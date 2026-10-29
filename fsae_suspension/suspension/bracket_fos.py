@@ -311,7 +311,7 @@ def screen_bracket(br: Bracket, fos_target: float = 1.5,
     #     because min_fos takes the minimum across modes: the screen gets
     #     stricter without deleting a number anyone was already reading. Errors
     #     in a screening tool must only ever move in the conservative direction.
-    if br.hole_dia_mm and br.hole_dia_mm > 0:
+    if (br.hole_dia_mm or 0) > 0:
         net_w = w - float(br.hole_dia_mm)
         if net_w <= 0:
             findings.append(Finding(
@@ -335,16 +335,16 @@ def screen_bracket(br: Bracket, fos_target: float = 1.5,
     #    tab and the conservative one. (The comment here previously said
     #    "strong axis", which contradicts the formula and has a habit of being
     #    copied into design-review slides.) c = t/2.
-    if br.lever_arm_mm and br.lever_arm_mm > 0:
+    if (br.lever_arm_mm or 0) > 0:
         M = P * float(br.lever_arm_mm)         # N·mm
         I = w * t**3 / 12.0                     # mm⁴
         c = t / 2.0
-        bend = M * c / I if I > 0 else math.inf
+        bend = M * c / I                        # I > 0: width and thickness were checked above
         modes.append(ModeResult("root bending", bend, Sy,
                                 Sy / bend if bend > 0 else math.inf))
 
     # 3) Bolt-hole bearing, P / (d·t) -------------------------------------------
-    if br.hole_dia_mm and br.hole_dia_mm > 0:
+    if (br.hole_dia_mm or 0) > 0:
         nb = max(int(br.n_bolts), 1)
         bearing = (P / nb) / (br.hole_dia_mm * t)
         # bearing is a compressive crushing check vs yield (ductile bearing allow
@@ -362,7 +362,7 @@ def screen_bracket(br: Bracket, fos_target: float = 1.5,
     #    This was a straight error rather than a convention choice: there is no
     #    school of practice in which the material inside the hole resists
     #    tear-out.
-    if br.hole_dia_mm and br.hole_dia_mm > 0 and br.edge_dist_mm and br.edge_dist_mm > 0:
+    if (br.hole_dia_mm or 0) > 0 and (br.edge_dist_mm or 0) > 0:
         nb = max(int(br.n_bolts), 1)
         plane_len = float(br.edge_dist_mm) - float(br.hole_dia_mm) / 2.0
         if plane_len <= 0:
@@ -380,13 +380,13 @@ def screen_bracket(br: Bracket, fos_target: float = 1.5,
                                     Ssy / tear if tear > 0 else math.inf))
 
     # 5) Fillet-weld throat shear (the "design for welding" check) --------------
-    if br.weld_leg_mm and br.weld_leg_mm > 0 and br.weld_length_mm and br.weld_length_mm > 0:
+    if (br.weld_leg_mm or 0) > 0 and (br.weld_length_mm or 0) > 0:
         throat = 0.707 * br.weld_leg_mm
         weld_area = throat * br.weld_length_mm
         # direct throat shear from the load; add the bending couple as an extra
         # throat shear over the weld group's length (screening-level superposition)
-        weld_shear = P / weld_area if weld_area > 0 else math.inf
-        if br.lever_arm_mm and br.lever_arm_mm > 0 and br.weld_length_mm > 0:
+        weld_shear = P / weld_area              # weld_area > 0: both weld sizes were checked above
+        if (br.lever_arm_mm or 0) > 0:
             # crude couple → extra line shear = 6·M / (throat·L²) for a line group
             weld_bend = 6.0 * (P * br.lever_arm_mm) / (throat * br.weld_length_mm**2)
             weld_shear = math.hypot(weld_shear, weld_bend)
@@ -395,15 +395,7 @@ def screen_bracket(br: Bracket, fos_target: float = 1.5,
         modes.append(ModeResult("weld throat shear", weld_shear, Ssy,
                                 Ssy / weld_shear if weld_shear > 0 else math.inf))
 
-    # ---- governing mode + verdict --------------------------------------------
-    if not modes:
-        return BracketResult(
-            name=br.name, material=br.material, min_fos=0.0,
-            governing_mode="none", verdict="INVALID", fos_target=fos_target,
-            findings=[Finding("bracket-fos", Severity.MISSING,
-                              "Nothing to check — give at least a load and a section.",
-                              subsystems=["chassis"])])
-
+    # ---- governing mode + verdict (the section check above always adds a mode) --
     gov = min(modes, key=lambda m: m.fos)
     gov.governs = True
     min_fos = gov.fos
@@ -411,7 +403,7 @@ def screen_bracket(br: Bracket, fos_target: float = 1.5,
     tight_ceiling = fos_target * (1.0 + tight_band)
     if min_fos < fos_target:
         verdict = "FAIL"
-    elif min_fos < tight_ceiling:
+    elif min_fos < tight_ceiling:  # pragma: no mutate (float threshold: < and <= differ only on exact equality)
         verdict = "TIGHT"
     else:
         verdict = "PASS"
@@ -466,7 +458,7 @@ def screen_bracket(br: Bracket, fos_target: float = 1.5,
     return BracketResult(
         name=br.name, material=mat.name, min_fos=min_fos,
         governing_mode=govlabel, verdict=verdict, fos_target=fos_target,
-        modes=modes, findings=findings, screening_only=True, notes=notes)
+        modes=modes, findings=findings, notes=notes)
 
 
 # --------------------------------------------------------------------------- #

@@ -1,0 +1,34 @@
+{
+ "bare_sections": [
+  "LF",
+  "LR",
+  "PR",
+  "TR",
+  "UF",
+  "UR"
+ ],
+ "bare_travel": [
+  40.0,
+  "baseline travel 400.0 mm clamped to ±40 mm (outside the solver-honest range)"
+ ],
+ "md": "# Ghost Topology audit — corner X\n\n**Verdict: `FEEDBACK_DIVERGENT`**  (flags: FEEDBACK_DIVERGENT, COMPLIANCE_INVERTED, MARGIN_BREACHED)\n\n5 instants audited (5 compliance solves, 0 cache hits). Worst transient FoS **0.80** (UF, t = 12 ms). Peak compliance: Δcamber 1.60°, Δtoe 0.16°. Peak tyre-feedback loop gain 1.40 (1.0 is the instability boundary).\n\n## Findings\n\n- 🔴 **tyre-feedback stability** — loop gain reached +1.40 at t = 12 ms (|g| ≥ 1): compliance-induced instability — deflection recruits force faster than force causes deflection. No quasi-static equilibrium exists on this branch.\n- 🔴 **kinematic-intent inversion** — camber INVERTED at t = 12 ms: rigid intent -1.50°, ghost topology +0.10° — structural deflection under load is actively reversing the kinematic design.\n- 🔴 **transient structural margin** — UF FoS fell to 0.80 (buckling) at t = 12 ms — under the 1.50 rule mid-event and past yield onset: elastic answers beyond this instant are void.\n\n## Instants\n\n| t (ms) | Fy (N) | Fz (N) | Δcamber (°) | Δtoe (°) | ΔRC (mm) | min FoS | member | loop gain |\n|---|---|---|---|---|---|---|---|---|\n| 0 | -100 | 900 | +0.00 | +0.00 | +0.0 | 5.00 | UF | +0.00 |\n| 12 | -300 | 900 | +1.60 | +0.00 | +0.0 | 0.80 | UF | +1.40 |\n| 62 | -400 | 900 | +0.00 | -0.16 | +0.0 | 1.00 | UF | +0.00 |\n| 112 | -500 | 900 | +0.51 | +0.00 | +0.0 | 5.00 | UF | +0.00 |\n| 162 | -200 | 900 | +0.00 | +0.00 | +0.0 | 5.00 | UF | +0.00 |\n\n_Quasi-static compliance along a transient load history — not a structural-dynamics solve, not plasticity, one corner at a time. A red instant here is the load case and pass criterion to hand the FEA seat, not a substitute for it._",
+ "short": 17144010918.735634,
+ "tie": 10.069885396087109,
+ "tiny_fy": {
+  "F_wc_extra": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "Fx": 0.0,
+  "Fx_wc": 0.0,
+  "Fy": 0.5,
+  "Fz": 900.0,
+  "M_wc_extra": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "Mz": 0.0
+ }
+}

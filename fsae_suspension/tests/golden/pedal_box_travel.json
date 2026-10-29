@@ -1,0 +1,1680 @@
+{
+ "cal_default": {
+  "air_cc": 0.0,
+  "calibrated": true,
+  "caliper_cc_per_bar": 0.002,
+  "compliance_scale": 0.9500406638124511,
+  "fitted_to": "bench measurement (40.0 mm at 50 bar, compliance scale x0.950)",
+  "fluid": "DOT 4",
+  "free_play_mm": 1.5,
+  "hardline_type": "hardline (steel tube)",
+  "hose_type": "PTFE braided (steel)",
+  "knockback_mm": 0.15,
+  "pad_compression_mm": 0.1
+ },
+ "cal_err_3.0": "A measured travel of 3.0 mm is at or below the 7.5 mm of pure free play implied by free_play_mm x pedal_ratio. Either the measurement or the free play is wrong -- there would be no fluid travel left to calibrate against.",
+ "cal_err_7.5": "A measured travel of 7.5 mm is at or below the 7.5 mm of pure free play implied by free_play_mm x pedal_ratio. Either the measurement or the free play is wrong -- there would be no fluid travel left to calibrate against.",
+ "cal_fit": {
+  "air_cc": 0.1,
+  "calibrated": true,
+  "caliper_cc_per_bar": 0.002,
+  "compliance_scale": 1.1258208176934572,
+  "fitted_to": "rig (52.1 mm at 60 bar, compliance scale x1.126)",
+  "fluid": "DOT 4",
+  "free_play_mm": 1.5,
+  "hardline_type": "hardline (steel tube)",
+  "hose_type": "PTFE braided (steel)",
+  "knockback_mm": 0.15,
+  "pad_compression_mm": 0.1
+ },
+ "cal_short": {
+  "air_cc": 0.1,
+  "calibrated": true,
+  "caliper_cc_per_bar": 0.002,
+  "compliance_scale": 0.7970537881908555,
+  "fitted_to": "rig (39.1 mm at 60 bar, compliance scale x0.797)",
+  "fluid": "DOT 4",
+  "free_play_mm": 1.5,
+  "hardline_type": "hardline (steel tube)",
+  "hose_type": "PTFE braided (steel)",
+  "knockback_mm": 0.15,
+  "pad_compression_mm": 0.1
+ },
+ "fail_both": {
+  "big": [
+   {
+    "name": "Piston knockback / running clearance",
+    "note": "8482.3 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+    "pressure_dependent": false,
+    "volume_cc": 1.2723450247038663
+   },
+   {
+    "name": "Pad compression",
+    "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+    "pressure_dependent": false,
+    "volume_cc": 0.8482300164692442
+   },
+   {
+    "name": "Caliper housing deflection",
+    "note": "2.000 cc/kbar per caliper at 90 bar.",
+    "pressure_dependent": true,
+    "volume_cc": 0.36
+   }
+  ],
+  "big2": [
+   {
+    "name": "Piston knockback / running clearance",
+    "note": "8482.3 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+    "pressure_dependent": false,
+    "volume_cc": 1.2723450247038663
+   },
+   {
+    "name": "Pad compression",
+    "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+    "pressure_dependent": false,
+    "volume_cc": 0.8482300164692442
+   }
+  ],
+  "d": {
+   "available_travel_mm": 30.0,
+   "findings": [
+    {
+     "check": "mc_stroke",
+     "detail": {},
+     "message": "The circuit demands 24.2 mm of cylinder stroke against a 10.0 mm limit. The piston bottoms before the brakes are fully applied -- this is a pedal that goes to the floor, not a soft one.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "pedal_travel",
+     "detail": {},
+     "message": "154.4 mm of travel at the pad against 30.0 mm available. Go after the largest consumers first: Piston knockback / running clearance, Pad compression.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "travel_provenance",
+     "detail": {},
+     "message": "Knockback, pad compression, hose and caliper compliance are representative values, not measured on this car. The RANKING of consumers and the sensitivity to bore and ratio are trustworthy; the absolute travel is provisional. One bench measurement -- pump to a firm pedal, measure the travel -- fixes that via TravelParams.from_measured_stroke().",
+     "severity": "missing",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "is_estimate": true,
+   "items": [
+    {
+     "name": "Piston knockback / running clearance",
+     "note": "8482.3 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+     "pressure_dependent": false,
+     "volume_cc": 1.2723450247038663
+    },
+    {
+     "name": "Pad compression",
+     "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+     "pressure_dependent": false,
+     "volume_cc": 0.8482300164692442
+    },
+    {
+     "name": "Caliper housing deflection",
+     "note": "2.000 cc/kbar per caliper at 90 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.36
+    },
+    {
+     "name": "Hose expansion (PTFE braided (steel))",
+     "note": "0.60 m per corner x 2 corner(s) at 90 bar. Switching rubber for PTFE braided is the cheapest firm-pedal fix there is.",
+     "pressure_dependent": true,
+     "volume_cc": 0.0864
+    },
+    {
+     "name": "Hardline expansion (hardline (steel tube))",
+     "note": "1.80 m of routed hardline at 90 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.016200000000000003
+    },
+    {
+     "name": "Fluid compressibility",
+     "note": "26.248 cc of DOT 4 at 90 bar, K=1.50 GPa. Hot or water-contaminated fluid is softer than this.",
+     "pressure_dependent": true,
+     "volume_cc": 0.15748803972445635
+    }
+   ],
+   "mc_stroke_limit_mm": 10.0,
+   "mc_stroke_mm": 24.232782037461714,
+   "notes": [
+    "Uncalibrated: use for trades, not as an absolute pedal travel."
+   ],
+   "pedal_travel_mm": 154.39669222477028,
+   "stroke_utilisation": 2.4232782037461713,
+   "total_cc": 2.740663080897567,
+   "verdict": "FAIL"
+  },
+  "s": "Pedal travel: 154.4 mm at the pad of 30.0 mm available -> FAIL\n  2.741 cc demanded, 24.2 mm of cylinder stroke (242% of the 10.0 mm limit)\n     1.272 cc  Piston knockback / running clearance\n     0.848 cc  Pad compression\n     0.360 cc  Caliper housing deflection\n     0.157 cc  Fluid compressibility",
+  "t": {
+   "available_travel_mm": 30.0,
+   "findings": [
+    {
+     "check": "mc_stroke",
+     "detail": {},
+     "message": "The circuit demands 24.2 mm of cylinder stroke against a 10.0 mm limit. The piston bottoms before the brakes are fully applied -- this is a pedal that goes to the floor, not a soft one.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "pedal_travel",
+     "detail": {},
+     "message": "154.4 mm of travel at the pad against 30.0 mm available. Go after the largest consumers first: Piston knockback / running clearance, Pad compression.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "travel_provenance",
+     "detail": {},
+     "message": "Knockback, pad compression, hose and caliper compliance are representative values, not measured on this car. The RANKING of consumers and the sensitivity to bore and ratio are trustworthy; the absolute travel is provisional. One bench measurement -- pump to a firm pedal, measure the travel -- fixes that via TravelParams.from_measured_stroke().",
+     "severity": "missing",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "is_estimate": true,
+   "items": [
+    {
+     "name": "Piston knockback / running clearance",
+     "note": "8482.3 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+     "pressure_dependent": false,
+     "volume_cc": 1.2723450247038663
+    },
+    {
+     "name": "Pad compression",
+     "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+     "pressure_dependent": false,
+     "volume_cc": 0.8482300164692442
+    },
+    {
+     "name": "Caliper housing deflection",
+     "note": "2.000 cc/kbar per caliper at 90 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.36
+    },
+    {
+     "name": "Hose expansion (PTFE braided (steel))",
+     "note": "0.60 m per corner x 2 corner(s) at 90 bar. Switching rubber for PTFE braided is the cheapest firm-pedal fix there is.",
+     "pressure_dependent": true,
+     "volume_cc": 0.0864
+    },
+    {
+     "name": "Hardline expansion (hardline (steel tube))",
+     "note": "1.80 m of routed hardline at 90 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.016200000000000003
+    },
+    {
+     "name": "Fluid compressibility",
+     "note": "26.248 cc of DOT 4 at 90 bar, K=1.50 GPa. Hot or water-contaminated fluid is softer than this.",
+     "pressure_dependent": true,
+     "volume_cc": 0.15748803972445635
+    }
+   ],
+   "mc_stroke_limit_mm": 10.0,
+   "mc_stroke_mm": 24.232782037461714,
+   "notes": [
+    "Uncalibrated: use for trades, not as an absolute pedal travel."
+   ],
+   "pedal_travel_mm": 154.39669222477028,
+   "stroke_utilisation": 2.4232782037461713,
+   "total_cc": 2.740663080897567,
+   "verdict": "FAIL"
+  }
+ },
+ "fail_stroke": {
+  "big": [
+   {
+    "name": "Piston knockback / running clearance",
+    "note": "4053.7 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+    "pressure_dependent": false,
+    "volume_cc": 0.6080489749169972
+   },
+   {
+    "name": "Pad compression",
+    "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+    "pressure_dependent": false,
+    "volume_cc": 0.40536598327799817
+   },
+   {
+    "name": "Caliper housing deflection",
+    "note": "2.000 cc/kbar per caliper at 60 bar.",
+    "pressure_dependent": true,
+    "volume_cc": 0.24
+   }
+  ],
+  "big2": [
+   {
+    "name": "Piston knockback / running clearance",
+    "note": "4053.7 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+    "pressure_dependent": false,
+    "volume_cc": 0.6080489749169972
+   },
+   {
+    "name": "Pad compression",
+    "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+    "pressure_dependent": false,
+    "volume_cc": 0.40536598327799817
+   }
+  ],
+  "d": {
+   "available_travel_mm": 500.0,
+   "findings": [
+    {
+     "check": "mc_stroke",
+     "detail": {},
+     "message": "The circuit demands 7.2 mm of cylinder stroke against a 2.0 mm limit. The piston bottoms before the brakes are fully applied -- this is a pedal that goes to the floor, not a soft one.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "travel_provenance",
+     "detail": {},
+     "message": "Knockback, pad compression, hose and caliper compliance are representative values, not measured on this car. The RANKING of consumers and the sensitivity to bore and ratio are trustworthy; the absolute travel is provisional. One bench measurement -- pump to a firm pedal, measure the travel -- fixes that via TravelParams.from_measured_stroke().",
+     "severity": "missing",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "is_estimate": true,
+   "items": [
+    {
+     "name": "Piston knockback / running clearance",
+     "note": "4053.7 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+     "pressure_dependent": false,
+     "volume_cc": 0.6080489749169972
+    },
+    {
+     "name": "Pad compression",
+     "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+     "pressure_dependent": false,
+     "volume_cc": 0.40536598327799817
+    },
+    {
+     "name": "Caliper housing deflection",
+     "note": "2.000 cc/kbar per caliper at 60 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.24
+    },
+    {
+     "name": "Hose expansion (PTFE braided (steel))",
+     "note": "0.60 m per corner x 2 corner(s) at 60 bar. Switching rubber for PTFE braided is the cheapest firm-pedal fix there is.",
+     "pressure_dependent": true,
+     "volume_cc": 0.0576
+    },
+    {
+     "name": "Hardline expansion (hardline (steel tube))",
+     "note": "1.80 m of routed hardline at 60 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.0108
+    },
+    {
+     "name": "Fluid compressibility",
+     "note": "25.141 cc of DOT 4 at 60 bar, K=1.50 GPa. Hot or water-contaminated fluid is softer than this.",
+     "pressure_dependent": true,
+     "volume_cc": 0.10056338615105843
+    }
+   ],
+   "mc_stroke_limit_mm": 2.0,
+   "mc_stroke_mm": 7.186174887355989,
+   "notes": [
+    "Uncalibrated: use for trades, not as an absolute pedal travel."
+   ],
+   "pedal_travel_mm": 8.686174887355989,
+   "stroke_utilisation": 3.5930874436779945,
+   "total_cc": 1.4223783443460538,
+   "verdict": "FAIL"
+  },
+  "s": "Pedal travel: 8.7 mm at the pad of 500.0 mm available -> FAIL\n  1.422 cc demanded, 7.2 mm of cylinder stroke (359% of the 2.0 mm limit)\n     0.608 cc  Piston knockback / running clearance\n     0.405 cc  Pad compression\n     0.240 cc  Caliper housing deflection\n     0.101 cc  Fluid compressibility",
+  "t": {
+   "available_travel_mm": 500.0,
+   "findings": [
+    {
+     "check": "mc_stroke",
+     "detail": {},
+     "message": "The circuit demands 7.2 mm of cylinder stroke against a 2.0 mm limit. The piston bottoms before the brakes are fully applied -- this is a pedal that goes to the floor, not a soft one.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "travel_provenance",
+     "detail": {},
+     "message": "Knockback, pad compression, hose and caliper compliance are representative values, not measured on this car. The RANKING of consumers and the sensitivity to bore and ratio are trustworthy; the absolute travel is provisional. One bench measurement -- pump to a firm pedal, measure the travel -- fixes that via TravelParams.from_measured_stroke().",
+     "severity": "missing",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "is_estimate": true,
+   "items": [
+    {
+     "name": "Piston knockback / running clearance",
+     "note": "4053.7 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+     "pressure_dependent": false,
+     "volume_cc": 0.6080489749169972
+    },
+    {
+     "name": "Pad compression",
+     "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+     "pressure_dependent": false,
+     "volume_cc": 0.40536598327799817
+    },
+    {
+     "name": "Caliper housing deflection",
+     "note": "2.000 cc/kbar per caliper at 60 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.24
+    },
+    {
+     "name": "Hose expansion (PTFE braided (steel))",
+     "note": "0.60 m per corner x 2 corner(s) at 60 bar. Switching rubber for PTFE braided is the cheapest firm-pedal fix there is.",
+     "pressure_dependent": true,
+     "volume_cc": 0.0576
+    },
+    {
+     "name": "Hardline expansion (hardline (steel tube))",
+     "note": "1.80 m of routed hardline at 60 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.0108
+    },
+    {
+     "name": "Fluid compressibility",
+     "note": "25.141 cc of DOT 4 at 60 bar, K=1.50 GPa. Hot or water-contaminated fluid is softer than this.",
+     "pressure_dependent": true,
+     "volume_cc": 0.10056338615105843
+    }
+   ],
+   "mc_stroke_limit_mm": 2.0,
+   "mc_stroke_mm": 7.186174887355989,
+   "notes": [
+    "Uncalibrated: use for trades, not as an absolute pedal travel."
+   ],
+   "pedal_travel_mm": 8.686174887355989,
+   "stroke_utilisation": 3.5930874436779945,
+   "total_cc": 1.4223783443460538,
+   "verdict": "FAIL"
+  }
+ },
+ "fail_travel": {
+  "big": [
+   {
+    "name": "Piston knockback / running clearance",
+    "note": "4053.7 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+    "pressure_dependent": false,
+    "volume_cc": 0.6080489749169972
+   },
+   {
+    "name": "Pad compression",
+    "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+    "pressure_dependent": false,
+    "volume_cc": 0.40536598327799817
+   },
+   {
+    "name": "Caliper housing deflection",
+    "note": "2.000 cc/kbar per caliper at 60 bar.",
+    "pressure_dependent": true,
+    "volume_cc": 0.24
+   }
+  ],
+  "big2": [
+   {
+    "name": "Piston knockback / running clearance",
+    "note": "4053.7 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+    "pressure_dependent": false,
+    "volume_cc": 0.6080489749169972
+   },
+   {
+    "name": "Pad compression",
+    "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+    "pressure_dependent": false,
+    "volume_cc": 0.40536598327799817
+   }
+  ],
+  "d": {
+   "available_travel_mm": 20.0,
+   "findings": [
+    {
+     "check": "pedal_travel",
+     "detail": {},
+     "message": "78.2 mm of travel at the pad against 20.0 mm available. Go after the largest consumers first: Piston knockback / running clearance, Pad compression.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "travel_provenance",
+     "detail": {},
+     "message": "Knockback, pad compression, hose and caliper compliance are representative values, not measured on this car. The RANKING of consumers and the sensitivity to bore and ratio are trustworthy; the absolute travel is provisional. One bench measurement -- pump to a firm pedal, measure the travel -- fixes that via TravelParams.from_measured_stroke().",
+     "severity": "missing",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "is_estimate": true,
+   "items": [
+    {
+     "name": "Piston knockback / running clearance",
+     "note": "4053.7 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+     "pressure_dependent": false,
+     "volume_cc": 0.6080489749169972
+    },
+    {
+     "name": "Pad compression",
+     "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+     "pressure_dependent": false,
+     "volume_cc": 0.40536598327799817
+    },
+    {
+     "name": "Caliper housing deflection",
+     "note": "2.000 cc/kbar per caliper at 60 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.24
+    },
+    {
+     "name": "Hose expansion (PTFE braided (steel))",
+     "note": "0.60 m per corner x 2 corner(s) at 60 bar. Switching rubber for PTFE braided is the cheapest firm-pedal fix there is.",
+     "pressure_dependent": true,
+     "volume_cc": 0.0576
+    },
+    {
+     "name": "Hardline expansion (hardline (steel tube))",
+     "note": "1.80 m of routed hardline at 60 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.0108
+    },
+    {
+     "name": "Fluid compressibility",
+     "note": "25.141 cc of DOT 4 at 60 bar, K=1.50 GPa. Hot or water-contaminated fluid is softer than this.",
+     "pressure_dependent": true,
+     "volume_cc": 0.10056338615105843
+    }
+   ],
+   "mc_stroke_limit_mm": 25.4,
+   "mc_stroke_mm": 7.186174887355989,
+   "notes": [
+    "Uncalibrated: use for trades, not as an absolute pedal travel."
+   ],
+   "pedal_travel_mm": 78.1755739862039,
+   "stroke_utilisation": 0.28292027115574764,
+   "total_cc": 1.4223783443460538,
+   "verdict": "FAIL"
+  },
+  "s": "Pedal travel: 78.2 mm at the pad of 20.0 mm available -> FAIL\n  1.422 cc demanded, 7.2 mm of cylinder stroke (28% of the 25.4 mm limit)\n     0.608 cc  Piston knockback / running clearance\n     0.405 cc  Pad compression\n     0.240 cc  Caliper housing deflection\n     0.101 cc  Fluid compressibility",
+  "t": {
+   "available_travel_mm": 20.0,
+   "findings": [
+    {
+     "check": "pedal_travel",
+     "detail": {},
+     "message": "78.2 mm of travel at the pad against 20.0 mm available. Go after the largest consumers first: Piston knockback / running clearance, Pad compression.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "travel_provenance",
+     "detail": {},
+     "message": "Knockback, pad compression, hose and caliper compliance are representative values, not measured on this car. The RANKING of consumers and the sensitivity to bore and ratio are trustworthy; the absolute travel is provisional. One bench measurement -- pump to a firm pedal, measure the travel -- fixes that via TravelParams.from_measured_stroke().",
+     "severity": "missing",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "is_estimate": true,
+   "items": [
+    {
+     "name": "Piston knockback / running clearance",
+     "note": "4053.7 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+     "pressure_dependent": false,
+     "volume_cc": 0.6080489749169972
+    },
+    {
+     "name": "Pad compression",
+     "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+     "pressure_dependent": false,
+     "volume_cc": 0.40536598327799817
+    },
+    {
+     "name": "Caliper housing deflection",
+     "note": "2.000 cc/kbar per caliper at 60 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.24
+    },
+    {
+     "name": "Hose expansion (PTFE braided (steel))",
+     "note": "0.60 m per corner x 2 corner(s) at 60 bar. Switching rubber for PTFE braided is the cheapest firm-pedal fix there is.",
+     "pressure_dependent": true,
+     "volume_cc": 0.0576
+    },
+    {
+     "name": "Hardline expansion (hardline (steel tube))",
+     "note": "1.80 m of routed hardline at 60 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.0108
+    },
+    {
+     "name": "Fluid compressibility",
+     "note": "25.141 cc of DOT 4 at 60 bar, K=1.50 GPa. Hot or water-contaminated fluid is softer than this.",
+     "pressure_dependent": true,
+     "volume_cc": 0.10056338615105843
+    }
+   ],
+   "mc_stroke_limit_mm": 25.4,
+   "mc_stroke_mm": 7.186174887355989,
+   "notes": [
+    "Uncalibrated: use for trades, not as an absolute pedal travel."
+   ],
+   "pedal_travel_mm": 78.1755739862039,
+   "stroke_utilisation": 0.28292027115574764,
+   "total_cc": 1.4223783443460538,
+   "verdict": "FAIL"
+  }
+ },
+ "front_default": {
+  "big": [
+   {
+    "name": "Piston knockback / running clearance",
+    "note": "4053.7 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+    "pressure_dependent": false,
+    "volume_cc": 0.6080489749169972
+   },
+   {
+    "name": "Pad compression",
+    "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+    "pressure_dependent": false,
+    "volume_cc": 0.40536598327799817
+   },
+   {
+    "name": "Caliper housing deflection",
+    "note": "2.000 cc/kbar per caliper at 60 bar.",
+    "pressure_dependent": true,
+    "volume_cc": 0.24
+   }
+  ],
+  "big2": [
+   {
+    "name": "Piston knockback / running clearance",
+    "note": "4053.7 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+    "pressure_dependent": false,
+    "volume_cc": 0.6080489749169972
+   },
+   {
+    "name": "Pad compression",
+    "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+    "pressure_dependent": false,
+    "volume_cc": 0.40536598327799817
+   }
+  ],
+  "d": {
+   "available_travel_mm": 60.0,
+   "findings": [
+    {
+     "check": "pedal_travel",
+     "detail": {},
+     "message": "43.4 mm at the pad, cylinder at 28% of stroke. Reserve for wear and heat.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "travel_provenance",
+     "detail": {},
+     "message": "Knockback, pad compression, hose and caliper compliance are representative values, not measured on this car. The RANKING of consumers and the sensitivity to bore and ratio are trustworthy; the absolute travel is provisional. One bench measurement -- pump to a firm pedal, measure the travel -- fixes that via TravelParams.from_measured_stroke().",
+     "severity": "missing",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "is_estimate": true,
+   "items": [
+    {
+     "name": "Piston knockback / running clearance",
+     "note": "4053.7 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+     "pressure_dependent": false,
+     "volume_cc": 0.6080489749169972
+    },
+    {
+     "name": "Pad compression",
+     "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+     "pressure_dependent": false,
+     "volume_cc": 0.40536598327799817
+    },
+    {
+     "name": "Caliper housing deflection",
+     "note": "2.000 cc/kbar per caliper at 60 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.24
+    },
+    {
+     "name": "Hose expansion (PTFE braided (steel))",
+     "note": "0.60 m per corner x 2 corner(s) at 60 bar. Switching rubber for PTFE braided is the cheapest firm-pedal fix there is.",
+     "pressure_dependent": true,
+     "volume_cc": 0.0576
+    },
+    {
+     "name": "Hardline expansion (hardline (steel tube))",
+     "note": "1.80 m of routed hardline at 60 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.0108
+    },
+    {
+     "name": "Fluid compressibility",
+     "note": "25.141 cc of DOT 4 at 60 bar, K=1.50 GPa. Hot or water-contaminated fluid is softer than this.",
+     "pressure_dependent": true,
+     "volume_cc": 0.10056338615105843
+    }
+   ],
+   "mc_stroke_limit_mm": 25.4,
+   "mc_stroke_mm": 7.186174887355989,
+   "notes": [
+    "Uncalibrated: use for trades, not as an absolute pedal travel."
+   ],
+   "pedal_travel_mm": 43.430874436779945,
+   "stroke_utilisation": 0.28292027115574764,
+   "total_cc": 1.4223783443460538,
+   "verdict": "PASS"
+  },
+  "s": "Pedal travel: 43.4 mm at the pad of 60.0 mm available -> PASS\n  1.422 cc demanded, 7.2 mm of cylinder stroke (28% of the 25.4 mm limit)\n     0.608 cc  Piston knockback / running clearance\n     0.405 cc  Pad compression\n     0.240 cc  Caliper housing deflection\n     0.101 cc  Fluid compressibility",
+  "t": {
+   "available_travel_mm": 60.0,
+   "findings": [
+    {
+     "check": "pedal_travel",
+     "detail": {},
+     "message": "43.4 mm at the pad, cylinder at 28% of stroke. Reserve for wear and heat.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "travel_provenance",
+     "detail": {},
+     "message": "Knockback, pad compression, hose and caliper compliance are representative values, not measured on this car. The RANKING of consumers and the sensitivity to bore and ratio are trustworthy; the absolute travel is provisional. One bench measurement -- pump to a firm pedal, measure the travel -- fixes that via TravelParams.from_measured_stroke().",
+     "severity": "missing",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "is_estimate": true,
+   "items": [
+    {
+     "name": "Piston knockback / running clearance",
+     "note": "4053.7 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+     "pressure_dependent": false,
+     "volume_cc": 0.6080489749169972
+    },
+    {
+     "name": "Pad compression",
+     "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+     "pressure_dependent": false,
+     "volume_cc": 0.40536598327799817
+    },
+    {
+     "name": "Caliper housing deflection",
+     "note": "2.000 cc/kbar per caliper at 60 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.24
+    },
+    {
+     "name": "Hose expansion (PTFE braided (steel))",
+     "note": "0.60 m per corner x 2 corner(s) at 60 bar. Switching rubber for PTFE braided is the cheapest firm-pedal fix there is.",
+     "pressure_dependent": true,
+     "volume_cc": 0.0576
+    },
+    {
+     "name": "Hardline expansion (hardline (steel tube))",
+     "note": "1.80 m of routed hardline at 60 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.0108
+    },
+    {
+     "name": "Fluid compressibility",
+     "note": "25.141 cc of DOT 4 at 60 bar, K=1.50 GPa. Hot or water-contaminated fluid is softer than this.",
+     "pressure_dependent": true,
+     "volume_cc": 0.10056338615105843
+    }
+   ],
+   "mc_stroke_limit_mm": 25.4,
+   "mc_stroke_mm": 7.186174887355989,
+   "notes": [
+    "Uncalibrated: use for trades, not as an absolute pedal travel."
+   ],
+   "pedal_travel_mm": 43.430874436779945,
+   "stroke_utilisation": 0.28292027115574764,
+   "total_cc": 1.4223783443460538,
+   "verdict": "PASS"
+  }
+ },
+ "negative_p": {
+  "big": [
+   {
+    "name": "Piston knockback / running clearance",
+    "note": "4053.7 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+    "pressure_dependent": false,
+    "volume_cc": 0.6080489749169972
+   },
+   {
+    "name": "Pad compression",
+    "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+    "pressure_dependent": false,
+    "volume_cc": 0.40536598327799817
+   },
+   {
+    "name": "Caliper housing deflection",
+    "note": "2.000 cc/kbar per caliper at 0 bar.",
+    "pressure_dependent": true,
+    "volume_cc": 0.0
+   }
+  ],
+  "big2": [
+   {
+    "name": "Piston knockback / running clearance",
+    "note": "4053.7 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+    "pressure_dependent": false,
+    "volume_cc": 0.6080489749169972
+   },
+   {
+    "name": "Pad compression",
+    "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+    "pressure_dependent": false,
+    "volume_cc": 0.40536598327799817
+   }
+  ],
+  "d": {
+   "available_travel_mm": 60.0,
+   "findings": [
+    {
+     "check": "pedal_travel",
+     "detail": {},
+     "message": "33.1 mm at the pad, cylinder at 20% of stroke. Reserve for wear and heat.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "travel_provenance",
+     "detail": {},
+     "message": "Knockback, pad compression, hose and caliper compliance are representative values, not measured on this car. The RANKING of consumers and the sensitivity to bore and ratio are trustworthy; the absolute travel is provisional. One bench measurement -- pump to a firm pedal, measure the travel -- fixes that via TravelParams.from_measured_stroke().",
+     "severity": "missing",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "is_estimate": true,
+   "items": [
+    {
+     "name": "Piston knockback / running clearance",
+     "note": "4053.7 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+     "pressure_dependent": false,
+     "volume_cc": 0.6080489749169972
+    },
+    {
+     "name": "Pad compression",
+     "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+     "pressure_dependent": false,
+     "volume_cc": 0.40536598327799817
+    },
+    {
+     "name": "Caliper housing deflection",
+     "note": "2.000 cc/kbar per caliper at 0 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.0
+    },
+    {
+     "name": "Hose expansion (PTFE braided (steel))",
+     "note": "1.00 m per corner x 2 corner(s) at 0 bar. Switching rubber for PTFE braided is the cheapest firm-pedal fix there is.",
+     "pressure_dependent": true,
+     "volume_cc": 0.0
+    },
+    {
+     "name": "Hardline expansion (hardline (steel tube))",
+     "note": "2.50 m of routed hardline at 0 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.0
+    },
+    {
+     "name": "Fluid compressibility",
+     "note": "57.562 cc of DOT 4 at 0 bar, K=1.50 GPa. Hot or water-contaminated fluid is softer than this.",
+     "pressure_dependent": true,
+     "volume_cc": 0.0
+    }
+   ],
+   "mc_stroke_limit_mm": 25.4,
+   "mc_stroke_mm": 5.12,
+   "notes": [
+    "Uncalibrated: use for trades, not as an absolute pedal travel."
+   ],
+   "pedal_travel_mm": 33.1,
+   "stroke_utilisation": 0.20157480314960632,
+   "total_cc": 1.0134149581949954,
+   "verdict": "PASS"
+  },
+  "s": "Pedal travel: 33.1 mm at the pad of 60.0 mm available -> PASS\n  1.013 cc demanded, 5.1 mm of cylinder stroke (20% of the 25.4 mm limit)\n     0.608 cc  Piston knockback / running clearance\n     0.405 cc  Pad compression\n     0.000 cc  Caliper housing deflection\n     0.000 cc  Hose expansion (PTFE braided (steel))",
+  "t": {
+   "available_travel_mm": 60.0,
+   "findings": [
+    {
+     "check": "pedal_travel",
+     "detail": {},
+     "message": "33.1 mm at the pad, cylinder at 20% of stroke. Reserve for wear and heat.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "travel_provenance",
+     "detail": {},
+     "message": "Knockback, pad compression, hose and caliper compliance are representative values, not measured on this car. The RANKING of consumers and the sensitivity to bore and ratio are trustworthy; the absolute travel is provisional. One bench measurement -- pump to a firm pedal, measure the travel -- fixes that via TravelParams.from_measured_stroke().",
+     "severity": "missing",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "is_estimate": true,
+   "items": [
+    {
+     "name": "Piston knockback / running clearance",
+     "note": "4053.7 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+     "pressure_dependent": false,
+     "volume_cc": 0.6080489749169972
+    },
+    {
+     "name": "Pad compression",
+     "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+     "pressure_dependent": false,
+     "volume_cc": 0.40536598327799817
+    },
+    {
+     "name": "Caliper housing deflection",
+     "note": "2.000 cc/kbar per caliper at 0 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.0
+    },
+    {
+     "name": "Hose expansion (PTFE braided (steel))",
+     "note": "1.00 m per corner x 2 corner(s) at 0 bar. Switching rubber for PTFE braided is the cheapest firm-pedal fix there is.",
+     "pressure_dependent": true,
+     "volume_cc": 0.0
+    },
+    {
+     "name": "Hardline expansion (hardline (steel tube))",
+     "note": "2.50 m of routed hardline at 0 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.0
+    },
+    {
+     "name": "Fluid compressibility",
+     "note": "57.562 cc of DOT 4 at 0 bar, K=1.50 GPa. Hot or water-contaminated fluid is softer than this.",
+     "pressure_dependent": true,
+     "volume_cc": 0.0
+    }
+   ],
+   "mc_stroke_limit_mm": 25.4,
+   "mc_stroke_mm": 5.12,
+   "notes": [
+    "Uncalibrated: use for trades, not as an absolute pedal travel."
+   ],
+   "pedal_travel_mm": 33.1,
+   "stroke_utilisation": 0.20157480314960632,
+   "total_cc": 1.0134149581949954,
+   "verdict": "PASS"
+  }
+ },
+ "rear_air": {
+  "big": [
+   {
+    "name": "Trapped air (compressed)",
+    "note": "0.300 cc of air at atmospheric collapses to almost nothing at 45 bar, and every cc of that collapse is pedal travel you paid for. Bleed it out.",
+    "pressure_dependent": true,
+    "volume_cc": 0.41086956521739126
+   },
+   {
+    "name": "Caliper housing deflection",
+    "note": "2.000 cc/kbar per caliper at 45 bar.",
+    "pressure_dependent": true,
+    "volume_cc": 0.252
+   },
+   {
+    "name": "Piston knockback / running clearance",
+    "note": "1013.4 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+    "pressure_dependent": false,
+    "volume_cc": 0.212817141220949
+   }
+  ],
+  "big2": [
+   {
+    "name": "Trapped air (compressed)",
+    "note": "0.300 cc of air at atmospheric collapses to almost nothing at 45 bar, and every cc of that collapse is pedal travel you paid for. Bleed it out.",
+    "pressure_dependent": true,
+    "volume_cc": 0.41086956521739126
+   },
+   {
+    "name": "Caliper housing deflection",
+    "note": "2.000 cc/kbar per caliper at 45 bar.",
+    "pressure_dependent": true,
+    "volume_cc": 0.252
+   }
+  ],
+  "d": {
+   "available_travel_mm": 60.0,
+   "findings": [
+    {
+     "check": "pedal_travel",
+     "detail": {},
+     "message": "28.4 mm at the pad, cylinder at 16% of stroke. Reserve for wear and heat.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "trapped_air",
+     "detail": {},
+     "message": "This budget includes 0.300 cc of trapped air. If you are modelling a badly-bled system to see the effect, good. If that is your real state, bleed it before you conclude anything about the cylinder bore.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "is_estimate": false,
+   "items": [
+    {
+     "name": "Piston knockback / running clearance",
+     "note": "1013.4 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+     "pressure_dependent": false,
+     "volume_cc": 0.212817141220949
+    },
+    {
+     "name": "Pad compression",
+     "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+     "pressure_dependent": false,
+     "volume_cc": 0.14187809414729935
+    },
+    {
+     "name": "Caliper housing deflection",
+     "note": "2.000 cc/kbar per caliper at 45 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.252
+    },
+    {
+     "name": "Hose expansion (PTFE braided (steel))",
+     "note": "0.60 m per corner x 2 corner(s) at 45 bar. Switching rubber for PTFE braided is the cheapest firm-pedal fix there is.",
+     "pressure_dependent": true,
+     "volume_cc": 0.06048
+    },
+    {
+     "name": "Hardline expansion (hardline (steel tube))",
+     "note": "1.80 m of routed hardline at 45 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.011340000000000001
+    },
+    {
+     "name": "Fluid compressibility",
+     "note": "24.381 cc of DOT 4 at 45 bar, K=1.50 GPa. Hot or water-contaminated fluid is softer than this.",
+     "pressure_dependent": true,
+     "volume_cc": 0.10239929834029712
+    },
+    {
+     "name": "Trapped air (compressed)",
+     "note": "0.300 cc of air at atmospheric collapses to almost nothing at 45 bar, and every cc of that collapse is pedal travel you paid for. Bleed it out.",
+     "pressure_dependent": true,
+     "volume_cc": 0.41086956521739126
+    }
+   ],
+   "mc_stroke_limit_mm": 25.4,
+   "mc_stroke_mm": 4.181361780475654,
+   "notes": [],
+   "pedal_travel_mm": 28.40680890237827,
+   "stroke_utilisation": 0.16462054253841157,
+   "total_cc": 1.1917840989259367,
+   "verdict": "PASS"
+  },
+  "s": "Pedal travel: 28.4 mm at the pad of 60.0 mm available -> PASS\n  1.192 cc demanded, 4.2 mm of cylinder stroke (16% of the 25.4 mm limit)\n     0.411 cc  Trapped air (compressed)\n     0.252 cc  Caliper housing deflection\n     0.213 cc  Piston knockback / running clearance\n     0.142 cc  Pad compression",
+  "t": {
+   "available_travel_mm": 60.0,
+   "findings": [
+    {
+     "check": "pedal_travel",
+     "detail": {},
+     "message": "28.4 mm at the pad, cylinder at 16% of stroke. Reserve for wear and heat.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "trapped_air",
+     "detail": {},
+     "message": "This budget includes 0.300 cc of trapped air. If you are modelling a badly-bled system to see the effect, good. If that is your real state, bleed it before you conclude anything about the cylinder bore.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "is_estimate": false,
+   "items": [
+    {
+     "name": "Piston knockback / running clearance",
+     "note": "1013.4 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+     "pressure_dependent": false,
+     "volume_cc": 0.212817141220949
+    },
+    {
+     "name": "Pad compression",
+     "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+     "pressure_dependent": false,
+     "volume_cc": 0.14187809414729935
+    },
+    {
+     "name": "Caliper housing deflection",
+     "note": "2.000 cc/kbar per caliper at 45 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.252
+    },
+    {
+     "name": "Hose expansion (PTFE braided (steel))",
+     "note": "0.60 m per corner x 2 corner(s) at 45 bar. Switching rubber for PTFE braided is the cheapest firm-pedal fix there is.",
+     "pressure_dependent": true,
+     "volume_cc": 0.06048
+    },
+    {
+     "name": "Hardline expansion (hardline (steel tube))",
+     "note": "1.80 m of routed hardline at 45 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.011340000000000001
+    },
+    {
+     "name": "Fluid compressibility",
+     "note": "24.381 cc of DOT 4 at 45 bar, K=1.50 GPa. Hot or water-contaminated fluid is softer than this.",
+     "pressure_dependent": true,
+     "volume_cc": 0.10239929834029712
+    },
+    {
+     "name": "Trapped air (compressed)",
+     "note": "0.300 cc of air at atmospheric collapses to almost nothing at 45 bar, and every cc of that collapse is pedal travel you paid for. Bleed it out.",
+     "pressure_dependent": true,
+     "volume_cc": 0.41086956521739126
+    }
+   ],
+   "mc_stroke_limit_mm": 25.4,
+   "mc_stroke_mm": 4.181361780475654,
+   "notes": [],
+   "pedal_travel_mm": 28.40680890237827,
+   "stroke_utilisation": 0.16462054253841157,
+   "total_cc": 1.1917840989259367,
+   "verdict": "PASS"
+  }
+ },
+ "tight_stroke": {
+  "big": [
+   {
+    "name": "Piston knockback / running clearance",
+    "note": "4053.7 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+    "pressure_dependent": false,
+    "volume_cc": 0.6080489749169972
+   },
+   {
+    "name": "Pad compression",
+    "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+    "pressure_dependent": false,
+    "volume_cc": 0.40536598327799817
+   },
+   {
+    "name": "Caliper housing deflection",
+    "note": "2.000 cc/kbar per caliper at 60 bar.",
+    "pressure_dependent": true,
+    "volume_cc": 0.24
+   }
+  ],
+  "big2": [
+   {
+    "name": "Piston knockback / running clearance",
+    "note": "4053.7 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+    "pressure_dependent": false,
+    "volume_cc": 0.6080489749169972
+   },
+   {
+    "name": "Pad compression",
+    "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+    "pressure_dependent": false,
+    "volume_cc": 0.40536598327799817
+   }
+  ],
+  "d": {
+   "available_travel_mm": 500.0,
+   "findings": [
+    {
+     "check": "mc_stroke",
+     "detail": {},
+     "message": "The circuit demands 7.2 mm of cylinder stroke against a 3.2 mm limit. The piston bottoms before the brakes are fully applied -- this is a pedal that goes to the floor, not a soft one.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "travel_provenance",
+     "detail": {},
+     "message": "Knockback, pad compression, hose and caliper compliance are representative values, not measured on this car. The RANKING of consumers and the sensitivity to bore and ratio are trustworthy; the absolute travel is provisional. One bench measurement -- pump to a firm pedal, measure the travel -- fixes that via TravelParams.from_measured_stroke().",
+     "severity": "missing",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "is_estimate": true,
+   "items": [
+    {
+     "name": "Piston knockback / running clearance",
+     "note": "4053.7 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+     "pressure_dependent": false,
+     "volume_cc": 0.6080489749169972
+    },
+    {
+     "name": "Pad compression",
+     "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+     "pressure_dependent": false,
+     "volume_cc": 0.40536598327799817
+    },
+    {
+     "name": "Caliper housing deflection",
+     "note": "2.000 cc/kbar per caliper at 60 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.24
+    },
+    {
+     "name": "Hose expansion (PTFE braided (steel))",
+     "note": "0.60 m per corner x 2 corner(s) at 60 bar. Switching rubber for PTFE braided is the cheapest firm-pedal fix there is.",
+     "pressure_dependent": true,
+     "volume_cc": 0.0576
+    },
+    {
+     "name": "Hardline expansion (hardline (steel tube))",
+     "note": "1.80 m of routed hardline at 60 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.0108
+    },
+    {
+     "name": "Fluid compressibility",
+     "note": "25.141 cc of DOT 4 at 60 bar, K=1.50 GPa. Hot or water-contaminated fluid is softer than this.",
+     "pressure_dependent": true,
+     "volume_cc": 0.10056338615105843
+    }
+   ],
+   "mc_stroke_limit_mm": 3.2,
+   "mc_stroke_mm": 7.186174887355989,
+   "notes": [
+    "Uncalibrated: use for trades, not as an absolute pedal travel."
+   ],
+   "pedal_travel_mm": 8.686174887355989,
+   "stroke_utilisation": 2.2456796522987466,
+   "total_cc": 1.4223783443460538,
+   "verdict": "FAIL"
+  },
+  "s": "Pedal travel: 8.7 mm at the pad of 500.0 mm available -> FAIL\n  1.422 cc demanded, 7.2 mm of cylinder stroke (225% of the 3.2 mm limit)\n     0.608 cc  Piston knockback / running clearance\n     0.405 cc  Pad compression\n     0.240 cc  Caliper housing deflection\n     0.101 cc  Fluid compressibility",
+  "t": {
+   "available_travel_mm": 500.0,
+   "findings": [
+    {
+     "check": "mc_stroke",
+     "detail": {},
+     "message": "The circuit demands 7.2 mm of cylinder stroke against a 3.2 mm limit. The piston bottoms before the brakes are fully applied -- this is a pedal that goes to the floor, not a soft one.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "travel_provenance",
+     "detail": {},
+     "message": "Knockback, pad compression, hose and caliper compliance are representative values, not measured on this car. The RANKING of consumers and the sensitivity to bore and ratio are trustworthy; the absolute travel is provisional. One bench measurement -- pump to a firm pedal, measure the travel -- fixes that via TravelParams.from_measured_stroke().",
+     "severity": "missing",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "is_estimate": true,
+   "items": [
+    {
+     "name": "Piston knockback / running clearance",
+     "note": "4053.7 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+     "pressure_dependent": false,
+     "volume_cc": 0.6080489749169972
+    },
+    {
+     "name": "Pad compression",
+     "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+     "pressure_dependent": false,
+     "volume_cc": 0.40536598327799817
+    },
+    {
+     "name": "Caliper housing deflection",
+     "note": "2.000 cc/kbar per caliper at 60 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.24
+    },
+    {
+     "name": "Hose expansion (PTFE braided (steel))",
+     "note": "0.60 m per corner x 2 corner(s) at 60 bar. Switching rubber for PTFE braided is the cheapest firm-pedal fix there is.",
+     "pressure_dependent": true,
+     "volume_cc": 0.0576
+    },
+    {
+     "name": "Hardline expansion (hardline (steel tube))",
+     "note": "1.80 m of routed hardline at 60 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.0108
+    },
+    {
+     "name": "Fluid compressibility",
+     "note": "25.141 cc of DOT 4 at 60 bar, K=1.50 GPa. Hot or water-contaminated fluid is softer than this.",
+     "pressure_dependent": true,
+     "volume_cc": 0.10056338615105843
+    }
+   ],
+   "mc_stroke_limit_mm": 3.2,
+   "mc_stroke_mm": 7.186174887355989,
+   "notes": [
+    "Uncalibrated: use for trades, not as an absolute pedal travel."
+   ],
+   "pedal_travel_mm": 8.686174887355989,
+   "stroke_utilisation": 2.2456796522987466,
+   "total_cc": 1.4223783443460538,
+   "verdict": "FAIL"
+  }
+ },
+ "tight_travel": {
+  "big": [
+   {
+    "name": "Piston knockback / running clearance",
+    "note": "4053.7 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+    "pressure_dependent": false,
+    "volume_cc": 0.6080489749169972
+   },
+   {
+    "name": "Pad compression",
+    "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+    "pressure_dependent": false,
+    "volume_cc": 0.40536598327799817
+   },
+   {
+    "name": "Caliper housing deflection",
+    "note": "2.000 cc/kbar per caliper at 60 bar.",
+    "pressure_dependent": true,
+    "volume_cc": 0.24
+   }
+  ],
+  "big2": [
+   {
+    "name": "Piston knockback / running clearance",
+    "note": "4053.7 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+    "pressure_dependent": false,
+    "volume_cc": 0.6080489749169972
+   },
+   {
+    "name": "Pad compression",
+    "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+    "pressure_dependent": false,
+    "volume_cc": 0.40536598327799817
+   }
+  ],
+  "d": {
+   "available_travel_mm": 40.0,
+   "findings": [
+    {
+     "check": "pedal_travel",
+     "detail": {},
+     "message": "43.4 mm of travel at the pad against 40.0 mm available. Go after the largest consumers first: Piston knockback / running clearance, Pad compression.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "travel_provenance",
+     "detail": {},
+     "message": "Knockback, pad compression, hose and caliper compliance are representative values, not measured on this car. The RANKING of consumers and the sensitivity to bore and ratio are trustworthy; the absolute travel is provisional. One bench measurement -- pump to a firm pedal, measure the travel -- fixes that via TravelParams.from_measured_stroke().",
+     "severity": "missing",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "is_estimate": true,
+   "items": [
+    {
+     "name": "Piston knockback / running clearance",
+     "note": "4053.7 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+     "pressure_dependent": false,
+     "volume_cc": 0.6080489749169972
+    },
+    {
+     "name": "Pad compression",
+     "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+     "pressure_dependent": false,
+     "volume_cc": 0.40536598327799817
+    },
+    {
+     "name": "Caliper housing deflection",
+     "note": "2.000 cc/kbar per caliper at 60 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.24
+    },
+    {
+     "name": "Hose expansion (PTFE braided (steel))",
+     "note": "0.60 m per corner x 2 corner(s) at 60 bar. Switching rubber for PTFE braided is the cheapest firm-pedal fix there is.",
+     "pressure_dependent": true,
+     "volume_cc": 0.0576
+    },
+    {
+     "name": "Hardline expansion (hardline (steel tube))",
+     "note": "1.80 m of routed hardline at 60 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.0108
+    },
+    {
+     "name": "Fluid compressibility",
+     "note": "25.141 cc of DOT 4 at 60 bar, K=1.50 GPa. Hot or water-contaminated fluid is softer than this.",
+     "pressure_dependent": true,
+     "volume_cc": 0.10056338615105843
+    }
+   ],
+   "mc_stroke_limit_mm": 25.4,
+   "mc_stroke_mm": 7.186174887355989,
+   "notes": [
+    "Uncalibrated: use for trades, not as an absolute pedal travel."
+   ],
+   "pedal_travel_mm": 43.430874436779945,
+   "stroke_utilisation": 0.28292027115574764,
+   "total_cc": 1.4223783443460538,
+   "verdict": "FAIL"
+  },
+  "s": "Pedal travel: 43.4 mm at the pad of 40.0 mm available -> FAIL\n  1.422 cc demanded, 7.2 mm of cylinder stroke (28% of the 25.4 mm limit)\n     0.608 cc  Piston knockback / running clearance\n     0.405 cc  Pad compression\n     0.240 cc  Caliper housing deflection\n     0.101 cc  Fluid compressibility",
+  "t": {
+   "available_travel_mm": 40.0,
+   "findings": [
+    {
+     "check": "pedal_travel",
+     "detail": {},
+     "message": "43.4 mm of travel at the pad against 40.0 mm available. Go after the largest consumers first: Piston knockback / running clearance, Pad compression.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "travel_provenance",
+     "detail": {},
+     "message": "Knockback, pad compression, hose and caliper compliance are representative values, not measured on this car. The RANKING of consumers and the sensitivity to bore and ratio are trustworthy; the absolute travel is provisional. One bench measurement -- pump to a firm pedal, measure the travel -- fixes that via TravelParams.from_measured_stroke().",
+     "severity": "missing",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "is_estimate": true,
+   "items": [
+    {
+     "name": "Piston knockback / running clearance",
+     "note": "4053.7 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+     "pressure_dependent": false,
+     "volume_cc": 0.6080489749169972
+    },
+    {
+     "name": "Pad compression",
+     "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+     "pressure_dependent": false,
+     "volume_cc": 0.40536598327799817
+    },
+    {
+     "name": "Caliper housing deflection",
+     "note": "2.000 cc/kbar per caliper at 60 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.24
+    },
+    {
+     "name": "Hose expansion (PTFE braided (steel))",
+     "note": "0.60 m per corner x 2 corner(s) at 60 bar. Switching rubber for PTFE braided is the cheapest firm-pedal fix there is.",
+     "pressure_dependent": true,
+     "volume_cc": 0.0576
+    },
+    {
+     "name": "Hardline expansion (hardline (steel tube))",
+     "note": "1.80 m of routed hardline at 60 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.0108
+    },
+    {
+     "name": "Fluid compressibility",
+     "note": "25.141 cc of DOT 4 at 60 bar, K=1.50 GPa. Hot or water-contaminated fluid is softer than this.",
+     "pressure_dependent": true,
+     "volume_cc": 0.10056338615105843
+    }
+   ],
+   "mc_stroke_limit_mm": 25.4,
+   "mc_stroke_mm": 7.186174887355989,
+   "notes": [
+    "Uncalibrated: use for trades, not as an absolute pedal travel."
+   ],
+   "pedal_travel_mm": 43.430874436779945,
+   "stroke_utilisation": 0.28292027115574764,
+   "total_cc": 1.4223783443460538,
+   "verdict": "FAIL"
+  }
+ },
+ "zero_corners": {
+  "big": [
+   {
+    "name": "Piston knockback / running clearance",
+    "note": "1963.5 mm2 of moving piston across 1 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+    "pressure_dependent": false,
+    "volume_cc": 0.2945243112740431
+   },
+   {
+    "name": "Pad compression",
+    "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+    "pressure_dependent": false,
+    "volume_cc": 0.1963495408493621
+   },
+   {
+    "name": "Caliper housing deflection",
+    "note": "2.000 cc/kbar per caliper at 30 bar.",
+    "pressure_dependent": true,
+    "volume_cc": 0.06
+   }
+  ],
+  "big2": [
+   {
+    "name": "Piston knockback / running clearance",
+    "note": "1963.5 mm2 of moving piston across 1 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+    "pressure_dependent": false,
+    "volume_cc": 0.2945243112740431
+   },
+   {
+    "name": "Pad compression",
+    "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+    "pressure_dependent": false,
+    "volume_cc": 0.1963495408493621
+   }
+  ],
+  "d": {
+   "available_travel_mm": 60.0,
+   "findings": [
+    {
+     "check": "pedal_travel",
+     "detail": {},
+     "message": "19.8 mm at the pad, cylinder at 14% of stroke. Reserve for wear and heat.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "travel_provenance",
+     "detail": {},
+     "message": "Knockback, pad compression, hose and caliper compliance are representative values, not measured on this car. The RANKING of consumers and the sensitivity to bore and ratio are trustworthy; the absolute travel is provisional. One bench measurement -- pump to a firm pedal, measure the travel -- fixes that via TravelParams.from_measured_stroke().",
+     "severity": "missing",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "is_estimate": true,
+   "items": [
+    {
+     "name": "Piston knockback / running clearance",
+     "note": "1963.5 mm2 of moving piston across 1 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+     "pressure_dependent": false,
+     "volume_cc": 0.2945243112740431
+    },
+    {
+     "name": "Pad compression",
+     "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+     "pressure_dependent": false,
+     "volume_cc": 0.1963495408493621
+    },
+    {
+     "name": "Caliper housing deflection",
+     "note": "2.000 cc/kbar per caliper at 30 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.06
+    },
+    {
+     "name": "Hose expansion (PTFE braided (steel))",
+     "note": "0.60 m per corner x 1 corner(s) at 30 bar. Switching rubber for PTFE braided is the cheapest firm-pedal fix there is.",
+     "pressure_dependent": true,
+     "volume_cc": 0.0144
+    },
+    {
+     "name": "Hardline expansion (hardline (steel tube))",
+     "note": "1.80 m of routed hardline at 30 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.0054
+    },
+    {
+     "name": "Fluid compressibility",
+     "note": "19.793 cc of DOT 4 at 30 bar, K=1.50 GPa. Hot or water-contaminated fluid is softer than this.",
+     "pressure_dependent": true,
+     "volume_cc": 0.03958563823155818
+    }
+   ],
+   "mc_stroke_limit_mm": 25.4,
+   "mc_stroke_mm": 3.453362291866071,
+   "notes": [
+    "Uncalibrated: use for trades, not as an absolute pedal travel."
+   ],
+   "pedal_travel_mm": 19.813449167464285,
+   "stroke_utilisation": 0.13595914534905792,
+   "total_cc": 0.6102594903549634,
+   "verdict": "PASS"
+  },
+  "s": "Pedal travel: 19.8 mm at the pad of 60.0 mm available -> PASS\n  0.610 cc demanded, 3.5 mm of cylinder stroke (14% of the 25.4 mm limit)\n     0.295 cc  Piston knockback / running clearance\n     0.196 cc  Pad compression\n     0.060 cc  Caliper housing deflection\n     0.040 cc  Fluid compressibility",
+  "t": {
+   "available_travel_mm": 60.0,
+   "findings": [
+    {
+     "check": "pedal_travel",
+     "detail": {},
+     "message": "19.8 mm at the pad, cylinder at 14% of stroke. Reserve for wear and heat.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "travel_provenance",
+     "detail": {},
+     "message": "Knockback, pad compression, hose and caliper compliance are representative values, not measured on this car. The RANKING of consumers and the sensitivity to bore and ratio are trustworthy; the absolute travel is provisional. One bench measurement -- pump to a firm pedal, measure the travel -- fixes that via TravelParams.from_measured_stroke().",
+     "severity": "missing",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "is_estimate": true,
+   "items": [
+    {
+     "name": "Piston knockback / running clearance",
+     "note": "1963.5 mm2 of moving piston across 1 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+     "pressure_dependent": false,
+     "volume_cc": 0.2945243112740431
+    },
+    {
+     "name": "Pad compression",
+     "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+     "pressure_dependent": false,
+     "volume_cc": 0.1963495408493621
+    },
+    {
+     "name": "Caliper housing deflection",
+     "note": "2.000 cc/kbar per caliper at 30 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.06
+    },
+    {
+     "name": "Hose expansion (PTFE braided (steel))",
+     "note": "0.60 m per corner x 1 corner(s) at 30 bar. Switching rubber for PTFE braided is the cheapest firm-pedal fix there is.",
+     "pressure_dependent": true,
+     "volume_cc": 0.0144
+    },
+    {
+     "name": "Hardline expansion (hardline (steel tube))",
+     "note": "1.80 m of routed hardline at 30 bar.",
+     "pressure_dependent": true,
+     "volume_cc": 0.0054
+    },
+    {
+     "name": "Fluid compressibility",
+     "note": "19.793 cc of DOT 4 at 30 bar, K=1.50 GPa. Hot or water-contaminated fluid is softer than this.",
+     "pressure_dependent": true,
+     "volume_cc": 0.03958563823155818
+    }
+   ],
+   "mc_stroke_limit_mm": 25.4,
+   "mc_stroke_mm": 3.453362291866071,
+   "notes": [
+    "Uncalibrated: use for trades, not as an absolute pedal travel."
+   ],
+   "pedal_travel_mm": 19.813449167464285,
+   "stroke_utilisation": 0.13595914534905792,
+   "total_cc": 0.6102594903549634,
+   "verdict": "PASS"
+  }
+ }
+}

@@ -54,10 +54,12 @@ Pure Python + NumPy. Self-test: python3 -m suspension.rules_fsae
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field as _dcfield
 from collections.abc import Sequence
 
 import numpy as np
+from ._num import vec as _vec
 
 
 __all__ = ["RULESET", "Ruleset", "Rule", "Finding", "RULES",
@@ -387,9 +389,9 @@ class MeasuredResult:
         default_factory=list)
     regen_events: list[tuple[float, float, str]] = _dcfield(
         default_factory=list)
-    peak_kw: float = float("nan")
-    peak_v: float = float("nan")
-    sample_rate_hz: float = float("nan")
+    peak_kw: float = math.nan
+    peak_v: float = math.nan
+    sample_rate_hz: float = math.nan
     rate_adequate: bool = False
 
     @property
@@ -413,9 +415,9 @@ def check_measured(t: Sequence[float], pack_v: Sequence[float],
     not counted twice.
     """
     res = MeasuredResult()
-    t = np.asarray(t, float)
-    v = np.asarray(pack_v, float)
-    i = np.asarray(pack_i, float)
+    t = _vec(t)
+    v = _vec(pack_v)
+    i = _vec(pack_i)
     good = np.isfinite(t) & np.isfinite(v) & np.isfinite(i)
     t, v, i = t[good], v[good], i[good]
     if t.size < 8:
@@ -425,8 +427,8 @@ def check_measured(t: Sequence[float], pack_v: Sequence[float],
 
     dt = np.diff(t)
     dt = dt[dt > 0]
-    med = float(np.median(dt)) if dt.size else float("nan")
-    res.sample_rate_hz = 1.0 / med if med > 0 else float("nan")
+    med = float(np.median(dt)) if dt.size else math.nan
+    res.sample_rate_hz = 1.0 / med if med > 0 else math.nan
     dwell = limit("EV.3.4.1") or 0.100
     window = limit("EV.3.4.1b") or 0.500
     #  A 10 Hz log cannot resolve a 100 ms dwell. Saying so is the finding;
@@ -459,8 +461,8 @@ def check_measured(t: Sequence[float], pack_v: Sequence[float],
     res.findings.append(_cmp("EV.3.3.2", res.peak_v))
 
     if speed_ms is not None:
-        s = np.asarray(speed_ms, float)[good] if np.asarray(
-            speed_ms, float).size == good.size else np.asarray(speed_ms, float)
+        s = _vec(speed_ms)[good] if _vec(
+            speed_ms).size == good.size else _vec(speed_ms)
         n = min(s.size, kw.size)
         if n > 8:
             thresh = (limit("EV.3.3.3") or 5.0) / 3.6      # km/h → m/s
@@ -492,7 +494,7 @@ def coverage() -> tuple[int, int]:
     return sum(1 for r in RULES if r.checkable), len(RULES)
 
 
-def _selftest() -> int:
+def _selftest() -> int:  # pragma: no mutate block (a self-test, not the feature)
     fails = 0
 
     def chk(name, cond, detail=""):
@@ -545,6 +547,6 @@ def _selftest() -> int:
     return 1 if fails else 0
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no mutate block (the command-line entry point)
     import sys
     sys.exit(_selftest())

@@ -1,0 +1,1890 @@
+{
+ "fit_fast": {
+  "a": 9.712989400165567,
+  "b": 3.523648153297447,
+  "findings": [
+   {
+    "check": "measurement-thin",
+    "detail": {},
+    "message": "60 A has only 2 sample(s). Blow times scatter by tens of percent; a median of two is not a median.",
+    "severity": "warning",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "scatter-observed",
+    "detail": {
+     "dof": 9,
+     "measured": true,
+     "n_levels": 3,
+     "sigma_ln": 0.030207538661402186,
+     "source": "measured, 3 level(s), 9 dof"
+    },
+    "message": "Observed spread sigma_ln = 0.030 (9 dof across 3 level(s)), itself uncertain by ±24%. Pass this into build_test_plan(log_scatter=...) and the next test is sized on these parts instead of on an assumption.",
+    "severity": "info",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "fit-result",
+    "detail": {
+     "a": 9.712989400165567,
+     "b": 3.523648153297447
+    },
+    "message": "Measured curve: t = 9.71 x (I/I_rated)^-3.52 over 3 current levels.",
+    "severity": "info",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "out-of-family",
+    "detail": {
+     "fast": [
+      40.0,
+      60.0
+     ],
+     "slow": [],
+     "worst_ratio": 3.334667841324335
+    },
+    "message": "Measured blow times differ from the declared curve by up to 233%, faster than the datasheet. Faster than published is safer for the wire and worse for nuisance trips; re-check inrush. Counterfeit or mislabelled blade fuses are common enough that this is the expected explanation, not an exotic one.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   }
+  ],
+  "in_family": false,
+  "per_point": {
+   "100.0": {
+    "declared": 0.013611145257082955,
+    "geo_sd": 1.0321451870335532,
+    "median": 0.013605698183198367,
+    "n": 5,
+    "ratio": 0.9995998078205981
+   },
+   "40.0": {
+    "declared": 1.179899569845651,
+    "geo_sd": 1.0321451870335532,
+    "median": 0.35382821497959566,
+    "n": 5,
+    "ratio": 0.2998799423461794
+   },
+   "60.0": {
+    "declared": 0.16379036133476055,
+    "geo_sd": 1.0143879963123836,
+    "median": 0.056750464844474,
+    "n": 2,
+    "ratio": 0.3464823227814083
+   }
+  },
+  "scatter": {
+   "dof": 9,
+   "measured": true,
+   "n_levels": 3,
+   "sigma_ln": 0.030207538661402186,
+   "source": "measured, 3 level(s), 9 dof"
+  }
+ },
+ "fit_in": {
+  "a": 139.99748517414594,
+  "b": 4.86995610343151,
+  "findings": [
+   {
+    "check": "scatter-observed",
+    "detail": {
+     "dof": 12,
+     "measured": true,
+     "n_levels": 3,
+     "sigma_ln": 0.031639342274181116,
+     "source": "measured, 3 level(s), 12 dof"
+    },
+    "message": "Observed spread sigma_ln = 0.032 (12 dof across 3 level(s)), itself uncertain by ±20%. Pass this into build_test_plan(log_scatter=...) and the next test is sized on these parts instead of on an assumption.",
+    "severity": "info",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "fit-result",
+    "detail": {
+     "a": 139.99748517414594,
+     "b": 4.86995610343151
+    },
+    "message": "Measured curve: t = 140 x (I/I_rated)^-4.87 over 3 current levels.",
+    "severity": "info",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "in-family",
+    "detail": {
+     "worst_ratio": 1.0004003523973006
+    },
+    "message": "Measured blow times sit within 0% of the declared curve at every level — these parts behave like the datasheet says.",
+    "severity": "ok",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   }
+  ],
+  "in_family": true,
+  "per_point": {
+   "100.0": {
+    "declared": 0.013611145257082955,
+    "geo_sd": 1.0321451870335532,
+    "median": 0.013605698183198367,
+    "n": 5,
+    "ratio": 0.9995998078205981
+   },
+   "40.0": {
+    "declared": 1.179899569845651,
+    "geo_sd": 1.0321451870335532,
+    "median": 1.1794273832653188,
+    "n": 5,
+    "ratio": 0.9995998078205979
+   },
+   "60.0": {
+    "declared": 0.16379036133476055,
+    "geo_sd": 1.0321451870335532,
+    "median": 0.16372481371309291,
+    "n": 5,
+    "ratio": 0.9995998078205978
+   }
+  },
+  "scatter": {
+   "dof": 12,
+   "measured": true,
+   "n_levels": 3,
+   "sigma_ln": 0.031639342274181116,
+   "source": "measured, 3 level(s), 12 dof"
+  }
+ },
+ "fit_nan": {
+  "a": 139.99748517414582,
+  "b": 4.869956103431509,
+  "findings": [
+   {
+    "check": "scatter-observed",
+    "detail": {
+     "dof": 8,
+     "measured": true,
+     "n_levels": 2,
+     "sigma_ln": 0.031639342274181116,
+     "source": "measured, 2 level(s), 8 dof"
+    },
+    "message": "Observed spread sigma_ln = 0.032 (8 dof across 2 level(s)), itself uncertain by ±25%. Pass this into build_test_plan(log_scatter=...) and the next test is sized on these parts instead of on an assumption.",
+    "severity": "info",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "fit-result",
+    "detail": {
+     "a": 139.99748517414582,
+     "b": 4.869956103431509
+    },
+    "message": "Measured curve: t = 140 x (I/I_rated)^-4.87 over 2 current levels.",
+    "severity": "info",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "in-family",
+    "detail": {
+     "worst_ratio": 1.0004003523973006
+    },
+    "message": "Measured blow times sit within 0% of the declared curve at every level — these parts behave like the datasheet says.",
+    "severity": "ok",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   }
+  ],
+  "in_family": true,
+  "per_point": {
+   "100.0": {
+    "declared": 0.013611145257082955,
+    "geo_sd": 1.0321451870335532,
+    "median": 0.013605698183198367,
+    "n": 5,
+    "ratio": 0.9995998078205981
+   },
+   "60.0": {
+    "declared": 0.16379036133476055,
+    "geo_sd": 1.0321451870335532,
+    "median": 0.16372481371309291,
+    "n": 5,
+    "ratio": 0.9995998078205978
+   }
+  },
+  "scatter": {
+   "dof": 8,
+   "measured": true,
+   "n_levels": 2,
+   "sigma_ln": 0.031639342274181116,
+   "source": "measured, 2 level(s), 8 dof"
+  }
+ },
+ "fit_nocurve": {
+  "a": 0.6997517739063785,
+  "b": 1.8892295061269189,
+  "findings": [
+   {
+    "check": "scatter-observed",
+    "detail": {
+     "dof": 4,
+     "measured": true,
+     "n_levels": 2,
+     "sigma_ln": 0.06595682338859545,
+     "source": "measured, 2 level(s), 4 dof"
+    },
+    "message": "Observed spread sigma_ln = 0.066 (4 dof across 2 level(s)), itself uncertain by ±35%. Pass this into build_test_plan(log_scatter=...) and the next test is sized on these parts instead of on an assumption.",
+    "severity": "info",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "fit-result",
+    "detail": {
+     "a": 0.6997517739063785,
+     "b": 1.8892295061269189
+    },
+    "message": "Measured curve: t = 0.7 x (I/I_rated)^-1.89 over 2 current levels.",
+    "severity": "info",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   }
+  ],
+  "in_family": null,
+  "per_point": {
+   "40.0": {
+    "declared": null,
+    "geo_sd": 1.0954795923795015,
+    "median": 0.10969613104865236,
+    "n": 3,
+    "ratio": null
+   },
+   "60.0": {
+    "declared": null,
+    "geo_sd": 1.019804223126166,
+    "median": 0.05099346321448876,
+    "n": 3,
+    "ratio": null
+   }
+  },
+  "scatter": {
+   "dof": 4,
+   "measured": true,
+   "n_levels": 2,
+   "sigma_ln": 0.06595682338859545,
+   "source": "measured, 2 level(s), 4 dof"
+  }
+ },
+ "fit_norating": {
+  "a": null,
+  "b": null,
+  "findings": [
+   {
+    "check": "scatter-observed",
+    "detail": {
+     "dof": 12,
+     "measured": true,
+     "n_levels": 3,
+     "sigma_ln": 0.031639342274181116,
+     "source": "measured, 3 level(s), 12 dof"
+    },
+    "message": "Observed spread sigma_ln = 0.032 (12 dof across 3 level(s)), itself uncertain by ±20%. Pass this into build_test_plan(log_scatter=...) and the next test is sized on these parts instead of on an assumption.",
+    "severity": "info",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "fit-refused",
+    "detail": {},
+    "message": "Only 3 usable current level(s) — a power law needs at least two to have a slope. No fitted curve is produced.",
+    "severity": "missing",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   }
+  ],
+  "in_family": null,
+  "per_point": {
+   "100.0": {
+    "declared": null,
+    "geo_sd": 1.0321451870335532,
+    "median": 0.013605698183198367,
+    "n": 5,
+    "ratio": null
+   },
+   "40.0": {
+    "declared": null,
+    "geo_sd": 1.0321451870335532,
+    "median": 1.1794273832653188,
+    "n": 5,
+    "ratio": null
+   },
+   "60.0": {
+    "declared": null,
+    "geo_sd": 1.0321451870335532,
+    "median": 0.16372481371309291,
+    "n": 5,
+    "ratio": null
+   }
+  },
+  "scatter": {
+   "dof": 12,
+   "measured": true,
+   "n_levels": 3,
+   "sigma_ln": 0.031639342274181116,
+   "source": "measured, 3 level(s), 12 dof"
+  }
+ },
+ "fit_one": {
+  "a": null,
+  "b": null,
+  "findings": [
+   {
+    "check": "scatter-observed",
+    "detail": {
+     "dof": 4,
+     "measured": true,
+     "n_levels": 1,
+     "sigma_ln": 0.031639342274181116,
+     "source": "measured, 1 level(s), 4 dof"
+    },
+    "message": "Observed spread sigma_ln = 0.032 (4 dof across 1 level(s)), itself uncertain by ±35%. Pass this into build_test_plan(log_scatter=...) and the next test is sized on these parts instead of on an assumption.",
+    "severity": "info",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "fit-refused",
+    "detail": {},
+    "message": "Only 1 usable current level(s) — a power law needs at least two to have a slope. No fitted curve is produced.",
+    "severity": "missing",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   }
+  ],
+  "in_family": null,
+  "per_point": {
+   "40.0": {
+    "declared": 1.179899569845651,
+    "geo_sd": 1.0321451870335532,
+    "median": 1.1794273832653188,
+    "n": 5,
+    "ratio": 0.9995998078205979
+   }
+  },
+  "scatter": {
+   "dof": 4,
+   "measured": true,
+   "n_levels": 1,
+   "sigma_ln": 0.031639342274181116,
+   "source": "measured, 1 level(s), 4 dof"
+  }
+ },
+ "fit_poc": {
+  "a": null,
+  "b": null,
+  "findings": [
+   {
+    "check": "measurement-rejected",
+    "detail": {
+     "current_a": 60.0
+    },
+    "message": "60 A: median 163.7 ms against an instrument uncertainty of ±80.0 ms (49%). Rejected from the fit — this reading is the rig, not the fuse.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "measurement-rejected",
+    "detail": {
+     "current_a": 100.0
+    },
+    "message": "100 A: median 13.6 ms against an instrument uncertainty of ±80.0 ms (588%). Rejected from the fit — this reading is the rig, not the fuse.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "scatter-observed",
+    "detail": {
+     "dof": 4,
+     "measured": true,
+     "n_levels": 1,
+     "sigma_ln": 0.031639342274181116,
+     "source": "measured, 1 level(s), 4 dof"
+    },
+    "message": "Observed spread sigma_ln = 0.032 (4 dof across 1 level(s)), itself uncertain by ±35%. Pass this into build_test_plan(log_scatter=...) and the next test is sized on these parts instead of on an assumption.",
+    "severity": "info",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "fit-refused",
+    "detail": {},
+    "message": "Only 1 usable current level(s) — a power law needs at least two to have a slope. No fitted curve is produced.",
+    "severity": "missing",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   }
+  ],
+  "in_family": null,
+  "per_point": {
+   "40.0": {
+    "declared": 1.179899569845651,
+    "geo_sd": 1.0321451870335532,
+    "median": 1.1794273832653188,
+    "n": 5,
+    "ratio": 0.9995998078205979
+   }
+  },
+  "scatter": {
+   "dof": 4,
+   "measured": true,
+   "n_levels": 1,
+   "sigma_ln": 0.031639342274181116,
+   "source": "measured, 1 level(s), 4 dof"
+  }
+ },
+ "fit_rejected": {
+  "a": 139.9974851741457,
+  "b": 4.869956103431509,
+  "findings": [
+   {
+    "check": "scatter-observed",
+    "detail": {
+     "dof": 12,
+     "measured": true,
+     "n_levels": 3,
+     "sigma_ln": 0.03163934227418113,
+     "source": "measured, 3 level(s), 12 dof"
+    },
+    "message": "Observed spread sigma_ln = 0.032 (12 dof across 3 level(s)), itself uncertain by ±20%. Pass this into build_test_plan(log_scatter=...) and the next test is sized on these parts instead of on an assumption.",
+    "severity": "info",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "fit-result",
+    "detail": {
+     "a": 139.9974851741457,
+     "b": 4.869956103431509
+    },
+    "message": "Measured curve: t = 140 x (I/I_rated)^-4.87 over 3 current levels.",
+    "severity": "info",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "in-family",
+    "detail": {
+     "worst_ratio": 1.0004003523973009
+    },
+    "message": "Measured blow times sit within 0% of the declared curve at every level — these parts behave like the datasheet says.",
+    "severity": "ok",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   }
+  ],
+  "in_family": true,
+  "per_point": {
+   "140.0": {
+    "declared": 0.0026439762489777236,
+    "geo_sd": 1.0321451870335532,
+    "median": 0.002642918150360359,
+    "n": 5,
+    "ratio": 0.9995998078205983
+   },
+   "149.0": {
+    "declared": 0.001952023959090767,
+    "geo_sd": 1.0321451870335532,
+    "median": 0.0019512427743683326,
+    "n": 5,
+    "ratio": 0.9995998078205975
+   },
+   "40.0": {
+    "declared": 1.179899569845651,
+    "geo_sd": 1.0321451870335532,
+    "median": 1.1794273832653188,
+    "n": 5,
+    "ratio": 0.9995998078205979
+   }
+  },
+  "scatter": {
+   "dof": 12,
+   "measured": true,
+   "n_levels": 3,
+   "sigma_ln": 0.03163934227418113,
+   "source": "measured, 3 level(s), 12 dof"
+  }
+ },
+ "fit_same": {
+  "a": null,
+  "b": null,
+  "findings": [
+   {
+    "check": "scatter-observed",
+    "detail": {
+     "dof": 8,
+     "measured": true,
+     "n_levels": 2,
+     "sigma_ln": 0.03163934227418112,
+     "source": "measured, 2 level(s), 8 dof"
+    },
+    "message": "Observed spread sigma_ln = 0.032 (8 dof across 2 level(s)), itself uncertain by ±25%. Pass this into build_test_plan(log_scatter=...) and the next test is sized on these parts instead of on an assumption.",
+    "severity": "info",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "fit-refused",
+    "detail": {},
+    "message": "All usable measurements are at one current; no slope.",
+    "severity": "missing",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   }
+  ],
+  "in_family": null,
+  "per_point": {
+   "40.0": {
+    "declared": 1.179899569845651,
+    "geo_sd": 1.0321451870335532,
+    "median": 1.297370121591851,
+    "n": 5,
+    "ratio": 1.099559788602658
+   }
+  },
+  "scatter": {
+   "dof": 8,
+   "measured": true,
+   "n_levels": 2,
+   "sigma_ln": 0.03163934227418112,
+   "source": "measured, 2 level(s), 8 dof"
+  }
+ },
+ "fit_scatter": {
+  "a": 78.73743552837843,
+  "b": 4.556116617328183,
+  "findings": [
+   {
+    "check": "scatter-observed",
+    "detail": {
+     "dof": 9,
+     "measured": true,
+     "n_levels": 3,
+     "sigma_ln": 0.7684169763785947,
+     "source": "measured, 3 level(s), 9 dof"
+    },
+    "message": "Observed spread sigma_ln = 0.768 (9 dof across 3 level(s)), itself uncertain by ±24%. Pass this into build_test_plan(log_scatter=...) and the next test is sized on these parts instead of on an assumption.",
+    "severity": "info",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "fit-result",
+    "detail": {
+     "a": 78.73743552837843,
+     "b": 4.556116617328183
+    },
+    "message": "Measured curve: t = 78.7 x (I/I_rated)^-4.56 over 3 current levels.",
+    "severity": "info",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "in-family",
+    "detail": {
+     "worst_ratio": 1.3406247417453006
+    },
+    "message": "Measured blow times sit within 34% of the declared curve at every level — these parts behave like the datasheet says.",
+    "severity": "ok",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "high-scatter",
+    "detail": {
+     "current_a": 40.0
+    },
+    "message": "40 A: geometric SD 3.49 — the spread between nominally identical fuses is wider than the margin most coordination decisions assume.",
+    "severity": "warning",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "high-scatter",
+    "detail": {
+     "current_a": 60.0
+    },
+    "message": "60 A: geometric SD 1.74 — the spread between nominally identical fuses is wider than the margin most coordination decisions assume.",
+    "severity": "warning",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   }
+  ],
+  "in_family": true,
+  "per_point": {
+   "100.0": {
+    "declared": 0.013611145257082955,
+    "geo_sd": 1.0321451870335532,
+    "median": 0.013605698183198367,
+    "n": 5,
+    "ratio": 0.9995998078205981
+   },
+   "40.0": {
+    "declared": 1.179899569845651,
+    "geo_sd": 3.49286069010399,
+    "median": 0.8801117367933934,
+    "n": 4,
+    "ratio": 0.7459208896131097
+   },
+   "60.0": {
+    "declared": 0.16379036133476055,
+    "geo_sd": 1.7428964697236582,
+    "median": 0.14881341924440525,
+    "n": 3,
+    "ratio": 0.90856029641607
+   }
+  },
+  "scatter": {
+   "dof": 9,
+   "measured": true,
+   "n_levels": 3,
+   "sigma_ln": 0.7684169763785947,
+   "source": "measured, 3 level(s), 9 dof"
+  }
+ },
+ "fit_slow": {
+  "a": 1010.8493739401131,
+  "b": 5.7994651324534825,
+  "findings": [
+   {
+    "check": "scatter-observed",
+    "detail": {
+     "dof": 12,
+     "measured": true,
+     "n_levels": 3,
+     "sigma_ln": 0.03163934227418115,
+     "source": "measured, 3 level(s), 12 dof"
+    },
+    "message": "Observed spread sigma_ln = 0.032 (12 dof across 3 level(s)), itself uncertain by ±20%. Pass this into build_test_plan(log_scatter=...) and the next test is sized on these parts instead of on an assumption.",
+    "severity": "info",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "fit-result",
+    "detail": {
+     "a": 1010.8493739401131,
+     "b": 5.7994651324534825
+    },
+    "message": "Measured curve: t = 1.01e+03 x (I/I_rated)^-5.80 over 3 current levels.",
+    "severity": "info",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "out-of-family",
+    "detail": {
+     "fast": [],
+     "slow": [
+      40.0,
+      60.0
+     ],
+     "worst_ratio": 2.5989595003335553
+    },
+    "message": "Measured blow times differ from the declared curve by up to 160%, SLOWER than the datasheet. A fuse slower than its published curve invalidates every coordination result computed from that curve — the wire protection you signed off does not exist. Counterfeit or mislabelled blade fuses are common enough that this is the expected explanation, not an exotic one.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   }
+  ],
+  "in_family": false,
+  "per_point": {
+   "100.0": {
+    "declared": 0.013611145257082955,
+    "geo_sd": 1.0321451870335532,
+    "median": 0.014966268001518202,
+    "n": 5,
+    "ratio": 1.0995597886026578
+   },
+   "40.0": {
+    "declared": 1.179899569845651,
+    "geo_sd": 1.0321451870335532,
+    "median": 2.9485684581632974,
+    "n": 5,
+    "ratio": 2.498999519551495
+   },
+   "60.0": {
+    "declared": 0.16379036133476055,
+    "geo_sd": 1.0321451870335532,
+    "median": 0.42568451565404175,
+    "n": 5,
+    "ratio": 2.5989595003335553
+   }
+  },
+  "scatter": {
+   "dof": 12,
+   "measured": true,
+   "n_levels": 3,
+   "sigma_ln": 0.03163934227418115,
+   "source": "measured, 3 level(s), 12 dof"
+  }
+ },
+ "fit_tol": {
+  "a": 1010.8493739401131,
+  "b": 5.7994651324534825,
+  "findings": [
+   {
+    "check": "scatter-observed",
+    "detail": {
+     "dof": 12,
+     "measured": true,
+     "n_levels": 3,
+     "sigma_ln": 0.03163934227418115,
+     "source": "measured, 3 level(s), 12 dof"
+    },
+    "message": "Observed spread sigma_ln = 0.032 (12 dof across 3 level(s)), itself uncertain by ±20%. Pass this into build_test_plan(log_scatter=...) and the next test is sized on these parts instead of on an assumption.",
+    "severity": "info",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "fit-result",
+    "detail": {
+     "a": 1010.8493739401131,
+     "b": 5.7994651324534825
+    },
+    "message": "Measured curve: t = 1.01e+03 x (I/I_rated)^-5.80 over 3 current levels.",
+    "severity": "info",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "in-family",
+    "detail": {
+     "worst_ratio": 2.5989595003335553
+    },
+    "message": "Measured blow times sit within 160% of the declared curve at every level — these parts behave like the datasheet says.",
+    "severity": "ok",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   }
+  ],
+  "in_family": true,
+  "per_point": {
+   "100.0": {
+    "declared": 0.013611145257082955,
+    "geo_sd": 1.0321451870335532,
+    "median": 0.014966268001518202,
+    "n": 5,
+    "ratio": 1.0995597886026578
+   },
+   "40.0": {
+    "declared": 1.179899569845651,
+    "geo_sd": 1.0321451870335532,
+    "median": 2.9485684581632974,
+    "n": 5,
+    "ratio": 2.498999519551495
+   },
+   "60.0": {
+    "declared": 0.16379036133476055,
+    "geo_sd": 1.0321451870335532,
+    "median": 0.42568451565404175,
+    "n": 5,
+    "ratio": 2.5989595003335553
+   }
+  },
+  "scatter": {
+   "dof": 12,
+   "measured": true,
+   "n_levels": 3,
+   "sigma_ln": 0.03163934227418115,
+   "source": "measured, 3 level(s), 12 dof"
+  }
+ },
+ "log_stats": [
+  [
+   "NaN",
+   "NaN"
+  ],
+  [
+   "NaN",
+   "NaN"
+  ],
+  [
+   2.0,
+   "NaN"
+  ],
+  [
+   2.0,
+   2.665144142690225
+  ],
+  [
+   4.0,
+   4.0
+  ]
+ ],
+ "plan_bare": [
+  {
+   "estimated_cost": 33.0,
+   "findings": [
+    {
+     "check": "plan-without-curve",
+     "detail": {},
+     "message": "No declared fuse curve, so the expected blow times are unknown and the plan cannot say which points the rig can resolve. Testing blind is still possible — but start at 2x rating and work up, because a point that clears faster than the rig can see returns a number that looks fine.",
+     "severity": "missing",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    },
+    {
+     "check": "scatter-source-assumed",
+     "detail": {
+      "dof": 0,
+      "measured": false,
+      "n_levels": 0,
+      "sigma_ln": 0.3,
+      "source": "module prior (not your fuses)"
+     },
+     "message": "Sized on an ASSUMED spread (sigma_ln = 0.30, module prior (not your fuses)), which nothing here has verified for the parts in your drawer. The count is quadratic in that assumption: if your fuses scatter half again as widely, this becomes 24 per level rather than 11. Run five at one current, pass them to refine_from_pilot(), and this stops being a guess.",
+     "severity": "missing",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    },
+    {
+     "check": "plan-size",
+     "detail": {
+      "cost": 33.0,
+      "fuses": 22,
+      "n": 11
+     },
+     "message": "2 current levels x 11 samples = 22 fuses (about 33 at 1.50 each) to pin the median blow time to ±20% at each level. 11 per level comes from the log-normal scatter of blow times, not from a round number — one fuse per level is an anecdote.",
+     "severity": "info",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    }
+   ],
+   "fuse": {
+    "anchors": [],
+    "continuous_derate": 0.75,
+    "declared_i2t": null,
+    "fuse_class": "unknown",
+    "is_estimate": false,
+    "label": "main GLV fuse",
+    "part_number": "",
+    "rating_a": null,
+    "source": ""
+   },
+   "fuses_consumed": 22,
+   "instrument": {
+    "adc_sample_rate_hz": 9600.0,
+    "detection_latency_s": 0.00010416666666666667,
+    "label": "instrumented (shunt + ADC threshold, micros)",
+    "latency_jitter_s": 5.208333333333334e-05,
+    "serial_baud": 9600,
+    "serial_chars_in_path": 30,
+    "serial_in_timing_path": false,
+    "timer_resolution_s": 1e-06
+   },
+   "points": [
+    {
+     "current_a": 0.0,
+     "current_mult": 1.0,
+     "expected_time_s": null,
+     "measurable": true,
+     "rel_uncertainty": null,
+     "samples": 11
+    },
+    {
+     "current_a": 0.0,
+     "current_mult": 2.0,
+     "expected_time_s": null,
+     "measurable": true,
+     "rel_uncertainty": null,
+     "samples": 11
+    }
+   ],
+   "scatter": {
+    "dof": 0,
+    "measured": false,
+    "n_levels": 0,
+    "sigma_ln": 0.3,
+    "source": "module prior (not your fuses)"
+   }
+  },
+  [
+   {
+    "current_a": 0.0,
+    "current_mult": 1.0,
+    "expected_time_s": null,
+    "measurable": true,
+    "rel_uncertainty": null,
+    "samples": 11
+   },
+   {
+    "current_a": 0.0,
+    "current_mult": 2.0,
+    "expected_time_s": null,
+    "measurable": true,
+    "rel_uncertainty": null,
+    "samples": 11
+   }
+  ],
+  false
+ ],
+ "plan_empty": [
+  {
+   "estimated_cost": 0.0,
+   "findings": [
+    {
+     "check": "scatter-source-assumed",
+     "detail": {
+      "dof": 0,
+      "measured": false,
+      "n_levels": 0,
+      "sigma_ln": 0.3,
+      "source": "module prior (not your fuses)"
+     },
+     "message": "Sized on an ASSUMED spread (sigma_ln = 0.30, module prior (not your fuses)), which nothing here has verified for the parts in your drawer. The count is quadratic in that assumption: if your fuses scatter half again as widely, this becomes 24 per level rather than 11. Run five at one current, pass them to refine_from_pilot(), and this stops being a guess.",
+     "severity": "missing",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    },
+    {
+     "check": "plan-size",
+     "detail": {
+      "cost": 0.0,
+      "fuses": 0,
+      "n": 11
+     },
+     "message": "0 current levels x 11 samples = 0 fuses (about 0 at 1.50 each) to pin the median blow time to ±20% at each level. 11 per level comes from the log-normal scatter of blow times, not from a round number — one fuse per level is an anecdote.",
+     "severity": "info",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    },
+    {
+     "check": "instrument-budget",
+     "detail": {
+      "bias_s": 0.00020833333333333335,
+      "floor_s": 0.0005208413332718942,
+      "uncertainty_s": 5.208413332718943e-05
+     },
+     "message": "instrumented (shunt + ADC threshold, micros): timer resolution 1 us, detection latency 0.2 ms, combined uncertainty ±0.1 ms. Shortest event measurable to 10% is 1 ms.",
+     "severity": "info",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    }
+   ],
+   "fuse": {
+    "anchors": [
+     {
+      "current_mult": 2.0,
+      "note": "",
+      "time_s": 1.0
+     },
+     {
+      "current_mult": 4.0,
+      "note": "",
+      "time_s": 0.25
+     },
+     {
+      "current_mult": 8.0,
+      "note": "",
+      "time_s": 0.0625
+     }
+    ],
+    "continuous_derate": 0.75,
+    "declared_i2t": null,
+    "fuse_class": "fast",
+    "is_estimate": false,
+    "label": "p",
+    "part_number": "",
+    "rating_a": 10.0,
+    "source": ""
+   },
+   "fuses_consumed": 0,
+   "instrument": {
+    "adc_sample_rate_hz": 9600.0,
+    "detection_latency_s": 0.00010416666666666667,
+    "label": "instrumented (shunt + ADC threshold, micros)",
+    "latency_jitter_s": 5.208333333333334e-05,
+    "serial_baud": 9600,
+    "serial_chars_in_path": 30,
+    "serial_in_timing_path": false,
+    "timer_resolution_s": 1e-06
+   },
+   "points": [],
+   "scatter": {
+    "dof": 0,
+    "measured": false,
+    "n_levels": 0,
+    "sigma_ln": 0.3,
+    "source": "module prior (not your fuses)"
+   }
+  },
+  [],
+  false
+ ],
+ "plan_measured": [
+  {
+   "estimated_cost": 352.0,
+   "findings": [
+    {
+     "check": "scatter-source-measured",
+     "detail": {
+      "dof": 10,
+      "measured": true,
+      "n_levels": 2,
+      "sigma_ln": 0.2,
+      "source": "m"
+     },
+     "message": "Sized on YOUR measured spread: sigma_ln = 0.200 from 10 degrees of freedom across 2 level(s), used at its 0.319 upper bound. The count below is a consequence of your parts rather than of an assumption.",
+     "severity": "ok",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    },
+    {
+     "check": "plan-size",
+     "detail": {
+      "cost": 352.0,
+      "fuses": 176,
+      "n": 44
+     },
+     "message": "4 current levels x 44 samples = 176 fuses (about 352 at 2.00 each) to pin the median blow time to ±10% at each level. 44 per level comes from the log-normal scatter of blow times, not from a round number — one fuse per level is an anecdote.",
+     "severity": "info",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    },
+    {
+     "check": "instrument-budget",
+     "detail": {
+      "bias_s": 0.00020833333333333335,
+      "floor_s": 0.0005208413332718942,
+      "uncertainty_s": 5.208413332718943e-05
+     },
+     "message": "instrumented (shunt + ADC threshold, micros): timer resolution 1 us, detection latency 0.2 ms, combined uncertainty ±0.1 ms. Shortest event measurable to 10% is 1 ms.",
+     "severity": "info",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    }
+   ],
+   "fuse": {
+    "anchors": [
+     {
+      "current_mult": 1.5,
+      "note": "",
+      "time_s": 30.0
+     },
+     {
+      "current_mult": 3.0,
+      "note": "",
+      "time_s": 10.0
+     },
+     {
+      "current_mult": 6.0,
+      "note": "",
+      "time_s": 3.0
+     }
+    ],
+    "continuous_derate": 0.8,
+    "declared_i2t": null,
+    "fuse_class": "unknown",
+    "is_estimate": false,
+    "label": "sh",
+    "part_number": "",
+    "rating_a": 20.0,
+    "source": ""
+   },
+   "fuses_consumed": 176,
+   "instrument": {
+    "adc_sample_rate_hz": 9600.0,
+    "detection_latency_s": 0.00010416666666666667,
+    "label": "instrumented (shunt + ADC threshold, micros)",
+    "latency_jitter_s": 5.208333333333334e-05,
+    "serial_baud": 9600,
+    "serial_chars_in_path": 30,
+    "serial_in_timing_path": false,
+    "timer_resolution_s": 1e-06
+   },
+   "points": [
+    {
+     "current_a": 40.0,
+     "current_mult": 2.0,
+     "expected_time_s": 18.933406247816137,
+     "measurable": true,
+     "rel_uncertainty": 2.750911940802889e-06,
+     "samples": 44
+    },
+    {
+     "current_a": 60.0,
+     "current_mult": 3.0,
+     "expected_time_s": 9.654893846056297,
+     "measurable": true,
+     "rel_uncertainty": 5.394583737289257e-06,
+     "samples": 44
+    },
+    {
+     "current_a": 100.0,
+     "current_mult": 5.0,
+     "expected_time_s": 4.132993345834874,
+     "measurable": true,
+     "rel_uncertainty": 1.2602036579535869e-05,
+     "samples": 44
+    },
+    {
+     "current_a": 200.0,
+     "current_mult": 10.0,
+     "expected_time_s": 1.0991323843445155,
+     "measurable": true,
+     "rel_uncertainty": 4.738658788427074e-05,
+     "samples": 44
+    }
+   ],
+   "scatter": {
+    "dof": 10,
+    "measured": true,
+    "n_levels": 2,
+    "sigma_ln": 0.2,
+    "source": "m"
+   }
+  },
+  [
+   {
+    "current_a": 40.0,
+    "current_mult": 2.0,
+    "expected_time_s": 18.933406247816137,
+    "measurable": true,
+    "rel_uncertainty": 2.750911940802889e-06,
+    "samples": 44
+   },
+   {
+    "current_a": 60.0,
+    "current_mult": 3.0,
+    "expected_time_s": 9.654893846056297,
+    "measurable": true,
+    "rel_uncertainty": 5.394583737289257e-06,
+    "samples": 44
+   },
+   {
+    "current_a": 100.0,
+    "current_mult": 5.0,
+    "expected_time_s": 4.132993345834874,
+    "measurable": true,
+    "rel_uncertainty": 1.2602036579535869e-05,
+    "samples": 44
+   },
+   {
+    "current_a": 200.0,
+    "current_mult": 10.0,
+    "expected_time_s": 1.0991323843445155,
+    "measurable": true,
+    "rel_uncertainty": 4.738658788427074e-05,
+    "samples": 44
+   }
+  ],
+  true
+ ],
+ "plan_scalar": [
+  {
+   "estimated_cost": 174.0,
+   "findings": [
+    {
+     "check": "scatter-source-assumed",
+     "detail": {
+      "dof": 0,
+      "measured": false,
+      "n_levels": 0,
+      "sigma_ln": 0.5,
+      "source": "caller-supplied scalar (unverified)"
+     },
+     "message": "Sized on an ASSUMED spread (sigma_ln = 0.50, caller-supplied scalar (unverified)), which nothing here has verified for the parts in your drawer. The count is quadratic in that assumption: if your fuses scatter half again as widely, this becomes 66 per level rather than 29. Run five at one current, pass them to refine_from_pilot(), and this stops being a guess.",
+     "severity": "missing",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    },
+    {
+     "check": "plan-size",
+     "detail": {
+      "cost": 174.0,
+      "fuses": 116,
+      "n": 29
+     },
+     "message": "4 current levels x 29 samples = 116 fuses (about 174 at 1.50 each) to pin the median blow time to ±20% at each level. 29 per level comes from the log-normal scatter of blow times, not from a round number — one fuse per level is an anecdote.",
+     "severity": "info",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    },
+    {
+     "check": "plan-points-unmeasurable",
+     "detail": {},
+     "message": "2 of 4 planned points are below what this rig can resolve (5x → 160.0 ms, 10x → 40.0 ms). Those are the short-circuit points — the ones that decide whether the harness survives — so a rig that can only take the slow points measures the region that matters least.",
+     "severity": "fail",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    },
+    {
+     "check": "instrument-budget",
+     "detail": {
+      "bias_s": 0.28125,
+      "floor_s": 0.8000052083163792,
+      "uncertainty_s": 0.08000052083163793
+     },
+     "message": "proof-of-concept (operator keypress, millis): timer resolution 1000 us, detection latency 281.2 ms, combined uncertainty ±80.0 ms. Shortest event measurable to 10% is 800 ms.",
+     "severity": "info",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    },
+    {
+     "check": "serial-in-timing-path",
+     "detail": {},
+     "message": "Blocking serial output sits between the start and stop marks: 30 characters at 9600 baud is 31 ms added to every reading, in one direction only. Buffer the results and print after the test, not during it.",
+     "severity": "warning",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    },
+    {
+     "check": "manual-detection",
+     "detail": {},
+     "message": "Blow detection is manual, so the 281 ms in this measurement is the operator's reaction time and not a property of the fuse. Every reading is biased long by roughly that much, and the bias is larger than most of the blow times worth measuring. Detect the current collapse on a shunt instead.",
+     "severity": "fail",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    },
+    {
+     "check": "test-point-unmeasurable",
+     "detail": {
+      "need_hz": 500.0000000000002,
+      "rel": 2.0000130207909494,
+      "time_s": 0.03999999999999998
+     },
+     "message": "An expected blow time of 40.0 ms is noise, not a measurement: ±80.0 ms is 200% of it. Resolving this point to 5% needs detection at 500 Hz or faster.",
+     "severity": "fail",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    },
+    {
+     "check": "test-point-unmeasurable",
+     "detail": {
+      "need_hz": 125.00000000000003,
+      "rel": 0.5000032551977371,
+      "time_s": 0.15999999999999998
+     },
+     "message": "An expected blow time of 160.0 ms is noise, not a measurement: ±80.0 ms is 50% of it. Resolving this point to 5% needs detection at 125 Hz or faster.",
+     "severity": "fail",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    },
+    {
+     "check": "test-point-unmeasurable",
+     "detail": {
+      "need_hz": 44.99999999999999,
+      "rel": 0.18000117187118533,
+      "time_s": 0.4444444444444445
+     },
+     "message": "An expected blow time of 444.4 ms is marginal: ±80.0 ms is 18% of it. Resolving this point to 5% needs detection at 45 Hz or faster.",
+     "severity": "warning",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    }
+   ],
+   "fuse": {
+    "anchors": [
+     {
+      "current_mult": 2.0,
+      "note": "",
+      "time_s": 1.0
+     },
+     {
+      "current_mult": 4.0,
+      "note": "",
+      "time_s": 0.25
+     },
+     {
+      "current_mult": 8.0,
+      "note": "",
+      "time_s": 0.0625
+     }
+    ],
+    "continuous_derate": 0.75,
+    "declared_i2t": null,
+    "fuse_class": "fast",
+    "is_estimate": false,
+    "label": "p",
+    "part_number": "",
+    "rating_a": 10.0,
+    "source": ""
+   },
+   "fuses_consumed": 116,
+   "instrument": {
+    "adc_sample_rate_hz": null,
+    "detection_latency_s": 0.25,
+    "label": "proof-of-concept (operator keypress, millis)",
+    "latency_jitter_s": 0.08,
+    "serial_baud": 9600,
+    "serial_chars_in_path": 30,
+    "serial_in_timing_path": true,
+    "timer_resolution_s": 0.001
+   },
+   "points": [
+    {
+     "current_a": 20.0,
+     "current_mult": 2.0,
+     "expected_time_s": 1.0,
+     "measurable": true,
+     "rel_uncertainty": 0.08000052083163793,
+     "samples": 29
+    },
+    {
+     "current_a": 30.0,
+     "current_mult": 3.0,
+     "expected_time_s": 0.4444444444444445,
+     "measurable": true,
+     "rel_uncertainty": 0.18000117187118533,
+     "samples": 29
+    },
+    {
+     "current_a": 50.0,
+     "current_mult": 5.0,
+     "expected_time_s": 0.15999999999999998,
+     "measurable": false,
+     "rel_uncertainty": 0.5000032551977371,
+     "samples": 29
+    },
+    {
+     "current_a": 100.0,
+     "current_mult": 10.0,
+     "expected_time_s": 0.03999999999999998,
+     "measurable": false,
+     "rel_uncertainty": 2.0000130207909494,
+     "samples": 29
+    }
+   ],
+   "scatter": {
+    "dof": 0,
+    "measured": false,
+    "n_levels": 0,
+    "sigma_ln": 0.5,
+    "source": "caller-supplied scalar (unverified)"
+   }
+  },
+  [
+   {
+    "current_a": 20.0,
+    "current_mult": 2.0,
+    "expected_time_s": 1.0,
+    "measurable": true,
+    "rel_uncertainty": 0.08000052083163793,
+    "samples": 29
+   },
+   {
+    "current_a": 30.0,
+    "current_mult": 3.0,
+    "expected_time_s": 0.4444444444444445,
+    "measurable": true,
+    "rel_uncertainty": 0.18000117187118533,
+    "samples": 29
+   }
+  ],
+  false
+ ],
+ "plan_steep_poc": [
+  {
+   "estimated_cost": 66.0,
+   "findings": [
+    {
+     "check": "scatter-source-assumed",
+     "detail": {
+      "dof": 0,
+      "measured": false,
+      "n_levels": 0,
+      "sigma_ln": 0.3,
+      "source": "module prior (not your fuses)"
+     },
+     "message": "Sized on an ASSUMED spread (sigma_ln = 0.30, module prior (not your fuses)), which nothing here has verified for the parts in your drawer. The count is quadratic in that assumption: if your fuses scatter half again as widely, this becomes 24 per level rather than 11. Run five at one current, pass them to refine_from_pilot(), and this stops being a guess.",
+     "severity": "missing",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    },
+    {
+     "check": "plan-size",
+     "detail": {
+      "cost": 66.0,
+      "fuses": 44,
+      "n": 11
+     },
+     "message": "4 current levels x 11 samples = 44 fuses (about 66 at 1.50 each) to pin the median blow time to ±20% at each level. 11 per level comes from the log-normal scatter of blow times, not from a round number — one fuse per level is an anecdote.",
+     "severity": "info",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    },
+    {
+     "check": "plan-points-unmeasurable",
+     "detail": {},
+     "message": "3 of 4 planned points are below what this rig can resolve (5x → 55.3 ms, 10x → 1.9 ms, 20x → 0.5 ms). Those are the short-circuit points — the ones that decide whether the harness survives — so a rig that can only take the slow points measures the region that matters least.",
+     "severity": "fail",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    },
+    {
+     "check": "instrument-budget",
+     "detail": {
+      "bias_s": 0.28125,
+      "floor_s": 0.8000052083163792,
+      "uncertainty_s": 0.08000052083163793
+     },
+     "message": "proof-of-concept (operator keypress, millis): timer resolution 1000 us, detection latency 281.2 ms, combined uncertainty ±80.0 ms. Shortest event measurable to 10% is 800 ms.",
+     "severity": "info",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    },
+    {
+     "check": "serial-in-timing-path",
+     "detail": {},
+     "message": "Blocking serial output sits between the start and stop marks: 30 characters at 9600 baud is 31 ms added to every reading, in one direction only. Buffer the results and print after the test, not during it.",
+     "severity": "warning",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    },
+    {
+     "check": "manual-detection",
+     "detail": {},
+     "message": "Blow detection is manual, so the 281 ms in this measurement is the operator's reaction time and not a property of the fuse. Every reading is biased long by roughly that much, and the bias is larger than most of the blow times worth measuring. Detect the current collapse on a shunt instead.",
+     "severity": "fail",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    },
+    {
+     "check": "test-point-unmeasurable",
+     "detail": {
+      "need_hz": 42340.11370837085,
+      "rel": 169.36155743702204,
+      "time_s": 0.0004723652878628406
+     },
+     "message": "An expected blow time of 0.5 ms is noise, not a measurement: ±80.0 ms is 16936% of it. Resolving this point to 5% needs detection at 42,340 Hz or faster.",
+     "severity": "fail",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    },
+    {
+     "check": "test-point-unmeasurable",
+     "detail": {
+      "need_hz": 10585.028427092713,
+      "rel": 42.34038935925551,
+      "time_s": 0.0018894611514513624
+     },
+     "message": "An expected blow time of 1.9 ms is noise, not a measurement: ±80.0 ms is 4234% of it. Resolving this point to 5% needs detection at 10,585 Hz or faster.",
+     "severity": "fail",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    },
+    {
+     "check": "test-point-unmeasurable",
+     "detail": {
+      "need_hz": 361.98382431789435,
+      "rel": 1.4479447239029837,
+      "time_s": 0.055251087635440836
+     },
+     "message": "An expected blow time of 55.3 ms is noise, not a measurement: ±80.0 ms is 145% of it. Resolving this point to 5% needs detection at 362 Hz or faster.",
+     "severity": "fail",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    }
+   ],
+   "fuse": {
+    "anchors": [
+     {
+      "current_mult": 2.0,
+      "note": "a",
+      "time_s": 5.0
+     },
+     {
+      "current_mult": 5.0,
+      "note": "",
+      "time_s": 0.05
+     },
+     {
+      "current_mult": 10.0,
+      "note": "",
+      "time_s": 0.002
+     }
+    ],
+    "continuous_derate": 0.75,
+    "declared_i2t": null,
+    "fuse_class": "unknown",
+    "is_estimate": true,
+    "label": "s",
+    "part_number": "ATO-15",
+    "rating_a": 15.0,
+    "source": "datasheet"
+   },
+   "fuses_consumed": 44,
+   "instrument": {
+    "adc_sample_rate_hz": null,
+    "detection_latency_s": 0.25,
+    "label": "proof-of-concept (operator keypress, millis)",
+    "latency_jitter_s": 0.08,
+    "serial_baud": 9600,
+    "serial_chars_in_path": 30,
+    "serial_in_timing_path": true,
+    "timer_resolution_s": 0.001
+   },
+   "points": [
+    {
+     "current_a": 30.0,
+     "current_mult": 2.0,
+     "expected_time_s": 4.789511338190816,
+     "measurable": true,
+     "rel_uncertainty": 0.016703274130228332,
+     "samples": 11
+    },
+    {
+     "current_a": 75.0,
+     "current_mult": 5.0,
+     "expected_time_s": 0.055251087635440836,
+     "measurable": false,
+     "rel_uncertainty": 1.4479447239029837,
+     "samples": 11
+    },
+    {
+     "current_a": 150.0,
+     "current_mult": 10.0,
+     "expected_time_s": 0.0018894611514513624,
+     "measurable": false,
+     "rel_uncertainty": 42.34038935925551,
+     "samples": 11
+    },
+    {
+     "current_a": 300.0,
+     "current_mult": 20.0,
+     "expected_time_s": 0.0004723652878628406,
+     "measurable": false,
+     "rel_uncertainty": 169.36155743702204,
+     "samples": 11
+    }
+   ],
+   "scatter": {
+    "dof": 0,
+    "measured": false,
+    "n_levels": 0,
+    "sigma_ln": 0.3,
+    "source": "module prior (not your fuses)"
+   }
+  },
+  [
+   {
+    "current_a": 30.0,
+    "current_mult": 2.0,
+    "expected_time_s": 4.789511338190816,
+    "measurable": true,
+    "rel_uncertainty": 0.016703274130228332,
+    "samples": 11
+   }
+  ],
+  false
+ ],
+ "plan_steep_rig": [
+  {
+   "estimated_cost": 66.0,
+   "findings": [
+    {
+     "check": "scatter-source-assumed",
+     "detail": {
+      "dof": 0,
+      "measured": false,
+      "n_levels": 0,
+      "sigma_ln": 0.3,
+      "source": "module prior (not your fuses)"
+     },
+     "message": "Sized on an ASSUMED spread (sigma_ln = 0.30, module prior (not your fuses)), which nothing here has verified for the parts in your drawer. The count is quadratic in that assumption: if your fuses scatter half again as widely, this becomes 24 per level rather than 11. Run five at one current, pass them to refine_from_pilot(), and this stops being a guess.",
+     "severity": "missing",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    },
+    {
+     "check": "plan-size",
+     "detail": {
+      "cost": 66.0,
+      "fuses": 44,
+      "n": 11
+     },
+     "message": "4 current levels x 11 samples = 44 fuses (about 66 at 1.50 each) to pin the median blow time to ±20% at each level. 11 per level comes from the log-normal scatter of blow times, not from a round number — one fuse per level is an anecdote.",
+     "severity": "info",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    },
+    {
+     "check": "instrument-budget",
+     "detail": {
+      "bias_s": 0.00020833333333333335,
+      "floor_s": 0.0005208413332718942,
+      "uncertainty_s": 5.208413332718943e-05
+     },
+     "message": "instrumented (shunt + ADC threshold, micros): timer resolution 1 us, detection latency 0.2 ms, combined uncertainty ±0.1 ms. Shortest event measurable to 10% is 1 ms.",
+     "severity": "info",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    }
+   ],
+   "fuse": {
+    "anchors": [
+     {
+      "current_mult": 2.0,
+      "note": "a",
+      "time_s": 5.0
+     },
+     {
+      "current_mult": 5.0,
+      "note": "",
+      "time_s": 0.05
+     },
+     {
+      "current_mult": 10.0,
+      "note": "",
+      "time_s": 0.002
+     }
+    ],
+    "continuous_derate": 0.75,
+    "declared_i2t": null,
+    "fuse_class": "unknown",
+    "is_estimate": true,
+    "label": "s",
+    "part_number": "ATO-15",
+    "rating_a": 15.0,
+    "source": "datasheet"
+   },
+   "fuses_consumed": 44,
+   "instrument": {
+    "adc_sample_rate_hz": 9600.0,
+    "detection_latency_s": 0.00010416666666666667,
+    "label": "instrumented (shunt + ADC threshold, micros)",
+    "latency_jitter_s": 5.208333333333334e-05,
+    "serial_baud": 9600,
+    "serial_chars_in_path": 30,
+    "serial_in_timing_path": false,
+    "timer_resolution_s": 1e-06
+   },
+   "points": [
+    {
+     "current_a": 30.0,
+     "current_mult": 2.0,
+     "expected_time_s": 4.789511338190816,
+     "measurable": true,
+     "rel_uncertainty": 1.087462366189191e-05,
+     "samples": 11
+    },
+    {
+     "current_a": 45.0,
+     "current_mult": 3.0,
+     "expected_time_s": 0.664866580807236,
+     "measurable": true,
+     "rel_uncertainty": 7.833772192904086e-05,
+     "samples": 11
+    },
+    {
+     "current_a": 75.0,
+     "current_mult": 5.0,
+     "expected_time_s": 0.055251087635440836,
+     "measurable": true,
+     "rel_uncertainty": 0.0009426806884029562,
+     "samples": 11
+    },
+    {
+     "current_a": 150.0,
+     "current_mult": 10.0,
+     "expected_time_s": 0.0018894611514513624,
+     "measurable": true,
+     "rel_uncertainty": 0.027565601593439352,
+     "samples": 11
+    }
+   ],
+   "scatter": {
+    "dof": 0,
+    "measured": false,
+    "n_levels": 0,
+    "sigma_ln": 0.3,
+    "source": "module prior (not your fuses)"
+   }
+  },
+  [
+   {
+    "current_a": 30.0,
+    "current_mult": 2.0,
+    "expected_time_s": 4.789511338190816,
+    "measurable": true,
+    "rel_uncertainty": 1.087462366189191e-05,
+    "samples": 11
+   },
+   {
+    "current_a": 45.0,
+    "current_mult": 3.0,
+    "expected_time_s": 0.664866580807236,
+    "measurable": true,
+    "rel_uncertainty": 7.833772192904086e-05,
+    "samples": 11
+   },
+   {
+    "current_a": 75.0,
+    "current_mult": 5.0,
+    "expected_time_s": 0.055251087635440836,
+    "measurable": true,
+    "rel_uncertainty": 0.0009426806884029562,
+    "samples": 11
+   },
+   {
+    "current_a": 150.0,
+    "current_mult": 10.0,
+    "expected_time_s": 0.0018894611514513624,
+    "measurable": true,
+    "rel_uncertainty": 0.027565601593439352,
+    "samples": 11
+   }
+  ],
+  false
+ ],
+ "sized_none": false,
+ "sketch": {
+  "bare": "// ===========================================================================\n//  Fuse time-to-blow rig  —  generated by KinematiK suspension/fuse_test.py\n//\n//  Fuse under test : main GLV fuse (0 A)\n//  Front end       : 1 mOhm shunt, gain 50, 10-bit ADC\n//                    full scale 100 A, 0.10 A per count\n//  Trip threshold  : 0 counts ~ 0 A (current collapse)\n//  Samples/level   : 11\n//\n//  Planned levels:\n//    1x =      0.0 A   expected ?\n//    2x =      0.0 A   expected ?\n//\n//  TIMING NOTES — the reason this is not the proof-of-concept sketch:\n//    * The stop mark is the current collapsing past a threshold, NOT a\n//      keypress. Operator reaction time (~250 ms) is larger than most blow\n//      times worth measuring and biases every reading in one direction.\n//    * micros(), not millis(). A 1 ms tick is 20% of a 5 ms event.\n//    * Nothing prints between the marks. Serial.println() blocks; 30 chars\n//      at 9600 baud is 31 ms silently added to the measurement.\n//    * analogRead() on an AVR takes ~104 us, so detection latency is about\n//      0.1 ms. Events faster than ~2 ms need a comparator, not this loop.\n// ===========================================================================\n\nconst uint8_t  PIN_SENSE   = A0;\nconst uint16_t TRIP_COUNTS = 0;   // current-collapse threshold\nconst uint16_t ARM_COUNTS  = 1;   // must exceed this to arm\nconst uint8_t  N_SAMPLES   = 11;\nconst uint32_t TIMEOUT_US  = 30000000UL;      // 30 s: fuse did not blow\n\nuint32_t results[N_SAMPLES];\nuint8_t  count = 0;\n\nvoid setup() {\n  Serial.begin(115200);                 // faster than 9600: prints hurt less\n  while (!Serial) { ; }\n  analogReference(DEFAULT);\n  Serial.println(F(\"Fuse rig ready. Apply current; detection is automatic.\"));\n  Serial.print(F(\"Trip threshold: \")); Serial.print(TRIP_COUNTS);\n  Serial.println(F(\" counts\"));\n}\n\n// Blocking measurement of one blow event. No I/O inside the timed region.\nbool measure_one(uint32_t *out) {\n  // --- arm: wait for current to establish -------------------------------- //\n  while (analogRead(PIN_SENSE) < ARM_COUNTS) { ; }\n  uint32_t t0 = micros();\n\n  // --- wait for the current to collapse ---------------------------------- //\n  while (analogRead(PIN_SENSE) >= TRIP_COUNTS) {\n    if (micros() - t0 > TIMEOUT_US) return false;\n  }\n  *out = micros() - t0;                 // wraps correctly on unsigned math\n  return true;\n}\n\nvoid report() {\n  // Sort a copy for the median. n is small; insertion sort is fine.\n  uint32_t s[N_SAMPLES];\n  for (uint8_t i = 0; i < count; i++) s[i] = results[i];\n  for (uint8_t i = 1; i < count; i++) {\n    uint32_t v = s[i]; int8_t j = i - 1;\n    while (j >= 0 && s[j] > v) { s[j+1] = s[j]; j--; }\n    s[j+1] = v;\n  }\n  uint32_t med = (count & 1) ? s[count/2] : (s[count/2 - 1] + s[count/2]) / 2;\n\n  Serial.println(F(\"--------------------------------\"));\n  Serial.print(F(\"n = \")); Serial.println(count);\n  for (uint8_t i = 0; i < count; i++) {\n    Serial.print(F(\"  \")); Serial.print(results[i] / 1000.0, 3);\n    Serial.println(F(\" ms\"));\n  }\n  Serial.print(F(\"min    \")); Serial.print(s[0] / 1000.0, 3);\n  Serial.println(F(\" ms\"));\n  Serial.print(F(\"median \")); Serial.print(med / 1000.0, 3);\n  Serial.println(F(\" ms\"));\n  Serial.print(F(\"max    \")); Serial.print(s[count-1] / 1000.0, 3);\n  Serial.println(F(\" ms\"));\n  Serial.print(F(\"spread \")); Serial.print((float)s[count-1] / (float)s[0], 2);\n  Serial.println(F(\"x  <-- report this, not a single reading\"));\n  Serial.println(F(\"--------------------------------\"));\n}\n\nvoid loop() {\n  if (count >= N_SAMPLES) { report(); count = 0; delay(5000); return; }\n\n  uint32_t us;\n  if (measure_one(&us)) {\n    results[count++] = us;              // print AFTER the timed region\n    Serial.print(F(\"blow \")); Serial.print(us / 1000.0, 3);\n    Serial.print(F(\" ms   (\")); Serial.print(count);\n    Serial.print(F(\"/\")); Serial.print(N_SAMPLES); Serial.println(F(\")\"));\n  } else {\n    Serial.println(F(\"TIMEOUT - fuse did not open. Raise the current.\"));\n  }\n  Serial.println(F(\"Fit the next fuse; measurement re-arms automatically.\"));\n  delay(2000);\n}\n",
+  "empty": "// ===========================================================================\n//  Fuse time-to-blow rig  —  generated by KinematiK suspension/fuse_test.py\n//\n//  Fuse under test : p (10 A)\n//  Front end       : 1 mOhm shunt, gain 50, 10-bit ADC\n//                    full scale 100 A, 0.10 A per count\n//  Trip threshold  : 512 counts ~ 50 A (current collapse)\n//  Samples/level   : 10\n//  !! WARNING: 100 A saturates this front end (full scale 100 A). Lower the gain or the shunt.\n//\n//  Planned levels:\n//    (no levels planned)\n//\n//  TIMING NOTES — the reason this is not the proof-of-concept sketch:\n//    * The stop mark is the current collapsing past a threshold, NOT a\n//      keypress. Operator reaction time (~250 ms) is larger than most blow\n//      times worth measuring and biases every reading in one direction.\n//    * micros(), not millis(). A 1 ms tick is 20% of a 5 ms event.\n//    * Nothing prints between the marks. Serial.println() blocks; 30 chars\n//      at 9600 baud is 31 ms silently added to the measurement.\n//    * analogRead() on an AVR takes ~104 us, so detection latency is about\n//      0.1 ms. Events faster than ~2 ms need a comparator, not this loop.\n// ===========================================================================\n\nconst uint8_t  PIN_SENSE   = A0;\nconst uint16_t TRIP_COUNTS = 512;   // current-collapse threshold\nconst uint16_t ARM_COUNTS  = 256;   // must exceed this to arm\nconst uint8_t  N_SAMPLES   = 10;\nconst uint32_t TIMEOUT_US  = 30000000UL;      // 30 s: fuse did not blow\n\nuint32_t results[N_SAMPLES];\nuint8_t  count = 0;\n\nvoid setup() {\n  Serial.begin(115200);                 // faster than 9600: prints hurt less\n  while (!Serial) { ; }\n  analogReference(DEFAULT);\n  Serial.println(F(\"Fuse rig ready. Apply current; detection is automatic.\"));\n  Serial.print(F(\"Trip threshold: \")); Serial.print(TRIP_COUNTS);\n  Serial.println(F(\" counts\"));\n}\n\n// Blocking measurement of one blow event. No I/O inside the timed region.\nbool measure_one(uint32_t *out) {\n  // --- arm: wait for current to establish -------------------------------- //\n  while (analogRead(PIN_SENSE) < ARM_COUNTS) { ; }\n  uint32_t t0 = micros();\n\n  // --- wait for the current to collapse ---------------------------------- //\n  while (analogRead(PIN_SENSE) >= TRIP_COUNTS) {\n    if (micros() - t0 > TIMEOUT_US) return false;\n  }\n  *out = micros() - t0;                 // wraps correctly on unsigned math\n  return true;\n}\n\nvoid report() {\n  // Sort a copy for the median. n is small; insertion sort is fine.\n  uint32_t s[N_SAMPLES];\n  for (uint8_t i = 0; i < count; i++) s[i] = results[i];\n  for (uint8_t i = 1; i < count; i++) {\n    uint32_t v = s[i]; int8_t j = i - 1;\n    while (j >= 0 && s[j] > v) { s[j+1] = s[j]; j--; }\n    s[j+1] = v;\n  }\n  uint32_t med = (count & 1) ? s[count/2] : (s[count/2 - 1] + s[count/2]) / 2;\n\n  Serial.println(F(\"--------------------------------\"));\n  Serial.print(F(\"n = \")); Serial.println(count);\n  for (uint8_t i = 0; i < count; i++) {\n    Serial.print(F(\"  \")); Serial.print(results[i] / 1000.0, 3);\n    Serial.println(F(\" ms\"));\n  }\n  Serial.print(F(\"min    \")); Serial.print(s[0] / 1000.0, 3);\n  Serial.println(F(\" ms\"));\n  Serial.print(F(\"median \")); Serial.print(med / 1000.0, 3);\n  Serial.println(F(\" ms\"));\n  Serial.print(F(\"max    \")); Serial.print(s[count-1] / 1000.0, 3);\n  Serial.println(F(\" ms\"));\n  Serial.print(F(\"spread \")); Serial.print((float)s[count-1] / (float)s[0], 2);\n  Serial.println(F(\"x  <-- report this, not a single reading\"));\n  Serial.println(F(\"--------------------------------\"));\n}\n\nvoid loop() {\n  if (count >= N_SAMPLES) { report(); count = 0; delay(5000); return; }\n\n  uint32_t us;\n  if (measure_one(&us)) {\n    results[count++] = us;              // print AFTER the timed region\n    Serial.print(F(\"blow \")); Serial.print(us / 1000.0, 3);\n    Serial.print(F(\" ms   (\")); Serial.print(count);\n    Serial.print(F(\"/\")); Serial.print(N_SAMPLES); Serial.println(F(\")\"));\n  } else {\n    Serial.println(F(\"TIMEOUT - fuse did not open. Raise the current.\"));\n  }\n  Serial.println(F(\"Fit the next fuse; measurement re-arms automatically.\"));\n  delay(2000);\n}\n",
+  "measured": "// ===========================================================================\n//  Fuse time-to-blow rig  —  generated by KinematiK suspension/fuse_test.py\n//\n//  Fuse under test : sh (20 A)\n//  Front end       : 1 mOhm shunt, gain 50, 10-bit ADC\n//                    full scale 100 A, 0.10 A per count\n//  Trip threshold  : 1023 counts ~ 100 A (current collapse)\n//  Samples/level   : 44\n//  !! WARNING: 200 A saturates this front end (full scale 100 A). Lower the gain or the shunt.\n//\n//  Planned levels:\n//    2x =     40.0 A   expected 18933.4 ms\n//    3x =     60.0 A   expected 9654.9 ms\n//    5x =    100.0 A   expected 4133.0 ms\n//    10x =    200.0 A   expected 1099.1 ms\n//\n//  TIMING NOTES — the reason this is not the proof-of-concept sketch:\n//    * The stop mark is the current collapsing past a threshold, NOT a\n//      keypress. Operator reaction time (~250 ms) is larger than most blow\n//      times worth measuring and biases every reading in one direction.\n//    * micros(), not millis(). A 1 ms tick is 20% of a 5 ms event.\n//    * Nothing prints between the marks. Serial.println() blocks; 30 chars\n//      at 9600 baud is 31 ms silently added to the measurement.\n//    * analogRead() on an AVR takes ~104 us, so detection latency is about\n//      0.1 ms. Events faster than ~2 ms need a comparator, not this loop.\n// ===========================================================================\n\nconst uint8_t  PIN_SENSE   = A0;\nconst uint16_t TRIP_COUNTS = 1023;   // current-collapse threshold\nconst uint16_t ARM_COUNTS  = 511;   // must exceed this to arm\nconst uint8_t  N_SAMPLES   = 44;\nconst uint32_t TIMEOUT_US  = 30000000UL;      // 30 s: fuse did not blow\n\nuint32_t results[N_SAMPLES];\nuint8_t  count = 0;\n\nvoid setup() {\n  Serial.begin(115200);                 // faster than 9600: prints hurt less\n  while (!Serial) { ; }\n  analogReference(DEFAULT);\n  Serial.println(F(\"Fuse rig ready. Apply current; detection is automatic.\"));\n  Serial.print(F(\"Trip threshold: \")); Serial.print(TRIP_COUNTS);\n  Serial.println(F(\" counts\"));\n}\n\n// Blocking measurement of one blow event. No I/O inside the timed region.\nbool measure_one(uint32_t *out) {\n  // --- arm: wait for current to establish -------------------------------- //\n  while (analogRead(PIN_SENSE) < ARM_COUNTS) { ; }\n  uint32_t t0 = micros();\n\n  // --- wait for the current to collapse ---------------------------------- //\n  while (analogRead(PIN_SENSE) >= TRIP_COUNTS) {\n    if (micros() - t0 > TIMEOUT_US) return false;\n  }\n  *out = micros() - t0;                 // wraps correctly on unsigned math\n  return true;\n}\n\nvoid report() {\n  // Sort a copy for the median. n is small; insertion sort is fine.\n  uint32_t s[N_SAMPLES];\n  for (uint8_t i = 0; i < count; i++) s[i] = results[i];\n  for (uint8_t i = 1; i < count; i++) {\n    uint32_t v = s[i]; int8_t j = i - 1;\n    while (j >= 0 && s[j] > v) { s[j+1] = s[j]; j--; }\n    s[j+1] = v;\n  }\n  uint32_t med = (count & 1) ? s[count/2] : (s[count/2 - 1] + s[count/2]) / 2;\n\n  Serial.println(F(\"--------------------------------\"));\n  Serial.print(F(\"n = \")); Serial.println(count);\n  for (uint8_t i = 0; i < count; i++) {\n    Serial.print(F(\"  \")); Serial.print(results[i] / 1000.0, 3);\n    Serial.println(F(\" ms\"));\n  }\n  Serial.print(F(\"min    \")); Serial.print(s[0] / 1000.0, 3);\n  Serial.println(F(\" ms\"));\n  Serial.print(F(\"median \")); Serial.print(med / 1000.0, 3);\n  Serial.println(F(\" ms\"));\n  Serial.print(F(\"max    \")); Serial.print(s[count-1] / 1000.0, 3);\n  Serial.println(F(\" ms\"));\n  Serial.print(F(\"spread \")); Serial.print((float)s[count-1] / (float)s[0], 2);\n  Serial.println(F(\"x  <-- report this, not a single reading\"));\n  Serial.println(F(\"--------------------------------\"));\n}\n\nvoid loop() {\n  if (count >= N_SAMPLES) { report(); count = 0; delay(5000); return; }\n\n  uint32_t us;\n  if (measure_one(&us)) {\n    results[count++] = us;              // print AFTER the timed region\n    Serial.print(F(\"blow \")); Serial.print(us / 1000.0, 3);\n    Serial.print(F(\" ms   (\")); Serial.print(count);\n    Serial.print(F(\"/\")); Serial.print(N_SAMPLES); Serial.println(F(\")\"));\n  } else {\n    Serial.println(F(\"TIMEOUT - fuse did not open. Raise the current.\"));\n  }\n  Serial.println(F(\"Fit the next fuse; measurement re-arms automatically.\"));\n  delay(2000);\n}\n",
+  "scalar": "// ===========================================================================\n//  Fuse time-to-blow rig  —  generated by KinematiK suspension/fuse_test.py\n//\n//  Fuse under test : p (10 A)\n//  Front end       : 1 mOhm shunt, gain 50, 10-bit ADC\n//                    full scale 100 A, 0.10 A per count\n//  Trip threshold  : 512 counts ~ 50 A (current collapse)\n//  Samples/level   : 29\n//  !! WARNING: 100 A saturates this front end (full scale 100 A). Lower the gain or the shunt.\n//\n//  Planned levels:\n//    2x =     20.0 A   expected 1000.0 ms\n//    3x =     30.0 A   expected 444.4 ms\n//    5x =     50.0 A   expected 160.0 ms   <-- BELOW RIG RESOLUTION\n//    10x =    100.0 A   expected 40.0 ms   <-- BELOW RIG RESOLUTION\n//\n//  TIMING NOTES — the reason this is not the proof-of-concept sketch:\n//    * The stop mark is the current collapsing past a threshold, NOT a\n//      keypress. Operator reaction time (~250 ms) is larger than most blow\n//      times worth measuring and biases every reading in one direction.\n//    * micros(), not millis(). A 1 ms tick is 20% of a 5 ms event.\n//    * Nothing prints between the marks. Serial.println() blocks; 30 chars\n//      at 9600 baud is 31 ms silently added to the measurement.\n//    * analogRead() on an AVR takes ~104 us, so detection latency is about\n//      0.1 ms. Events faster than ~2 ms need a comparator, not this loop.\n// ===========================================================================\n\nconst uint8_t  PIN_SENSE   = A0;\nconst uint16_t TRIP_COUNTS = 512;   // current-collapse threshold\nconst uint16_t ARM_COUNTS  = 256;   // must exceed this to arm\nconst uint8_t  N_SAMPLES   = 29;\nconst uint32_t TIMEOUT_US  = 30000000UL;      // 30 s: fuse did not blow\n\nuint32_t results[N_SAMPLES];\nuint8_t  count = 0;\n\nvoid setup() {\n  Serial.begin(115200);                 // faster than 9600: prints hurt less\n  while (!Serial) { ; }\n  analogReference(DEFAULT);\n  Serial.println(F(\"Fuse rig ready. Apply current; detection is automatic.\"));\n  Serial.print(F(\"Trip threshold: \")); Serial.print(TRIP_COUNTS);\n  Serial.println(F(\" counts\"));\n}\n\n// Blocking measurement of one blow event. No I/O inside the timed region.\nbool measure_one(uint32_t *out) {\n  // --- arm: wait for current to establish -------------------------------- //\n  while (analogRead(PIN_SENSE) < ARM_COUNTS) { ; }\n  uint32_t t0 = micros();\n\n  // --- wait for the current to collapse ---------------------------------- //\n  while (analogRead(PIN_SENSE) >= TRIP_COUNTS) {\n    if (micros() - t0 > TIMEOUT_US) return false;\n  }\n  *out = micros() - t0;                 // wraps correctly on unsigned math\n  return true;\n}\n\nvoid report() {\n  // Sort a copy for the median. n is small; insertion sort is fine.\n  uint32_t s[N_SAMPLES];\n  for (uint8_t i = 0; i < count; i++) s[i] = results[i];\n  for (uint8_t i = 1; i < count; i++) {\n    uint32_t v = s[i]; int8_t j = i - 1;\n    while (j >= 0 && s[j] > v) { s[j+1] = s[j]; j--; }\n    s[j+1] = v;\n  }\n  uint32_t med = (count & 1) ? s[count/2] : (s[count/2 - 1] + s[count/2]) / 2;\n\n  Serial.println(F(\"--------------------------------\"));\n  Serial.print(F(\"n = \")); Serial.println(count);\n  for (uint8_t i = 0; i < count; i++) {\n    Serial.print(F(\"  \")); Serial.print(results[i] / 1000.0, 3);\n    Serial.println(F(\" ms\"));\n  }\n  Serial.print(F(\"min    \")); Serial.print(s[0] / 1000.0, 3);\n  Serial.println(F(\" ms\"));\n  Serial.print(F(\"median \")); Serial.print(med / 1000.0, 3);\n  Serial.println(F(\" ms\"));\n  Serial.print(F(\"max    \")); Serial.print(s[count-1] / 1000.0, 3);\n  Serial.println(F(\" ms\"));\n  Serial.print(F(\"spread \")); Serial.print((float)s[count-1] / (float)s[0], 2);\n  Serial.println(F(\"x  <-- report this, not a single reading\"));\n  Serial.println(F(\"--------------------------------\"));\n}\n\nvoid loop() {\n  if (count >= N_SAMPLES) { report(); count = 0; delay(5000); return; }\n\n  uint32_t us;\n  if (measure_one(&us)) {\n    results[count++] = us;              // print AFTER the timed region\n    Serial.print(F(\"blow \")); Serial.print(us / 1000.0, 3);\n    Serial.print(F(\" ms   (\")); Serial.print(count);\n    Serial.print(F(\"/\")); Serial.print(N_SAMPLES); Serial.println(F(\")\"));\n  } else {\n    Serial.println(F(\"TIMEOUT - fuse did not open. Raise the current.\"));\n  }\n  Serial.println(F(\"Fit the next fuse; measurement re-arms automatically.\"));\n  delay(2000);\n}\n",
+  "steep_poc": "// ===========================================================================\n//  Fuse time-to-blow rig  —  generated by KinematiK suspension/fuse_test.py\n//\n//  Fuse under test : s (15 A, ATO-15)\n//  Front end       : 1 mOhm shunt, gain 50, 10-bit ADC\n//                    full scale 100 A, 0.10 A per count\n//  Trip threshold  : 1023 counts ~ 150 A (current collapse)\n//  Samples/level   : 11\n//  !! WARNING: 300 A saturates this front end (full scale 100 A). Lower the gain or the shunt.\n//\n//  Planned levels:\n//    2x =     30.0 A   expected 4789.5 ms\n//    5x =     75.0 A   expected 55.3 ms   <-- BELOW RIG RESOLUTION\n//    10x =    150.0 A   expected 1.9 ms   <-- BELOW RIG RESOLUTION\n//    20x =    300.0 A   expected 0.5 ms   <-- BELOW RIG RESOLUTION\n//\n//  TIMING NOTES — the reason this is not the proof-of-concept sketch:\n//    * The stop mark is the current collapsing past a threshold, NOT a\n//      keypress. Operator reaction time (~250 ms) is larger than most blow\n//      times worth measuring and biases every reading in one direction.\n//    * micros(), not millis(). A 1 ms tick is 20% of a 5 ms event.\n//    * Nothing prints between the marks. Serial.println() blocks; 30 chars\n//      at 9600 baud is 31 ms silently added to the measurement.\n//    * analogRead() on an AVR takes ~104 us, so detection latency is about\n//      0.1 ms. Events faster than ~2 ms need a comparator, not this loop.\n// ===========================================================================\n\nconst uint8_t  PIN_SENSE   = A0;\nconst uint16_t TRIP_COUNTS = 1023;   // current-collapse threshold\nconst uint16_t ARM_COUNTS  = 511;   // must exceed this to arm\nconst uint8_t  N_SAMPLES   = 11;\nconst uint32_t TIMEOUT_US  = 30000000UL;      // 30 s: fuse did not blow\n\nuint32_t results[N_SAMPLES];\nuint8_t  count = 0;\n\nvoid setup() {\n  Serial.begin(115200);                 // faster than 9600: prints hurt less\n  while (!Serial) { ; }\n  analogReference(DEFAULT);\n  Serial.println(F(\"Fuse rig ready. Apply current; detection is automatic.\"));\n  Serial.print(F(\"Trip threshold: \")); Serial.print(TRIP_COUNTS);\n  Serial.println(F(\" counts\"));\n}\n\n// Blocking measurement of one blow event. No I/O inside the timed region.\nbool measure_one(uint32_t *out) {\n  // --- arm: wait for current to establish -------------------------------- //\n  while (analogRead(PIN_SENSE) < ARM_COUNTS) { ; }\n  uint32_t t0 = micros();\n\n  // --- wait for the current to collapse ---------------------------------- //\n  while (analogRead(PIN_SENSE) >= TRIP_COUNTS) {\n    if (micros() - t0 > TIMEOUT_US) return false;\n  }\n  *out = micros() - t0;                 // wraps correctly on unsigned math\n  return true;\n}\n\nvoid report() {\n  // Sort a copy for the median. n is small; insertion sort is fine.\n  uint32_t s[N_SAMPLES];\n  for (uint8_t i = 0; i < count; i++) s[i] = results[i];\n  for (uint8_t i = 1; i < count; i++) {\n    uint32_t v = s[i]; int8_t j = i - 1;\n    while (j >= 0 && s[j] > v) { s[j+1] = s[j]; j--; }\n    s[j+1] = v;\n  }\n  uint32_t med = (count & 1) ? s[count/2] : (s[count/2 - 1] + s[count/2]) / 2;\n\n  Serial.println(F(\"--------------------------------\"));\n  Serial.print(F(\"n = \")); Serial.println(count);\n  for (uint8_t i = 0; i < count; i++) {\n    Serial.print(F(\"  \")); Serial.print(results[i] / 1000.0, 3);\n    Serial.println(F(\" ms\"));\n  }\n  Serial.print(F(\"min    \")); Serial.print(s[0] / 1000.0, 3);\n  Serial.println(F(\" ms\"));\n  Serial.print(F(\"median \")); Serial.print(med / 1000.0, 3);\n  Serial.println(F(\" ms\"));\n  Serial.print(F(\"max    \")); Serial.print(s[count-1] / 1000.0, 3);\n  Serial.println(F(\" ms\"));\n  Serial.print(F(\"spread \")); Serial.print((float)s[count-1] / (float)s[0], 2);\n  Serial.println(F(\"x  <-- report this, not a single reading\"));\n  Serial.println(F(\"--------------------------------\"));\n}\n\nvoid loop() {\n  if (count >= N_SAMPLES) { report(); count = 0; delay(5000); return; }\n\n  uint32_t us;\n  if (measure_one(&us)) {\n    results[count++] = us;              // print AFTER the timed region\n    Serial.print(F(\"blow \")); Serial.print(us / 1000.0, 3);\n    Serial.print(F(\" ms   (\")); Serial.print(count);\n    Serial.print(F(\"/\")); Serial.print(N_SAMPLES); Serial.println(F(\")\"));\n  } else {\n    Serial.println(F(\"TIMEOUT - fuse did not open. Raise the current.\"));\n  }\n  Serial.println(F(\"Fit the next fuse; measurement re-arms automatically.\"));\n  delay(2000);\n}\n",
+  "steep_rig": "// ===========================================================================\n//  Fuse time-to-blow rig  —  generated by KinematiK suspension/fuse_test.py\n//\n//  Fuse under test : s (15 A, ATO-15)\n//  Front end       : 1 mOhm shunt, gain 50, 10-bit ADC\n//                    full scale 100 A, 0.10 A per count\n//  Trip threshold  : 767 counts ~ 75 A (current collapse)\n//  Samples/level   : 11\n//  !! WARNING: 150 A saturates this front end (full scale 100 A). Lower the gain or the shunt.\n//\n//  Planned levels:\n//    2x =     30.0 A   expected 4789.5 ms\n//    3x =     45.0 A   expected 664.9 ms\n//    5x =     75.0 A   expected 55.3 ms\n//    10x =    150.0 A   expected 1.9 ms\n//\n//  TIMING NOTES — the reason this is not the proof-of-concept sketch:\n//    * The stop mark is the current collapsing past a threshold, NOT a\n//      keypress. Operator reaction time (~250 ms) is larger than most blow\n//      times worth measuring and biases every reading in one direction.\n//    * micros(), not millis(). A 1 ms tick is 20% of a 5 ms event.\n//    * Nothing prints between the marks. Serial.println() blocks; 30 chars\n//      at 9600 baud is 31 ms silently added to the measurement.\n//    * analogRead() on an AVR takes ~104 us, so detection latency is about\n//      0.1 ms. Events faster than ~2 ms need a comparator, not this loop.\n// ===========================================================================\n\nconst uint8_t  PIN_SENSE   = A0;\nconst uint16_t TRIP_COUNTS = 767;   // current-collapse threshold\nconst uint16_t ARM_COUNTS  = 383;   // must exceed this to arm\nconst uint8_t  N_SAMPLES   = 11;\nconst uint32_t TIMEOUT_US  = 30000000UL;      // 30 s: fuse did not blow\n\nuint32_t results[N_SAMPLES];\nuint8_t  count = 0;\n\nvoid setup() {\n  Serial.begin(115200);                 // faster than 9600: prints hurt less\n  while (!Serial) { ; }\n  analogReference(DEFAULT);\n  Serial.println(F(\"Fuse rig ready. Apply current; detection is automatic.\"));\n  Serial.print(F(\"Trip threshold: \")); Serial.print(TRIP_COUNTS);\n  Serial.println(F(\" counts\"));\n}\n\n// Blocking measurement of one blow event. No I/O inside the timed region.\nbool measure_one(uint32_t *out) {\n  // --- arm: wait for current to establish -------------------------------- //\n  while (analogRead(PIN_SENSE) < ARM_COUNTS) { ; }\n  uint32_t t0 = micros();\n\n  // --- wait for the current to collapse ---------------------------------- //\n  while (analogRead(PIN_SENSE) >= TRIP_COUNTS) {\n    if (micros() - t0 > TIMEOUT_US) return false;\n  }\n  *out = micros() - t0;                 // wraps correctly on unsigned math\n  return true;\n}\n\nvoid report() {\n  // Sort a copy for the median. n is small; insertion sort is fine.\n  uint32_t s[N_SAMPLES];\n  for (uint8_t i = 0; i < count; i++) s[i] = results[i];\n  for (uint8_t i = 1; i < count; i++) {\n    uint32_t v = s[i]; int8_t j = i - 1;\n    while (j >= 0 && s[j] > v) { s[j+1] = s[j]; j--; }\n    s[j+1] = v;\n  }\n  uint32_t med = (count & 1) ? s[count/2] : (s[count/2 - 1] + s[count/2]) / 2;\n\n  Serial.println(F(\"--------------------------------\"));\n  Serial.print(F(\"n = \")); Serial.println(count);\n  for (uint8_t i = 0; i < count; i++) {\n    Serial.print(F(\"  \")); Serial.print(results[i] / 1000.0, 3);\n    Serial.println(F(\" ms\"));\n  }\n  Serial.print(F(\"min    \")); Serial.print(s[0] / 1000.0, 3);\n  Serial.println(F(\" ms\"));\n  Serial.print(F(\"median \")); Serial.print(med / 1000.0, 3);\n  Serial.println(F(\" ms\"));\n  Serial.print(F(\"max    \")); Serial.print(s[count-1] / 1000.0, 3);\n  Serial.println(F(\" ms\"));\n  Serial.print(F(\"spread \")); Serial.print((float)s[count-1] / (float)s[0], 2);\n  Serial.println(F(\"x  <-- report this, not a single reading\"));\n  Serial.println(F(\"--------------------------------\"));\n}\n\nvoid loop() {\n  if (count >= N_SAMPLES) { report(); count = 0; delay(5000); return; }\n\n  uint32_t us;\n  if (measure_one(&us)) {\n    results[count++] = us;              // print AFTER the timed region\n    Serial.print(F(\"blow \")); Serial.print(us / 1000.0, 3);\n    Serial.print(F(\" ms   (\")); Serial.print(count);\n    Serial.print(F(\"/\")); Serial.print(N_SAMPLES); Serial.println(F(\")\"));\n  } else {\n    Serial.println(F(\"TIMEOUT - fuse did not open. Raise the current.\"));\n  }\n  Serial.println(F(\"Fit the next fuse; measurement re-arms automatically.\"));\n  delay(2000);\n}\n"
+ },
+ "sketch_kw": [
+  "// ===========================================================================\n//  Fuse time-to-blow rig  —  generated by KinematiK suspension/fuse_test.py\n//\n//  Fuse under test : s (15 A, ATO-15)\n//  Front end       : 0.5 mOhm shunt, gain 20, 12-bit ADC\n//                    full scale 330 A, 0.08 A per count\n//  Trip threshold  : 558 counts ~ 45 A (current collapse)\n//  Samples/level   : 11\n//\n//  Planned levels:\n//    2x =     30.0 A   expected 4789.5 ms\n//    3x =     45.0 A   expected 664.9 ms\n//    5x =     75.0 A   expected 55.3 ms\n//    10x =    150.0 A   expected 1.9 ms\n//\n//  TIMING NOTES — the reason this is not the proof-of-concept sketch:\n//    * The stop mark is the current collapsing past a threshold, NOT a\n//      keypress. Operator reaction time (~250 ms) is larger than most blow\n//      times worth measuring and biases every reading in one direction.\n//    * micros(), not millis(). A 1 ms tick is 20% of a 5 ms event.\n//    * Nothing prints between the marks. Serial.println() blocks; 30 chars\n//      at 9600 baud is 31 ms silently added to the measurement.\n//    * analogRead() on an AVR takes ~104 us, so detection latency is about\n//      0.1 ms. Events faster than ~2 ms need a comparator, not this loop.\n// ===========================================================================\n\nconst uint8_t  PIN_SENSE   = A0;\nconst uint16_t TRIP_COUNTS = 558;   // current-collapse threshold\nconst uint16_t ARM_COUNTS  = 279;   // must exceed this to arm\nconst uint8_t  N_SAMPLES   = 11;\nconst uint32_t TIMEOUT_US  = 30000000UL;      // 30 s: fuse did not blow\n\nuint32_t results[N_SAMPLES];\nuint8_t  count = 0;\n\nvoid setup() {\n  Serial.begin(115200);                 // faster than 9600: prints hurt less\n  while (!Serial) { ; }\n  analogReference(DEFAULT);\n  Serial.println(F(\"Fuse rig ready. Apply current; detection is automatic.\"));\n  Serial.print(F(\"Trip threshold: \")); Serial.print(TRIP_COUNTS);\n  Serial.println(F(\" counts\"));\n}\n\n// Blocking measurement of one blow event. No I/O inside the timed region.\nbool measure_one(uint32_t *out) {\n  // --- arm: wait for current to establish -------------------------------- //\n  while (analogRead(PIN_SENSE) < ARM_COUNTS) { ; }\n  uint32_t t0 = micros();\n\n  // --- wait for the current to collapse ---------------------------------- //\n  while (analogRead(PIN_SENSE) >= TRIP_COUNTS) {\n    if (micros() - t0 > TIMEOUT_US) return false;\n  }\n  *out = micros() - t0;                 // wraps correctly on unsigned math\n  return true;\n}\n\nvoid report() {\n  // Sort a copy for the median. n is small; insertion sort is fine.\n  uint32_t s[N_SAMPLES];\n  for (uint8_t i = 0; i < count; i++) s[i] = results[i];\n  for (uint8_t i = 1; i < count; i++) {\n    uint32_t v = s[i]; int8_t j = i - 1;\n    while (j >= 0 && s[j] > v) { s[j+1] = s[j]; j--; }\n    s[j+1] = v;\n  }\n  uint32_t med = (count & 1) ? s[count/2] : (s[count/2 - 1] + s[count/2]) / 2;\n\n  Serial.println(F(\"--------------------------------\"));\n  Serial.print(F(\"n = \")); Serial.println(count);\n  for (uint8_t i = 0; i < count; i++) {\n    Serial.print(F(\"  \")); Serial.print(results[i] / 1000.0, 3);\n    Serial.println(F(\" ms\"));\n  }\n  Serial.print(F(\"min    \")); Serial.print(s[0] / 1000.0, 3);\n  Serial.println(F(\" ms\"));\n  Serial.print(F(\"median \")); Serial.print(med / 1000.0, 3);\n  Serial.println(F(\" ms\"));\n  Serial.print(F(\"max    \")); Serial.print(s[count-1] / 1000.0, 3);\n  Serial.println(F(\" ms\"));\n  Serial.print(F(\"spread \")); Serial.print((float)s[count-1] / (float)s[0], 2);\n  Serial.println(F(\"x  <-- report this, not a single reading\"));\n  Serial.println(F(\"--------------------------------\"));\n}\n\nvoid loop() {\n  if (count >= N_SAMPLES) { report(); count = 0; delay(5000); return; }\n\n  uint32_t us;\n  if (measure_one(&us)) {\n    results[count++] = us;              // print AFTER the timed region\n    Serial.print(F(\"blow \")); Serial.print(us / 1000.0, 3);\n    Serial.print(F(\" ms   (\")); Serial.print(count);\n    Serial.print(F(\"/\")); Serial.print(N_SAMPLES); Serial.println(F(\")\"));\n  } else {\n    Serial.println(F(\"TIMEOUT - fuse did not open. Raise the current.\"));\n  }\n  Serial.println(F(\"Fit the next fuse; measurement re-arms automatically.\"));\n  delay(2000);\n}\n",
+  "// ===========================================================================\n//  Fuse time-to-blow rig  —  generated by KinematiK suspension/fuse_test.py\n//\n//  Fuse under test : s (15 A, ATO-15)\n//  Front end       : 10 mOhm shunt, gain 100, 10-bit ADC\n//                    full scale 5 A, 0.00 A per count\n//  Trip threshold  : 1023 counts ~ 75 A (current collapse)\n//  Samples/level   : 11\n//  !! WARNING: 150 A saturates this front end (full scale 5 A). Lower the gain or the shunt.\n//\n//  Planned levels:\n//    2x =     30.0 A   expected 4789.5 ms\n//    3x =     45.0 A   expected 664.9 ms\n//    5x =     75.0 A   expected 55.3 ms\n//    10x =    150.0 A   expected 1.9 ms\n//\n//  TIMING NOTES — the reason this is not the proof-of-concept sketch:\n//    * The stop mark is the current collapsing past a threshold, NOT a\n//      keypress. Operator reaction time (~250 ms) is larger than most blow\n//      times worth measuring and biases every reading in one direction.\n//    * micros(), not millis(). A 1 ms tick is 20% of a 5 ms event.\n//    * Nothing prints between the marks. Serial.println() blocks; 30 chars\n//      at 9600 baud is 31 ms silently added to the measurement.\n//    * analogRead() on an AVR takes ~104 us, so detection latency is about\n//      0.1 ms. Events faster than ~2 ms need a comparator, not this loop.\n// ===========================================================================\n\nconst uint8_t  PIN_SENSE   = A0;\nconst uint16_t TRIP_COUNTS = 1023;   // current-collapse threshold\nconst uint16_t ARM_COUNTS  = 511;   // must exceed this to arm\nconst uint8_t  N_SAMPLES   = 11;\nconst uint32_t TIMEOUT_US  = 30000000UL;      // 30 s: fuse did not blow\n\nuint32_t results[N_SAMPLES];\nuint8_t  count = 0;\n\nvoid setup() {\n  Serial.begin(115200);                 // faster than 9600: prints hurt less\n  while (!Serial) { ; }\n  analogReference(DEFAULT);\n  Serial.println(F(\"Fuse rig ready. Apply current; detection is automatic.\"));\n  Serial.print(F(\"Trip threshold: \")); Serial.print(TRIP_COUNTS);\n  Serial.println(F(\" counts\"));\n}\n\n// Blocking measurement of one blow event. No I/O inside the timed region.\nbool measure_one(uint32_t *out) {\n  // --- arm: wait for current to establish -------------------------------- //\n  while (analogRead(PIN_SENSE) < ARM_COUNTS) { ; }\n  uint32_t t0 = micros();\n\n  // --- wait for the current to collapse ---------------------------------- //\n  while (analogRead(PIN_SENSE) >= TRIP_COUNTS) {\n    if (micros() - t0 > TIMEOUT_US) return false;\n  }\n  *out = micros() - t0;                 // wraps correctly on unsigned math\n  return true;\n}\n\nvoid report() {\n  // Sort a copy for the median. n is small; insertion sort is fine.\n  uint32_t s[N_SAMPLES];\n  for (uint8_t i = 0; i < count; i++) s[i] = results[i];\n  for (uint8_t i = 1; i < count; i++) {\n    uint32_t v = s[i]; int8_t j = i - 1;\n    while (j >= 0 && s[j] > v) { s[j+1] = s[j]; j--; }\n    s[j+1] = v;\n  }\n  uint32_t med = (count & 1) ? s[count/2] : (s[count/2 - 1] + s[count/2]) / 2;\n\n  Serial.println(F(\"--------------------------------\"));\n  Serial.print(F(\"n = \")); Serial.println(count);\n  for (uint8_t i = 0; i < count; i++) {\n    Serial.print(F(\"  \")); Serial.print(results[i] / 1000.0, 3);\n    Serial.println(F(\" ms\"));\n  }\n  Serial.print(F(\"min    \")); Serial.print(s[0] / 1000.0, 3);\n  Serial.println(F(\" ms\"));\n  Serial.print(F(\"median \")); Serial.print(med / 1000.0, 3);\n  Serial.println(F(\" ms\"));\n  Serial.print(F(\"max    \")); Serial.print(s[count-1] / 1000.0, 3);\n  Serial.println(F(\" ms\"));\n  Serial.print(F(\"spread \")); Serial.print((float)s[count-1] / (float)s[0], 2);\n  Serial.println(F(\"x  <-- report this, not a single reading\"));\n  Serial.println(F(\"--------------------------------\"));\n}\n\nvoid loop() {\n  if (count >= N_SAMPLES) { report(); count = 0; delay(5000); return; }\n\n  uint32_t us;\n  if (measure_one(&us)) {\n    results[count++] = us;              // print AFTER the timed region\n    Serial.print(F(\"blow \")); Serial.print(us / 1000.0, 3);\n    Serial.print(F(\" ms   (\")); Serial.print(count);\n    Serial.print(F(\"/\")); Serial.print(N_SAMPLES); Serial.println(F(\")\"));\n  } else {\n    Serial.println(F(\"TIMEOUT - fuse did not open. Raise the current.\"));\n  }\n  Serial.println(F(\"Fit the next fuse; measurement re-arms automatically.\"));\n  delay(2000);\n}\n",
+  "// ===========================================================================\n//  Fuse time-to-blow rig  —  generated by KinematiK suspension/fuse_test.py\n//\n//  Fuse under test : main GLV fuse (0 A)\n//  Front end       : 1 mOhm shunt, gain 50, 10-bit ADC\n//                    full scale 100 A, 0.10 A per count\n//  Trip threshold  : 0 counts ~ 0 A (current collapse)\n//  Samples/level   : 11\n//\n//  Planned levels:\n//    1x =      0.0 A   expected ?\n//    2x =      0.0 A   expected ?\n//\n//  TIMING NOTES — the reason this is not the proof-of-concept sketch:\n//    * The stop mark is the current collapsing past a threshold, NOT a\n//      keypress. Operator reaction time (~250 ms) is larger than most blow\n//      times worth measuring and biases every reading in one direction.\n//    * micros(), not millis(). A 1 ms tick is 20% of a 5 ms event.\n//    * Nothing prints between the marks. Serial.println() blocks; 30 chars\n//      at 9600 baud is 31 ms silently added to the measurement.\n//    * analogRead() on an AVR takes ~104 us, so detection latency is about\n//      0.1 ms. Events faster than ~2 ms need a comparator, not this loop.\n// ===========================================================================\n\nconst uint8_t  PIN_SENSE   = A0;\nconst uint16_t TRIP_COUNTS = 0;   // current-collapse threshold\nconst uint16_t ARM_COUNTS  = 1;   // must exceed this to arm\nconst uint8_t  N_SAMPLES   = 11;\nconst uint32_t TIMEOUT_US  = 30000000UL;      // 30 s: fuse did not blow\n\nuint32_t results[N_SAMPLES];\nuint8_t  count = 0;\n\nvoid setup() {\n  Serial.begin(115200);                 // faster than 9600: prints hurt less\n  while (!Serial) { ; }\n  analogReference(DEFAULT);\n  Serial.println(F(\"Fuse rig ready. Apply current; detection is automatic.\"));\n  Serial.print(F(\"Trip threshold: \")); Serial.print(TRIP_COUNTS);\n  Serial.println(F(\" counts\"));\n}\n\n// Blocking measurement of one blow event. No I/O inside the timed region.\nbool measure_one(uint32_t *out) {\n  // --- arm: wait for current to establish -------------------------------- //\n  while (analogRead(PIN_SENSE) < ARM_COUNTS) { ; }\n  uint32_t t0 = micros();\n\n  // --- wait for the current to collapse ---------------------------------- //\n  while (analogRead(PIN_SENSE) >= TRIP_COUNTS) {\n    if (micros() - t0 > TIMEOUT_US) return false;\n  }\n  *out = micros() - t0;                 // wraps correctly on unsigned math\n  return true;\n}\n\nvoid report() {\n  // Sort a copy for the median. n is small; insertion sort is fine.\n  uint32_t s[N_SAMPLES];\n  for (uint8_t i = 0; i < count; i++) s[i] = results[i];\n  for (uint8_t i = 1; i < count; i++) {\n    uint32_t v = s[i]; int8_t j = i - 1;\n    while (j >= 0 && s[j] > v) { s[j+1] = s[j]; j--; }\n    s[j+1] = v;\n  }\n  uint32_t med = (count & 1) ? s[count/2] : (s[count/2 - 1] + s[count/2]) / 2;\n\n  Serial.println(F(\"--------------------------------\"));\n  Serial.print(F(\"n = \")); Serial.println(count);\n  for (uint8_t i = 0; i < count; i++) {\n    Serial.print(F(\"  \")); Serial.print(results[i] / 1000.0, 3);\n    Serial.println(F(\" ms\"));\n  }\n  Serial.print(F(\"min    \")); Serial.print(s[0] / 1000.0, 3);\n  Serial.println(F(\" ms\"));\n  Serial.print(F(\"median \")); Serial.print(med / 1000.0, 3);\n  Serial.println(F(\" ms\"));\n  Serial.print(F(\"max    \")); Serial.print(s[count-1] / 1000.0, 3);\n  Serial.println(F(\" ms\"));\n  Serial.print(F(\"spread \")); Serial.print((float)s[count-1] / (float)s[0], 2);\n  Serial.println(F(\"x  <-- report this, not a single reading\"));\n  Serial.println(F(\"--------------------------------\"));\n}\n\nvoid loop() {\n  if (count >= N_SAMPLES) { report(); count = 0; delay(5000); return; }\n\n  uint32_t us;\n  if (measure_one(&us)) {\n    results[count++] = us;              // print AFTER the timed region\n    Serial.print(F(\"blow \")); Serial.print(us / 1000.0, 3);\n    Serial.print(F(\" ms   (\")); Serial.print(count);\n    Serial.print(F(\"/\")); Serial.print(N_SAMPLES); Serial.println(F(\")\"));\n  } else {\n    Serial.println(F(\"TIMEOUT - fuse did not open. Raise the current.\"));\n  }\n  Serial.println(F(\"Fit the next fuse; measurement re-arms automatically.\"));\n  delay(2000);\n}\n"
+ ]
+}

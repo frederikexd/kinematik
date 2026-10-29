@@ -43,6 +43,7 @@ from enum import Enum
 from collections.abc import Sequence
 
 import numpy as np
+from ._num import vec as _vec
 
 
 # --------------------------------------------------------------------------- #
@@ -112,8 +113,8 @@ def _motor_wheel_force(motor_map, v_ms: float, final_drive: float,
     v = max(v_ms, 0.05)
     r = max(wheel_r, 0.05)
     rpm = (v / r) * final_drive * 60.0 / (2.0 * math.pi)
-    rp = np.asarray(motor_map._rpm, float)
-    tq = np.asarray(motor_map._t, float)
+    rp = _vec(motor_map._rpm)
+    tq = _vec(motor_map._t)
     if rpm <= rp[0]:
         t_motor = float(tq[0])
     elif rpm >= rp[-1]:
@@ -125,7 +126,7 @@ def _motor_wheel_force(motor_map, v_ms: float, final_drive: float,
 
 
 def _redline_rpm(motor_map) -> float:
-    return float(np.asarray(motor_map._rpm, float)[-1])
+    return float(_vec(motor_map._rpm)[-1])
 
 
 def _speed_at_redline_kmh(motor_map, final_drive: float, wheel_r: float) -> float:

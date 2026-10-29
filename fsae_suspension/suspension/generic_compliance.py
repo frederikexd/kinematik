@@ -77,11 +77,12 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from . import loadpath as lp
+from .kinematics import _vec
 from .topology import Link
 
 
 def _v(x):
-    return np.asarray(x, float).reshape(3)
+    return _vec(x).reshape(3)
 
 
 @dataclass
@@ -150,8 +151,8 @@ def _pose_sensitivities(mech, links, cp_name, R0, eps_mm):
         cp_p = _v(plus["positions"][cp_name])
         cp_m = _v(minus["positions"][cp_name])
         b_vecs[label] = (cp_p - cp_m) / (2 * eps_mm)
-        r_p = _rotvec(np.asarray(plus["carrier_R"], float) @ R0.T)
-        r_m = _rotvec(np.asarray(minus["carrier_R"], float) @ R0.T)
+        r_p = _rotvec(_vec(plus["carrier_R"]) @ R0.T)
+        r_m = _rotvec(_vec(minus["carrier_R"]) @ R0.T)
         r_vecs[label] = (r_p - r_m) / (2 * eps_mm)
     return b_vecs, r_vecs
 
@@ -177,7 +178,7 @@ def solve_generic_compliance(kin, load: lp.WheelLoad, stiffness_for,
 
     base = mech.solve(0.0)
     pos0 = base["positions"]
-    R0 = np.asarray(base["carrier_R"], float)     # static reference orientation
+    R0 = _vec(base["carrier_R"])     # static reference orientation
     cp_name = mech.contact_patch
 
     links = _link_constraints(mech)
@@ -199,10 +200,10 @@ def solve_generic_compliance(kin, load: lp.WheelLoad, stiffness_for,
     total_delta = {label: 0.0 for label, *_ in links}
     m_forces, m_defl, m_k, m_jdefl = {}, {}, {}, {}
     camber_deg = toe_deg = cp_shift = 0.0
-    well_conditioned = True
+    ill = []                                   # members the axial model cannot carry (see the guard below)
     it = 0
 
-    d_cam = d_toe = float("inf")
+    settled = False  # pragma: no mutate (None reads the same through bool())
     for it in range(1, max_iter + 1):
         # (a) set every held length to its CURRENT deflected value and solve the
         # actual deflected pose. On iteration 1 total_delta is zero (static pose);
@@ -212,7 +213,7 @@ def solve_generic_compliance(kin, load: lp.WheelLoad, stiffness_for,
         cur = mech.solve(0.0)
         cur_pos = cur["positions"]
         cur_cp = _v(cur_pos[cp_name])
-        cur_R = np.asarray(cur["carrier_R"], float)
+        cur_R = _vec(cur["carrier_R"])
 
         # read out compliance at THIS deflected pose (relative to the static ref).
         rot = _rotvec(cur_R @ R0.T)
@@ -229,7 +230,7 @@ def solve_generic_compliance(kin, load: lp.WheelLoad, stiffness_for,
         # from the current force (non-linear joints use their tangent give here).
         new_delta = {}
         m_forces, m_defl, m_k, m_jdefl = {}, {}, {}, {}
-        well_conditioned = True
+        ill = []
         for label, a, b, c in links:
             bvec = b_vecs[label]
             T = float(F @ bvec)                 # axial force, +tension
@@ -249,9 +250,12 @@ def solve_generic_compliance(kin, load: lp.WheelLoad, stiffness_for,
             # a member whose stretch barely locates the wheel gives |b| >> 1 and
             # would explode an axial model. Keep it out of the deflected geometry
             # and the read-out, and flag low confidence.
-            if (np.linalg.norm(bvec) > B_SINGULAR
-                    or np.linalg.norm(r_vecs[label]) > 1.0):
-                well_conditioned = False
+            # pragma: no mutate start (float thresholds: > and >= differ only on exact equality)
+            b_big = np.linalg.norm(bvec) > B_SINGULAR
+            r_big = np.linalg.norm(r_vecs[label]) > 1.0
+            # pragma: no mutate end
+            if b_big or r_big:
+                ill.append(label)
                 new_delta[label] = 0.0
                 continue
             new_delta[label] = delta
@@ -262,7 +266,9 @@ def solve_generic_compliance(kin, load: lp.WheelLoad, stiffness_for,
         camber_deg, toe_deg, cp_shift = new_camber, new_toe, new_cp_shift
         total_delta = new_delta
 
-        if it > 1 and max(d_cam, d_toe) < tol_deg:
+        # pass 1 reads the unloaded pose, so only a later pass that agrees with the one before it is settled
+        if it > 1 and max(d_cam, d_toe) < tol_deg:  # pragma: no mutate (float threshold: < and <= differ only on equality)
+            settled = True
             break
 
     # restore the mechanism to its rest lengths so the object is reusable.
@@ -270,7 +276,6 @@ def solve_generic_compliance(kin, load: lp.WheelLoad, stiffness_for,
         c.length = L0[label]
     mech.solve(0.0)
 
-    loop_converged = it < max_iter or max(d_cam, d_toe) < tol_deg
     return GenericComplianceResult(
         load=load,
         compliance_toe=toe_deg,
@@ -280,8 +285,7 @@ def solve_generic_compliance(kin, load: lp.WheelLoad, stiffness_for,
         member_deflection=m_defl,
         member_stiffness=m_k,
         member_joint_deflection=m_jdefl,
-        well_conditioned=bool(well_conditioned),
-        converged=bool(well_conditioned and loop_converged),
+        well_conditioned=not ill,
+        converged=not ill and settled,
         iterations=int(it),
-        residual_N=0.0,
     )

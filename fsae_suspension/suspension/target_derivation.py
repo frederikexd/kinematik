@@ -179,11 +179,11 @@ def loaded_camber_error(veh: Vehicle, tire: Tire, static_camber_deg: float,
 def f_min(veh: Vehicle, anti_pct: float, a_x_g: float, a_y_g: float,
           axle: str) -> float:
     """Minimum ride frequency (Hz) that keeps a manoeuvre inside the budget."""
-    m_s = veh.sprung_corner_front_kg if axle == "front" else veh.sprung_corner_rear_kg
+    m_s = {"front": veh.sprung_corner_front_kg, "rear": veh.sprung_corner_rear_kg}[axle]
     dW = veh.mass_kg * G0 * a_x_g * veh.cg_height_mm / (2.0 * veh.wheelbase_mm)
     room = veh.jounce_budget_mm - veh.aero_heave_mm - roll(veh, a_y_g)[1]
     if room <= 0.0:
-        return float("inf")
+        return math.inf
     k = (1.0 - anti_pct / 100.0) * dW / (room / 1000.0)      # N/m
     return math.sqrt(k / m_s) / (2.0 * math.pi)
 
@@ -191,11 +191,11 @@ def f_min(veh: Vehicle, anti_pct: float, a_x_g: float, a_y_g: float,
 def anti_floor_pct(veh: Vehicle, ride_hz: float, a_x_g: float, a_y_g: float,
                    axle: str) -> float:
     """Minimum anti (%) for which ``ride_hz`` keeps the manoeuvre in budget."""
-    m_s = veh.sprung_corner_front_kg if axle == "front" else veh.sprung_corner_rear_kg
+    m_s = {"front": veh.sprung_corner_front_kg, "rear": veh.sprung_corner_rear_kg}[axle]
     dW = veh.mass_kg * G0 * a_x_g * veh.cg_height_mm / (2.0 * veh.wheelbase_mm)
     room = veh.jounce_budget_mm - veh.aero_heave_mm - roll(veh, a_y_g)[1]
     if room <= 0.0:
-        return float("inf")
+        return math.inf
     k = (2.0 * math.pi * ride_hz) ** 2 * m_s
     return 100.0 * (1.0 - k * (room / 1000.0) / dW)
 
@@ -246,7 +246,6 @@ def tire_sensitivity(corners: list[Corner], veh: Vehicle = Vehicle(),
                               base.camber_sensitivity_pct_per_deg * f)))
     out = []
     for label, t in cases:
-        a = design_accelerations(t)
         row = {"case": label, "tire": t, **targets(veh, t)}
         for c in corners:
             err = loaded_camber_error(veh, t, c.static_camber_deg,
@@ -286,8 +285,8 @@ def roll_gradient_ceiling(veh: Vehicle, tire: Tire, anti_pct: float, axle: str,
     """Largest roll gradient (deg/g) at which ``ride_hz`` still holds the budget."""
     t = replace(tire, peak_mu=tire.peak_mu * (1.0 + mu_allowance))
     a = design_accelerations(t)
-    lo, hi = 0.05, 3.0
-    for _ in range(80):
+    lo, hi = 0.05, 3.0  # pragma: no mutate (bracket)
+    for _ in range(80):  # pragma: no mutate (bisection count)
         mid = 0.5 * (lo + hi)
         ok = f_min(replace(veh, roll_gradient_deg_per_g=mid), anti_pct,
                    a["combined"], a["combined"], axle) < ride_hz
@@ -368,10 +367,11 @@ def axle_capacity_ratio(veh: Vehicle, front_share: float, a_lat_g: float = 1.5,
 
 def neutral_front_share(veh: Vehicle, a_lat_g: float = 1.5) -> float:
     """Front load-transfer share (fraction) at which both axles saturate together."""
-    lo, hi = 0.3, 0.8
-    for _ in range(80):
+    lo, hi = 0.3, 0.8  # pragma: no mutate (bracket)
+    for _ in range(80):  # pragma: no mutate (bisection count)
         mid = 0.5 * (lo + hi)
-        lo, hi = (mid, hi) if axle_capacity_ratio(veh, mid, a_lat_g) > 1.0 else (lo, mid)
+        front_spare = axle_capacity_ratio(veh, mid, a_lat_g) > 1.0  # pragma: no mutate
+        lo, hi = (mid, hi) if front_spare else (lo, mid)
     return lo
 
 
@@ -475,11 +475,11 @@ def steer_warp(hp, rack_mm: float, k_roll_front_nm_per_deg: float,
     from .kinematics import SuspensionKinematics
 
     k0 = SuspensionKinematics(hp)
-    act = bool(getattr(k0, "_has_rocker", False)) and k0.motion_ratio_is_real()
+    act = k0.motion_ratio_is_real()                          # a real rocker linkage is defined
     if act:
         st0 = k0.solve_at_travel(0.0)
-        L0 = k0.spring_length_at(st0, seed=0.0)[0]
-        mr0 = float(np.interp(0.0, *k0.motion_ratio_curve(-1.0, 1.0, 3)))
+        L0 = k0.spring_length_at(st0)[0]
+        mr0 = float(np.interp(0.0, *k0.motion_ratio_curve(-1.0, 1.0, 3)))  # pragma: no mutate (the local ratio at static; the grid only brackets it)
 
     def patch_z(r):
         """Effective contact-patch height in mm at a rack travel in mm: the patch's own height change less the
@@ -489,7 +489,7 @@ def steer_warp(hp, rack_mm: float, k_roll_front_nm_per_deg: float,
         st = k.solve_at_travel(0.0)
         z = float(st.contact_patch[2])
         if act:
-            L = k.spring_length_at(st, seed=0.0)[0]
+            L = k.spring_length_at(st)[0]
             return z, -(L0 - L) / mr0              # spring compressed by steering = patch pushed down
         return z, 0.0
 

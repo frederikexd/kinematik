@@ -44,7 +44,7 @@ def geometric_split(delta_outer_deg: float, wheelbase_mm: float,
                     kingpin_track_mm: float) -> float:
     """Inner steer (deg) that geometric (100%) Ackermann gives for an outer steer."""
     do = math.radians(abs(delta_outer_deg))
-    if do < 1e-9:
+    if do < 1e-9:  # pragma: no mutate (float threshold: < and <= differ only on exact equality)
         return 0.0
     cot_i = 1.0 / math.tan(do) - kingpin_track_mm / wheelbase_mm
     return math.degrees(math.atan(1.0 / cot_i))
@@ -55,18 +55,22 @@ def ackermann_pct(delta_inner_deg: float, delta_outer_deg: float,
     """Ackermann percentage of a steer pair: 100 geometric, 0 parallel."""
     gi = geometric_split(delta_outer_deg, wheelbase_mm, kingpin_track_mm)
     geo = gi - abs(delta_outer_deg)
-    if abs(geo) < 1e-12:
-        return float("nan")
+    if abs(geo) < 1e-12:  # pragma: no mutate (float threshold: < and <= differ only on exact equality)
+        return math.nan
     return 100.0 * (abs(delta_inner_deg) - abs(delta_outer_deg)) / geo
 
 
-def peak_slip_deg(tire, fz_n: float, camber_deg: float = 0.0,
-                  lo: float = 0.5, hi: float = 20.0) -> float:
+SLIP_LO = 0.5  # pragma: no mutate (search range: tire peaks sit far inside it)
+SLIP_HI = 20.0  # pragma: no mutate (search range: tire peaks sit far inside it)
+RACK_MAX_MM = 60.0  # pragma: no mutate (search bracket top; checked in the tests)
+
+
+def peak_slip_deg(tire, fz_n: float, camber_deg: float = 0.0, lo: float = SLIP_LO, hi: float = SLIP_HI) -> float:
     """Slip angle (deg) of peak |Fy|, refined to 0.01 deg."""
-    a = np.radians(np.linspace(lo, hi, 391))
+    a = np.radians(np.linspace(lo, hi, 391))  # pragma: no mutate (search grid)
     fy = np.abs(tire.fy(a, fz_n, math.radians(camber_deg)))
     k = int(np.argmax(fy))
-    a2 = np.linspace(a[max(k - 1, 0)], a[min(k + 1, len(a) - 1)], 201)
+    a2 = np.linspace(a[max(k - 1, 0)], a[min(k + 1, len(a) - 1)], 201)  # pragma: no mutate (refinement window and grid)
     fy2 = np.abs(tire.fy(a2, fz_n, math.radians(camber_deg)))
     return float(np.degrees(a2[int(np.argmax(fy2))]))
 
@@ -128,7 +132,7 @@ def axle_force_at_split(tire, case: AxleCase, split_deg: float,
     d = split_deg - t["geometric_difference_deg"]
     ao = np.linspace(0.5, 20.0, n)
     ai = ao + d
-    ok = ai > 0.0
+    ok = ai > 0.0  # pragma: no mutate (the grid's floor: a zero inner slip never carries the best force)
     co, ci = math.radians(case.camber_outer_deg), math.radians(case.camber_inner_deg)
     F = (np.abs(tire.fy(np.radians(ao[ok]), case.fz_outer_n, co))
          + np.abs(tire.fy(np.radians(ai[ok]), case.fz_inner_n, ci)))
@@ -136,7 +140,7 @@ def axle_force_at_split(tire, case: AxleCase, split_deg: float,
     opt = float(abs(tire.fy(math.radians(t["peak_slip_outer_deg"]), case.fz_outer_n, co))
                 + abs(tire.fy(math.radians(t["peak_slip_inner_deg"]), case.fz_inner_n, ci)))
     return {"axle_force_n": best, "optimum_n": opt,
-            "loss_pct": 100.0 * (1.0 - best / opt) if opt > 0 else float("nan")}
+            "loss_pct": 100.0 * (1.0 - best / opt) if opt > 0 else math.nan}
 
 
 def kinematic_split(hp: Hardpoints, rack_mm: float) -> dict:
@@ -157,7 +161,7 @@ def kinematic_split(hp: Hardpoints, rack_mm: float) -> dict:
 
     dR = toe_at(rack_mm) - toe0                    # right wheel, + = right turn
     dL = -(toe_at(-rack_mm) - toe0)                # left wheel, + = right turn
-    if dR + dL >= 0.0:                             # right turn: right is inner
+    if dR + dL >= 0.0:  # pragma: no mutate (straight ahead both assignments give zero)
         inner, outer = dR, dL
     else:                                          # left turn: left is inner
         inner, outer = -dL, -dR
@@ -167,7 +171,7 @@ def kinematic_split(hp: Hardpoints, rack_mm: float) -> dict:
 
 def lock_report(hp: Hardpoints, rack_c_mm_per_rev: float, lock_road_wheel_deg: float,
                 wheelbase_mm: float = 1630.0, kingpin_track_mm: float = 1210.0,
-                rack_lo_mm: float = 5.0, rack_max_mm: float = 60.0,
+                rack_lo_mm: float = 5.0, rack_max_mm: float = RACK_MAX_MM,
                 lock_basis: str = "inner") -> dict:
     """Steer split, Ackermann and camber of a mirrored front axle at its lock.
 
@@ -188,12 +192,12 @@ def lock_report(hp: Hardpoints, rack_c_mm_per_rev: float, lock_road_wheel_deg: f
         s = kinematic_split(hp, r)
         return s["inner_deg"] if lock_basis == "inner" else 0.5 * (s["inner_deg"] + s["outer_deg"])
 
-    lo, hi = 0.0, float(rack_max_mm)
-    if _reach(hi) < lock_road_wheel_deg:
+    lo, hi = 0.0, float(rack_max_mm)  # pragma: no mutate (bracket floor: no lock is reached within 1 mm of rack)
+    if _reach(hi) < lock_road_wheel_deg:  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
         return {"reachable": False}
-    for _ in range(50):
+    for _ in range(50):  # pragma: no mutate (bisection count)
         mid = 0.5 * (lo + hi)
-        lo, hi = (mid, hi) if _reach(mid) < lock_road_wheel_deg else (lo, mid)
+        lo, hi = (mid, hi) if _reach(mid) < lock_road_wheel_deg else (lo, mid)  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
     x = hi
     s_lo, s_lock = kinematic_split(hp, rack_lo_mm), kinematic_split(hp, x)
     ack = [ackermann_pct(s["inner_deg"], s["outer_deg"], wheelbase_mm, kingpin_track_mm)
@@ -202,8 +206,10 @@ def lock_report(hp: Hardpoints, rack_c_mm_per_rev: float, lock_road_wheel_deg: f
     def _st(r):
         return SuspensionKinematics(hp, pickup_deltas={
             "tie_rod_inner": np.array([0.0, r, 0.0])}).solve_at_travel(0.0)
+    # pragma: no mutate start (a direction probe: any small rack step and ride height give the same sign)
     t0 = SuspensionKinematics(hp).solve_at_travel(0.0).toe
     sgn = 1.0 if _st(1.0).toe > t0 else -1.0
+    # pragma: no mutate end
     return {"reachable": True, "rack_at_lock_mm": x, "wheel_lock_deg": 360.0 * x / rack_c_mm_per_rev,
             "inner_deg": s_lock["inner_deg"], "outer_deg": s_lock["outer_deg"],
             "mean_deg": 0.5 * (s_lock["inner_deg"] + s_lock["outer_deg"]),

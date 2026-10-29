@@ -30,6 +30,7 @@ Forces in N, lengths in mm, stresses in MPa, accelerations in g.
 """
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from functools import lru_cache
 from types import SimpleNamespace
@@ -179,7 +180,7 @@ class LinkStructure:
         """Lowest buckling or yield factor of any link (dimensionless)."""
         mm = self.margins(hp)
         if not mm:
-            return float("nan")
+            return math.nan
         return float(min(min(v["fos_buckling"], v["fos_yield"]) for v in mm.values()))
 
     def to_dict(self) -> dict:
@@ -247,7 +248,7 @@ class RockerBearingWall:
         try:
             return float(min(r["s0"] for r in self.rows(hp)))
         except ValueError:
-            return float("nan")
+            return math.nan
 
     def to_dict(self) -> dict:
         """Serialise the spec: lengths in mm, loads in N, mass in kg."""

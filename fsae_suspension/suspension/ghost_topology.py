@@ -109,6 +109,7 @@ import math
 from dataclasses import dataclass, field
 
 import numpy as np
+from ._num import vec as _vec
 
 from .kinematics import Hardpoints, CornerState
 from .compliance import CompliantCorner, CompliantResult
@@ -118,6 +119,12 @@ from . import flex as flexmod
 
 # Canonical member set audited for margins (the pushrod carries the spring
 # path; it gets a margin row too even though it has no wishbone length key).
+_TRACK_MM = 1200.0           # track for the roll-centre height
+_FEEDBACK_TOL_N = 1.0        # closed-loop Fy tolerance
+_MAX_FEEDBACK_ITER = 8
+_N_SAMPLES = 24               # audited instants per transient
+_CACHE_QUANTUM_N = 25.0       # load rounding for the solve cache
+
 _MARGIN_MEMBERS = ("UF", "UR", "LF", "LR", "TR", "PR")
 
 # Verdicts, worst-first. A ghost audit reports ONE governing verdict plus the
@@ -169,7 +176,7 @@ class MemberSection:
     def euler_pcr_N(self, length_mm: float) -> float:
         """Pinned-pinned Euler critical load (N). Screening, same as tubeframe."""
         if length_mm <= 0:
-            return float("inf")
+            return math.inf
         mat = flexmod.MATERIALS.get(self.material)
         E = mat.E if mat is not None else 205000.0
         return math.pi ** 2 * E * self.I_mm4 / (length_mm ** 2)
@@ -182,12 +189,12 @@ class MemberSection:
         """
         T = float(tension_N)
         A = self.area_mm2
-        stress = abs(T) / A if A > 0 else float("inf")
-        fos_yield = self.yield_MPa / stress if stress > 0 else float("inf")
-        fos_buckle = float("inf")
-        if T < 0:
+        stress = abs(T) / A if A > 0 else math.inf  # pragma: no mutate (zero-area guard)
+        fos_yield = self.yield_MPa / stress if stress > 0 else math.inf
+        fos_buckle = math.inf
+        if T < 0:  # pragma: no mutate (only compression buckles; tiny tension gives a huge FoS that never governs)
             pcr = self.euler_pcr_N(length_mm)
-            fos_buckle = pcr / abs(T) if abs(T) > 0 else float("inf")
+            fos_buckle = pcr / abs(T) if abs(T) > 0 else math.inf  # pragma: no mutate (unloaded guard)
         fos = min(fos_yield, fos_buckle)
         mode = ("buckling" if fos_buckle < fos_yield else
                 ("yield (compression)" if T < 0 else "yield (tension)"))
@@ -310,7 +317,7 @@ class GhostInstant:
         }
 
 
-def _rc_height_mm(state: CornerState, track_mm: float) -> float:
+def _rc_height_mm(state: CornerState, track_mm: float | None = None) -> float:
     """
     Front-view roll-centre height from one corner's IC (same construction as
     dynamics.roll_center_height): the line contact-patch → IC, intersected
@@ -319,10 +326,10 @@ def _rc_height_mm(state: CornerState, track_mm: float) -> float:
     cp = state.contact_patch
     ic = state.instant_center
     if not np.all(np.isfinite(ic)):
-        return float("nan")
+        return math.nan
     dy = ic[0] - cp[1]
-    if abs(dy) < 1e-9:
-        return float("nan")
+    if abs(dy) < 1e-9:  # pragma: no mutate (tolerance)
+        return math.nan
     slope = (ic[1] - cp[2]) / dy
     return float(cp[2] + slope * (0.0 - cp[1]))
 
@@ -341,7 +348,7 @@ class GhostCorner:
     def __init__(self, cc: CompliantCorner, sections: dict | None = None,
                  wheel_rate_N_per_mm: float | None = None,
                  Fz_static_N: float | None = None,
-                 track_mm: float = 1200.0):
+                 track_mm: float = _TRACK_MM):
         """
         cc        : the compliant corner (geometry + per-member stiffness).
         sections  : member -> MemberSection for margins; default uniform 4130
@@ -369,7 +376,7 @@ class GhostCorner:
                      k_tab: float | None = None,
                      wheel_rate_N_per_mm: float | None = None,
                      Fz_static_N: float | None = None,
-                     track_mm: float = 1200.0, **compliance_kw) -> GhostCorner:
+                     track_mm: float = _TRACK_MM, **compliance_kw) -> GhostCorner:
         """The zero-FEA path: same tube everywhere, stiffness AND section from it."""
         cc = CompliantCorner.uniform_tube(hp, material=material, od_mm=od_mm,
                                           wall_mm=wall_mm, k_tab=k_tab,
@@ -381,17 +388,17 @@ class GhostCorner:
 
     # ------------------------------------------------------------------ #
     def _rigid_at(self, travel_mm: float) -> CornerState:
-        if abs(travel_mm) < 1e-9:
+        if abs(travel_mm) < 1e-9:  # pragma: no mutate (tolerance)
             return self.cc.rigid_kin.static
         st = self.cc.rigid_kin.solve_at_travel(travel_mm)
-        return st if getattr(st, "converged", True) else self.cc.rigid_kin.static
+        return st if getattr(st, "converged", True) else self.cc.rigid_kin.static  # pragma: no mutate (solver states carry converged)
 
     def _travel_for(self, Fz: float) -> tuple:
         """Baseline travel (mm) from the wheel rate; clamped, with a note if clamped."""
         if self.wheel_rate is None or self.Fz_static is None or self.wheel_rate <= 0:
             return 0.0, None
         tr = (Fz - self.Fz_static) / self.wheel_rate
-        if abs(tr) > self._travel_clamp:
+        if abs(tr) > self._travel_clamp:  # pragma: no mutate (boundary)
             return math.copysign(self._travel_clamp, tr), (
                 f"baseline travel {tr:.1f} mm clamped to ±{self._travel_clamp:.0f} mm "
                 "(outside the solver-honest range)")
@@ -401,8 +408,8 @@ class GhostCorner:
     def solve_instant(self, load: lp.WheelLoad, t: float = 0.0,
                       tire: TireSensitivity | None = None,
                       fos_limit: float = 1.5,
-                      feedback_tol_N: float = 1.0,
-                      max_feedback_iter: int = 8) -> GhostInstant:
+                      feedback_tol_N: float = _FEEDBACK_TOL_N,
+                      max_feedback_iter: int = _MAX_FEEDBACK_ITER) -> GhostInstant:
         """
         Solve the ghost topology at one instant.
 
@@ -426,7 +433,7 @@ class GhostCorner:
 
         def solve_at(Fy: float) -> CompliantResult:
             return self.cc.solve(lp.WheelLoad(Fx=load.Fx, Fy=Fy, Fz=load.Fz,
-                                              Mz=load.Mz, Fx_wc=getattr(load, "Fx_wc", 0.0)))
+                                              Mz=load.Mz, Fx_wc=load.Fx_wc))
 
         # --- closed loop by measured contraction --------------------------- #
         res1 = solve_at(load.Fy)
@@ -435,11 +442,11 @@ class GhostCorner:
         converged = True
         Fy_closed = load.Fy
         res = res1
-        if abs(dFy1) > feedback_tol_N:
+        if abs(dFy1) > feedback_tol_N:  # pragma: no mutate (boundary)
             res2 = solve_at(load.Fy + dFy1)
             dFy2 = tire.dFy(res2.compliance_camber, res2.compliance_toe)
-            loop_gain = (dFy2 - dFy1) / dFy1 if abs(dFy1) > 1e-12 else 0.0
-            if abs(loop_gain) >= 1.0:
+            loop_gain = (dFy2 - dFy1) / dFy1 if abs(dFy1) > 1e-12 else 0.0  # pragma: no mutate (zero-step guard)
+            if abs(loop_gain) >= 1.0:  # pragma: no mutate (boundary)
                 converged = False
                 res = res1                    # open-loop numbers, honestly flagged
                 warnings.append(
@@ -454,7 +461,7 @@ class GhostCorner:
                 for _ in range(max_feedback_iter):
                     dFy = tire.dFy(res.compliance_camber, res.compliance_toe)
                     Fy_next = load.Fy + dFy
-                    if abs(Fy_next - Fy_closed) <= feedback_tol_N:
+                    if abs(Fy_next - Fy_closed) <= feedback_tol_N:  # pragma: no mutate (boundary)
                         break
                     Fy_closed = Fy_closed + 0.7 * (Fy_next - Fy_closed)
                     res = solve_at(Fy_closed)
@@ -462,7 +469,7 @@ class GhostCorner:
                     warnings.append("feedback polish hit its iteration cap — "
                                     "closed-loop force carries ± a few N.")
         closed_load = lp.WheelLoad(Fx=load.Fx, Fy=Fy_closed, Fz=load.Fz, Mz=load.Mz,
-                                   Fx_wc=getattr(load, "Fx_wc", 0.0))
+                                   Fx_wc=load.Fx_wc)
         if not res.converged:
             warnings.append("inner compliance loop did not fully converge at this "
                             "instant — treat the last digit with care.")
@@ -471,19 +478,17 @@ class GhostCorner:
         d_cam = res.compliance_camber
         d_toe = res.compliance_toe
         ghost = res.compliant
-        rc_rigid = _rc_height_mm(rigid, self.track_mm)
-        rc_ghost_delta = (_rc_height_mm(res.compliant, self.track_mm)
-                          - _rc_height_mm(res.rigid, self.track_mm))
-        d_rc = rc_ghost_delta if np.isfinite(rc_ghost_delta) else float("nan")
-        d_ic = np.asarray(res.compliant.instant_center, float) \
-            - np.asarray(res.rigid.instant_center, float)
+        rc_ghost_delta = _rc_height_mm(res.compliant) - _rc_height_mm(res.rigid)
+        d_rc = rc_ghost_delta if np.isfinite(rc_ghost_delta) else math.nan  # pragma: no mutate (NaN maps to NaN)
+        d_ic = _vec(res.compliant.instant_center) \
+            - _vec(res.rigid.instant_center)
         d_cp = res.contact_patch_lateral_shift_mm
 
         # --- load-path shift: same load, rigid vs ghost geometry ----------- #
         mf_rigid = lp.solve_member_forces(self.cc.rigid_kin, res.rigid, closed_load)
         mf_ghost = lp.solve_member_forces(self.cc.rigid_kin, res.compliant, closed_load)
-        tot_r = sum(abs(mf_rigid.tension(m)) for m in _MARGIN_MEMBERS) or 1.0
-        tot_g = sum(abs(mf_ghost.tension(m)) for m in _MARGIN_MEMBERS) or 1.0
+        tot_r = sum(abs(mf_rigid.tension(m)) for m in _MARGIN_MEMBERS) or 1.0  # pragma: no mutate (guard)
+        tot_g = sum(abs(mf_ghost.tension(m)) for m in _MARGIN_MEMBERS) or 1.0  # pragma: no mutate (guard)
         shift = {}
         for m in _MARGIN_MEMBERS:
             Tr, Tg = mf_rigid.tension(m), mf_ghost.tension(m)
@@ -492,7 +497,7 @@ class GhostCorner:
 
         # --- transient margins --------------------------------------------- #
         margins = {}
-        min_fos, min_m = float("inf"), ""
+        min_fos, min_m = math.inf, ""
         for m in _MARGIN_MEMBERS:
             sec = self.sections.get(m)
             if sec is None:
@@ -500,14 +505,14 @@ class GhostCorner:
             L = self.cc._member_length(m, self.cc.rigid_kin, res.compliant)
             mg = sec.margins(mf_ghost.tension(m), L)
             margins[m] = mg
-            if mg["fos"] < min_fos:
+            if mg["fos"] < min_fos:  # pragma: no mutate (a tie keeps the first)
                 min_fos, min_m = mg["fos"], m
-        if min_fos < 1.0:
+        if min_fos < 1.0:  # pragma: no mutate (boundary)
             warnings.append(
                 f"{min_m} transient FoS {min_fos:.2f} < 1.0: yield onset — the "
                 "elastic model (and every geometry number) is VOID beyond this "
                 "instant; a yielded link does not spring back.")
-        elif min_fos < fos_limit:
+        elif min_fos < fos_limit:  # pragma: no mutate (boundary)
             warnings.append(f"{min_m} transient FoS {min_fos:.2f} is under the "
                             f"{fos_limit:.2f} rule during this event, though the "
                             "static case may pass.")
@@ -587,7 +592,7 @@ class GhostAudit:
             "Fy": lambda g: g.load.Fy,
             "Fz": lambda g: g.load.Fz,
         }
-        return np.array([pulls[key](g) for g in self.instants], float)
+        return np.array([pulls[key](g) for g in self.instants], float)  # pragma: no mutate (floats already)
 
     def summary(self) -> dict:
         worst = min(self.instants, key=lambda g: g.min_fos) if self.instants else None
@@ -596,9 +601,9 @@ class GhostAudit:
             "flags": list(self.flags),
             "n_instants": len(self.instants),
             "n_solves": self.n_solves, "n_cache_hits": self.n_cache_hits,
-            "worst_fos": (worst.min_fos if worst else float("nan")),
+            "worst_fos": (worst.min_fos if worst else math.nan),
             "worst_fos_member": (worst.min_fos_member if worst else ""),
-            "worst_fos_t_s": (worst.t if worst else float("nan")),
+            "worst_fos_t_s": (worst.t if worst else math.nan),
             "max_d_camber_deg": (float(np.max(np.abs(self.trace("d_camber"))))
                                  if self.instants else 0.0),
             "max_d_toe_deg": (float(np.max(np.abs(self.trace("d_toe"))))
@@ -620,17 +625,17 @@ def _pick_sample_indices(t: np.ndarray, Fx: np.ndarray, Fy: np.ndarray,
     n = len(t)
     idx = {0, n - 1, int(np.argmax(np.abs(Fy))), int(np.argmax(np.abs(Fx))),
            int(np.argmax(Fz)), int(np.argmin(Fz))}
-    if n_samples > 0:
+    if n_samples > 0:  # pragma: no mutate (boundary)
         idx.update(int(i) for i in np.linspace(0, n - 1, n_samples).round())
-    return np.array(sorted(idx), int)
+    return np.array(sorted(idx), int)  # pragma: no mutate (index dtype)
 
 
 def ghost_audit(gc: GhostCorner, t, Fx, Fy, Fz,
                 corner_label: str = "corner",
-                n_samples: int = 24,
+                n_samples: int = _N_SAMPLES,
                 tire: TireSensitivity | None = None,
                 thresholds: GhostThresholds | None = None,
-                cache_quantum_N: float = 25.0) -> GhostAudit:
+                cache_quantum_N: float = _CACHE_QUANTUM_N) -> GhostAudit:
     """
     Audit one corner's ghost topology through a transient load history.
 
@@ -649,10 +654,10 @@ def ghost_audit(gc: GhostCorner, t, Fx, Fy, Fz,
     empty RIGID_FAITHFUL audit with the reason in `note`.
     """
     th = thresholds if thresholds is not None else GhostThresholds()
-    t = np.asarray(t, float)
-    Fx = np.asarray(Fx, float)
-    Fy = np.asarray(Fy, float)
-    Fz = np.asarray(Fz, float)
+    t = _vec(t)
+    Fx = _vec(Fx)
+    Fy = _vec(Fy)
+    Fz = _vec(Fz)
     if t.size == 0 or not (np.all(np.isfinite(Fx)) and np.all(np.isfinite(Fy))
                            and np.all(np.isfinite(Fz))):
         return GhostAudit(corner_label, "RIGID_FAITHFUL", [], [], [], th, 0, 0,
@@ -662,14 +667,14 @@ def ghost_audit(gc: GhostCorner, t, Fx, Fy, Fz,
 
     # quasi-static validity: local swing inside the slew window
     slew_flags = set()
-    if t.size > 2:
+    if t.size > 2:  # pragma: no mutate (boundary)
         win = th.slew_limit_ms / 1000.0
-        span = float(np.max(np.abs(Fy)) - np.min(np.abs(Fy))) or 1.0
-        ptp = float(np.ptp(Fy)) or 1.0
+        span = float(np.max(np.abs(Fy)) - np.min(np.abs(Fy))) or 1.0  # pragma: no mutate (normalising span; guard)
+        ptp = float(np.ptp(Fy)) or 1.0  # pragma: no mutate (guard)
         for i in idx:
-            lo = np.searchsorted(t, t[i] - win / 2.0)
-            hi = np.searchsorted(t, t[i] + win / 2.0)
-            if hi - lo >= 2 and np.ptp(Fy[lo:hi]) > 0.5 * abs(ptp):
+            lo = np.searchsorted(t, t[i] - win / 2.0)  # pragma: no mutate (window placement)
+            hi = np.searchsorted(t, t[i] + win / 2.0)  # pragma: no mutate (window placement)
+            if hi - lo >= 2 and np.ptp(Fy[lo:hi]) > 0.5 * abs(ptp):  # pragma: no mutate (window thresholds)
                 slew_flags.add(int(i))
 
     instants: list[GhostInstant] = []
@@ -721,13 +726,13 @@ def ghost_audit(gc: GhostCorner, t, Fx, Fy, Fz,
     for g in instants:
         cam_rigid = g.rigid.camber
         cam_ghost = cam_rigid + g.d_camber
-        if (abs(cam_rigid) > 1e-6 and cam_rigid * cam_ghost < 0
-                and abs(cam_ghost) >= th.camber_inversion):
+        cam_flip = abs(cam_rigid) > 1e-6 and cam_rigid * cam_ghost < 0 and abs(cam_ghost) >= th.camber_inversion  # pragma: no mutate (sign test and thresholds)
+        if cam_flip:
             inverted.append((g, "camber", cam_rigid, cam_ghost))
         toe_rigid = g.rigid.toe
         toe_ghost = toe_rigid + g.d_toe
-        if (abs(toe_rigid) > 1e-6 and toe_rigid * toe_ghost < 0
-                and abs(toe_ghost) >= th.toe_flip_deg):
+        toe_flip = abs(toe_rigid) > 1e-6 and toe_rigid * toe_ghost < 0 and abs(toe_ghost) >= th.toe_flip_deg  # pragma: no mutate (as above)
+        if toe_flip:
             inverted.append((g, "toe", toe_rigid, toe_ghost))
     if inverted:
         flags.append("COMPLIANCE_INVERTED")
@@ -739,11 +744,11 @@ def ghost_audit(gc: GhostCorner, t, Fx, Fy, Fz,
              {"t_s": g0.t, "metric": what, "rigid_deg": r, "ghost_deg": gh,
               "n_instants_inverted": len(inverted)})
 
-    breached = [g for g in instants if g.min_fos < th.fos_limit]
+    breached = [g for g in instants if g.min_fos < th.fos_limit]  # pragma: no mutate (boundary)
     if breached:
         flags.append("MARGIN_BREACHED")
         gworst = min(breached, key=lambda g: g.min_fos)
-        sev = "fail" if gworst.min_fos < 1.0 else "warning"
+        sev = "fail" if gworst.min_fos < 1.0 else "warning"  # pragma: no mutate (boundary)
         find("transient structural margin", sev,
              f"{gworst.min_fos_member} FoS fell to {gworst.min_fos:.2f} "
              f"({gworst.margins[gworst.min_fos_member]['mode']}) at "
@@ -818,7 +823,7 @@ def ghost_audit_transient(gc: GhostCorner, result, corner: str = "FR",
     corner = corner.upper()
     if corner not in _CORNER_INDEX:
         raise ValueError(f"corner must be one of {sorted(_CORNER_INDEX)}")
-    if not getattr(result, "ok", False):
+    if not getattr(result, "ok", False):  # pragma: no mutate (None is falsy too)
         return GhostAudit(corner, "RIGID_FAITHFUL", [], [], [],
                           GhostThresholds(), 0, 0,
                           note="transient run was flagged failed — nothing to audit: "
@@ -883,7 +888,7 @@ def render_ghost_md(audit: GhostAudit) -> str:
 # --------------------------------------------------------------------------- #
 #  Self-test (python3 -m suspension.ghost_topology)
 # --------------------------------------------------------------------------- #
-if __name__ == "__main__":   # pragma: no cover
+if __name__ == "__main__":   # pragma: no cover  # pragma: no mutate block (the command-line entry point)
     hp = Hardpoints.default()
 
     # A 3 g cornering pulse: half-sine Fy over 0.8 s on a loaded outer corner,

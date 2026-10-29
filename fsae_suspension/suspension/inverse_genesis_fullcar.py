@@ -120,6 +120,7 @@ import time as _time
 from dataclasses import dataclass, field as _dcfield
 
 import numpy as np
+from ._num import vec as _vec
 
 from .dynamics import VehicleDynamics, VehicleParams
 from .laptime import (MotorMap, Powertrain, Track, LapResult,
@@ -137,7 +138,7 @@ _PHI = (math.sqrt(5.0) - 1.0) / 2.0        # golden ratio step, deterministic
 
 def _trapz(y, x):
     """Trapezoidal integral, tolerant of the NumPy 2.x trapz→trapezoid rename."""
-    fn = getattr(np, "trapezoid", None) or np.trapz
+    fn = np.trapezoid
     return float(fn(y, x))
 
 
@@ -370,8 +371,8 @@ class _TraceAdapter:
     plus longitudinal g recovered as a = v·dv/ds — the QSS identity, so the
     current integrates back to the same energy the speed trace implies."""
     def __init__(self, lap: LapResult, g: float = 9.81):
-        s = np.asarray(lap.s, float)
-        v = np.asarray(lap.v, float)
+        s = _vec(lap.s)
+        v = _vec(lap.v)
         if s.size < 2:
             s = np.array([0.0, 1.0])
             v = np.array([0.0, 0.0])
@@ -401,15 +402,15 @@ class ConfigScore:
     config: FullCarConfig
     ok: bool
     derived: dict[str, float]
-    accel_s: float = float("nan")
-    skidpad_s: float = float("nan")
-    autocross_s: float = float("nan")
+    accel_s: float = math.nan
+    skidpad_s: float = math.nan
+    autocross_s: float = math.nan
     endurance_laps: int = 0
-    endurance_s: float = float("nan")
-    energy_event_kwh: float = float("nan")
-    energy_margin_kwh: float = float("nan")
+    endurance_s: float = math.nan
+    energy_event_kwh: float = math.nan
+    energy_margin_kwh: float = math.nan
     derate_penalty_s: float = 0.0          # per-lap, when energy runs short
-    peak_lat_g: float = float("nan")
+    peak_lat_g: float = math.nan
     tv_yaw_note: str = ""
     points: dict[str, float] = _dcfield(default_factory=dict)
     total_points: float = 0.0
@@ -662,7 +663,7 @@ def _score_field(scores: list[ConfigScore],
     for k in _EVENT_KEYS:
         field_best = min((getattr(s, f"{k}_s") for s in timed
                           if math.isfinite(getattr(s, f"{k}_s"))),
-                         default=float("nan"))
+                         default=math.nan)
         bests[k] = declared[k] if declared[k] is not None else field_best
     for s in timed:
         s.points = {}
@@ -960,7 +961,7 @@ def kinematic_intent_for(score: ConfigScore | None, space: DesignSpace,
     solves before the first edit — exactly how the corner tab seeds itself.
     """
     hp = hp or Hardpoints.default()
-    stations = (np.asarray(stations_mm, float) if stations_mm is not None
+    stations = (_vec(stations_mm) if stations_mm is not None
                 else np.array([-25.0, -12.5, 0.0, 12.5, 25.0]))
     vals, ok = _ig.curves_of(hp, stations, track_mm=space.track_mm)
     if not ok:
@@ -1001,8 +1002,8 @@ def kinematic_intent_for(score: ConfigScore | None, space: DesignSpace,
     travel_span = max(float(stations.max() - stations.min()), 1.0)
     camber_target = static_camber - (stations / travel_span) * roll_deg
     toe_target = np.zeros_like(stations)                 # dead bump steer
-    rc_target = np.asarray(vals["rc_height_mm"], float)  # hold nominal RC
-    scrub_target = np.asarray(vals["scrub_mm"], float)   # hold nominal scrub
+    rc_target = _vec(vals["rc_height_mm"])  # hold nominal RC
+    scrub_target = _vec(vals["scrub_mm"])   # hold nominal scrub
 
     return _ig.GenesisTargets(curves=[
         _ig.TargetCurve("camber_deg", stations, camber_target,
@@ -1293,7 +1294,7 @@ def export_hardpoints_csv(hp: Hardpoints) -> str:
         c = getattr(hp, name, None)
         if c is None:
             continue
-        c = np.asarray(c, float).ravel()
+        c = _vec(c).ravel()
         rows.append(f"{name},{c[0]:.3f},{c[1]:.3f},{c[2]:.3f}")
     return "\n".join(rows) + "\n"
 

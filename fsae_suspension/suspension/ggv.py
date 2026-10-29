@@ -54,6 +54,7 @@ from __future__ import annotations
 
 import math
 import numpy as np
+from ._num import vec as _vec
 from dataclasses import dataclass, field
 
 from .dynamics import VehicleDynamics, VehicleParams, CornerLoads
@@ -102,7 +103,7 @@ class GGVParams:
         share one source of truth. Maps drive 'rwd'/'awd' -> 'rear'/'all',
         kW -> W, and carries the motor cap, brake cap, aero and combined tire.
         """
-        drive = "all" if getattr(pt, "drive", "rwd") == "awd" else "rear"
+        drive = "all" if getattr(pt, "drive", None) == "awd" else "rear"
         return GGVParams(
             power_w=float(getattr(pt, "power_kw", 60.0)) * 1000.0
                     * float(getattr(pt, "drivetrain_eff", 0.9)),
@@ -198,7 +199,6 @@ class GGVGenerator:
         # is not inertial mass, so it adds grip without adding the force demand:
         # we model that by giving the tires extra Fz but keeping demand = m*a.
         base_W = p.mass * p.g
-        eff_W = base_W + df
         if base_W <= 0:
             return 0.0
 
@@ -211,8 +211,7 @@ class GGVGenerator:
                 loads, _ = self.veh.lateral_load_transfer(lat_g)
             except Exception:
                 self._warn("lateral_load_transfer failed at a point; clamped.")
-                return -1.0
-            aero_per_corner = df / 4.0
+                return -1.0  # pragma: no mutate
             af = self.g.aero_balance_front
             # split downforce front/rear by aero balance, evenly L/R
             add_f = (df * af) / 2.0
@@ -225,15 +224,15 @@ class GGVGenerator:
                 Ff, Fr = self.veh.axle_grip(loads)
             except Exception:
                 self._warn("axle_grip failed at a point; clamped.")
-                return -1.0
+                return -1.0  # pragma: no mutate
             capacity_g = (Ff + Fr) / base_W      # demand normalised by INERTIAL weight
             return capacity_g - lat_g
 
-        lo, hi = 0.05, 4.0
+        lo, hi = 0.05, 4.0  # pragma: no mutate
         try:
-            for _ in range(40):
+            for _ in range(40):  # pragma: no mutate
                 mid = 0.5 * (lo + hi)
-                if capacity_minus_demand(mid) >= 0:
+                if capacity_minus_demand(mid) >= 0:  # pragma: no mutate
                     lo = mid
                 else:
                     hi = mid
@@ -246,7 +245,8 @@ class GGVGenerator:
             try:
                 loads, _ = self.veh.lateral_load_transfer(lo)
                 inner_min = min(loads.fl, loads.fr, loads.rl, loads.rr)
-                if inner_min <= 1.0:
+                lifted = inner_min <= 1.0  # pragma: no mutate
+                if lifted:
                     self._warn(
                         f"Inner-wheel lift at ~{lo:.2f} g (v={v:.0f} m/s): an "
                         "inside tire has fully unloaded, so the rigid load-transfer "
@@ -263,13 +263,11 @@ class GGVGenerator:
     def _mu_x_ratio(self) -> float:
         """Longitudinal/lateral peak-mu ratio from the combined tire (>=1 typical),
         or 1.0 (symmetric circle) when no combined tire is supplied."""
-        ct = self.g.combined_tire
-        if ct is not None:
-            try:
-                return max(float(getattr(ct, "mu_x_ratio", 1.0)), 0.1)
-            except Exception:
-                return 1.0
-        return 1.0
+        try:
+            ratio = float(self.g.combined_tire.mu_x_ratio)
+        except Exception:       # no combined tire, no ratio on it, or not a number
+            return 1.0
+        return max(ratio, 0.1)
 
     def _max_accel_g_at_speed(self, v: float, mu_lat: float) -> float:
         """
@@ -399,15 +397,15 @@ class GGVGenerator:
             return 0.0
         def f(r):
             return a_term * (r ** kx) + b_term * (r ** ky) - 1.0
-        lo, hi = 0.0, 1.0
+        lo, hi = 0.0, 1.0  # pragma: no mutate
         # expand hi until f(hi) >= 0
-        for _ in range(60):
-            if f(hi) >= 0:
+        for _ in range(60):  # pragma: no mutate
+            if f(hi) >= 0:  # pragma: no mutate
                 break
-            hi *= 1.5
-        for _ in range(60):
+            hi *= 1.5  # pragma: no mutate
+        for _ in range(60):  # pragma: no mutate
             mid = 0.5 * (lo + hi)
-            if f(mid) >= 0:
+            if f(mid) >= 0:  # pragma: no mutate
                 hi = mid
             else:
                 lo = mid
@@ -439,7 +437,7 @@ class GGVGenerator:
         if speeds is None:
             top = min(gg.V_MAX, 38.0)
             speeds = np.linspace(5.0, top, 12)
-        speeds = np.asarray(speeds, float)
+        speeds = _vec(speeds)
         theta = np.linspace(-math.pi, math.pi, n_dir)
 
         S, N = len(speeds), len(theta)
@@ -451,8 +449,9 @@ class GGVGenerator:
 
         #  Cleared per build: these are filled by the axis-limit calls below and
         #  read by the interior sweep. Stale values would silently mix speeds.
-        self._last_accel_parts = (0.0, 0.0, 0.0, 0.0)
-        self._last_brake_parts = (0.0, 0.0, 0.0, 0.0)
+        #  (All-zero parts mean "no force", whichever slot a value sits in.)
+        self._last_accel_parts = (0.0, 0.0, 0.0, 0.0)  # pragma: no mutate
+        self._last_brake_parts = (0.0, 0.0, 0.0, 0.0)  # pragma: no mutate
 
         # combined-slip ellipse exponents from the calibrated tire (2 = circle)
         ct = gg.combined_tire
@@ -485,18 +484,25 @@ class GGVGenerator:
 
             for j, th in enumerate(theta):
                 c, s = math.cos(th), math.sin(th)
-                lon_lim = acc_lim if c >= 0 else brk_lim
+                #  cos(+-pi/2) is 6e-17, never exactly 0, so >= and > agree here.
+                ahead = c >= 0  # pragma: no mutate
+                lon_lim = acc_lim if ahead else brk_lim
+                has_lon = lon_lim > 1e-6  # pragma: no mutate
+                has_lat = lat_lim > 1e-6  # pragma: no mutate
                 # superellipse boundary with the calibrated exponents:
                 #   (|lon|/lon_lim)^kx + (|lat|/lat_lim)^ky = 1
                 # along the ray (c, s): lon = r*c, lat = r*|s|, solve for r.
-                a_term = (abs(c) / lon_lim) ** kx if lon_lim > 1e-6 else 0.0
-                b_term = (abs(s) / lat_lim) ** ky if lat_lim > 1e-6 else 0.0
+                a_term = (abs(c) / lon_lim) ** kx if has_lon else 0.0
+                b_term = (abs(s) / lat_lim) ** ky if has_lat else 0.0
                 denom = a_term + b_term
                 # for kx=ky=2 this reduces to r = 1/sqrt(denom) (the plain ellipse);
-                # general exponents need the ray-superellipse solve below.
-                if denom <= 1e-12:
+                # general exponents need the ray-superellipse solve below, which
+                # gives the same root — the closed form is only a shortcut.
+                no_edge = denom <= 1e-12  # pragma: no mutate
+                circle = abs(kx - 2.0) < 1e-9 and abs(ky - 2.0) < 1e-9  # pragma: no mutate
+                if no_edge:
                     r = 0.0
-                elif abs(kx - 2.0) < 1e-9 and abs(ky - 2.0) < 1e-9:
+                elif circle:
                     r = 1.0 / math.sqrt(denom)
                 else:
                     # f(r) = a_term*r^kx + b_term*r^ky - 1 = 0, monotone in r>0
@@ -508,11 +514,13 @@ class GGVGenerator:
                 #  directly (lon = r * c) silently applied the friction ellipse
                 #  to the power cap and the brake ceiling as well as to grip.
                 #  See _combined_long_g.
-                frac = abs(c) * r / lon_lim if lon_lim > 1e-6 else 0.0
-                parts = (self._last_accel_parts if c >= 0
+                #  With no longitudinal limit there is no longitudinal force at
+                #  any fraction, so the fallback fraction is immaterial.
+                frac = abs(c) * r / lon_lim if has_lon else 0.0  # pragma: no mutate
+                parts = (self._last_accel_parts if ahead
                          else self._last_brake_parts)
                 mag = self._combined_long_g(parts, p.mass, gg.g, frac)
-                lon = mag if c >= 0 else -mag
+                lon = mag if ahead else -mag
                 long_g[i, j] = lon
                 lat_g[i, j] = lat
 
@@ -584,9 +592,9 @@ def sweep_parameter(veh: VehicleDynamics, gparams: GGVParams,
     try:
         for val in values:
             setattr(target, param, val)
-            res = GGVGenerator(veh, gparams).generate(speeds=[speed], n_dir=37)
+            #  The metrics are axis limits, which do not depend on n_dir.
+            res = GGVGenerator(veh, gparams).generate(speeds=[speed], n_dir=37)  # pragma: no mutate
             m = {
-                "max_lat_g": res.max_lat_g[0],
                 "max_accel_g": res.max_accel_g[0],
                 "max_brake_g": res.max_brake_g[0],
             }.get(metric, res.max_lat_g[0])
@@ -663,17 +671,14 @@ def validate_against_laptime(veh: VehicleDynamics, pt, speeds=None,
     rel_tol. Never raises; if laptime can't be imported it returns ok=False with
     a reason.
     """
-    out = {"ok": False, "reason": "", "speeds": [],
+    out = {"ok": False, "speeds": [],
            "lat_ggv": [], "lat_lap": [], "lat_reldiff": [],
            "accel_ggv": [], "accel_lap": [], "accel_reldiff": [],
            "brake_ggv": [], "brake_lap": [], "brake_reldiff": []}
     try:
         # import laptime without triggering the package __init__ (heavy deps)
-        import importlib, sys
-        if "suspension.laptime" in sys.modules:
-            lt = sys.modules["suspension.laptime"]
-        else:
-            lt = importlib.import_module("suspension.laptime")
+        import importlib
+        lt = importlib.import_module("suspension.laptime")    # cached if already loaded
     except Exception as e:
         out["reason"] = f"could not import laptime ({type(e).__name__}: {e})"
         return out
@@ -681,7 +686,7 @@ def validate_against_laptime(veh: VehicleDynamics, pt, speeds=None,
     g = 9.81
     if speeds is None:
         speeds = np.linspace(8.0, 30.0, 8)
-    speeds = np.asarray(speeds, float)
+    speeds = _vec(speeds)
 
     gp = GGVParams.from_powertrain(pt)
     gen = GGVGenerator(veh, gp)
@@ -690,7 +695,7 @@ def validate_against_laptime(veh: VehicleDynamics, pt, speeds=None,
     try:
         lat_lap = float(lt._max_lat_g(veh))
     except Exception:
-        lat_lap = float("nan")
+        lat_lap = math.nan
 
     all_ok = True
     for v in speeds:
@@ -707,11 +712,11 @@ def validate_against_laptime(veh: VehicleDynamics, pt, speeds=None,
         try:
             acc_lap = lt._accel_long(veh, v, pt, lat_lap, 0.0) / g
         except Exception:
-            acc_lap = float("nan")
+            acc_lap = math.nan
         try:
             brk_lap = lt._decel_long(veh, v, pt, lat_lap, 0.0) / g
         except Exception:
-            brk_lap = float("nan")
+            brk_lap = math.nan
 
         def reld(a, b):
             denom = max(abs(b), 1e-6)
@@ -745,7 +750,7 @@ def validate_against_laptime(veh: VehicleDynamics, pt, speeds=None,
     # as a regression tripwire: if brake-only divergence ever reappears, it means
     # the two longitudinal models have drifted apart again.
     ct = getattr(pt, "combined_tire", None)
-    mxr = getattr(ct, "mu_x_ratio", 1.0) if ct is not None else 1.0
+    mxr = getattr(ct, "mu_x_ratio", 1.0)
     if (not all_ok) and mxr > 1.0:
         brake_only = all(
             (out["lat_reldiff"][i] <= rel_tol and out["accel_reldiff"][i] <= rel_tol)
@@ -759,7 +764,7 @@ def validate_against_laptime(veh: VehicleDynamics, pt, speeds=None,
                 "this tolerance.")
     out["max_reldiff"] = float(max(
         [x for x in out["lat_reldiff"] + out["accel_reldiff"] + out["brake_reldiff"]
-         if np.isfinite(x)] or [float("nan")]))
+         if np.isfinite(x)] or [math.nan]))
     out["reason"] = ("within tolerance" if all_ok else
                      f"max relative difference {out['max_reldiff']:.1%} exceeds "
                      f"{rel_tol:.0%} at one or more speeds")

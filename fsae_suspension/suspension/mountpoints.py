@@ -36,6 +36,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field, asdict
 
 import numpy as np
+from ._num import vec as _vec
 
 from .interfaces import Finding, Severity, IntegrationLedger
 
@@ -67,7 +68,7 @@ class MountPoint:
     notes: str = ""
 
     def as_array(self) -> np.ndarray:
-        return np.asarray(self.xyz_mm, dtype=float)
+        return _vec(self.xyz_mm)
 
     def as_dict(self):
         return asdict(self)
@@ -98,8 +99,8 @@ class KeepOut:
     notes: str = ""
 
     def __post_init__(self):
-        lo = np.minimum(np.asarray(self.lo_mm, float), np.asarray(self.hi_mm, float))
-        hi = np.maximum(np.asarray(self.lo_mm, float), np.asarray(self.hi_mm, float))
+        lo = np.minimum(_vec(self.lo_mm), _vec(self.hi_mm))
+        hi = np.maximum(_vec(self.lo_mm), _vec(self.hi_mm))
         self.lo_mm = tuple(lo.tolist())
         self.hi_mm = tuple(hi.tolist())
 
@@ -111,8 +112,8 @@ class KeepOut:
           < 0  : p is inside, value = -(depth to nearest face)  [interference]
         Standard exact AABB SDF — no sampling, no dependencies beyond numpy.
         """
-        lo = np.asarray(self.lo_mm, float)
-        hi = np.asarray(self.hi_mm, float)
+        lo = _vec(self.lo_mm)
+        hi = _vec(self.hi_mm)
         # distance component outside the box on each axis
         d_out = np.maximum(np.maximum(lo - p, p - hi), 0.0)
         outside = float(np.linalg.norm(d_out))
@@ -127,10 +128,7 @@ class KeepOut:
 
     @staticmethod
     def from_dict(d) -> KeepOut:
-        d = dict(d)
-        for k in ("lo_mm", "hi_mm"):
-            if isinstance(d.get(k), list):
-                d[k] = tuple(d[k])
+        d = dict(d)              # __post_init__ turns lo/hi lists into tuples
         valid = KeepOut.__dataclass_fields__.keys()
         return KeepOut(**{k: v for k, v in d.items() if k in valid})
 
@@ -307,7 +305,7 @@ def propagate_mount_move(geom: GeometryLedger,
             iface.cg_y_mm += float(shift[1])
             iface.cg_z_mm += float(shift[2])
             ledger.set(iface)
-            notes.append(f"{owner} CG shifted by {tuple(round(s,1) for s in shift)} mm "
+            notes.append(f"{owner} CG shifted by {tuple(round(float(s), 1) for s in shift)} mm "
                          f"with the point.")
         else:
             notes.append("update_interface_cg requested but owner has no declared CG "
@@ -316,10 +314,10 @@ def propagate_mount_move(geom: GeometryLedger,
     roll = ledger.mass_rollup()
     cg_after = roll.get("cg_mm")
     cg_delta = (tuple(a - b for a, b in zip(cg_after, cg_before))
-                if (cg_before and cg_after) else None)
+                if cg_before else None)   # moving a point never adds or drops a CG
 
     clashes = geom.check_clashes()
     return PropagationResult(
         moved_point=point_name, new_xyz_mm=tuple(new.tolist()),
         clash_findings=clashes, cg_before_mm=cg_before, cg_after_mm=cg_after,
-        cg_delta_mm=cg_delta, mass_total_kg=roll.get("total_kg", 0.0), notes=notes)
+        cg_delta_mm=cg_delta, mass_total_kg=roll["total_kg"], notes=notes)

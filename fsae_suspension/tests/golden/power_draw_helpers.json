@@ -1,0 +1,43 @@
+{
+ "fs1": "Sheet",
+ "fs2": null,
+ "fs3": null,
+ "fs4": "Sheet",
+ "lm": {
+  "alpha": [
+   1,
+   "B1"
+  ],
+  "beta": [
+   6,
+   "B6"
+  ]
+ },
+ "lm_c3": {
+  "alpha": [
+   10,
+   "C1"
+  ],
+  "beta": [
+   60,
+   "C6"
+  ]
+ },
+ "lm_lab2": {},
+ "lm_max5": {
+  "alpha": [
+   1,
+   "B1"
+  ]
+ },
+ "num0": "S!A1 is empty",
+ "num1": "S!A1 holds a boolean, not a number",
+ "num2": "S!A1 holds datetime.datetime(2020, 1, 1, 0, 0), a date/time value. The cell's number format is a date format, so its cached value is a time serial rather than a number. In Excel the underlying arithmetic is still correct; every Python reader of this file sees a datetime. Set the cell's format to General. Do NOT coerce this to a float — the coercion is the bug.",
+ "num3": "S!A1 holds datetime.date(2020, 1, 1), a date/time value. The cell's number format is a date format, so its cached value is a time serial rather than a number. In Excel the underlying arithmetic is still correct; every Python reader of this file sees a datetime. Set the cell's format to General. Do NOT coerce this to a float — the coercion is the bug.",
+ "num4": "S!A1 holds datetime.time(1, 2), a date/time value. The cell's number format is a date format, so its cached value is a time serial rather than a number. In Excel the underlying arithmetic is still correct; every Python reader of this file sees a datetime. Set the cell's format to General. Do NOT coerce this to a float — the coercion is the bug.",
+ "num5": "S!A1 holds datetime.timedelta(days=1), a date/time value. The cell's number format is a date format, so its cached value is a time serial rather than a number. In Excel the underlying arithmetic is still correct; every Python reader of this file sees a datetime. Set the cell's format to General. Do NOT coerce this to a float — the coercion is the bug.",
+ "num6": 3.5,
+ "num7": "S!A1 holds text 'abc'",
+ "num8": 4.0,
+ "num9": 2.5
+}

@@ -59,6 +59,7 @@ analytic estimate; the Fluent deck it writes is for the user to run, not Kinemat
 
 from __future__ import annotations
 
+import math
 import os
 import statistics
 from dataclasses import dataclass
@@ -137,8 +138,8 @@ class EnsembleResult:
     fused: CoeffResult
     members: list                          # list[MemberOutcome]
     n_voted: int
-    cl_spread_pct: float = float("nan")
-    cd_spread_pct: float = float("nan")
+    cl_spread_pct: float = math.nan
+    cd_spread_pct: float = math.nan
 
     def as_dict(self):
         return dict(
@@ -161,10 +162,10 @@ def _spread_pct(values: Sequence[float]) -> float:
     """Peak-to-peak as a percentage of |mean|; nan if <2 values or mean ~0."""
     vals = [v for v in values if v is not None]
     if len(vals) < 2:
-        return float("nan")
+        return math.nan
     mean = sum(vals) / len(vals)
     if abs(mean) < 1e-12:
-        return float("nan")
+        return math.nan
     return 100.0 * (max(vals) - min(vals)) / abs(mean)
 
 
@@ -384,7 +385,7 @@ class EnsembleTunnelSolver:
 
         # Worst-channel spread, for the human-facing number on the result.
         worst_spread = max((s for s in (cl_spread, cd_spread) if s == s),
-                           default=float("nan"))
+                           default=math.nan)
 
         note = self._fuse_note(outcomes, n_voted, cl_spread, cd_spread,
                                enough, agree)

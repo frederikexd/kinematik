@@ -1,0 +1,139 @@
+{
+ "elec": [
+  [
+   {
+    "age_days": 0.0,
+    "downtime_days": 0.02,
+    "fos": 3.7886130847407187,
+    "grade": "modelled",
+    "key": "branch_fuse",
+    "label": "Actuator branch fuse",
+    "note": "rating 25 A vs peak draw 6.6 A in this event",
+    "replace_cost_usd": 2.0,
+    "severity": "S1"
+   },
+   {
+    "age_days": 0.0,
+    "downtime_days": 0.2,
+    "fos": 3.0308904677925748,
+    "grade": "modelled",
+    "key": "branch_conn",
+    "label": "Actuator branch connector",
+    "note": "continuous rating 20 A vs peak 6.6 A",
+    "replace_cost_usd": 18.0,
+    "severity": "S2"
+   }
+  ],
+  [
+   {
+    "age_days": 0.0,
+    "downtime_days": 0.02,
+    "fos": 3.7886130847407187,
+    "grade": "estimate",
+    "key": "branch_fuse",
+    "label": "Actuator branch fuse",
+    "note": "rating 25 A vs peak draw 6.6 A in this event",
+    "replace_cost_usd": 2.0,
+    "severity": "S1"
+   },
+   {
+    "age_days": 0.0,
+    "downtime_days": 0.2,
+    "fos": 3.0308904677925748,
+    "grade": "estimate",
+    "key": "branch_conn",
+    "label": "Actuator branch connector",
+    "note": "continuous rating 20 A vs peak 6.6 A",
+    "replace_cost_usd": 18.0,
+    "severity": "S2"
+   }
+  ]
+ ],
+ "elec_empty": [
+  {
+   "age_days": 0.0,
+   "downtime_days": 0.02,
+   "fos": 25000000.0,
+   "grade": "modelled",
+   "key": "branch_fuse",
+   "label": "Actuator branch fuse",
+   "note": "rating 25 A vs peak draw 0.0 A in this event",
+   "replace_cost_usd": 2.0,
+   "severity": "S1"
+  },
+  {
+   "age_days": 0.0,
+   "downtime_days": 0.2,
+   "fos": 20000000.0,
+   "grade": "modelled",
+   "key": "branch_conn",
+   "label": "Actuator branch connector",
+   "note": "continuous rating 20 A vs peak 0.0 A",
+   "replace_cost_usd": 18.0,
+   "severity": "S2"
+  }
+ ],
+ "mech": [
+  [
+   {
+    "age_days": 0.0,
+    "downtime_days": 1.0,
+    "fos": 2.5,
+    "grade": "modelled",
+    "key": "TR",
+    "label": "Member TR",
+    "note": "worst transient FoS from the ghost audit of this event",
+    "replace_cost_usd": 60.0,
+    "severity": "S2"
+   },
+   {
+    "age_days": 0.0,
+    "downtime_days": 1.0,
+    "fos": 4.041132906152145,
+    "grade": "modelled",
+    "key": "UF",
+    "label": "Member UF",
+    "note": "worst transient FoS from the ghost audit of this event",
+    "replace_cost_usd": 60.0,
+    "severity": "S2"
+   }
+  ],
+  [
+   {
+    "age_days": 0.0,
+    "downtime_days": 1.0,
+    "fos": 2.5,
+    "grade": "modelled",
+    "key": "TR",
+    "label": "Member TR",
+    "note": "worst transient FoS from the ghost audit of this event",
+    "replace_cost_usd": 60.0,
+    "severity": "S2"
+   },
+   {
+    "age_days": 0.0,
+    "downtime_days": 1.0,
+    "fos": 4.041132906152145,
+    "grade": "modelled",
+    "key": "UF",
+    "label": "Member UF",
+    "note": "worst transient FoS from the ghost audit of this event",
+    "replace_cost_usd": 60.0,
+    "severity": "S2"
+   }
+  ],
+  [
+   {
+    "age_days": 0.0,
+    "downtime_days": 1.0,
+    "fos": 0.001,
+    "grade": "modelled",
+    "key": "UF",
+    "label": "Member UF",
+    "note": "worst transient FoS from the ghost audit of this event",
+    "replace_cost_usd": 60.0,
+    "severity": "S2"
+   }
+  ]
+ ]
+}

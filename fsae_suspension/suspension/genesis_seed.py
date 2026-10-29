@@ -88,7 +88,7 @@ def seed_cost(hp, targets, volume, clearance_target_mm: float = 2.0,
         if vals is None:
             return math.inf, {"reason": "properties do not solve"}
         for b in volume.properties.bounds:
-            m = b.margin(vals.get(b.prop, float("nan")))
+            m = b.margin(vals.get(b.prop, math.nan))
             if m < 0:
                 pen += 10.0 if not math.isfinite(m) else min(-m / _bound_scale(b), 10.0)
                 why.append(b.prop)

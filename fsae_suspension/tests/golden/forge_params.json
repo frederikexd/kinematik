@@ -1,0 +1,464 @@
+{
+ "act": [
+  [
+   1.6363636363636362,
+   14.256,
+   8.417508417508419
+  ],
+  [
+   999999999.9999999,
+   0.0,
+   0.0
+  ],
+  [
+   1.6363636363636362,
+   4.125,
+   29.09090909090909
+  ]
+ ],
+ "bus": [
+  0.065,
+  0.0
+ ],
+ "deg": [
+  [
+   {
+    "authority_scale": 1.0,
+    "i_other_add_A": 0.0,
+    "key": "nominal",
+    "label": "Pristine electrics",
+    "r_harness_add_ohm": 0.0,
+    "r_int_scale": 1.0,
+    "story": "The schematic's car: rested pack, clean connectors.",
+    "v_brownout_add": 0.0,
+    "v_oc_drop": 0.0
+   },
+   [
+    {
+     "I_other_A": 6.0,
+     "R_harness_ohm": 0.02,
+     "R_int_ohm": 0.045,
+     "V_brownout": 17.5,
+     "V_oc": 25.2,
+     "kwh_per_lap": 0.28,
+     "pack_kwh": 6.5,
+     "reboot_s": 0.35,
+     "reserve_kwh": 0.4,
+     "usable_frac": 0.85
+    },
+    {
+     "Ke": 0.055,
+     "Kt": 0.055,
+     "L_H": 0.0009,
+     "M_max_Nm": 900.0,
+     "R_ohm": 0.55,
+     "conn_rating_A": 20.0,
+     "duty_max": 0.95,
+     "eff": 0.72,
+     "fuse_rating_A": 25.0,
+     "gear": 120.0,
+     "i_quiescent_A": 0.35,
+     "kd": 900.0,
+     "kp": 12000.0
+    }
+   ]
+  ],
+  [
+   {
+    "authority_scale": 1.0,
+    "i_other_add_A": 0.0,
+    "key": "sagging_pack",
+    "label": "Sagging pack",
+    "r_harness_add_ohm": 0.0,
+    "r_int_scale": 3.0,
+    "story": "An aged / cold pack: internal resistance up 3×, starting 1.5 V down. Every transient amp now costs real volts.",
+    "v_brownout_add": 0.0,
+    "v_oc_drop": 1.5
+   },
+   [
+    {
+     "I_other_A": 6.0,
+     "R_harness_ohm": 0.02,
+     "R_int_ohm": 0.135,
+     "V_brownout": 17.5,
+     "V_oc": 23.7,
+     "kwh_per_lap": 0.28,
+     "pack_kwh": 6.5,
+     "reboot_s": 0.35,
+     "reserve_kwh": 0.4,
+     "usable_frac": 0.85
+    },
+    {
+     "Ke": 0.055,
+     "Kt": 0.055,
+     "L_H": 0.0009,
+     "M_max_Nm": 900.0,
+     "R_ohm": 0.55,
+     "conn_rating_A": 20.0,
+     "duty_max": 0.95,
+     "eff": 0.72,
+     "fuse_rating_A": 25.0,
+     "gear": 120.0,
+     "i_quiescent_A": 0.35,
+     "kd": 900.0,
+     "kp": 12000.0
+    }
+   ]
+  ],
+  [
+   {
+    "authority_scale": 1.0,
+    "i_other_add_A": 0.0,
+    "key": "corroded_connector",
+    "label": "Corroded connector",
+    "r_harness_add_ohm": 0.12,
+    "r_int_scale": 1.0,
+    "story": "One branch connector gone green: +120 mΩ in series. Invisible at idle, a voltage cliff under actuator load.",
+    "v_brownout_add": 0.0,
+    "v_oc_drop": 0.0
+   },
+   [
+    {
+     "I_other_A": 6.0,
+     "R_harness_ohm": 0.13999999999999999,
+     "R_int_ohm": 0.045,
+     "V_brownout": 17.5,
+     "V_oc": 25.2,
+     "kwh_per_lap": 0.28,
+     "pack_kwh": 6.5,
+     "reboot_s": 0.35,
+     "reserve_kwh": 0.4,
+     "usable_frac": 0.85
+    },
+    {
+     "Ke": 0.055,
+     "Kt": 0.055,
+     "L_H": 0.0009,
+     "M_max_Nm": 900.0,
+     "R_ohm": 0.55,
+     "conn_rating_A": 20.0,
+     "duty_max": 0.95,
+     "eff": 0.72,
+     "fuse_rating_A": 25.0,
+     "gear": 120.0,
+     "i_quiescent_A": 0.35,
+     "kd": 900.0,
+     "kp": 12000.0
+    }
+   ]
+  ],
+  [
+   {
+    "authority_scale": 1.0,
+    "i_other_add_A": 0.0,
+    "key": "brownout_margin",
+    "label": "Brownout-marginal controller",
+    "r_harness_add_ohm": 0.0,
+    "r_int_scale": 1.6,
+    "story": "A marginal regulator: the controller resets 2.5 V earlier than spec, and rides the sag into reboot loops.",
+    "v_brownout_add": 2.5,
+    "v_oc_drop": 0.0
+   },
+   [
+    {
+     "I_other_A": 6.0,
+     "R_harness_ohm": 0.02,
+     "R_int_ohm": 0.072,
+     "V_brownout": 20.0,
+     "V_oc": 25.2,
+     "kwh_per_lap": 0.28,
+     "pack_kwh": 6.5,
+     "reboot_s": 0.35,
+     "reserve_kwh": 0.4,
+     "usable_frac": 0.85
+    },
+    {
+     "Ke": 0.055,
+     "Kt": 0.055,
+     "L_H": 0.0009,
+     "M_max_Nm": 900.0,
+     "R_ohm": 0.55,
+     "conn_rating_A": 20.0,
+     "duty_max": 0.95,
+     "eff": 0.72,
+     "fuse_rating_A": 25.0,
+     "gear": 120.0,
+     "i_quiescent_A": 0.35,
+     "kd": 900.0,
+     "kp": 12000.0
+    }
+   ]
+  ],
+  [
+   {
+    "authority_scale": 0.0,
+    "i_other_add_A": 0.0,
+    "key": "dead_actuator",
+    "label": "Dead actuator",
+    "r_harness_add_ohm": 0.0,
+    "r_int_scale": 1.0,
+    "story": "The connector vibrated off on the trailer: full passive car, quiescent draw still on the bus.",
+    "v_brownout_add": 0.0,
+    "v_oc_drop": 0.0
+   },
+   [
+    {
+     "I_other_A": 6.0,
+     "R_harness_ohm": 0.02,
+     "R_int_ohm": 0.045,
+     "V_brownout": 17.5,
+     "V_oc": 25.2,
+     "kwh_per_lap": 0.28,
+     "pack_kwh": 6.5,
+     "reboot_s": 0.35,
+     "reserve_kwh": 0.4,
+     "usable_frac": 0.85
+    },
+    {
+     "Ke": 0.055,
+     "Kt": 0.055,
+     "L_H": 0.0009,
+     "M_max_Nm": 0.0,
+     "R_ohm": 0.55,
+     "conn_rating_A": 20.0,
+     "duty_max": 0.0,
+     "eff": 0.72,
+     "fuse_rating_A": 25.0,
+     "gear": 120.0,
+     "i_quiescent_A": 0.35,
+     "kd": 900.0,
+     "kp": 12000.0
+    }
+   ]
+  ],
+  [
+   {
+    "authority_scale": -0.5,
+    "i_other_add_A": -3.0,
+    "key": "neg",
+    "label": "n",
+    "r_harness_add_ohm": -0.1,
+    "r_int_scale": -1.0,
+    "story": "s",
+    "v_brownout_add": -0.2,
+    "v_oc_drop": -2.0
+   },
+   [
+    {
+     "I_other_A": 6.0,
+     "R_harness_ohm": 0.02,
+     "R_int_ohm": 0.0,
+     "V_brownout": 17.5,
+     "V_oc": 25.2,
+     "kwh_per_lap": 0.28,
+     "pack_kwh": 6.5,
+     "reboot_s": 0.35,
+     "reserve_kwh": 0.4,
+     "usable_frac": 0.85
+    },
+    {
+     "Ke": 0.055,
+     "Kt": 0.055,
+     "L_H": 0.0009,
+     "M_max_Nm": 0.0,
+     "R_ohm": 0.55,
+     "conn_rating_A": 20.0,
+     "duty_max": 0.0,
+     "eff": 0.72,
+     "fuse_rating_A": 25.0,
+     "gear": 120.0,
+     "i_quiescent_A": 0.35,
+     "kd": 900.0,
+     "kp": 12000.0
+    }
+   ]
+  ],
+  [
+   {
+    "authority_scale": 2.0,
+    "i_other_add_A": 1.0,
+    "key": "big",
+    "label": "b",
+    "r_harness_add_ohm": 0.05,
+    "r_int_scale": 2.0,
+    "story": "s",
+    "v_brownout_add": 1.0,
+    "v_oc_drop": 30.0
+   },
+   [
+    {
+     "I_other_A": 7.0,
+     "R_harness_ohm": 0.07,
+     "R_int_ohm": 0.09,
+     "V_brownout": 18.5,
+     "V_oc": 0.0,
+     "kwh_per_lap": 0.28,
+     "pack_kwh": 6.5,
+     "reboot_s": 0.35,
+     "reserve_kwh": 0.4,
+     "usable_frac": 0.85
+    },
+    {
+     "Ke": 0.055,
+     "Kt": 0.055,
+     "L_H": 0.0009,
+     "M_max_Nm": 900.0,
+     "R_ohm": 0.55,
+     "conn_rating_A": 20.0,
+     "duty_max": 0.95,
+     "eff": 0.72,
+     "fuse_rating_A": 25.0,
+     "gear": 120.0,
+     "i_quiescent_A": 0.35,
+     "kd": 900.0,
+     "kp": 12000.0
+    }
+   ]
+  ],
+  [
+   {
+    "authority_scale": 0.5,
+    "i_other_add_A": 0.0,
+    "key": "nominal",
+    "label": "Pristine electrics",
+    "r_harness_add_ohm": 0.0,
+    "r_int_scale": 1.0,
+    "story": "The schematic's car: rested pack, clean connectors.",
+    "v_brownout_add": 0.0,
+    "v_oc_drop": 0.0
+   },
+   [
+    {
+     "I_other_A": 6.0,
+     "R_harness_ohm": 0.02,
+     "R_int_ohm": 0.045,
+     "V_brownout": 17.5,
+     "V_oc": 25.2,
+     "kwh_per_lap": 0.28,
+     "pack_kwh": 6.5,
+     "reboot_s": 0.35,
+     "reserve_kwh": 0.4,
+     "usable_frac": 0.85
+    },
+    {
+     "Ke": 0.055,
+     "Kt": 0.055,
+     "L_H": 0.0009,
+     "M_max_Nm": 450.0,
+     "R_ohm": 0.55,
+     "conn_rating_A": 20.0,
+     "duty_max": 0.475,
+     "eff": 0.72,
+     "fuse_rating_A": 25.0,
+     "gear": 120.0,
+     "i_quiescent_A": 0.35,
+     "kd": 900.0,
+     "kp": 12000.0
+    }
+   ]
+  ]
+ ],
+ "presets": {
+  "brownout_margin": {
+   "authority_scale": 1.0,
+   "i_other_add_A": 0.0,
+   "key": "brownout_margin",
+   "label": "Brownout-marginal controller",
+   "r_harness_add_ohm": 0.0,
+   "r_int_scale": 1.6,
+   "story": "A marginal regulator: the controller resets 2.5 V earlier than spec, and rides the sag into reboot loops.",
+   "v_brownout_add": 2.5,
+   "v_oc_drop": 0.0
+  },
+  "corroded_connector": {
+   "authority_scale": 1.0,
+   "i_other_add_A": 0.0,
+   "key": "corroded_connector",
+   "label": "Corroded connector",
+   "r_harness_add_ohm": 0.12,
+   "r_int_scale": 1.0,
+   "story": "One branch connector gone green: +120 mΩ in series. Invisible at idle, a voltage cliff under actuator load.",
+   "v_brownout_add": 0.0,
+   "v_oc_drop": 0.0
+  },
+  "dead_actuator": {
+   "authority_scale": 0.0,
+   "i_other_add_A": 0.0,
+   "key": "dead_actuator",
+   "label": "Dead actuator",
+   "r_harness_add_ohm": 0.0,
+   "r_int_scale": 1.0,
+   "story": "The connector vibrated off on the trailer: full passive car, quiescent draw still on the bus.",
+   "v_brownout_add": 0.0,
+   "v_oc_drop": 0.0
+  },
+  "nominal": {
+   "authority_scale": 1.0,
+   "i_other_add_A": 0.0,
+   "key": "nominal",
+   "label": "Pristine electrics",
+   "r_harness_add_ohm": 0.0,
+   "r_int_scale": 1.0,
+   "story": "The schematic's car: rested pack, clean connectors.",
+   "v_brownout_add": 0.0,
+   "v_oc_drop": 0.0
+  },
+  "sagging_pack": {
+   "authority_scale": 1.0,
+   "i_other_add_A": 0.0,
+   "key": "sagging_pack",
+   "label": "Sagging pack",
+   "r_harness_add_ohm": 0.0,
+   "r_int_scale": 3.0,
+   "story": "An aged / cold pack: internal resistance up 3×, starting 1.5 V down. Every transient amp now costs real volts.",
+   "v_brownout_add": 0.0,
+   "v_oc_drop": 1.5
+  }
+ },
+ "thresholds": {
+  "authority_min": 0.85,
+  "fos_drop_max": 0.1,
+  "fos_limit": 1.5,
+  "lag_ms_max": 12.0,
+  "load_cycle_amp_max": 1.1,
+  "roll_amp_max": 1.15
+ },
+ "untouched": [
+  {
+   "I_other_A": 6.0,
+   "R_harness_ohm": 0.02,
+   "R_int_ohm": 0.045,
+   "V_brownout": 17.5,
+   "V_oc": 25.2,
+   "kwh_per_lap": 0.28,
+   "pack_kwh": 6.5,
+   "reboot_s": 0.35,
+   "reserve_kwh": 0.4,
+   "usable_frac": 0.85
+  },
+  {
+   "Ke": 0.055,
+   "Kt": 0.055,
+   "L_H": 0.0009,
+   "M_max_Nm": 900.0,
+   "R_ohm": 0.55,
+   "conn_rating_A": 20.0,
+   "duty_max": 0.95,
+   "eff": 0.72,
+   "fuse_rating_A": 25.0,
+   "gear": 120.0,
+   "i_quiescent_A": 0.35,
+   "kd": 900.0,
+   "kp": 12000.0
+  }
+ ],
+ "verdicts": [
+  "STRUCTURAL_REGRESSION",
+  "ORDER_INVERTED",
+  "BROWNOUT",
+  "AUTHORITY_LOST",
+  "SESSION_STARVED",
+  "RESPONSE_LAGGED",
+  "COUPLED_FAITHFUL"
+ ]
+}

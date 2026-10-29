@@ -34,10 +34,12 @@ temperature and is not modelled. Units: mm, N, MPa, N*mm.
 """
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from collections.abc import Callable
 
 import numpy as np
+from ._num import vec as _vec
 
 
 @dataclass
@@ -80,42 +82,46 @@ def _residual(sec: Section, profile: Callable | None) -> np.ndarray:
     return s
 
 
-def _stress(y, sr, E, sy, eps0, kappa, epp):
-    trial = sr + E * (eps0 + kappa * y - epp)
+def _stress(y, sr, E, sy, eps0, kappa):
+    """Fiber stress (MPa) of a member loaded from its virgin state (no plastic strain yet), and the elastic trial."""
+    trial = sr + E * (eps0 + kappa * y)
     return np.clip(trial, -sy, sy), trial
 
 
-def _load(sec, E, sy, M, sr, epp):
+def _load(sec, E, sy, M, sr):
     """Curvature and axial strain carrying M (N*mm) at zero axial force."""
     y, A = sec.fibers()
 
     def forces(e0, k):
         """Section axial force in N and moment in N·mm."""
-        s, _ = _stress(y, sr, E, sy, e0, k, epp)
+        s, _ = _stress(y, sr, E, sy, e0, k)
         return float(np.sum(s * A)), float(np.sum(s * A * y))
 
+    # pragma: no mutate start (bisection settings: the starting bracket, its growth and the iteration counts change
+    # only how fast the same root is reached; the sign only picks the branch the absolute values then search)
     k_el = M / (E * sec.I_mm4())
     lo, hi = 0.0, max(abs(k_el) * 2.0, 1e-9)
     sgn = 1.0 if M >= 0 else -1.0
+    # pragma: no mutate end
 
     def e0_for(k):
         """Reference-fibre strain (dimensionless) for a curvature in 1/mm."""
-        a, b = -1.0, 1.0
-        for _ in range(60):
+        a, b = -1.0, 1.0  # pragma: no mutate (any bracket holding the root: strains are far below 1)
+        for _ in range(60):  # pragma: no mutate (bisection count: converged long before)
             m = 0.5 * (a + b)
-            (a, b) = (m, b) if forces(m, k)[0] < 0 else (a, m)
+            (a, b) = (m, b) if forces(m, k)[0] < 0 else (a, m)  # pragma: no mutate (float threshold: < and <= differ only on exact equality)
         return 0.5 * (a + b)
 
     # grow the bracket until the moment is reached, or the section collapses
-    for _ in range(60):
-        if abs(forces(e0_for(sgn * hi), sgn * hi)[1]) >= abs(M):
+    for _ in range(60):  # pragma: no mutate (bisection count: the hinge test ends it long before)
+        if abs(forces(e0_for(sgn * hi), sgn * hi)[1]) >= abs(M):  # pragma: no mutate (float threshold: >= and > differ only on exact equality)
             break
-        hi *= 2.0
-        if hi > 1.0:                                   # 1/mm: plastic hinge
+        hi *= 2.0  # pragma: no mutate (bracket growth rate)
+        if hi > 1.0:  # pragma: no mutate (1/mm: any curvature this far past yield is a plastic hinge)
             return None
-    for _ in range(80):
+    for _ in range(80):  # pragma: no mutate (bisection count: converged long before)
         mid = 0.5 * (lo + hi)
-        (lo, hi) = (mid, hi) if abs(forces(e0_for(sgn * mid), sgn * mid)[1]) < abs(M) else (lo, mid)
+        (lo, hi) = (mid, hi) if abs(forces(e0_for(sgn * mid), sgn * mid)[1]) < abs(M) else (lo, mid)  # pragma: no mutate (float threshold: < and <= differ only on exact equality)
     k = sgn * 0.5 * (lo + hi)
     return e0_for(k), k
 
@@ -125,19 +131,17 @@ def permanent_curvature(sec: Section, E: float, sy: float, M: float,
     """Permanent curvature (1/mm) left after moment M is applied and removed."""
     y, A = sec.fibers()
     sr = _residual(sec, residual)
-    epp = np.zeros_like(y)
-    sol = _load(sec, E, sy, M, sr, epp)
+    sol = _load(sec, E, sy, M, sr)
     if sol is None:
-        return {"collapsed": True, "kappa_perm": float("inf"), "yielded": True}
+        return {"collapsed": True, "kappa_perm": math.inf, "yielded": True}
     e0, k = sol
-    s, trial = _stress(y, sr, E, sy, e0, k, epp)
+    s, trial = _stress(y, sr, E, sy, e0, k)
     epp = (trial - s) / E                              # plastic strain taken
-    # elastic unload to zero force and moment: solve for (e0', k')
-    Mat = E * np.array([[np.sum(A), np.sum(A * y)], [np.sum(A * y), np.sum(A * y * y)]])
-    rhs = -np.array([np.sum((sr - E * epp) * A), np.sum((sr - E * epp) * A * y)])
-    e0u, ku = np.linalg.solve(Mat, rhs)
-    return {"collapsed": False, "kappa_perm": float(ku),
-            "yielded": bool(np.any(np.abs(epp) > 1e-12))}
+    # elastic unload to zero force and moment. Every section here is symmetric about y = 0 (sum A y = 0), so the
+    # axial and bending equations decouple and the curvature at zero moment is the bending one alone.
+    ku = -np.sum((sr - E * epp) * A * y) / (E * np.sum(A * y * y))
+    yielded = bool(np.any(np.abs(epp) > 1e-12))  # pragma: no mutate (float threshold: > and >= differ only on exact equality)
+    return {"collapsed": False, "kappa_perm": float(ku), "yielded": yielded}
 
 
 def cantilever_set(sec: Section, E: float, sy: float, length_mm: float,
@@ -154,7 +158,7 @@ def cantilever_set(sec: Section, E: float, sy: float, length_mm: float,
     for xi in x:
         r = permanent_curvature(sec, E, sy, tip_load_n * (length_mm - xi), residual)
         if r["collapsed"]:
-            return {"collapsed": True, "permanent_tip_mm": float("inf"), "yielded": True}
+            return {"collapsed": True, "permanent_tip_mm": math.inf, "yielded": True}
         yielded |= r["yielded"]
         tip += r["kappa_perm"] * (length_mm - xi) * dx
     return {"collapsed": False, "permanent_tip_mm": float(tip), "yielded": yielded}
@@ -164,5 +168,5 @@ def channel_drift(hp, pickup: str, offset_mm) -> dict:
     """Camber, toe, caster, kpi change (deg) from a pickup moved by offset_mm."""
     from . import elastokinematics as _ek
     J = _ek.compliance_jacobian(hp, points=(pickup,))
-    d = J @ np.asarray(offset_mm, float).reshape(3)
+    d = J @ _vec(offset_mm).reshape(3)
     return {ch: float(v) for ch, v in zip(_ek.CHANNELS, d)}

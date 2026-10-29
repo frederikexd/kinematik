@@ -1,0 +1,74 @@
+{
+ "alias": {
+  "cell_capacity_ah": 4.5,
+  "cell_resistance_ohm": 0.015,
+  "cell_voltage_v": 3.7,
+  "cell_weight_kg": 0.07,
+  "fuse_max_a": 60.0,
+  "max_cells": 600,
+  "n_parallel": 4,
+  "n_series": 120,
+  "source": "<T>/alias.xlsx!BatteryPackConfig"
+ },
+ "bad_cell": "BatteryPackConfig!B4 holds datetime.datetime(2020, 1, 1, 0, 0), a date/time value. The cell's number format is a date format, so its cached value is a time serial rather than a number. In Excel the underlying arithmetic is still correct; every Python reader of this file sees a datetime. Set the cell's format to General. Do NOT coerce this to a float — the coercion is the bug.",
+ "cached": {
+  "cell_capacity_ah": 4.5,
+  "cell_resistance_ohm": 0.015,
+  "cell_voltage_v": 3.7,
+  "cell_weight_kg": 0.07,
+  "fuse_max_a": 60.0,
+  "max_cells": 600,
+  "n_parallel": 4,
+  "n_series": 120,
+  "source": "<T>/cached.xlsx!BatteryPackConfig"
+ },
+ "decoy_par": {
+  "cell_capacity_ah": 4.5,
+  "cell_resistance_ohm": 0.015,
+  "cell_voltage_v": 3.7,
+  "cell_weight_kg": 0.07,
+  "fuse_max_a": 60.0,
+  "max_cells": 600,
+  "n_parallel": 4,
+  "n_series": 120,
+  "source": "<T>/decoy_par.xlsx!BatteryPackConfig"
+ },
+ "fuse_only": "none of ('series battery count',) found among the labels on 'BatteryPackConfig'",
+ "no_par": "none of ('parrallel battery count', 'parallel battery count') found among the labels on 'BatteryPackConfig'",
+ "other_first": {
+  "cell_capacity_ah": 4.5,
+  "cell_resistance_ohm": 0.015,
+  "cell_voltage_v": 3.7,
+  "cell_weight_kg": 0.07,
+  "fuse_max_a": 60.0,
+  "max_cells": 600,
+  "n_parallel": 4,
+  "n_series": 120,
+  "source": "<T>/other_first.xlsx!BatteryPackConfig"
+ },
+ "plain": {
+  "cell_capacity_ah": 4.5,
+  "cell_resistance_ohm": 0.015,
+  "cell_voltage_v": 3.7,
+  "cell_weight_kg": 0.07,
+  "fuse_max_a": 60.0,
+  "max_cells": 600,
+  "n_parallel": 4,
+  "n_series": 120,
+  "source": "<T>/plain.xlsx!BatteryPackConfig"
+ },
+ "series_alone": "none of ('parrallel battery count', 'parallel battery count') found among the labels on 'BatteryPackConfig'",
+ "series_only": "none of ('fuse max',) found among the labels on 'BatteryPackConfig'",
+ "text_cell": {
+  "cell_capacity_ah": 4.5,
+  "cell_resistance_ohm": 0.015,
+  "cell_voltage_v": 3.7,
+  "cell_weight_kg": 0.07,
+  "fuse_max_a": 60.0,
+  "max_cells": 600,
+  "n_parallel": 4,
+  "n_series": 120,
+  "source": "<T>/text_cell.xlsx!BatteryPackConfig"
+ },
+ "unlabelled": "no sheet contains the pack topology labels. Note that the shipped readers look for a sheet *named* 'Battery Pack Calcs' and this file's is 'BatteryPackConfig', which is exactly why they fail silently — searching by label avoids that whole class of bug."
+}

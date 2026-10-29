@@ -84,6 +84,7 @@ from enum import Enum
 from collections.abc import Sequence
 
 import numpy as np
+from .._num import vec as _vec
 
 from .cfd import Attitude
 from .windtunnel import GroundState
@@ -169,12 +170,12 @@ class TapCalibration:
         and is returned as NaN — a railed reading is not a pressure, and pretending it
         is would corrupt the tap's mean. Uncalibrated channels reduce to all-NaN.
         """
-        v = np.asarray(volts, dtype=float)
+        v = _vec(volts)
         if not self.is_calibrated:
             return np.full(v.shape, np.nan)
         p = self.sensitivity_pa_per_v * (v - self.zero_offset_v)
         if self.saturation_v is not None:
-            railed = np.abs(v) >= abs(self.saturation_v) - 1e-12
+            railed = np.abs(v) >= abs(self.saturation_v) - 1e-12  # pragma: no mutate
             p = np.where(railed, np.nan, p)
         return p
 
@@ -223,11 +224,17 @@ class ScanProvenance:
         pitot is what the freestream actually was, computing from a nominal V trusts a
         speed set-point that the tunnel may not have held.
         """
-        if self.p_total_inf_pa is not None:
-            q_meas = self.p_total_inf_pa - self.p_static_inf_pa
-            if q_meas > 0:
-                return float(q_meas)
+        q_meas = self._pitot_q()
+        if q_meas is not None:
+            return float(q_meas)
         return 0.5 * self.rho * self.speed_ms * self.speed_ms
+
+    def _pitot_q(self) -> float | None:
+        """The pitot's q = p_total - p_static, or None when there is no usable one."""
+        if self.p_total_inf_pa is None:
+            return None
+        q_meas = self.p_total_inf_pa - self.p_static_inf_pa
+        return q_meas if q_meas > 0 else None
 
     def averaging_ok(self, min_seconds: float = 5.0) -> bool:
         """
@@ -240,21 +247,21 @@ class ScanProvenance:
 
     def status(self) -> str:
         q = self.dynamic_pressure()
-        qsrc = "pitot" if (self.p_total_inf_pa is not None
-                           and (self.p_total_inf_pa - self.p_static_inf_pa) > 0) else "½ρV²"
+        qsrc = "pitot" if self._pitot_q() is not None else "½ρV²"
         blk = "blockage-corrected" if self.blockage_corrected else "NOT blockage-corrected"
         re = f", Re={self.reynolds:.2e}" if self.reynolds else ""
-        warn = ""
+        warns = []
         if not self.averaging_ok():
             sec = "unknown" if self.sample_seconds is None else f"{self.sample_seconds:g}s"
-            warn += (f" — WARNING: averaging window {sec} is short; freestream "
-                     "turbulence is left in the tap means as bias")
+            warns.append(f" — WARNING: averaging window {sec} is short; freestream "
+                         "turbulence is left in the tap means as bias")
         if self.ground_state is not GroundState.MOVING_BELT:
-            warn += (" — WARNING: fixed/suction floor distorts the underbody/wing-floor "
-                     "pressure field; C_p near the ground is not ground-effect-true")
+            warns.append(" — WARNING: fixed/suction floor distorts the underbody/wing-floor "
+                         "pressure field; C_p near the ground is not ground-effect-true")
         if not self.blockage_corrected:
-            warn += (" — WARNING: uncorrected static reference inflates suction C_p; "
-                     "correct blockage before comparing to free-air CFD")
+            warns.append(" — WARNING: uncorrected static reference inflates suction C_p; "
+                         "correct blockage before comparing to free-air CFD")
+        warn = "".join(warns)
         return (f"{self.facility}: q={q:.1f} Pa ({qsrc}, V={self.speed_ms:g} m/s, "
                 f"rho={self.rho:g}), p_inf={self.p_static_inf_pa:+.1f} Pa gauge, "
                 f"{self.ground_state.value} floor, {blk}{re}{warn}")
@@ -284,7 +291,7 @@ class RawPressureScan:
     attitude: Attitude | None = None
 
     def __post_init__(self):
-        self.volts = np.asarray(self.volts, dtype=float)
+        self.volts = _vec(self.volts)
         if self.volts.ndim == 1:
             # a single-sample scan is allowed; promote to one row
             self.volts = self.volts[None, :]
@@ -319,13 +326,11 @@ class RawPressureScan:
             cal = self.calibrations.get(tap.tap_id)
             col = self.volts[:, j]
             if cal is None:
-                out[tap.tap_id] = float("nan")
+                out[tap.tap_id] = math.nan
                 continue
             p = cal.volts_to_pressure(col)
-            if np.all(np.isnan(p)):
-                out[tap.tap_id] = float("nan")
-            else:
-                out[tap.tap_id] = float(np.nanmean(p))
+            good = p[~np.isnan(p)]
+            out[tap.tap_id] = float(good.sum()) / good.size if good.size else math.nan
         return out
 
     def to_cp(self, prov: ScanProvenance) -> CpField:
@@ -344,9 +349,9 @@ class RawPressureScan:
         pres = self.tap_pressures_pa()
         cps: dict[str, float] = {}
         for tap in self.taps:
-            p = pres.get(tap.tap_id, float("nan"))
+            p = pres[tap.tap_id]
             if not math.isfinite(p) or q <= 0:
-                cps[tap.tap_id] = float("nan")
+                cps[tap.tap_id] = math.nan
             else:
                 cps[tap.tap_id] = (p - prov.p_static_inf_pa) / q
         return CpField(taps=list(self.taps), cp=cps,
@@ -386,23 +391,23 @@ class CpField:
 
     # -- the chordwise curve the engineer reads --------------------------- #
     def chordwise(self, element: str, surface: WingSurface,
-                  span_tol_m: float = 1e9) -> tuple[np.ndarray, np.ndarray, list]:
+                  span_tol_m: float | None = None) -> tuple[np.ndarray, np.ndarray, list]:
         """
         Pull the C_p(x/c) distribution for one element's one surface, sorted leading
         edge -> trailing edge. Returns (x_over_c, cp, tap_ids) over the VALID taps
         only — holes are dropped, never interpolated, so a gap in the curve is a real
         gap in the instrumentation. `span_tol_m` restricts to taps near one spanwise
-        station for a 3D wing; the default takes the whole span.
+        station for a 3D wing; the default (None) takes the whole span.
         """
         rows = []
         for t in self.taps:
             if t.element != element or t.surface != surface:
                 continue
-            v = self.cp.get(t.tap_id, float("nan"))
+            v = self.cp.get(t.tap_id, math.nan)
             if not math.isfinite(v):
                 continue
             rows.append((t.x_over_c, v, t.tap_id, t.span_m))
-        if span_tol_m < 1e9 and rows:
+        if span_tol_m is not None and rows:
             # keep taps near the most-populated span station
             spans = sorted({r[3] for r in rows})
             s0 = spans[len(spans) // 2]
@@ -410,13 +415,13 @@ class CpField:
         rows.sort(key=lambda r: r[0])
         if not rows:
             return np.array([]), np.array([]), []
-        xc = np.array([r[0] for r in rows], dtype=float)
-        cp = np.array([r[1] for r in rows], dtype=float)
+        xc = np.array([float(r[0]) for r in rows])
+        cp = np.array([float(r[1]) for r in rows])
         ids = [r[2] for r in rows]
         return xc, cp, ids
 
     # -- the loading integral: where the downforce comes from ------------- #
-    def chord_coverage(self, element: str, span_tol_m: float = 1e9) -> float:
+    def chord_coverage(self, element: str, span_tol_m: float | None = None) -> float:
         """Fraction of the chord over which BOTH surfaces are instrumented — i.e.
         the fraction normal_load_coefficient can actually integrate over.
 
@@ -433,19 +438,15 @@ class CpField:
         """
         xs, _, _ = self.chordwise(element, WingSurface.SUCTION, span_tol_m)
         xp, _, _ = self.chordwise(element, WingSurface.PRESSURE, span_tol_m)
-        if len(xs) < 2 or len(xp) < 2:
+        if xs.size < 2 or xp.size < 2:
             return 0.0
-        lo = max(xs.min(), xp.min())
-        hi = min(xs.max(), xp.max())
-        if hi <= lo:
-            return 0.0
-        full_lo = min(xs.min(), xp.min())
-        full_hi = max(xs.max(), xp.max())
-        span = full_hi - full_lo
-        return float((hi - lo) / span) if span > 0 else 0.0
+        # one tap on a surface spans nothing, so its overlap below is zero
+        overlap = min(xs.max(), xp.max()) - max(xs.min(), xp.min())
+        span = max(xs.max(), xp.max()) - min(xs.min(), xp.min())
+        return float(max(overlap, 0.0) / span) if span > 0 else 0.0
 
     def normal_load_coefficient(self, element: str,
-                                span_tol_m: float = 1e9,
+                                span_tol_m: float | None = None,
                                 min_chord_coverage: float = 0.0) -> float:
         """
         Integrate (C_p_pressure - C_p_suction) along the chord to get the element's
@@ -465,17 +466,18 @@ class CpField:
         """
         xs, cps_s, _ = self.chordwise(element, WingSurface.SUCTION, span_tol_m)
         xp, cpp, _ = self.chordwise(element, WingSurface.PRESSURE, span_tol_m)
-        if len(xs) < 2 or len(xp) < 2:
-            return float("nan")
-        # common chord grid = the union of both surfaces' x/c, clipped to overlap
+        if xs.size < 2 or xp.size < 2:
+            return math.nan
         lo = max(xs.min(), xp.min())
         hi = min(xs.max(), xp.max())
-        if hi <= lo:
-            return float("nan")
-        if min_chord_coverage > 0.0:
-            if self.chord_coverage(element, span_tol_m) < min_chord_coverage:
-                return float("nan")
-        grid = np.linspace(lo, hi, 50)
+        if hi <= lo:                         # includes a surface with a single tap
+            return math.nan
+        if self.chord_coverage(element, span_tol_m) < min_chord_coverage:
+            return math.nan
+        # common chord grid = the union of both surfaces' x/c, clipped to the
+        # overlap: both C_p curves are piecewise linear between their taps, so the
+        # trapezoid rule on their breakpoints integrates the difference exactly.
+        grid = np.unique(np.clip(np.concatenate([xs, xp]), lo, hi))
         cp_s = np.interp(grid, xs, cps_s)
         cp_p = np.interp(grid, xp, cpp)
         # C_n = ∮ C_p d(x/c) with pressure side minus suction side (downforce +ve here)
@@ -484,7 +486,7 @@ class CpField:
 
     # -- the thing the integral cannot see: stall ------------------------- #
     def suction_peak(self, element: str,
-                     span_tol_m: float = 1e9) -> tuple[float, float]:
+                     span_tol_m: float | None = None) -> tuple[float, float]:
         """
         The minimum (most negative) C_p on the suction surface and the x/c it sits at
         — the suction peak. Its depth is how hard the wing is working; its position is
@@ -493,11 +495,11 @@ class CpField:
         """
         xc, cp, _ = self.chordwise(element, WingSurface.SUCTION, span_tol_m)
         if len(cp) == 0:
-            return float("nan"), float("nan")
+            return math.nan, math.nan
         i = int(np.argmin(cp))
         return float(cp[i]), float(xc[i])
 
-    def stall_indicator(self, element: str, span_tol_m: float = 1e9,
+    def stall_indicator(self, element: str, span_tol_m: float | None = None,
                         recovery_slope_tol: float = 0.5) -> StallVerdict:
         """
         Read the suction surface for the signature of separation. A healthy suction
@@ -516,9 +518,9 @@ class CpField:
         xc, cp, ids = self.chordwise(element, WingSurface.SUCTION, span_tol_m)
         if len(cp) < 3:
             return StallVerdict(
-                element=element, stalled=False, peak_cp=float("nan"),
-                peak_xc=float("nan"), recovery_slope=float("nan"),
-                aft_cp_spread=float("nan"),
+                element=element, stalled=False, peak_cp=math.nan,
+                peak_xc=math.nan, recovery_slope=math.nan,
+                aft_cp_spread=math.nan,
                 note="too few valid suction taps to judge recovery — not a verdict")
         i_peak = int(np.argmin(cp))
         peak_cp = float(cp[i_peak]); peak_xc = float(xc[i_peak])
@@ -527,11 +529,11 @@ class CpField:
         if len(cp_aft) < 2:
             return StallVerdict(
                 element=element, stalled=False, peak_cp=peak_cp, peak_xc=peak_xc,
-                recovery_slope=float("nan"), aft_cp_spread=float("nan"),
+                recovery_slope=math.nan, aft_cp_spread=math.nan,
                 note="suction peak is at the trailing edge — no aft chord to recover")
         # least-squares recovery slope dCp/d(x/c) over the aft chord
         A = np.vstack([xc_aft, np.ones_like(xc_aft)]).T
-        slope, _ = np.linalg.lstsq(A, cp_aft, rcond=None)[0]
+        slope, _ = np.linalg.lstsq(A, cp_aft)[0]
         aft_spread = float(np.nanmax(cp_aft) - np.nanmin(cp_aft))
         stalled = bool(slope < recovery_slope_tol)
         if stalled:
@@ -607,9 +609,9 @@ class TapResidual:
     def residual(self) -> float:
         """CFD minus physical, in C_p units (the RMSE is over these)."""
         if self.cp_phys is None or self.cp_cfd is None:
-            return float("nan")
+            return math.nan
         if not (math.isfinite(self.cp_phys) and math.isfinite(self.cp_cfd)):
-            return float("nan")
+            return math.nan
         return self.cp_cfd - self.cp_phys
 
     def as_dict(self):
@@ -690,17 +692,16 @@ def correlate_cp(phys: CpField, cfd: CFDSurfaceCp,
 
     # measured taps, paired against CFD where possible
     for tid, tap in by_id.items():
-        cp_p = phys.cp.get(tid, float("nan"))
-        cp_c = cfd.cp.get(tid, None)
+        cp_p = phys.cp.get(tid, math.nan)
+        cp_c = cfd.cp.get(tid)
         if cp_c is None:
             residuals.append(TapResidual(
                 tap=tap, cp_phys=(cp_p if math.isfinite(cp_p) else None),
-                cp_cfd=None, paired=False,
-                note="no CFD C_p at this tap — not paired"))
+                cp_cfd=None, note="no CFD C_p at this tap — not paired"))
             continue
         if not math.isfinite(cp_p):
             residuals.append(TapResidual(
-                tap=tap, cp_phys=None, cp_cfd=float(cp_c), paired=False,
+                tap=tap, cp_phys=None, cp_cfd=float(cp_c),
                 note="measured tap is a hole (uncalibrated/railed) — not paired"))
             continue
         tr = TapResidual(tap=tap, cp_phys=float(cp_p), cp_cfd=float(cp_c),
@@ -716,19 +717,19 @@ def correlate_cp(phys: CpField, cfd: CFDSurfaceCp,
         if tid not in by_id:
             residuals.append(TapResidual(
                 tap=TapLocation(tap_id=tid), cp_phys=None, cp_cfd=float(cp_c),
-                paired=False, note="CFD tap not present in the physical scan — not paired"))
+                note="CFD tap not present in the physical scan — not paired"))
 
     n_paired = len(sq_errs)
     n_unpaired = sum(1 for r in residuals if not r.paired)
     n_measured = len(by_id)
     coverage = (n_paired / n_measured) if n_measured else 0.0
 
-    rmse = math.sqrt(sum(sq_errs) / n_paired) if n_paired else float("nan")
-    bias = (sum(errs) / n_paired) if n_paired else float("nan")
+    rmse = math.sqrt(sum(sq_errs) / n_paired) if n_paired else math.nan
+    bias = (sum(errs) / n_paired) if n_paired else math.nan
 
-    paired_res = [r for r in residuals if r.paired and math.isfinite(r.residual)]
+    paired_res = [r for r in residuals if r.paired]      # both sides finite by construction
     worst = max(paired_res, key=lambda r: abs(r.residual), default=None)
-    max_abs = abs(worst.residual) if worst else float("nan")
+    max_abs = abs(worst.residual) if worst else math.nan
 
     within = (
         bool(n_paired)
@@ -774,10 +775,9 @@ def _summarise_cp(rmse, bias, max_abs, n_paired, n_unpaired, coverage,
                "MISMATCHED — the CFD pressure distribution drifts from the measured "
                "C_p beyond tolerance; the integrated force may still agree while the "
                "wing is loaded differently, so do NOT trust CFD surface detail here")
-    worst_txt = ""
-    if worst is not None and math.isfinite(worst.residual):
-        worst_txt = (f"  Worst tap: {worst.tap.label()} "
-                     f"ΔC_p={worst.residual:+.3f} (CFD−phys).")
+    # n_paired > 0 here, so there is always a finite worst tap
+    worst_txt = (f"  Worst tap: {worst.tap.label()} "
+                 f"ΔC_p={worst.residual:+.3f} (CFD−phys).")
     return (f"{head}. {verdict}. "
             f"RMSE {rmse:.3f} C_p (bias {bias:+.3f}, max |ΔC_p| {max_abs:.3f})."
             + cov + worst_txt)

@@ -38,6 +38,7 @@ import math
 from dataclasses import dataclass, replace
 
 import numpy as np
+from ._num import vec as _vec
 
 
 @dataclass
@@ -64,11 +65,11 @@ class SingleTrack:
 
 def lateral_accel_frf(car: SingleTrack, f_hz) -> np.ndarray:
     """a_y / delta ((m/s^2)/rad), complex, at each frequency (Hz)."""
-    f = np.atleast_1d(np.asarray(f_hz, float))
+    f = np.atleast_1d(_vec(f_hz))
     V, m, a, b = car.speed_ms, car.mass_kg, car.a_m, car.b_m
     g_ratio, lag = car.stiction
     G = g_ratio * np.exp(-1j * math.radians(lag))
-    tau = car.sigma_m / V if car.sigma_m > 0 else 0.0
+    tau = car.sigma_m / V
     out = np.empty(len(f), complex)
     for i, fi in enumerate(f):
         s = 1j * 2.0 * math.pi * fi
@@ -79,8 +80,8 @@ def lateral_accel_frf(car: SingleTrack, f_hz) -> np.ndarray:
             [car.cf_n_per_rad / V, car.cf_n_per_rad * a / V,
              tau * s + 1.0 + car.cf_n_per_rad * car.e_f_rad_per_n * G, 0.0],
             [car.cr_n_per_rad / V, -car.cr_n_per_rad * b / V, 0.0, tau * s + 1.0],
-        ], complex)
-        rhs = np.array([0.0, 0.0, car.cf_n_per_rad, 0.0], complex)
+        ])                                       # complex through s
+        rhs = np.array([0.0, 0.0, car.cf_n_per_rad, 0.0])
         v, r, fyf, fyr = np.linalg.solve(A, rhs)
         out[i] = (fyf + fyr) / m
     return out
@@ -90,7 +91,7 @@ def lag(car: SingleTrack, f_hz: float) -> dict:
     """Phase lag of a_y behind steer at f_hz: degrees and milliseconds."""
     h = lateral_accel_frf(car, [1e-3, f_hz])
     ph = math.degrees(np.angle(h[1] / h[0]))
-    ph = (ph + 180.0) % 360.0 - 180.0
+    ph = (ph + 180.0) % 360.0 - 180.0  # pragma: no mutate (wrap into [-180, 180): a shift of +-180 wraps alike)
     return {"phase_deg": -ph, "lag_ms": -ph / (360.0 * f_hz) * 1000.0,
             "gain_ratio": float(abs(h[1]) / abs(h[0]))}
 
@@ -107,8 +108,7 @@ def lag_budget(car: SingleTrack, f_hz: float = 2.5) -> dict:
     no_relax = lag(replace(car, sigma_m=0.0), f_hz)["lag_ms"]
     no_stic = lag(replace(car, stiction=(1.0, 0.0)), f_hz)["lag_ms"]
     no_comp = lag(replace(car, e_f_rad_per_n=0.0), f_hz)["lag_ms"]
-    bare = lag(replace(car, sigma_m=0.0, e_f_rad_per_n=0.0,
-                       stiction=(1.0, 0.0)), f_hz)["lag_ms"]
+    bare = lag(replace(car, sigma_m=0.0, e_f_rad_per_n=0.0), f_hz)["lag_ms"]      # stiction acts on compliance only
     return {"total_ms": full, "relaxation_ms": full - no_relax,
             "compliance_ms": full - no_comp, "stiction_ms": full - no_stic,
             "chassis_ms": bare}
@@ -132,17 +132,16 @@ def yaw_mode(car: SingleTrack, speeds_ms=(10.0, 15.0, 20.0, 25.0)) -> list[dict]
     mode does not overshoot, and None marks an oversteering car past its
     critical speed, where the mode is unstable.
     """
-    from dataclasses import replace
     out = []
     for V in speeds_ms:
-        c = replace(car, speed_ms=V)
-        m, a, b, cf, cr, iz = c.mass_kg, c.a_m, c.b_m, c.cf_n_per_rad, c.cr_n_per_rad, c.iz
+        m, a, b, cf, cr, iz = car.mass_kg, car.a_m, car.b_m, car.cf_n_per_rad, car.cr_n_per_rad, car.iz
         A = np.array([[-(cf + cr) / (m * V), -(a * cf - b * cr) / (m * V) - V],
                       [-(a * cf - b * cr) / (iz * V), -(a * a * cf + b * b * cr) / (iz * V)]])
-        ev = np.linalg.eigvals(A)
         det, tr = float(np.linalg.det(A)), float(np.trace(A))
-        wn = float(np.sqrt(det)) if det > 0 else float("nan")
-        zeta = -tr / (2.0 * wn) if det > 0 else None       # >= 1: no overshoot; None: unstable
+        wn, zeta = math.nan, None                           # det <= 0: no oscillatory mode (unstable)
+        if det > 0:  # pragma: no mutate (float threshold: > and >= differ only on exact equality)
+            wn = float(np.sqrt(det))
+            zeta = -tr / (2.0 * wn)                         # >= 1: no overshoot
         out.append({"speed_ms": V, "fn_hz": wn / (2 * np.pi), "zeta": zeta,
                     "yaw_damping_nms_per_rad": (a * a * cf + b * b * cr) / V})
     return out

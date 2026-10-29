@@ -1,0 +1,306 @@
+{
+ "box_odd": {
+  "bbox_mm": [
+   30.0,
+   70.0,
+   110.0
+  ],
+  "degenerate_tris": 0,
+  "diag_mm": 133.79088160259653,
+  "nonmanifold_edges": 0,
+  "open_edges": 0,
+  "pca_mm": [
+   109.99999999999997,
+   69.99999999999999,
+   30.0
+  ],
+  "solidity": 1.0,
+  "symmetry": 0.10307788869767709,
+  "triangles": 12,
+  "volume_mm3": 231000.0,
+  "watertight": true
+ },
+ "fit_off": {
+  "contained_in": [],
+  "fill": 1.0,
+  "fits": true,
+  "interferences": [],
+  "overhang_mm": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "placed_mm": [
+   40.0,
+   100.0,
+   60.0
+  ],
+  "ratios": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "scale_ratio": 1.0,
+  "slot_mm": [
+   40.0,
+   100.0,
+   60.0
+  ],
+  "tightest_neighbors": [
+   [
+    "Graze",
+    4.5
+   ],
+   [
+    "Pair",
+    70.0
+   ],
+   [
+    "Broken",
+    325.0
+   ]
+  ],
+  "unit_suspect": false
+ },
+ "fit_origin": {
+  "contained_in": [],
+  "fill": 1.0,
+  "fits": true,
+  "interferences": [
+   [
+    "Graze",
+    2.0
+   ]
+  ],
+  "overhang_mm": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "placed_mm": [
+   40.0,
+   100.0,
+   60.0
+  ],
+  "ratios": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "scale_ratio": 1.0,
+  "slot_mm": [
+   40.0,
+   100.0,
+   60.0
+  ],
+  "tightest_neighbors": [
+   [
+    "Pair",
+    90.0
+   ],
+   [
+    "Broken",
+    345.0
+   ]
+  ],
+  "unit_suspect": false
+ },
+ "iter": [
+  [
+   "Skip",
+   [
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    2.5,
+    2.5,
+    2.5
+   ]
+  ],
+  [
+   "Broken",
+   [
+    0.0,
+    400.0,
+    0.0
+   ],
+   [
+    5.0,
+    5.0,
+    5.0
+   ]
+  ],
+  [
+   "Pair",
+   [
+    0.0,
+    150.0,
+    0.0
+   ],
+   [
+    10.0,
+    10.0,
+    10.0
+   ]
+  ],
+  [
+   "Pair",
+   [
+    0.0,
+    300.0,
+    0.0
+   ],
+   [
+    10.0,
+    10.0,
+    10.0
+   ]
+  ],
+  [
+   "Graze",
+   [
+    0.0,
+    0.0,
+    79.5
+   ],
+   [
+    50.0,
+    50.0,
+    50.0
+   ]
+  ]
+ ],
+ "perf_light": {
+  "capacity_proxy": null,
+  "cg_shift_mm": [
+   76.80890538033395,
+   -3.552713678800501e-15,
+   -23.042671614100186
+  ],
+  "density_kg_m3": 2760.0,
+  "fastener_note": "vs one M6 8.8 in single shear @ 6 kN design allowable",
+  "fastener_util": 0.00048811232056976395,
+  "g_vector": [
+   0.0,
+   1.5,
+   1.0
+  ],
+  "inertial_force_n": 11.714695693674335,
+  "lap_delta_s": 0.023184000000000003,
+  "lap_note": "~0.035 s/lap per kg — FSAE autocross rule of thumb, not a sim",
+  "load_case": "1.5 g cornering",
+  "mass_kg": 0.6624,
+  "mass_note": "enclosed volume × density (closed solid — good estimate)",
+  "material": "Aluminium 6061/7075",
+  "n_mounts": 4,
+  "per_mount_n": 2.9286739234185837
+ },
+ "realism": {
+  "1.0125": {
+   "deductions": [
+    [
+     6,
+     "fits with <6% margin — tolerance-stack risk"
+    ]
+   ],
+   "grade": "assembles cleanly",
+   "score": 94.0
+  },
+  "1.0375": {
+   "deductions": [
+    [
+     6,
+     "fits with <6% margin — tolerance-stack risk"
+    ]
+   ],
+   "grade": "assembles cleanly",
+   "score": 94.0
+  },
+  "1.0625": {
+   "deductions": [
+    [
+     6,
+     "fits with <6% margin — tolerance-stack risk"
+    ]
+   ],
+   "grade": "assembles cleanly",
+   "score": 94.0
+  },
+  "1.1040": {
+   "deductions": [
+    [
+     6,
+     "fits with <6% margin — tolerance-stack risk"
+    ]
+   ],
+   "grade": "assembles cleanly",
+   "score": 94.0
+  },
+  "1.1875": {
+   "deductions": [
+    [
+     6,
+     "fits with <6% margin — tolerance-stack risk"
+    ]
+   ],
+   "grade": "assembles cleanly",
+   "score": 94.0
+  }
+ },
+ "realism_ic1": {
+  "deductions": [
+   [
+    8,
+    "predicted interference with neighbours"
+   ]
+  ],
+  "grade": "assembles cleanly",
+  "score": 91.96000000000001
+ },
+ "realism_ic_half": {
+  "deductions": [
+   [
+    8,
+    "predicted interference with neighbours"
+   ]
+  ],
+  "grade": "assembles cleanly",
+  "score": 91.98
+ },
+ "slot_none": [
+  {
+   "centre": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "container": null,
+   "env": [
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "centre": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "container": null,
+   "env": [
+    1.0,
+    1.0,
+    1.0
+   ]
+  }
+ ],
+ "sw_one_degen": [
+  {
+   "severity": "warn",
+   "text": "1 sliver/zero-area facets — usually a too-coarse export tolerance; harmless visually, but re-export if the STEP won't knit."
+  }
+ ]
+}

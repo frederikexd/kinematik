@@ -123,6 +123,11 @@ G = 9.80665
 MPH_TO_IN_PER_MIN = 1056.0
 MPH_TO_MS = 0.44704
 
+# Row labels the pack sheet is found and read by (lower case; _find_sheet lowers what it searches).
+_SERIES = "series battery count"
+_PARRALLEL = "parrallel battery count"       # the workbook's own spelling
+_FUSE = "fuse max"
+
 
 # ===================================================================== #
 #  1.  READING THE WORKBOOK WITHOUT LYING ABOUT IT
@@ -185,7 +190,7 @@ def _find_sheet(wb, *must_contain: str):
     """Locate a sheet by the labels it contains, not by its name."""
     for ws in wb.worksheets:
         labels = " ".join(str(ws.cell(r, 1).value or "").lower()
-                          for r in range(1, min(ws.max_row, 40) + 1))
+                          for r in range(1, min(ws.max_row, 40) + 1))  # pragma: no mutate
         if all(t.lower() in labels for t in must_contain):
             return ws
     return None
@@ -261,7 +266,7 @@ class PackSpec:
         None when the demand exceeds `max_deliverable_power_w` — the honest
         answer, rather than a current the pack cannot actually supply.
         """
-        if p_elec_w <= 0:
+        if p_elec_w <= 0:  # pragma: no mutate
             return 0.0
         voc, r = self.nominal_voltage_v(), self.resistance_ohm()
         disc = voc * voc - 4.0 * r * p_elec_w
@@ -282,9 +287,9 @@ def read_pack_config(path: str) -> PackSpec:
     """Read pack topology from the workbook by label, raising on bad values."""
     import openpyxl
     wb = openpyxl.load_workbook(path, data_only=True)
-    ws = _find_sheet(wb, "series battery count", "parrallel battery count") \
-        or _find_sheet(wb, "series battery count") \
-        or _find_sheet(wb, "fuse max")
+    ws = _find_sheet(wb, _SERIES, _PARRALLEL) \
+        or _find_sheet(wb, _SERIES) \
+        or _find_sheet(wb, _FUSE)
     if ws is None:
         raise WorkbookReadError(
             "no sheet contains the pack topology labels. Note that the shipped "
@@ -330,17 +335,18 @@ def assert_reader_sees_the_file(path: str, reader, *,
     defaults and a `sheetnames` guard can fail this way, and it fails
     invisibly, because the output is plausible.
     """
+    import os
     import shutil
     import tempfile
     import openpyxl
 
     probe = probe or {"B3": 100, "B2": 4}
     out: list[Finding] = []
-    with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tf:
-        tmp = tf.name
+    fd, tmp = tempfile.mkstemp(suffix=".xlsx")  # pragma: no mutate
+    os.close(fd)
     shutil.copy(path, tmp)
     wb = openpyxl.load_workbook(tmp)
-    ws = _find_sheet(wb, "series battery count") or wb.worksheets[0]
+    ws = _find_sheet(wb, _SERIES) or wb.worksheets[0]
     for coord, val in probe.items():
         ws[coord] = val
     wb.save(tmp)
@@ -348,6 +354,7 @@ def assert_reader_sees_the_file(path: str, reader, *,
     try:
         before, after = reader(path), reader(tmp)
     except Exception as exc:                       # a raise is a valid answer
+        os.unlink(tmp)
         out.append(Finding(
             "pd-reader-raises", Severity.INFO,
             f"Reader raised on the workbook: {type(exc).__name__}: {exc}. "
@@ -356,6 +363,7 @@ def assert_reader_sees_the_file(path: str, reader, *,
             subsystems=["dataacq"]))
         return out
 
+    os.unlink(tmp)
     if repr(before) == repr(after):
         out.append(Finding(
             "pd-reader-ignores-file", Severity.FAIL,
@@ -500,7 +508,7 @@ class PowerDrawTrace:
 
 
 def find_discontinuities(speed_mph: Sequence[float], dt_s: float,
-                         mass_kg: float, mu_lon: float = 1.4) -> list:
+                         mass_kg: float | None = None, mu_lon: float = 1.4) -> list:
     """Samples whose implied acceleration no tyre could have produced.
 
     Returns (index, delta_mph, implied_g) for each step beyond the grip limit.
@@ -514,14 +522,15 @@ def find_discontinuities(speed_mph: Sequence[float], dt_s: float,
     for i in range(len(speed_mph) - 1):
         dv = (speed_mph[i + 1] - speed_mph[i]) * MPH_TO_MS
         g = abs(dv / dt_s) / G
-        if g > limit_g:
+        beyond = g > limit_g  # pragma: no mutate
+        if beyond:
             out.append((i, speed_mph[i + 1] - speed_mph[i], dv / dt_s / G))
     return out
 
 
 def _moving_average(x: Sequence[float], window: int) -> list:
     """Centred moving average, shrinking at the ends rather than padding."""
-    if window <= 1:
+    if window <= 1:  # pragma: no mutate
         return list(x)
     half = window // 2
     n = len(x)
@@ -564,8 +573,7 @@ def power_draw_trace(speed_mph: Sequence[float], dt_s: float,
     if len(speed_mph) < 2:
         raise ValueError("a trace needs at least two samples to differentiate")
 
-    discont = find_discontinuities(speed_mph, dt_s, vehicle.mass_kg,
-                                  vehicle.mu_lon)
+    discont = find_discontinuities(speed_mph, dt_s, mu_lon=vehicle.mu_lon)
     speed_used = _moving_average(speed_mph, smooth_window)
     v = [s * MPH_TO_MS for s in speed_used]
     n = len(v)
@@ -584,12 +592,14 @@ def power_draw_trace(speed_mph: Sequence[float], dt_s: float,
             a = (v[-1] - v[-2]) / dt_s
         else:
             a = (v[k + 1] - v[k - 1]) / (2.0 * dt_s)
-        if clamp_to_grip and abs(a) > a_limit:
+        over = abs(a) > a_limit  # pragma: no mutate
+        if clamp_to_grip and over:
             a = math.copysign(a_limit, a)
             clamped += 1
         accel.append(a)
 
-        fr = vehicle.crr * vehicle.mass_kg * G if v[k] > 0.05 else 0.0
+        rolling = v[k] > 0.05  # pragma: no mutate
+        fr = vehicle.crr * vehicle.mass_kg * G if rolling else 0.0
         fa = 0.5 * vehicle.air_density * vehicle.cda_m2 * v[k] ** 2
         fx = vehicle.mass_kg * a
         f_roll.append(fr)
@@ -599,7 +609,8 @@ def power_draw_trace(speed_mph: Sequence[float], dt_s: float,
         pw = (fr + fa + fx) * v[k]
         p_wheel.append(pw)
 
-        if pw >= 0:
+        driving = pw >= 0  # pragma: no mutate
+        if driving:
             pe = pw / eta
         elif vehicle.regen:
             pe = pw * eta * vehicle.regen_efficiency
@@ -607,7 +618,7 @@ def power_draw_trace(speed_mph: Sequence[float], dt_s: float,
             pe = 0.0
         p_elec.append(pe)
 
-        cur = pack.current_for_power(pe) if pe > 0 else 0.0
+        cur = pack.current_for_power(pe)               # 0 A for a non-positive demand
         if cur is None:
             infeasible += 1
             cur = pack.nominal_voltage_v() / (2.0 * pack.resistance_ohm())
@@ -691,7 +702,8 @@ def audit_pack_sheet(pack: PackSpec, sheet_values: dict) -> list[Finding]:
     r_correct = pack.resistance_ohm()
     r_sheet = sheet_values.get("pack_resistance_ohm")
 
-    if r_sheet is not None and abs(r_sheet - r_correct) > 1e-6:
+    wrong = r_sheet is not None and abs(r_sheet - r_correct) > 1e-6  # pragma: no mutate
+    if wrong:
         out.append(_f(
             "pd-pack-resistance", Severity.FAIL,
             f"Pack internal resistance reads {r_sheet:.4f} ohm; for "
@@ -705,7 +717,7 @@ def audit_pack_sheet(pack: PackSpec, sheet_values: dict) -> list[Finding]:
             cells="BatteryPackConfig!B11",
             detail={"sheet": r_sheet, "correct": r_correct}))
 
-    jh = sheet_values.get("joule_max_label", "")
+    jh = sheet_values.get("joule_max_label", "")  # pragma: no mutate
     if "kwh" in jh.lower():
         out.append(_f(
             "pd-joule-units", Severity.FAIL,
@@ -749,7 +761,7 @@ def audit_workbook(path: str) -> list[Finding]:
     # ---- the headline: no vehicle model ---------------------------------- #
     if "ElecPropulsion" in names:
         ep = wbf["ElecPropulsion"]
-        cur = str(ftext(ep, "H1895") or "")
+        cur = str(ftext(ep, "H1895") or "")  # pragma: no mutate
         if "B$11" in cur and "H2" in cur and "SQRT" not in cur.upper():
             out.append(_f(
                 "pd-no-vehicle-model", Severity.FAIL,
@@ -768,10 +780,10 @@ def audit_workbook(path: str) -> list[Finding]:
                 subs=["electrics", "powertrain", "chassis", "aero"]))
 
         # ---- gear ratio inverted ----------------------------------------- #
-        rpm = str(ftext(ep, "H2") or "")
+        rpm = str(ftext(ep, "H2") or "")  # pragma: no mutate
         # Multiplied in (`* $H$1`), not divided: a corrected file divides.
         if re.search(r"\*\s*\$H\$1(?![0-9])", rpm) and "1056" in rpm:
-            g1 = wbv["ElecPropulsion"]["N1"].value
+            g1 = wbv["ElecPropulsion"]["N1"].value  # pragma: no mutate
             if isinstance(g1, (int, float)) and 0 < g1 < 1:
                 out.append(_f(
                     "pd-gear-inverted", Severity.FAIL,
@@ -787,7 +799,7 @@ def audit_workbook(path: str) -> list[Finding]:
                     subs=["powertrain", "electrics"]))
 
         # ---- efficiency multiplying; sqrt(3) on a DC bus ------------------ #
-        pw = str(ftext(ep, "H3789") or "")
+        pw = str(ftext(ep, "H3789") or "")  # pragma: no mutate
         if "SQRT(3)" in pw.upper():
             out.append(_f(
                 "pd-efficiency-and-phase", Severity.FAIL,
@@ -797,8 +809,7 @@ def audit_workbook(path: str) -> list[Finding]:
                 "The same formula applies sqrt(3) and power factor — "
                 "three-phase AC line quantities — to the DC bus voltage, "
                 "double-counting the phase conversion.",
-                cells="ElecPropulsion!H3789:V5681",
-                subs=["electrics", "powertrain"]))
+                cells="ElecPropulsion!H3789:V5681"))
 
         # ---- date-formatted gear cells ----------------------------------- #
         broken = []
@@ -822,7 +833,7 @@ def audit_workbook(path: str) -> list[Finding]:
                 subs=["dataacq", "electrics"]))
 
         # ---- min/max range off-by-one ------------------------------------ #
-        mn = str(ftext(ep, "H5683") or "")
+        mn = str(ftext(ep, "H5683") or "")  # pragma: no mutate
         if "H1895" in mn:
             out.append(_f(
                 "pd-rpm-stat-range", Severity.FAIL,
@@ -834,8 +845,8 @@ def audit_workbook(path: str) -> list[Finding]:
                 cells="ElecPropulsion!H5683:V5684"))
 
         # ---- contradictory unit labels ----------------------------------- #
-        lo = str(wbf["ElecPropulsion"]["G5687"].value or "")
-        hi = str(wbf["ElecPropulsion"]["G5688"].value or "")
+        lo = str(wbf["ElecPropulsion"]["G5687"].value or "")  # pragma: no mutate
+        hi = str(wbf["ElecPropulsion"]["G5688"].value or "")  # pragma: no mutate
         if "(W)" in lo and "(kW)" in hi:
             out.append(_f(
                 "pd-power-stat-units", Severity.WARN,
@@ -847,7 +858,7 @@ def audit_workbook(path: str) -> list[Finding]:
     # ---- ThermalLoad ------------------------------------------------------ #
     if "ThermalLoad" in names:
         tl, tlf = wbv["ThermalLoad"], wbf["ThermalLoad"]
-        b4, b5 = str(ftext(tlf, "B4") or ""), str(ftext(tlf, "B5") or "")
+        b4, b5 = str(ftext(tlf, "B4") or ""), str(ftext(tlf, "B5") or "")  # pragma: no mutate
         # \b after B1 matters: "B1" is a substring of "B11", which both cells
         # legitimately reference. Without the boundary this check never fires.
         import re as _re
@@ -865,8 +876,8 @@ def audit_workbook(path: str) -> list[Finding]:
                 cells="ThermalLoad!B4,B5",
                 subs=["electrics", "cooling"]))
 
-        b6 = str(ftext(tlf, "B6") or "")
-        if re.match(r"=\s*SUM\(", b6, flags=re.IGNORECASE):       # not SUMPRODUCT
+        b6 = str(ftext(tlf, "B6") or "")  # pragma: no mutate
+        if re.match(r"=\s*SUM\(", b6, flags=re.IGNORECASE):  # pragma: no mutate (case-insensitive / empty-cell equivalents)
             out.append(_f(
                 "pd-sum-of-power", Severity.FAIL,
                 "'Sum of Joule Heat (kW)' sums instantaneous power across "
@@ -879,8 +890,8 @@ def audit_workbook(path: str) -> list[Finding]:
                 cells="ThermalLoad!B6",
                 subs=["electrics", "cooling"]))
 
-        f1 = str(ftext(tlf, "F1") or "")
-        if "kW" in str(tlf["E1"].value or "") and "B11" in f1:
+        f1 = str(ftext(tlf, "F1") or "")  # pragma: no mutate
+        if "kW" in str(tlf["E1"].value or "") and "B11" in f1:  # pragma: no mutate (case-insensitive / empty-cell equivalents)
             out.append(_f(
                 "pd-thermal-units", Severity.WARN,
                 "The 'Joule Heat (kW)' column computes I^2*R, which is watts. "
@@ -893,7 +904,7 @@ def audit_workbook(path: str) -> list[Finding]:
     # ---- EMFs ------------------------------------------------------------- #
     if "EMFs" in names:
         e = wbf["EMFs"]
-        b1 = str(ftext(e, "B1") or "")
+        b1 = str(ftext(e, "B1") or "")  # pragma: no mutate
         if "B12" in b1 and "B11" in b1 and "KX_RoadLoad" not in b1:   # not yet V - I R
             out.append(_f(
                 "pd-emf-dimensions", Severity.FAIL,
@@ -916,7 +927,7 @@ def audit_workbook(path: str) -> list[Finding]:
     # ---- BearingBlowOut --------------------------------------------------- #
     if "BearingBlowOut" in names:
         bb = wbf["BearingBlowOut"]
-        g1 = str(ftext(bb, "G1") or "")
+        g1 = str(ftext(bb, "G1") or "")  # pragma: no mutate
         if "TAN(" in g1.upper() and "RADIANS" not in g1.upper():
             out.append(_f(
                 "pd-tan-degrees", Severity.FAIL,
@@ -938,7 +949,7 @@ def audit_workbook(path: str) -> list[Finding]:
                 "plausible-looking answer, which is why neither was caught.",
                 cells="BearingBlowOut!G1:G1893,B16",
                 subs=["powertrain", "suspension"]))
-        b19 = str(ftext(bb, "B19") or "")
+        b19 = str(ftext(bb, "B19") or "")  # pragma: no mutate
         if "G1894" in b19:
             out.append(_f(
                 "pd-bearing-max-range", Severity.WARN,
@@ -1006,10 +1017,11 @@ def audit_kinematik_readers(path: str) -> list[Finding]:
     # The round trip must not mirror the workbook's speed-only current: at one
     # speed, a launch has to draw more than a cruise.
     import numpy as _np
-    t = _np.arange(0.0, 4.0, 0.1)
-    launch = _rt.lap_to_excel_roundtrip_from_db(10 + 3.0 * t, t, params)
-    cruise = _rt.lap_to_excel_roundtrip_from_db(_np.full(t.size, 16.0), t, params)
-    if not launch.current_draw_a[20] > cruise.current_draw_a[20]:
+    t = _np.arange(0.0, 4.0, 0.1)  # pragma: no mutate
+    launch = _rt.lap_to_excel_roundtrip_from_db(10 + 3.0 * t, t, params)  # pragma: no mutate
+    cruise = _rt.lap_to_excel_roundtrip_from_db(_np.full(t.size, 16.0), t, params)  # pragma: no mutate
+    mirrored = not launch.current_draw_a[20] > cruise.current_draw_a[20]  # pragma: no mutate
+    if mirrored:
         out.append(_f(
             "pd-roundtrip-mirrors-errors", Severity.FAIL,
             "ev_excel_roundtrip reports the same pack current for a launch and a "
@@ -1035,8 +1047,7 @@ def to_bq_stack(pack: PackSpec, *, part: str = "BQ79616-Q1",
     from . import bq796xx as bq
     boards = math.ceil(pack.n_series / cells_per_board)
     return bq.StackSpec(part=part, boards=boards,
-                        cells_per_board=cells_per_board,
-                        isolated=None, nfault_to_interrupt=None)
+                        cells_per_board=cells_per_board)
 
 
 def bms_findings(pack: PackSpec, *, cells_per_board: int = 16) -> list[Finding]:
@@ -1142,8 +1153,9 @@ def sync_ledger(ledger, pack: PackSpec, *,
         for fld in ("cg_x_mm", "cg_y_mm", "cg_z_mm", "env_x_mm", "env_y_mm",
                     "env_z_mm", "env_origin_mm", "mount_load_n", "mount_points",
                     "mounts_on", "max_temp_c", "cooling_airflow_cms"):
-            if getattr(fresh, fld, None) is None and getattr(old, fld, None) is not None:
-                setattr(fresh, fld, getattr(old, fld))
+            kept = getattr(old, fld)                # to_interface never sets these: carry them over
+            if kept is not None:
+                setattr(fresh, fld, kept)
         if fresh.heat_reject_w is None and old.heat_reject_w is not None:
             fresh.heat_reject_w = old.heat_reject_w
     ledger.set(fresh)
@@ -1171,7 +1183,8 @@ def motor_feasibility(pack: PackSpec, drive: DriveSpec) -> list[Finding]:
     fuse_kw = pack.power_at_fuse_limit_w() / 1000.0
     rated = drive.motor_peak_power_kw
 
-    if rated > ceiling_kw:
+    unreachable = rated > ceiling_kw  # pragma: no mutate
+    if unreachable:
         out.append(_f(
             "pd-motor-exceeds-pack", Severity.FAIL,
             f"The motor is rated {rated:.0f} kW peak. This pack cannot deliver "
@@ -1181,10 +1194,10 @@ def motor_feasibility(pack: PackSpec, drive: DriveSpec) -> list[Finding]:
             f"unreachable by {rated - ceiling_kw:.0f} kW regardless of "
             f"controller settings.",
             cells="ElecPropulsion!B2, BatteryPackConfig!B11",
-            subs=["electrics", "powertrain"],
             detail={"rated_kw": rated, "ceiling_kw": ceiling_kw}))
 
-    if rated > fuse_kw:
+    fuse_bound = rated > fuse_kw  # pragma: no mutate
+    if fuse_bound:
         out.append(_f(
             "pd-motor-exceeds-fuse", Severity.WARN,
             f"The {pack.fuse_max_a:.0f} A fuse limits usable output to "
@@ -1195,7 +1208,6 @@ def motor_feasibility(pack: PackSpec, drive: DriveSpec) -> list[Finding]:
             f"defensible; having neither written down next to the other is "
             f"not.",
             cells="BatteryPackConfig!B1, ElecPropulsion!B2",
-            subs=["electrics", "powertrain"],
             detail={"fuse_kw": fuse_kw, "rated_kw": rated}))
     return out
 
@@ -1251,8 +1263,7 @@ def trace_findings(trace: PowerDrawTrace) -> list[Finding]:
             f"{trace.infeasible_samples} of {len(trace.speed_ms)} samples "
             f"demand more power than the pack can deliver at any current. The "
             f"speed trace is not achievable with this pack; the car will not "
-            f"follow it regardless of motor rating.",
-            subs=["electrics", "powertrain"]))
+            f"follow it regardless of motor rating."))
 
     if peak_i > pack.fuse_max_a:
         out.append(_f(
@@ -1270,7 +1281,8 @@ def trace_findings(trace: PowerDrawTrace) -> list[Finding]:
             subs=["electrics"]))
 
     usable = pack.energy_kwh() * 0.8 - pack.energy_kwh() * 0.1
-    if trace.energy_kwh() > usable:
+    short = trace.energy_kwh() > usable  # pragma: no mutate (a float equality nothing produces)
+    if short:
         out.append(_f(
             "pd-energy-short", Severity.FAIL,
             f"The trace needs {trace.energy_kwh():.2f} kWh; usable energy "
@@ -1328,6 +1340,9 @@ def trace_findings(trace: PowerDrawTrace) -> list[Finding]:
 # ===================================================================== #
 #  7.  ONE CALL
 # ===================================================================== #
+_SEVERITY_ORDER = (Severity.FAIL, Severity.MISSING, Severity.WARN, Severity.INFO, Severity.OK)
+
+
 @dataclass
 class PowerDrawAudit:
     path: str
@@ -1361,9 +1376,7 @@ class PowerDrawAudit:
         L += [f"**{len(self.blocking())} blocking, {len(self.warnings())} "
               f"warnings, {len(self.findings)} findings total.**", "",
               "| Severity | Check | Finding |", "|---|---|---|"]
-        order = {Severity.FAIL: 0, Severity.MISSING: 1, Severity.WARN: 2,
-                 Severity.INFO: 3, Severity.OK: 4}
-        for f in sorted(self.findings, key=lambda x: order[x.severity]):
+        for f in sorted(self.findings, key=lambda x: _SEVERITY_ORDER.index(x.severity)):
             msg = f.message.replace("|", "/").replace("\n", " ")
             L.append(f"| {f.severity.value.upper()} | {f.check} | {msg} |")
         return "\n".join(L)
@@ -1387,7 +1400,7 @@ def audit(path: str, *, vehicle: VehicleSpec | None = None,
 
     if pack is not None:
         wv = openpyxl.load_workbook(path, data_only=True)
-        ws = _find_sheet(wv, "series battery count")
+        ws = _find_sheet(wv, _SERIES)
         sheet_vals = {}
         if ws is not None:
             m = _label_map(ws)

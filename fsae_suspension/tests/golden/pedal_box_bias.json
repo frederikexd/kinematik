@@ -1,0 +1,2935 @@
+{
+ "auth_custom": {
+  "a": {
+   "bias_at_centre": 0.782888552862806,
+   "bias_max": 0.8880560846917617,
+   "bias_min": 0.6210770328102709,
+   "bias_per_turn": 0.010624209451626343,
+   "findings": [],
+   "offset_for_target_mm": null,
+   "sweep": [
+    {
+     "bias_front": 0.6210770328102709,
+     "offset_mm": -15.0,
+     "pressure_front_bar": 39.4705048277997,
+     "pressure_rear_bar": 60.302160153582875
+    },
+    {
+     "bias_front": 0.6839001808834729,
+     "offset_mm": -10.0,
+     "pressure_front_bar": 47.364605793359644,
+     "pressure_rear_bar": 54.82014559416625
+    },
+    {
+     "bias_front": 0.7371610924203444,
+     "offset_mm": -5.0,
+     "pressure_front_bar": 55.25870675891958,
+     "pressure_rear_bar": 49.33813103474962
+    },
+    {
+     "bias_front": 0.782888552862806,
+     "offset_mm": 0.0,
+     "pressure_front_bar": 63.15280772447952,
+     "pressure_rear_bar": 43.856116475333
+    },
+    {
+     "bias_front": 0.8225753354071643,
+     "offset_mm": 5.0,
+     "pressure_front_bar": 71.04690869003946,
+     "pressure_rear_bar": 38.37410191591638
+    },
+    {
+     "bias_front": 0.85734425349087,
+     "offset_mm": 10.0,
+     "pressure_front_bar": 78.9410096555994,
+     "pressure_rear_bar": 32.89208735649975
+    },
+    {
+     "bias_front": 0.8880560846917617,
+     "offset_mm": 15.0,
+     "pressure_front_bar": 86.83511062115933,
+     "pressure_rear_bar": 27.410072797083124
+    }
+   ],
+   "target_bias": null,
+   "target_reachable": false,
+   "thread_pitch_mm": 1.25
+  },
+  "d": {
+   "bias_at_centre": 0.782888552862806,
+   "bias_max": 0.8880560846917617,
+   "bias_min": 0.6210770328102709,
+   "bias_per_turn": 0.010624209451626343,
+   "findings": [],
+   "offset_for_target_mm": null,
+   "sweep": [
+    {
+     "bias_front": 0.6210770328102709,
+     "offset_mm": -15.0,
+     "pressure_front_bar": 39.4705048277997,
+     "pressure_rear_bar": 60.302160153582875
+    },
+    {
+     "bias_front": 0.6839001808834729,
+     "offset_mm": -10.0,
+     "pressure_front_bar": 47.364605793359644,
+     "pressure_rear_bar": 54.82014559416625
+    },
+    {
+     "bias_front": 0.7371610924203444,
+     "offset_mm": -5.0,
+     "pressure_front_bar": 55.25870675891958,
+     "pressure_rear_bar": 49.33813103474962
+    },
+    {
+     "bias_front": 0.782888552862806,
+     "offset_mm": 0.0,
+     "pressure_front_bar": 63.15280772447952,
+     "pressure_rear_bar": 43.856116475333
+    },
+    {
+     "bias_front": 0.8225753354071643,
+     "offset_mm": 5.0,
+     "pressure_front_bar": 71.04690869003946,
+     "pressure_rear_bar": 38.37410191591638
+    },
+    {
+     "bias_front": 0.85734425349087,
+     "offset_mm": 10.0,
+     "pressure_front_bar": 78.9410096555994,
+     "pressure_rear_bar": 32.89208735649975
+    },
+    {
+     "bias_front": 0.8880560846917617,
+     "offset_mm": 15.0,
+     "pressure_front_bar": 86.83511062115933,
+     "pressure_rear_bar": 27.410072797083124
+    }
+   ],
+   "target_bias": null,
+   "target_reachable": false,
+   "thread_pitch_mm": 1.25
+  },
+  "s": "Reachable front bias: 62.1% to 88.8% (centred bar = 78.3%)\nAdjuster: 1.06% bias per turn (1.25 mm pitch)"
+ },
+ "auth_default": {
+  "a": {
+   "bias_at_centre": 0.782888552862806,
+   "bias_max": 0.893773369858631,
+   "bias_min": 0.6071341791943543,
+   "bias_per_turn": 0.011990030884774017,
+   "findings": [],
+   "offset_for_target_mm": null,
+   "sweep": [
+    {
+     "bias_front": 0.6071341791943543,
+     "offset_mm": -12.0,
+     "pressure_front_bar": 37.891684634687714,
+     "pressure_rear_bar": 61.3985630654662
+    },
+    {
+     "bias_front": 0.6183286582661226,
+     "offset_mm": -11.4,
+     "pressure_front_bar": 39.1547407891773,
+     "pressure_rear_bar": 60.521440735959544
+    },
+    {
+     "bias_front": 0.6292049949807956,
+     "offset_mm": -10.8,
+     "pressure_front_bar": 40.41779694366689,
+     "pressure_rear_bar": 59.64431840645288
+    },
+    {
+     "bias_front": 0.6397765615290728,
+     "offset_mm": -10.2,
+     "pressure_front_bar": 41.68085309815648,
+     "pressure_rear_bar": 58.76719607694622
+    },
+    {
+     "bias_front": 0.6500559910414333,
+     "offset_mm": -9.6,
+     "pressure_front_bar": 42.94390925264607,
+     "pressure_rear_bar": 57.89007374743956
+    },
+    {
+     "bias_front": 0.660055227950659,
+     "offset_mm": -9.0,
+     "pressure_front_bar": 44.20696540713566,
+     "pressure_rear_bar": 57.012951417932904
+    },
+    {
+     "bias_front": 0.6697855742914471,
+     "offset_mm": -8.4,
+     "pressure_front_bar": 45.47002156162525,
+     "pressure_rear_bar": 56.13582908842624
+    },
+    {
+     "bias_front": 0.6792577323144331,
+     "offset_mm": -7.8,
+     "pressure_front_bar": 46.73307771611485,
+     "pressure_rear_bar": 55.25870675891958
+    },
+    {
+     "bias_front": 0.6884818437524236,
+     "offset_mm": -7.2,
+     "pressure_front_bar": 47.99613387060444,
+     "pressure_rear_bar": 54.381584429412925
+    },
+    {
+     "bias_front": 0.6974675260417154,
+     "offset_mm": -6.6,
+     "pressure_front_bar": 49.25919002509403,
+     "pressure_rear_bar": 53.50446209990626
+    },
+    {
+     "bias_front": 0.7062239057704537,
+     "offset_mm": -6.0,
+     "pressure_front_bar": 50.522246179583625,
+     "pressure_rear_bar": 52.6273397703996
+    },
+    {
+     "bias_front": 0.7147596495985818,
+     "offset_mm": -5.4,
+     "pressure_front_bar": 51.785302334073215,
+     "pressure_rear_bar": 51.75021744089294
+    },
+    {
+     "bias_front": 0.7230829928695837,
+     "offset_mm": -4.8,
+     "pressure_front_bar": 53.0483584885628,
+     "pressure_rear_bar": 50.873095111386284
+    },
+    {
+     "bias_front": 0.7312017661125817,
+     "offset_mm": -4.2,
+     "pressure_front_bar": 54.31141464305239,
+     "pressure_rear_bar": 49.99597278187962
+    },
+    {
+     "bias_front": 0.7391234196140604,
+     "offset_mm": -3.5999999999999996,
+     "pressure_front_bar": 55.57447079754198,
+     "pressure_rear_bar": 49.11885045237296
+    },
+    {
+     "bias_front": 0.7468550462212903,
+     "offset_mm": -3.0,
+     "pressure_front_bar": 56.837526952031574,
+     "pressure_rear_bar": 48.241728122866306
+    },
+    {
+     "bias_front": 0.7544034025241552,
+     "offset_mm": -2.4000000000000004,
+     "pressure_front_bar": 58.100583106521164,
+     "pressure_rear_bar": 47.364605793359644
+    },
+    {
+     "bias_front": 0.7617749285483426,
+     "offset_mm": -1.8000000000000007,
+     "pressure_front_bar": 59.36363926101075,
+     "pressure_rear_bar": 46.48748346385298
+    },
+    {
+     "bias_front": 0.7689757660805411,
+     "offset_mm": -1.1999999999999993,
+     "pressure_front_bar": 60.62669541550034,
+     "pressure_rear_bar": 45.61036113434632
+    },
+    {
+     "bias_front": 0.7760117757352394,
+     "offset_mm": -0.5999999999999996,
+     "pressure_front_bar": 61.889751569989926,
+     "pressure_rear_bar": 44.733238804839665
+    },
+    {
+     "bias_front": 0.782888552862806,
+     "offset_mm": 0.0,
+     "pressure_front_bar": 63.15280772447952,
+     "pressure_rear_bar": 43.856116475333
+    },
+    {
+     "bias_front": 0.7896114423896017,
+     "offset_mm": 0.5999999999999996,
+     "pressure_front_bar": 64.4158638789691,
+     "pressure_rear_bar": 42.97899414582634
+    },
+    {
+     "bias_front": 0.7961855526728465,
+     "offset_mm": 1.1999999999999993,
+     "pressure_front_bar": 65.67892003345871,
+     "pressure_rear_bar": 42.10187181631969
+    },
+    {
+     "bias_front": 0.8026157684457169,
+     "offset_mm": 1.8000000000000007,
+     "pressure_front_bar": 66.9419761879483,
+     "pressure_rear_bar": 41.22474948681302
+    },
+    {
+     "bias_front": 0.8089067629216171,
+     "offset_mm": 2.4000000000000004,
+     "pressure_front_bar": 68.20503234243789,
+     "pressure_rear_bar": 40.347627157306356
+    },
+    {
+     "bias_front": 0.8150630091206572,
+     "offset_mm": 3.0,
+     "pressure_front_bar": 69.46808849692748,
+     "pressure_rear_bar": 39.4705048277997
+    },
+    {
+     "bias_front": 0.8210887904760301,
+     "offset_mm": 3.5999999999999996,
+     "pressure_front_bar": 70.73114465141707,
+     "pressure_rear_bar": 38.59338249829304
+    },
+    {
+     "bias_front": 0.8269882107731388,
+     "offset_mm": 4.199999999999999,
+     "pressure_front_bar": 71.99420080590666,
+     "pressure_rear_bar": 37.71626016878638
+    },
+    {
+     "bias_front": 0.8327652034699392,
+     "offset_mm": 4.800000000000001,
+     "pressure_front_bar": 73.25725696039625,
+     "pressure_rear_bar": 36.83913783927972
+    },
+    {
+     "bias_front": 0.8384235404429818,
+     "offset_mm": 5.399999999999999,
+     "pressure_front_bar": 74.52031311488584,
+     "pressure_rear_bar": 35.96201550977306
+    },
+    {
+     "bias_front": 0.8439668402000161,
+     "offset_mm": 6.0,
+     "pressure_front_bar": 75.78336926937543,
+     "pressure_rear_bar": 35.0848931802664
+    },
+    {
+     "bias_front": 0.8493985755967359,
+     "offset_mm": 6.600000000000001,
+     "pressure_front_bar": 77.04642542386502,
+     "pressure_rear_bar": 34.20777085075974
+    },
+    {
+     "bias_front": 0.8547220810922452,
+     "offset_mm": 7.199999999999999,
+     "pressure_front_bar": 78.3094815783546,
+     "pressure_rear_bar": 33.33064852125308
+    },
+    {
+     "bias_front": 0.8599405595750957,
+     "offset_mm": 7.800000000000001,
+     "pressure_front_bar": 79.57253773284421,
+     "pressure_rear_bar": 32.45352619174642
+    },
+    {
+     "bias_front": 0.8650570887892604,
+     "offset_mm": 8.399999999999999,
+     "pressure_front_bar": 80.83559388733379,
+     "pressure_rear_bar": 31.57640386223976
+    },
+    {
+     "bias_front": 0.8700746273871331,
+     "offset_mm": 9.0,
+     "pressure_front_bar": 82.09865004182338,
+     "pressure_rear_bar": 30.6992815327331
+    },
+    {
+     "bias_front": 0.8749960206345668,
+     "offset_mm": 9.600000000000001,
+     "pressure_front_bar": 83.36170619631297,
+     "pressure_rear_bar": 29.82215920322644
+    },
+    {
+     "bias_front": 0.879824005791069,
+     "offset_mm": 10.2,
+     "pressure_front_bar": 84.62476235080257,
+     "pressure_rear_bar": 28.94503687371978
+    },
+    {
+     "bias_front": 0.8845612171865259,
+     "offset_mm": 10.8,
+     "pressure_front_bar": 85.88781850529215,
+     "pressure_rear_bar": 28.06791454421312
+    },
+    {
+     "bias_front": 0.8892101910142444,
+     "offset_mm": 11.399999999999999,
+     "pressure_front_bar": 87.15087465978173,
+     "pressure_rear_bar": 27.190792214706462
+    },
+    {
+     "bias_front": 0.893773369858631,
+     "offset_mm": 12.0,
+     "pressure_front_bar": 88.41393081427132,
+     "pressure_rear_bar": 26.3136698851998
+    }
+   ],
+   "target_bias": null,
+   "target_reachable": false,
+   "thread_pitch_mm": 1.058
+  },
+  "d": {
+   "bias_at_centre": 0.782888552862806,
+   "bias_max": 0.893773369858631,
+   "bias_min": 0.6071341791943543,
+   "bias_per_turn": 0.011990030884774017,
+   "findings": [],
+   "offset_for_target_mm": null,
+   "sweep": [
+    {
+     "bias_front": 0.6071341791943543,
+     "offset_mm": -12.0,
+     "pressure_front_bar": 37.891684634687714,
+     "pressure_rear_bar": 61.3985630654662
+    },
+    {
+     "bias_front": 0.6183286582661226,
+     "offset_mm": -11.4,
+     "pressure_front_bar": 39.1547407891773,
+     "pressure_rear_bar": 60.521440735959544
+    },
+    {
+     "bias_front": 0.6292049949807956,
+     "offset_mm": -10.8,
+     "pressure_front_bar": 40.41779694366689,
+     "pressure_rear_bar": 59.64431840645288
+    },
+    {
+     "bias_front": 0.6397765615290728,
+     "offset_mm": -10.2,
+     "pressure_front_bar": 41.68085309815648,
+     "pressure_rear_bar": 58.76719607694622
+    },
+    {
+     "bias_front": 0.6500559910414333,
+     "offset_mm": -9.6,
+     "pressure_front_bar": 42.94390925264607,
+     "pressure_rear_bar": 57.89007374743956
+    },
+    {
+     "bias_front": 0.660055227950659,
+     "offset_mm": -9.0,
+     "pressure_front_bar": 44.20696540713566,
+     "pressure_rear_bar": 57.012951417932904
+    },
+    {
+     "bias_front": 0.6697855742914471,
+     "offset_mm": -8.4,
+     "pressure_front_bar": 45.47002156162525,
+     "pressure_rear_bar": 56.13582908842624
+    },
+    {
+     "bias_front": 0.6792577323144331,
+     "offset_mm": -7.8,
+     "pressure_front_bar": 46.73307771611485,
+     "pressure_rear_bar": 55.25870675891958
+    },
+    {
+     "bias_front": 0.6884818437524236,
+     "offset_mm": -7.2,
+     "pressure_front_bar": 47.99613387060444,
+     "pressure_rear_bar": 54.381584429412925
+    },
+    {
+     "bias_front": 0.6974675260417154,
+     "offset_mm": -6.6,
+     "pressure_front_bar": 49.25919002509403,
+     "pressure_rear_bar": 53.50446209990626
+    },
+    {
+     "bias_front": 0.7062239057704537,
+     "offset_mm": -6.0,
+     "pressure_front_bar": 50.522246179583625,
+     "pressure_rear_bar": 52.6273397703996
+    },
+    {
+     "bias_front": 0.7147596495985818,
+     "offset_mm": -5.4,
+     "pressure_front_bar": 51.785302334073215,
+     "pressure_rear_bar": 51.75021744089294
+    },
+    {
+     "bias_front": 0.7230829928695837,
+     "offset_mm": -4.8,
+     "pressure_front_bar": 53.0483584885628,
+     "pressure_rear_bar": 50.873095111386284
+    },
+    {
+     "bias_front": 0.7312017661125817,
+     "offset_mm": -4.2,
+     "pressure_front_bar": 54.31141464305239,
+     "pressure_rear_bar": 49.99597278187962
+    },
+    {
+     "bias_front": 0.7391234196140604,
+     "offset_mm": -3.5999999999999996,
+     "pressure_front_bar": 55.57447079754198,
+     "pressure_rear_bar": 49.11885045237296
+    },
+    {
+     "bias_front": 0.7468550462212903,
+     "offset_mm": -3.0,
+     "pressure_front_bar": 56.837526952031574,
+     "pressure_rear_bar": 48.241728122866306
+    },
+    {
+     "bias_front": 0.7544034025241552,
+     "offset_mm": -2.4000000000000004,
+     "pressure_front_bar": 58.100583106521164,
+     "pressure_rear_bar": 47.364605793359644
+    },
+    {
+     "bias_front": 0.7617749285483426,
+     "offset_mm": -1.8000000000000007,
+     "pressure_front_bar": 59.36363926101075,
+     "pressure_rear_bar": 46.48748346385298
+    },
+    {
+     "bias_front": 0.7689757660805411,
+     "offset_mm": -1.1999999999999993,
+     "pressure_front_bar": 60.62669541550034,
+     "pressure_rear_bar": 45.61036113434632
+    },
+    {
+     "bias_front": 0.7760117757352394,
+     "offset_mm": -0.5999999999999996,
+     "pressure_front_bar": 61.889751569989926,
+     "pressure_rear_bar": 44.733238804839665
+    },
+    {
+     "bias_front": 0.782888552862806,
+     "offset_mm": 0.0,
+     "pressure_front_bar": 63.15280772447952,
+     "pressure_rear_bar": 43.856116475333
+    },
+    {
+     "bias_front": 0.7896114423896017,
+     "offset_mm": 0.5999999999999996,
+     "pressure_front_bar": 64.4158638789691,
+     "pressure_rear_bar": 42.97899414582634
+    },
+    {
+     "bias_front": 0.7961855526728465,
+     "offset_mm": 1.1999999999999993,
+     "pressure_front_bar": 65.67892003345871,
+     "pressure_rear_bar": 42.10187181631969
+    },
+    {
+     "bias_front": 0.8026157684457169,
+     "offset_mm": 1.8000000000000007,
+     "pressure_front_bar": 66.9419761879483,
+     "pressure_rear_bar": 41.22474948681302
+    },
+    {
+     "bias_front": 0.8089067629216171,
+     "offset_mm": 2.4000000000000004,
+     "pressure_front_bar": 68.20503234243789,
+     "pressure_rear_bar": 40.347627157306356
+    },
+    {
+     "bias_front": 0.8150630091206572,
+     "offset_mm": 3.0,
+     "pressure_front_bar": 69.46808849692748,
+     "pressure_rear_bar": 39.4705048277997
+    },
+    {
+     "bias_front": 0.8210887904760301,
+     "offset_mm": 3.5999999999999996,
+     "pressure_front_bar": 70.73114465141707,
+     "pressure_rear_bar": 38.59338249829304
+    },
+    {
+     "bias_front": 0.8269882107731388,
+     "offset_mm": 4.199999999999999,
+     "pressure_front_bar": 71.99420080590666,
+     "pressure_rear_bar": 37.71626016878638
+    },
+    {
+     "bias_front": 0.8327652034699392,
+     "offset_mm": 4.800000000000001,
+     "pressure_front_bar": 73.25725696039625,
+     "pressure_rear_bar": 36.83913783927972
+    },
+    {
+     "bias_front": 0.8384235404429818,
+     "offset_mm": 5.399999999999999,
+     "pressure_front_bar": 74.52031311488584,
+     "pressure_rear_bar": 35.96201550977306
+    },
+    {
+     "bias_front": 0.8439668402000161,
+     "offset_mm": 6.0,
+     "pressure_front_bar": 75.78336926937543,
+     "pressure_rear_bar": 35.0848931802664
+    },
+    {
+     "bias_front": 0.8493985755967359,
+     "offset_mm": 6.600000000000001,
+     "pressure_front_bar": 77.04642542386502,
+     "pressure_rear_bar": 34.20777085075974
+    },
+    {
+     "bias_front": 0.8547220810922452,
+     "offset_mm": 7.199999999999999,
+     "pressure_front_bar": 78.3094815783546,
+     "pressure_rear_bar": 33.33064852125308
+    },
+    {
+     "bias_front": 0.8599405595750957,
+     "offset_mm": 7.800000000000001,
+     "pressure_front_bar": 79.57253773284421,
+     "pressure_rear_bar": 32.45352619174642
+    },
+    {
+     "bias_front": 0.8650570887892604,
+     "offset_mm": 8.399999999999999,
+     "pressure_front_bar": 80.83559388733379,
+     "pressure_rear_bar": 31.57640386223976
+    },
+    {
+     "bias_front": 0.8700746273871331,
+     "offset_mm": 9.0,
+     "pressure_front_bar": 82.09865004182338,
+     "pressure_rear_bar": 30.6992815327331
+    },
+    {
+     "bias_front": 0.8749960206345668,
+     "offset_mm": 9.600000000000001,
+     "pressure_front_bar": 83.36170619631297,
+     "pressure_rear_bar": 29.82215920322644
+    },
+    {
+     "bias_front": 0.879824005791069,
+     "offset_mm": 10.2,
+     "pressure_front_bar": 84.62476235080257,
+     "pressure_rear_bar": 28.94503687371978
+    },
+    {
+     "bias_front": 0.8845612171865259,
+     "offset_mm": 10.8,
+     "pressure_front_bar": 85.88781850529215,
+     "pressure_rear_bar": 28.06791454421312
+    },
+    {
+     "bias_front": 0.8892101910142444,
+     "offset_mm": 11.399999999999999,
+     "pressure_front_bar": 87.15087465978173,
+     "pressure_rear_bar": 27.190792214706462
+    },
+    {
+     "bias_front": 0.893773369858631,
+     "offset_mm": 12.0,
+     "pressure_front_bar": 88.41393081427132,
+     "pressure_rear_bar": 26.3136698851998
+    }
+   ],
+   "target_bias": null,
+   "target_reachable": false,
+   "thread_pitch_mm": 1.058
+  },
+  "s": "Reachable front bias: 60.7% to 89.4% (centred bar = 78.3%)\nAdjuster: 1.20% bias per turn (1.06 mm pitch)"
+ },
+ "auth_edge": {
+  "a": {
+   "bias_at_centre": 0.782888552862806,
+   "bias_max": 0.893773369858631,
+   "bias_min": 0.6071341791943543,
+   "bias_per_turn": 0.011990030884774017,
+   "findings": [
+    {
+     "check": "target_bias_reachable",
+     "detail": {},
+     "message": "89% front needs the bar at +12.00 mm -- that is 100% of the way to the stop, so there is little trim left. Re-centre it by changing a bore.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "offset_for_target_mm": 11.999999999999975,
+   "sweep": [
+    {
+     "bias_front": 0.6071341791943543,
+     "offset_mm": -12.0,
+     "pressure_front_bar": 37.891684634687714,
+     "pressure_rear_bar": 61.3985630654662
+    },
+    {
+     "bias_front": 0.660055227950659,
+     "offset_mm": -9.0,
+     "pressure_front_bar": 44.20696540713566,
+     "pressure_rear_bar": 57.012951417932904
+    },
+    {
+     "bias_front": 0.7062239057704537,
+     "offset_mm": -6.0,
+     "pressure_front_bar": 50.522246179583625,
+     "pressure_rear_bar": 52.6273397703996
+    },
+    {
+     "bias_front": 0.7468550462212903,
+     "offset_mm": -3.0,
+     "pressure_front_bar": 56.837526952031574,
+     "pressure_rear_bar": 48.241728122866306
+    },
+    {
+     "bias_front": 0.782888552862806,
+     "offset_mm": 0.0,
+     "pressure_front_bar": 63.15280772447952,
+     "pressure_rear_bar": 43.856116475333
+    },
+    {
+     "bias_front": 0.8150630091206572,
+     "offset_mm": 3.0,
+     "pressure_front_bar": 69.46808849692748,
+     "pressure_rear_bar": 39.4705048277997
+    },
+    {
+     "bias_front": 0.8439668402000161,
+     "offset_mm": 6.0,
+     "pressure_front_bar": 75.78336926937543,
+     "pressure_rear_bar": 35.0848931802664
+    },
+    {
+     "bias_front": 0.8700746273871331,
+     "offset_mm": 9.0,
+     "pressure_front_bar": 82.09865004182338,
+     "pressure_rear_bar": 30.6992815327331
+    },
+    {
+     "bias_front": 0.893773369858631,
+     "offset_mm": 12.0,
+     "pressure_front_bar": 88.41393081427132,
+     "pressure_rear_bar": 26.3136698851998
+    }
+   ],
+   "target_bias": 0.893773369858631,
+   "target_reachable": true,
+   "thread_pitch_mm": 1.058
+  },
+  "s": "Reachable front bias: 60.7% to 89.4% (centred bar = 78.3%)\nAdjuster: 1.20% bias per turn (1.06 mm pitch)\nTarget 89% front is reachable at +12.00 mm bar offset."
+ },
+ "auth_far": {
+  "a": {
+   "bias_at_centre": 0.782888552862806,
+   "bias_max": 0.893773369858631,
+   "bias_min": 0.6071341791943543,
+   "bias_per_turn": 0.011990030884774017,
+   "findings": [
+    {
+     "check": "target_bias_reachable",
+     "detail": {},
+     "message": "88% front needs the bar at +10.46 mm -- that is 87% of the way to the stop, so there is little trim left. Re-centre it by changing a bore.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "offset_for_target_mm": 10.46458054744426,
+   "sweep": [
+    {
+     "bias_front": 0.6071341791943543,
+     "offset_mm": -12.0,
+     "pressure_front_bar": 37.891684634687714,
+     "pressure_rear_bar": 61.3985630654662
+    },
+    {
+     "bias_front": 0.660055227950659,
+     "offset_mm": -9.0,
+     "pressure_front_bar": 44.20696540713566,
+     "pressure_rear_bar": 57.012951417932904
+    },
+    {
+     "bias_front": 0.7062239057704537,
+     "offset_mm": -6.0,
+     "pressure_front_bar": 50.522246179583625,
+     "pressure_rear_bar": 52.6273397703996
+    },
+    {
+     "bias_front": 0.7468550462212903,
+     "offset_mm": -3.0,
+     "pressure_front_bar": 56.837526952031574,
+     "pressure_rear_bar": 48.241728122866306
+    },
+    {
+     "bias_front": 0.782888552862806,
+     "offset_mm": 0.0,
+     "pressure_front_bar": 63.15280772447952,
+     "pressure_rear_bar": 43.856116475333
+    },
+    {
+     "bias_front": 0.8150630091206572,
+     "offset_mm": 3.0,
+     "pressure_front_bar": 69.46808849692748,
+     "pressure_rear_bar": 39.4705048277997
+    },
+    {
+     "bias_front": 0.8439668402000161,
+     "offset_mm": 6.0,
+     "pressure_front_bar": 75.78336926937543,
+     "pressure_rear_bar": 35.0848931802664
+    },
+    {
+     "bias_front": 0.8700746273871331,
+     "offset_mm": 9.0,
+     "pressure_front_bar": 82.09865004182338,
+     "pressure_rear_bar": 30.6992815327331
+    },
+    {
+     "bias_front": 0.893773369858631,
+     "offset_mm": 12.0,
+     "pressure_front_bar": 88.41393081427132,
+     "pressure_rear_bar": 26.3136698851998
+    }
+   ],
+   "target_bias": 0.8819239986228821,
+   "target_reachable": true,
+   "thread_pitch_mm": 1.058
+  },
+  "s": "Reachable front bias: 60.7% to 89.4% (centred bar = 78.3%)\nAdjuster: 1.20% bias per turn (1.06 mm pitch)\nTarget 88% front is reachable at +10.46 mm bar offset."
+ },
+ "auth_near_end": {
+  "a": {
+   "bias_at_centre": 0.782888552862806,
+   "bias_max": 0.9474504179237352,
+   "bias_min": 0.41900522758590514,
+   "bias_per_turn": 0.05678425034842882,
+   "findings": [
+    {
+     "check": "bias_adjuster_sensitivity",
+     "detail": {},
+     "message": "One turn of the adjuster moves bias 5.7% -- that is coarse. A driver asking for 'a little more front' will overshoot. A finer thread or a longer bar gives finer trim.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "offset_for_target_mm": null,
+   "sweep": [
+    {
+     "bias_front": 0.41900522758590514,
+     "offset_mm": -20.0,
+     "pressure_front_bar": 21.050935908159843,
+     "pressure_rear_bar": 73.09352745888835
+    },
+    {
+     "bias_front": 0.782888552862806,
+     "offset_mm": 0.0,
+     "pressure_front_bar": 63.15280772447952,
+     "pressure_rear_bar": 43.856116475333
+    },
+    {
+     "bias_front": 0.9474504179237352,
+     "offset_mm": 20.0,
+     "pressure_front_bar": 105.25467954079922,
+     "pressure_rear_bar": 14.618705491777668
+    }
+   ],
+   "target_bias": null,
+   "target_reachable": false,
+   "thread_pitch_mm": 5.0
+  },
+  "d": {
+   "bias_at_centre": 0.782888552862806,
+   "bias_max": 0.9474504179237352,
+   "bias_min": 0.41900522758590514,
+   "bias_per_turn": 0.05678425034842882,
+   "findings": [
+    {
+     "check": "bias_adjuster_sensitivity",
+     "detail": {},
+     "message": "One turn of the adjuster moves bias 5.7% -- that is coarse. A driver asking for 'a little more front' will overshoot. A finer thread or a longer bar gives finer trim.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "offset_for_target_mm": null,
+   "sweep": [
+    {
+     "bias_front": 0.41900522758590514,
+     "offset_mm": -20.0,
+     "pressure_front_bar": 21.050935908159843,
+     "pressure_rear_bar": 73.09352745888835
+    },
+    {
+     "bias_front": 0.782888552862806,
+     "offset_mm": 0.0,
+     "pressure_front_bar": 63.15280772447952,
+     "pressure_rear_bar": 43.856116475333
+    },
+    {
+     "bias_front": 0.9474504179237352,
+     "offset_mm": 20.0,
+     "pressure_front_bar": 105.25467954079922,
+     "pressure_rear_bar": 14.618705491777668
+    }
+   ],
+   "target_bias": null,
+   "target_reachable": false,
+   "thread_pitch_mm": 5.0
+  },
+  "s": "Reachable front bias: 41.9% to 94.7% (centred bar = 78.3%)\nAdjuster: 5.68% bias per turn (5.00 mm pitch)"
+ },
+ "auth_target": {
+  "a": {
+   "bias_at_centre": 0.782888552862806,
+   "bias_max": 0.893773369858631,
+   "bias_min": 0.6071341791943543,
+   "bias_per_turn": 0.011990030884774017,
+   "findings": [
+    {
+     "check": "target_bias_reachable",
+     "detail": {},
+     "message": "60% front is outside everything these bores can make (60.7%-89.4%). No bar position gets there. Fit a larger front bore or smaller rear bore. Bias is set by the hardware; the bar only trims it.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "offset_for_target_mm": null,
+   "sweep": [
+    {
+     "bias_front": 0.6071341791943543,
+     "offset_mm": -12.0,
+     "pressure_front_bar": 37.891684634687714,
+     "pressure_rear_bar": 61.3985630654662
+    },
+    {
+     "bias_front": 0.6183286582661226,
+     "offset_mm": -11.4,
+     "pressure_front_bar": 39.1547407891773,
+     "pressure_rear_bar": 60.521440735959544
+    },
+    {
+     "bias_front": 0.6292049949807956,
+     "offset_mm": -10.8,
+     "pressure_front_bar": 40.41779694366689,
+     "pressure_rear_bar": 59.64431840645288
+    },
+    {
+     "bias_front": 0.6397765615290728,
+     "offset_mm": -10.2,
+     "pressure_front_bar": 41.68085309815648,
+     "pressure_rear_bar": 58.76719607694622
+    },
+    {
+     "bias_front": 0.6500559910414333,
+     "offset_mm": -9.6,
+     "pressure_front_bar": 42.94390925264607,
+     "pressure_rear_bar": 57.89007374743956
+    },
+    {
+     "bias_front": 0.660055227950659,
+     "offset_mm": -9.0,
+     "pressure_front_bar": 44.20696540713566,
+     "pressure_rear_bar": 57.012951417932904
+    },
+    {
+     "bias_front": 0.6697855742914471,
+     "offset_mm": -8.4,
+     "pressure_front_bar": 45.47002156162525,
+     "pressure_rear_bar": 56.13582908842624
+    },
+    {
+     "bias_front": 0.6792577323144331,
+     "offset_mm": -7.8,
+     "pressure_front_bar": 46.73307771611485,
+     "pressure_rear_bar": 55.25870675891958
+    },
+    {
+     "bias_front": 0.6884818437524236,
+     "offset_mm": -7.2,
+     "pressure_front_bar": 47.99613387060444,
+     "pressure_rear_bar": 54.381584429412925
+    },
+    {
+     "bias_front": 0.6974675260417154,
+     "offset_mm": -6.6,
+     "pressure_front_bar": 49.25919002509403,
+     "pressure_rear_bar": 53.50446209990626
+    },
+    {
+     "bias_front": 0.7062239057704537,
+     "offset_mm": -6.0,
+     "pressure_front_bar": 50.522246179583625,
+     "pressure_rear_bar": 52.6273397703996
+    },
+    {
+     "bias_front": 0.7147596495985818,
+     "offset_mm": -5.4,
+     "pressure_front_bar": 51.785302334073215,
+     "pressure_rear_bar": 51.75021744089294
+    },
+    {
+     "bias_front": 0.7230829928695837,
+     "offset_mm": -4.8,
+     "pressure_front_bar": 53.0483584885628,
+     "pressure_rear_bar": 50.873095111386284
+    },
+    {
+     "bias_front": 0.7312017661125817,
+     "offset_mm": -4.2,
+     "pressure_front_bar": 54.31141464305239,
+     "pressure_rear_bar": 49.99597278187962
+    },
+    {
+     "bias_front": 0.7391234196140604,
+     "offset_mm": -3.5999999999999996,
+     "pressure_front_bar": 55.57447079754198,
+     "pressure_rear_bar": 49.11885045237296
+    },
+    {
+     "bias_front": 0.7468550462212903,
+     "offset_mm": -3.0,
+     "pressure_front_bar": 56.837526952031574,
+     "pressure_rear_bar": 48.241728122866306
+    },
+    {
+     "bias_front": 0.7544034025241552,
+     "offset_mm": -2.4000000000000004,
+     "pressure_front_bar": 58.100583106521164,
+     "pressure_rear_bar": 47.364605793359644
+    },
+    {
+     "bias_front": 0.7617749285483426,
+     "offset_mm": -1.8000000000000007,
+     "pressure_front_bar": 59.36363926101075,
+     "pressure_rear_bar": 46.48748346385298
+    },
+    {
+     "bias_front": 0.7689757660805411,
+     "offset_mm": -1.1999999999999993,
+     "pressure_front_bar": 60.62669541550034,
+     "pressure_rear_bar": 45.61036113434632
+    },
+    {
+     "bias_front": 0.7760117757352394,
+     "offset_mm": -0.5999999999999996,
+     "pressure_front_bar": 61.889751569989926,
+     "pressure_rear_bar": 44.733238804839665
+    },
+    {
+     "bias_front": 0.782888552862806,
+     "offset_mm": 0.0,
+     "pressure_front_bar": 63.15280772447952,
+     "pressure_rear_bar": 43.856116475333
+    },
+    {
+     "bias_front": 0.7896114423896017,
+     "offset_mm": 0.5999999999999996,
+     "pressure_front_bar": 64.4158638789691,
+     "pressure_rear_bar": 42.97899414582634
+    },
+    {
+     "bias_front": 0.7961855526728465,
+     "offset_mm": 1.1999999999999993,
+     "pressure_front_bar": 65.67892003345871,
+     "pressure_rear_bar": 42.10187181631969
+    },
+    {
+     "bias_front": 0.8026157684457169,
+     "offset_mm": 1.8000000000000007,
+     "pressure_front_bar": 66.9419761879483,
+     "pressure_rear_bar": 41.22474948681302
+    },
+    {
+     "bias_front": 0.8089067629216171,
+     "offset_mm": 2.4000000000000004,
+     "pressure_front_bar": 68.20503234243789,
+     "pressure_rear_bar": 40.347627157306356
+    },
+    {
+     "bias_front": 0.8150630091206572,
+     "offset_mm": 3.0,
+     "pressure_front_bar": 69.46808849692748,
+     "pressure_rear_bar": 39.4705048277997
+    },
+    {
+     "bias_front": 0.8210887904760301,
+     "offset_mm": 3.5999999999999996,
+     "pressure_front_bar": 70.73114465141707,
+     "pressure_rear_bar": 38.59338249829304
+    },
+    {
+     "bias_front": 0.8269882107731388,
+     "offset_mm": 4.199999999999999,
+     "pressure_front_bar": 71.99420080590666,
+     "pressure_rear_bar": 37.71626016878638
+    },
+    {
+     "bias_front": 0.8327652034699392,
+     "offset_mm": 4.800000000000001,
+     "pressure_front_bar": 73.25725696039625,
+     "pressure_rear_bar": 36.83913783927972
+    },
+    {
+     "bias_front": 0.8384235404429818,
+     "offset_mm": 5.399999999999999,
+     "pressure_front_bar": 74.52031311488584,
+     "pressure_rear_bar": 35.96201550977306
+    },
+    {
+     "bias_front": 0.8439668402000161,
+     "offset_mm": 6.0,
+     "pressure_front_bar": 75.78336926937543,
+     "pressure_rear_bar": 35.0848931802664
+    },
+    {
+     "bias_front": 0.8493985755967359,
+     "offset_mm": 6.600000000000001,
+     "pressure_front_bar": 77.04642542386502,
+     "pressure_rear_bar": 34.20777085075974
+    },
+    {
+     "bias_front": 0.8547220810922452,
+     "offset_mm": 7.199999999999999,
+     "pressure_front_bar": 78.3094815783546,
+     "pressure_rear_bar": 33.33064852125308
+    },
+    {
+     "bias_front": 0.8599405595750957,
+     "offset_mm": 7.800000000000001,
+     "pressure_front_bar": 79.57253773284421,
+     "pressure_rear_bar": 32.45352619174642
+    },
+    {
+     "bias_front": 0.8650570887892604,
+     "offset_mm": 8.399999999999999,
+     "pressure_front_bar": 80.83559388733379,
+     "pressure_rear_bar": 31.57640386223976
+    },
+    {
+     "bias_front": 0.8700746273871331,
+     "offset_mm": 9.0,
+     "pressure_front_bar": 82.09865004182338,
+     "pressure_rear_bar": 30.6992815327331
+    },
+    {
+     "bias_front": 0.8749960206345668,
+     "offset_mm": 9.600000000000001,
+     "pressure_front_bar": 83.36170619631297,
+     "pressure_rear_bar": 29.82215920322644
+    },
+    {
+     "bias_front": 0.879824005791069,
+     "offset_mm": 10.2,
+     "pressure_front_bar": 84.62476235080257,
+     "pressure_rear_bar": 28.94503687371978
+    },
+    {
+     "bias_front": 0.8845612171865259,
+     "offset_mm": 10.8,
+     "pressure_front_bar": 85.88781850529215,
+     "pressure_rear_bar": 28.06791454421312
+    },
+    {
+     "bias_front": 0.8892101910142444,
+     "offset_mm": 11.399999999999999,
+     "pressure_front_bar": 87.15087465978173,
+     "pressure_rear_bar": 27.190792214706462
+    },
+    {
+     "bias_front": 0.893773369858631,
+     "offset_mm": 12.0,
+     "pressure_front_bar": 88.41393081427132,
+     "pressure_rear_bar": 26.3136698851998
+    }
+   ],
+   "target_bias": 0.6,
+   "target_reachable": false,
+   "thread_pitch_mm": 1.058
+  },
+  "d": {
+   "bias_at_centre": 0.782888552862806,
+   "bias_max": 0.893773369858631,
+   "bias_min": 0.6071341791943543,
+   "bias_per_turn": 0.011990030884774017,
+   "findings": [
+    {
+     "check": "target_bias_reachable",
+     "detail": {},
+     "message": "60% front is outside everything these bores can make (60.7%-89.4%). No bar position gets there. Fit a larger front bore or smaller rear bore. Bias is set by the hardware; the bar only trims it.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "offset_for_target_mm": null,
+   "sweep": [
+    {
+     "bias_front": 0.6071341791943543,
+     "offset_mm": -12.0,
+     "pressure_front_bar": 37.891684634687714,
+     "pressure_rear_bar": 61.3985630654662
+    },
+    {
+     "bias_front": 0.6183286582661226,
+     "offset_mm": -11.4,
+     "pressure_front_bar": 39.1547407891773,
+     "pressure_rear_bar": 60.521440735959544
+    },
+    {
+     "bias_front": 0.6292049949807956,
+     "offset_mm": -10.8,
+     "pressure_front_bar": 40.41779694366689,
+     "pressure_rear_bar": 59.64431840645288
+    },
+    {
+     "bias_front": 0.6397765615290728,
+     "offset_mm": -10.2,
+     "pressure_front_bar": 41.68085309815648,
+     "pressure_rear_bar": 58.76719607694622
+    },
+    {
+     "bias_front": 0.6500559910414333,
+     "offset_mm": -9.6,
+     "pressure_front_bar": 42.94390925264607,
+     "pressure_rear_bar": 57.89007374743956
+    },
+    {
+     "bias_front": 0.660055227950659,
+     "offset_mm": -9.0,
+     "pressure_front_bar": 44.20696540713566,
+     "pressure_rear_bar": 57.012951417932904
+    },
+    {
+     "bias_front": 0.6697855742914471,
+     "offset_mm": -8.4,
+     "pressure_front_bar": 45.47002156162525,
+     "pressure_rear_bar": 56.13582908842624
+    },
+    {
+     "bias_front": 0.6792577323144331,
+     "offset_mm": -7.8,
+     "pressure_front_bar": 46.73307771611485,
+     "pressure_rear_bar": 55.25870675891958
+    },
+    {
+     "bias_front": 0.6884818437524236,
+     "offset_mm": -7.2,
+     "pressure_front_bar": 47.99613387060444,
+     "pressure_rear_bar": 54.381584429412925
+    },
+    {
+     "bias_front": 0.6974675260417154,
+     "offset_mm": -6.6,
+     "pressure_front_bar": 49.25919002509403,
+     "pressure_rear_bar": 53.50446209990626
+    },
+    {
+     "bias_front": 0.7062239057704537,
+     "offset_mm": -6.0,
+     "pressure_front_bar": 50.522246179583625,
+     "pressure_rear_bar": 52.6273397703996
+    },
+    {
+     "bias_front": 0.7147596495985818,
+     "offset_mm": -5.4,
+     "pressure_front_bar": 51.785302334073215,
+     "pressure_rear_bar": 51.75021744089294
+    },
+    {
+     "bias_front": 0.7230829928695837,
+     "offset_mm": -4.8,
+     "pressure_front_bar": 53.0483584885628,
+     "pressure_rear_bar": 50.873095111386284
+    },
+    {
+     "bias_front": 0.7312017661125817,
+     "offset_mm": -4.2,
+     "pressure_front_bar": 54.31141464305239,
+     "pressure_rear_bar": 49.99597278187962
+    },
+    {
+     "bias_front": 0.7391234196140604,
+     "offset_mm": -3.5999999999999996,
+     "pressure_front_bar": 55.57447079754198,
+     "pressure_rear_bar": 49.11885045237296
+    },
+    {
+     "bias_front": 0.7468550462212903,
+     "offset_mm": -3.0,
+     "pressure_front_bar": 56.837526952031574,
+     "pressure_rear_bar": 48.241728122866306
+    },
+    {
+     "bias_front": 0.7544034025241552,
+     "offset_mm": -2.4000000000000004,
+     "pressure_front_bar": 58.100583106521164,
+     "pressure_rear_bar": 47.364605793359644
+    },
+    {
+     "bias_front": 0.7617749285483426,
+     "offset_mm": -1.8000000000000007,
+     "pressure_front_bar": 59.36363926101075,
+     "pressure_rear_bar": 46.48748346385298
+    },
+    {
+     "bias_front": 0.7689757660805411,
+     "offset_mm": -1.1999999999999993,
+     "pressure_front_bar": 60.62669541550034,
+     "pressure_rear_bar": 45.61036113434632
+    },
+    {
+     "bias_front": 0.7760117757352394,
+     "offset_mm": -0.5999999999999996,
+     "pressure_front_bar": 61.889751569989926,
+     "pressure_rear_bar": 44.733238804839665
+    },
+    {
+     "bias_front": 0.782888552862806,
+     "offset_mm": 0.0,
+     "pressure_front_bar": 63.15280772447952,
+     "pressure_rear_bar": 43.856116475333
+    },
+    {
+     "bias_front": 0.7896114423896017,
+     "offset_mm": 0.5999999999999996,
+     "pressure_front_bar": 64.4158638789691,
+     "pressure_rear_bar": 42.97899414582634
+    },
+    {
+     "bias_front": 0.7961855526728465,
+     "offset_mm": 1.1999999999999993,
+     "pressure_front_bar": 65.67892003345871,
+     "pressure_rear_bar": 42.10187181631969
+    },
+    {
+     "bias_front": 0.8026157684457169,
+     "offset_mm": 1.8000000000000007,
+     "pressure_front_bar": 66.9419761879483,
+     "pressure_rear_bar": 41.22474948681302
+    },
+    {
+     "bias_front": 0.8089067629216171,
+     "offset_mm": 2.4000000000000004,
+     "pressure_front_bar": 68.20503234243789,
+     "pressure_rear_bar": 40.347627157306356
+    },
+    {
+     "bias_front": 0.8150630091206572,
+     "offset_mm": 3.0,
+     "pressure_front_bar": 69.46808849692748,
+     "pressure_rear_bar": 39.4705048277997
+    },
+    {
+     "bias_front": 0.8210887904760301,
+     "offset_mm": 3.5999999999999996,
+     "pressure_front_bar": 70.73114465141707,
+     "pressure_rear_bar": 38.59338249829304
+    },
+    {
+     "bias_front": 0.8269882107731388,
+     "offset_mm": 4.199999999999999,
+     "pressure_front_bar": 71.99420080590666,
+     "pressure_rear_bar": 37.71626016878638
+    },
+    {
+     "bias_front": 0.8327652034699392,
+     "offset_mm": 4.800000000000001,
+     "pressure_front_bar": 73.25725696039625,
+     "pressure_rear_bar": 36.83913783927972
+    },
+    {
+     "bias_front": 0.8384235404429818,
+     "offset_mm": 5.399999999999999,
+     "pressure_front_bar": 74.52031311488584,
+     "pressure_rear_bar": 35.96201550977306
+    },
+    {
+     "bias_front": 0.8439668402000161,
+     "offset_mm": 6.0,
+     "pressure_front_bar": 75.78336926937543,
+     "pressure_rear_bar": 35.0848931802664
+    },
+    {
+     "bias_front": 0.8493985755967359,
+     "offset_mm": 6.600000000000001,
+     "pressure_front_bar": 77.04642542386502,
+     "pressure_rear_bar": 34.20777085075974
+    },
+    {
+     "bias_front": 0.8547220810922452,
+     "offset_mm": 7.199999999999999,
+     "pressure_front_bar": 78.3094815783546,
+     "pressure_rear_bar": 33.33064852125308
+    },
+    {
+     "bias_front": 0.8599405595750957,
+     "offset_mm": 7.800000000000001,
+     "pressure_front_bar": 79.57253773284421,
+     "pressure_rear_bar": 32.45352619174642
+    },
+    {
+     "bias_front": 0.8650570887892604,
+     "offset_mm": 8.399999999999999,
+     "pressure_front_bar": 80.83559388733379,
+     "pressure_rear_bar": 31.57640386223976
+    },
+    {
+     "bias_front": 0.8700746273871331,
+     "offset_mm": 9.0,
+     "pressure_front_bar": 82.09865004182338,
+     "pressure_rear_bar": 30.6992815327331
+    },
+    {
+     "bias_front": 0.8749960206345668,
+     "offset_mm": 9.600000000000001,
+     "pressure_front_bar": 83.36170619631297,
+     "pressure_rear_bar": 29.82215920322644
+    },
+    {
+     "bias_front": 0.879824005791069,
+     "offset_mm": 10.2,
+     "pressure_front_bar": 84.62476235080257,
+     "pressure_rear_bar": 28.94503687371978
+    },
+    {
+     "bias_front": 0.8845612171865259,
+     "offset_mm": 10.8,
+     "pressure_front_bar": 85.88781850529215,
+     "pressure_rear_bar": 28.06791454421312
+    },
+    {
+     "bias_front": 0.8892101910142444,
+     "offset_mm": 11.399999999999999,
+     "pressure_front_bar": 87.15087465978173,
+     "pressure_rear_bar": 27.190792214706462
+    },
+    {
+     "bias_front": 0.893773369858631,
+     "offset_mm": 12.0,
+     "pressure_front_bar": 88.41393081427132,
+     "pressure_rear_bar": 26.3136698851998
+    }
+   ],
+   "target_bias": 0.6,
+   "target_reachable": false,
+   "thread_pitch_mm": 1.058
+  },
+  "s": "Reachable front bias: 60.7% to 89.4% (centred bar = 78.3%)\nAdjuster: 1.20% bias per turn (1.06 mm pitch)\nTarget 60% front is NOT reachable with these bores -- change a bore."
+ },
+ "auth_target_hi": {
+  "a": {
+   "bias_at_centre": 0.782888552862806,
+   "bias_max": 0.893773369858631,
+   "bias_min": 0.6071341791943543,
+   "bias_per_turn": 0.011990030884774017,
+   "findings": [
+    {
+     "check": "target_bias_reachable",
+     "detail": {},
+     "message": "99% front is outside everything these bores can make (60.7%-89.4%). No bar position gets there. Fit a smaller front bore or larger rear bore. Bias is set by the hardware; the bar only trims it.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "offset_for_target_mm": null,
+   "sweep": [
+    {
+     "bias_front": 0.6071341791943543,
+     "offset_mm": -12.0,
+     "pressure_front_bar": 37.891684634687714,
+     "pressure_rear_bar": 61.3985630654662
+    },
+    {
+     "bias_front": 0.6183286582661226,
+     "offset_mm": -11.4,
+     "pressure_front_bar": 39.1547407891773,
+     "pressure_rear_bar": 60.521440735959544
+    },
+    {
+     "bias_front": 0.6292049949807956,
+     "offset_mm": -10.8,
+     "pressure_front_bar": 40.41779694366689,
+     "pressure_rear_bar": 59.64431840645288
+    },
+    {
+     "bias_front": 0.6397765615290728,
+     "offset_mm": -10.2,
+     "pressure_front_bar": 41.68085309815648,
+     "pressure_rear_bar": 58.76719607694622
+    },
+    {
+     "bias_front": 0.6500559910414333,
+     "offset_mm": -9.6,
+     "pressure_front_bar": 42.94390925264607,
+     "pressure_rear_bar": 57.89007374743956
+    },
+    {
+     "bias_front": 0.660055227950659,
+     "offset_mm": -9.0,
+     "pressure_front_bar": 44.20696540713566,
+     "pressure_rear_bar": 57.012951417932904
+    },
+    {
+     "bias_front": 0.6697855742914471,
+     "offset_mm": -8.4,
+     "pressure_front_bar": 45.47002156162525,
+     "pressure_rear_bar": 56.13582908842624
+    },
+    {
+     "bias_front": 0.6792577323144331,
+     "offset_mm": -7.8,
+     "pressure_front_bar": 46.73307771611485,
+     "pressure_rear_bar": 55.25870675891958
+    },
+    {
+     "bias_front": 0.6884818437524236,
+     "offset_mm": -7.2,
+     "pressure_front_bar": 47.99613387060444,
+     "pressure_rear_bar": 54.381584429412925
+    },
+    {
+     "bias_front": 0.6974675260417154,
+     "offset_mm": -6.6,
+     "pressure_front_bar": 49.25919002509403,
+     "pressure_rear_bar": 53.50446209990626
+    },
+    {
+     "bias_front": 0.7062239057704537,
+     "offset_mm": -6.0,
+     "pressure_front_bar": 50.522246179583625,
+     "pressure_rear_bar": 52.6273397703996
+    },
+    {
+     "bias_front": 0.7147596495985818,
+     "offset_mm": -5.4,
+     "pressure_front_bar": 51.785302334073215,
+     "pressure_rear_bar": 51.75021744089294
+    },
+    {
+     "bias_front": 0.7230829928695837,
+     "offset_mm": -4.8,
+     "pressure_front_bar": 53.0483584885628,
+     "pressure_rear_bar": 50.873095111386284
+    },
+    {
+     "bias_front": 0.7312017661125817,
+     "offset_mm": -4.2,
+     "pressure_front_bar": 54.31141464305239,
+     "pressure_rear_bar": 49.99597278187962
+    },
+    {
+     "bias_front": 0.7391234196140604,
+     "offset_mm": -3.5999999999999996,
+     "pressure_front_bar": 55.57447079754198,
+     "pressure_rear_bar": 49.11885045237296
+    },
+    {
+     "bias_front": 0.7468550462212903,
+     "offset_mm": -3.0,
+     "pressure_front_bar": 56.837526952031574,
+     "pressure_rear_bar": 48.241728122866306
+    },
+    {
+     "bias_front": 0.7544034025241552,
+     "offset_mm": -2.4000000000000004,
+     "pressure_front_bar": 58.100583106521164,
+     "pressure_rear_bar": 47.364605793359644
+    },
+    {
+     "bias_front": 0.7617749285483426,
+     "offset_mm": -1.8000000000000007,
+     "pressure_front_bar": 59.36363926101075,
+     "pressure_rear_bar": 46.48748346385298
+    },
+    {
+     "bias_front": 0.7689757660805411,
+     "offset_mm": -1.1999999999999993,
+     "pressure_front_bar": 60.62669541550034,
+     "pressure_rear_bar": 45.61036113434632
+    },
+    {
+     "bias_front": 0.7760117757352394,
+     "offset_mm": -0.5999999999999996,
+     "pressure_front_bar": 61.889751569989926,
+     "pressure_rear_bar": 44.733238804839665
+    },
+    {
+     "bias_front": 0.782888552862806,
+     "offset_mm": 0.0,
+     "pressure_front_bar": 63.15280772447952,
+     "pressure_rear_bar": 43.856116475333
+    },
+    {
+     "bias_front": 0.7896114423896017,
+     "offset_mm": 0.5999999999999996,
+     "pressure_front_bar": 64.4158638789691,
+     "pressure_rear_bar": 42.97899414582634
+    },
+    {
+     "bias_front": 0.7961855526728465,
+     "offset_mm": 1.1999999999999993,
+     "pressure_front_bar": 65.67892003345871,
+     "pressure_rear_bar": 42.10187181631969
+    },
+    {
+     "bias_front": 0.8026157684457169,
+     "offset_mm": 1.8000000000000007,
+     "pressure_front_bar": 66.9419761879483,
+     "pressure_rear_bar": 41.22474948681302
+    },
+    {
+     "bias_front": 0.8089067629216171,
+     "offset_mm": 2.4000000000000004,
+     "pressure_front_bar": 68.20503234243789,
+     "pressure_rear_bar": 40.347627157306356
+    },
+    {
+     "bias_front": 0.8150630091206572,
+     "offset_mm": 3.0,
+     "pressure_front_bar": 69.46808849692748,
+     "pressure_rear_bar": 39.4705048277997
+    },
+    {
+     "bias_front": 0.8210887904760301,
+     "offset_mm": 3.5999999999999996,
+     "pressure_front_bar": 70.73114465141707,
+     "pressure_rear_bar": 38.59338249829304
+    },
+    {
+     "bias_front": 0.8269882107731388,
+     "offset_mm": 4.199999999999999,
+     "pressure_front_bar": 71.99420080590666,
+     "pressure_rear_bar": 37.71626016878638
+    },
+    {
+     "bias_front": 0.8327652034699392,
+     "offset_mm": 4.800000000000001,
+     "pressure_front_bar": 73.25725696039625,
+     "pressure_rear_bar": 36.83913783927972
+    },
+    {
+     "bias_front": 0.8384235404429818,
+     "offset_mm": 5.399999999999999,
+     "pressure_front_bar": 74.52031311488584,
+     "pressure_rear_bar": 35.96201550977306
+    },
+    {
+     "bias_front": 0.8439668402000161,
+     "offset_mm": 6.0,
+     "pressure_front_bar": 75.78336926937543,
+     "pressure_rear_bar": 35.0848931802664
+    },
+    {
+     "bias_front": 0.8493985755967359,
+     "offset_mm": 6.600000000000001,
+     "pressure_front_bar": 77.04642542386502,
+     "pressure_rear_bar": 34.20777085075974
+    },
+    {
+     "bias_front": 0.8547220810922452,
+     "offset_mm": 7.199999999999999,
+     "pressure_front_bar": 78.3094815783546,
+     "pressure_rear_bar": 33.33064852125308
+    },
+    {
+     "bias_front": 0.8599405595750957,
+     "offset_mm": 7.800000000000001,
+     "pressure_front_bar": 79.57253773284421,
+     "pressure_rear_bar": 32.45352619174642
+    },
+    {
+     "bias_front": 0.8650570887892604,
+     "offset_mm": 8.399999999999999,
+     "pressure_front_bar": 80.83559388733379,
+     "pressure_rear_bar": 31.57640386223976
+    },
+    {
+     "bias_front": 0.8700746273871331,
+     "offset_mm": 9.0,
+     "pressure_front_bar": 82.09865004182338,
+     "pressure_rear_bar": 30.6992815327331
+    },
+    {
+     "bias_front": 0.8749960206345668,
+     "offset_mm": 9.600000000000001,
+     "pressure_front_bar": 83.36170619631297,
+     "pressure_rear_bar": 29.82215920322644
+    },
+    {
+     "bias_front": 0.879824005791069,
+     "offset_mm": 10.2,
+     "pressure_front_bar": 84.62476235080257,
+     "pressure_rear_bar": 28.94503687371978
+    },
+    {
+     "bias_front": 0.8845612171865259,
+     "offset_mm": 10.8,
+     "pressure_front_bar": 85.88781850529215,
+     "pressure_rear_bar": 28.06791454421312
+    },
+    {
+     "bias_front": 0.8892101910142444,
+     "offset_mm": 11.399999999999999,
+     "pressure_front_bar": 87.15087465978173,
+     "pressure_rear_bar": 27.190792214706462
+    },
+    {
+     "bias_front": 0.893773369858631,
+     "offset_mm": 12.0,
+     "pressure_front_bar": 88.41393081427132,
+     "pressure_rear_bar": 26.3136698851998
+    }
+   ],
+   "target_bias": 0.99,
+   "target_reachable": false,
+   "thread_pitch_mm": 1.058
+  },
+  "d": {
+   "bias_at_centre": 0.782888552862806,
+   "bias_max": 0.893773369858631,
+   "bias_min": 0.6071341791943543,
+   "bias_per_turn": 0.011990030884774017,
+   "findings": [
+    {
+     "check": "target_bias_reachable",
+     "detail": {},
+     "message": "99% front is outside everything these bores can make (60.7%-89.4%). No bar position gets there. Fit a smaller front bore or larger rear bore. Bias is set by the hardware; the bar only trims it.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "offset_for_target_mm": null,
+   "sweep": [
+    {
+     "bias_front": 0.6071341791943543,
+     "offset_mm": -12.0,
+     "pressure_front_bar": 37.891684634687714,
+     "pressure_rear_bar": 61.3985630654662
+    },
+    {
+     "bias_front": 0.6183286582661226,
+     "offset_mm": -11.4,
+     "pressure_front_bar": 39.1547407891773,
+     "pressure_rear_bar": 60.521440735959544
+    },
+    {
+     "bias_front": 0.6292049949807956,
+     "offset_mm": -10.8,
+     "pressure_front_bar": 40.41779694366689,
+     "pressure_rear_bar": 59.64431840645288
+    },
+    {
+     "bias_front": 0.6397765615290728,
+     "offset_mm": -10.2,
+     "pressure_front_bar": 41.68085309815648,
+     "pressure_rear_bar": 58.76719607694622
+    },
+    {
+     "bias_front": 0.6500559910414333,
+     "offset_mm": -9.6,
+     "pressure_front_bar": 42.94390925264607,
+     "pressure_rear_bar": 57.89007374743956
+    },
+    {
+     "bias_front": 0.660055227950659,
+     "offset_mm": -9.0,
+     "pressure_front_bar": 44.20696540713566,
+     "pressure_rear_bar": 57.012951417932904
+    },
+    {
+     "bias_front": 0.6697855742914471,
+     "offset_mm": -8.4,
+     "pressure_front_bar": 45.47002156162525,
+     "pressure_rear_bar": 56.13582908842624
+    },
+    {
+     "bias_front": 0.6792577323144331,
+     "offset_mm": -7.8,
+     "pressure_front_bar": 46.73307771611485,
+     "pressure_rear_bar": 55.25870675891958
+    },
+    {
+     "bias_front": 0.6884818437524236,
+     "offset_mm": -7.2,
+     "pressure_front_bar": 47.99613387060444,
+     "pressure_rear_bar": 54.381584429412925
+    },
+    {
+     "bias_front": 0.6974675260417154,
+     "offset_mm": -6.6,
+     "pressure_front_bar": 49.25919002509403,
+     "pressure_rear_bar": 53.50446209990626
+    },
+    {
+     "bias_front": 0.7062239057704537,
+     "offset_mm": -6.0,
+     "pressure_front_bar": 50.522246179583625,
+     "pressure_rear_bar": 52.6273397703996
+    },
+    {
+     "bias_front": 0.7147596495985818,
+     "offset_mm": -5.4,
+     "pressure_front_bar": 51.785302334073215,
+     "pressure_rear_bar": 51.75021744089294
+    },
+    {
+     "bias_front": 0.7230829928695837,
+     "offset_mm": -4.8,
+     "pressure_front_bar": 53.0483584885628,
+     "pressure_rear_bar": 50.873095111386284
+    },
+    {
+     "bias_front": 0.7312017661125817,
+     "offset_mm": -4.2,
+     "pressure_front_bar": 54.31141464305239,
+     "pressure_rear_bar": 49.99597278187962
+    },
+    {
+     "bias_front": 0.7391234196140604,
+     "offset_mm": -3.5999999999999996,
+     "pressure_front_bar": 55.57447079754198,
+     "pressure_rear_bar": 49.11885045237296
+    },
+    {
+     "bias_front": 0.7468550462212903,
+     "offset_mm": -3.0,
+     "pressure_front_bar": 56.837526952031574,
+     "pressure_rear_bar": 48.241728122866306
+    },
+    {
+     "bias_front": 0.7544034025241552,
+     "offset_mm": -2.4000000000000004,
+     "pressure_front_bar": 58.100583106521164,
+     "pressure_rear_bar": 47.364605793359644
+    },
+    {
+     "bias_front": 0.7617749285483426,
+     "offset_mm": -1.8000000000000007,
+     "pressure_front_bar": 59.36363926101075,
+     "pressure_rear_bar": 46.48748346385298
+    },
+    {
+     "bias_front": 0.7689757660805411,
+     "offset_mm": -1.1999999999999993,
+     "pressure_front_bar": 60.62669541550034,
+     "pressure_rear_bar": 45.61036113434632
+    },
+    {
+     "bias_front": 0.7760117757352394,
+     "offset_mm": -0.5999999999999996,
+     "pressure_front_bar": 61.889751569989926,
+     "pressure_rear_bar": 44.733238804839665
+    },
+    {
+     "bias_front": 0.782888552862806,
+     "offset_mm": 0.0,
+     "pressure_front_bar": 63.15280772447952,
+     "pressure_rear_bar": 43.856116475333
+    },
+    {
+     "bias_front": 0.7896114423896017,
+     "offset_mm": 0.5999999999999996,
+     "pressure_front_bar": 64.4158638789691,
+     "pressure_rear_bar": 42.97899414582634
+    },
+    {
+     "bias_front": 0.7961855526728465,
+     "offset_mm": 1.1999999999999993,
+     "pressure_front_bar": 65.67892003345871,
+     "pressure_rear_bar": 42.10187181631969
+    },
+    {
+     "bias_front": 0.8026157684457169,
+     "offset_mm": 1.8000000000000007,
+     "pressure_front_bar": 66.9419761879483,
+     "pressure_rear_bar": 41.22474948681302
+    },
+    {
+     "bias_front": 0.8089067629216171,
+     "offset_mm": 2.4000000000000004,
+     "pressure_front_bar": 68.20503234243789,
+     "pressure_rear_bar": 40.347627157306356
+    },
+    {
+     "bias_front": 0.8150630091206572,
+     "offset_mm": 3.0,
+     "pressure_front_bar": 69.46808849692748,
+     "pressure_rear_bar": 39.4705048277997
+    },
+    {
+     "bias_front": 0.8210887904760301,
+     "offset_mm": 3.5999999999999996,
+     "pressure_front_bar": 70.73114465141707,
+     "pressure_rear_bar": 38.59338249829304
+    },
+    {
+     "bias_front": 0.8269882107731388,
+     "offset_mm": 4.199999999999999,
+     "pressure_front_bar": 71.99420080590666,
+     "pressure_rear_bar": 37.71626016878638
+    },
+    {
+     "bias_front": 0.8327652034699392,
+     "offset_mm": 4.800000000000001,
+     "pressure_front_bar": 73.25725696039625,
+     "pressure_rear_bar": 36.83913783927972
+    },
+    {
+     "bias_front": 0.8384235404429818,
+     "offset_mm": 5.399999999999999,
+     "pressure_front_bar": 74.52031311488584,
+     "pressure_rear_bar": 35.96201550977306
+    },
+    {
+     "bias_front": 0.8439668402000161,
+     "offset_mm": 6.0,
+     "pressure_front_bar": 75.78336926937543,
+     "pressure_rear_bar": 35.0848931802664
+    },
+    {
+     "bias_front": 0.8493985755967359,
+     "offset_mm": 6.600000000000001,
+     "pressure_front_bar": 77.04642542386502,
+     "pressure_rear_bar": 34.20777085075974
+    },
+    {
+     "bias_front": 0.8547220810922452,
+     "offset_mm": 7.199999999999999,
+     "pressure_front_bar": 78.3094815783546,
+     "pressure_rear_bar": 33.33064852125308
+    },
+    {
+     "bias_front": 0.8599405595750957,
+     "offset_mm": 7.800000000000001,
+     "pressure_front_bar": 79.57253773284421,
+     "pressure_rear_bar": 32.45352619174642
+    },
+    {
+     "bias_front": 0.8650570887892604,
+     "offset_mm": 8.399999999999999,
+     "pressure_front_bar": 80.83559388733379,
+     "pressure_rear_bar": 31.57640386223976
+    },
+    {
+     "bias_front": 0.8700746273871331,
+     "offset_mm": 9.0,
+     "pressure_front_bar": 82.09865004182338,
+     "pressure_rear_bar": 30.6992815327331
+    },
+    {
+     "bias_front": 0.8749960206345668,
+     "offset_mm": 9.600000000000001,
+     "pressure_front_bar": 83.36170619631297,
+     "pressure_rear_bar": 29.82215920322644
+    },
+    {
+     "bias_front": 0.879824005791069,
+     "offset_mm": 10.2,
+     "pressure_front_bar": 84.62476235080257,
+     "pressure_rear_bar": 28.94503687371978
+    },
+    {
+     "bias_front": 0.8845612171865259,
+     "offset_mm": 10.8,
+     "pressure_front_bar": 85.88781850529215,
+     "pressure_rear_bar": 28.06791454421312
+    },
+    {
+     "bias_front": 0.8892101910142444,
+     "offset_mm": 11.399999999999999,
+     "pressure_front_bar": 87.15087465978173,
+     "pressure_rear_bar": 27.190792214706462
+    },
+    {
+     "bias_front": 0.893773369858631,
+     "offset_mm": 12.0,
+     "pressure_front_bar": 88.41393081427132,
+     "pressure_rear_bar": 26.3136698851998
+    }
+   ],
+   "target_bias": 0.99,
+   "target_reachable": false,
+   "thread_pitch_mm": 1.058
+  },
+  "s": "Reachable front bias: 60.7% to 89.4% (centred bar = 78.3%)\nAdjuster: 1.20% bias per turn (1.06 mm pitch)\nTarget 99% front is NOT reachable with these bores -- change a bore."
+ },
+ "auth_target_lo": {
+  "a": {
+   "bias_at_centre": 0.782888552862806,
+   "bias_max": 0.893773369858631,
+   "bias_min": 0.6071341791943543,
+   "bias_per_turn": 0.011990030884774017,
+   "findings": [
+    {
+     "check": "target_bias_reachable",
+     "detail": {},
+     "message": "5% front is outside everything these bores can make (60.7%-89.4%). No bar position gets there. Fit a larger front bore or smaller rear bore. Bias is set by the hardware; the bar only trims it.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "offset_for_target_mm": null,
+   "sweep": [
+    {
+     "bias_front": 0.6071341791943543,
+     "offset_mm": -12.0,
+     "pressure_front_bar": 37.891684634687714,
+     "pressure_rear_bar": 61.3985630654662
+    },
+    {
+     "bias_front": 0.6183286582661226,
+     "offset_mm": -11.4,
+     "pressure_front_bar": 39.1547407891773,
+     "pressure_rear_bar": 60.521440735959544
+    },
+    {
+     "bias_front": 0.6292049949807956,
+     "offset_mm": -10.8,
+     "pressure_front_bar": 40.41779694366689,
+     "pressure_rear_bar": 59.64431840645288
+    },
+    {
+     "bias_front": 0.6397765615290728,
+     "offset_mm": -10.2,
+     "pressure_front_bar": 41.68085309815648,
+     "pressure_rear_bar": 58.76719607694622
+    },
+    {
+     "bias_front": 0.6500559910414333,
+     "offset_mm": -9.6,
+     "pressure_front_bar": 42.94390925264607,
+     "pressure_rear_bar": 57.89007374743956
+    },
+    {
+     "bias_front": 0.660055227950659,
+     "offset_mm": -9.0,
+     "pressure_front_bar": 44.20696540713566,
+     "pressure_rear_bar": 57.012951417932904
+    },
+    {
+     "bias_front": 0.6697855742914471,
+     "offset_mm": -8.4,
+     "pressure_front_bar": 45.47002156162525,
+     "pressure_rear_bar": 56.13582908842624
+    },
+    {
+     "bias_front": 0.6792577323144331,
+     "offset_mm": -7.8,
+     "pressure_front_bar": 46.73307771611485,
+     "pressure_rear_bar": 55.25870675891958
+    },
+    {
+     "bias_front": 0.6884818437524236,
+     "offset_mm": -7.2,
+     "pressure_front_bar": 47.99613387060444,
+     "pressure_rear_bar": 54.381584429412925
+    },
+    {
+     "bias_front": 0.6974675260417154,
+     "offset_mm": -6.6,
+     "pressure_front_bar": 49.25919002509403,
+     "pressure_rear_bar": 53.50446209990626
+    },
+    {
+     "bias_front": 0.7062239057704537,
+     "offset_mm": -6.0,
+     "pressure_front_bar": 50.522246179583625,
+     "pressure_rear_bar": 52.6273397703996
+    },
+    {
+     "bias_front": 0.7147596495985818,
+     "offset_mm": -5.4,
+     "pressure_front_bar": 51.785302334073215,
+     "pressure_rear_bar": 51.75021744089294
+    },
+    {
+     "bias_front": 0.7230829928695837,
+     "offset_mm": -4.8,
+     "pressure_front_bar": 53.0483584885628,
+     "pressure_rear_bar": 50.873095111386284
+    },
+    {
+     "bias_front": 0.7312017661125817,
+     "offset_mm": -4.2,
+     "pressure_front_bar": 54.31141464305239,
+     "pressure_rear_bar": 49.99597278187962
+    },
+    {
+     "bias_front": 0.7391234196140604,
+     "offset_mm": -3.5999999999999996,
+     "pressure_front_bar": 55.57447079754198,
+     "pressure_rear_bar": 49.11885045237296
+    },
+    {
+     "bias_front": 0.7468550462212903,
+     "offset_mm": -3.0,
+     "pressure_front_bar": 56.837526952031574,
+     "pressure_rear_bar": 48.241728122866306
+    },
+    {
+     "bias_front": 0.7544034025241552,
+     "offset_mm": -2.4000000000000004,
+     "pressure_front_bar": 58.100583106521164,
+     "pressure_rear_bar": 47.364605793359644
+    },
+    {
+     "bias_front": 0.7617749285483426,
+     "offset_mm": -1.8000000000000007,
+     "pressure_front_bar": 59.36363926101075,
+     "pressure_rear_bar": 46.48748346385298
+    },
+    {
+     "bias_front": 0.7689757660805411,
+     "offset_mm": -1.1999999999999993,
+     "pressure_front_bar": 60.62669541550034,
+     "pressure_rear_bar": 45.61036113434632
+    },
+    {
+     "bias_front": 0.7760117757352394,
+     "offset_mm": -0.5999999999999996,
+     "pressure_front_bar": 61.889751569989926,
+     "pressure_rear_bar": 44.733238804839665
+    },
+    {
+     "bias_front": 0.782888552862806,
+     "offset_mm": 0.0,
+     "pressure_front_bar": 63.15280772447952,
+     "pressure_rear_bar": 43.856116475333
+    },
+    {
+     "bias_front": 0.7896114423896017,
+     "offset_mm": 0.5999999999999996,
+     "pressure_front_bar": 64.4158638789691,
+     "pressure_rear_bar": 42.97899414582634
+    },
+    {
+     "bias_front": 0.7961855526728465,
+     "offset_mm": 1.1999999999999993,
+     "pressure_front_bar": 65.67892003345871,
+     "pressure_rear_bar": 42.10187181631969
+    },
+    {
+     "bias_front": 0.8026157684457169,
+     "offset_mm": 1.8000000000000007,
+     "pressure_front_bar": 66.9419761879483,
+     "pressure_rear_bar": 41.22474948681302
+    },
+    {
+     "bias_front": 0.8089067629216171,
+     "offset_mm": 2.4000000000000004,
+     "pressure_front_bar": 68.20503234243789,
+     "pressure_rear_bar": 40.347627157306356
+    },
+    {
+     "bias_front": 0.8150630091206572,
+     "offset_mm": 3.0,
+     "pressure_front_bar": 69.46808849692748,
+     "pressure_rear_bar": 39.4705048277997
+    },
+    {
+     "bias_front": 0.8210887904760301,
+     "offset_mm": 3.5999999999999996,
+     "pressure_front_bar": 70.73114465141707,
+     "pressure_rear_bar": 38.59338249829304
+    },
+    {
+     "bias_front": 0.8269882107731388,
+     "offset_mm": 4.199999999999999,
+     "pressure_front_bar": 71.99420080590666,
+     "pressure_rear_bar": 37.71626016878638
+    },
+    {
+     "bias_front": 0.8327652034699392,
+     "offset_mm": 4.800000000000001,
+     "pressure_front_bar": 73.25725696039625,
+     "pressure_rear_bar": 36.83913783927972
+    },
+    {
+     "bias_front": 0.8384235404429818,
+     "offset_mm": 5.399999999999999,
+     "pressure_front_bar": 74.52031311488584,
+     "pressure_rear_bar": 35.96201550977306
+    },
+    {
+     "bias_front": 0.8439668402000161,
+     "offset_mm": 6.0,
+     "pressure_front_bar": 75.78336926937543,
+     "pressure_rear_bar": 35.0848931802664
+    },
+    {
+     "bias_front": 0.8493985755967359,
+     "offset_mm": 6.600000000000001,
+     "pressure_front_bar": 77.04642542386502,
+     "pressure_rear_bar": 34.20777085075974
+    },
+    {
+     "bias_front": 0.8547220810922452,
+     "offset_mm": 7.199999999999999,
+     "pressure_front_bar": 78.3094815783546,
+     "pressure_rear_bar": 33.33064852125308
+    },
+    {
+     "bias_front": 0.8599405595750957,
+     "offset_mm": 7.800000000000001,
+     "pressure_front_bar": 79.57253773284421,
+     "pressure_rear_bar": 32.45352619174642
+    },
+    {
+     "bias_front": 0.8650570887892604,
+     "offset_mm": 8.399999999999999,
+     "pressure_front_bar": 80.83559388733379,
+     "pressure_rear_bar": 31.57640386223976
+    },
+    {
+     "bias_front": 0.8700746273871331,
+     "offset_mm": 9.0,
+     "pressure_front_bar": 82.09865004182338,
+     "pressure_rear_bar": 30.6992815327331
+    },
+    {
+     "bias_front": 0.8749960206345668,
+     "offset_mm": 9.600000000000001,
+     "pressure_front_bar": 83.36170619631297,
+     "pressure_rear_bar": 29.82215920322644
+    },
+    {
+     "bias_front": 0.879824005791069,
+     "offset_mm": 10.2,
+     "pressure_front_bar": 84.62476235080257,
+     "pressure_rear_bar": 28.94503687371978
+    },
+    {
+     "bias_front": 0.8845612171865259,
+     "offset_mm": 10.8,
+     "pressure_front_bar": 85.88781850529215,
+     "pressure_rear_bar": 28.06791454421312
+    },
+    {
+     "bias_front": 0.8892101910142444,
+     "offset_mm": 11.399999999999999,
+     "pressure_front_bar": 87.15087465978173,
+     "pressure_rear_bar": 27.190792214706462
+    },
+    {
+     "bias_front": 0.893773369858631,
+     "offset_mm": 12.0,
+     "pressure_front_bar": 88.41393081427132,
+     "pressure_rear_bar": 26.3136698851998
+    }
+   ],
+   "target_bias": 0.05,
+   "target_reachable": false,
+   "thread_pitch_mm": 1.058
+  },
+  "d": {
+   "bias_at_centre": 0.782888552862806,
+   "bias_max": 0.893773369858631,
+   "bias_min": 0.6071341791943543,
+   "bias_per_turn": 0.011990030884774017,
+   "findings": [
+    {
+     "check": "target_bias_reachable",
+     "detail": {},
+     "message": "5% front is outside everything these bores can make (60.7%-89.4%). No bar position gets there. Fit a larger front bore or smaller rear bore. Bias is set by the hardware; the bar only trims it.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "offset_for_target_mm": null,
+   "sweep": [
+    {
+     "bias_front": 0.6071341791943543,
+     "offset_mm": -12.0,
+     "pressure_front_bar": 37.891684634687714,
+     "pressure_rear_bar": 61.3985630654662
+    },
+    {
+     "bias_front": 0.6183286582661226,
+     "offset_mm": -11.4,
+     "pressure_front_bar": 39.1547407891773,
+     "pressure_rear_bar": 60.521440735959544
+    },
+    {
+     "bias_front": 0.6292049949807956,
+     "offset_mm": -10.8,
+     "pressure_front_bar": 40.41779694366689,
+     "pressure_rear_bar": 59.64431840645288
+    },
+    {
+     "bias_front": 0.6397765615290728,
+     "offset_mm": -10.2,
+     "pressure_front_bar": 41.68085309815648,
+     "pressure_rear_bar": 58.76719607694622
+    },
+    {
+     "bias_front": 0.6500559910414333,
+     "offset_mm": -9.6,
+     "pressure_front_bar": 42.94390925264607,
+     "pressure_rear_bar": 57.89007374743956
+    },
+    {
+     "bias_front": 0.660055227950659,
+     "offset_mm": -9.0,
+     "pressure_front_bar": 44.20696540713566,
+     "pressure_rear_bar": 57.012951417932904
+    },
+    {
+     "bias_front": 0.6697855742914471,
+     "offset_mm": -8.4,
+     "pressure_front_bar": 45.47002156162525,
+     "pressure_rear_bar": 56.13582908842624
+    },
+    {
+     "bias_front": 0.6792577323144331,
+     "offset_mm": -7.8,
+     "pressure_front_bar": 46.73307771611485,
+     "pressure_rear_bar": 55.25870675891958
+    },
+    {
+     "bias_front": 0.6884818437524236,
+     "offset_mm": -7.2,
+     "pressure_front_bar": 47.99613387060444,
+     "pressure_rear_bar": 54.381584429412925
+    },
+    {
+     "bias_front": 0.6974675260417154,
+     "offset_mm": -6.6,
+     "pressure_front_bar": 49.25919002509403,
+     "pressure_rear_bar": 53.50446209990626
+    },
+    {
+     "bias_front": 0.7062239057704537,
+     "offset_mm": -6.0,
+     "pressure_front_bar": 50.522246179583625,
+     "pressure_rear_bar": 52.6273397703996
+    },
+    {
+     "bias_front": 0.7147596495985818,
+     "offset_mm": -5.4,
+     "pressure_front_bar": 51.785302334073215,
+     "pressure_rear_bar": 51.75021744089294
+    },
+    {
+     "bias_front": 0.7230829928695837,
+     "offset_mm": -4.8,
+     "pressure_front_bar": 53.0483584885628,
+     "pressure_rear_bar": 50.873095111386284
+    },
+    {
+     "bias_front": 0.7312017661125817,
+     "offset_mm": -4.2,
+     "pressure_front_bar": 54.31141464305239,
+     "pressure_rear_bar": 49.99597278187962
+    },
+    {
+     "bias_front": 0.7391234196140604,
+     "offset_mm": -3.5999999999999996,
+     "pressure_front_bar": 55.57447079754198,
+     "pressure_rear_bar": 49.11885045237296
+    },
+    {
+     "bias_front": 0.7468550462212903,
+     "offset_mm": -3.0,
+     "pressure_front_bar": 56.837526952031574,
+     "pressure_rear_bar": 48.241728122866306
+    },
+    {
+     "bias_front": 0.7544034025241552,
+     "offset_mm": -2.4000000000000004,
+     "pressure_front_bar": 58.100583106521164,
+     "pressure_rear_bar": 47.364605793359644
+    },
+    {
+     "bias_front": 0.7617749285483426,
+     "offset_mm": -1.8000000000000007,
+     "pressure_front_bar": 59.36363926101075,
+     "pressure_rear_bar": 46.48748346385298
+    },
+    {
+     "bias_front": 0.7689757660805411,
+     "offset_mm": -1.1999999999999993,
+     "pressure_front_bar": 60.62669541550034,
+     "pressure_rear_bar": 45.61036113434632
+    },
+    {
+     "bias_front": 0.7760117757352394,
+     "offset_mm": -0.5999999999999996,
+     "pressure_front_bar": 61.889751569989926,
+     "pressure_rear_bar": 44.733238804839665
+    },
+    {
+     "bias_front": 0.782888552862806,
+     "offset_mm": 0.0,
+     "pressure_front_bar": 63.15280772447952,
+     "pressure_rear_bar": 43.856116475333
+    },
+    {
+     "bias_front": 0.7896114423896017,
+     "offset_mm": 0.5999999999999996,
+     "pressure_front_bar": 64.4158638789691,
+     "pressure_rear_bar": 42.97899414582634
+    },
+    {
+     "bias_front": 0.7961855526728465,
+     "offset_mm": 1.1999999999999993,
+     "pressure_front_bar": 65.67892003345871,
+     "pressure_rear_bar": 42.10187181631969
+    },
+    {
+     "bias_front": 0.8026157684457169,
+     "offset_mm": 1.8000000000000007,
+     "pressure_front_bar": 66.9419761879483,
+     "pressure_rear_bar": 41.22474948681302
+    },
+    {
+     "bias_front": 0.8089067629216171,
+     "offset_mm": 2.4000000000000004,
+     "pressure_front_bar": 68.20503234243789,
+     "pressure_rear_bar": 40.347627157306356
+    },
+    {
+     "bias_front": 0.8150630091206572,
+     "offset_mm": 3.0,
+     "pressure_front_bar": 69.46808849692748,
+     "pressure_rear_bar": 39.4705048277997
+    },
+    {
+     "bias_front": 0.8210887904760301,
+     "offset_mm": 3.5999999999999996,
+     "pressure_front_bar": 70.73114465141707,
+     "pressure_rear_bar": 38.59338249829304
+    },
+    {
+     "bias_front": 0.8269882107731388,
+     "offset_mm": 4.199999999999999,
+     "pressure_front_bar": 71.99420080590666,
+     "pressure_rear_bar": 37.71626016878638
+    },
+    {
+     "bias_front": 0.8327652034699392,
+     "offset_mm": 4.800000000000001,
+     "pressure_front_bar": 73.25725696039625,
+     "pressure_rear_bar": 36.83913783927972
+    },
+    {
+     "bias_front": 0.8384235404429818,
+     "offset_mm": 5.399999999999999,
+     "pressure_front_bar": 74.52031311488584,
+     "pressure_rear_bar": 35.96201550977306
+    },
+    {
+     "bias_front": 0.8439668402000161,
+     "offset_mm": 6.0,
+     "pressure_front_bar": 75.78336926937543,
+     "pressure_rear_bar": 35.0848931802664
+    },
+    {
+     "bias_front": 0.8493985755967359,
+     "offset_mm": 6.600000000000001,
+     "pressure_front_bar": 77.04642542386502,
+     "pressure_rear_bar": 34.20777085075974
+    },
+    {
+     "bias_front": 0.8547220810922452,
+     "offset_mm": 7.199999999999999,
+     "pressure_front_bar": 78.3094815783546,
+     "pressure_rear_bar": 33.33064852125308
+    },
+    {
+     "bias_front": 0.8599405595750957,
+     "offset_mm": 7.800000000000001,
+     "pressure_front_bar": 79.57253773284421,
+     "pressure_rear_bar": 32.45352619174642
+    },
+    {
+     "bias_front": 0.8650570887892604,
+     "offset_mm": 8.399999999999999,
+     "pressure_front_bar": 80.83559388733379,
+     "pressure_rear_bar": 31.57640386223976
+    },
+    {
+     "bias_front": 0.8700746273871331,
+     "offset_mm": 9.0,
+     "pressure_front_bar": 82.09865004182338,
+     "pressure_rear_bar": 30.6992815327331
+    },
+    {
+     "bias_front": 0.8749960206345668,
+     "offset_mm": 9.600000000000001,
+     "pressure_front_bar": 83.36170619631297,
+     "pressure_rear_bar": 29.82215920322644
+    },
+    {
+     "bias_front": 0.879824005791069,
+     "offset_mm": 10.2,
+     "pressure_front_bar": 84.62476235080257,
+     "pressure_rear_bar": 28.94503687371978
+    },
+    {
+     "bias_front": 0.8845612171865259,
+     "offset_mm": 10.8,
+     "pressure_front_bar": 85.88781850529215,
+     "pressure_rear_bar": 28.06791454421312
+    },
+    {
+     "bias_front": 0.8892101910142444,
+     "offset_mm": 11.399999999999999,
+     "pressure_front_bar": 87.15087465978173,
+     "pressure_rear_bar": 27.190792214706462
+    },
+    {
+     "bias_front": 0.893773369858631,
+     "offset_mm": 12.0,
+     "pressure_front_bar": 88.41393081427132,
+     "pressure_rear_bar": 26.3136698851998
+    }
+   ],
+   "target_bias": 0.05,
+   "target_reachable": false,
+   "thread_pitch_mm": 1.058
+  },
+  "s": "Reachable front bias: 60.7% to 89.4% (centred bar = 78.3%)\nAdjuster: 1.20% bias per turn (1.06 mm pitch)\nTarget 5% front is NOT reachable with these bores -- change a bore."
+ },
+ "bar_-12.0": {
+  "b": {
+   "bar_offset_mm": -12.0,
+   "bias_front": 0.6071341791943543,
+   "findings": [],
+   "force_front_N": 702.0,
+   "force_rear_N": 1638.0,
+   "pressure_front_bar": 35.4666168180677,
+   "pressure_rear_bar": 57.46905502927637,
+   "torque_front_Nm": 612.0271871999998,
+   "torque_rear_Nm": 396.03200000000004
+  },
+  "d": {
+   "bar_offset_mm": -12.0,
+   "bias_front": 0.6071341791943543,
+   "findings": [],
+   "force_front_N": 702.0,
+   "force_rear_N": 1638.0,
+   "pressure_front_bar": 35.4666168180677,
+   "pressure_rear_bar": 57.46905502927637,
+   "torque_front_Nm": 612.0271871999998,
+   "torque_rear_Nm": 396.03200000000004
+  }
+ },
+ "bar_-30.0": {
+  "b": {
+   "bar_offset_mm": -30.0,
+   "bias_front": 6.009881991754339e-08,
+   "findings": [
+    {
+     "check": "balance_bar_offset",
+     "detail": {},
+     "message": "A -30.0 mm offset puts the pivot outside the 60.0 mm clevis span. The bar cannot be assembled like that.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "bar_authority",
+     "detail": {},
+     "message": "The bar is 100% of the way to its end stop to make 0% front. There is almost no trim left in that direction, so the driver cannot dial bias further at a test day. Change a BORE to re-centre the bar instead -- that is what the bore choice is for.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "force_front_N": 3.9e-05,
+   "force_rear_N": 2340.0,
+   "pressure_front_bar": 1.970367601003761e-06,
+   "pressure_rear_bar": 82.09865004182338,
+   "torque_front_Nm": 3.40015104e-05,
+   "torque_rear_Nm": 565.76
+  },
+  "d": {
+   "bar_offset_mm": -30.0,
+   "bias_front": 6.009881991754339e-08,
+   "findings": [
+    {
+     "check": "balance_bar_offset",
+     "detail": {},
+     "message": "A -30.0 mm offset puts the pivot outside the 60.0 mm clevis span. The bar cannot be assembled like that.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "bar_authority",
+     "detail": {},
+     "message": "The bar is 100% of the way to its end stop to make 0% front. There is almost no trim left in that direction, so the driver cannot dial bias further at a test day. Change a BORE to re-centre the bar instead -- that is what the bore choice is for.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "force_front_N": 3.9e-05,
+   "force_rear_N": 2340.0,
+   "pressure_front_bar": 1.970367601003761e-06,
+   "pressure_rear_bar": 82.09865004182338,
+   "torque_front_Nm": 3.40015104e-05,
+   "torque_rear_Nm": 565.76
+  }
+ },
+ "bar_0.0": {
+  "b": {
+   "bar_offset_mm": 0.0,
+   "bias_front": 0.782888552862806,
+   "findings": [
+    {
+     "check": "bar_authority",
+     "detail": {},
+     "message": "The bar sits 0% off centre, so there is trim authority in both directions.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "force_front_N": 1170.0,
+   "force_rear_N": 1170.0,
+   "pressure_front_bar": 59.111028030112834,
+   "pressure_rear_bar": 41.04932502091169,
+   "torque_front_Nm": 1020.0453119999999,
+   "torque_rear_Nm": 282.88
+  },
+  "d": {
+   "bar_offset_mm": 0.0,
+   "bias_front": 0.782888552862806,
+   "findings": [
+    {
+     "check": "bar_authority",
+     "detail": {},
+     "message": "The bar sits 0% off centre, so there is trim authority in both directions.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "force_front_N": 1170.0,
+   "force_rear_N": 1170.0,
+   "pressure_front_bar": 59.111028030112834,
+   "pressure_rear_bar": 41.04932502091169,
+   "torque_front_Nm": 1020.0453119999999,
+   "torque_rear_Nm": 282.88
+  }
+ },
+ "bar_10.4": {
+  "b": {
+   "bar_offset_mm": 10.4,
+   "bias_front": 0.8814130350108581,
+   "findings": [
+    {
+     "check": "bar_authority",
+     "detail": {},
+     "message": "The bar sits 35% off centre, so there is trim authority in both directions.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "force_front_N": 1575.6,
+   "force_rear_N": 764.4,
+   "pressure_front_bar": 79.60285108055194,
+   "pressure_rear_bar": 26.818892346995636,
+   "torque_front_Nm": 1373.6610201599995,
+   "torque_rear_Nm": 184.81493333333333
+  },
+  "d": {
+   "bar_offset_mm": 10.4,
+   "bias_front": 0.8814130350108581,
+   "findings": [
+    {
+     "check": "bar_authority",
+     "detail": {},
+     "message": "The bar sits 35% off centre, so there is trim authority in both directions.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "force_front_N": 1575.6,
+   "force_rear_N": 764.4,
+   "pressure_front_bar": 79.60285108055194,
+   "pressure_rear_bar": 26.818892346995636,
+   "torque_front_Nm": 1373.6610201599995,
+   "torque_rear_Nm": 184.81493333333333
+  }
+ },
+ "bar_10.6": {
+  "b": {
+   "bar_offset_mm": 10.6,
+   "bias_front": 0.8829920741711894,
+   "findings": [],
+   "force_front_N": 1583.4,
+   "force_rear_N": 756.6,
+   "pressure_front_bar": 79.9969246007527,
+   "pressure_rear_bar": 26.54523018018956,
+   "torque_front_Nm": 1380.4613222399998,
+   "torque_rear_Nm": 182.92906666666667
+  },
+  "d": {
+   "bar_offset_mm": 10.6,
+   "bias_front": 0.8829920741711894,
+   "findings": [],
+   "force_front_N": 1583.4,
+   "force_rear_N": 756.6,
+   "pressure_front_bar": 79.9969246007527,
+   "pressure_rear_bar": 26.54523018018956,
+   "torque_front_Nm": 1380.4613222399998,
+   "torque_rear_Nm": 182.92906666666667
+  }
+ },
+ "bar_25.0": {
+  "b": {
+   "bar_offset_mm": 25.0,
+   "bias_front": 0.9754089634039086,
+   "findings": [
+    {
+     "check": "bar_authority",
+     "detail": {},
+     "message": "The bar is 83% of the way to its end stop to make 98% front. There is almost no trim left in that direction, so the driver cannot dial bias further at a test day. Change a BORE to re-centre the bar instead -- that is what the bore choice is for.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "force_front_N": 2145.0,
+   "force_rear_N": 195.0,
+   "pressure_front_bar": 108.37021805520685,
+   "pressure_rear_bar": 6.841554170151948,
+   "torque_front_Nm": 1870.0830719999994,
+   "torque_rear_Nm": 47.14666666666667
+  },
+  "d": {
+   "bar_offset_mm": 25.0,
+   "bias_front": 0.9754089634039086,
+   "findings": [
+    {
+     "check": "bar_authority",
+     "detail": {},
+     "message": "The bar is 83% of the way to its end stop to make 98% front. There is almost no trim left in that direction, so the driver cannot dial bias further at a test day. Change a BORE to re-centre the bar instead -- that is what the bore choice is for.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "force_front_N": 2145.0,
+   "force_rear_N": 195.0,
+   "pressure_front_bar": 108.37021805520685,
+   "pressure_rear_bar": 6.841554170151948,
+   "torque_front_Nm": 1870.0830719999994,
+   "torque_rear_Nm": 47.14666666666667
+  }
+ },
+ "bar_30.0": {
+  "b": {
+   "bar_offset_mm": 30.0,
+   "bias_front": 0.9999999953779831,
+   "findings": [
+    {
+     "check": "balance_bar_offset",
+     "detail": {},
+     "message": "A +30.0 mm offset puts the pivot outside the 60.0 mm clevis span. The bar cannot be assembled like that.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "bar_authority",
+     "detail": {},
+     "message": "The bar is 100% of the way to its end stop to make 100% front. There is almost no trim left in that direction, so the driver cannot dial bias further at a test day. Change a BORE to re-centre the bar instead -- that is what the bore choice is for.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "force_front_N": 2340.0,
+   "force_rear_N": 3.9e-05,
+   "pressure_front_bar": 118.22205606022567,
+   "pressure_rear_bar": 1.3683108340303896e-06,
+   "torque_front_Nm": 2040.0906239999997,
+   "torque_rear_Nm": 9.429333333333335e-06
+  },
+  "d": {
+   "bar_offset_mm": 30.0,
+   "bias_front": 0.9999999953779831,
+   "findings": [
+    {
+     "check": "balance_bar_offset",
+     "detail": {},
+     "message": "A +30.0 mm offset puts the pivot outside the 60.0 mm clevis span. The bar cannot be assembled like that.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "bar_authority",
+     "detail": {},
+     "message": "The bar is 100% of the way to its end stop to make 100% front. There is almost no trim left in that direction, so the driver cannot dial bias further at a test day. Change a BORE to re-centre the bar instead -- that is what the bore choice is for.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "force_front_N": 2340.0,
+   "force_rear_N": 3.9e-05,
+   "pressure_front_bar": 118.22205606022567,
+   "pressure_rear_bar": 1.3683108340303896e-06,
+   "torque_front_Nm": 2040.0906239999997,
+   "torque_rear_Nm": 9.429333333333335e-06
+  }
+ },
+ "bar_40.0": {
+  "b": {
+   "bar_offset_mm": 40.0,
+   "bias_front": 0.9999999960382713,
+   "findings": [
+    {
+     "check": "balance_bar_offset",
+     "detail": {},
+     "message": "A +40.0 mm offset puts the pivot outside the 60.0 mm clevis span. The bar cannot be assembled like that.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "bar_authority",
+     "detail": {},
+     "message": "The bar is 133% of the way to its end stop to make 100% front. There is almost no trim left in that direction, so the driver cannot dial bias further at a test day. Change a BORE to re-centre the bar instead -- that is what the bore choice is for.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "force_front_N": 2730.0,
+   "force_rear_N": 3.9e-05,
+   "pressure_front_bar": 137.92573207026328,
+   "pressure_rear_bar": 1.3683108340303896e-06,
+   "torque_front_Nm": 2380.1057279999995,
+   "torque_rear_Nm": 9.429333333333335e-06
+  },
+  "d": {
+   "bar_offset_mm": 40.0,
+   "bias_front": 0.9999999960382713,
+   "findings": [
+    {
+     "check": "balance_bar_offset",
+     "detail": {},
+     "message": "A +40.0 mm offset puts the pivot outside the 60.0 mm clevis span. The bar cannot be assembled like that.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "bar_authority",
+     "detail": {},
+     "message": "The bar is 133% of the way to its end stop to make 100% front. There is almost no trim left in that direction, so the driver cannot dial bias further at a test day. Change a BORE to re-centre the bar instead -- that is what the bore choice is for.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "force_front_N": 2730.0,
+   "force_rear_N": 3.9e-05,
+   "pressure_front_bar": 137.92573207026328,
+   "pressure_rear_bar": 1.3683108340303896e-06,
+   "torque_front_Nm": 2380.1057279999995,
+   "torque_rear_Nm": 9.429333333333335e-06
+  }
+ },
+ "bar_6.0": {
+  "b": {
+   "bar_offset_mm": 6.0,
+   "bias_front": 0.8439668402000161,
+   "findings": [
+    {
+     "check": "bar_authority",
+     "detail": {},
+     "message": "The bar sits 20% off centre, so there is trim authority in both directions.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "force_front_N": 1404.0,
+   "force_rear_N": 936.0,
+   "pressure_front_bar": 70.9332336361354,
+   "pressure_rear_bar": 32.839460016729355,
+   "torque_front_Nm": 1224.0543743999997,
+   "torque_rear_Nm": 226.30400000000006
+  },
+  "d": {
+   "bar_offset_mm": 6.0,
+   "bias_front": 0.8439668402000161,
+   "findings": [
+    {
+     "check": "bar_authority",
+     "detail": {},
+     "message": "The bar sits 20% off centre, so there is trim authority in both directions.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "force_front_N": 1404.0,
+   "force_rear_N": 936.0,
+   "pressure_front_bar": 70.9332336361354,
+   "pressure_rear_bar": 32.839460016729355,
+   "torque_front_Nm": 1224.0543743999997,
+   "torque_rear_Nm": 226.30400000000006
+  }
+ },
+ "bar_short": {
+  "bar_offset_mm": 0.0,
+  "bias_front": 0.782888552862806,
+  "findings": [
+   {
+    "check": "bar_authority",
+    "detail": {},
+    "message": "The bar sits 0% off centre, so there is trim authority in both directions.",
+    "severity": "ok",
+    "subsystems": [
+     "brakes"
+    ]
+   }
+  ],
+  "force_front_N": 1170.0,
+  "force_rear_N": 1170.0,
+  "pressure_front_bar": 59.111028030112834,
+  "pressure_rear_bar": 41.04932502091169,
+  "torque_front_Nm": 1020.0453119999999,
+  "torque_rear_Nm": 282.88
+ }
+}

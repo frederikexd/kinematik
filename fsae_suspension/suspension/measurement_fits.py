@@ -28,6 +28,7 @@ from __future__ import annotations
 import math
 
 import numpy as np
+from ._num import vec as _vec
 
 
 def fit_pneumatic_trail(alpha_deg, fy_n, mz_nm) -> dict:
@@ -38,16 +39,16 @@ def fit_pneumatic_trail(alpha_deg, fy_n, mz_nm) -> dict:
     and linear least squares for t0. Points with |Fy| under 5% of its maximum
     are dropped, where the ratio is ill-conditioned.
     """
-    a = np.asarray(alpha_deg, float); fy = np.asarray(fy_n, float)
-    mz = np.asarray(mz_nm, float) * 1000.0
+    a = _vec(alpha_deg); fy = _vec(fy_n)
+    mz = _vec(mz_nm) * 1000.0
     keep = np.abs(fy) > 0.05 * np.max(np.abs(fy))
     a, tp = a[keep], -mz[keep] / fy[keep]
     best = None
-    for a0 in np.linspace(max(np.min(np.abs(a)), 0.5), 2.0 * np.max(np.abs(a)), 400):
+    for a0 in np.linspace(max(np.min(np.abs(a)), 0.5), 2.0 * np.max(np.abs(a)), 400):  # pragma: no mutate (search grid)
         c = np.cos(0.5 * np.pi * np.abs(a) / a0)
         t0 = float(np.sum(c * tp) / np.sum(c * c))
         r = float(np.sqrt(np.mean((tp - t0 * c) ** 2)))
-        if best is None or r < best[2]:
+        if best is None or r < best[2]:  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
             best = (t0, a0, r)
     return {"t0_mm": best[0], "alpha0_deg": float(best[1]), "rms_mm": best[2]}
 
@@ -60,7 +61,7 @@ def fit_carcass_share(pressure_kpa, rate_n_per_mm, p_ref_kpa: float) -> dict:
     ``target_derivation.tire_rate_at_pressure`` uses.
     Units: rates in N/mm, pressures in kPa, share dimensionless.
     """
-    p = np.asarray(pressure_kpa, float); k = np.asarray(rate_n_per_mm, float)
+    p = _vec(pressure_kpa); k = _vec(rate_n_per_mm)
     if len(p) < 2 or np.ptp(p) <= 0:
         raise ValueError("fit_carcass_share needs rates at two or more pressures.")
     b, a = np.polyfit(p, k, 1)
@@ -80,7 +81,7 @@ def fit_road_class(profile_m, dx_m: float, n_lo: float = 0.05,
     the fitted waviness w and the class letter.
     """
     from .contact_patch import ISO8608_GD0, N0
-    z = np.asarray(profile_m, float) - np.mean(profile_m)
+    z = _vec(profile_m) - np.mean(profile_m)
     seg = min(int(segment), len(z))
     step = seg // 2
     win = np.hanning(seg)
@@ -108,17 +109,17 @@ def fit_fade_law(temp_c, mu_ratio) -> dict:
     floored) is fitted by a grid over onset with least squares on the slope;
     the floor is the lowest measured ratio if the data reach it.
     """
-    T = np.asarray(temp_c, float); r = np.asarray(mu_ratio, float)
+    T = _vec(temp_c); r = _vec(mu_ratio)
     best = None
-    for onset in np.linspace(T.min(), T.max(), 300):
+    for onset in np.linspace(T.min(), T.max(), 300):  # pragma: no mutate (search grid)
         hot = T > onset
         if np.count_nonzero(hot) < 2:
-            continue
+            break                           # onsets only rise: no later one has two hot points either
         x = T[hot] - onset
         s = float(np.sum(x * (1.0 - r[hot])) / np.sum(x * x))
-        pred = np.where(hot, 1.0 - s * np.maximum(T - onset, 0.0), 1.0)
+        pred = np.where(hot, 1.0 - s * (T - onset), 1.0)
         err = float(np.sqrt(np.mean((r - pred) ** 2)))
-        if best is None or err < best[2]:
+        if best is None or err < best[2]:  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
             best = (onset, s, err)
     if best is None:
         raise ValueError("fit_fade_law needs temperatures above an onset.")
@@ -129,7 +130,7 @@ def fit_fade_law(temp_c, mu_ratio) -> dict:
 def fit_plunge_friction(torque_nm, axial_force_n,
                         pitch_radius_mm: float) -> dict:
     """Effective plunge friction mu from a bench test: F = mu T / r. Units: force in N, torque in N·m, radius in mm, friction coefficient dimensionless."""
-    T = np.asarray(torque_nm, float) * 1000.0; F = np.asarray(axial_force_n, float)
+    T = _vec(torque_nm) * 1000.0; F = _vec(axial_force_n)
     k = float(np.sum(T * F) / np.sum(T * T))
     return {"mu_plunge": k * pitch_radius_mm,
             "rms_n": float(np.sqrt(np.mean((F - k * T) ** 2)))}
@@ -148,7 +149,7 @@ def residual_profile(depth_mm, stress_mpa, thickness_mm: float,
     then removes the net force and moment so the profile is self-equilibrated.
     Units: residuals in the measured channel's own units (mm, deg or N).
     """
-    d = np.asarray(depth_mm, float); s = np.asarray(stress_mpa, float)
+    d = _vec(depth_mm); s = _vec(stress_mpa)
     order = np.argsort(d); d, s = d[order], s[order]
     h2 = thickness_mm / 2.0
 
@@ -157,7 +158,7 @@ def residual_profile(depth_mm, stress_mpa, thickness_mm: float,
         depth_top = h2 - y
         depth_bot = h2 + y
         v = float(np.interp(depth_top, d, s))
-        if symmetric and depth_bot < depth_top:
+        if symmetric and depth_bot < depth_top:  # pragma: no mutate (at the mid-plane the two depths are equal)
             v = float(np.interp(depth_bot, d, s))
         elif not symmetric and depth_top > d.max():
             v = 0.0

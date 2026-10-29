@@ -103,7 +103,7 @@ def first_harmonic_from_three(t0: float, t120: float, t240: float) -> dict:
     """Amplitude (hot-to-cold difference) and direction of the gradient from
     three sensors at 0, 120 and 240 deg."""
     th = np.radians([0.0, 120.0, 240.0])
-    T = np.array([t0, t120, t240], float)
+    T = np.array([t0, t120, t240])
     a = 2.0 / 3.0 * np.sum(T * np.cos(th))
     b = 2.0 / 3.0 * np.sum(T * np.sin(th))
     return {"delta_T_c": 2.0 * math.hypot(a, b),
@@ -130,7 +130,8 @@ def ring_harmonics(q_w_m2: float, od_mm: float, wall_mm: float,
             return 0.5
         if n % 2 == 1:
             return 0.0
-        return 2.0 / math.pi * (-1) ** (n // 2 + 1) / (n * n - 1)
+        sign = 1.0 if n % 4 == 2 else -1.0                    # +, -, +, ... for n = 2, 4, 6
+        return sign * 2.0 / math.pi / (n * n - 1)
     return {n: absorptivity * q_w_m2 * cn(n) / (2.0 * h_w_m2k + n * n * k * t / (r * r))
             for n in range(1, n_max + 1)}
 
@@ -167,8 +168,7 @@ def bridge_thermal_error(q_w_m2: float, od_mm: float, wall_mm: float,
     ``transverse_at_deg`` and +180 (90 = the usual quarter-turn layout, 0 =
     beside the axial gauges), for a source at ``source_deg``."""
     h = ring_harmonics(q_w_m2, od_mm, wall_mm, material, h_w_m2k)
-    ta = (ring_temperature(h, 0.0, source_deg), ring_temperature(h, 180.0, source_deg))
-    tt = (ring_temperature(h, transverse_at_deg, source_deg),
-          ring_temperature(h, transverse_at_deg + 180.0, source_deg))
+    ta = tuple(ring_temperature(h, a, source_deg) for a in (0.0, 180.0))
+    tt = tuple(ring_temperature(h, transverse_at_deg + a, source_deg) for a in (0.0, 180.0))  # pragma: no mutate (+-180 deg is one point)
     return {"side_to_side_c": 2.0 * h[1], "second_harmonic_c": h[2],
             "apparent_ue": poisson_bridge_apparent_ue(ta, tt, mismatch_ue_per_c)}

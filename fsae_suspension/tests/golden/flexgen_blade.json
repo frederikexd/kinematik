@@ -1,0 +1,182 @@
+{
+ "err": [
+  "BladeSection: width and root thickness must be > 0",
+  "BladeSection: width and root thickness must be > 0",
+  "BladeSection: width and root thickness must be > 0",
+  "BladeSection: width and root thickness must be > 0",
+  "BladeSection: tip thickness must be > 0",
+  "BladeSection: tip thickness must be > 0",
+  "BladeSection: reverse taper (tip thicker than root) puts peak strain at the clamp — refused.",
+  "FlexureBlade: length must be > 0",
+  "FlexureBlade: length must be > 0",
+  "FlexureBlade: unknown boundary 'pinned'",
+  "FlexureBlade: n_seg >= 4 (discretized elastica)"
+ ],
+ "fat": {
+  "Aluminium 6061": {
+   "S_e": 96.0,
+   "S_ut": 310.0,
+   "S_y": 276.0,
+   "note": "T6; NO endurance limit — 5e8-cycle strength"
+  },
+  "Aluminium 7075": {
+   "S_e": 159.0,
+   "S_ut": 572.0,
+   "S_y": 503.0,
+   "note": "T6; NO endurance limit — 5e8-cycle strength"
+  },
+  "Carbon (axial, representative)": {
+   "S_e": null,
+   "S_ut": 600.0,
+   "S_y": 600.0,
+   "note": "laminate — coupon test required"
+  },
+  "Steel 4130": {
+   "S_e": 335.0,
+   "S_ut": 670.0,
+   "S_y": 435.0,
+   "note": "normalized; HT raises all three"
+  },
+  "Steel mild": {
+   "S_e": 200.0,
+   "S_ut": 400.0,
+   "S_y": 250.0,
+   "note": "A36-class"
+  },
+  "Titanium Ti-6Al-4V": {
+   "S_e": 510.0,
+   "S_ut": 950.0,
+   "S_y": 880.0,
+   "note": "annealed; printed Ti needs HIP + own data"
+  }
+ },
+ "ff": [
+  13.333333333333334,
+  [
+   0.08333333333333333,
+   0.25,
+   0.4166666666666667,
+   0.5833333333333334,
+   0.75,
+   0.9166666666666666
+  ],
+  [
+   307500.0,
+   307500.0,
+   307500.0,
+   307500.0,
+   307500.0,
+   307500.0
+  ],
+  37.68,
+  24.0234375,
+  5405.2734375,
+  153750.00000000017
+ ],
+ "fg": [
+  10.0,
+  [
+   0.0625,
+   0.1875,
+   0.3125,
+   0.4375,
+   0.5625,
+   0.6875,
+   0.8125,
+   0.9375
+  ],
+  [
+   380012.34374999994,
+   324495.78125,
+   274667.96875,
+   230221.40624999994,
+   190848.59375000003,
+   156242.03125,
+   126094.21875000003,
+   100097.65625
+  ],
+  30.144,
+  70.05234375000002,
+  19458.984375,
+  120394.01606347872
+ ],
+ "sec": [
+  [
+   2.0,
+   60.0,
+   20.0,
+   4500.0
+  ],
+  [
+   2.0,
+   60.0,
+   20.0,
+   4500.0
+  ],
+  [
+   2.0,
+   60.0,
+   20.0,
+   4500.0
+  ],
+  [
+   3.0,
+   60.0,
+   45.0,
+   2000.0
+  ],
+  [
+   2.625,
+   52.5,
+   30.146484375,
+   1750.0
+  ],
+  [
+   1.5,
+   30.0,
+   5.625,
+   1000.0
+  ],
+  [
+   1.0,
+   10.0,
+   0.8333333333333334,
+   83.33333333333333
+  ],
+  [
+   1.0,
+   10.0,
+   0.8333333333333334,
+   83.33333333333333
+  ],
+  [
+   1.0,
+   10.0,
+   0.8333333333333334,
+   83.33333333333333
+  ]
+ ],
+ "ti": [
+  10.0,
+  [
+   0.08333333333333333,
+   0.25,
+   0.4166666666666667,
+   0.5833333333333334,
+   0.75,
+   0.9166666666666666
+  ],
+  [
+   64012.5,
+   64012.5,
+   64012.5,
+   64012.5,
+   64012.5,
+   64012.5
+  ],
+  7.973999999999999,
+  8.890625,
+  1580.5555555555557,
+  56899.99999999998
+ ]
+}

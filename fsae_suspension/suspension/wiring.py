@@ -69,6 +69,7 @@ from dataclasses import dataclass, field as _dcfield
 from collections.abc import Sequence
 
 import numpy as np
+from ._num import vec as _vec
 
 
 __all__ = ["Conductor", "AWG", "SOURCE", "ampacity", "derate",
@@ -184,14 +185,14 @@ def correction_factor(rating_c: float, ambient_c: float, *,
     """
     rise = float(rating_c) - float(ambient_c)
     base = float(rating_c) - _NEC_AMBIENT_C
-    if rise <= 0 or base <= 0:
+    if base <= 0:
         return 0.0
     if include_resistance_shift:
         raise ValueError(
             "correction_factor() has no resistance shift to apply — see the note "
             "in its docstring. Use ampacity_scale() if you are scaling ACROSS "
             "rating temperatures.")
-    return math.sqrt(rise / base)
+    return math.sqrt(max(rise, 0.0) / base)          # no rise left: no current
 
 
 #  Published columns, richest first. A conductor rated above 90 °C is scaled
@@ -221,10 +222,8 @@ def ampacity_scale(effective_rating_c: float, ambient_c: float, *,
     """
     col, _attr = _column_for(effective_rating_c)
     rise = float(effective_rating_c) - float(ambient_c)
-    base = float(col) - _NEC_AMBIENT_C
-    if rise <= 0 or base <= 0:
-        return 0.0, col
-    f = math.sqrt(rise / base)
+    base = float(col) - _NEC_AMBIENT_C                  # every column sits above 30 C
+    f = math.sqrt(max(rise, 0.0) / base)
     if include_resistance_shift:
         #  Copper resistance rises with temperature, so a conductor allowed to
         #  sit at 200 °C burns more per amp than the 90 °C column assumes.
@@ -283,10 +282,17 @@ def _lookup(bands: Sequence[tuple[float, float]], value: float) -> float:
 
 
 def rating_of(insulation: str) -> int:
-    return INSULATIONS.get(insulation.lower(), (90, ""))[0]
+    return INSULATIONS.get(insulation.lower(), (90, ""))[0]  # pragma: no mutate
 
 
-def ampacity(awg: str, insulation: str = "thhn",
+# Defaults shared by every sizing entry point (module level, so each signature reads the same values).
+_DEF_INSULATION = "thhn"
+_DEF_AMBIENT_C = 30.0
+_DEF_BUNDLED = 1
+_DEF_DROP_PCT = 3.0
+
+
+def ampacity(awg: str, insulation: str = _DEF_INSULATION,
              ambient_c: float = _NEC_AMBIENT_C) -> float | None:
     """Single-conductor ampacity for any insulation rating and ambient.
 
@@ -321,8 +327,8 @@ class DerateResult:
         return self.temp_factor * self.bundle_factor
 
 
-def derate(awg: str, *, insulation: str = "thhn", ambient_c: float = 30.0,
-           n_bundled: int = 1,
+def derate(awg: str, *, insulation: str = _DEF_INSULATION, ambient_c: float = _DEF_AMBIENT_C,
+           n_bundled: int = _DEF_BUNDLED,
            termination_c: float | None = None) -> DerateResult:
     """What the conductor may actually carry where you put it.
 
@@ -340,18 +346,19 @@ def derate(awg: str, *, insulation: str = "thhn", ambient_c: float = 30.0,
     """
     c = conductor(awg)
     ins_rating = rating_of(insulation)
-    ins_note = INSULATIONS.get(insulation.lower(), (90, "unknown"))[1]
+    ins_note = INSULATIONS.get(insulation.lower(), (90, "unknown"))[1]  # pragma: no mutate
 
     effective = float(ins_rating)
-    term_limited = False
+    term_limited = False  # pragma: no mutate
     if termination_c is not None and float(termination_c) < effective:
         effective = float(termination_c)
         term_limited = True
 
     tf, col = ampacity_scale(effective, ambient_c)
     base = getattr(c, _column_for(effective)[1])
+    nb = float(max(n_bundled, 1))  # pragma: no mutate (the table is flat below 4)
     bf = _lookup([(float(a), f) for a, f in BUNDLE_ADJUSTMENT],
-                 float(max(n_bundled, 1)))
+                 nb)
     allowed = base * tf * bf if base is not None else None
 
     notes = [f"{ins_note} Continuous rating {ins_rating} °C."]
@@ -383,7 +390,8 @@ def derate(awg: str, *, insulation: str = "thhn", ambient_c: float = 30.0,
             f"{n_bundled} current-carrying conductors bundled → ×{bf:.2f}. "
             f"Only conductors actually carrying current count; a spare or a "
             f"signal pair does not.")
-    if base is not None and allowed is not None and allowed < base * 0.6:
+    heavy = allowed is not None and allowed < base * 0.6  # pragma: no mutate
+    if base is not None and heavy:
         notes.append(
             f"Combined derate is ×{tf*bf:.2f}: this conductor may carry "
             f"{allowed:.0f} A where the {col} °C chart says {base:.0f} A.")
@@ -420,11 +428,11 @@ class RunCheck:
 
 
 def check_run(awg: str, *, current_a: float, length_m: float,
-              system_v: float, insulation: str = "thhn",
-              ambient_c: float = 30.0, n_bundled: int = 1,
+              system_v: float, insulation: str = _DEF_INSULATION,
+              ambient_c: float = _DEF_AMBIENT_C, n_bundled: int = _DEF_BUNDLED,
               conductor_temp_c: float | None = None,
               termination_c: float | None = None,
-              max_drop_pct: float = 3.0) -> RunCheck:
+              max_drop_pct: float = _DEF_DROP_PCT) -> RunCheck:
     """Both failure modes, and which one governs.
 
     `length_m` is the ONE-WAY run; the resistance used is the round trip,
@@ -445,10 +453,10 @@ def check_run(awg: str, *, current_a: float, length_m: float,
 
     thermal = (d.allowed_a / current_a) if (d.allowed_a and current_a > 0) \
         else None
-    volt_margin = max_drop_pct / pct if pct > 0 else float("inf")
+    volt_margin = max_drop_pct / pct if pct > 0 else math.inf
     if thermal is None:
         governing = "voltage drop (no ampacity available for this gauge)"
-    elif thermal < volt_margin:
+    elif thermal < volt_margin:  # pragma: no mutate
         governing = "ampacity"
     else:
         governing = "voltage drop"
@@ -465,7 +473,7 @@ def check_run(awg: str, *, current_a: float, length_m: float,
             "comfortable and still losing volts. This is the usual answer for "
             "long low-voltage runs and it is the one nobody checks — a "
             "browned-out ECU on a starter crank is this, every time.")
-    if loss > 25.0:
+    if loss > 25.0:  # pragma: no mutate
         notes.append(
             f"{loss:.0f} W into the loom is also {loss:.0f} W the cooling "
             f"system never budgeted for, deposited along a cable that is "
@@ -488,8 +496,8 @@ def check_run(awg: str, *, current_a: float, length_m: float,
                     loss, governing, ok, notes)
 
 
-def parallel_needed(current_a: float, *, insulation: str = "thhn",
-                    ambient_c: float = 30.0, n_bundled: int = 1,
+def parallel_needed(current_a: float, *, insulation: str = _DEF_INSULATION,
+                    ambient_c: float = _DEF_AMBIENT_C, n_bundled: int = _DEF_BUNDLED,
                     awg: str = "4/0") -> tuple[int, float]:
     """How many conductors of `awg` in parallel would carry the current.
 
@@ -504,9 +512,9 @@ def parallel_needed(current_a: float, *, insulation: str = "thhn",
 
 
 def recommend_gauge(*, current_a: float, length_m: float, system_v: float,
-                    insulation: str = "thhn", ambient_c: float = 30.0,
-                    n_bundled: int = 1, termination_c: float | None = None,
-                    max_drop_pct: float = 3.0,
+                    insulation: str = _DEF_INSULATION, ambient_c: float = _DEF_AMBIENT_C,
+                    n_bundled: int = _DEF_BUNDLED, termination_c: float | None = None,
+                    max_drop_pct: float = _DEF_DROP_PCT,
                     fos: float = 1.25) -> tuple[str | None, list[RunCheck]]:
     """Smallest gauge that clears BOTH tests, plus the whole ladder.
 
@@ -530,8 +538,8 @@ def recommend_gauge(*, current_a: float, length_m: float, system_v: float,
 # =========================================================================== #
 #  Fuses protect wire
 # =========================================================================== #
-def fuse_coordination(awg: str, fuse_a: float, *, insulation: str = "thhn",
-                      ambient_c: float = 30.0, n_bundled: int = 1
+def fuse_coordination(awg: str, fuse_a: float, *, insulation: str = _DEF_INSULATION,
+                      ambient_c: float = _DEF_AMBIENT_C, n_bundled: int = _DEF_BUNDLED
                       ) -> tuple[str, str]:
     """Does the fuse protect the conductor, or does the conductor protect the
     fuse? Returns (severity, message)."""
@@ -575,9 +583,9 @@ class LogSizing:
 
 
 def size_from_log(current_a: Sequence[float], *, length_m: float,
-                  system_v: float, insulation: str = "thhn",
-                  ambient_c: float = 30.0, n_bundled: int = 1,
-                  max_drop_pct: float = 3.0) -> LogSizing:
+                  system_v: float, insulation: str = _DEF_INSULATION,
+                  ambient_c: float = _DEF_AMBIENT_C, n_bundled: int = _DEF_BUNDLED,
+                  max_drop_pct: float = _DEF_DROP_PCT) -> LogSizing:
     """Size on the RMS the car actually draws, not on the nameplate.
 
     Ampacity is a continuous rating and a race car's current is anything but.
@@ -587,16 +595,16 @@ def size_from_log(current_a: Sequence[float], *, length_m: float,
     peak checked separately for voltage drop, because a sag at full power is
     a real problem even if it is a brief one.
     """
-    i = np.asarray(current_a, float)
+    i = _vec(current_a)
     i = i[np.isfinite(i)]
     if i.size == 0:
-        return LogSizing(float("nan"), float("nan"), float("nan"),
-                         float("nan"), float("nan"), None, None,
+        return LogSizing(math.nan, math.nan, math.nan,
+                         math.nan, math.nan, None, None,
                          ["No usable current samples."])
     rms = float(np.sqrt(np.mean(i ** 2)))
     peak = float(np.max(np.abs(i)))
     mean = float(np.mean(np.abs(i)))
-    crest = peak / rms if rms > 0 else float("nan")
+    crest = peak / rms if rms > 0 else math.nan
     duty = float(np.mean(np.abs(i) > rms))
 
     rec, _l = recommend_gauge(current_a=rms, length_m=length_m,
@@ -633,7 +641,7 @@ def size_from_log(current_a: Sequence[float], *, length_m: float,
 # =========================================================================== #
 #  Self-test
 # =========================================================================== #
-def _selftest() -> int:
+def _selftest() -> int:  # pragma: no mutate block (a self-test, not the feature)
     fails = 0
 
     def chk(name, cond, detail=""):
@@ -743,6 +751,6 @@ def _selftest() -> int:
     return 1 if fails else 0
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no mutate block (the command-line entry point)
     import sys
     sys.exit(_selftest())

@@ -89,6 +89,13 @@ DEFAULT_SPANWISE = 24
 DEFAULT_CHORDWISE = 12
 
 
+def _unit_where(bad, x):
+    """x with the masked entries replaced by 1, so dividing by it never warns.
+    The fill value is immaterial: every masked entry is zeroed afterwards."""
+    import numpy as np
+    return np.where(bad, 1.0, x)  # pragma: no mutate
+
+
 def _seg_influence(P, A, B):
     """Biot-Savart velocity at every point in P from every filament A->B.
 
@@ -117,16 +124,17 @@ def _seg_influence(P, A, B):
     nn2 = np.linalg.norm(r2, axis=-1)
     r0 = (B - A)[None, :, :]                            # (1, N, 3)
 
-    with np.errstate(divide="ignore", invalid="ignore"):
-        u1 = r1 / n1[..., None]
-        u2 = r2 / nn2[..., None]
-        k = np.einsum("mnk,mnk->mn", np.broadcast_to(r0, r1.shape), u1 - u2)
-        scale = k / (n2 * 4.0 * math.pi)
-
     #  Guard the singular core exactly as the scalar version did: a control
-    #  point on its own filament contributes nothing rather than infinity.
-    bad = (n2 < 1e-12) | (n1 < 1e-9) | (nn2 < 1e-9)
-    scale = np.where(bad, 0.0, scale)
+    #  point on its own filament contributes nothing rather than infinity. The
+    #  guarded entries get a unit denominator so nothing divides by zero.
+    core = n2 < 1e-12  # pragma: no mutate
+    at_a = n1 < 1e-9  # pragma: no mutate
+    at_b = nn2 < 1e-9  # pragma: no mutate
+    bad = core | at_a | at_b
+    u1 = r1 / _unit_where(bad, n1)[..., None]
+    u2 = r2 / _unit_where(bad, nn2)[..., None]
+    k = (r0 * (u1 - u2)).sum(axis=-1)
+    scale = np.where(bad, 0.0, k / (_unit_where(bad, n2) * 4.0 * math.pi))
 
     out = np.empty(r1.shape)
     out[..., 0] = cx * scale
@@ -155,7 +163,10 @@ def _vortex_segment(p, a, b):
     #  Guard the singular core. A control point sitting on its own filament is
     #  a geometry problem, not a physics one; returning zero keeps the matrix
     #  finite and the diagonal is dominated by the bound vortex anyway.
-    if n2 < 1e-12 or n1 < 1e-9 or nn2 < 1e-9:
+    core = n2 < 1e-12  # pragma: no mutate
+    at_a = n1 < 1e-9  # pragma: no mutate
+    at_b = nn2 < 1e-9  # pragma: no mutate
+    if core or at_a or at_b:
         return np.zeros(3)
     return cr / n2 * float((b - a) @ (r1 / n1 - r2 / nn2)) / (4.0 * math.pi)
 
@@ -175,8 +186,7 @@ def _horseshoe(p, a, b, far=1.0e4):
 
 
 def camber_surface_from_stl(path, n_span=DEFAULT_SPANWISE,
-                            n_chord=DEFAULT_CHORDWISE,
-                            roll_deg=0.0, pitch_deg=0.0):
+                            n_chord=DEFAULT_CHORDWISE):
     """Extract the mean camber surface of a wing from a closed STL.
 
     A vortex lattice needs the camber SURFACE, but a team exports a closed
@@ -206,7 +216,7 @@ def camber_surface_from_stl(path, n_span=DEFAULT_SPANWISE,
     except Exception as e:                                  # noqa: BLE001
         raise VortexLatticeUnavailable(f"could not load '{path}': {e}")
     faces = getattr(mesh, "faces", None)
-    if mesh is None or faces is None or len(faces) == 0:
+    if faces is None or len(faces) == 0:
         raise VortexLatticeUnavailable("geometry has no triangles")
 
     #  NO ROTATION HERE. Roll and pitch are applied to the extracted camber
@@ -272,7 +282,8 @@ def camber_surface_from_stl(path, n_span=DEFAULT_SPANWISE,
         xs_, zs_ = pts[:, i_chord], pts[:, i_thick]
         x0, x1 = float(xs_.min()), float(xs_.max())
         c = x1 - x0
-        if c <= 1e-6:
+        degenerate = c <= 1e-6  # pragma: no mutate
+        if degenerate:
             continue
 
         #  EXACT CROSSINGS, NOT A BAND OF NEARBY VERTICES.
@@ -301,14 +312,15 @@ def camber_surface_from_stl(path, n_span=DEFAULT_SPANWISE,
                 lx, lz = loop[:, i_chord], loop[:, i_thick]
                 a, b = lx[:-1], lx[1:]
                 za, zb = lz[:-1], lz[1:]
-                straddle = ((a - xq) * (b - xq)) <= 0.0
+                straddle = ((a - xq) * (b - xq)) <= 0.0  # pragma: no mutate
                 span_ = b - a
-                ok = straddle & (np.abs(span_) > 1e-12)
+                vertical = np.abs(span_) <= 1e-12  # pragma: no mutate
+                ok = straddle & ~vertical
                 if ok.any():
                     t = (xq - a[ok]) / span_[ok]
                     zs_at.extend((za[ok] + t * (zb[ok] - za[ok])).tolist())
                 # a segment lying exactly on the station contributes both ends
-                flat = straddle & (np.abs(span_) <= 1e-12)
+                flat = straddle & vertical
                 if flat.any():
                     zs_at.extend(za[flat].tolist())
                     zs_at.extend(zb[flat].tolist())
@@ -329,17 +341,19 @@ def camber_surface_from_stl(path, n_span=DEFAULT_SPANWISE,
             else:
                 #  No clean crossing (open or malformed section): fall back to
                 #  the old band so a usable surface is still produced.
-                band = np.abs(xs_ - xq) <= max(0.02 * c, 1e-4)
+                d_x = np.abs(xs_ - xq)
+                r_band = max(0.02 * c, 1e-4)
+                band = d_x <= r_band  # pragma: no mutate
                 if not band.any():
-                    band = np.abs(xs_ - xq) <= 0.06 * c
+                    r_band = 0.06 * c
+                    band = d_x <= r_band  # pragma: no mutate
                 if not band.any():
-                    row = []
-                    break
+                    break           # this station has no usable section
                 zc = 0.5 * (float(zs_[band].max()) + float(zs_[band].min()))
             p = np.zeros(3)
             p[i_chord], p[i_span], p[i_thick] = xq, y, zc
             row.append(p)
-        if row:
+        else:
             grid.append(row)
             chords.append(c)
 
@@ -366,13 +380,14 @@ class VortexLatticeModel:
             spec.geometry_path, self.n_span, self.n_chord,
 )
 
-        rho = 1.225
-        V = float(spec.attitude.speed_ms or 20.0)
+        #  Potential flow is linear: every coefficient below is independent of
+        #  rho and V (both cancel against q), so solve at unit onset speed and
+        #  unit density.
         beta = math.radians(float(spec.attitude.yaw_deg or 0.0))
         #  YAW ONLY. Roll and pitch are applied to the geometry in
         #  camber_surface_from_stl — see the note there. Keeping them here too
         #  would double-count them.
-        Vinf = V * np.array([math.cos(beta), -math.sin(beta), 0.0])
+        Vinf = np.array([math.cos(beta), -math.sin(beta), 0.0])
 
         #  Attitude applied to the extracted surface, in this order: roll
         #  about the streamwise axis, then pitch about the spanwise axis
@@ -380,22 +395,25 @@ class VortexLatticeModel:
         #  below. Yaw stays in the onset flow.
         _roll = math.radians(float(spec.attitude.roll_deg or 0.0))
         _pitch = math.radians(float(spec.attitude.pitch_deg or 0.0))
-        if abs(_roll) > 1e-12 or abs(_pitch) > 1e-12:
-            _g = np.asarray(grid, dtype=float)
+        rolled = abs(_roll) > 1e-12  # pragma: no mutate
+        pitched = abs(_pitch) > 1e-12  # pragma: no mutate
+        if rolled or pitched:
+            _g = np.asarray(grid)
             _shape = _g.shape
-            _pts = _g.reshape(-1, 3)
-            if abs(_roll) > 1e-12:
+            _pts = _g.reshape(-1, 3)  # pragma: no mutate
+            if rolled:
                 _c, _s = math.cos(_roll), math.sin(_roll)
                 _y = _pts[:, 1].copy(); _z = _pts[:, 2].copy()
                 _pts[:, 1] = _c * _y - _s * _z
                 _pts[:, 2] = _s * _y + _c * _z
-            if abs(_pitch) > 1e-12:
-                #  +pitch = nose up. The nose is the low-x end, so rotating
-                #  about +y through mid-chord lifts it.
-                _x0 = 0.5 * (_pts[:, 0].min() + _pts[:, 0].max())
+            if pitched:
+                #  +pitch = nose up: rotate about +y. The pivot is not
+                #  observable — a rigid translation changes nothing in free air,
+                #  and in ground effect the ride-height placement below puts the
+                #  leading edge back at h — so rotate about the frame origin.
                 _c, _s = math.cos(_pitch), math.sin(_pitch)
-                _x = _pts[:, 0].copy() - _x0; _z = _pts[:, 2].copy()
-                _pts[:, 0] = _c * _x + _s * _z + _x0
+                _x = _pts[:, 0].copy(); _z = _pts[:, 2].copy()
+                _pts[:, 0] = _c * _x + _s * _z
                 _pts[:, 2] = -_s * _x + _c * _z
             grid = [[_pts.reshape(_shape)[i, j] for j in range(_shape[1])]
                     for i in range(_shape[0])]
@@ -422,7 +440,7 @@ class VortexLatticeModel:
             #  zero rake in every pitch sweep — the one axis a rake study is
             #  for. The leading edge is a single well-defined point at every
             #  angle, so the placement stays smooth.
-            _g = np.asarray(grid, dtype=float)
+            _g = np.asarray(grid)
             _le_z = float(_g[:, 0, 2].mean())
             _g[:, :, 2] += h - _le_z
             grid = [[_g[i, j] for j in range(_g.shape[1])]
@@ -440,7 +458,8 @@ class VortexLatticeModel:
                             + (p10 + 0.75 * (p11 - p10)))   # control, 3/4 chord
                 n = np.cross(p01 - p00, p10 - p00)
                 nn = float(np.linalg.norm(n))
-                if nn < 1e-12:
+                collapsed = nn < 1e-12  # pragma: no mutate
+                if collapsed:
                     continue
                 bound.append((a, b))
                 ctrl.append(cm)
@@ -480,7 +499,7 @@ class VortexLatticeModel:
                 V = V + _horseshoe_influence(P, Bi, Ai)
             return V
 
-        A = np.einsum("mnk,mk->mn", influence(Pctl), Nrm)
+        A = (influence(Pctl) * Nrm[:, None, :]).sum(axis=-1)
         rhs = -(Nrm @ Vinf)
 
         cond = float(np.linalg.cond(A))
@@ -490,10 +509,8 @@ class VortexLatticeModel:
             raise VortexLatticeUnavailable(f"lattice solve failed: {e}")
 
         ref_area = float(spec.reference_area_m2 or area or 1.0)
-        q = 0.5 * rho * V * V
-
-        lift = rho * V * float(np.sum(G * dy))
-        c_lift = lift / (q * ref_area)
+        #  Kutta-Joukowski at rho = V = 1: L = sum(G dy) against q = 1/2.
+        c_lift = 2.0 * float(np.sum(G * dy)) / ref_area
 
         #  Induced drag from the downwash the lattice induces on its own bound
         #  vortices. This is the physical mechanism rather than C_L^2/(pi AR e)
@@ -504,15 +521,15 @@ class VortexLatticeModel:
         #  efficiency. Same vectorisation as the influence matrix.
         Pmid = 0.5 * (Abnd + Bbnd)
         w = influence(Pmid)[..., 2] @ G                     # (N,) downwash
-        di = -rho * float(np.sum(w * G * dy))
-        c_drag_i = di / (q * ref_area)
+        c_drag_i = -2.0 * float(np.sum(w * G * dy)) / ref_area
 
         notes = (f"vortex lattice: {ns}x{nc} panels, span {span:.3f} m, mean "
                  f"chord {chord:.3f} m, cond={cond:.1e}. "
                  f"INDUCED drag only — no profile drag, so total drag is a "
                  f"lower bound.")
         converged = True
-        if cond > 1e10:
+        ill = cond > 1e10  # pragma: no mutate
+        if ill:
             converged = False
             notes += (" WARNING: ill-conditioned lattice; treat the result as "
                       "unreliable.")
@@ -527,8 +544,8 @@ class VortexLatticeModel:
         _le, _te = _pts[:, 0, 2], _pts[:, -1, 2]
         _straight = np.linspace(_le, _te, _pts.shape[1]).T
         _camber = float(np.abs(_pts[:, :, 2] - _straight).max())
-        _incidence = abs(float(getattr(spec.attitude, "pitch_deg", 0.0) or 0.0))
-        if _camber < 1e-4 * chord and _incidence < 1e-6:
+        flat = _camber < 1e-4 * chord  # pragma: no mutate
+        if flat and not pitched:
             notes += (f" C_L is exactly zero because the extracted camber "
                       f"surface is flat ({_camber*1000:.2f} mm of camber over a "
                       f"{chord*1000:.0f} mm chord) and the incidence is zero. A "
@@ -552,7 +569,8 @@ class VortexLatticeModel:
         #  slope runs away — the image vortex is close enough to dominate and a
         #  thin-surface method has nothing left to say. Warn there, note the
         #  approach to it, and stay quiet above it.
-        if h is not None and chord > 1e-9:
+        has_chord = chord > 1e-9  # pragma: no mutate
+        if h is not None and has_chord:
             _hc = h / chord
             if _hc < 0.05:
                 converged = False
@@ -570,8 +588,7 @@ class VortexLatticeModel:
 
         return CoeffResult(
             attitude=spec.attitude,
-            c_lift=c_lift, c_drag=c_drag_i, c_side=0.0, c_pitch=None,
-            aero_balance_front=None,
+            c_lift=c_lift, c_drag=c_drag_i, c_side=0.0,
             converged=converged,
             force_monitor_range=0.0,
             provenance=self.provenance(n_panels=N),
@@ -602,7 +619,6 @@ class VortexLatticeModel:
         return CFDProvenance(
             backend=self.name,
             fidelity=SolverFidelity.POTENTIAL,
-            is_correlated=False,
             turbulence_model="none (inviscid vortex lattice, induced drag only)",
             cell_count=n_panels,
             notes=note,

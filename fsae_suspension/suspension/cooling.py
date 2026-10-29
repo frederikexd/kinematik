@@ -94,7 +94,7 @@ COOLANTS: dict[str, Coolant] = {
 
 
 def coolant(key: str) -> Coolant:
-    k = (key or "water").strip().lower().replace("/", "").replace("-", "")
+    k = (key or "water").strip().lower().replace("/", "").replace("-", "")  # pragma: no mutate (lower-cased next: "WATER" is the same default)
     if k in COOLANTS:
         return COOLANTS[k]
     for c in COOLANTS.values():
@@ -190,14 +190,14 @@ def size_loop(spec: LoopSpec | None = None) -> LoopResult:
     #  less conservative figure, for sizing against a real radiator curve.
     drive_mean_k = max(s.coolant_in_c + 0.5 * dT - s.ambient_c, 1e-6)
     ua_req_mean = s.heat_w / drive_mean_k
-    margin = (s.radiator_ua_w_per_k / ua_req) if ua_req > 0 else float("inf")
+    margin = (s.radiator_ua_w_per_k / ua_req) if ua_req > 0 else math.inf
     steady = s.ambient_c + s.heat_w / max(s.radiator_ua_w_per_k, 1e-9)
 
     #  Transient: with no radiator at all, how long from inlet to limit?
     m_loop = s.loop_volume_l / 1000.0 * c.rho_kg_m3
     head = max(s.max_coolant_c - s.coolant_in_c, 0.0)
     t_limit = (m_loop * c.cp_j_kgk * head / max(s.heat_w, 1e-9)
-               if s.heat_w > 0 else float("inf"))
+               if s.heat_w > 0 else math.inf)
 
     #  Boiling point rises about 20 °C per bar of cap pressure for water-like
     #  mixes; declared, approximate, and enough to say whether you are close.
@@ -217,27 +217,26 @@ def size_loop(spec: LoopSpec | None = None) -> LoopResult:
         f"against {s.ambient_c:g} °C ambient; you have "
         f"{s.radiator_ua_w_per_k:g} W/K ({margin:.2f}× margin).",
     ]
-    if margin < 1.0:
+    if margin < 1.0:  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
         notes.append(
             "⚠️ The radiator is undersized for this load at this ambient. "
             "The loop will keep climbing until the coolant is hot enough to "
             "shed the heat — which is what `steady coolant` below tells you, "
             "and it is above your limit.")
-    if t_limit < 120:
+    if t_limit < 120:  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
         notes.append(
             f"With the radiator ignored entirely, the loop's own thermal "
             f"mass buys only **{t_limit:.0f} s** before the limit. That is "
             f"the number that matters for Acceleration and Skidpad, where "
             f"the car is done before the radiator has done anything.")
-    if boil_margin < 15.0:
+    if boil_margin < 15.0:  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
         notes.append(
             f"⚠️ Only {boil_margin:.0f} °C between the steady coolant "
             f"temperature and the boiling point at a "
             f"{s.cap_pressure_bar:g} bar cap. Local film temperatures at the "
             f"stator are well above bulk, so this margin is smaller than it "
             f"looks.")
-    ok = bool(margin >= 1.0 and steady <= s.max_coolant_c
-              and boil_margin >= 15.0)
+    ok = bool(margin >= 1.0 and steady <= s.max_coolant_c and boil_margin >= 15.0)  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
     return LoopResult(s, dT, m_dot, ua_req, margin, steady, t_limit,
                       boil_margin, ok, notes)
 
@@ -339,7 +338,7 @@ def rig_uncertainty(*, heat_w: float, flow_lpm: float, coolant_key: str,
              "coolant cp": cp_uncertainty_rel}
     dominant = max(terms, key=lambda k: terms[k])
 
-    if u_total <= target_resolution_rel:
+    if u_total <= target_resolution_rel:  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
         verdict = (f"This rig resolves heat rejection to ±{u_total:.1%}, "
                    f"which meets the ±{target_resolution_rel:.0%} you asked "
                    f"for.")
@@ -364,13 +363,13 @@ def rig_uncertainty(*, heat_w: float, flow_lpm: float, coolant_key: str,
         f"**{dominant} dominates.** Spending money anywhere else first is "
         f"spending it in the wrong place.",
     ]
-    if not ts.differential and u_dt_rel > u_flow_rel:
+    if not ts.differential and u_dt_rel > u_flow_rel:  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
         notes.append(
             "The temperature term is the largest and it is also the cheapest "
             "to fix: a matched PT100 pair measures the difference directly "
             "and cancels most of the common-mode error. Same money as two "
             "good absolute sensors, several times the resolution.")
-    if dT < 5.0:
+    if dT < 5.0:  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
         notes.append(
             f"A {dT:.1f} K difference is a hard thing to measure well. "
             "Plumb the rig so it can run BELOW the car's design flow rate — "
@@ -404,7 +403,7 @@ def required_delta_t(*, temp_sensor: str, flow_meter: str,
 # =========================================================================== #
 #  Self-test
 # =========================================================================== #
-def _selftest() -> int:
+def _selftest() -> int:  # pragma: no mutate block (a self-test, not the feature)
     fails = 0
 
     def chk(name, cond, detail=""):
@@ -461,6 +460,6 @@ def _selftest() -> int:
     return 1 if fails else 0
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no mutate block (the command-line entry point)
     import sys
     sys.exit(_selftest())

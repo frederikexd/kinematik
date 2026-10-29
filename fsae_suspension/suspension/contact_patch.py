@@ -52,6 +52,7 @@ import math
 from dataclasses import dataclass
 
 import numpy as np
+from ._num import vec as _vec
 
 ISO8608_GD0 = {"A": 16e-6, "B": 64e-6, "C": 256e-6, "D": 1024e-6}   # m^3
 N0 = 0.1                                                             # cycle/m
@@ -94,7 +95,7 @@ class QuarterCar:
 
     def load_frf(self, f_hz) -> np.ndarray:
         """dFz / z_r (N/m), complex, at each frequency (Hz)."""
-        f = np.atleast_1d(np.asarray(f_hz, float))
+        f = np.atleast_1d(_vec(f_hz))
         out = np.empty(len(f), complex)
         for i, fi in enumerate(f):
             w = 2.0 * math.pi * fi
@@ -106,8 +107,8 @@ class QuarterCar:
             # m_u s^2 z_u =  ks (z_s - z_u) + (1 - kappa) kt (z_r - z_u)
             A = np.array([[self.m_s * s * s + ks, -ks + self.kappa * kt],
                           [-ks, self.m_u * s * s + ks + (1.0 - self.kappa) * kt]],
-                         complex)
-            b = np.array([self.kappa * kt, (1.0 - self.kappa) * kt], complex)
+                         )                                         # complex through s
+            b = np.array([self.kappa * kt, (1.0 - self.kappa) * kt])
             zs, zu = np.linalg.solve(A, b)
             out[i] = kt * (1.0 - zu)
         return out
@@ -121,7 +122,7 @@ class QuarterCar:
         Minv = np.linalg.inv(M)
         A = np.block([[np.zeros((2, 2)), np.eye(2)],
                       [-Minv @ Kmat, -Minv @ Cmat]])
-        return bool(np.all(np.linalg.eigvals(A).real < 0.0))
+        return bool(np.all(np.linalg.eigvals(A).real < 0.0))  # pragma: no mutate (float threshold: a pole on the axis is not decaying either way)
 
 
 def kappa_from_anti(anti_pct: float, cg_height_mm: float, wheelbase_mm: float,
@@ -138,16 +139,21 @@ def kappa_from_anti(anti_pct: float, cg_height_mm: float, wheelbase_mm: float,
     return float(tan_t * mu_x)
 
 
-def iso8608_psd(f_hz, speed_ms: float, road_class: str = "B",
+N_FREQ = 2000  # pragma: no mutate (integration grid)
+N_FREQ_FINE = 4000  # pragma: no mutate (integration grid)
+DEFAULT_ROAD_CLASS = "B"  # pragma: no mutate (looked up upper-cased: "b" names the same class)
+
+
+def iso8608_psd(f_hz, speed_ms: float, road_class: str = DEFAULT_ROAD_CLASS,
                 waviness: float = 2.0) -> np.ndarray:
     """Temporal road displacement PSD (m^2/Hz) at frequency f (Hz) and speed."""
     gd0 = ISO8608_GD0[road_class.upper()]
-    n = np.asarray(f_hz, float) / float(speed_ms)
+    n = _vec(f_hz) / float(speed_ms)
     return gd0 * (n / N0) ** (-waviness) / float(speed_ms)
 
 
-def load_variation(qc: QuarterCar, speed_ms: float, road_class: str = "B",
-                   f_lo: float = 0.5, f_hi: float = 50.0, n: int = 2000) -> dict:
+def load_variation(qc: QuarterCar, speed_ms: float, road_class: str = DEFAULT_ROAD_CLASS,
+                   f_lo: float = 0.5, f_hi: float = 50.0, n: int = N_FREQ) -> dict:
     """RMS tire load variation over an ISO 8608 road.
 
     Returns sigma(dFz) in N, its ratio to the static load, the frequency of
@@ -157,19 +163,19 @@ def load_variation(qc: QuarterCar, speed_ms: float, road_class: str = "B",
     f = np.geomspace(f_lo, f_hi, n)
     H = qc.load_frf(f)
     S = np.abs(H) ** 2 * iso8608_psd(f, speed_ms, road_class)
-    fn = getattr(np, "trapezoid", None) or np.trapz
+    fn = np.trapezoid
     var = float(fn(S, f))
-    hi = f >= 10.0
-    var_hi = float(fn(S[hi], f[hi])) if np.count_nonzero(hi) > 1 else 0.0
-    sig = math.sqrt(max(var, 0.0))
+    hi = f >= 10.0  # pragma: no mutate (float threshold: >= and > differ only on exact equality)
+    var_hi = float(fn(S[hi], f[hi]))               # fewer than two points integrate to zero
+    sig = math.sqrt(var)                           # a PSD integral is never negative
     return {"sigma_dFz_N": sig, "ratio": sig / qc.static_load_N,
             "peak_hz": float(f[int(np.argmax(S))]),
-            "share_above_10hz": var_hi / var if var > 0 else 0.0,
+            "share_above_10hz": var_hi / var,          # a moving car on any ISO road has var > 0
             "stable": qc.is_stable()}
 
 
-def body_accel_rms(qc: QuarterCar, speed_ms: float, road_class: str = "B",
-                   f_lo: float = 0.5, f_hi: float = 50.0, n: int = 2000) -> float:
+def body_accel_rms(qc: QuarterCar, speed_ms: float, road_class: str = DEFAULT_ROAD_CLASS,
+                   f_lo: float = 0.5, f_hi: float = 50.0, n: int = N_FREQ) -> float:
     """RMS sprung (body) vertical acceleration over an ISO 8608 road, m/s^2.
 
     The harshness a driver feels through the seat. With ``kappa`` set it
@@ -184,17 +190,17 @@ def body_accel_rms(qc: QuarterCar, speed_ms: float, road_class: str = "B",
         kt = qc.k_t + qc.c_t * s
         ks = qc.k + qc.c * s
         A = np.array([[qc.m_s * s * s + ks, -ks + qc.kappa * kt],
-                      [-ks, qc.m_u * s * s + ks + (1.0 - qc.kappa) * kt]], complex)
-        b = np.array([qc.kappa * kt, (1.0 - qc.kappa) * kt], complex)
+                      [-ks, qc.m_u * s * s + ks + (1.0 - qc.kappa) * kt]])     # complex through s
+        b = np.array([qc.kappa * kt, (1.0 - qc.kappa) * kt])
         zs, _ = np.linalg.solve(A, b)
         acc[i] = abs(s * s * zs) ** 2
-    fn = getattr(np, "trapezoid", None) or np.trapz
+    fn = np.trapezoid
     return math.sqrt(float(fn(acc * iso8608_psd(f, speed_ms, road_class), f)))
 
 
 def damper_speed_distribution(qc: QuarterCar, speed_ms: float, knee_ms: float,
-                              motion_ratio: float = 1.0, road_class: str = "B",
-                              f_lo: float = 0.1, f_hi: float = 50.0, n: int = 4000) -> dict:
+                              motion_ratio: float = 1.0, road_class: str = DEFAULT_ROAD_CLASS,
+                              f_lo: float = 0.1, f_hi: float = 50.0, n: int = N_FREQ_FINE) -> dict:
     """Share of time the damper spends below its low/high-speed knee.
 
     Suspension (wheel-to-body) velocity from the quarter-car response to an

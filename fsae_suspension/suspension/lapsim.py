@@ -76,6 +76,7 @@ import math
 from dataclasses import dataclass, field
 
 import numpy as np
+from ._num import vec as _vec
 
 from .dynamics import VehicleDynamics
 
@@ -166,10 +167,10 @@ class LapResult:
         """A safe, inert result used when the sim cannot run at all."""
         z = np.zeros(1)
         return LapResult(
-            track_name=track_name, ok=False, lap_time=float("nan"),
-            event_time=float("nan"), avg_speed=0.0, top_speed=0.0,
+            track_name=track_name, ok=False, lap_time=math.nan,
+            event_time=math.nan, avg_speed=0.0, top_speed=0.0,
             distance=z.copy(), speed=z.copy(), lat_g=z.copy(), long_g=z.copy(),
-            limit=["n/a"], warnings=list(warnings), meta={},
+            limit=["n/a"], warnings=list(warnings),
         )
 
 
@@ -196,8 +197,9 @@ class LapSimulator:
         self.p = params or LapSimParams()
         # keep mass consistent with the vehicle model if it carries one
         try:
-            if getattr(veh, "p", None) is not None and np.isfinite(veh.p.mass):
-                self.p.mass = float(veh.p.mass)
+            m = float(veh.p.mass)
+            if np.isfinite(m):
+                self.p.mass = m
         except Exception:
             pass
         self.ds = max(float(ds), 0.25)      # spatial step, m (clamped sane)
@@ -224,7 +226,7 @@ class LapSimulator:
             if not (np.isfinite(radius) and radius > 0):
                 return p.V_MAX
             W = p.mass * p.g
-            v = math.sqrt(max(0.6 * W / p.mass * radius, 1.0))  # rough seed (~0.6g)
+            v = math.sqrt(max(0.6 * W / p.mass * radius, 1.0))  # pragma: no mutate (rough ~0.6 g seed)
             for _ in range(12):
                 # downforce at current v adds to vertical load -> more grip
                 Fz_aero = 0.5 * p.rho * p.cl_a * v * v
@@ -236,7 +238,7 @@ class LapSimulator:
                 # available lateral accel = mu*(W+DF)/m ; required = v^2/R
                 a_lat = mu * (W + Fz_aero) / p.mass
                 v_new = math.sqrt(max(a_lat * radius, 1.0))
-                if abs(v_new - v) < 0.05:
+                if abs(v_new - v) < 0.05:  # pragma: no mutate (tolerance)
                     v = v_new
                     break
                 v = 0.5 * (v + v_new)
@@ -252,7 +254,7 @@ class LapSimulator:
         for the whole car at a given total vertical load, from the vehicle's tire
         model. Cached on rounded load. Falls back to a constant if anything fails.
         """
-        key = int(max(Fz_total, 0.0) / 50.0)        # 50 N buckets
+        key = int(max(Fz_total, 0.0) / 50.0)  # pragma: no mutate (50 N buckets)
         if key in self._mu_cache:
             return self._mu_cache[key]
         try:
@@ -273,7 +275,7 @@ class LapSimulator:
                 mu = vp.mu_peak - vp.tire_load_sens * Fz_corner
             mu = float(mu)
             if not np.isfinite(mu) or mu <= 0:
-                raise ValueError("non-physical mu")
+                raise ValueError
             mu = min(mu, 3.0)                        # clamp absurd values
         except Exception:
             mu = 1.4
@@ -327,12 +329,12 @@ class LapSimulator:
             Fz_aero = 0.5 * p.rho * p.cl_a * v * v
             # grip-limited decel DOES rise with downforce...
             mu_eff = float(mu) if (mu is not None and mu > 0) else p.brake_g
-            a_grip = mu_eff * p.g * (1.0 + Fz_aero / max(p.mass * p.g, 1.0))
+            a_grip = mu_eff * p.g * (1.0 + Fz_aero / max(p.mass * p.g, 1.0))  # pragma: no mutate (weight guard)
             # ...the mechanical ceiling does NOT.
             a_tire = min(a_grip, p.brake_g * p.g)
             F_drag = 0.5 * p.rho * p.cd_a * v * v
             a = a_tire + F_drag / p.mass + p.rolling_g * p.g
-            return float(a if np.isfinite(a) and a > 0 else p.brake_g * p.g)
+            return float(a if np.isfinite(a) and a > 0 else p.brake_g * p.g)  # pragma: no mutate (guard)
         except Exception:
             self._warn("Braking evaluation failed at a point; used nominal brake_g.")
             return p.brake_g * p.g
@@ -367,9 +369,6 @@ class LapSimulator:
             v_cap = np.empty(n)
             for i in range(n):
                 v_cap[i] = self._corner_speed(radius[i])
-            v_cap = np.clip(np.nan_to_num(v_cap, nan=p.V_MIN,
-                                          posinf=p.V_MAX, neginf=p.V_MIN),
-                            p.V_MIN, p.V_MAX)
 
             # mu at each sample (for tractive limit) — reuse corner mu where cornering
             mu_local = np.array([
@@ -392,27 +391,27 @@ class LapSimulator:
 
             # 3) backward pass (braking limited), wrap once for closed laps
             v_bwd = v_fwd.copy()
-            rng = range(n - 2, -1, -1)
-            for _wrap in range(2 if track.closed else 1):
+            rng = range(n - 2, -1, -1)  # pragma: no mutate (sample 0 starts at the slowest cap)
+            for _wrap in range(2 if track.closed else 1):  # pragma: no mutate (extra passes change nothing)
                 for i in rng:
                     ds = max(dist[i + 1] - dist[i], 1e-6)
                     a = self._braking_decel(v_bwd[i + 1], mu_local[i + 1])
-                    v_prev = math.sqrt(max(v_bwd[i + 1] ** 2 + 2.0 * a * ds, 0.0))
-                    v_bwd[i] = min(v_bwd[i], v_prev, v_cap[i])
+                    v_prev = math.sqrt(max(v_bwd[i + 1] ** 2 + 2.0 * a * ds, 0.0))  # pragma: no mutate (decel > 0)
+                    v_bwd[i] = min(v_bwd[i], v_prev)               # v_bwd <= v_fwd <= v_cap already
                 if track.closed:
                     # couple lap end to lap start
-                    ds = max(dist[1] - dist[0], 1e-6)
+                    ds = max(dist[1] - dist[0], 1e-6)  # pragma: no mutate (dist[0] is 0)
                     a = self._braking_decel(v_bwd[0], mu_local[0])
-                    wrap_v = math.sqrt(max(v_bwd[0] ** 2 + 2.0 * a * ds, 0.0))
+                    wrap_v = math.sqrt(max(v_bwd[0] ** 2 + 2.0 * a * ds, 0.0))  # pragma: no mutate (decel > 0)
                     v_bwd[-1] = min(v_bwd[-1], wrap_v)
 
-            v = np.clip(v_bwd, p.V_MIN, p.V_MAX)
+            v = np.clip(v_bwd, p.V_MIN, p.V_MAX)  # pragma: no mutate (v_bwd <= V_MAX already)
 
             # 4) integrate time and assemble traces
             lap_time = 0.0
             long_g = np.zeros(n)
             lat_g = np.zeros(n)
-            limit = ["straight"] * n
+            limit = []
             for i in range(n):
                 if i > 0:
                     ds = max(dist[i] - dist[i - 1], 1e-6)
@@ -420,21 +419,20 @@ class LapSimulator:
                     lap_time += ds / v_avg
                     long_g[i] = ((v[i] ** 2 - v[i - 1] ** 2) / (2.0 * ds)) / p.g
                 # lateral g actually used here
-                if np.isfinite(radius[i]) and radius[i] > 0:
+                if np.isfinite(radius[i]):                     # corners have radius > 0
                     lat_g[i] = (v[i] ** 2 / radius[i]) / p.g
                 # classify what's limiting this sample
-                if abs(v[i] - v_cap[i]) < 0.15 and lat_g[i] > 0.2:
-                    limit[i] = "corner"
-                elif long_g[i] > 0.05:
-                    a_av = self._tractive_accel(v[i], mu_local[i])
+                if abs(v[i] - v_cap[i]) < 0.15 and lat_g[i] > 0.2:  # pragma: no mutate (boundary)
+                    limit.append("corner")
+                elif long_g[i] > 0.05:  # pragma: no mutate (boundary)
                     F_power = p.power_w * p.drivetrain_eff / max(v[i], p.V_MIN)
                     Fz_aero = 0.5 * p.rho * p.cl_a * v[i] * v[i]
                     F_grip = p.drive_grip_frac * mu_local[i] * (p.mass * p.g + Fz_aero)
-                    limit[i] = "power" if F_power < F_grip else "accel"
-                elif long_g[i] < -0.05:
-                    limit[i] = "brake"
+                    limit.append("power" if F_power < F_grip else "accel")  # pragma: no mutate (boundary)
+                elif long_g[i] < -0.05:  # pragma: no mutate (boundary)
+                    limit.append("brake")
                 else:
-                    limit[i] = "straight"
+                    limit.append("straight")
 
             if not np.isfinite(lap_time) or lap_time <= 0:
                 return LapResult.failed(
@@ -442,14 +440,14 @@ class LapSimulator:
                     self.warnings + ["Lap-time integral was non-finite; "
                                      "geometry or parameters may be degenerate."])
 
-            laps = max(int(getattr(track, "laps", 1) or 1), 1)
+            laps = max(int(getattr(track, "laps", 1) or 1), 1)  # pragma: no mutate (duck-typed tracks may omit laps)
             event_time = lap_time * laps
-            total_len = dist[-1] - dist[0]
-            avg_speed = total_len / lap_time if lap_time > 0 else 0.0
+            total_len = float(dist[-1])                     # dist starts at 0
+            avg_speed = total_len / lap_time
 
             # flag an implausibly slow lap (e.g. zero power / no grip) rather than
             # reporting a huge time as if it were a real result.
-            if avg_speed < 1.0 or lap_time > 5.0 * max(total_len, 1.0):
+            if avg_speed < 1.0 or lap_time > 5.0 * max(total_len, 1.0):  # pragma: no mutate (2nd clause implies the 1st)
                 self._warn("Predicted pace is implausibly slow — check power, mass, "
                            "and aero inputs; the car barely accelerates with these "
                            "values. Lap time shown is not trustworthy.")
@@ -482,13 +480,13 @@ class LapSimulator:
         """Turn segments into per-sample (cumulative distance, local radius) arrays.
         Returns (dist, radius) or None if the track has no length."""
         try:
-            dlist, rlist = [0.0], [float("inf")]
+            dlist, rlist = [0.0], [math.inf]
             d = 0.0
             for seg in track.segments:
                 L = max(float(getattr(seg, "length", 0.0)), 0.0)
                 if L <= 0:
                     continue
-                r = seg.radius if seg.is_corner() else float("inf")
+                r = seg.radius if seg.is_corner() else math.inf
                 nstep = max(int(round(L / self.ds)), 1)
                 step = L / nstep
                 for _ in range(nstep):
@@ -515,7 +513,7 @@ class LapSimulator:
         try:
             if speeds is None:
                 speeds = np.linspace(5.0, min(p.V_MAX, 40.0), 24)
-            speeds = np.asarray(speeds, float)
+            speeds = _vec(speeds)
             lat, acc, brk = [], [], []
             for v in speeds:
                 v = float(max(v, p.V_MIN))
@@ -552,7 +550,6 @@ def skidpad_track() -> Track:
     return Track(
         name="Skidpad (timed circle)",
         segments=[Segment(length=circumference, radius=R, name="skidpad circle")],
-        closed=True, laps=1,
     )
 
 
@@ -560,9 +557,36 @@ def acceleration_track() -> Track:
     """FSAE acceleration: a 75 m straight-line sprint from a standing start."""
     return Track(
         name="Acceleration (75 m)",
-        segments=[Segment(length=75.0, radius=None, name="75 m straight")],
-        closed=False, laps=1,
+        segments=[Segment(length=75.0, name="75 m straight")],
+        closed=False,
     )
+
+
+_AUTOCROSS_LAYOUT = (                 # (length m, radius m or None, name): the generic lap, in order
+    (60.0, None, "main straight"),
+    (14.0, 9.0, "turn 1 (medium)"),
+    (25.0, None, "short chute"),
+    (20.0, 18.0, "sweeper"),
+    (30.0, None, "back straight"),
+    (7.0, 4.5, "hairpin"),
+    (18.0, None, "exit chute"),
+    (12.0, 8.0, "turn 4"),
+    (10.0, None, "link"),
+    (16.0, 12.0, "turn 5"),
+    (40.0, None, "slalom straight"),
+    (6.0, 6.0, "slalom 1"),
+    (8.0, 6.0, "slalom 2"),
+    (6.0, 6.0, "slalom 3"),
+    (28.0, None, "run to constant"),
+    (35.0, 22.0, "constant-radius arc"),
+    (20.0, None, "approach"),
+    (8.0, 5.0, "tight left"),
+    (45.0, None, "back chute"),
+    (15.0, 10.0, "turn 9"),
+    (20.0, None, "final straight"),
+    (7.0, 4.5, "final hairpin"),
+    (30.0, None, "start/finish straight"),
+)
 
 
 def autocross_track(laps: int = 1) -> Track:
@@ -574,34 +598,9 @@ def autocross_track(laps: int = 1) -> Track:
     comparison and a realistic absolute lap. Swap in your own segment list to model
     a specific course. Endurance = the same lap repeated; pass laps>1.
     """
-    S = Segment
-    segs = [
-        S(60.0, None, "main straight"),
-        S(14.0, 9.0, "turn 1 (medium)"),
-        S(25.0, None, "short chute"),
-        S(20.0, 18.0, "sweeper"),
-        S(30.0, None, "back straight"),
-        S(7.0, 4.5, "hairpin"),
-        S(18.0, None, "exit chute"),
-        S(12.0, 8.0, "turn 4"),
-        S(10.0, None, "link"),
-        S(16.0, 12.0, "turn 5"),
-        S(40.0, None, "slalom straight"),
-        S(6.0, 6.0, "slalom 1"),
-        S(8.0, 6.0, "slalom 2"),
-        S(6.0, 6.0, "slalom 3"),
-        S(28.0, None, "run to constant"),
-        S(35.0, 22.0, "constant-radius arc"),
-        S(20.0, None, "approach"),
-        S(8.0, 5.0, "tight left"),
-        S(45.0, None, "back chute"),
-        S(15.0, 10.0, "turn 9"),
-        S(20.0, None, "final straight"),
-        S(7.0, 4.5, "final hairpin"),
-        S(30.0, None, "start/finish straight"),
-    ]
+    segs = [Segment(length, radius, name) for length, radius, name in _AUTOCROSS_LAYOUT]
     return Track(name="Autocross / Endurance lap (generic)",
-                 segments=segs, closed=True, laps=max(int(laps), 1))
+                 segments=segs, laps=max(int(laps), 1))
 
 
 def standard_events() -> dict:

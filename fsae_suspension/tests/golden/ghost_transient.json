@@ -1,0 +1,137 @@
+{
+ "FL": [
+  "FL",
+  [
+   [
+    -0.0,
+    600.0,
+    0.0
+   ],
+   [
+    -320.0,
+    616.0,
+    0.4
+   ]
+  ]
+ ],
+ "RL": [
+  "RL",
+  [
+   [
+    -40.0,
+    602.0,
+    0.0
+   ],
+   [
+    -360.0,
+    618.0,
+    0.4
+   ]
+  ]
+ ],
+ "RR": [
+  "RR",
+  [
+   [
+    60.0,
+    603.0,
+    0.0
+   ],
+   [
+    380.0,
+    619.0,
+    0.4
+   ]
+  ]
+ ],
+ "bad": "corner must be one of ['FL', 'FR', 'RL', 'RR']",
+ "calls": [
+  [
+   -0.0,
+   -0.0,
+   600.0
+  ],
+  [
+   -160.0,
+   -320.0,
+   616.0
+  ],
+  [
+   -10.0,
+   20.0,
+   601.0
+  ],
+  [
+   -170.0,
+   340.0,
+   617.0
+  ],
+  [
+   -20.0,
+   -40.0,
+   602.0
+  ],
+  [
+   -180.0,
+   -360.0,
+   618.0
+  ],
+  [
+   -30.0,
+   60.0,
+   603.0
+  ],
+  [
+   -190.0,
+   380.0,
+   619.0
+  ]
+ ],
+ "failed": {
+  "corner": "FL",
+  "findings": [],
+  "flags": [],
+  "max_d_camber_deg": 0.0,
+  "max_d_toe_deg": 0.0,
+  "max_loop_gain": 0.0,
+  "n_cache_hits": 0,
+  "n_instants": 0,
+  "n_solves": 0,
+  "note": "transient run was flagged failed — nothing to audit: a; b",
+  "verdict": "RIGID_FAITHFUL",
+  "worst_fos": "NaN",
+  "worst_fos_member": "",
+  "worst_fos_t_s": "NaN"
+ },
+ "failed_nowarn": {
+  "corner": "RR",
+  "findings": [],
+  "flags": [],
+  "max_d_camber_deg": 0.0,
+  "max_d_toe_deg": 0.0,
+  "max_loop_gain": 0.0,
+  "n_cache_hits": 0,
+  "n_instants": 0,
+  "n_solves": 0,
+  "note": "transient run was flagged failed — nothing to audit: ",
+  "verdict": "RIGID_FAITHFUL",
+  "worst_fos": "NaN",
+  "worst_fos_member": "",
+  "worst_fos_t_s": "NaN"
+ },
+ "fr": [
+  "FR",
+  [
+   [
+    20.0,
+    601.0,
+    0.0
+   ],
+   [
+    340.0,
+    617.0,
+    0.4
+   ]
+  ]
+ ]
+}

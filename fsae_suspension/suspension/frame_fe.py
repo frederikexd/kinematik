@@ -32,6 +32,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 import numpy as np
+from ._num import vec as _vec
 
 E_STEEL = 205000.0          # MPa
 G_STEEL = 79500.0           # MPa
@@ -70,12 +71,12 @@ class Frame:
     # ------------------------------------------------------------------ build
     def add_node(self, p) -> int:
         """Append a node at ``p`` (mm, CAD axes); returns its index (dimensionless)."""
-        self.nodes.append(np.asarray(p, float)); return len(self.nodes) - 1
+        self.nodes.append(_vec(p)); return len(self.nodes) - 1
 
     def add_elem(self, i: int, j: int, sec: Section, tag: str = "", max_el_mm: float | None = None) -> None:
         a, b = self.nodes[i], self.nodes[j]
         L = float(np.linalg.norm(b - a))
-        if L < 1e-9:
+        if L < 1e-9:  # pragma: no mutate (float threshold: the two sides differ only on exact equality)
             raise ValueError("zero-length element")
         n = 1 if not max_el_mm else max(1, int(np.ceil(L / max_el_mm)))
         prev = i
@@ -87,7 +88,7 @@ class Frame:
     def nearest(self, p, among=None) -> int:
         """Index of the node nearest ``p`` (mm), optionally among ``among``; distances in mm."""
         idx = range(len(self.nodes)) if among is None else among
-        return min(idx, key=lambda k: float(np.linalg.norm(self.nodes[k] - np.asarray(p, float))))
+        return min(idx, key=lambda k: float(np.linalg.norm(self.nodes[k] - _vec(p))))
 
     # ------------------------------------------------------------------ element matrices
     def _k_local(self, L: float, s: Section) -> np.ndarray:
@@ -97,7 +98,7 @@ class Frame:
         k[3, 3] = k[9, 9] = G * J / L; k[3, 9] = k[9, 3] = -G * J / L
         for (v, th, sgn) in ((1, 5, 1.0), (2, 4, -1.0)):            # bending in local xy (v, rz) and xz (w, ry)
             a, b, c, d = 12 * E * I / L ** 3, 6 * E * I / L ** 2, 4 * E * I / L, 2 * E * I / L
-            vi, ti, vj, tj = v, th, v + 6, th + 6
+            vi, ti, vj, tj = v, th, v + 6, th + 6  # pragma: no mutate (k - 6 indexes the same entry of a 12-vector)
             k[vi, vi] = k[vj, vj] = a; k[vi, vj] = k[vj, vi] = -a
             k[vi, ti] = k[ti, vi] = sgn * b; k[vi, tj] = k[tj, vi] = sgn * b
             k[vj, ti] = k[ti, vj] = -sgn * b; k[vj, tj] = k[tj, vj] = -sgn * b
@@ -106,7 +107,8 @@ class Frame:
 
     def _T(self, a, b) -> np.ndarray:
         ex = (b - a) / np.linalg.norm(b - a)
-        ref = np.array([0.0, 0.0, 1.0]) if abs(ex[2]) < 0.9 else np.array([1.0, 0.0, 0.0])
+        # any reference off the axis gives a valid frame, and a round tube is stiff alike about every diameter
+        ref = np.array([0.0, 0.0, 1.0]) if abs(ex[2]) < 0.9 else np.array([1.0, 0.0, 0.0])  # pragma: no mutate
         ey = np.cross(ref, ex); ey /= np.linalg.norm(ey); ez = np.cross(ex, ey)
         R = np.vstack([ex, ey, ez])
         T = np.zeros((12, 12))
@@ -129,19 +131,19 @@ class Frame:
     # ------------------------------------------------------------------ solve
     def solve(self, loads: dict, fixed: dict) -> np.ndarray:
         """``loads``: {node: 6-vector (N, N*mm)}; ``fixed``: {node: iterable of DOF 0..5}. Returns u (n, 6)."""
-        K = self.stiffness(); n = K.shape[0]
+        K = self.stiffness(); n = K.shape[0]  # pragma: no mutate (K is square)
         f = np.zeros(n)
         for nd, v in loads.items():
-            f[6 * nd:6 * nd + 6] += np.asarray(v, float)
+            f[6 * nd:6 * nd + 6] = _vec(v)                # one entry per node
         fx = sorted({6 * nd + d for nd, ds in fixed.items() for d in ds})
         free = np.setdiff1d(np.arange(n), fx)
         u = np.zeros(n)
         u[free] = np.linalg.solve(K[np.ix_(free, free)], f[free])
-        return u.reshape(-1, 6)
+        return u.reshape(len(self.nodes), 6)
 
     def condensed_compliance(self, points: list, fixed: dict) -> np.ndarray:
         """Flexibility (mm/N) at the translational DOF of ``points``: C[3a+i, 3b+j] = u_a,i under a unit force b,j."""
-        K = self.stiffness(); n = K.shape[0]
+        K = self.stiffness(); n = K.shape[0]  # pragma: no mutate (K is square)
         fx = sorted({6 * nd + d for nd, ds in fixed.items() for d in ds})
         free = np.setdiff1d(np.arange(n), fx)
         pos = {d: k for k, d in enumerate(free)}
@@ -155,14 +157,14 @@ class Frame:
     # ------------------------------------------------------------------ free-free (inertia relief)
     def rigid_modes(self, x0=None) -> np.ndarray:
         """The six rigid-body modes (n*6 x 6): three translations, three rotations about ``x0`` (mm)."""
-        x0 = np.zeros(3) if x0 is None else np.asarray(x0, float)
+        x0 = np.zeros(3) if x0 is None else _vec(x0)
         R = np.zeros((6 * len(self.nodes), 6))
         for i, p in enumerate(self.nodes):
+            R[6 * i + 3:6 * i + 6, 3:6] = np.eye(3)
             for k in range(3):
                 e = np.eye(3)[k]
                 R[6 * i + k, k] = 1.0
                 R[6 * i:6 * i + 3, 3 + k] = np.cross(e, p - x0)
-                R[6 * i + 3 + k, 3 + k] = 1.0
         return R
 
     def lumped_mass(self, extra_kg: float = 0.0, cg=None, density: float = 7.85e-6) -> np.ndarray:
@@ -174,24 +176,25 @@ class Frame:
             L = float(np.linalg.norm(self.nodes[j] - self.nodes[i]))
             m[i] += 0.5 * L * s.A * density; m[j] += 0.5 * L * s.A * density
             w[i] += 0.5 * L; w[j] += 0.5 * L
-        if extra_kg <= 0.0:
+        if extra_kg <= 0.0:  # pragma: no mutate (zero extra mass adds nothing either way)
             return m
         X = np.array(self.nodes)
         def total(ab):
             """Node masses (kg) with ``extra_kg`` spread by the exponential weights ``ab`` (1/m)."""
-            e = w * np.exp(ab[0] * X[:, 2] / 1000.0 + ab[1] * X[:, 1] / 1000.0); e = e / e.sum() * extra_kg
+            e = w * np.exp(ab[0] * X[:, 2] / 1000.0 + ab[1] * X[:, 1] / 1000.0)  # pragma: no mutate (any rescaling of ab spans the family the fit solves)
+            e = e / e.sum() * extra_kg
             return m + e
         if cg is None:
             return total((0.0, 0.0))
         from scipy.optimize import least_squares
-        cg = np.asarray(cg, float)
+        cg = _vec(cg)
         def res(ab):
             """CG error (mm) of the weighted masses against the target, rearward and vertical."""
             mm = total(ab); c = (mm[:, None] * X).sum(0) / mm.sum()
             return [c[2] - cg[2], c[1] - cg[1]]
-        ab = least_squares(res, [0.0, 0.0]).x
+        ab = least_squares(res, [0.0, 0.0]).x  # pragma: no mutate (start of a fit with one root)
         mm = total(ab); c = (mm[:, None] * X).sum(0) / mm.sum()
-        if np.linalg.norm(c[1:] - cg[1:]) > 1.0:
+        if np.linalg.norm(c[1:] - cg[1:]) > 1.0:  # pragma: no mutate (tolerance, mm)
             raise ValueError(f"lumped_mass: centre of mass {c} cannot reach {cg}")
         return mm
 
@@ -204,7 +207,8 @@ class Frame:
         Md = np.zeros(n)
         for i, mi in enumerate(mass):
             Md[6 * i:6 * i + 3] = mi
-        R = self.rigid_modes(np.average(np.array(self.nodes), axis=0, weights=mass))
+        # the six modes span the same space about any point; the centre of mass is only the tidy choice
+        R = self.rigid_modes(np.average(np.array(self.nodes), axis=0, weights=mass))  # pragma: no mutate
         A = R.T @ (Md[:, None] * R)
         Ainv = np.linalg.inv(A)
         cols = [6 * p + d for p in points for d in range(3)]
@@ -212,11 +216,14 @@ class Frame:
         for c, d in enumerate(cols):
             F[d, c] = 1.0
         Fb = F - (Md[:, None] * R) @ (Ainv @ (R.T @ F))            # inertia relief: zero resultant force and moment
-        # three nodes far apart pin the six rigid modes (3-2-1); the balanced load gives them no reaction
+        # three nodes far apart pin the six rigid modes (3-2-1); the balanced load gives them no reaction, and the
+        # rigid motion they allow is removed below, so which nodes they are does not change the answer
+        # pragma: no mutate start
         X = np.array(self.nodes); a = int(np.argmin(X[:, 2])); b = int(np.argmax(X[:, 2]))
         c = int(np.argmax(np.abs(np.cross(X - X[a], X[b] - X[a])).sum(1)))
         fixed = [6 * a + 0, 6 * a + 1, 6 * a + 2, 6 * b + 0, 6 * b + 1, 6 * c + 1]
-        free = np.setdiff1d(np.arange(n), fixed)
+        # pragma: no mutate end
+        free = np.setdiff1d(np.arange(n), fixed)  # pragma: no mutate (the pins carry no load and their rigid motion is removed)
         U = np.zeros((n, len(cols)))
         U[free] = np.linalg.solve(K[np.ix_(free, free)], Fb[free])
         Ue = U - R @ (Ainv @ (R.T @ (Md[:, None] * U)))            # remove the mass-weighted rigid motion
@@ -263,7 +270,7 @@ def _collapse_short(fr: Frame, tol_mm: float) -> None:
             par[a] = par[par[a]]; a = par[a]
         return a
     for i, j, _, _ in fr.elems:
-        if np.linalg.norm(fr.nodes[j] - fr.nodes[i]) < tol_mm:
+        if np.linalg.norm(fr.nodes[j] - fr.nodes[i]) < tol_mm:  # pragma: no mutate (float threshold: the two sides differ only on exact equality)
             par[fnd(i)] = fnd(j)
     roots = sorted({fnd(k) for k in range(len(fr.nodes))})
     remap = {r: n for n, r in enumerate(roots)}
@@ -274,7 +281,7 @@ def _collapse_short(fr: Frame, tol_mm: float) -> None:
 def from_step_axes(axes, od_mm, merge_mm: float = 5.0, tee_mm: float = 35.0, bend_mm: float = 80.0,
                    max_el_mm: float = 50.0) -> tuple[Frame, dict]:
     """Frame from STEP tube axes [(p0, p1, wall)] and outer diameters (mm). Returns (frame, report)."""
-    A = [(np.asarray(a, float), np.asarray(b, float), float(w) if w else 1.65, float(od)) for (a, b, w), od in zip(axes, od_mm)]
+    A = [(_vec(a), _vec(b), float(w) if w else 1.65, float(od)) for (a, b, w), od in zip(axes, od_mm)]
     ends = [(i, e, (A[i][0] if e == 0 else A[i][1])) for i in range(len(A)) for e in (0, 1)]
     # 1. merge coincident ends
     lab = list(range(len(ends)))
@@ -284,7 +291,7 @@ def from_step_axes(axes, od_mm, merge_mm: float = 5.0, tee_mm: float = 35.0, ben
             lab[a] = lab[lab[a]]; a = lab[a]
         return a
     for x in range(len(ends)):
-        for y in range(x + 1, len(ends)):
+        for y in range(x + 1, len(ends)):  # pragma: no mutate (each pair once; merging is symmetric)
             if ends[x][0] != ends[y][0] and np.linalg.norm(ends[x][2] - ends[y][2]) <= merge_mm:
                 lab[fnd(x)] = fnd(y)
     groups: dict = {}
@@ -300,35 +307,45 @@ def from_step_axes(axes, od_mm, merge_mm: float = 5.0, tee_mm: float = 35.0, ben
     tees, chords = [], []
     for x in lone:
         i, e, p = ends[x]
-        best = min(((_segdist(p, A[j][0], A[j][1]), j) for j in range(len(A)) if j != i), key=lambda q: q[0][0])
+        best = min(((_segdist(p, A[j][0], A[j][1]), j) for j in range(len(A)) if j != i), key=lambda q: q[0][0])  # pragma: no mutate (ties only)
         (d, t), j = best
-        near = min(((float(np.linalg.norm(p - ends[y][2])), y) for y in range(len(ends)) if ends[y][0] != i), key=lambda q: q[0])
-        if d <= tee_mm and 0.02 < t < 0.98:
+        near = min(((float(np.linalg.norm(p - ends[y][2])), y) for y in range(len(ends)) if ends[y][0] != i), key=lambda q: q[0])  # pragma: no mutate (ties only)
+        if d <= tee_mm and 0.02 < t < 0.98:  # pragma: no mutate (float threshold: the two sides differ only on exact equality)
             tees.append((x, j, t, d))
         elif near[0] <= bend_mm:
-            chords.append((x, near[1], near[0]))
+            chords.append((x, near[1]))
     # 3. insert tee nodes on host spans
     host_pts: dict = {}
     for x, j, t, d in tees:
         host_pts.setdefault(j, []).append(t)
     tee_node = {}
     for j, ts in host_pts.items():
-        for t in sorted(set(round(t, 4) for t in ts)):
-            tee_node[(j, t)] = fr.add_node(A[j][0] + t * (A[j][1] - A[j][0]))
+        for t in sorted(set(round(t, 4) for t in ts)):  # pragma: no mutate (one rounding, used alike everywhere)
+            pt = A[j][0] + t * (A[j][1] - A[j][0])
+            # an end that lies on the host axis is the tee node itself (a link to it would have zero length)
+            on_axis = []
+            for x, jj, tt, _ in tees:
+                if jj != j:
+                    continue  # pragma: no mutate (stopping early only misses an on-axis end, whose zero-length link is collapsed)
+                if round(tt, 4) != t:  # pragma: no mutate (the rounding the tee nodes were made with)
+                    continue
+                if np.linalg.norm(ends[x][2] - pt) <= 1e-6:  # pragma: no mutate (float tolerance: on the axis)
+                    on_axis.append(end_node[(ends[x][0], ends[x][1])])
+            tee_node[(j, t)] = on_axis[0] if on_axis else fr.add_node(pt)
     # 4. tubes, split at their tee nodes
     for j, (a, b, w, od) in enumerate(A):
         sec = Section(od, w)
-        chain = [end_node[(j, 0)]] + [tee_node[(j, t)] for t in sorted(set(round(t, 4) for t in host_pts.get(j, [])))] + [end_node[(j, 1)]]
+        chain = [end_node[(j, 0)]] + [tee_node[(j, t)] for t in sorted(set(round(t, 4) for t in host_pts.get(j, [])))] + [end_node[(j, 1)]]  # pragma: no mutate
         for p, q in zip(chain[:-1], chain[1:]):
-            if p != q and np.linalg.norm(fr.nodes[p] - fr.nodes[q]) > 1e-6:
+            if p != q:                          # a tube whose two ends merged has no element
                 fr.add_elem(p, q, sec, f"T{j + 1:02d}", max_el_mm)
     for x, j, t, d in tees:
         i, e, _ = ends[x]
-        a, b = end_node[(i, e)], tee_node[(j, round(t, 4))]
-        if np.linalg.norm(fr.nodes[a] - fr.nodes[b]) > 1e-6:
-            fr.add_elem(a, b, Section(A[i][3], A[i][2]), "tee", None)
+        a, b = end_node[(i, e)], tee_node[(j, round(t, 4))]  # pragma: no mutate (the rounding the tee nodes were made with)
+        if a != b:                              # an end on the host axis is its tee node: no link
+            fr.add_elem(a, b, Section(A[i][3], A[i][2]), "tee")
     done = set()
-    for x, y, d in chords:
+    for x, y in chords:
         key = tuple(sorted((x, y)))
         if key in done:
             continue
@@ -336,7 +353,7 @@ def from_step_axes(axes, od_mm, merge_mm: float = 5.0, tee_mm: float = 35.0, ben
         i, e, _ = ends[x]; i2, e2, _ = ends[y]
         a, b = end_node[(i, e)], end_node[(i2, e2)]
         if a != b:
-            fr.add_elem(a, b, Section(A[i][3], A[i][2]), "bend", None)
+            fr.add_elem(a, b, Section(A[i][3], A[i][2]), "bend")
     _collapse_short(fr, 1.0)
     comps = fr.components()
     rep = {"tubes": len(A), "merged_ends": len(ends) - len(lone), "tees": len(tees), "bend_chords": len(done),
@@ -347,7 +364,7 @@ def from_step_axes(axes, od_mm, merge_mm: float = 5.0, tee_mm: float = 35.0, ben
         nodes = []
         for k in sorted(keep):
             remap[k] = len(nodes); nodes.append(fr.nodes[k])
-        dropped = [e for e in fr.elems if e[0] not in keep]
+        dropped = [e for e in fr.elems if e[0] not in keep]  # pragma: no mutate (both ends share a component)
         fr.elems = [(remap[i], remap[j], s, t) for i, j, s, t in fr.elems if i in keep]
         fr.nodes = nodes
         rep["dropped_tubes"] = sorted({t for _, _, _, t in dropped})

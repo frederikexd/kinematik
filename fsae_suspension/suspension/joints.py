@@ -59,6 +59,7 @@ from __future__ import annotations
 
 import math
 import numpy as np
+from ._num import vec as _vec
 from dataclasses import dataclass, field
 from collections.abc import Sequence
 
@@ -124,7 +125,7 @@ class JointCompliance:
         """A plain linear joint: F = k·δ (k in N/mm). The degenerate baseline."""
         if not (np.isfinite(k) and k > 0):
             raise ValueError("linear joint needs a positive finite rate k (N/mm).")
-        return JointCompliance(kind="linear", k1=float(k),
+        return JointCompliance(k1=float(k),                 # kind defaults to "linear"
                                c_viscous=float(c_viscous),
                                loss_factor=float(loss_factor), label=label)
 
@@ -195,8 +196,8 @@ class JointCompliance:
         origin region so tension and compression are both represented. Interpolated
         with a monotone PCHIP spline and inverted the same way.
         """
-        d = np.asarray(disp_mm, float)
-        f = np.asarray(force_N, float)
+        d = _vec(disp_mm)
+        f = _vec(force_N)
         if d.shape != f.shape or d.ndim != 1 or d.size < 3:
             raise ValueError("tabular joint needs matching 1-D disp/force arrays of "
                              "length ≥ 3.")
@@ -263,11 +264,11 @@ class JointCompliance:
         if self.kind == "cubic":
             return self.k1 * d + self.k3 * d**3
         if self.kind == "bilinear":
-            if a <= self.knee:
+            if a <= self.knee:  # pragma: no mutate (both laws meet at the knee)
                 return self.k1 * d
             return s * (self.k1 * self.knee + self.k2 * (a - self.knee))
         if self.kind == "freeplay":
-            if a <= self.lash:
+            if a <= self.lash:  # pragma: no mutate (both laws meet at take-up)
                 return self.k_lash * d
             return s * (self.k_lash * self.lash + self.k1 * (a - self.lash))
         if self.kind == "tabular":
@@ -285,24 +286,24 @@ class JointCompliance:
             return F / self.k1
         if self.kind == "cubic":
             # one real root of k3 δ³ + k1 δ − F = 0; Newton from the linear seed
-            d = F / self.k1
-            for _ in range(60):
+            d = F / self.k1  # pragma: no mutate (Newton seed)
+            for _ in range(60):  # pragma: no mutate (iteration cap)
                 g = self.k3 * d**3 + self.k1 * d - F
                 dg = 3.0 * self.k3 * d**2 + self.k1
                 step = g / dg
                 d -= step
-                if abs(step) < 1e-12:
+                if abs(step) < 1e-12:  # pragma: no mutate (tolerance)
                     break
             return d
         if self.kind == "bilinear":
             Fk = self.k1 * self.knee          # force at the knee
-            if a <= Fk:
+            if a <= Fk:  # pragma: no mutate (both laws meet at the knee)
                 return F / self.k1
             return s * (self.knee + (a - Fk) / self.k2)
         if self.kind == "freeplay":
             Fl = self.k_lash * self.lash      # force at clearance take-up
-            if a <= Fl:
-                return F / self.k_lash if self.k_lash > 0 else 0.0
+            if a <= Fl:  # pragma: no mutate (both laws meet at take-up; with k_lash = 0 no nonzero force is inside)
+                return F / self.k_lash
             return s * (self.lash + (a - Fl) / self.k1)
         if self.kind == "tabular":
             return float(self._invert_tabular(F))
@@ -355,7 +356,7 @@ class JointCompliance:
         omega = 2.0 * np.pi * float(freq_hz)
         e_visc = np.pi * self.c_viscous * omega * X**2
         Fx = self.force(X)
-        k_sec = abs(Fx / X) if X > 0 else self.tangent_stiffness(0.0)
+        k_sec = abs(Fx / X)
         e_struct = np.pi * self.loss_factor * k_sec * X**2
         return float(e_visc + e_struct)
 
@@ -372,7 +373,7 @@ class JointCompliance:
         d = self.displacement(about_force_N)
         k_t = self.tangent_stiffness(d)
         c_eq = self.c_viscous
-        if freq_hz is not None and freq_hz > 0 and self.loss_factor > 0:
+        if freq_hz is not None and freq_hz > 0:
             omega = 2.0 * np.pi * float(freq_hz)
             c_eq = self.c_viscous + self.loss_factor * k_t / omega
         return {"tangent_stiffness_N_per_mm": float(k_t),
@@ -389,8 +390,7 @@ class JointCompliance:
         # Single source of truth: force as a monotone function of displacement.
         # displacement(F) numerically inverts THIS curve, so the two are exact
         # inverses (two independent splines would not be).
-        self._f_of_d = PchipInterpolator(self.table_disp, self.table_force,
-                                         extrapolate=True)
+        self._f_of_d = PchipInterpolator(self.table_disp, self.table_force)   # extrapolates by default
         self._d_lo = float(self.table_disp[0])
         self._d_hi = float(self.table_disp[-1])
         self._f_lo = float(self.table_force[0])
@@ -401,18 +401,18 @@ class JointCompliance:
 
     def _invert_tabular(self, F: float) -> float:
         """Displacement at force F: bisection inside the table, linear slope outside."""
-        if F <= self._f_lo:
+        if F <= self._f_lo:  # pragma: no mutate (both branches give the table end)
             return self._d_lo + (F - self._f_lo) / self._slope_lo
-        if F >= self._f_hi:
+        if F >= self._f_hi:  # pragma: no mutate (both branches give the table end)
             return self._d_hi + (F - self._f_hi) / self._slope_hi
         lo, hi = self._d_lo, self._d_hi
-        for _ in range(80):
+        for _ in range(80):  # pragma: no mutate (bisection cap)
             mid = 0.5 * (lo + hi)
-            if float(self._f_of_d(mid)) < F:
+            if float(self._f_of_d(mid)) < F:  # pragma: no mutate (bisection side)
                 lo = mid
             else:
                 hi = mid
-            if hi - lo < 1e-12:
+            if hi - lo < 1e-12:  # pragma: no mutate (tolerance)
                 break
         return 0.5 * (lo + hi)
 
@@ -455,17 +455,17 @@ def stiction_describing_function(k_n_per_mm: float, breakout_n: float,
     if k <= 0.0 or F0 <= 0.0:
         raise ValueError("k and force amplitude must be > 0.")
     if F0 <= Fs:
-        return {"locked": True, "k_eff_n_per_mm": float("inf"),
+        return {"locked": True, "k_eff_n_per_mm": math.inf,
                 "phase_lag_deg": 0.0, "hysteresis_mm": 0.0}
-    th = np.linspace(0.0, 4.0 * np.pi, 2 * n, endpoint=False)
+    th = np.arange(2 * n) * (2.0 * np.pi / n)                # two cycles, n samples each
     F = F0 * np.sin(th)
     x = np.zeros_like(F)
-    xi = 0.0
+    xi = 0.0  # pragma: no mutate (the first cycle settles whatever the start)
     for i, f in enumerate(F):
         # slides only when the spring cannot hold the force within break-out
-        if f - k * xi > Fs:
+        if f - k * xi > Fs:  # pragma: no mutate (at break-out sliding leaves xi where it is)
             xi = (f - Fs) / k
-        elif f - k * xi < -Fs:
+        elif f - k * xi < -Fs:  # pragma: no mutate (at break-out sliding leaves xi where it is)
             xi = (f + Fs) / k
         x[i] = xi
     th2, x2 = th[n:], x[n:]                       # second cycle: settled
@@ -473,7 +473,7 @@ def stiction_describing_function(k_n_per_mm: float, breakout_n: float,
     b = 2.0 / n * np.sum(x2 * np.cos(th2))
     amp = math.hypot(a, b)
     lag = -math.degrees(math.atan2(b, a))
-    return {"locked": False, "k_eff_n_per_mm": F0 / amp if amp > 0 else float("inf"),
+    return {"locked": False, "k_eff_n_per_mm": F0 / amp,      # past break-out the path always moves
             "phase_lag_deg": lag, "hysteresis_mm": 2.0 * Fs / k}
 
 

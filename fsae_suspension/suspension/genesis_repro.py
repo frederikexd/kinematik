@@ -49,6 +49,7 @@ from dataclasses import dataclass, field as _dcfield
 from typing import Any
 
 import numpy as np
+from ._num import vec as _vec
 
 from .kinematics import Hardpoints, SuspensionKinematics
 from .kinematik_stochastic import (ToleranceField, ToleranceSpec,
@@ -81,7 +82,7 @@ def cad_to_corner(p_cad, axle_station_z: float, ground_y: float) -> np.ndarray:
     """CAD (X lateral +right, Y up, Z forward) → corner (x rearward,
     All coordinates in mm.
     y = X, z up from the ground plane). Determinant −1 by construction."""
-    p = np.asarray(p_cad, float)
+    p = _vec(p_cad)
     out = np.empty_like(p)
     out[..., 0] = -(p[..., 2] - axle_station_z)
     out[..., 1] = p[..., 0]
@@ -92,7 +93,7 @@ def cad_to_corner(p_cad, axle_station_z: float, ground_y: float) -> np.ndarray:
 def corner_to_cad(p_corner, axle_station_z: float, ground_y: float
                   ) -> np.ndarray:
     """Corner (x rearward, y outboard, z up from ground, mm) → CAD frame (mm); inverse of ``cad_to_corner``."""
-    p = np.asarray(p_corner, float)
+    p = _vec(p_corner)
     out = np.empty_like(p)
     out[..., 0] = p[..., 1]
     out[..., 1] = p[..., 2] + ground_y
@@ -115,7 +116,7 @@ def _pt_seg_dist(p: np.ndarray, a: np.ndarray, b: np.ndarray) -> np.ndarray:
 
 def seg_seg_dist(p1, q1, p2, q2) -> float:
     """Closest distance between segments p1q1 and p2q2 (Ericson §5.1.9). Distance in the input's length units (mm throughout KinematiK)."""
-    p1, q1, p2, q2 = (np.asarray(v, float) for v in (p1, q1, p2, q2))
+    p1, q1, p2, q2 = (_vec(v) for v in (p1, q1, p2, q2))
     d1, d2, r = q1 - p1, q2 - p2, p1 - p2
     a, e, f = d1 @ d1, d2 @ d2, d2 @ r
     eps = 1e-12
@@ -157,10 +158,10 @@ class CapsuleObstacle:
     label: str = "frame tubes"
 
     def __post_init__(self):
-        self.a = np.asarray(self.a, float).reshape(-1, 3)
-        self.b = np.asarray(self.b, float).reshape(-1, 3)
+        self.a = _vec(self.a).reshape(-1, 3)
+        self.b = _vec(self.b).reshape(-1, 3)
         self.radius = np.broadcast_to(
-            np.asarray(self.radius, float), (len(self.a),)).copy()
+            _vec(self.radius), (len(self.a),)).copy()
         if len(self.a) != len(self.b):
             raise ValueError("CapsuleObstacle: a and b differ in length.")
         if not self.names:
@@ -168,7 +169,7 @@ class CapsuleObstacle:
 
     def clearances(self, points, probe_radius_mm: float = 0.0) -> np.ndarray:
         """Signed skin clearance (mm) from each point to the nearest capsule, minus the probe radius (mm); + is clear."""
-        pts = np.asarray(points, float).reshape(-1, 3)
+        pts = _vec(points).reshape(-1, 3)
         if len(self.a) == 0:
             return np.full(len(pts), np.inf)
         d = _pt_seg_dist(pts, self.a, self.b) - self.radius[None, :]
@@ -231,7 +232,7 @@ def hp_from_dict(d: dict) -> Hardpoints:
     kw: dict[str, Any] = {}
     for k, v in d.items():
         if k in _HP_POINTS or k in _HP_OPTIONAL:
-            kw[k] = None if v is None else np.asarray(v, float)
+            kw[k] = None if v is None else _vec(v)
         elif k in ("static_camber", "static_toe"):
             kw[k] = float(v)
         elif k == "pushrod_attach":
@@ -265,7 +266,7 @@ def linear_targets(stations, *, static_camber=None, camber_gain=None,
                    track_mm: float = 1200.0) -> ig.GenesisTargets:
     """Targets written the way a design brief states them (deg, mm): static + gain·t for
     camber, constants for toe / RC height / scrub. Omit a channel with None."""
-    st = np.asarray(stations, float)
+    st = _vec(stations)
     n = len(st)
     curves = []
     if camber_gain is not None:
@@ -359,8 +360,8 @@ def _property_bounds_from_dict(d: dict | None) -> ig.SolvedPropertyBounds | None
     return ig.SolvedPropertyBounds(
         bounds=[ig.PropertyBound(
             b["prop"],
-            lo=float("-inf") if b.get("lo") is None else float(b["lo"]),
-            hi=float("inf") if b.get("hi") is None else float(b["hi"]))
+            lo=-math.inf if b.get("lo") is None else float(b["lo"]),
+            hi=math.inf if b.get("hi") is None else float(b["hi"]))
             for b in d.get("bounds", [])],
         cg_height_mm=float(d.get("cg_height_mm", 280.0)),
         wheelbase_mm=float(d.get("wheelbase_mm", 1630.0)),
@@ -433,7 +434,7 @@ def nodes_from_framegraph(fg, axle_station_z: float, ground_y: float
     if isinstance(fg, dict):
         fg = FrameGraph.from_dict(fg)
     return tuple(tuple(float(c) for c in cad_to_corner(
-        np.asarray(n.xyz_mm, float), axle_station_z, ground_y))
+        _vec(n.xyz_mm), axle_station_z, ground_y))
         for n in fg.nodes.values())
 
 
@@ -501,9 +502,9 @@ def boxes_about(hp: Hardpoints, half: dict[str, Any]
     stored as ±1e6 mm so JSON stays finite)."""
     out = {}
     for p, h in half.items():
-        h = np.broadcast_to(np.asarray(h, float), (3,)).copy()
+        h = np.broadcast_to(_vec(h), (3,)).copy()
         h[~np.isfinite(h)] = 1e6
-        c = np.asarray(getattr(hp, p), float)
+        c = _vec(getattr(hp, p))
         out[p] = (c - h, c + h)
     return out
 
@@ -553,8 +554,8 @@ def field_with_overrides(shop: str, overrides: dict[str, float | tuple]
             f.specs[p] = ToleranceSpec.symmetric(float(v))
         else:
             lo, hi = v
-            f.specs[p] = ToleranceSpec(np.asarray(lo, float),
-                                       np.asarray(hi, float))
+            f.specs[p] = ToleranceSpec(_vec(lo),
+                                       _vec(hi))
     if overrides:
         f.provenance += f" | per-point overrides: {sorted(overrides)}"
     return f
@@ -858,7 +859,7 @@ def corner_diagnostics(hp: Hardpoints, *, travel_mm: float = 25.0,
     scaled by front brake bias; anti-squat to the wheel centre (inboard
     drive). Both need wheelbase and CG height; they are omitted otherwise.
     """
-    st = (np.asarray(stations, float) if stations is not None
+    st = (_vec(stations) if stations is not None
           else np.linspace(-travel_mm, travel_mm, 5))
     vals, ok = ig.curves_of(hp, st, track_mm=track_mm)
     if not ok:
@@ -909,7 +910,7 @@ def corner_diagnostics(hp: Hardpoints, *, travel_mm: float = 25.0,
     }
 
     # side-view instant centre and anti-geometry
-    p = {k: np.asarray(getattr(hp, k), float) for k in
+    p = {k: _vec(getattr(hp, k)) for k in
          ("upper_front_inner", "upper_rear_inner",
           "lower_front_inner", "lower_rear_inner")}
     bu, bl = np.asarray(s0.upper_outer), np.asarray(s0.lower_outer)
@@ -1104,10 +1105,10 @@ def swept_clearance(hp: Hardpoints, obstacle: CapsuleObstacle, *,
     per_link = {}
     worst = (math.inf, "", "", 0.0)
     for name, inner, outer in _LINKS:
-        a0 = np.asarray(getattr(hp, inner), float)
+        a0 = _vec(getattr(hp, inner))
         best = (math.inf, "", 0.0)
         for s in states:
-            b = np.asarray(getattr(s, outer), float)
+            b = _vec(getattr(s, outer))
             L = np.linalg.norm(b - a0)
             if L <= exclusion_mm:
                 continue

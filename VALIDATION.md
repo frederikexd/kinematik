@@ -20,7 +20,7 @@ feature, is in [BENCHMARK.md](BENCHMARK.md).
 | Panel method | Sphere in potential flow | Cp minimum −1.248 against −1.250; mean error 0.009, largest 0.028 | `scripts/aero_closed_form.py` |
 | Vortex lattice | Rectangular AR 8 wing | C_L 11% under lifting-line, 4% under an independent lattice (open, see below) | `scripts/aero_closed_form.py` |
 | Code | About 3,500 tests, lint, CodeQL, dependency audit, bandit | Green on every push | badges in the README |
-| The tests themselves | Mutation testing of the kinematics and statics; property-based invariants on random corners | all 1,679 deliberate errors caught (floor 99%); 14 laws hold on 100 random cases each; core solvers and seven physics, model and workbook modules at 100% statement and branch coverage | `.github/workflows/mutation.yml`, `tests/test_invariants_property.py` |
+| The tests themselves | Mutation testing of every physics module; property-based invariants on random corners | every physics module at 99% or better on its own (83 files in 80 groups, 60,223 of 60,443 mutants caught; kinematics and statics 100%); 14 laws hold on 100 random cases each; core solvers and seven physics, model and workbook modules at 100% statement and branch coverage | `.github/workflows/mutation.yml`, `tests/test_invariants_property.py` |
 
 ## Kinematics
 
@@ -87,7 +87,38 @@ removes); two redundant pieces of code were deleted instead. Every other survivo
 unconverged, each solve starts from the seed it is given, the bending arm is clipped to the leg, points are stored as
 floats, the default sweep and curve ranges, a state without a pushrod point falls back to the strut, and notes add up
 rather than replace each other. That removed 189 mutants and left none surviving. The score is held at a 99% floor
-monthly (`.github/workflows/mutation.yml`), and the run lists every survivor.
+(`.github/workflows/mutation.yml`), and the run lists every survivor.
+
+The same gate now holds each file to its own score, so one well-tested module cannot carry a weak one:
+`mutation_targets.toml` lists the files and the tests that pin them, `scripts/mutation_gate.py` scores each file
+separately against a 99% floor, and a push runs only the groups it touches (every group monthly, as parallel jobs). A
+manual run with `baseline: true` measures every module in `suspension/` and `powertrain/` as its own job. The
+elastokinematics and link-compliance modules have joined at 99.0% (871 of 880) and 97.0% (477 of 492); they were at
+78.2% and 68.5%. `tests/test_mutation_compliance.py` closes what got through: the defaults a saved spec falls back on,
+every refusal message and the edge of each "must be positive" check, pull-test stiffness checked in its own link frame,
+the load-stepped solve checked as a fixed point (each pickup's deflection is its compliance times the force on the
+deflected geometry), and the series sums of link, tab and joint.
+
+Every physics module in `suspension/` and `powertrain/` is now in the gate: 83 files in 80 groups, each at 99% or
+better on its own, 60,223 of the 60,443 mutants caught (99.6%). Most of the new suites (`tests/test_mutation_*.py`, one per
+group) are golden-master characterizations. `tests/_golden.py` flattens what a function returns (dataclasses, arrays,
+enums, nested results) to JSON and compares it with a file recorded under `tests/golden/`, floats at a relative
+1e-9 and booleans by type, so a mutant that changes any recorded number, string or flag fails. The inputs are chosen
+to reach every branch, and values such as t = 0.0125 s are picked so that a changed constant in a formatted message
+rounds differently. The files are re-recorded only after a change has been checked to be intended
+(`KINEMATIK_GOLDEN_RECORD=1`). A golden file pins what the code does today; whether that is right is still the job of
+the closed-form and property tests above.
+
+The survivors that no test can kill were dealt with in two ways. Where the code could say the same thing without the
+equivalent mutant, it was rewritten: arguments equal to the default were removed, dtype arguments go through
+`functools.partial(np.asarray, dtype=float)` helpers, defaults, einsum subscripts and block sizes are module-level
+constants, guards that could never fire were deleted, and a `getattr` default for an attribute that always exists
+became a plain read. Where every mutant of a line gives the same answer, the line carries
+`# pragma: no mutate (reason)`: a `<` against `<=` on a floating-point threshold that no input meets exactly, solver
+iteration caps, tolerances, step limiters and damping, block and chunk sizes, warm-start seeds and display thresholds.
+mutmut ignores the pragma on the continuation lines of a statement, so those statements were split into single
+lines first. Mutants that crash the test process are counted as survivors, so the chassis suites cap the address space
+and a runaway sampling grid raises `MemoryError` instead of tripping the out-of-memory killer.
 
 **Property-based invariants.** `tests/test_invariants_property.py` draws 100 corners at random around the published
 ones, with every pickup moved independently by up to 4 mm and the pushrod on the upright or either wishbone, and

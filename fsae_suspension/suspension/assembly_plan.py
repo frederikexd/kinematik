@@ -40,6 +40,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 import numpy as np
+from ._num import vec as _vec
 
 
 def _seg_seg(p1, q1, p2, q2) -> float:
@@ -57,9 +58,9 @@ class Part:
     fixed: bool = False
 
     def __post_init__(self):
-        self.capsules = [(np.asarray(a, float), np.asarray(b, float), float(r))
+        self.capsules = [(_vec(a), _vec(b), float(r))
                          for a, b, r in self.capsules]
-        self.directions = [np.asarray(d, float) / np.linalg.norm(d)
+        self.directions = [_vec(d) / np.linalg.norm(d)
                            for d in self.directions]
 
 
@@ -71,7 +72,7 @@ def _gap(p: Part, q: Part, shift=np.zeros(3)) -> float:
 def blockers(part: Part, others: list, direction, samples: int = 15,
              tol: float = 1e-6) -> list:
     """Names of parts that stop ``part`` moving along ``direction``."""
-    d = np.asarray(direction, float) / np.linalg.norm(direction)
+    d = _vec(direction) / np.linalg.norm(direction)
     out = []
     for q in others:
         if q is part:

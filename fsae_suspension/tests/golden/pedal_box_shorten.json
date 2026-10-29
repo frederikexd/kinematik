@@ -1,0 +1,1548 @@
+{
+ "opts_already_shortest": [
+  {
+   "label": "+1.0 mm  Wind the pushrod in to minimum safe thread engagement  (free, but it is then spent)",
+   "o": {
+    "cost": "free, but it is then spent",
+    "cost_rank": 0,
+    "feasible": true,
+    "gain_mm": 0.9902680687415704,
+    "name": "Wind the pushrod in to minimum safe thread engagement",
+    "requires_recheck": [
+     "pedal free play / rest-port return"
+    ],
+    "side_effects": {
+     "further adjustment": "none left in this direction",
+     "pedal free play": "goes to zero -- re-set the pedal stop so the cylinder still returns fully to its rest port, or the brakes will drag as they heat"
+    }
+   }
+  },
+  {
+   "label": "+24.0 mm  Move to a 'compact racing (short body)' cylinder body  (buy different cylinders)",
+   "o": {
+    "cost": "buy different cylinders",
+    "cost_rank": 1,
+    "feasible": true,
+    "gain_mm": 24.0,
+    "name": "Move to a 'compact racing (short body)' cylinder body",
+    "requires_recheck": [
+     "pedal_travel() stroke demand vs the new stroke limit"
+    ],
+    "side_effects": {
+     "lead time": "a parts order sits on the critical path",
+     "usable stroke": "drops 6.4 mm to 19.0 mm -- only safe if pedal_travel() says the circuit needs less than that with a reserve"
+    }
+   }
+  },
+  {
+   "label": "+9.4 mm  Go up in bore, 15.9 -> 20.0 mm, and take the shorter-stroke cylinder it allows  (pedal effort rises as the square of the bore ratio)",
+   "o": {
+    "cost": "pedal effort rises as the square of the bore ratio",
+    "cost_rank": 2,
+    "feasible": true,
+    "gain_mm": 9.3970078125,
+    "name": "Go up in bore, 15.9 -> 20.0 mm, and take the shorter-stroke cylinder it allows",
+    "requires_recheck": [
+     "Hydraulic sizing: torque made vs needed at the new bore",
+     "pedal effort against driver capability"
+    ],
+    "side_effects": {
+     "line pressure at a given pedal force": "x0.63 (lower)",
+     "pedal force to reach lock-up": "x1.59 -- check this against what a driver can actually push before you commit",
+     "pedal travel to lock": "x0.63 (shorter, the one genuinely free win here)"
+    }
+   }
+  },
+  {
+   "label": "+3.8 mm  Raise the pedal ratio from 5.0 to 6.5 (clevis moves toward the pivot)  (pays for length and effort in travel)",
+   "o": {
+    "cost": "pays for length and effort in travel",
+    "cost_rank": 2,
+    "feasible": true,
+    "gain_mm": 3.764663115383007,
+    "name": "Raise the pedal ratio from 5.0 to 6.5 (clevis moves toward the pivot)",
+    "requires_recheck": [
+     "pedal_travel() against the available travel",
+     "brake pedal 2000 N check at the new clevis position"
+    ],
+    "side_effects": {
+     "clevis load": "x1.30 into the bar and pushrod",
+     "pedal effort to lock": "x0.77 (lower -- this is the good half of the trade)",
+     "pedal travel to lock": "x1.30 (higher -- this is what it costs, and it is the half that gets forgotten)"
+    }
+   }
+  },
+  {
+   "label": "+2.2 mm  Tilt the cylinders to 10 deg off the X axis  (geometry change; needs spherical rod ends)",
+   "o": {
+    "cost": "geometry change; needs spherical rod ends",
+    "cost_rank": 2,
+    "feasible": true,
+    "gain_mm": 2.1513487830757354,
+    "name": "Tilt the cylinders to 10 deg off the X axis",
+    "requires_recheck": [
+     "rod-end articulation through full pedal travel",
+     "hydraulic sizing at the higher pedal effort"
+    ],
+    "side_effects": {
+     "pushrod force reaching the piston": "-1.5% (cosine loss), so pedal effort rises by about the same fraction",
+     "sanity": "within the usual limit",
+     "side load into the bore": "17% of the rod load pushes sideways on the piston seal -- spherical rod ends at BOTH ends are mandatory past 3 deg"
+    }
+   }
+  },
+  {
+   "label": "+17.1 mm  Move the balance bar behind the pedal (overlap the bar into the pedal's swept plane)  (a genuine re-layout of the pedal box plate)",
+   "o": {
+    "cost": "a genuine re-layout of the pedal box plate",
+    "cost_rank": 3,
+    "feasible": true,
+    "gain_mm": 17.1,
+    "name": "Move the balance bar behind the pedal (overlap the bar into the pedal's swept plane)",
+    "requires_recheck": [
+     "swept-path interference through full pedal travel",
+     "bias adjuster routing"
+    ],
+    "side_effects": {
+     "adjuster access": "the bias adjuster cable/knob has to still reach the driver",
+     "clearance": "the bar and the pedal now share a volume -- this only works if the swept-path check is clean through FULL travel, not just at rest"
+    }
+   }
+  },
+  {
+   "label": "+12.6 mm  Stand the pedal up: rest angle 25 -> 40 deg from X  (ergonomics and a pedal-face re-design)",
+   "o": {
+    "cost": "ergonomics and a pedal-face re-design",
+    "cost_rank": 3,
+    "feasible": true,
+    "gain_mm": 12.623700952590474,
+    "name": "Stand the pedal up: rest angle 25 -> 40 deg from X",
+    "requires_recheck": [
+     "driver fit for every driver",
+     "brake pedal 2000 N check on the new pedal",
+     "throttle and clutch pedal plane alignment"
+    ],
+    "side_effects": {
+     "driver ankle angle": "steeper -- run it past every driver, not just the tallest one, before it is welded",
+     "foot force direction": "less of the driver's push lines up with the pushrod, so effective pedal effort rises",
+     "heel position": "the floor/heel rest almost certainly moves too"
+    }
+   }
+  }
+ ],
+ "opts_alt_missing": [
+  {
+   "label": "+1.0 mm  Wind the pushrod in to minimum safe thread engagement  (free, but it is then spent)",
+   "o": {
+    "cost": "free, but it is then spent",
+    "cost_rank": 0,
+    "feasible": true,
+    "gain_mm": 0.9902680687415704,
+    "name": "Wind the pushrod in to minimum safe thread engagement",
+    "requires_recheck": [
+     "pedal free play / rest-port return"
+    ],
+    "side_effects": {
+     "further adjustment": "none left in this direction",
+     "pedal free play": "goes to zero -- re-set the pedal stop so the cylinder still returns fully to its rest port, or the brakes will drag as they heat"
+    }
+   }
+  },
+  {
+   "label": "+4.4 mm  Go up in bore, 15.9 -> 17.5 mm, and take the shorter-stroke cylinder it allows  (pedal effort rises as the square of the bore ratio)",
+   "o": {
+    "cost": "pedal effort rises as the square of the bore ratio",
+    "cost_rank": 2,
+    "feasible": true,
+    "gain_mm": 4.408264462809919,
+    "name": "Go up in bore, 15.9 -> 17.5 mm, and take the shorter-stroke cylinder it allows",
+    "requires_recheck": [
+     "Hydraulic sizing: torque made vs needed at the new bore",
+     "pedal effort against driver capability"
+    ],
+    "side_effects": {
+     "line pressure at a given pedal force": "x0.83 (lower)",
+     "pedal force to reach lock-up": "x1.21 -- check this against what a driver can actually push before you commit",
+     "pedal travel to lock": "x0.83 (shorter, the one genuinely free win here)"
+    }
+   }
+  },
+  {
+   "label": "+3.8 mm  Raise the pedal ratio from 5.0 to 6.5 (clevis moves toward the pivot)  (pays for length and effort in travel)",
+   "o": {
+    "cost": "pays for length and effort in travel",
+    "cost_rank": 2,
+    "feasible": true,
+    "gain_mm": 3.764663115383007,
+    "name": "Raise the pedal ratio from 5.0 to 6.5 (clevis moves toward the pivot)",
+    "requires_recheck": [
+     "pedal_travel() against the available travel",
+     "brake pedal 2000 N check at the new clevis position"
+    ],
+    "side_effects": {
+     "clevis load": "x1.30 into the bar and pushrod",
+     "pedal effort to lock": "x0.77 (lower -- this is the good half of the trade)",
+     "pedal travel to lock": "x1.30 (higher -- this is what it costs, and it is the half that gets forgotten)"
+    }
+   }
+  },
+  {
+   "label": "+17.1 mm  Move the balance bar behind the pedal (overlap the bar into the pedal's swept plane)  (a genuine re-layout of the pedal box plate)",
+   "o": {
+    "cost": "a genuine re-layout of the pedal box plate",
+    "cost_rank": 3,
+    "feasible": true,
+    "gain_mm": 17.1,
+    "name": "Move the balance bar behind the pedal (overlap the bar into the pedal's swept plane)",
+    "requires_recheck": [
+     "swept-path interference through full pedal travel",
+     "bias adjuster routing"
+    ],
+    "side_effects": {
+     "adjuster access": "the bias adjuster cable/knob has to still reach the driver",
+     "clearance": "the bar and the pedal now share a volume -- this only works if the swept-path check is clean through FULL travel, not just at rest"
+    }
+   }
+  },
+  {
+   "label": "+12.6 mm  Stand the pedal up: rest angle 25 -> 40 deg from X  (ergonomics and a pedal-face re-design)",
+   "o": {
+    "cost": "ergonomics and a pedal-face re-design",
+    "cost_rank": 3,
+    "feasible": true,
+    "gain_mm": 12.623700952590474,
+    "name": "Stand the pedal up: rest angle 25 -> 40 deg from X",
+    "requires_recheck": [
+     "driver fit for every driver",
+     "brake pedal 2000 N check on the new pedal",
+     "throttle and clutch pedal plane alignment"
+    ],
+    "side_effects": {
+     "driver ankle angle": "steeper -- run it past every driver, not just the tallest one, before it is welded",
+     "foot force direction": "less of the driver's push lines up with the pushrod, so effective pedal effort rises",
+     "heel position": "the floor/heel rest almost certainly moves too"
+    }
+   }
+  }
+ ],
+ "opts_custom": [
+  {
+   "label": "+1.0 mm  Wind the pushrod in to minimum safe thread engagement  (free, but it is then spent)",
+   "o": {
+    "cost": "free, but it is then spent",
+    "cost_rank": 0,
+    "feasible": true,
+    "gain_mm": 0.9902680687415704,
+    "name": "Wind the pushrod in to minimum safe thread engagement",
+    "requires_recheck": [
+     "pedal free play / rest-port return"
+    ],
+    "side_effects": {
+     "further adjustment": "none left in this direction",
+     "pedal free play": "goes to zero -- re-set the pedal stop so the cylinder still returns fully to its rest port, or the brakes will drag as they heat"
+    }
+   }
+  },
+  {
+   "label": "+3.0 mm  Change the MC outlet to 'bulkhead elbow at the MC face' (shortest available)  (one fitting per cylinder)",
+   "o": {
+    "cost": "one fitting per cylinder",
+    "cost_rank": 1,
+    "feasible": true,
+    "gain_mm": 3.0,
+    "name": "Change the MC outlet to 'bulkhead elbow at the MC face' (shortest available)",
+    "requires_recheck": [
+     "leak check"
+    ],
+    "side_effects": {
+     "pedal feel": "unchanged"
+    }
+   }
+  },
+  {
+   "label": "+4.3 mm  Tilt the cylinders to 15 deg off the X axis  (geometry change; needs spherical rod ends)",
+   "o": {
+    "cost": "geometry change; needs spherical rod ends",
+    "cost_rank": 2,
+    "feasible": false,
+    "gain_mm": 4.302697566151458,
+    "name": "Tilt the cylinders to 15 deg off the X axis",
+    "requires_recheck": [
+     "rod-end articulation through full pedal travel",
+     "hydraulic sizing at the higher pedal effort"
+    ],
+    "side_effects": {
+     "pushrod force reaching the piston": "-1.5% (cosine loss), so pedal effort rises by about the same fraction",
+     "sanity": "past the 12 deg point where seal scoring starts -- do not",
+     "side load into the bore": "26% of the rod load pushes sideways on the piston seal -- spherical rod ends at BOTH ends are mandatory past 3 deg"
+    }
+   }
+  },
+  {
+   "label": "+17.1 mm  Move the balance bar behind the pedal (overlap the bar into the pedal's swept plane)  (a genuine re-layout of the pedal box plate)",
+   "o": {
+    "cost": "a genuine re-layout of the pedal box plate",
+    "cost_rank": 3,
+    "feasible": true,
+    "gain_mm": 17.1,
+    "name": "Move the balance bar behind the pedal (overlap the bar into the pedal's swept plane)",
+    "requires_recheck": [
+     "swept-path interference through full pedal travel",
+     "bias adjuster routing"
+    ],
+    "side_effects": {
+     "adjuster access": "the bias adjuster cable/knob has to still reach the driver",
+     "clearance": "the bar and the pedal now share a volume -- this only works if the swept-path check is clean through FULL travel, not just at rest"
+    }
+   }
+  }
+ ],
+ "opts_default": [
+  {
+   "label": "+1.0 mm  Wind the pushrod in to minimum safe thread engagement  (free, but it is then spent)",
+   "o": {
+    "cost": "free, but it is then spent",
+    "cost_rank": 0,
+    "feasible": true,
+    "gain_mm": 0.9902680687415704,
+    "name": "Wind the pushrod in to minimum safe thread engagement",
+    "requires_recheck": [
+     "pedal free play / rest-port return"
+    ],
+    "side_effects": {
+     "further adjustment": "none left in this direction",
+     "pedal free play": "goes to zero -- re-set the pedal stop so the cylinder still returns fully to its rest port, or the brakes will drag as they heat"
+    }
+   }
+  },
+  {
+   "label": "+28.0 mm  Change the MC outlet from 'straight fitting + hardline bend' to '90 deg banjo'  (one fitting per cylinder, no performance penalty)",
+   "o": {
+    "cost": "one fitting per cylinder, no performance penalty",
+    "cost_rank": 1,
+    "feasible": true,
+    "gain_mm": 28.0,
+    "name": "Change the MC outlet from 'straight fitting + hardline bend' to '90 deg banjo'",
+    "requires_recheck": [
+     "leak check",
+     "line routing clearance"
+    ],
+    "side_effects": {
+     "assembly": "one more sealing joint per circuit to bleed and leak-check before the brake test",
+     "pedal feel": "unchanged -- this removes packaging length, not fluid"
+    }
+   }
+  },
+  {
+   "label": "+24.0 mm  Move to a 'compact racing (short body)' cylinder body  (buy different cylinders)",
+   "o": {
+    "cost": "buy different cylinders",
+    "cost_rank": 1,
+    "feasible": true,
+    "gain_mm": 24.0,
+    "name": "Move to a 'compact racing (short body)' cylinder body",
+    "requires_recheck": [
+     "pedal_travel() stroke demand vs the new stroke limit"
+    ],
+    "side_effects": {
+     "lead time": "a parts order sits on the critical path",
+     "usable stroke": "drops 6.4 mm to 19.0 mm -- only safe if pedal_travel() says the circuit needs less than that with a reserve"
+    }
+   }
+  },
+  {
+   "label": "+4.4 mm  Go up in bore, 15.9 -> 17.5 mm, and take the shorter-stroke cylinder it allows  (pedal effort rises as the square of the bore ratio)",
+   "o": {
+    "cost": "pedal effort rises as the square of the bore ratio",
+    "cost_rank": 2,
+    "feasible": true,
+    "gain_mm": 4.408264462809919,
+    "name": "Go up in bore, 15.9 -> 17.5 mm, and take the shorter-stroke cylinder it allows",
+    "requires_recheck": [
+     "Hydraulic sizing: torque made vs needed at the new bore",
+     "pedal effort against driver capability"
+    ],
+    "side_effects": {
+     "line pressure at a given pedal force": "x0.83 (lower)",
+     "pedal force to reach lock-up": "x1.21 -- check this against what a driver can actually push before you commit",
+     "pedal travel to lock": "x0.83 (shorter, the one genuinely free win here)"
+    }
+   }
+  },
+  {
+   "label": "+3.8 mm  Raise the pedal ratio from 5.0 to 6.5 (clevis moves toward the pivot)  (pays for length and effort in travel)",
+   "o": {
+    "cost": "pays for length and effort in travel",
+    "cost_rank": 2,
+    "feasible": true,
+    "gain_mm": 3.764663115383007,
+    "name": "Raise the pedal ratio from 5.0 to 6.5 (clevis moves toward the pivot)",
+    "requires_recheck": [
+     "pedal_travel() against the available travel",
+     "brake pedal 2000 N check at the new clevis position"
+    ],
+    "side_effects": {
+     "clevis load": "x1.30 into the bar and pushrod",
+     "pedal effort to lock": "x0.77 (lower -- this is the good half of the trade)",
+     "pedal travel to lock": "x1.30 (higher -- this is what it costs, and it is the half that gets forgotten)"
+    }
+   }
+  },
+  {
+   "label": "+2.2 mm  Tilt the cylinders to 10 deg off the X axis  (geometry change; needs spherical rod ends)",
+   "o": {
+    "cost": "geometry change; needs spherical rod ends",
+    "cost_rank": 2,
+    "feasible": true,
+    "gain_mm": 2.1513487830757354,
+    "name": "Tilt the cylinders to 10 deg off the X axis",
+    "requires_recheck": [
+     "rod-end articulation through full pedal travel",
+     "hydraulic sizing at the higher pedal effort"
+    ],
+    "side_effects": {
+     "pushrod force reaching the piston": "-1.5% (cosine loss), so pedal effort rises by about the same fraction",
+     "sanity": "within the usual limit",
+     "side load into the bore": "17% of the rod load pushes sideways on the piston seal -- spherical rod ends at BOTH ends are mandatory past 3 deg"
+    }
+   }
+  },
+  {
+   "label": "+17.1 mm  Move the balance bar behind the pedal (overlap the bar into the pedal's swept plane)  (a genuine re-layout of the pedal box plate)",
+   "o": {
+    "cost": "a genuine re-layout of the pedal box plate",
+    "cost_rank": 3,
+    "feasible": true,
+    "gain_mm": 17.1,
+    "name": "Move the balance bar behind the pedal (overlap the bar into the pedal's swept plane)",
+    "requires_recheck": [
+     "swept-path interference through full pedal travel",
+     "bias adjuster routing"
+    ],
+    "side_effects": {
+     "adjuster access": "the bias adjuster cable/knob has to still reach the driver",
+     "clearance": "the bar and the pedal now share a volume -- this only works if the swept-path check is clean through FULL travel, not just at rest"
+    }
+   }
+  },
+  {
+   "label": "+12.6 mm  Stand the pedal up: rest angle 25 -> 40 deg from X  (ergonomics and a pedal-face re-design)",
+   "o": {
+    "cost": "ergonomics and a pedal-face re-design",
+    "cost_rank": 3,
+    "feasible": true,
+    "gain_mm": 12.623700952590474,
+    "name": "Stand the pedal up: rest angle 25 -> 40 deg from X",
+    "requires_recheck": [
+     "driver fit for every driver",
+     "brake pedal 2000 N check on the new pedal",
+     "throttle and clutch pedal plane alignment"
+    ],
+    "side_effects": {
+     "driver ankle angle": "steeper -- run it past every driver, not just the tallest one, before it is welded",
+     "foot force direction": "less of the driver's push lines up with the pushrod, so effective pedal effort rises",
+     "heel position": "the floor/heel rest almost certainly moves too"
+    }
+   }
+  }
+ ],
+ "opts_no_pushrod": [
+  {
+   "label": "+28.0 mm  Change the MC outlet from 'straight fitting + hardline bend' to '90 deg banjo'  (one fitting per cylinder, no performance penalty)",
+   "o": {
+    "cost": "one fitting per cylinder, no performance penalty",
+    "cost_rank": 1,
+    "feasible": true,
+    "gain_mm": 28.0,
+    "name": "Change the MC outlet from 'straight fitting + hardline bend' to '90 deg banjo'",
+    "requires_recheck": [
+     "leak check",
+     "line routing clearance"
+    ],
+    "side_effects": {
+     "assembly": "one more sealing joint per circuit to bleed and leak-check before the brake test",
+     "pedal feel": "unchanged -- this removes packaging length, not fluid"
+    }
+   }
+  },
+  {
+   "label": "+24.0 mm  Move to a 'compact racing (short body)' cylinder body  (buy different cylinders)",
+   "o": {
+    "cost": "buy different cylinders",
+    "cost_rank": 1,
+    "feasible": true,
+    "gain_mm": 24.0,
+    "name": "Move to a 'compact racing (short body)' cylinder body",
+    "requires_recheck": [
+     "pedal_travel() stroke demand vs the new stroke limit"
+    ],
+    "side_effects": {
+     "lead time": "a parts order sits on the critical path",
+     "usable stroke": "drops 6.4 mm to 19.0 mm -- only safe if pedal_travel() says the circuit needs less than that with a reserve"
+    }
+   }
+  },
+  {
+   "label": "+4.4 mm  Go up in bore, 15.9 -> 17.5 mm, and take the shorter-stroke cylinder it allows  (pedal effort rises as the square of the bore ratio)",
+   "o": {
+    "cost": "pedal effort rises as the square of the bore ratio",
+    "cost_rank": 2,
+    "feasible": true,
+    "gain_mm": 4.408264462809919,
+    "name": "Go up in bore, 15.9 -> 17.5 mm, and take the shorter-stroke cylinder it allows",
+    "requires_recheck": [
+     "Hydraulic sizing: torque made vs needed at the new bore",
+     "pedal effort against driver capability"
+    ],
+    "side_effects": {
+     "line pressure at a given pedal force": "x0.83 (lower)",
+     "pedal force to reach lock-up": "x1.21 -- check this against what a driver can actually push before you commit",
+     "pedal travel to lock": "x0.83 (shorter, the one genuinely free win here)"
+    }
+   }
+  },
+  {
+   "label": "+3.8 mm  Raise the pedal ratio from 5.0 to 6.5 (clevis moves toward the pivot)  (pays for length and effort in travel)",
+   "o": {
+    "cost": "pays for length and effort in travel",
+    "cost_rank": 2,
+    "feasible": true,
+    "gain_mm": 3.764663115383007,
+    "name": "Raise the pedal ratio from 5.0 to 6.5 (clevis moves toward the pivot)",
+    "requires_recheck": [
+     "pedal_travel() against the available travel",
+     "brake pedal 2000 N check at the new clevis position"
+    ],
+    "side_effects": {
+     "clevis load": "x1.30 into the bar and pushrod",
+     "pedal effort to lock": "x0.77 (lower -- this is the good half of the trade)",
+     "pedal travel to lock": "x1.30 (higher -- this is what it costs, and it is the half that gets forgotten)"
+    }
+   }
+  },
+  {
+   "label": "+0.0 mm  Tilt the cylinders to 10 deg off the X axis  (geometry change; needs spherical rod ends)",
+   "o": {
+    "cost": "geometry change; needs spherical rod ends",
+    "cost_rank": 2,
+    "feasible": true,
+    "gain_mm": 0.0,
+    "name": "Tilt the cylinders to 10 deg off the X axis",
+    "requires_recheck": [
+     "rod-end articulation through full pedal travel",
+     "hydraulic sizing at the higher pedal effort"
+    ],
+    "side_effects": {
+     "pushrod force reaching the piston": "-1.5% (cosine loss), so pedal effort rises by about the same fraction",
+     "sanity": "within the usual limit",
+     "side load into the bore": "17% of the rod load pushes sideways on the piston seal -- spherical rod ends at BOTH ends are mandatory past 3 deg"
+    }
+   }
+  },
+  {
+   "label": "+12.6 mm  Stand the pedal up: rest angle 25 -> 40 deg from X  (ergonomics and a pedal-face re-design)",
+   "o": {
+    "cost": "ergonomics and a pedal-face re-design",
+    "cost_rank": 3,
+    "feasible": true,
+    "gain_mm": 12.623700952590474,
+    "name": "Stand the pedal up: rest angle 25 -> 40 deg from X",
+    "requires_recheck": [
+     "driver fit for every driver",
+     "brake pedal 2000 N check on the new pedal",
+     "throttle and clutch pedal plane alignment"
+    ],
+    "side_effects": {
+     "driver ankle angle": "steeper -- run it past every driver, not just the tallest one, before it is welded",
+     "foot force direction": "less of the driver's push lines up with the pushrod, so effective pedal effort rises",
+     "heel position": "the floor/heel rest almost certainly moves too"
+    }
+   }
+  },
+  {
+   "label": "+0.0 mm  Move the balance bar behind the pedal (overlap the bar into the pedal's swept plane)  (a genuine re-layout of the pedal box plate)",
+   "o": {
+    "cost": "a genuine re-layout of the pedal box plate",
+    "cost_rank": 3,
+    "feasible": true,
+    "gain_mm": 0.0,
+    "name": "Move the balance bar behind the pedal (overlap the bar into the pedal's swept plane)",
+    "requires_recheck": [
+     "swept-path interference through full pedal travel",
+     "bias adjuster routing"
+    ],
+    "side_effects": {
+     "adjuster access": "the bias adjuster cable/knob has to still reach the driver",
+     "clearance": "the bar and the pedal now share a volume -- this only works if the swept-path check is clean through FULL travel, not just at rest"
+    }
+   }
+  }
+ ],
+ "opts_tilt_sane_edge": [
+  {
+   "label": "+1.0 mm  Wind the pushrod in to minimum safe thread engagement  (free, but it is then spent)",
+   "o": {
+    "cost": "free, but it is then spent",
+    "cost_rank": 0,
+    "feasible": true,
+    "gain_mm": 0.9902680687415704,
+    "name": "Wind the pushrod in to minimum safe thread engagement",
+    "requires_recheck": [
+     "pedal free play / rest-port return"
+    ],
+    "side_effects": {
+     "further adjustment": "none left in this direction",
+     "pedal free play": "goes to zero -- re-set the pedal stop so the cylinder still returns fully to its rest port, or the brakes will drag as they heat"
+    }
+   }
+  },
+  {
+   "label": "+28.0 mm  Change the MC outlet from 'straight fitting + hardline bend' to '90 deg banjo'  (one fitting per cylinder, no performance penalty)",
+   "o": {
+    "cost": "one fitting per cylinder, no performance penalty",
+    "cost_rank": 1,
+    "feasible": true,
+    "gain_mm": 28.0,
+    "name": "Change the MC outlet from 'straight fitting + hardline bend' to '90 deg banjo'",
+    "requires_recheck": [
+     "leak check",
+     "line routing clearance"
+    ],
+    "side_effects": {
+     "assembly": "one more sealing joint per circuit to bleed and leak-check before the brake test",
+     "pedal feel": "unchanged -- this removes packaging length, not fluid"
+    }
+   }
+  },
+  {
+   "label": "+24.0 mm  Move to a 'compact racing (short body)' cylinder body  (buy different cylinders)",
+   "o": {
+    "cost": "buy different cylinders",
+    "cost_rank": 1,
+    "feasible": true,
+    "gain_mm": 24.0,
+    "name": "Move to a 'compact racing (short body)' cylinder body",
+    "requires_recheck": [
+     "pedal_travel() stroke demand vs the new stroke limit"
+    ],
+    "side_effects": {
+     "lead time": "a parts order sits on the critical path",
+     "usable stroke": "drops 6.4 mm to 19.0 mm -- only safe if pedal_travel() says the circuit needs less than that with a reserve"
+    }
+   }
+  },
+  {
+   "label": "+4.4 mm  Go up in bore, 15.9 -> 17.5 mm, and take the shorter-stroke cylinder it allows  (pedal effort rises as the square of the bore ratio)",
+   "o": {
+    "cost": "pedal effort rises as the square of the bore ratio",
+    "cost_rank": 2,
+    "feasible": true,
+    "gain_mm": 4.408264462809919,
+    "name": "Go up in bore, 15.9 -> 17.5 mm, and take the shorter-stroke cylinder it allows",
+    "requires_recheck": [
+     "Hydraulic sizing: torque made vs needed at the new bore",
+     "pedal effort against driver capability"
+    ],
+    "side_effects": {
+     "line pressure at a given pedal force": "x0.83 (lower)",
+     "pedal force to reach lock-up": "x1.21 -- check this against what a driver can actually push before you commit",
+     "pedal travel to lock": "x0.83 (shorter, the one genuinely free win here)"
+    }
+   }
+  },
+  {
+   "label": "+3.8 mm  Raise the pedal ratio from 5.0 to 6.5 (clevis moves toward the pivot)  (pays for length and effort in travel)",
+   "o": {
+    "cost": "pays for length and effort in travel",
+    "cost_rank": 2,
+    "feasible": true,
+    "gain_mm": 3.764663115383007,
+    "name": "Raise the pedal ratio from 5.0 to 6.5 (clevis moves toward the pivot)",
+    "requires_recheck": [
+     "pedal_travel() against the available travel",
+     "brake pedal 2000 N check at the new clevis position"
+    ],
+    "side_effects": {
+     "clevis load": "x1.30 into the bar and pushrod",
+     "pedal effort to lock": "x0.77 (lower -- this is the good half of the trade)",
+     "pedal travel to lock": "x1.30 (higher -- this is what it costs, and it is the half that gets forgotten)"
+    }
+   }
+  },
+  {
+   "label": "+3.1 mm  Tilt the cylinders to 12 deg off the X axis  (geometry change; needs spherical rod ends)",
+   "o": {
+    "cost": "geometry change; needs spherical rod ends",
+    "cost_rank": 2,
+    "feasible": true,
+    "gain_mm": 3.094481850274665,
+    "name": "Tilt the cylinders to 12 deg off the X axis",
+    "requires_recheck": [
+     "rod-end articulation through full pedal travel",
+     "hydraulic sizing at the higher pedal effort"
+    ],
+    "side_effects": {
+     "pushrod force reaching the piston": "-2.2% (cosine loss), so pedal effort rises by about the same fraction",
+     "sanity": "within the usual limit",
+     "side load into the bore": "21% of the rod load pushes sideways on the piston seal -- spherical rod ends at BOTH ends are mandatory past 3 deg"
+    }
+   }
+  },
+  {
+   "label": "+17.1 mm  Move the balance bar behind the pedal (overlap the bar into the pedal's swept plane)  (a genuine re-layout of the pedal box plate)",
+   "o": {
+    "cost": "a genuine re-layout of the pedal box plate",
+    "cost_rank": 3,
+    "feasible": true,
+    "gain_mm": 17.1,
+    "name": "Move the balance bar behind the pedal (overlap the bar into the pedal's swept plane)",
+    "requires_recheck": [
+     "swept-path interference through full pedal travel",
+     "bias adjuster routing"
+    ],
+    "side_effects": {
+     "adjuster access": "the bias adjuster cable/knob has to still reach the driver",
+     "clearance": "the bar and the pedal now share a volume -- this only works if the swept-path check is clean through FULL travel, not just at rest"
+    }
+   }
+  },
+  {
+   "label": "+12.6 mm  Stand the pedal up: rest angle 25 -> 40 deg from X  (ergonomics and a pedal-face re-design)",
+   "o": {
+    "cost": "ergonomics and a pedal-face re-design",
+    "cost_rank": 3,
+    "feasible": true,
+    "gain_mm": 12.623700952590474,
+    "name": "Stand the pedal up: rest angle 25 -> 40 deg from X",
+    "requires_recheck": [
+     "driver fit for every driver",
+     "brake pedal 2000 N check on the new pedal",
+     "throttle and clutch pedal plane alignment"
+    ],
+    "side_effects": {
+     "driver ankle angle": "steeper -- run it past every driver, not just the tallest one, before it is welded",
+     "foot force direction": "less of the driver's push lines up with the pushrod, so effective pedal effort rises",
+     "heel position": "the floor/heel rest almost certainly moves too"
+    }
+   }
+  }
+ ],
+ "plan_custom": {
+  "as_dict": {
+   "chosen": [
+    {
+     "cost": "c",
+     "cost_rank": 1,
+     "feasible": true,
+     "gain_mm": 30.0,
+     "name": "big",
+     "requires_recheck": [],
+     "side_effects": {
+      "k": "v"
+     }
+    },
+    {
+     "cost": "c",
+     "cost_rank": 2,
+     "feasible": true,
+     "gain_mm": 200.0,
+     "name": "more",
+     "requires_recheck": [],
+     "side_effects": {}
+    }
+   ],
+   "deficit_mm": 49.489574830002766,
+   "findings": [
+    {
+     "check": "shorten_plan",
+     "detail": {},
+     "message": "230.0 mm recovered against a 49.5 mm deficit using 2 change(s), none above cost rank 2. Every option carries a re-check -- run them before this counts as closed.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "shorten_plan_provenance",
+     "detail": {},
+     "message": "This plan is priced against catalogue segment lengths. Measure the real cylinders and fittings before ordering anything -- the deficit itself could move by tens of mm.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "remaining_mm": 0.0,
+   "solved": true,
+   "total_gain_mm": 230.0
+  },
+  "p": {
+   "chosen": [
+    {
+     "cost": "c",
+     "cost_rank": 1,
+     "feasible": true,
+     "gain_mm": 30.0,
+     "name": "big",
+     "requires_recheck": [],
+     "side_effects": {
+      "k": "v"
+     }
+    },
+    {
+     "cost": "c",
+     "cost_rank": 2,
+     "feasible": true,
+     "gain_mm": 200.0,
+     "name": "more",
+     "requires_recheck": [],
+     "side_effects": {}
+    }
+   ],
+   "deficit_mm": 49.489574830002766,
+   "findings": [
+    {
+     "check": "shorten_plan",
+     "detail": {},
+     "message": "230.0 mm recovered against a 49.5 mm deficit using 2 change(s), none above cost rank 2. Every option carries a re-check -- run them before this counts as closed.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "shorten_plan_provenance",
+     "detail": {},
+     "message": "This plan is priced against catalogue segment lengths. Measure the real cylinders and fittings before ordering anything -- the deficit itself could move by tens of mm.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "remaining_mm": 0.0,
+   "solved": true,
+   "total_gain_mm": 230.0
+  },
+  "summary": "Need 49.5 mm. SOLVED with 2 change(s):\n    +30.0 mm  big  (c)\n         -> k: v\n    +200.0 mm  more  (c)"
+ },
+ "plan_exact": {
+  "as_dict": {
+   "chosen": [
+    {
+     "cost": "c",
+     "cost_rank": 0,
+     "feasible": true,
+     "gain_mm": 30.0,
+     "name": "a",
+     "requires_recheck": [],
+     "side_effects": {}
+    }
+   ],
+   "deficit_mm": 30.0,
+   "findings": [
+    {
+     "check": "shorten_plan",
+     "detail": {},
+     "message": "30.0 mm recovered against a 30.0 mm deficit using 1 change(s), none above cost rank 2. Every option carries a re-check -- run them before this counts as closed.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "remaining_mm": 0.0,
+   "solved": true,
+   "total_gain_mm": 30.0
+  },
+  "p": {
+   "chosen": [
+    {
+     "cost": "c",
+     "cost_rank": 0,
+     "feasible": true,
+     "gain_mm": 30.0,
+     "name": "a",
+     "requires_recheck": [],
+     "side_effects": {}
+    }
+   ],
+   "deficit_mm": 30.0,
+   "findings": [
+    {
+     "check": "shorten_plan",
+     "detail": {},
+     "message": "30.0 mm recovered against a 30.0 mm deficit using 1 change(s), none above cost rank 2. Every option carries a re-check -- run them before this counts as closed.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "remaining_mm": 0.0,
+   "solved": true,
+   "total_gain_mm": 30.0
+  },
+  "summary": "Need 30.0 mm. SOLVED with 1 change(s):\n    +30.0 mm  a  (c)"
+ },
+ "plan_fits": {
+  "as_dict": {
+   "chosen": [],
+   "deficit_mm": 0.0,
+   "findings": [
+    {
+     "check": "shorten_plan",
+     "detail": {},
+     "message": "Nothing to do -- the assembly already fits.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "remaining_mm": 0.0,
+   "solved": true,
+   "total_gain_mm": 0.0
+  },
+  "p": {
+   "chosen": [],
+   "deficit_mm": 0.0,
+   "findings": [
+    {
+     "check": "shorten_plan",
+     "detail": {},
+     "message": "Nothing to do -- the assembly already fits.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "remaining_mm": 0.0,
+   "solved": true,
+   "total_gain_mm": 0.0
+  },
+  "summary": "Need 0.0 mm. SOLVED with 0 change(s):"
+ },
+ "plan_kw": {
+  "as_dict": {
+   "chosen": [
+    {
+     "cost": "free, but it is then spent",
+     "cost_rank": 0,
+     "feasible": true,
+     "gain_mm": 0.9902680687415704,
+     "name": "Wind the pushrod in to minimum safe thread engagement",
+     "requires_recheck": [
+      "pedal free play / rest-port return"
+     ],
+     "side_effects": {
+      "further adjustment": "none left in this direction",
+      "pedal free play": "goes to zero -- re-set the pedal stop so the cylinder still returns fully to its rest port, or the brakes will drag as they heat"
+     }
+    },
+    {
+     "cost": "one fitting per cylinder, no performance penalty",
+     "cost_rank": 1,
+     "feasible": true,
+     "gain_mm": 28.0,
+     "name": "Change the MC outlet from 'straight fitting + hardline bend' to '90 deg banjo'",
+     "requires_recheck": [
+      "leak check",
+      "line routing clearance"
+     ],
+     "side_effects": {
+      "assembly": "one more sealing joint per circuit to bleed and leak-check before the brake test",
+      "pedal feel": "unchanged -- this removes packaging length, not fluid"
+     }
+    },
+    {
+     "cost": "buy different cylinders",
+     "cost_rank": 1,
+     "feasible": true,
+     "gain_mm": 24.0,
+     "name": "Move to a 'compact racing (short body)' cylinder body",
+     "requires_recheck": [
+      "pedal_travel() stroke demand vs the new stroke limit"
+     ],
+     "side_effects": {
+      "lead time": "a parts order sits on the critical path",
+      "usable stroke": "drops 6.4 mm to 19.0 mm -- only safe if pedal_travel() says the circuit needs less than that with a reserve"
+     }
+    }
+   ],
+   "deficit_mm": 49.489574830002766,
+   "findings": [
+    {
+     "check": "shorten_plan",
+     "detail": {},
+     "message": "53.0 mm recovered against a 49.5 mm deficit using 3 change(s), none above cost rank 2. Every option carries a re-check -- run them before this counts as closed.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "shorten_plan_provenance",
+     "detail": {},
+     "message": "This plan is priced against catalogue segment lengths. Measure the real cylinders and fittings before ordering anything -- the deficit itself could move by tens of mm.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "remaining_mm": 0.0,
+   "solved": true,
+   "total_gain_mm": 52.99026806874157
+  },
+  "p": {
+   "chosen": [
+    {
+     "cost": "free, but it is then spent",
+     "cost_rank": 0,
+     "feasible": true,
+     "gain_mm": 0.9902680687415704,
+     "name": "Wind the pushrod in to minimum safe thread engagement",
+     "requires_recheck": [
+      "pedal free play / rest-port return"
+     ],
+     "side_effects": {
+      "further adjustment": "none left in this direction",
+      "pedal free play": "goes to zero -- re-set the pedal stop so the cylinder still returns fully to its rest port, or the brakes will drag as they heat"
+     }
+    },
+    {
+     "cost": "one fitting per cylinder, no performance penalty",
+     "cost_rank": 1,
+     "feasible": true,
+     "gain_mm": 28.0,
+     "name": "Change the MC outlet from 'straight fitting + hardline bend' to '90 deg banjo'",
+     "requires_recheck": [
+      "leak check",
+      "line routing clearance"
+     ],
+     "side_effects": {
+      "assembly": "one more sealing joint per circuit to bleed and leak-check before the brake test",
+      "pedal feel": "unchanged -- this removes packaging length, not fluid"
+     }
+    },
+    {
+     "cost": "buy different cylinders",
+     "cost_rank": 1,
+     "feasible": true,
+     "gain_mm": 24.0,
+     "name": "Move to a 'compact racing (short body)' cylinder body",
+     "requires_recheck": [
+      "pedal_travel() stroke demand vs the new stroke limit"
+     ],
+     "side_effects": {
+      "lead time": "a parts order sits on the critical path",
+      "usable stroke": "drops 6.4 mm to 19.0 mm -- only safe if pedal_travel() says the circuit needs less than that with a reserve"
+     }
+    }
+   ],
+   "deficit_mm": 49.489574830002766,
+   "findings": [
+    {
+     "check": "shorten_plan",
+     "detail": {},
+     "message": "53.0 mm recovered against a 49.5 mm deficit using 3 change(s), none above cost rank 2. Every option carries a re-check -- run them before this counts as closed.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "shorten_plan_provenance",
+     "detail": {},
+     "message": "This plan is priced against catalogue segment lengths. Measure the real cylinders and fittings before ordering anything -- the deficit itself could move by tens of mm.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "remaining_mm": 0.0,
+   "solved": true,
+   "total_gain_mm": 52.99026806874157
+  },
+  "summary": "Need 49.5 mm. SOLVED with 3 change(s):\n    +1.0 mm  Wind the pushrod in to minimum safe thread engagement  (free, but it is then spent)\n         -> pedal free play: goes to zero -- re-set the pedal stop so the cylinder still returns fully to its rest port, or the brakes will drag as they heat\n         -> further adjustment: none left in this direction\n    +28.0 mm  Change the MC outlet from 'straight fitting + hardline bend' to '90 deg banjo'  (one fitting per cylinder, no performance penalty)\n         -> pedal feel: unchanged -- this removes packaging length, not fluid\n         -> assembly: one more sealing joint per circuit to bleed and leak-check before the brake test\n    +24.0 mm  Move to a 'compact racing (short body)' cylinder body  (buy different cylinders)\n         -> usable stroke: drops 6.4 mm to 19.0 mm -- only safe if pedal_travel() says the circuit needs less than that with a reserve\n         -> lead time: a parts order sits on the critical path"
+ },
+ "plan_over": {
+  "as_dict": {
+   "chosen": [
+    {
+     "cost": "free, but it is then spent",
+     "cost_rank": 0,
+     "feasible": true,
+     "gain_mm": 0.9902680687415704,
+     "name": "Wind the pushrod in to minimum safe thread engagement",
+     "requires_recheck": [
+      "pedal free play / rest-port return"
+     ],
+     "side_effects": {
+      "further adjustment": "none left in this direction",
+      "pedal free play": "goes to zero -- re-set the pedal stop so the cylinder still returns fully to its rest port, or the brakes will drag as they heat"
+     }
+    },
+    {
+     "cost": "one fitting per cylinder, no performance penalty",
+     "cost_rank": 1,
+     "feasible": true,
+     "gain_mm": 28.0,
+     "name": "Change the MC outlet from 'straight fitting + hardline bend' to '90 deg banjo'",
+     "requires_recheck": [
+      "leak check",
+      "line routing clearance"
+     ],
+     "side_effects": {
+      "assembly": "one more sealing joint per circuit to bleed and leak-check before the brake test",
+      "pedal feel": "unchanged -- this removes packaging length, not fluid"
+     }
+    },
+    {
+     "cost": "buy different cylinders",
+     "cost_rank": 1,
+     "feasible": true,
+     "gain_mm": 24.0,
+     "name": "Move to a 'compact racing (short body)' cylinder body",
+     "requires_recheck": [
+      "pedal_travel() stroke demand vs the new stroke limit"
+     ],
+     "side_effects": {
+      "lead time": "a parts order sits on the critical path",
+      "usable stroke": "drops 6.4 mm to 19.0 mm -- only safe if pedal_travel() says the circuit needs less than that with a reserve"
+     }
+    }
+   ],
+   "deficit_mm": 49.489574830002766,
+   "findings": [
+    {
+     "check": "shorten_plan",
+     "detail": {},
+     "message": "53.0 mm recovered against a 49.5 mm deficit using 3 change(s), none above cost rank 2. Every option carries a re-check -- run them before this counts as closed.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "shorten_plan_provenance",
+     "detail": {},
+     "message": "This plan is priced against catalogue segment lengths. Measure the real cylinders and fittings before ordering anything -- the deficit itself could move by tens of mm.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "remaining_mm": 0.0,
+   "solved": true,
+   "total_gain_mm": 52.99026806874157
+  },
+  "p": {
+   "chosen": [
+    {
+     "cost": "free, but it is then spent",
+     "cost_rank": 0,
+     "feasible": true,
+     "gain_mm": 0.9902680687415704,
+     "name": "Wind the pushrod in to minimum safe thread engagement",
+     "requires_recheck": [
+      "pedal free play / rest-port return"
+     ],
+     "side_effects": {
+      "further adjustment": "none left in this direction",
+      "pedal free play": "goes to zero -- re-set the pedal stop so the cylinder still returns fully to its rest port, or the brakes will drag as they heat"
+     }
+    },
+    {
+     "cost": "one fitting per cylinder, no performance penalty",
+     "cost_rank": 1,
+     "feasible": true,
+     "gain_mm": 28.0,
+     "name": "Change the MC outlet from 'straight fitting + hardline bend' to '90 deg banjo'",
+     "requires_recheck": [
+      "leak check",
+      "line routing clearance"
+     ],
+     "side_effects": {
+      "assembly": "one more sealing joint per circuit to bleed and leak-check before the brake test",
+      "pedal feel": "unchanged -- this removes packaging length, not fluid"
+     }
+    },
+    {
+     "cost": "buy different cylinders",
+     "cost_rank": 1,
+     "feasible": true,
+     "gain_mm": 24.0,
+     "name": "Move to a 'compact racing (short body)' cylinder body",
+     "requires_recheck": [
+      "pedal_travel() stroke demand vs the new stroke limit"
+     ],
+     "side_effects": {
+      "lead time": "a parts order sits on the critical path",
+      "usable stroke": "drops 6.4 mm to 19.0 mm -- only safe if pedal_travel() says the circuit needs less than that with a reserve"
+     }
+    }
+   ],
+   "deficit_mm": 49.489574830002766,
+   "findings": [
+    {
+     "check": "shorten_plan",
+     "detail": {},
+     "message": "53.0 mm recovered against a 49.5 mm deficit using 3 change(s), none above cost rank 2. Every option carries a re-check -- run them before this counts as closed.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "shorten_plan_provenance",
+     "detail": {},
+     "message": "This plan is priced against catalogue segment lengths. Measure the real cylinders and fittings before ordering anything -- the deficit itself could move by tens of mm.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "remaining_mm": 0.0,
+   "solved": true,
+   "total_gain_mm": 52.99026806874157
+  },
+  "summary": "Need 49.5 mm. SOLVED with 3 change(s):\n    +1.0 mm  Wind the pushrod in to minimum safe thread engagement  (free, but it is then spent)\n         -> pedal free play: goes to zero -- re-set the pedal stop so the cylinder still returns fully to its rest port, or the brakes will drag as they heat\n         -> further adjustment: none left in this direction\n    +28.0 mm  Change the MC outlet from 'straight fitting + hardline bend' to '90 deg banjo'  (one fitting per cylinder, no performance penalty)\n         -> pedal feel: unchanged -- this removes packaging length, not fluid\n         -> assembly: one more sealing joint per circuit to bleed and leak-check before the brake test\n    +24.0 mm  Move to a 'compact racing (short body)' cylinder body  (buy different cylinders)\n         -> usable stroke: drops 6.4 mm to 19.0 mm -- only safe if pedal_travel() says the circuit needs less than that with a reserve\n         -> lead time: a parts order sits on the critical path"
+ },
+ "plan_rank0": {
+  "as_dict": {
+   "chosen": [
+    {
+     "cost": "free, but it is then spent",
+     "cost_rank": 0,
+     "feasible": true,
+     "gain_mm": 0.9902680687415704,
+     "name": "Wind the pushrod in to minimum safe thread engagement",
+     "requires_recheck": [
+      "pedal free play / rest-port return"
+     ],
+     "side_effects": {
+      "further adjustment": "none left in this direction",
+      "pedal free play": "goes to zero -- re-set the pedal stop so the cylinder still returns fully to its rest port, or the brakes will drag as they heat"
+     }
+    }
+   ],
+   "deficit_mm": 49.489574830002766,
+   "findings": [
+    {
+     "check": "shorten_plan",
+     "detail": {},
+     "message": "The affordable menu returns 1.0 mm of the 49.5 mm needed, leaving 48.5 mm. This is no longer an adjustment problem. The honest options are a cylinder family with a shorter body, a floor-mounted pedal, or moving the bulkhead -- all of which are chassis conversations, so start them now rather than at the next design review.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes",
+      "chassis"
+     ]
+    },
+    {
+     "check": "shorten_plan_provenance",
+     "detail": {},
+     "message": "This plan is priced against catalogue segment lengths. Measure the real cylinders and fittings before ordering anything -- the deficit itself could move by tens of mm.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "remaining_mm": 48.499306761261195,
+   "solved": false,
+   "total_gain_mm": 0.9902680687415704
+  },
+  "p": {
+   "chosen": [
+    {
+     "cost": "free, but it is then spent",
+     "cost_rank": 0,
+     "feasible": true,
+     "gain_mm": 0.9902680687415704,
+     "name": "Wind the pushrod in to minimum safe thread engagement",
+     "requires_recheck": [
+      "pedal free play / rest-port return"
+     ],
+     "side_effects": {
+      "further adjustment": "none left in this direction",
+      "pedal free play": "goes to zero -- re-set the pedal stop so the cylinder still returns fully to its rest port, or the brakes will drag as they heat"
+     }
+    }
+   ],
+   "deficit_mm": 49.489574830002766,
+   "findings": [
+    {
+     "check": "shorten_plan",
+     "detail": {},
+     "message": "The affordable menu returns 1.0 mm of the 49.5 mm needed, leaving 48.5 mm. This is no longer an adjustment problem. The honest options are a cylinder family with a shorter body, a floor-mounted pedal, or moving the bulkhead -- all of which are chassis conversations, so start them now rather than at the next design review.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes",
+      "chassis"
+     ]
+    },
+    {
+     "check": "shorten_plan_provenance",
+     "detail": {},
+     "message": "This plan is priced against catalogue segment lengths. Measure the real cylinders and fittings before ordering anything -- the deficit itself could move by tens of mm.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "remaining_mm": 48.499306761261195,
+   "solved": false,
+   "total_gain_mm": 0.9902680687415704
+  },
+  "summary": "Need 49.5 mm. SHORT BY 48.5 mm with 1 change(s):\n    +1.0 mm  Wind the pushrod in to minimum safe thread engagement  (free, but it is then spent)\n         -> pedal free play: goes to zero -- re-set the pedal stop so the cylinder still returns fully to its rest port, or the brakes will drag as they heat\n         -> further adjustment: none left in this direction\n    -> Every listed lever is spent and it is still too long. This is a layout problem, not an adjustment problem: move the bulkhead, go to a floor-mounted pedal, or accept a different cylinder family."
+ },
+ "plan_rank3": {
+  "as_dict": {
+   "chosen": [
+    {
+     "cost": "free, but it is then spent",
+     "cost_rank": 0,
+     "feasible": true,
+     "gain_mm": 0.9902680687415704,
+     "name": "Wind the pushrod in to minimum safe thread engagement",
+     "requires_recheck": [
+      "pedal free play / rest-port return"
+     ],
+     "side_effects": {
+      "further adjustment": "none left in this direction",
+      "pedal free play": "goes to zero -- re-set the pedal stop so the cylinder still returns fully to its rest port, or the brakes will drag as they heat"
+     }
+    },
+    {
+     "cost": "one fitting per cylinder, no performance penalty",
+     "cost_rank": 1,
+     "feasible": true,
+     "gain_mm": 28.0,
+     "name": "Change the MC outlet from 'straight fitting + hardline bend' to '90 deg banjo'",
+     "requires_recheck": [
+      "leak check",
+      "line routing clearance"
+     ],
+     "side_effects": {
+      "assembly": "one more sealing joint per circuit to bleed and leak-check before the brake test",
+      "pedal feel": "unchanged -- this removes packaging length, not fluid"
+     }
+    },
+    {
+     "cost": "buy different cylinders",
+     "cost_rank": 1,
+     "feasible": true,
+     "gain_mm": 24.0,
+     "name": "Move to a 'compact racing (short body)' cylinder body",
+     "requires_recheck": [
+      "pedal_travel() stroke demand vs the new stroke limit"
+     ],
+     "side_effects": {
+      "lead time": "a parts order sits on the critical path",
+      "usable stroke": "drops 6.4 mm to 19.0 mm -- only safe if pedal_travel() says the circuit needs less than that with a reserve"
+     }
+    }
+   ],
+   "deficit_mm": 49.489574830002766,
+   "findings": [
+    {
+     "check": "shorten_plan",
+     "detail": {},
+     "message": "53.0 mm recovered against a 49.5 mm deficit using 3 change(s), none above cost rank 3. Every option carries a re-check -- run them before this counts as closed.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "shorten_plan_provenance",
+     "detail": {},
+     "message": "This plan is priced against catalogue segment lengths. Measure the real cylinders and fittings before ordering anything -- the deficit itself could move by tens of mm.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "remaining_mm": 0.0,
+   "solved": true,
+   "total_gain_mm": 52.99026806874157
+  },
+  "p": {
+   "chosen": [
+    {
+     "cost": "free, but it is then spent",
+     "cost_rank": 0,
+     "feasible": true,
+     "gain_mm": 0.9902680687415704,
+     "name": "Wind the pushrod in to minimum safe thread engagement",
+     "requires_recheck": [
+      "pedal free play / rest-port return"
+     ],
+     "side_effects": {
+      "further adjustment": "none left in this direction",
+      "pedal free play": "goes to zero -- re-set the pedal stop so the cylinder still returns fully to its rest port, or the brakes will drag as they heat"
+     }
+    },
+    {
+     "cost": "one fitting per cylinder, no performance penalty",
+     "cost_rank": 1,
+     "feasible": true,
+     "gain_mm": 28.0,
+     "name": "Change the MC outlet from 'straight fitting + hardline bend' to '90 deg banjo'",
+     "requires_recheck": [
+      "leak check",
+      "line routing clearance"
+     ],
+     "side_effects": {
+      "assembly": "one more sealing joint per circuit to bleed and leak-check before the brake test",
+      "pedal feel": "unchanged -- this removes packaging length, not fluid"
+     }
+    },
+    {
+     "cost": "buy different cylinders",
+     "cost_rank": 1,
+     "feasible": true,
+     "gain_mm": 24.0,
+     "name": "Move to a 'compact racing (short body)' cylinder body",
+     "requires_recheck": [
+      "pedal_travel() stroke demand vs the new stroke limit"
+     ],
+     "side_effects": {
+      "lead time": "a parts order sits on the critical path",
+      "usable stroke": "drops 6.4 mm to 19.0 mm -- only safe if pedal_travel() says the circuit needs less than that with a reserve"
+     }
+    }
+   ],
+   "deficit_mm": 49.489574830002766,
+   "findings": [
+    {
+     "check": "shorten_plan",
+     "detail": {},
+     "message": "53.0 mm recovered against a 49.5 mm deficit using 3 change(s), none above cost rank 3. Every option carries a re-check -- run them before this counts as closed.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "shorten_plan_provenance",
+     "detail": {},
+     "message": "This plan is priced against catalogue segment lengths. Measure the real cylinders and fittings before ordering anything -- the deficit itself could move by tens of mm.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "remaining_mm": 0.0,
+   "solved": true,
+   "total_gain_mm": 52.99026806874157
+  },
+  "summary": "Need 49.5 mm. SOLVED with 3 change(s):\n    +1.0 mm  Wind the pushrod in to minimum safe thread engagement  (free, but it is then spent)\n         -> pedal free play: goes to zero -- re-set the pedal stop so the cylinder still returns fully to its rest port, or the brakes will drag as they heat\n         -> further adjustment: none left in this direction\n    +28.0 mm  Change the MC outlet from 'straight fitting + hardline bend' to '90 deg banjo'  (one fitting per cylinder, no performance penalty)\n         -> pedal feel: unchanged -- this removes packaging length, not fluid\n         -> assembly: one more sealing joint per circuit to bleed and leak-check before the brake test\n    +24.0 mm  Move to a 'compact racing (short body)' cylinder body  (buy different cylinders)\n         -> usable stroke: drops 6.4 mm to 19.0 mm -- only safe if pedal_travel() says the circuit needs less than that with a reserve\n         -> lead time: a parts order sits on the critical path"
+ },
+ "plan_unsolved": {
+  "as_dict": {
+   "chosen": [
+    {
+     "cost": "c",
+     "cost_rank": 0,
+     "feasible": true,
+     "gain_mm": 10.0,
+     "name": "a",
+     "requires_recheck": [],
+     "side_effects": {}
+    },
+    {
+     "cost": "c",
+     "cost_rank": 0,
+     "feasible": true,
+     "gain_mm": 0.11,
+     "name": "b",
+     "requires_recheck": [],
+     "side_effects": {}
+    }
+   ],
+   "deficit_mm": 30.0,
+   "findings": [
+    {
+     "check": "shorten_plan",
+     "detail": {},
+     "message": "The affordable menu returns 10.1 mm of the 30.0 mm needed, leaving 19.9 mm. This is no longer an adjustment problem. The honest options are a cylinder family with a shorter body, a floor-mounted pedal, or moving the bulkhead -- all of which are chassis conversations, so start them now rather than at the next design review.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes",
+      "chassis"
+     ]
+    },
+    {
+     "check": "shorten_plan_provenance",
+     "detail": {},
+     "message": "This plan is priced against catalogue segment lengths. Measure the real cylinders and fittings before ordering anything -- the deficit itself could move by tens of mm.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "remaining_mm": 19.89,
+   "solved": false,
+   "total_gain_mm": 10.11
+  },
+  "p": {
+   "chosen": [
+    {
+     "cost": "c",
+     "cost_rank": 0,
+     "feasible": true,
+     "gain_mm": 10.0,
+     "name": "a",
+     "requires_recheck": [],
+     "side_effects": {}
+    },
+    {
+     "cost": "c",
+     "cost_rank": 0,
+     "feasible": true,
+     "gain_mm": 0.11,
+     "name": "b",
+     "requires_recheck": [],
+     "side_effects": {}
+    }
+   ],
+   "deficit_mm": 30.0,
+   "findings": [
+    {
+     "check": "shorten_plan",
+     "detail": {},
+     "message": "The affordable menu returns 10.1 mm of the 30.0 mm needed, leaving 19.9 mm. This is no longer an adjustment problem. The honest options are a cylinder family with a shorter body, a floor-mounted pedal, or moving the bulkhead -- all of which are chassis conversations, so start them now rather than at the next design review.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes",
+      "chassis"
+     ]
+    },
+    {
+     "check": "shorten_plan_provenance",
+     "detail": {},
+     "message": "This plan is priced against catalogue segment lengths. Measure the real cylinders and fittings before ordering anything -- the deficit itself could move by tens of mm.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "remaining_mm": 19.89,
+   "solved": false,
+   "total_gain_mm": 10.11
+  },
+  "summary": "Need 30.0 mm. SHORT BY 19.9 mm with 2 change(s):\n    +10.0 mm  a  (c)\n    +0.1 mm  b  (c)\n    -> Every listed lever is spent and it is still too long. This is a layout problem, not an adjustment problem: move the bulkhead, go to a floor-mounted pedal, or accept a different cylinder family."
+ }
+}

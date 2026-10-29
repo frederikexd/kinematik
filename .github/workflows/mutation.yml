@@ -1,39 +1,89 @@
-# Mutation testing of the core solvers (the [tool.mutmut] section of fsae_suspension/pyproject.toml).
-# mutmut makes small deliberate errors in suspension/kinematics.py and suspension/loadpath.py (a flipped sign, a swapped
-# operator, an off-by-one) and runs the kinematics, statics, property and benchmark suites against each one. A mutant the
-# tests catch is "killed"; one they miss "survives". The score is the share killed, and it is held at or above the floor
-# below, so the tests cannot quietly lose their teeth. Too slow for every push: monthly, on demand, and when the two
-# mutated files or their tests change on main.
+# Per-file mutation testing of the physics modules (fsae_suspension/mutation_targets.toml).
+# mutmut makes small deliberate errors in a module (a flipped sign, a swapped operator, an off-by-one) and runs the
+# tests that pin it against each one. A mutant the tests catch is "killed"; one they miss "survives". Every listed file
+# must keep its own score at or above the floor in mutation_targets.toml (99%), so no single module can hide behind
+# the others and the tests cannot quietly lose their teeth.
+#
+# A push or pull request runs only the groups whose files or tests it changes; the monthly run (and a manual run)
+# checks every group, one parallel job each, so no job comes near the six-hour limit.
 name: mutation
 
 on:
   workflow_dispatch:
+    inputs:
+      baseline:
+        description: 'Also measure every module in suspension/ and powertrain/ (one job each, report only)'
+        type: boolean
+        default: false
   schedule:
     - cron: '17 6 1 * *'
   push:
     branches: [main]
     paths:
-      - 'fsae_suspension/suspension/kinematics.py'
-      - 'fsae_suspension/suspension/loadpath.py'
-      - 'fsae_suspension/tests/test_kinematics.py'
-      - 'fsae_suspension/tests/test_load_case_physics.py'
-      - 'fsae_suspension/tests/test_invariants_property.py'
-      - 'fsae_suspension/tests/test_core_solver_edges.py'
-      - 'fsae_suspension/tests/test_motion_ratio_antidive.py'
-      - 'fsae_suspension/tests/test_accuracy_invariants.py'
-      - 'fsae_suspension/tests/test_actuation.py'
-      - 'fsae_suspension/tests/test_mutation_gaps.py'
+      - 'fsae_suspension/suspension/**'
+      - 'fsae_suspension/powertrain/**'
+      - 'fsae_suspension/tests/**'
+      - 'fsae_suspension/mutation_targets.toml'
+      - 'fsae_suspension/scripts/mutation_gate.py'
+      - 'fsae_suspension/pyproject.toml'
+      - '.github/workflows/mutation.yml'
+  pull_request:
+    paths:
+      - 'fsae_suspension/suspension/**'
+      - 'fsae_suspension/powertrain/**'
+      - 'fsae_suspension/tests/**'
+      - 'fsae_suspension/mutation_targets.toml'
+      - 'fsae_suspension/scripts/mutation_gate.py'
       - 'fsae_suspension/pyproject.toml'
       - '.github/workflows/mutation.yml'
 
 jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      groups: ${{ steps.pick.outputs.groups }}
+      modules: ${{ steps.pick.outputs.modules }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - id: pick
+        working-directory: fsae_suspension
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ "$EVENT" = schedule ] || [ "$EVENT" = workflow_dispatch ]; then
+            groups=$(python scripts/mutation_gate.py --matrix)
+          else
+            base=${BASE:-$BEFORE}
+            if [ -z "$base" ] || ! git cat-file -e "$base" 2>/dev/null; then
+              groups=$(python scripts/mutation_gate.py --matrix)       # first push of a branch: check everything
+            else
+              groups=$(python scripts/mutation_gate.py --changed $(git diff --name-only "$base" HEAD))
+            fi
+          fi
+          echo "groups=$groups" >> "$GITHUB_OUTPUT"
+          if [ "${{ inputs.baseline }}" = true ]; then
+            echo "modules=$(python scripts/mutation_gate.py --modules)" >> "$GITHUB_OUTPUT"
+          else
+            echo "modules=[]" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Mutation groups to run: $groups" >> "$GITHUB_STEP_SUMMARY"
+
   mutmut:
+    needs: plan
+    if: needs.plan.outputs.groups != '[]'
     runs-on: ubuntu-latest
     timeout-minutes: 300
-    env:
-      # 100% measured 2026-10-23 (1679 of 1679 caught); it was 93.7% before the equivalent mutants were marked and
-      # 74.8% before tests/test_mutation_gaps.py. 99 leaves room for one equivalent mutant a later edit brings in.
-      FLOOR: '99'
+    strategy:
+      fail-fast: false
+      matrix:
+        group: ${{ fromJson(needs.plan.outputs.groups) }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -43,38 +93,35 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install -e ./fsae_suspension pytest hypothesis 'mutmut>=3.2'
-      - name: Mutate the kinematics and statics and run the tests against each mutant
+      - name: Mutate the group's files and hold each one at the floor
         working-directory: fsae_suspension
-        # No `|| true`: mutmut exits non-zero only when it cannot start (its clean run of the test selection failed,
-        # or no tests were collected), never because mutants survived. Swallowing that exit turned a broken test into
-        # a silent 0% score; letting it fail puts the failing test at the end of this step's log.
-        run: mutmut run --max-children 4
-      - name: Score
-        working-directory: fsae_suspension
-        run: |
-          mutmut export-cicd-stats
-          python - <<'PY'
-          import json, os
-          s = json.load(open("mutants/mutmut-cicd-stats.json"))
-          tested = int(s.get("total", 0)) - int(s.get("skipped", 0))       # mutmut's own score definition
-          score = 100.0 * (int(s.get("killed", 0)) + int(s.get("timeout", 0))) / tested if tested else 0.0
-          floor = float(os.environ["FLOOR"])
-          if not tested:
-              raise SystemExit("mutmut tested no mutants: its clean run of the test selection failed before mutating "
-                               "anything. The failing test is at the end of the 'Mutate' step's log.")
-          line = (f"Mutation score {score:.1f}% ({s['killed']} killed, {s['survived']} survived, "
-                  f"{s.get('timeout', 0)} timed out, {s.get('no_tests', 0)} with no test); floor {floor:.1f}%")
-          print(line)
-          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
-              f.write(line + "\n")
-          raise SystemExit(0 if score >= floor else 1)
-          PY
-      - name: List surviving mutants
-        if: always()
-        working-directory: fsae_suspension
-        run: mutmut results > survivors.txt || true
+        shell: bash          # -o pipefail, so the gate's exit status survives the tee
+        run: python scripts/mutation_gate.py --group "${{ matrix.group }}" --max-children 4 | tee survivors.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: mutation-survivors
+          name: mutation-survivors-${{ matrix.group }}
           path: fsae_suspension/survivors.txt
+
+  # Baseline: every module's own score, so the next file to raise is the one furthest below the floor. Report only.
+  baseline:
+    needs: plan
+    if: needs.plan.outputs.modules != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        module: ${{ fromJson(needs.plan.outputs.modules) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install
+        run: |
+          pip install -r requirements.txt
+          pip install -e ./fsae_suspension pytest hypothesis 'mutmut>=3.2'
+      - name: Measure the module against the tests that import it
+        working-directory: fsae_suspension
+        run: python scripts/mutation_gate.py --module "${{ matrix.module }}" --max-children 4

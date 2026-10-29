@@ -236,5 +236,5 @@ def _demo():
           f"{'pressure_distribution' in o.synthesized})")
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no mutate block (the command-line entry point)
     _demo()

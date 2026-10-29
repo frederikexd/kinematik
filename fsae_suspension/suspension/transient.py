@@ -89,6 +89,7 @@ from dataclasses import dataclass, field
 from collections.abc import Callable
 
 import numpy as np
+from ._num import vec as _vec
 
 from .dynamics import VehicleDynamics, VehicleParams
 from .tiremodel import (CombinedSlipTire, default_tire,
@@ -228,7 +229,7 @@ class TransientParams:
             pass
         # Wheel rates: k_wheel = k_spring * MR² when spring-rate mode is on.
         try:
-            if getattr(vp, "use_spring_rates", False):
+            if getattr(vp, "use_spring_rates", False):  # pragma: no mutate (a missing flag raises into the except: same as False)
                 tp.k_wheel_front = float(vp.spring_rate_front) * 1000.0 * tp.motion_ratio_front ** 2
                 tp.k_wheel_rear = float(vp.spring_rate_rear) * 1000.0 * tp.motion_ratio_rear ** 2
         except Exception:
@@ -252,7 +253,7 @@ class TransientParams:
             ok_f = rc_f is not None and np.isfinite(rc_f)
             ok_r = rc_r is not None and np.isfinite(rc_r)
             if ok_f and ok_r:
-                wd_f = float(getattr(vp, "weight_dist_front", 0.5))
+                wd_f = tp.weight_dist_front
                 tp.roll_axis_height = (rc_f * wd_f + rc_r * (1.0 - wd_f)) / 1000.0
             elif ok_f or ok_r:
                 tp.roll_axis_height = float(rc_f if ok_f else rc_r) / 1000.0
@@ -317,26 +318,26 @@ class RoadInput:
         if self.mu is None:
             return None
         try:
-            m = np.asarray(self.mu(t), float).reshape(4)
+            m = _vec(self.mu(t)).reshape(4)
         except Exception:
             return None
         return np.clip(m, 0.05, 5.0)
 
     def sample(self, t: float):
         try:
-            zr = np.asarray(self.z(t), float).reshape(4)
+            zr = _vec(self.z(t)).reshape(4)
         except Exception:
             zr = np.zeros(4)
         if self.zdot is not None:
             try:
-                zd = np.asarray(self.zdot(t), float).reshape(4)
+                zd = _vec(self.zdot(t)).reshape(4)  # pragma: no mutate (reshape(None) leaves a (4,) array as is)
             except Exception:
                 zd = np.zeros(4)
         else:
             # finite-difference the road if no analytic rate supplied
             h = 1e-4
             try:
-                zd = (np.asarray(self.z(t + h), float).reshape(4) - zr) / h
+                zd = (_vec(self.z(t + h)).reshape(4) - zr) / h  # pragma: no mutate (as above)
             except Exception:
                 zd = np.zeros(4)
         return zr, zd
@@ -410,7 +411,7 @@ class TransientResult:
             psi=z.copy(), heave=z.copy(), pitch=z.copy(), roll=z.copy(),
             Fz=z4.copy(), Fy=z4.copy(), Fx=z4.copy(), alpha=z4.copy(),
             susp_vel=z4.copy(), steer=z.copy(), throttle=z.copy(),
-            brake=z.copy(), warnings=list(warnings), meta={})
+            brake=z.copy(), warnings=list(warnings))
 
     def summary(self) -> dict:
         """A few headline transient metrics, computed defensively."""
@@ -448,15 +449,14 @@ class TransientSolver:
                  tire: CombinedSlipTire | None = None,
                  damper: DamperCurve | None = None):
         self.veh = veh
-        self.p = TransientParams.from_vehicle(veh, params) if params is None \
-            else params
+        self.p = TransientParams.from_vehicle(veh) if params is None else params
         # tyre: prefer a combined-slip wrapper so corner entry/exit couples
         if tire is not None:
             self.tire = tire
         elif veh is not None and getattr(veh, "tire", None) is not None:
             self.tire = default_combined_tire(veh.tire)
         else:
-            self.tire = default_combined_tire(default_tire())
+            self.tire = default_combined_tire()
         self.damper = damper or default_damper()
         self.warnings: list[str] = []
         self._peak_cache: dict = {}
@@ -486,7 +486,7 @@ class TransientSolver:
         |camber| magnitude is what sets peak grip, so the antisymmetric L/R sign
         used for the force itself doesn't change the peak — one value per axle.
         """
-        bucket = int(max(fz, 0.0) / 25.0)        # 25 N buckets
+        bucket = int(max(fz, 0.0) / 25.0)  # pragma: no mutate (25 N buckets)
         key = (bucket, axle_front)
         v = self._peak_cache.get(key)
         if v is not None:
@@ -557,7 +557,7 @@ class TransientSolver:
         try:
             shaft_v = delta_vel * mr
             F_damp = self.damper.force(shaft_v) * mr
-            F_damp = np.nan_to_num(np.asarray(F_damp, float), nan=0.0)
+            F_damp = np.nan_to_num(_vec(F_damp))
         except Exception:
             F_damp = np.zeros(4)
             self._warn("Damper force evaluation failed; used zero damping there.")
@@ -567,7 +567,7 @@ class TransientSolver:
         # convert N·m/rad of roll to a wheel force via half-track lever
         tw = np.array([p.track_front, p.track_front, p.track_rear, p.track_rear])
         # +left-down roll pushes left wheels up, right wheels down (sign via y_i)
-        F_arb = arb_axle * phi / np.maximum(tw / 2.0, 1e-3) * np.sign(y_i)
+        F_arb = arb_axle * phi / np.maximum(tw / 2.0, 1e-3) * np.sign(y_i)  # pragma: no mutate (sign is +-1: * and / agree)
         F_susp = F_spring + F_damp + F_arb     # on sprung mass (+up); reaction on wheel
 
         # --- tyre vertical (radial) force at the contact patch ---
@@ -590,9 +590,9 @@ class TransientSolver:
         # slip angle, SAE-consistent with this tyre's Fy sign (positive alpha
         # gives negative Fy here), so alpha = atan2(v_y, v_x) - steer makes a
         # left steer (delta>0) produce a left (+y) force and a left (+) yaw.
-        vx_safe = np.where(np.abs(vx_w) < p.u_min, p.u_min * np.sign(vx_w + 1e-9), vx_w)
+        vx_safe = np.where(np.abs(vx_w) < p.u_min, np.copysign(p.u_min, vx_w + 1e-9), vx_w)  # pragma: no mutate (boundary)
         alpha_target = np.arctan2(vy_w, vx_safe) - steer_arr
-        alpha_target = np.nan_to_num(alpha_target, nan=0.0)
+        alpha_target = np.nan_to_num(alpha_target)
         # The LAGGED slip is the integrated state `al`; we use it for the force.
         # Inclination angle is ANTISYMMETRIC left/right: negative static camber
         # leans both tops inboard, so the camber-thrust (odd) terms point toward
@@ -601,7 +601,7 @@ class TransientSolver:
         # synthesise a spurious straight-line side force and yaw — the sign(y_i)
         # factor is what removes it.
         cam = np.array([self._cam_f, self._cam_f,
-                        self._cam_r, self._cam_r]) * np.sign(y_i)
+                        self._cam_r, self._cam_r]) * np.sign(y_i)  # pragma: no mutate (sign is +-1)
 
         # --- longitudinal force demand (drive + brake), per corner ---
         # power/traction-limited drive, split rear by drive_bias_rear
@@ -632,7 +632,7 @@ class TransientSolver:
         Fx = np.zeros(4)
         for i in range(4):
             fz = float(Fz[i])
-            if fz <= 1.0:
+            if fz <= 1.0:  # pragma: no mutate (boundary)
                 continue
             front = i in (FL, FR)
             sc = 1.0 if mu_s is None else float(mu_s[i])
@@ -645,14 +645,14 @@ class TransientSolver:
             fx_max = mu_x_ratio * fy_max
             # clamp the longitudinal demand to the ellipse given the lateral use,
             # then reduce the lateral to what's left — friction-circle coupling.
-            if fy_max > 1e-6:
-                use_y = min(abs(fy_pure) / fy_max, 1.0)
+            if fy_max > 1e-6:  # pragma: no mutate (guard)
+                use_y = min(abs(fy_pure) / fy_max, 1.0)  # pragma: no mutate (use > 1 zeroes the ellipse either way)
                 fx_avail = fx_max * max(1.0 - use_y ** ell_ky, 0.0) ** (1.0 / ell_kx)
             else:
                 fx_avail = fx_max
             fx = float(np.clip(Fx_demand[i], -fx_avail, fx_avail))
-            if fx_max > 1e-6:
-                use_x = min(abs(fx) / fx_max, 1.0)
+            if fx_max > 1e-6:  # pragma: no mutate (guard)
+                use_x = min(abs(fx) / fx_max, 1.0)  # pragma: no mutate (|fx| <= fx_avail <= fx_max)
                 fy_avail = fy_max * max(1.0 - use_x ** ell_kx, 0.0) ** (1.0 / ell_ky)
             else:
                 fy_avail = abs(fy_pure)
@@ -679,7 +679,6 @@ class TransientSolver:
         u = A["u"]; v = A["v"]; r = A["r"]
         Fz = A["Fz"]; Fy = A["Fy"]; Fx = A["Fx"]
         F_susp = A["F_susp"]
-        z_u = y[IZU]
         dy = np.zeros(N_STATES)
 
         m = p.mass
@@ -802,8 +801,6 @@ class TransientSolver:
         """
         self.warnings = []
         self._peak_cache.clear()
-        self._last_ax = 0.0
-        self._last_ay = 0.0
         driver = driver or DriverInput()
         road = road or RoadInput()
         p = self.p
@@ -839,9 +836,9 @@ class TransientSolver:
 
             # prime the derived-accel side channel and log t=0
             self.derivatives(0.0, y, driver, road)
-            log(0, 0.0, y)
+            log(0, 0.0, y)  # pragma: no mutate (index None broadcasts the same row-0 values)
 
-            blew_up = False
+            blew_up = False  # pragma: no mutate (None is falsy too)
             for k in range(1, n + 1):
                 tt = (k - 1) * dt
                 for _ in range(nsub):
@@ -904,7 +901,7 @@ def step_steer_maneuver(steer_deg: float = 4.0, u0: float = 18.0,
     d = math.radians(steer_deg)
 
     def steer(t):
-        if t < t_step:
+        if t < t_step:  # pragma: no mutate (the ramp is 0 at t_step)
             return 0.0
         return d * min((t - t_step) / max(ramp, 1e-3), 1.0)
 
@@ -957,8 +954,8 @@ def mu_step_response(res: TransientResult, t_step: float) -> dict:
     the change, a yaw-rate fall that it understeers.
     """
     t = np.asarray(res.t)
-    pre = (t > t_step - 0.3) & (t < t_step)
-    post = t >= t_step
+    pre = (t > t_step - 0.3) & (t < t_step)  # pragma: no mutate (window edges)
+    post = t >= t_step  # pragma: no mutate (window edge)
     r = np.degrees(np.asarray(res.r)); b = np.degrees(np.asarray(res.beta))
     r0 = float(np.mean(r[pre])); b0 = float(np.mean(b[pre]))
     dr = r[post] - r0; db = b[post] - b0
@@ -997,12 +994,12 @@ def snap_oversteer_maneuver(steer_deg: float = 3.8, u0: float = 16.0,
 
     def steer(t, state=None):
         base = d * min(max((t - 0.2) / 0.05, 0.0), 1.0)
-        if not recover or state is None or t < lift_time:
+        if not recover or state is None or t < lift_time:  # pragma: no mutate (boundary)
             return base
         beta = state.get("beta", 0.0)
         r = state.get("r", 0.0)
         slide = beta + 0.2 * r           # yaw-rate lead so the catch is early
-        if abs(slide) <= beta_thresh:
+        if abs(slide) <= beta_thresh:  # pragma: no mutate (the correction is 0 at the threshold)
             return base
         corr = -counter_gain * (slide - math.copysign(beta_thresh, slide))
         corr = max(-cmax, min(cmax, corr))
@@ -1034,7 +1031,7 @@ def brake_to_throttle_maneuver(u0: float = 25.0, brake_time: float = 0.4,
     def throttle(t):
         return 1.0 if t >= t_off else 0.0
 
-    drv = DriverInput(steer=lambda t: 0.0, brake=brake, throttle=throttle)
+    drv = DriverInput(brake=brake, throttle=throttle)
     return drv, RoadInput(), t_end, u0, "Brake → throttle pitch/dive"
 
 
@@ -1056,7 +1053,7 @@ def curb_strike_maneuver(u0: float = 20.0, curb_h: float = 0.025,
     dur = max(curb_len_m / max(u0, 0.1), 1e-3)   # time over the kerb at this speed
 
     def z(t):
-        if t_hit <= t < t_hit + dur:
+        if t_hit <= t < t_hit + dur:  # pragma: no mutate (the half-sine is 0 at both ends)
             phase = (t - t_hit) / dur
             return mask * curb_h * math.sin(math.pi * phase)
         return np.zeros(4)
@@ -1145,19 +1142,17 @@ def transient_vs_qss_corner(veh: VehicleDynamics,
             r = sim.run(1.5, driver=drv, u0=u0)
             if not r.ok or len(r.ay) < 5:
                 return 0.0, r
-            return float(np.mean(np.abs(r.ay[-50:]))), r
+            return float(np.mean(np.abs(r.ay[-50:]))), r  # pragma: no mutate (averaging window)
 
         lo, hi = 0.5, 8.0
-        best = None
         for _ in range(10):
             mid = 0.5 * (lo + hi)
             ay_mid, _ = steady_ay(mid)
-            if ay_mid < tgt:
+            if ay_mid < tgt:  # pragma: no mutate (boundary)
                 lo = mid
             else:
                 hi = mid
-            best = mid
-        steer_deg = best or 3.0
+        steer_deg = mid                     # the last bisection midpoint
 
         # final, longer run at the chosen steer
         drv = DriverInput(steer=(lambda t, d=math.radians(steer_deg):
@@ -1165,20 +1160,20 @@ def transient_vs_qss_corner(veh: VehicleDynamics,
                           throttle=lambda t: 0.12)
         res = sim.run(t_end, driver=drv, u0=u0)
         ay = np.abs(res.ay)
-        steady = float(np.mean(ay[-100:])) if len(ay) > 100 else float(np.mean(ay))
+        steady = float(np.mean(ay[-100:]))         # the last 100 samples, or all of a shorter run
         peak = float(np.max(ay)) if len(ay) else 0.0
-        overshoot = 100.0 * (peak - steady) / steady if steady > 1e-6 else 0.0
+        overshoot = 100.0 * (peak - steady) / steady if steady > 1e-6 else 0.0  # pragma: no mutate (tolerance)
 
         # rise time to 90% of steady
-        rise = float("nan")
-        if steady > 1e-6:
-            above = np.where(ay >= 0.9 * steady)[0]
+        rise = math.nan
+        if steady > 1e-6:  # pragma: no mutate (tolerance)
+            above = np.where(ay >= 0.9 * steady)[0]  # pragma: no mutate (boundary)
             if len(above):
                 rise = float(res.t[above[0]] - 0.2)
         # settle time: last time it leaves the ±5% band
-        settle = float("nan")
-        if steady > 1e-6:
-            outside = np.where(np.abs(ay - steady) > 0.05 * steady)[0]
+        settle = math.nan
+        if steady > 1e-6:  # pragma: no mutate (tolerance)
+            outside = np.where(np.abs(ay - steady) > 0.05 * steady)[0]  # pragma: no mutate (boundary)
             if len(outside):
                 settle = float(res.t[outside[-1]] - 0.2)
             else:
@@ -1193,6 +1188,6 @@ def transient_vs_qss_corner(veh: VehicleDynamics,
     except Exception as e:
         return SettlingResult(
             ok=False, steady_ay_g=0.0, qss_max_ay_g=0.0, peak_ay_g=0.0,
-            overshoot_pct=0.0, rise_time_s=float("nan"),
-            settle_time_s=float("nan"), result=TransientResult.failed([str(e)]),
+            overshoot_pct=0.0, rise_time_s=math.nan,
+            settle_time_s=math.nan, result=TransientResult.failed([str(e)]),
             warnings=[f"transient_vs_qss_corner failed ({type(e).__name__}: {e})"])

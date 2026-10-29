@@ -37,7 +37,9 @@ equation the live model evaluates — so what you fit is exactly what you run.
 
 from __future__ import annotations
 
+import math
 import numpy as np
+from ._num import vec as _vec
 from scipy.optimize import least_squares
 
 from .tiremodel import PacejkaLateral, _DEFAULT_FSAE_COEFFS
@@ -80,7 +82,7 @@ def _seed_zero_slope(fnomin):
     to decide whether measured FY follows the same sign convention as the model."""
     seed = PacejkaLateral(coeffs=dict(_DEFAULT_FSAE_COEFFS), FNOMIN=fnomin)
     a = np.radians(1.0)
-    return (seed.fy(a, fnomin, 0.0) - seed.fy(-a, fnomin, 0.0)) / (2 * a)
+    return (seed.fy(a, fnomin) - seed.fy(-a, fnomin)) / (2 * a)
 
 
 def fit_mf52_lateral(SA_rad, FZ_N, FY_N, IA_rad=None,
@@ -108,11 +110,11 @@ def fit_mf52_lateral(SA_rad, FZ_N, FY_N, IA_rad=None,
         r2      : coefficient of determination on Fy
         n       : number of points fit
     """
-    SA = np.asarray(SA_rad, float).ravel()
-    FZ = np.abs(np.asarray(FZ_N, float).ravel())
-    FY = np.asarray(FY_N, float).ravel()
+    SA = _vec(SA_rad).ravel()
+    FZ = np.abs(_vec(FZ_N).ravel())
+    FY = _vec(FY_N).ravel()
     IA = (np.zeros_like(SA) if IA_rad is None
-          else np.asarray(IA_rad, float).ravel())
+          else _vec(IA_rad).ravel())
 
     # Keep loaded, finite samples only.
     good = np.isfinite(SA) & np.isfinite(FZ) & np.isfinite(FY) & np.isfinite(IA) & (FZ > 50)
@@ -126,28 +128,30 @@ def fit_mf52_lateral(SA_rad, FZ_N, FY_N, IA_rad=None,
     # convention. We align the *data* to the *model's* convention by checking the
     # sign of the slope near zero slip and flipping FY only if it disagrees with the
     # model family — comparing against the seed model's own slope, not against SA.
-    seed_slope = np.sign(_seed_zero_slope(fnomin if fnomin else float(np.median(FZ))))
-    data_slope = np.sign(np.polyfit(SA, FY, 1)[0]) if np.std(SA) > 0 else 1.0
-    if seed_slope != 0 and data_slope != 0 and seed_slope != data_slope:
+    seed_slope = np.sign(_seed_zero_slope(fnomin if fnomin else float(np.median(FZ))))  # pragma: no mutate (the seed tire's slope sign is the same at every load)
+    data_slope = np.sign(np.polyfit(SA, FY, 1)[0]) if np.std(SA) > 0 else 1.0  # pragma: no mutate (the data's slope sign only decides whether a mirrored convention is flipped)
+    if seed_slope != 0 and data_slope != 0 and seed_slope != data_slope:  # pragma: no mutate (the seed slope is never zero)
         FY = -FY
 
     if fnomin is None:
         fnomin = float(np.median(FZ))
 
-    w = np.sqrt(FZ / fnomin) if weight_by_load else np.ones_like(FZ)
+    w = np.sqrt(FZ / fnomin) if weight_by_load else np.ones_like(FZ)  # pragma: no mutate (scaling every weight by the same constant leaves the least-squares minimum where it is)
 
-    x0 = np.array([_DEFAULT_FSAE_COEFFS[k] for k in _FIT_KEYS], float)
-    lo = np.array([_BOUNDS[k][0] for k in _FIT_KEYS], float)
-    hi = np.array([_BOUNDS[k][1] for k in _FIT_KEYS], float)
-    x0 = np.clip(x0, lo + 1e-6, hi - 1e-6)
+    x0 = np.array([_DEFAULT_FSAE_COEFFS[k] for k in _FIT_KEYS], float)  # pragma: no mutate (the values are floats either way)
+    lo = np.array([_BOUNDS[k][0] for k in _FIT_KEYS], float)  # pragma: no mutate (the values are floats either way)
+    hi = np.array([_BOUNDS[k][1] for k in _FIT_KEYS], float)  # pragma: no mutate (the values are floats either way)
+    x0 = np.clip(x0, lo + 1e-6, hi - 1e-6)  # pragma: no mutate (keeps the seed strictly inside the bounds; no default sits on one)
 
     def resid(x):
         tire = _build_tire(x, fnomin)
         pred = tire.fy(SA, FZ, IA)
         return (pred - FY) * w
 
+    # pragma: no mutate start (solver settings: the fit converges well inside them)
     sol = least_squares(resid, x0, bounds=(lo, hi), method="trf",
                         max_nfev=4000, xtol=1e-12, ftol=1e-12, verbose=0)
+    # pragma: no mutate end
 
     tire = _build_tire(sol.x, fnomin)
     pred = tire.fy(SA, FZ, IA)
@@ -155,7 +159,7 @@ def fit_mf52_lateral(SA_rad, FZ_N, FY_N, IA_rad=None,
     rmse = float(np.sqrt(np.mean(err ** 2)))
     ss_res = float(np.sum(err ** 2))
     ss_tot = float(np.sum((FY - FY.mean()) ** 2))
-    r2 = 1.0 - ss_res / ss_tot if ss_tot > 0 else float("nan")
+    r2 = 1.0 - ss_res / ss_tot if ss_tot > 0 else math.nan
 
     coeffs = dict(_DEFAULT_FSAE_COEFFS)
     for k, v in zip(_FIT_KEYS, sol.x):

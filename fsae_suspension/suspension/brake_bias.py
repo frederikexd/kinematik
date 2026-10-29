@@ -40,6 +40,7 @@ import math
 from dataclasses import dataclass, field
 
 import numpy as np
+from ._num import vec as _vec
 
 from .brake_thermal import BrakeThermalParams
 
@@ -88,26 +89,26 @@ class BrakeHydraulics:
 
     def bias(self, t_front_c: float = 30.0, t_rear_c: float = 30.0) -> float:
         """Front share of brake torque (fraction). Independent of pedal force. Units: dimensionless fraction; temperatures in °C."""
-        tf, tr = self.axle_torques_Nm(1000.0, t_front_c, t_rear_c)
+        tf, tr = self.axle_torques_Nm(1000.0, t_front_c, t_rear_c)  # pragma: no mutate (the bias does not depend on pedal force)
         return tf / (tf + tr)
 
     def bar_for_bias(self, target: float, t_front_c: float = 30.0,
                      t_rear_c: float = 30.0) -> float:
         """Balance-bar front fraction that gives ``target`` bias (bisection)."""
         lo, hi = 0.05, 0.95
-        for _ in range(80):
+        for _ in range(80):  # pragma: no mutate (bisection count: converged long before)
             mid = 0.5 * (lo + hi)
             b = BrakeHydraulics(**{**self.__dict__, "bar_front": mid}).bias(
                 t_front_c, t_rear_c)
-            lo, hi = (mid, hi) if b < target else (lo, mid)
+            lo, hi = (mid, hi) if b < target else (lo, mid)  # pragma: no mutate (float threshold: < and <= differ only on exact equality)
         return 0.5 * (lo + hi)
 
 
 def bias_drift(system: BrakeHydraulics, t_front_c, t_rear_c) -> dict:
     """Bias along paired rotor-temperature traces (deg C), e.g. from
     ``brake_thermal`` over an endurance stint. Returns the trace and its range."""
-    tf = np.atleast_1d(np.asarray(t_front_c, float))
-    tr = np.atleast_1d(np.asarray(t_rear_c, float))
+    tf = np.atleast_1d(_vec(t_front_c))
+    tr = np.atleast_1d(_vec(t_rear_c))
     b = np.array([system.bias(a, c) for a, c in zip(tf, tr)])
     return {"bias": b, "min": float(b.min()), "max": float(b.max()),
             "cold": float(system.bias(float(tf[0]), float(tr[0])))}
@@ -127,7 +128,7 @@ def anti_dive_window(anti_at_ref_pct: float, bias_ref: float,
 
 def anti_dive_over_bias(anti_at_ref_pct: float, bias_ref: float, bias) -> np.ndarray:
     """Anti-dive (%) at each bias along a trace (outboard front brakes). Units: anti-dive in %, bias as a front fraction (dimensionless)."""
-    return anti_at_ref_pct * np.asarray(bias, float) / bias_ref
+    return anti_at_ref_pct * _vec(bias) / bias_ref
 
 
 def pedal_travel_mm(system: BrakeHydraulics, pressure_bar: float,

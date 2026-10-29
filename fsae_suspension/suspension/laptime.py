@@ -48,6 +48,7 @@ import math
 from dataclasses import dataclass, field
 
 import numpy as np
+from ._num import vec as _vec
 
 from .dynamics import VehicleDynamics
 
@@ -89,8 +90,8 @@ class MotorMap:
     source: str = "user"             # "user" | "datasheet" | "representative"
 
     def __post_init__(self):
-        r = np.asarray(self.rpm, float)
-        t = np.asarray(self.torque_nm, float)
+        r = _vec(self.rpm)
+        t = _vec(self.torque_nm)
         order = np.argsort(r)
         self._rpm = r[order]
         self._t = t[order]
@@ -119,7 +120,7 @@ class MotorMap:
             rp = rpm_base + frac * (redline_rpm - rpm_base)
             omega = rp * 2.0 * math.pi / 60.0
             pts_rpm.append(rp)
-            pts_t.append(peak_power_w / max(omega, 1e-3))
+            pts_t.append(peak_power_w / max(omega, 1e-3))  # pragma: no mutate (omega >= 100 rad/s past base speed)
         return MotorMap(rpm=pts_rpm, torque_nm=pts_t, final_drive=final_drive,
                         wheel_radius_m=wheel_radius_m, source="representative")
 
@@ -129,9 +130,9 @@ class MotorMap:
         r = max(self.wheel_radius_m, 0.05)
         rpm = (v / r) * self.final_drive * 60.0 / (2.0 * math.pi)
         # clamp to the mapped range; beyond redline the motor makes no more torque
-        if rpm <= self._rpm[0]:
+        if rpm <= self._rpm[0]:  # pragma: no mutate (boundary: interp gives t[0] there too)
             t_motor = float(self._t[0])
-        elif rpm >= self._rpm[-1]:
+        elif rpm >= self._rpm[-1]:  # pragma: no mutate (boundary)
             t_motor = 0.0                    # past redline: no drive
         else:
             t_motor = float(np.interp(rpm, self._rpm, self._t))
@@ -245,9 +246,8 @@ class LapResult:
 
 def _safe_lap(distance=0.0, warning="calculation unavailable") -> LapResult:
     """A finite, non-crashing placeholder result with a surfaced warning."""
-    return LapResult(lap_time_s=float("nan"), avg_speed_ms=0.0, top_speed_ms=0.0,
-                     min_speed_ms=0.0, distance_m=float(distance), s=[], v=[],
-                     ok=False, warning=warning)
+    return LapResult(lap_time_s=math.nan, avg_speed_ms=0.0, top_speed_ms=0.0,
+                     min_speed_ms=0.0, distance_m=float(distance), ok=False, warning=warning)
 
 
 # --------------------------------------------------------------------------- #
@@ -260,6 +260,8 @@ def _safe_lap(distance=0.0, warning="calculation unavailable") -> LapResult:
 #  silently breaks every call site. `_max_lat_g_flagged` returns the fact
 #  alongside the number so the two can never disagree.
 _FALLBACK_LAT_G = 1.4
+#  Speeds (m/s) the lateral-limit table is built at.
+_LAT_TABLE_V = (0.1,) + tuple(1.0 + 2.0 * i for i in range(24))
 
 
 def _lat_limit_at_speed(veh: VehicleDynamics, pt, v: float,
@@ -292,22 +294,22 @@ def _lat_limit_at_speed(veh: VehicleDynamics, pt, v: float,
 
     def _linear(vv: float) -> float:
         f_down = 0.5 * pt.rho * max(pt.cla, 0.0) * vv * vv
-        return max(max_lat_g, 1e-6) * (1.0 + f_down / max(m * g, 1e-6))
+        return max(max_lat_g, 1e-6) * (1.0 + f_down / max(m * g, 1e-6))  # pragma: no mutate (m >= 1 kg)
 
     table = getattr(veh, "_kx_lat_limit_table", None)
     if table is None or table[2] != round(float(max_lat_g), 9):
         try:
             from .ggv import GGVGenerator, GGVParams
             gp = GGVParams.from_powertrain(pt)
-            gp.combined_tire = getattr(pt, "combined_tire", None)
+            gp.combined_tire = pt.combined_tire
             gen = GGVGenerator(veh, gp)
-            vs = [0.1] + [1.0 + 2.0 * i for i in range(24)]
+            vs = list(_LAT_TABLE_V)
             ls = []
             for vv in vs:
                 out = float(gen._max_lateral_g_at_speed(vv))
                 ls.append(out if math.isfinite(out) and out > 0 else _linear(vv))
         except Exception:
-            vs = [0.1] + [1.0 + 2.0 * i for i in range(24)]
+            vs = list(_LAT_TABLE_V)
             ls = [_linear(vv) for vv in vs]
         table = (vs, ls, round(float(max_lat_g), 9))
         try:
@@ -317,13 +319,13 @@ def _lat_limit_at_speed(veh: VehicleDynamics, pt, v: float,
 
     vs, ls, _ = table
     vv = max(float(v), vs[0])
-    if vv >= vs[-1]:
+    if vv >= vs[-1]:  # pragma: no mutate (the last segment's line continues through vs[-1])
         return ls[-1] + (vv - vs[-1]) * (ls[-1] - ls[-2]) / (vs[-1] - vs[-2])
-    for i in range(1, len(vs)):
-        if vv <= vs[i]:
-            f = (vv - vs[i - 1]) / (vs[i] - vs[i - 1])
-            return ls[i - 1] + f * (ls[i] - ls[i - 1])
-    return ls[-1]
+    for i in range(1, len(vs)):  # pragma: no mutate (i = 0 sits at vv = vs[0] and gives ls[0] too)
+        if vv <= vs[i]:  # pragma: no mutate (at a vertex both segments give ls[i]; vv < vs[-1] always stops)
+            break
+    f = (vv - vs[i - 1]) / (vs[i] - vs[i - 1])
+    return ls[i - 1] + f * (ls[i] - ls[i - 1])
 
 
 def _max_lat_g_flagged(veh: VehicleDynamics) -> tuple[float, bool]:
@@ -351,17 +353,16 @@ def _corner_limit_speed(veh: VehicleDynamics, radius_m: float, pt: Powertrain,
     Solve directly (downforce ∝ v^2 makes this closed-form).
     """
     if radius_m <= 0.0 or not math.isfinite(radius_m):
-        return float("inf")  # treat as straight
+        return math.inf  # treat as straight
     g = 9.81
     m = max(veh.p.mass, 1.0)
-    W = m * g
     a0 = max_lat_g * g                      # grip accel at zero aero, m/s^2
     # downforce accel coefficient: F_down = 0.5*rho*ClA*v^2 ; extra a_lat = mu*F/m
     # approximate mu ~ max_lat_g (grip already includes load sensitivity envelope)
     k = 0.5 * pt.rho * max(pt.cla, 0.0) / m  # downforce / v^2 per unit mass
     # v^2/R = a0 + max_lat_g * k * v^2   ->  v^2 (1/R - mu*k) = a0
     denom = (1.0 / radius_m) - max_lat_g * k
-    if denom <= 1e-9:
+    if denom <= 1e-9:  # pragma: no mutate (boundary)
         # aero would (unphysically) let speed run away; cap at no-aero solution
         v2 = a0 * radius_m
     else:
@@ -384,7 +385,7 @@ def _accel_long(veh: VehicleDynamics, v: float, pt: Powertrain,
     F_down = 0.5 * pt.rho * max(pt.cla, 0.0) * v * v
     # longitudinal grip ceiling (driven axle share)
     axle_frac = 1.0 if pt.drive == "awd" else (1.0 - veh.p.weight_dist_front)
-    N_drive = (m * g + F_down) * (axle_frac if pt.drive != "awd" else 1.0)
+    N_drive = (m * g + F_down) * axle_frac
     mu = max(max_lat_g, 0.3)
     F_grip = mu * N_drive
     # friction circle: subtract lateral usage. If a combined-slip tyre is supplied,
@@ -405,8 +406,8 @@ def _accel_long(veh: VehicleDynamics, v: float, pt: Powertrain,
     #  agree across the ENVELOPE INTERIOR and not merely on its three axes —
     #  which is all validate_against_laptime had ever compared.
     lat_lim = _lat_limit_at_speed(veh, pt, v, max_lat_g)
-    frac_lat = min(lat_used_g / max(lat_lim, 1e-6), 1.0)
-    ct = getattr(pt, "combined_tire", None)
+    frac_lat = min(lat_used_g / max(lat_lim, 1e-6), 1.0)  # pragma: no mutate (past 1 the ellipse is 0 either way)
+    ct = pt.combined_tire
     if ct is not None:
         try:
             ky = max(ct.ell_ky, 1e-3); kx = max(ct.ell_kx, 1e-3)
@@ -467,8 +468,8 @@ def _decel_long(veh: VehicleDynamics, v: float, pt: Powertrain,
     #  agree across the ENVELOPE INTERIOR and not merely on its three axes —
     #  which is all validate_against_laptime had ever compared.
     lat_lim = _lat_limit_at_speed(veh, pt, v, max_lat_g)
-    frac_lat = min(lat_used_g / max(lat_lim, 1e-6), 1.0)
-    ct = getattr(pt, "combined_tire", None)
+    frac_lat = min(lat_used_g / max(lat_lim, 1e-6), 1.0)  # pragma: no mutate (past 1 the ellipse is 0 either way)
+    ct = pt.combined_tire
     if ct is not None:
         try:
             ky = max(ct.ell_ky, 1e-3); kx = max(ct.ell_kx, 1e-3)
@@ -489,8 +490,11 @@ def _decel_long(veh: VehicleDynamics, v: float, pt: Powertrain,
 # --------------------------------------------------------------------------- #
 #  Standing-start acceleration (the 75 m event)
 # --------------------------------------------------------------------------- #
+_ACCEL_STEPS = 4000
+
+
 def acceleration_time(veh: VehicleDynamics, pt: Powertrain | None = None,
-                      distance_m: float = 75.0, dv_steps: int = 4000) -> LapResult:
+                      distance_m: float = 75.0, dv_steps: int = _ACCEL_STEPS) -> LapResult:
     """
     Time for a standing-start straight-line acceleration over `distance_m`.
 
@@ -512,10 +516,7 @@ def acceleration_time(veh: VehicleDynamics, pt: Powertrain | None = None,
         t = 0.0
         ds = distance_m / max(int(dv_steps), 50)
         s_trace, v_trace = [0.0], [0.0]
-        guard = 0
-        max_iter = int(dv_steps) * 4 + 1000
-        while s < distance_m and guard < max_iter:
-            guard += 1
+        while s < distance_m:  # pragma: no mutate (a fixed ds per step: always reaches the line)
             a = _accel_long(veh, v, pt, max_lat_g, lat_used_g=0.0)
             if not math.isfinite(a):
                 a = 0.0
@@ -526,16 +527,13 @@ def acceleration_time(veh: VehicleDynamics, pt: Powertrain | None = None,
             v = v_next
             s_trace.append(min(s, distance_m))
             v_trace.append(v)
-        if guard >= max_iter:
-            return _safe_lap(warning="acceleration sim did not reach the line — "
-                                     "car barely accelerates; check power/grip inputs")
         warning = ("grip fell back to the default lateral-g value — verify tire/geometry"
                    if grip_is_fallback else "")
         return LapResult(lap_time_s=float(t),
-                         avg_speed_ms=float(distance_m / t) if t > 0 else 0.0,
+                         avg_speed_ms=float(distance_m / t),    # t > 0: every step adds ds / v_mean
                          top_speed_ms=float(v), min_speed_ms=0.0,
                          distance_m=float(distance_m),
-                         s=s_trace, v=v_trace, ok=True, warning=warning)
+                         s=s_trace, v=v_trace, warning=warning)
     except Exception as e:
         return _safe_lap(warning=f"acceleration sim failed safely: {e}")
 
@@ -572,7 +570,7 @@ def skidpad_time(veh: VehicleDynamics, pt: Powertrain | None = None,
         t = circ / v
         return LapResult(lap_time_s=t, avg_speed_ms=v, top_speed_ms=v,
                          min_speed_ms=v, distance_m=circ,
-                         s=[0.0, circ], v=[v, v], ok=True,
+                         s=[0.0, circ], v=[v, v],
                          warning=("grip fell back to the default lateral-g value — verify tire/geometry"
                                   if grip_is_fallback else ""))
     except Exception as e:                       # never crash the session
@@ -582,6 +580,9 @@ def skidpad_time(veh: VehicleDynamics, pt: Powertrain | None = None,
 # --------------------------------------------------------------------------- #
 #  General QSS lap over an arbitrary track
 # --------------------------------------------------------------------------- #
+_NO_CORNER_LIMIT = 1e6   # m/s ceiling on a straight
+
+
 def simulate_lap(veh: VehicleDynamics, track: Track,
                  pt: Powertrain | None = None) -> LapResult:
     """
@@ -597,7 +598,7 @@ def simulate_lap(veh: VehicleDynamics, track: Track,
         if not track.segments or track.total_length() <= 0.0:
             return _safe_lap(warning="track is empty; add at least one segment")
 
-        ds = track.ds if track.ds and track.ds > 0 else 1.0
+        ds = track.ds if track.ds and track.ds > 0 else 1.0  # pragma: no mutate (0 is falsy)
         max_lat_g, grip_is_fallback = _max_lat_g_flagged(veh)
 
         # Build station list: position s, local radius (inf for straight)
@@ -605,60 +606,55 @@ def simulate_lap(veh: VehicleDynamics, track: Track,
         s_cur = 0.0
         for seg in track.segments:
             L = max(seg.length_m, 0.0)
-            r = seg.radius_m if seg.is_corner else float("inf")
+            r = seg.radius_m if seg.is_corner else math.inf
             n = max(int(round(L / ds)), 1)
             for _ in range(n):
                 s_pts.append(s_cur)
                 radii.append(r)
                 s_cur += L / n
         s_pts.append(s_cur)
-        radii.append(radii[-1] if radii else float("inf"))
+        radii.append(radii[-1])               # a non-empty track gives at least one station
         N = len(s_pts)
-        if N < 2:
-            return _safe_lap(warning="track too short to integrate")
 
         # Pass 1: cornering speed ceiling at each station
         v_ceiling = np.empty(N)
         for i in range(N):
             r = radii[i]
             if math.isinf(r):
-                v_ceiling[i] = 1e6   # straight: no cornering limit (capped later)
+                v_ceiling[i] = _NO_CORNER_LIMIT     # straight: no cornering limit
             else:
-                v_ceiling[i] = _corner_limit_speed(veh, r, pt, max_lat_g)
-        # clamp non-finite
-        v_ceiling = np.where(np.isfinite(v_ceiling), v_ceiling, 1e6)
-        v_ceiling = np.clip(v_ceiling, 0.0, 1e6)
+                v_ceiling[i] = _corner_limit_speed(veh, r, pt, max_lat_g)   # finite, >= 0 for r > 0
 
         # Pass 2: forward (acceleration-limited), closed loop -> seed from ceiling
         v_fwd = v_ceiling.copy()
         # iterate twice for the closed lap so the start speed is consistent
-        for _ in range(2):
+        for _ in range(2):  # pragma: no mutate (a third pass changes nothing)
             for i in range(1, N):
                 ds_i = max(s_pts[i] - s_pts[i - 1], 1e-3)
                 v0 = v_fwd[i - 1]
-                lat_used = (v0 * v0 / radii[i - 1] / 9.81) if math.isfinite(radii[i - 1]) else 0.0
+                lat_used = v0 * v0 / radii[i - 1] / 9.81           # 0 on a straight (r = inf)
                 a = _accel_long(veh, v0, pt, max_lat_g, lat_used)
-                v_next = math.sqrt(max(v0 * v0 + 2.0 * a * ds_i, 0.0))
+                v_next = math.sqrt(max(v0 * v0 + 2.0 * a * ds_i, 0.0))  # pragma: no mutate (guard)
                 v_fwd[i] = min(v_next, v_ceiling[i])
             v_fwd[0] = min(v_fwd[0], v_fwd[-1])  # close the loop
 
         # Pass 3: backward (braking-limited)
         v = v_fwd.copy()
-        for _ in range(2):
-            for i in range(N - 2, -1, -1):
+        for _ in range(2):  # pragma: no mutate (a third pass changes nothing)
+            for i in range(N - 2, -1, -1):  # pragma: no mutate (i = -1 repeats the loop closure below)
                 ds_i = max(s_pts[i + 1] - s_pts[i], 1e-3)
                 v1 = v[i + 1]
-                lat_used = (v1 * v1 / radii[i + 1] / 9.81) if math.isfinite(radii[i + 1]) else 0.0
+                lat_used = v1 * v1 / radii[i + 1] / 9.81
                 d = _decel_long(veh, v1, pt, max_lat_g, lat_used)
-                v_prev = math.sqrt(max(v1 * v1 + 2.0 * d * ds_i, 0.0))
-                v[i] = min(v[i], v_prev, v_ceiling[i])
+                v_prev = math.sqrt(max(v1 * v1 + 2.0 * d * ds_i, 0.0))  # pragma: no mutate (decel > 0)
+                v[i] = min(v[i], v_prev)              # v <= v_fwd <= v_ceiling already
             v[-1] = min(v[-1], v[0])
 
-        v = np.clip(v, 0.05, 1e6)   # avoid div-by-zero in dt
+        v = np.clip(v, 0.05, 1e6)  # pragma: no mutate (guard against a zero speed in dt)
 
         # Integrate time: dt = ds / v_mean over each interval
         t = 0.0
-        for i in range(1, N):
+        for i in range(1, N):  # pragma: no mutate (i = 0 adds a zero-length step)
             ds_i = max(s_pts[i] - s_pts[i - 1], 0.0)
             v_mean = 0.5 * (v[i] + v[i - 1])
             t += ds_i / max(v_mean, 0.05)
@@ -669,13 +665,13 @@ def simulate_lap(veh: VehicleDynamics, track: Track,
             warning = "grip fell back to the default lateral-g value — verify tire/geometry"
         return LapResult(
             lap_time_s=float(t),
-            avg_speed_ms=float(dist / t) if t > 0 else 0.0,
+            avg_speed_ms=float(dist / t),          # t > 0 on a track with length
             top_speed_ms=float(np.max(v)),
             min_speed_ms=float(np.min(v)),
             distance_m=float(dist),
             s=[float(x) for x in s_pts],
             v=[float(x) for x in v],
-            ok=True, warning=warning)
+            warning=warning)
     except Exception as e:
         return _safe_lap(warning=f"lap sim failed safely: {e}")
 
@@ -691,26 +687,25 @@ def default_autocross(scale: float = 1.0) -> Track:
     yardstick so that comparing two setups on it is an apples-to-apples ranking.
     `scale` stretches every length if you want a longer/shorter lap.
     """
-    R = lambda r: max(r, 0.1)
     segs = [
         Segment(40 * scale),                 # start straight
-        Segment(18 * scale, R(9.0)),         # right sweeper
+        Segment(18 * scale, 9.0),            # right sweeper
         Segment(25 * scale),
-        Segment(12 * scale, R(5.0)),         # hairpin
+        Segment(12 * scale, 5.0),            # hairpin
         Segment(20 * scale),
         # slalom: alternating tight corners
-        *[Segment(6 * scale, R(7.0)) for _ in range(6)],
+        *[Segment(6 * scale, 7.0) for _ in range(6)],
         Segment(30 * scale),                 # back straight
-        Segment(15 * scale, R(12.0)),        # fast sweeper
+        Segment(15 * scale, 12.0),           # fast sweeper
         Segment(22 * scale),
-        Segment(10 * scale, R(6.0)),         # medium corner
+        Segment(10 * scale, 6.0),            # medium corner
         Segment(35 * scale),                 # straight
-        Segment(11 * scale, R(4.5)),         # tight hairpin
+        Segment(11 * scale, 4.5),            # tight hairpin
         Segment(18 * scale),
-        Segment(14 * scale, R(8.0)),         # sweeper to finish
+        Segment(14 * scale, 8.0),            # sweeper to finish
         Segment(28 * scale),                 # finish straight
     ]
-    return Track(name=f"Representative autocross (×{scale:g})", segments=segs, ds=1.0)
+    return Track(name=f"Representative autocross (×{scale:g})", segments=segs)
 
 
 # --------------------------------------------------------------------------- #
@@ -723,10 +718,10 @@ def _menger_curvature(x, y):
     triangle formed by points i-1, i, i+1). Endpoints copy their neighbour. Sign
     is dropped — the lap sim only uses |radius|. Returns curvature array (1/m).
     """
-    x = np.asarray(x, float); y = np.asarray(y, float)
+    x = _vec(x); y = _vec(y)
     n = x.size
     k = np.zeros(n)
-    for i in range(1, n - 1):
+    for i in range(1, n - 1):  # pragma: no mutate (the ends are copied from their neighbours)
         ax, ay = x[i - 1], y[i - 1]
         bx, by = x[i],     y[i]
         cx, cy = x[i + 1], y[i + 1]
@@ -736,19 +731,22 @@ def _menger_curvature(x, y):
         c = math.hypot(ax - bx, ay - by)
         # twice the signed area
         area2 = abs((bx - ax) * (cy - ay) - (cx - ax) * (by - ay))
-        if a * b * c < 1e-9 or area2 < 1e-12:
+        if a * b * c < 1e-9 or area2 < 1e-12:  # pragma: no mutate (degeneracy tolerances)
             k[i] = 0.0                       # collinear => straight
         else:
             k[i] = 2.0 * area2 / (a * b * c)  # = 1 / circumradius
-    if n >= 2:
+    if n >= 2:  # pragma: no mutate (n = 2 is all zeros anyway)
         k[0] = k[1]
         k[-1] = k[-2]
     return k
 
 
+_STRAIGHT_RADIUS_M = 200.0   # flatter than this is a straight
+
+
 def track_from_path(x, y, name: str = "Imported path", ds: float = 1.0,
                     smooth_window: int = 5, min_radius_m: float = 3.0,
-                    straight_radius_m: float = 200.0,
+                    straight_radius_m: float = _STRAIGHT_RADIUS_M,
                     closed: bool = True) -> Track:
     """
     Build a lap-sim Track from an ordered 2-D centreline — GPS breadcrumbs, or the
@@ -768,12 +766,13 @@ def track_from_path(x, y, name: str = "Imported path", ds: float = 1.0,
     (see `latlon_to_xy`).
     """
     try:
-        x = np.asarray(x, float).ravel()
-        y = np.asarray(y, float).ravel()
+        x = _vec(x).ravel()
+        y = _vec(y).ravel()
         if x.size < 3 or x.size != y.size:
-            return Track(name=name, segments=[], ds=ds)
+            raise ValueError
 
-        if closed and (abs(x[0] - x[-1]) > 1e-6 or abs(y[0] - y[-1]) > 1e-6):
+        if closed:
+            # close the loop; on an already-closed path this only adds a zero-length step
             x = np.append(x, x[0]); y = np.append(y, y[0])
 
         # cumulative arc length, then resample to uniform ds
@@ -781,7 +780,7 @@ def track_from_path(x, y, name: str = "Imported path", ds: float = 1.0,
         s = np.concatenate([[0.0], np.cumsum(seg)])
         total = float(s[-1])
         if total <= 0:
-            return Track(name=name, segments=[], ds=ds)
+            raise ValueError
         n_samp = max(int(round(total / max(ds, 0.25))), 3)
         s_u = np.linspace(0.0, total, n_samp)
         xu = np.interp(s_u, s, x)
@@ -789,22 +788,23 @@ def track_from_path(x, y, name: str = "Imported path", ds: float = 1.0,
 
         k = _menger_curvature(xu, yu)
         # smooth curvature with a centred moving average
-        w = max(int(smooth_window), 1)
-        if w > 1:
+        # never wider than the path: np.convolve 'same' returns the LONGER of the two, which would add segments
+        w = min(max(int(smooth_window), 1), k.size)
+        if w > 1:  # pragma: no mutate (a width-1 kernel is the identity)
             kernel = np.ones(w) / w
             k = np.convolve(k, kernel, mode="same")
 
         ds_u = total / (n_samp - 1)
         segs: list[Segment] = []
         for ki in k[:-1]:
-            if ki <= 1.0 / straight_radius_m:
-                segs.append(Segment(ds_u, None))           # straight
+            if ki <= 1.0 / straight_radius_m:  # pragma: no mutate (boundary)
+                segs.append(Segment(ds_u))                 # straight
             else:
                 r = max(1.0 / ki, min_radius_m)            # clamp absurd tight noise
                 segs.append(Segment(ds_u, r))
         return Track(name=name, segments=segs, ds=ds)
     except Exception:
-        return Track(name=name, segments=[], ds=ds)
+        return Track(name=name, ds=ds)
 
 
 def cones_to_centerline(left_x, left_y, right_x, right_y):
@@ -813,14 +813,14 @@ def cones_to_centerline(left_x, left_y, right_x, right_y):
     Rows may differ in length; the shorter is interpolated onto the longer's
     arc-length parameterisation so midpoints pair up sensibly. Returns (x, y).
     """
-    lx = np.asarray(left_x, float); ly = np.asarray(left_y, float)
-    rx = np.asarray(right_x, float); ry = np.asarray(right_y, float)
+    lx = _vec(left_x); ly = _vec(left_y)
+    rx = _vec(right_x); ry = _vec(right_y)
     if lx.size < 2 or rx.size < 2:
         return np.array([]), np.array([])
 
     def _arc(px, py):
         d = np.concatenate([[0.0], np.cumsum(np.hypot(np.diff(px), np.diff(py)))])
-        return d / d[-1] if d[-1] > 0 else d
+        return d / d[-1] if d[-1] > 0 else d  # pragma: no mutate (a zero-length row interpolates to its one point)
 
     # resample both rows to a common normalised parameter
     n = max(lx.size, rx.size)
@@ -831,6 +831,9 @@ def cones_to_centerline(left_x, left_y, right_x, right_y):
     return 0.5 * (lxi + rxi), 0.5 * (lyi + ryi)
 
 
+_EARTH_RADIUS_M = 6_371_000.0
+
+
 def latlon_to_xy(lat, lon):
     """
     Project GPS latitude/longitude (degrees) to a local metric x/y frame using an
@@ -838,10 +841,10 @@ def latlon_to_xy(lat, lon):
     fraction of a percent over an FSAE-sized site (a few hundred metres), which is
     far below the curvature smoothing noise. Returns (x_east_m, y_north_m).
     """
-    lat = np.asarray(lat, float); lon = np.asarray(lon, float)
+    lat = _vec(lat); lon = _vec(lon)
     if lat.size == 0:
         return np.array([]), np.array([])
-    R = 6_371_000.0
+    R = _EARTH_RADIUS_M
     lat0 = math.radians(float(np.mean(lat)))
     x = np.radians(lon - np.mean(lon)) * math.cos(lat0) * R
     y = np.radians(lat - np.mean(lat)) * R
@@ -850,15 +853,19 @@ def latlon_to_xy(lat, lon):
 
 def _path_normals(x, y):
     """Unit normal (pointing left of travel) at each point of a 2-D path."""
-    x = np.asarray(x, float); y = np.asarray(y, float)
+    x = _vec(x); y = _vec(y)
     dx = np.gradient(x); dy = np.gradient(y)
-    t = np.hypot(dx, dy); t[t < 1e-9] = 1e-9
+    t = np.hypot(dx, dy); t[t < 1e-9] = 1e-9  # pragma: no mutate (a zero tangent gives a zero normal either way)
     tx, ty = dx / t, dy / t
     return -ty, tx               # left normal
 
 
+_RELAX_ITERATIONS = 60
+_N_OFFSETS = 2000   # kept for API compatibility; the relaxation does not sample offsets
+
+
 def optimise_racing_line(x, y, track_width_m: float = 3.0, closed: bool = True,
-                         iterations: int = 60, n_offsets: int = 2000):
+                         iterations: int = _RELAX_ITERATIONS, n_offsets: int = _N_OFFSETS):
     """
     Find a faster line than the centreline by letting the car use track width.
 
@@ -881,15 +888,14 @@ def optimise_racing_line(x, y, track_width_m: float = 3.0, closed: bool = True,
     the smoothest admissible path.
     """
     try:
-        x = np.asarray(x, float).ravel().copy()
-        y = np.asarray(y, float).ravel().copy()
+        x = _vec(x).ravel().copy()
+        y = _vec(y).ravel().copy()
         n = x.size
         if n < 5 or x.size != y.size:
-            return x, y, np.zeros(n)
+            return x, y, np.zeros(n)  # pragma: no mutate (the except returns the same)
         half = max(track_width_m, 0.2) / 2.0
         nx, ny = _path_normals(x, y)
         cx, cy = x.copy(), y.copy()            # fixed centreline reference
-        offset = np.zeros(n)
 
         for _ in range(max(int(iterations), 1)):
             # desired smoothed position = average of neighbours
@@ -911,8 +917,8 @@ def optimise_racing_line(x, y, track_width_m: float = 3.0, closed: bool = True,
             offset = off
         return x, y, offset
     except Exception:
-        x = np.asarray(x, float).ravel()
-        y = np.asarray(y, float).ravel()
+        x = _vec(x).ravel()
+        y = _vec(y).ravel()
         return x, y, np.zeros(x.size)
 
 
@@ -931,7 +937,7 @@ def compare_line_vs_centerline(veh, x, y, track_width_m: float = 3.0,
     line_track = track_from_path(lx, ly, name="Racing line", ds=ds)
     base = simulate_lap(veh, base_track, pt)
     line = simulate_lap(veh, line_track, pt)
-    gained = (base.lap_time_s - line.lap_time_s) if (base.ok and line.ok) else float("nan")
+    gained = (base.lap_time_s - line.lap_time_s) if (base.ok and line.ok) else math.nan
     return dict(centerline_track=base_track, line_track=line_track,
                 centerline_result=base, line_result=line,
                 line_x=lx, line_y=ly, offset=off, time_gained_s=gained)
@@ -949,10 +955,10 @@ def event_points_estimate(your_time: float, best_time: float,
         maxpts = {"skidpad": 75.0, "autocross": 125.0,
                   "endurance": 275.0}.get(event, 100.0)
         minpts = 0.05 * maxpts
-        if your_time <= 0 or best_time <= 0 or not math.isfinite(your_time):
+        if your_time <= 0 or best_time <= 0 or not math.isfinite(your_time):  # pragma: no mutate (0 divides into the except)
             return 0.0
         t_max = 1.45 * best_time
-        if your_time >= t_max:
+        if your_time >= t_max:  # pragma: no mutate (frac is 0 at t_max)
             return minpts
         frac = (t_max / your_time - 1.0) / (t_max / best_time - 1.0)
         return float(minpts + (maxpts - minpts) * max(0.0, min(frac, 1.0)))

@@ -1,0 +1,661 @@
+{
+ "consts": [
+  [
+   "FORGEABLE",
+   "COARSENED",
+   "UNBUILDABLE",
+   "LOAD_STARVED",
+   "SOLVER_LIMITED"
+  ],
+  1.5,
+  0.01,
+  {
+   "LF": "lower_front_inner",
+   "LR": "lower_rear_inner",
+   "TR": "tie_rod_inner",
+   "UF": "upper_front_inner",
+   "UR": "upper_rear_inner"
+  },
+  {
+   "LF": "lower_outer",
+   "LR": "lower_outer",
+   "PR": "pushrod_outer",
+   "TR": "tie_rod_outer",
+   "UF": "upper_outer",
+   "UR": "upper_outer"
+  },
+  {
+   "LF": "LCA front leg",
+   "LR": "LCA rear leg",
+   "PR": "pushrod",
+   "TR": "tie rod",
+   "UF": "UCA front leg",
+   "UR": "UCA rear leg"
+  },
+  {
+   "COARSENED": "🟡 COARSENED — the unconstrained ribs were REJECTED by the declared fabrication limits; a coarser pattern passed. The premium is printed below.",
+   "FORGEABLE": "🟢 FORGEABLE — grown, converged, and buildable at the shop's own limits on the first attempt.",
+   "LOAD_STARVED": "⚪ LOAD_STARVED — the transient audit carries no usable force history for this member.",
+   "SOLVER_LIMITED": "🔴 SOLVER_LIMITED — the FE solve failed; check the anchor and domain declaration.",
+   "UNBUILDABLE": "🔴 UNBUILDABLE — no shape inside the volume budget satisfies the declared shop limits."
+  }
+ ],
+ "flag": [
+  {
+   "coarsen_premium": null,
+   "domain": "",
+   "fan": null,
+   "findings": [
+    {
+     "check": "run",
+     "detail": {},
+     "message": "msg",
+     "severity": "error"
+    }
+   ],
+   "fos": null,
+   "fos_case_deg": "NaN",
+   "limits": {
+    "accuracy_mm": 1.5,
+    "haz_mm": 8.0,
+    "min_rib_haz_mm": 8.0,
+    "min_rib_mm": 5.0,
+    "process": "hand_weld",
+    "web_floor_mm": 2.0
+   },
+   "mass_g": 0.0,
+   "n_solves": 0,
+   "rounds": [],
+   "suggested_thickness_mm": null,
+   "verdict": "SOLVER_LIMITED",
+   "vm_max_MPa": "NaN",
+   "warnings": []
+  },
+  {},
+  [
+   1,
+   1
+  ],
+  "# 🕸️🔩 MorphMesh — \n\n🔴 SOLVER_LIMITED — the FE solve failed; check the anchor and domain declaration.\n\n## The shop's declared limits\n- process **hand_weld** — positional accuracy ±1.5 mm, web floor 2.0 mm → minimum rib **5.0 mm**; HAZ 8.0 mm deep at the weld, minimum rib inside it **8.0 mm**.\n\n## Growth rounds — enforce, grow, measure, accept/reject\n| round | enforced scale | iters | compliance | vol | thin-rib viol | HAZ viol | outcome |\n|---|---|---|---|---|---|---|---|\n\n## Findings\n- **[error]** msg\n\n---\n*Scope: 2D plane-stress plate, linear elastic, quasi-static; the load fan inherits Ghost Topology's time-scale separation whole. The HAZ rule is a screening heuristic, not a welding simulation. This is a starting shape for the CAD seat and the FEA queue — validate before manufacturing.*"
+ ],
+ "flag2": "# 🕸️🔩 MorphMesh — \n\nWEIRD\n\n## The shop's declared limits\n- process **hand_weld** — positional accuracy ±1.5 mm, web floor 2.0 mm → minimum rib **5.0 mm**; HAZ 8.0 mm deep at the weld, minimum rib inside it **8.0 mm**.\n\n## Growth rounds — enforce, grow, measure, accept/reject\n| round | enforced scale | iters | compliance | vol | thin-rib viol | HAZ viol | outcome |\n|---|---|---|---|---|---|---|---|\n\n## Findings\n- **[error]** m2\n\n## Warnings\n- w\n\n---\n*Scope: 2D plane-stress plate, linear elastic, quasi-static; the load fan inherits Ghost Topology's time-scale separation whole. The HAZ rule is a screening heuristic, not a welding simulation. This is a starting shape for the CAD seat and the FEA queue — validate before manufacturing.*",
+ "ok": [
+  {
+   "coarsen_premium": null,
+   "domain": "chassis tab",
+   "fan": {
+    "cases": [
+     {
+      "F_N": 2300.0,
+      "angle_deg": -5.4,
+      "n_instants": 3,
+      "t_hi_ms": 40.0,
+      "t_lo_ms": 20.0,
+      "weight": 0.663
+     },
+     {
+      "F_N": 1700.0,
+      "angle_deg": 22.8,
+      "n_instants": 2,
+      "t_hi_ms": 10.0,
+      "t_lo_ms": 0.0,
+      "weight": 0.337
+     }
+    ],
+    "inplane_share": 1.0,
+    "member": "LF",
+    "n_instants": 5,
+    "peak_F_N": 2300.0,
+    "reversal_share": 0.0,
+    "span_deg": 28.2,
+    "warnings": []
+   },
+   "findings": [],
+   "fos": 4.504,
+   "fos_case_deg": -5.4,
+   "limits": {
+    "accuracy_mm": 0.05,
+    "haz_mm": 0.0,
+    "min_rib_haz_mm": 1.1,
+    "min_rib_mm": 1.1,
+    "process": "cnc",
+    "web_floor_mm": 1.0
+   },
+   "mass_g": 12.8,
+   "n_solves": 18,
+   "rounds": [
+    {
+     "accepted": true,
+     "compliance": 21.351,
+     "filter_mm": 3.0,
+     "iterations": 8,
+     "viol_frac": 0.0,
+     "viol_haz_frac": 0.0,
+     "volfrac": 0.4499
+    }
+   ],
+   "suggested_thickness_mm": null,
+   "verdict": "FORGEABLE",
+   "vm_max_MPa": 102.1,
+   "warnings": []
+  },
+  "# 🕸️🔩 MorphMesh — chassis tab\n\n🟢 FORGEABLE — grown, converged, and buildable at the shop's own limits on the first attempt.\n\n## The transient load fan — member LF (LCA front leg)\n- 5 audited instants, peak 2300 N, fan span 28°, 100% of exposure in the bracket plane.\n\n| case | angle | peak force | exposure | instants | window |\n|---|---|---|---|---|---|\n| 1 | -5° | 2300 N | 66% | 3 | 20–40 ms |\n| 2 | +23° | 1700 N | 34% | 2 | 0–10 ms |\n\n## The shop's declared limits\n- process **cnc** — positional accuracy ±0.05 mm, web floor 1.0 mm → minimum rib **1.1 mm**; no weld zone declared.\n\n## Growth rounds — enforce, grow, measure, accept/reject\n| round | enforced scale | iters | compliance | vol | thin-rib viol | HAZ viol | outcome |\n|---|---|---|---|---|---|---|---|\n| 1 | 3.0 mm | 8 | 21.35 | 45% | 0.0% | 0.0% | ACCEPTED |\n\n## The finished shape\n- mass **13 g** at 4.0 mm Steel 4130\n- worst von Mises FoS **4.50** (102 MPa, governing case at -5°) vs the standing 1.5 rule.\n\n---\n*Scope: 2D plane-stress plate, linear elastic, quasi-static; the load fan inherits Ghost Topology's time-scale separation whole. The HAZ rule is a screening heuristic, not a welding simulation. This is a starting shape for the CAD seat and the FEA queue — validate before manufacturing.*",
+  "{\n  \"verdict\": \"FORGEABLE\",\n  \"domain\": \"chassis tab\",\n  \"limits\": {\n    \"process\": \"cnc\",\n    \"min_rib_mm\": 1.1,\n    \"haz_mm\": 0.0,\n    \"min_rib_haz_mm\": 1.1,\n    \"accuracy_mm\": 0.05,\n    \"web_floor_mm\": 1.0\n  },\n  \"fan\": {\n    \"member\": \"LF\",\n    \"cases\": [\n      {\n        \"angle_deg\": -5.4,\n        \"F_N\": 2300.0,\n        \"weight\": 0.663,\n        \"n_instants\": 3,\n        \"t_lo_ms\": 20.0,\n        \"t_hi_ms\": 40.0\n      },\n      {\n        \"angle_deg\": 22.8,\n        \"F_N\": 1700.0,\n        \"weight\": 0.337,\n        \"n_instants\": 2,\n        \"t_lo_ms\": 0.0,\n        \"t_hi_ms\": 10.0\n      }\n    ],\n    \"inplane_share\": 1.0,\n    \"span_deg\": 28.2,\n    \"n_instants\": 5,\n    \"peak_F_N\": 2300.0,\n    \"reversal_share\": 0.0,\n    \"warnings\": []\n  },\n  \"rounds\": [\n    {\n      \"filter_mm\": 3.0,\n      \"iterations\": 8,\n      \"compliance\": 21.351,\n      \"volfrac\": 0.4499,\n      \"viol_frac\": 0.0,\n      \"viol_haz_frac\": 0.0,\n      \"accepted\": true\n    }\n  ],\n  \"mass_g\": 12.8,\n  \"fos\": 4.504,\n  \"fos_case_deg\": -5.4,\n  \"vm_max_MPa\": 102.1,\n  \"suggested_thickness_mm\": null,\n  \"coarsen_premium\": null,\n  \"n_solves\": 18,\n  \"findings\": [],\n  \"warnings\": []\n}",
+  "x_mm,y_mm,density\n1.00,1.00,1.000\n3.00,1.00,0.998\n5.00,1.00,0.978\n7.00,1.00,0.910\n9.00,1.00,0.889\n11.00,1.00,0.928\n13.00,1.00,0.928\n15.00,1.00,0.886\n17.00,1.00,0.906\n19.00,1.00,0.976\n21.00,1.00,0.998\n23.00,1.00,1.000\n1.00,3.00,1.000\n3.00,3.00,0.997\n5.00,3.00,0.974\n7.00,3.00,0.944\n9.00,3.00,0.967\n11.00,3.00,0.988\n13.00,3.00,0.988\n15.00,3.00,0.966\n17.00,3.00,0.942\n19.00,3.00,0.972\n21.00,3.00,0.997\n23.00,3.00,1.000\n1.00,5.00,1.000\n3.00,5.00,0.991\n5.00,5.00,0.905\n7.00,5.00,0.865\n9.00,5.00,0.985\n11.00,5.00,1.000\n13.00,5.00,1.000\n15.00,5.00,0.985\n17.00,5.00,0.863\n19.00,5.00,0.901\n21.00,5.00,0.991\n23.00,5.00,1.000\n1.00,7.00,0.992\n3.00,7.00,0.981\n5.00,7.00,0.689\n7.00,7.00,0.691\n9.00,7.00,1.000\n11.00,7.00,1.000\n13.00,7.00,1.000\n15.00,7.00,1.000\n17.00,7.00,0.689\n19.00,7.00,0.683\n21.00,7.00,0.981\n23.00,7.00,0.991\n1.00,9.00,0.900\n3.00,9.00,0.960\n5.00,9.00,0.810\n7.00,9.00,1.000\n9.00,9.00,1.000\n11.00,9.00,1.000\n13.00,9.00,1.000\n15.00,9.00,1.000\n17.00,9.00,1.000\n19.00,9.00,0.808\n21.00,9.00,0.959\n23.00,9.00,0.894\n1.00,11.00,0.521\n3.00,11.00,0.970\n5.00,11.00,1.000\n7.00,11.00,1.000\n9.00,11.00,1.000\n15.00,11.00,1.000\n17.00,11.00,1.000\n19.00,11.00,1.000\n21.00,11.00,0.969\n23.00,11.00,0.510\n1.00,13.00,0.181\n3.00,13.00,0.923\n5.00,13.00,1.000\n7.00,13.00,1.000\n17.00,13.00,1.000\n19.00,13.00,1.000\n21.00,13.00,0.921\n23.00,13.00,0.177\n3.00,15.00,0.526\n5.00,15.00,1.000\n7.00,15.00,1.000\n17.00,15.00,1.000\n19.00,15.00,1.000\n21.00,15.00,0.509\n3.00,17.00,0.104\n5.00,17.00,1.000\n7.00,17.00,1.000\n17.00,17.00,1.000\n19.00,17.00,1.000\n21.00,17.00,0.102\n5.00,19.00,1.000\n7.00,19.00,1.000\n9.00,19.00,1.000\n15.00,19.00,1.000\n17.00,19.00,1.000\n19.00,19.00,1.000\n5.00,21.00,0.136\n7.00,21.00,1.000\n9.00,21.00,1.000\n11.00,21.00,1.000\n13.00,21.00,1.000\n15.00,21.00,1.000\n17.00,21.00,1.000\n19.00,21.00,0.136\n7.00,23.00,0.136\n9.00,23.00,1.000\n11.00,23.00,1.000\n13.00,23.00,1.000\n15.00,23.00,1.000\n17.00,23.00,0.136\n11.00,25.00,0.053\n13.00,25.00,0.053",
+  [
+   [
+    0.0,
+    0.0,
+    2.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    2.0
+   ],
+   [
+    2.0,
+    0.0,
+    4.0,
+    0.0
+   ],
+   [
+    4.0,
+    0.0,
+    6.0,
+    0.0
+   ],
+   [
+    6.0,
+    0.0,
+    8.0,
+    0.0
+   ],
+   [
+    8.0,
+    0.0,
+    10.0,
+    0.0
+   ],
+   [
+    10.0,
+    0.0,
+    12.0,
+    0.0
+   ],
+   [
+    12.0,
+    0.0,
+    14.0,
+    0.0
+   ],
+   [
+    14.0,
+    0.0,
+    16.0,
+    0.0
+   ],
+   [
+    16.0,
+    0.0,
+    18.0,
+    0.0
+   ],
+   [
+    18.0,
+    0.0,
+    20.0,
+    0.0
+   ],
+   [
+    20.0,
+    0.0,
+    22.0,
+    0.0
+   ],
+   [
+    22.0,
+    0.0,
+    24.0,
+    0.0
+   ],
+   [
+    24.0,
+    0.0,
+    24.0,
+    2.0
+   ],
+   [
+    0.0,
+    2.0,
+    0.0,
+    4.0
+   ],
+   [
+    24.0,
+    2.0,
+    24.0,
+    4.0
+   ],
+   [
+    0.0,
+    4.0,
+    0.0,
+    6.0
+   ],
+   [
+    24.0,
+    4.0,
+    24.0,
+    6.0
+   ],
+   [
+    0.0,
+    6.0,
+    0.0,
+    8.0
+   ],
+   [
+    24.0,
+    6.0,
+    24.0,
+    8.0
+   ],
+   [
+    0.0,
+    8.0,
+    0.0,
+    10.0
+   ],
+   [
+    10.0,
+    10.0,
+    12.0,
+    10.0
+   ],
+   [
+    12.0,
+    10.0,
+    14.0,
+    10.0
+   ],
+   [
+    24.0,
+    8.0,
+    24.0,
+    10.0
+   ],
+   [
+    0.0,
+    12.0,
+    2.0,
+    12.0
+   ],
+   [
+    0.0,
+    10.0,
+    0.0,
+    12.0
+   ],
+   [
+    8.0,
+    12.0,
+    10.0,
+    12.0
+   ],
+   [
+    10.0,
+    10.0,
+    10.0,
+    12.0
+   ],
+   [
+    14.0,
+    12.0,
+    16.0,
+    12.0
+   ],
+   [
+    14.0,
+    10.0,
+    14.0,
+    12.0
+   ],
+   [
+    22.0,
+    12.0,
+    24.0,
+    12.0
+   ],
+   [
+    24.0,
+    10.0,
+    24.0,
+    12.0
+   ],
+   [
+    2.0,
+    12.0,
+    2.0,
+    14.0
+   ],
+   [
+    8.0,
+    12.0,
+    8.0,
+    14.0
+   ],
+   [
+    16.0,
+    12.0,
+    16.0,
+    14.0
+   ],
+   [
+    22.0,
+    12.0,
+    22.0,
+    14.0
+   ],
+   [
+    2.0,
+    16.0,
+    4.0,
+    16.0
+   ],
+   [
+    2.0,
+    14.0,
+    2.0,
+    16.0
+   ],
+   [
+    8.0,
+    14.0,
+    8.0,
+    16.0
+   ],
+   [
+    16.0,
+    14.0,
+    16.0,
+    16.0
+   ],
+   [
+    20.0,
+    16.0,
+    22.0,
+    16.0
+   ],
+   [
+    22.0,
+    14.0,
+    22.0,
+    16.0
+   ],
+   [
+    4.0,
+    16.0,
+    4.0,
+    18.0
+   ],
+   [
+    8.0,
+    16.0,
+    8.0,
+    18.0
+   ],
+   [
+    16.0,
+    16.0,
+    16.0,
+    18.0
+   ],
+   [
+    20.0,
+    16.0,
+    20.0,
+    18.0
+   ],
+   [
+    4.0,
+    20.0,
+    6.0,
+    20.0
+   ],
+   [
+    4.0,
+    18.0,
+    4.0,
+    20.0
+   ],
+   [
+    8.0,
+    18.0,
+    10.0,
+    18.0
+   ],
+   [
+    10.0,
+    18.0,
+    10.0,
+    20.0
+   ],
+   [
+    14.0,
+    18.0,
+    16.0,
+    18.0
+   ],
+   [
+    14.0,
+    18.0,
+    14.0,
+    20.0
+   ],
+   [
+    18.0,
+    20.0,
+    20.0,
+    20.0
+   ],
+   [
+    20.0,
+    18.0,
+    20.0,
+    20.0
+   ],
+   [
+    6.0,
+    22.0,
+    8.0,
+    22.0
+   ],
+   [
+    6.0,
+    20.0,
+    6.0,
+    22.0
+   ],
+   [
+    10.0,
+    20.0,
+    12.0,
+    20.0
+   ],
+   [
+    12.0,
+    20.0,
+    14.0,
+    20.0
+   ],
+   [
+    16.0,
+    22.0,
+    18.0,
+    22.0
+   ],
+   [
+    18.0,
+    20.0,
+    18.0,
+    22.0
+   ],
+   [
+    8.0,
+    24.0,
+    10.0,
+    24.0
+   ],
+   [
+    8.0,
+    22.0,
+    8.0,
+    24.0
+   ],
+   [
+    10.0,
+    24.0,
+    12.0,
+    24.0
+   ],
+   [
+    12.0,
+    24.0,
+    14.0,
+    24.0
+   ],
+   [
+    14.0,
+    24.0,
+    16.0,
+    24.0
+   ],
+   [
+    16.0,
+    22.0,
+    16.0,
+    24.0
+   ]
+  ]
+ ],
+ "outline": [
+  [
+   [
+    0.0,
+    0.0,
+    1.5,
+    0.0
+   ],
+   [
+    0.0,
+    1.5,
+    1.5,
+    1.5
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    1.5
+   ],
+   [
+    1.5,
+    0.0,
+    1.5,
+    1.5
+   ],
+   [
+    1.5,
+    1.5,
+    3.0,
+    1.5
+   ],
+   [
+    1.5,
+    3.0,
+    3.0,
+    3.0
+   ],
+   [
+    1.5,
+    1.5,
+    1.5,
+    3.0
+   ],
+   [
+    3.0,
+    1.5,
+    4.5,
+    1.5
+   ],
+   [
+    3.0,
+    3.0,
+    4.5,
+    3.0
+   ],
+   [
+    4.5,
+    1.5,
+    4.5,
+    3.0
+   ]
+  ],
+  "x_mm,y_mm,density\n0.75,0.75,0.710\n2.25,2.25,0.710\n3.75,2.25,0.710"
+ ],
+ "starved": [
+  {
+   "coarsen_premium": null,
+   "domain": "chassis tab",
+   "fan": {
+    "cases": [],
+    "inplane_share": 0.0,
+    "member": "LF",
+    "n_instants": 0,
+    "peak_F_N": 0.0,
+    "reversal_share": 0.0,
+    "span_deg": 0.0,
+    "warnings": [
+     "the audit carries no usable force history for this member — nothing to grow a topology from."
+    ]
+   },
+   "findings": [
+    {
+     "check": "run",
+     "detail": {},
+     "message": "the ghost audit yields no usable load fan for member LF — the audit carries no usable force history for this member — nothing to grow a topology from.",
+     "severity": "error"
+    }
+   ],
+   "fos": null,
+   "fos_case_deg": "NaN",
+   "limits": {
+    "accuracy_mm": 1.5,
+    "haz_mm": 8.0,
+    "min_rib_haz_mm": 8.0,
+    "min_rib_mm": 5.0,
+    "process": "hand_weld",
+    "web_floor_mm": 2.0
+   },
+   "mass_g": 0.0,
+   "n_solves": 0,
+   "rounds": [],
+   "suggested_thickness_mm": null,
+   "verdict": "LOAD_STARVED",
+   "vm_max_MPa": "NaN",
+   "warnings": [
+    "the audit carries no usable force history for this member — nothing to grow a topology from."
+   ]
+  },
+  "# 🕸️🔩 MorphMesh — chassis tab\n\n⚪ LOAD_STARVED — the transient audit carries no usable force history for this member.\n\n## The shop's declared limits\n- process **hand_weld** — positional accuracy ±1.5 mm, web floor 2.0 mm → minimum rib **5.0 mm**; HAZ 8.0 mm deep at the weld, minimum rib inside it **8.0 mm**.\n\n## Growth rounds — enforce, grow, measure, accept/reject\n| round | enforced scale | iters | compliance | vol | thin-rib viol | HAZ viol | outcome |\n|---|---|---|---|---|---|---|---|\n\n## Findings\n- **[error]** the ghost audit yields no usable load fan for member LF — the audit carries no usable force history for this member — nothing to grow a topology from.\n\n## Warnings\n- the audit carries no usable force history for this member — nothing to grow a topology from.\n\n---\n*Scope: 2D plane-stress plate, linear elastic, quasi-static; the load fan inherits Ghost Topology's time-scale separation whole. The HAZ rule is a screening heuristic, not a welding simulation. This is a starting shape for the CAD seat and the FEA queue — validate before manufacturing.*",
+  "x_mm,y_mm,density",
+  [],
+  [
+   80,
+   60
+  ]
+ ]
+}

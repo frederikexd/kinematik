@@ -64,9 +64,11 @@ HONEST SCOPE (same contract as pack_thermal / tire_thermal)
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field, asdict
 
 import numpy as np
+from ._num import vec as _vec
 
 from .interfaces import Finding, Severity
 from .pack_thermal import PackLayout, PackThermalResult
@@ -127,9 +129,9 @@ class PCMMaterial:
         """Fraction of the wax melted at temperature t_c (0 below window, 1 above)."""
         lo = self.t_melt_c - 0.5 * self.melt_window_c
         hi = self.t_melt_c + 0.5 * self.melt_window_c
-        if t_c <= lo:
+        if t_c <= lo:  # pragma: no mutate (at lo the linear fraction is 0 too)
             return 0.0
-        if t_c >= hi:
+        if t_c >= hi:  # pragma: no mutate (at hi the linear fraction is 1 too)
             return 1.0
         return (t_c - lo) / max(hi - lo, 1e-9)
 
@@ -194,10 +196,10 @@ class PCMResult:
     def failed(warnings: list) -> PCMResult:
         return PCMResult(
             ok=False, hold_time_s=None, peak_cell_c_with_pcm=None,
-            peak_cell_c_without_pcm=None, plateau_temp_c=float("nan"),
+            peak_cell_c_without_pcm=None, plateau_temp_c=math.nan,
             fully_melted=False, latent_buffer_j_per_cell=0.0,
             total_pcm_mass_kg=0.0, total_pcm_volume_cc=0.0,
-            synthesized=True, provenance="run failed", warnings=warnings)
+            provenance="run failed", warnings=warnings)
 
 
 def _provenance(cell_cal: bool, pcm_cal: bool) -> str:
@@ -238,8 +240,8 @@ def evaluate_pcm_buffer(result: PackThermalResult,
 
         cell = layout.cell
         hottest = int(result.hottest_cell_index)
-        T_hist = np.asarray(result.temp_history_c, float)[:, hottest]
-        t = np.asarray(result.time_s, float)
+        T_hist = _vec(result.temp_history_c)[:, hottest]
+        t = _vec(result.time_s)
         if T_hist.size < 2:
             return PCMResult.failed(["temperature history too short"])
 
@@ -259,7 +261,7 @@ def evaluate_pcm_buffer(result: PackThermalResult,
         cum_q = np.cumsum(q_above)
 
         plateau = mat.t_melt_c
-        total_above = float(cum_q[-1]) if cum_q.size else 0.0
+        total_above = float(cum_q[-1])                      # at least one step: the history has two points
 
         if buffer_j <= 0.0:
             warns.append("PCM mass is zero — no latent buffer; equals bare cell.")
@@ -272,13 +274,10 @@ def evaluate_pcm_buffer(result: PackThermalResult,
             fully = False
             # with the buffer, the cell is pinned near the plateau once it reaches
             # onset; peak is ~the top of the melt window (it never melts out)
-            reached_onset = np.any(T_hist >= onset)
-            peak_with = (min(peak_no_pcm, mat.t_melt_c + 0.5 * mat.melt_window_c)
-                         if reached_onset else peak_no_pcm)
+            peak_with = min(peak_no_pcm, mat.t_melt_c + 0.5 * mat.melt_window_c)   # below the window: its own peak
         else:
             # find the step where cumulative heat above onset exhausts the buffer
             idx = int(np.searchsorted(cum_q, buffer_j))
-            idx = min(max(idx, 0), t.size - 2)
             # hold time = time from first reaching onset to buffer exhaustion
             first_onset_i = int(np.argmax(T_hist >= onset))
             hold_time = float(t[idx + 1] - t[first_onset_i])
@@ -331,8 +330,8 @@ def size_pcm_for_hold(result: PackThermalResult,
             return out
         cell = layout.cell
         hottest = int(result.hottest_cell_index)
-        T_hist = np.asarray(result.temp_history_c, float)[:, hottest]
-        t = np.asarray(result.time_s, float)
+        T_hist = _vec(result.temp_history_c)[:, hottest]
+        t = _vec(result.time_s)
         onset = material.t_melt_c - 0.5 * material.melt_window_c
         C_cell = max(cell.mass_kg * cell.cp, 1e-9)
 
@@ -341,7 +340,7 @@ def size_pcm_for_hold(result: PackThermalResult,
         q_above = C_cell * np.clip(dT, 0.0, None) * (T_mid >= onset)
         cum_q = np.cumsum(q_above)
         # heat absorbed above onset within the requested hold window
-        first_onset_i = int(np.argmax(T_hist >= onset)) if np.any(T_hist >= onset) else 0
+        first_onset_i = int(np.argmax(T_hist >= onset))       # never reached: 0, and no heat counts anyway
         t_target = t[first_onset_i] + hold_time_s
         end_i = int(np.searchsorted(t, t_target))
         end_i = min(max(end_i, first_onset_i), cum_q.size - 1)

@@ -279,7 +279,7 @@ def analyze_joint(
     # --- bolt working force & stress ---------------------------------------- #
     # Until separation, the bolt only sees Phi · F_ext on top of preload.
     # After separation the bolt carries the FULL external load (the spike).
-    F_sep = F_preload / (1.0 - Phi) if Phi < 1.0 else float("inf")
+    F_sep = F_preload / (1.0 - Phi) if Phi < 1.0 else math.inf
     separated = F_ext > F_sep
     if not separated:
         F_bolt_max = F_preload + Phi * F_ext
@@ -287,7 +287,7 @@ def analyze_joint(
         F_bolt_max = F_ext  # joint gapped: clamp gone, bolt takes it all
     sigma_bolt = F_bolt_max / At
     sigma_proof = grade.proof_MPa
-    separation_safety = (F_sep / F_ext) if F_ext > 0 else float("inf")
+    separation_safety = (F_sep / F_ext) if F_ext > 0 else math.inf
 
     # --- preload sanity vs proof (installation, before external load) ------- #
     preload_stress = F_preload / At
@@ -312,10 +312,10 @@ def analyze_joint(
             al_yield = {"Aluminium 6061": 276.0, "Aluminium 7075": 503.0,
                         "Steel 4130": 460.0, "Steel mild": 250.0}
             bearing_allow = al_yield.get(stack.base_material, 200.0)
-        bearing_yield = sigma_bearing > bearing_allow
+        bearing_yield = sigma_bearing > bearing_allow  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
 
     notes = []
-    if preload_stress > preload_cap:
+    if preload_stress > preload_cap:  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
         notes.append(
             f"Preload stress {preload_stress:.0f} MPa exceeds "
             f"{preload_fraction_of_proof_cap:.0%} of proof "
@@ -381,7 +381,7 @@ def joint_findings(result: JointResult, *, bolt_label: str = "pedal-box mount bo
 
     # Bolt stress vs proof.
     proof_use = result.sigma_bolt / result.sigma_proof
-    if proof_use > 1.0:
+    if proof_use > 1.0:  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
         out.append(Finding(
             "bolt-stress", Severity.FAIL,
             f"{bolt_label}: bolt tensile stress {result.sigma_bolt:.0f} MPa exceeds "

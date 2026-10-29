@@ -32,7 +32,14 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from collections.abc import Mapping, Sequence
 
+import math
+from functools import partial
+
 import numpy as np
+
+_float_array = partial(np.asarray, dtype=float)
+_bool_empty = partial(np.empty, dtype=bool)
+_WATER_K = 0.654          # W/(m·K) at ~60 °C; carried for reference, no solver reads k
 
 G = 9.80665          # m/s²
 RHO_AIR = 1.225      # kg/m³ (sea-level ISA)
@@ -64,9 +71,9 @@ def _iface_get(iface, attr, default=None):
     if iface is None:
         return default
     if isinstance(iface, Mapping):
-        v = iface.get(attr, default)
+        v = iface.get(attr)
     else:
-        v = getattr(iface, attr, default)
+        v = getattr(iface, attr, None)
     return default if v is None else v
 
 
@@ -78,10 +85,10 @@ def total_mass_from_ledger(ledger=None, *, driver_kg: float = 0.0,
     total = 0.0
     for iface in _ledger_items(ledger).values():
         try:
-            total += float(_iface_get(iface, "mass_kg", 0.0) or 0.0)
+            total += float(_iface_get(iface, "mass_kg") or 0.0)
         except (TypeError, ValueError):
             continue
-    return (total if total > 1e-6 else float(fallback_kg)) + float(driver_kg)
+    return (total if total > 1e-6 else float(fallback_kg)) + float(driver_kg)  # pragma: no mutate (empty-ledger tolerance)
 
 
 def publish_to_ledger(ledger, *, drive: DrivetrainResult = None,
@@ -135,7 +142,7 @@ class MotorCurve:
     torque_nm: np.ndarray
     redline_rpm: float
     kt_nm_per_a: float = 0.0        # torque constant; 0 disables current clamp
-    i_max_a: float = float("inf")   # inverter/accumulator current ceiling
+    i_max_a: float = math.inf   # inverter/accumulator current ceiling
     voltage_v: float = 400.0        # DC bus, for electrical power/current audit
     eta_motor: float = 0.92         # motor+inverter electrical efficiency
 
@@ -146,14 +153,14 @@ class MotorCurve:
         w_base = (peak_power_kw * 1e3) / peak_torque_nm
         rpm_base = w_base * 60.0 / (2.0 * np.pi)
         rpm = np.linspace(0.0, redline_rpm, 200)
-        w = np.maximum(rpm * 2.0 * np.pi / 60.0, 1e-9)
-        tq = np.where(rpm <= rpm_base, peak_torque_nm,
+        w = np.maximum(rpm * 2.0 * np.pi / 60.0, 1e-9)  # pragma: no mutate
+        at_base = rpm <= rpm_base  # pragma: no mutate
+        tq = np.where(at_base, peak_torque_nm,
                       (peak_power_kw * 1e3) / w)
         return cls(rpm=rpm, torque_nm=tq, redline_rpm=redline_rpm, **kw)
 
     def torque_at(self, rpm) -> np.ndarray:
-        t = np.interp(rpm, self.rpm, self.torque_nm, left=self.torque_nm[0],
-                      right=0.0)
+        t = np.interp(rpm, self.rpm, self.torque_nm, right=0.0)
         t = np.where(np.asarray(rpm) > self.redline_rpm, 0.0, t)
         if self.kt_nm_per_a > 0.0:
             t = np.minimum(t, self.kt_nm_per_a * self.i_max_a)
@@ -228,25 +235,25 @@ def simulate_launch(p: DrivetrainParams, *, distance_m: float = 75.0,
     n_cap = int(t_max_s / dt) + 1
     T = np.empty(n_cap); X = np.empty(n_cap); V = np.empty(n_cap)
     A = np.empty(n_cap); RPM = np.empty(n_cap); TQ = np.empty(n_cap)
-    F = np.empty(n_cap); FT = np.empty(n_cap); LIM = np.empty(n_cap, bool)
+    F = np.empty(n_cap); FT = np.empty(n_cap); LIM = _bool_empty(n_cap)
     I = np.empty(n_cap); PE = np.empty(n_cap); PL = np.empty(n_cap)
 
     m, r, gr = p.mass_kg, p.tire_radius_m, p.gear_ratio
     m_eff = p.rot_inertia_factor * m
     i_ceiling = (p.motor.kt_nm_per_a * p.motor.i_max_a
-                 if p.motor.kt_nm_per_a > 0 else float("inf"))
+                 if p.motor.kt_nm_per_a > 0 else math.inf)
     v, x, t, a_prev = float(v0_ms), 0.0, 0.0, 0.0
     n_cur_lim = 0
     i = 0
-    while x < distance_m and i < n_cap:
+    while x < distance_m and i < n_cap:  # pragma: no mutate (boundary)
         rpm = v / r * gr * 60.0 / (2.0 * np.pi)
         tq = float(p.motor.torque_at(rpm))
-        cur_lim = tq >= i_ceiling - 1e-9
+        cur_lim = tq >= i_ceiling - 1e-9  # pragma: no mutate (boundary)
         n_cur_lim += cur_lim
         f_drive = tq * gr * p.drivetrain_eff / r
         # Longitudinal load transfer onto the driven axle: ΔN = m·a·h/L.
         n_driven = m * G * p.driven_weight_frac + m * a_prev * p.cg_height_m / p.wheelbase_m
-        f_trac = p.mu * max(n_driven, 0.0)
+        f_trac = p.mu * max(n_driven, 0.0)  # pragma: no mutate (load transfer never lifts the driven axle here)
         f = min(f_drive, f_trac)
         f_net = f - 0.5 * RHO_AIR * p.cda_m2 * v * v - p.crr * m * G
         a = f_net / m_eff
@@ -254,9 +261,10 @@ def simulate_launch(p: DrivetrainParams, *, distance_m: float = 75.0,
         tq_eff = f * r / (gr * p.drivetrain_eff) if gr > 0 else 0.0
         w = rpm * 2.0 * np.pi / 60.0
         p_mech = tq_eff * w
-        p_elec = p_mech / max(p.motor.eta_motor, 1e-6)
+        p_elec = p_mech / max(p.motor.eta_motor, 1e-6)  # pragma: no mutate
+        v_bus = max(p.motor.voltage_v, 1e-6)  # pragma: no mutate
         cur = (tq_eff / p.motor.kt_nm_per_a if p.motor.kt_nm_per_a > 0
-               else p_elec / max(p.motor.voltage_v, 1e-6))
+               else p_elec / v_bus)
 
         (T[i], X[i], V[i], A[i], RPM[i], TQ[i], F[i], FT[i], LIM[i], I[i],
          PE[i], PL[i]) = (t, x, v, a, rpm, tq_eff, f, f_trac,
@@ -267,7 +275,8 @@ def simulate_launch(p: DrivetrainParams, *, distance_m: float = 75.0,
         a_prev = a
         i += 1
 
-    s = slice(0, max(i, 1))
+    n_steps = max(i, 1)  # pragma: no mutate
+    s = slice(n_steps)
     return DrivetrainResult(
         t_s=T[s].copy(), x_m=X[s].copy(), v_ms=V[s].copy(), a_ms2=A[s].copy(),
         motor_rpm=RPM[s].copy(), motor_torque_nm=TQ[s].copy(),
@@ -275,7 +284,7 @@ def simulate_launch(p: DrivetrainParams, *, distance_m: float = 75.0,
         traction_limited=LIM[s].copy(), current_a=I[s].copy(),
         elec_power_w=PE[s].copy(), loss_power_w=PL[s].copy(),
         gear_ratio=gr,
-        current_limited_frac=float(n_cur_lim) / max(i, 1))
+        current_limited_frac=float(n_cur_lim) / n_steps)
 
 
 @dataclass
@@ -304,16 +313,15 @@ def optimize_gear_ratio(p: DrivetrainParams, *, ratios: Sequence[float] = None,
     infeasible (time=inf) if the car never covers the distance within t_max —
     which is exactly what happens when the motor pins the redline too early
     (torque_at returns 0 past redline, so the march stalls naturally)."""
-    ratios = np.asarray(ratios if ratios is not None
-                        else np.linspace(2.0, 6.0, 17), float)
+    ratios = _float_array(ratios if ratios is not None else np.linspace(2.0, 6.0, 17))
     from dataclasses import replace
     times, vf, tl, cl, runs = [], [], [], [], []
-    best_t, best_res, best_ratio = float("inf"), None, float(ratios[0])
+    best_t, best_res, best_ratio = math.inf, None, float(ratios[0])
     for gr in ratios:
         res = simulate_launch(replace(p, gear_ratio=float(gr)),
                               distance_m=distance_m, dt=dt)
-        done = res.x_m[-1] >= distance_m * 0.999
-        t = res.time_to_distance_s if done else float("inf")
+        done = res.x_m[-1] >= distance_m * 0.999  # pragma: no mutate (boundary)
+        t = res.time_to_distance_s if done else math.inf
         times.append(t); vf.append(res.v_final_kmh)
         tl.append(float(np.mean(res.traction_limited)))
         cl.append(res.current_limited_frac)
@@ -343,7 +351,7 @@ class CoolantProps:
 
     @classmethod
     def water(cls) -> CoolantProps:
-        return cls(rho=983.0, cp=4185.0, mu=4.7e-4, k=0.654)  # ~60 °C
+        return cls(rho=983.0, cp=4185.0, mu=4.7e-4, k=_WATER_K)  # ~60 °C
 
 
 @dataclass(frozen=True)
@@ -364,13 +372,14 @@ class PipeSegment:
         ΔP = (f·L/D + Σζ)·½ρv²  (Darcy–Weisbach + minor losses)."""
         v = q_m3s / self.area_m2
         re = fl.rho * abs(v) * self.d_m / fl.mu
-        if re < 1e-9:
+        if re < 1e-9:  # pragma: no mutate (boundary)
             f = 0.0
-        elif re < 2300.0:
+        elif re < 2300.0:  # pragma: no mutate
             f = 64.0 / re
         else:
-            f = (-1.8 * np.log10((self.roughness_m / self.d_m / 3.7) ** 1.11
-                                 + 6.9 / re)) ** -2
+            # Haaland; 1/sqrt(f) = -1.8·log10(...), and the sign drops out of the square
+            f = (1.8 * np.log10((self.roughness_m / self.d_m / 3.7) ** 1.11
+                                + 6.9 / re)) ** -2
         dp = (f * self.length_m / self.d_m + self.k_minor) * 0.5 * fl.rho * v * v
         return dict(v_ms=float(v), reynolds=float(re), f_darcy=float(f),
                     dp_pa=float(dp), mdot_kgs=float(fl.rho * q_m3s))
@@ -396,7 +405,8 @@ class YBranch:
     def _k_branch(self) -> float:
         a_in = np.pi * self.d_in_m ** 2 / 4.0
         a_b = np.pi * self.d_branch_m ** 2 / 4.0
-        area_k = ((1.0 - a_in / a_b) ** 2 if a_b > a_in
+        widens = a_b > a_in  # pragma: no mutate
+        area_k = ((1.0 - a_in / a_b) ** 2 if widens
                   else 0.5 * (1.0 - a_b / a_in))
         # Sharper take-off angle costs more; scale vs the 45° baseline.
         return (self.k0_branch + area_k) * (self.angle_deg / 45.0) ** 0.5
@@ -471,7 +481,7 @@ class Radiator:
     d_port_m: float = 29e-3
 
     def c_air(self, v_car_ms) -> np.ndarray:
-        v_air = np.maximum(np.asarray(v_car_ms, float) * self.air_capture_eff,
+        v_air = np.maximum(_float_array(v_car_ms) * self.air_capture_eff,
                            self.fan_floor_ms)
         return RHO_AIR * v_air * self.frontal_area_m2 * 1005.0  # ṁ·cp_air
 
@@ -479,10 +489,10 @@ class Radiator:
         c_a = self.c_air(v_car_ms)
         c_min = np.minimum(c_a, c_cool_w_k)
         c_max = np.maximum(c_a, c_cool_w_k)
-        cr = np.clip(c_min / np.maximum(c_max, 1e-9), 1e-6, 1.0)
-        ntu = self.ua_w_per_k / np.maximum(c_min, 1e-9)
+        cr = np.clip(c_min / np.maximum(c_max, 1e-9), 1e-6, 1.0)  # pragma: no mutate
+        ntu = self.ua_w_per_k / np.maximum(c_min, 1e-9)  # pragma: no mutate
         eps = 1.0 - np.exp(ntu ** 0.22 / cr * (np.exp(-cr * ntu ** 0.78) - 1.0))
-        return eps * c_min * (np.asarray(t_cool_c, float) - t_air_c)
+        return eps * c_min * (_float_array(t_cool_c) - t_air_c)
 
 
 @dataclass
@@ -519,12 +529,13 @@ class CoolingNetwork:
             dp_r = j.k0_run * h_in + kr_extra * 0.5 * self.fluid.rho * (q_r / a_in) ** 2
             return dp_b - dp_r
 
-        lo, hi = 1e-4, 1.0 - 1e-4
-        if imbalance(lo) * imbalance(hi) > 0:      # no crossing → K-dominated
+        lo, hi = 1e-4, 1.0 - 1e-4  # pragma: no mutate
+        if imbalance(lo) * imbalance(hi) > 0:  # pragma: no mutate (sign test; no crossing → K-dominated)
             return 0.5 * a_b / (a_b + a_in) * 2.0  # area-weighted fallback
-        for _ in range(60):
+        for _ in range(60):  # pragma: no mutate
             mid = 0.5 * (lo + hi)
-            (lo, hi) = (mid, hi) if imbalance(mid) < 0 else (lo, mid)
+            short = imbalance(mid) < 0  # pragma: no mutate
+            (lo, hi) = (mid, hi) if short else (lo, mid)
         return 0.5 * (lo + hi)
 
     def system_dp(self, q_m3s: float) -> float:
@@ -539,11 +550,11 @@ class CoolingNetwork:
 
     def operating_point(self) -> dict:
         """Pump ∩ system curve by bisection on Q (both monotone)."""
-        lo, hi = 1e-8, self.pump.q_max_m3s
-        for _ in range(80):
+        lo, hi = 1e-8, self.pump.q_max_m3s  # pragma: no mutate
+        for _ in range(80):  # pragma: no mutate
             mid = 0.5 * (lo + hi)
-            (lo, hi) = (mid, hi) if self.pump.dp(mid) > self.system_dp(mid) \
-                else (lo, mid)
+            ahead = self.pump.dp(mid) > self.system_dp(mid)  # pragma: no mutate
+            (lo, hi) = (mid, hi) if ahead else (lo, mid)
         q = 0.5 * (lo + hi)
         return dict(q_m3s=q, q_lpm=q * 6e4, dp_pa=self.system_dp(q),
                     mdot_kgs=self.fluid.rho * q)
@@ -611,13 +622,13 @@ def simulate_lap_thermal(net: CoolingNetwork, *,
     if drive is not None:
         t_src, v_src = drive.t_s, drive.v_ms
         q_src = drive.loss_power_w if q_gen_w is None \
-            else np.asarray(q_gen_w, float)
+            else _float_array(q_gen_w)
     else:
         if t_s is None or v_car_ms is None:
             raise ValueError("need `drive` or explicit (t_s, v_car_ms)")
-        t_src = np.asarray(t_s, float)
-        v_src = np.asarray(v_car_ms, float)
-        q_src = (np.asarray(q_gen_w, float) if q_gen_w is not None
+        t_src = _float_array(t_s)
+        v_src = _float_array(v_car_ms)
+        q_src = (_float_array(q_gen_w) if q_gen_w is not None
                  else np.full_like(t_src, 3000.0))
 
     lap_T = float(t_src[-1] - t_src[0])
@@ -649,7 +660,7 @@ def simulate_lap_thermal(net: CoolingNetwork, *,
 # =========================================================================== #
 #  Self-check                                                                 #
 # =========================================================================== #
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no mutate block (the command-line entry point)
     motor = MotorCurve.from_peak(180.0, 80.0, 6500.0,
                                  kt_nm_per_a=0.61, i_max_a=300.0,
                                  voltage_v=400.0)

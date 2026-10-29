@@ -1,0 +1,148 @@
+{
+ "csv": [
+  [
+   [
+    0.0,
+    -1.0,
+    0.0,
+    22.0,
+    17.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    30.0,
+    20.0
+   ],
+   [
+    0.0,
+    1.0,
+    0.0,
+    22.0,
+    17.0
+   ],
+   [
+    0.0,
+    1.0,
+    0.0,
+    44.0,
+    25.0
+   ]
+  ],
+  1.55,
+  "imported-csv",
+  false,
+  "roll_deg,pitch_deg,yaw_deg,ride_height_mm,speed_ms,c_lift,c_drag,c_side,aero_balance_front,converged\r\n0.0,-1.0,0.0,22.0,17.0,-1.1,0.5,,,1\r\n0.0,1.0,0.0,22.0,17.0,-0.9,0.52,0.02,,1\r\n0.0,1.0,0.0,44.0,25.0,-1.2,0.56,0.03,,1\r\n0.0,0.0,0.0,30.0,20.0,-1.0,0.5,,,1\r\n",
+  {
+   "aero_balance_front": null,
+   "c_drag": 0.5,
+   "c_lift": -1.0,
+   "c_side": null,
+   "extrapolated": false,
+   "note": ""
+  }
+ ],
+ "csv_empty": [
+  0,
+  true,
+  2.0
+ ],
+ "csv_prov": true,
+ "cube": [
+  {
+   "aero_balance_front": 0.39,
+   "c_drag": 0.52,
+   "c_lift": -2.045,
+   "c_side": 0.2,
+   "extrapolated": false,
+   "note": ""
+  },
+  {
+   "aero_balance_front": 0.42000000000000004,
+   "c_drag": 0.5800000000000001,
+   "c_lift": 3.98,
+   "c_side": 0.4,
+   "extrapolated": false,
+   "note": ""
+  },
+  {
+   "aero_balance_front": 0.405,
+   "c_drag": 0.549,
+   "c_lift": 0.07799999999999987,
+   "c_side": 0.27,
+   "extrapolated": false,
+   "note": ""
+  },
+  {
+   "aero_balance_front": 0.39,
+   "c_drag": 0.52,
+   "c_lift": -2.8449999999999998,
+   "c_side": 0.4,
+   "extrapolated": true,
+   "note": "clamped to solved envelope"
+  },
+  {
+   "aero_balance_front": 0.4,
+   "c_drag": 0.56,
+   "c_lift": -0.7,
+   "c_side": 0.30000000000000004,
+   "extrapolated": true,
+   "note": "clamped to solved envelope"
+  },
+  {
+   "aero_balance_front": 0.41000000000000003,
+   "c_drag": 0.54,
+   "c_lift": 0.44500000000000006,
+   "c_side": 0.2,
+   "extrapolated": false,
+   "note": ""
+  }
+ ],
+ "one": [
+  {
+   "aero_balance_front": null,
+   "c_drag": 0.505,
+   "c_lift": -0.025000000000000022,
+   "c_side": null,
+   "extrapolated": true,
+   "note": "clamped to solved envelope"
+  },
+  1.55,
+  1.0
+ ],
+ "sparse": [
+  {
+   "aero_balance_front": null,
+   "c_drag": 0.5023762376237623,
+   "c_lift": -0.5683168316831682,
+   "c_side": null,
+   "extrapolated": false,
+   "note": ""
+  },
+  {
+   "aero_balance_front": null,
+   "c_drag": 0.5009187279151943,
+   "c_lift": -0.7540636042402824,
+   "c_side": 0.3,
+   "extrapolated": false,
+   "note": ""
+  },
+  {
+   "aero_balance_front": null,
+   "c_drag": 0.5,
+   "c_lift": -0.7,
+   "c_side": null,
+   "extrapolated": false,
+   "note": ""
+  },
+  {
+   "aero_balance_front": null,
+   "c_drag": 0.49,
+   "c_lift": -2.0,
+   "c_side": 0.3,
+   "extrapolated": false,
+   "note": ""
+  }
+ ]
+}

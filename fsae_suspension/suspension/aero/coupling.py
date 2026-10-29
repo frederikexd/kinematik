@@ -72,8 +72,7 @@ class AeroProvider:
 def estimate_attitude(speed_ms: float, lat_g: float = 0.0, long_g: float = 0.0,
                       roll_grad_deg_per_g: float = 1.2,
                       pitch_grad_deg_per_g: float = 0.6,
-                      static_ride_mm: float = 30.0,
-                      ride_drop_mm_per_g_aero: float = 0.0) -> Attitude:
+                      static_ride_mm: float = 30.0) -> Attitude:
     """
     Crude attitude estimate from the sim's instantaneous lat/long g and speed — a
     placeholder bridge until the suspension model feeds real roll/pitch/heave in.
@@ -83,7 +82,7 @@ def estimate_attitude(speed_ms: float, lat_g: float = 0.0, long_g: float = 0.0,
     """
     roll = roll_grad_deg_per_g * lat_g
     pitch = pitch_grad_deg_per_g * long_g      # braking (long_g<0) => nose down (pitch<0)
-    return Attitude(roll_deg=roll, pitch_deg=pitch, yaw_deg=0.0,
+    return Attitude(roll_deg=roll, pitch_deg=pitch,          # yaw stays at 0
                     ride_height_mm=static_ride_mm, speed_ms=speed_ms)
 
 
@@ -106,13 +105,11 @@ def _axle_wheel_rate(veh, axle: str) -> float | None:
     if p is None:
         return None
     import numpy as _np
-    if axle == "front":
-        k_spring = getattr(p, "spring_rate_front", None)
-        kin = getattr(veh, "front_kin", None)
-    else:
-        k_spring = getattr(p, "spring_rate_rear", None)
-        kin = getattr(veh, "rear_kin", None)
-    if not getattr(p, "use_spring_rates", False) or kin is None or k_spring is None:
+    rate_name, kin_name = {"front": ("spring_rate_front", "front_kin"),
+                           "rear": ("spring_rate_rear", "rear_kin")}[axle]
+    k_spring = getattr(p, rate_name, None)
+    kin = getattr(veh, kin_name, None)
+    if not getattr(p, "use_spring_rates", None) or kin is None or k_spring is None:
         return None
     try:
         mr = kin.motion_ratio()
@@ -122,6 +119,14 @@ def _axle_wheel_rate(veh, axle: str) -> float | None:
         return None
     # x2: an axle has two wheels, and callers divide per-axle loads by this.
     return 2.0 * float(k_spring) * mr * mr   # N/mm at the axle (both wheels)
+
+
+def _resisted_fraction(anti_pct) -> float:
+    """Share of the geometric deflection left after an anti-dive/squat percentage,
+    clamped to [0, 1]; a non-finite percentage resists nothing."""
+    import numpy as _np
+    cut = anti_pct / 100.0 if _np.isfinite(anti_pct) else 0.0
+    return min(max(1.0 - cut, 0.0), 1.0)
 
 
 def attitude_from_dynamics(veh, lat_g: float, long_g: float, speed_ms: float,
@@ -165,7 +170,7 @@ def attitude_from_dynamics(veh, lat_g: float, long_g: float, speed_ms: float,
         _loads, rinfo = veh.lateral_load_transfer(abs(lat_g))
         roll_mag = float(rinfo.get("roll_angle", 0.0))
         if _np.isfinite(roll_mag):
-            roll_deg = _np.sign(lat_g) * roll_mag if lat_g != 0 else 0.0
+            roll_deg = _np.sign(lat_g) * roll_mag      # sign(0) = 0: no turn, no roll
             info["roll_source"] = "dynamics(spring/MR/RC)"
     except Exception as e:                  # noqa: BLE001
         info["roll_error"] = str(e)
@@ -178,16 +183,15 @@ def attitude_from_dynamics(veh, lat_g: float, long_g: float, speed_ms: float,
         try:
             dW, _ = veh.longitudinal_load_transfer(long_g)   # N, +ve braking
             # anti-dive/squat REDUCE the geometric portion of the deflection
-            if long_g > 0:      # braking: front compresses, rear extends; anti-dive resists
+            braking = long_g > 0  # pragma: no mutate  (long_g == 0 never gets here)
+            if braking:         # front compresses, rear extends; anti-dive resists
                 ad = veh.anti_dive_pct(brake_bias_front=brake_bias_front)
-                frac_f = 1.0 - (ad / 100.0 if _np.isfinite(ad) else 0.0)
+                frac_f = _resisted_fraction(ad)
                 frac_r = 1.0
             else:               # accel: rear squats; anti-squat resists at the rear
                 asq = veh.anti_squat_pct(drive_bias_rear=drive_bias_rear)
                 frac_f = 1.0
-                frac_r = 1.0 - (asq / 100.0 if _np.isfinite(asq) else 0.0)
-            frac_f = min(max(frac_f, 0.0), 1.0)
-            frac_r = min(max(frac_r, 0.0), 1.0)
+                frac_r = _resisted_fraction(asq)
             # deflection (mm): front loses dW under accel / gains under braking
             defl_f = (dW / kf) * frac_f      # +ve = front compresses (braking)
             defl_r = (-dW / kr) * frac_r     # rear extends under braking

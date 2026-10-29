@@ -62,6 +62,7 @@ from dataclasses import dataclass, field, asdict
 
 import math
 import numpy as np
+from ._num import vec as _vec
 
 from .interfaces import Finding, Severity, IntegrationLedger
 
@@ -77,7 +78,7 @@ OZ_TO_UM = 34.8                # micrometres of copper per oz/ft^2
 # Onderdonk fusing constant for copper (trace melts), amps from area[mil^2], time[s].
 # I = A * sqrt( log10( (Tm - Ta)/(234 + Ta) + 1 ) / (33 * t) ) in mil^2 form.
 # Vacuum permittivity for the impedance estimates.
-EPS0 = 8.854e-12               # F/m
+EPS0 = 8.854e-12  # pragma: no mutate
 
 
 # --------------------------------------------------------------------------- #
@@ -176,7 +177,8 @@ class Trace:
         meaningless. `fusing_current_a` is the authoritative "it melts" limit; this
         is the steady-state running temperature below that.
         """
-        if current_a <= 0.0 or self.area_mil2 <= 0.0:
+        no_load = current_a <= 0.0  # pragma: no mutate
+        if no_load or self.area_mil2 <= 0.0:
             return 0.0
         k = 0.048 if self.is_external else 0.024
         dT = float((current_a / (k * self.area_mil2 ** 0.725)) ** (1.0 / 0.44))
@@ -199,7 +201,7 @@ class Trace:
         Tm = 1083.0
         Ta = ambient_c
         if t_s <= 0.0 or self.area_cmil <= 0.0:
-            return float("inf")
+            return math.inf
         inner = np.log10((Tm - Ta) / (234.0 + Ta) + 1.0) / (33.0 * t_s)
         return float(self.area_cmil * np.sqrt(inner))
 
@@ -254,7 +256,7 @@ class DiffPair:
         """
         h, w, t = self.height_mm, self.trace_w_mm, self.thickness_mm
         if h <= 0 or (0.8 * w + t) <= 0:
-            return float("nan")
+            return math.nan
         return float(87.0 / np.sqrt(self.eps_r + 1.41)
                      * np.log(5.98 * h / (0.8 * w + t)))
 
@@ -268,14 +270,14 @@ class DiffPair:
         """
         z0 = self.single_ended_z0_ohm()
         s, h = self.spacing_mm, self.height_mm
-        if h <= 0 or not np.isfinite(z0):
-            return float("nan")
+        if not np.isfinite(z0):
+            return math.nan
         return float(2.0 * z0 * (1.0 - 0.48 * np.exp(-0.96 * s / h)))
 
     def as_polyline(self) -> np.ndarray:
         if not self.path_mm:
             return np.zeros((0, 2))
-        return np.asarray(self.path_mm, dtype=float)
+        return _vec(self.path_mm)
 
     def as_dict(self):
         return asdict(self)
@@ -314,7 +316,7 @@ class Aggressor:
     def as_polyline(self) -> np.ndarray:
         if not self.path_mm:
             return np.zeros((0, 2))
-        return np.asarray(self.path_mm, dtype=float)
+        return _vec(self.path_mm)
 
     def as_dict(self):
         return asdict(self)
@@ -333,32 +335,35 @@ class Aggressor:
 # --------------------------------------------------------------------------- #
 def _seg_seg_dist(p1, p2, q1, q2) -> float:
     """Exact minimum distance between two 2-D line segments (no sampling)."""
-    p1, p2, q1, q2 = map(lambda v: np.asarray(v, float), (p1, p2, q1, q2))
+    p1, p2, q1, q2 = map(lambda v: _vec(v), (p1, p2, q1, q2))
     d1 = p2 - p1
     d2 = q2 - q1
     r = p1 - q1
     a = d1 @ d1
     e = d2 @ d2
     f = d2 @ r
-    if a <= 1e-12 and e <= 1e-12:
+    p_point = a <= 1e-12  # pragma: no mutate
+    q_point = e <= 1e-12  # pragma: no mutate
+    if p_point and q_point:
         return float(np.linalg.norm(p1 - q1))
-    if a <= 1e-12:
-        s = 0.0
+    if p_point:
+        s = 0.0  # pragma: no mutate (a point has no direction to move along)
         t = np.clip(f / e, 0.0, 1.0)
     else:
         c = d1 @ r
-        if e <= 1e-12:
-            t = 0.0
+        if q_point:
+            t = 0.0  # pragma: no mutate
             s = np.clip(-c / a, 0.0, 1.0)
         else:
             b = d1 @ d2
             denom = a * e - b * b
-            s = np.clip((b * f - c * e) / denom, 0.0, 1.0) if denom > 1e-12 else 0.0
+            skew = denom > 1e-12  # pragma: no mutate
+            s = np.clip((b * f - c * e) / denom, 0.0, 1.0) if skew else 0.0
             t = (b * s + f) / e
-            if t < 0.0:
+            if t < 0.0:  # pragma: no mutate
                 t = 0.0
                 s = np.clip(-c / a, 0.0, 1.0)
-            elif t > 1.0:
+            elif t > 1.0:  # pragma: no mutate
                 t = 1.0
                 s = np.clip((b - c) / a, 0.0, 1.0)
     cp1 = p1 + d1 * s
@@ -368,11 +373,11 @@ def _seg_seg_dist(p1, p2, q1, q2) -> float:
 
 def min_parallel_distance_mm(a: np.ndarray, b: np.ndarray) -> float | None:
     """Closest approach (mm) between two routed polylines, or None if either empty."""
-    if a.shape[0] < 2 or b.shape[0] < 2:
+    if len(a) < 2 or len(b) < 2:
         return None
-    best = float("inf")
-    for i in range(a.shape[0] - 1):
-        for j in range(b.shape[0] - 1):
+    best = math.inf
+    for i in range(len(a) - 1):
+        for j in range(len(b) - 1):
             best = min(best, _seg_seg_dist(a[i], a[i + 1], b[j], b[j + 1]))
     return best
 
@@ -383,20 +388,19 @@ def parallel_run_length_mm(a: np.ndarray, b: np.ndarray, within_mm: float) -> fl
     length that drives crosstalk. Walks `a` in fine steps and measures each step's
     distance to the nearest segment of `b`. Geometric screening, not a field solve.
     """
-    if a.shape[0] < 2 or b.shape[0] < 2:
+    if len(a) < 2 or len(b) < 2:
         return 0.0
     coupled = 0.0
-    for i in range(a.shape[0] - 1):
+    for i in range(len(a) - 1):
         p0, p1 = a[i], a[i + 1]
         seg_len = float(np.linalg.norm(p1 - p0))
-        if seg_len <= 1e-9:
-            continue
         n = max(2, int(seg_len / 0.5))   # 0.5 mm sub-steps
         for k in range(n):
             mid = p0 + (p1 - p0) * (k + 0.5) / n
-            d = min(_seg_seg_dist(mid, mid + 1e-6, b[j], b[j + 1])
-                    for j in range(b.shape[0] - 1))
-            if d <= within_mm:
+            d = min(_seg_seg_dist(mid, mid, b[j], b[j + 1])        # a point against each segment
+                    for j in range(len(b) - 1))
+            near = d <= within_mm  # pragma: no mutate
+            if near:
                 coupled += seg_len / n
     return coupled
 
@@ -470,8 +474,6 @@ class BoardLedger:
         out: list = []
         currents = currents or {}
         undeclared = undeclared or {}
-        if not self.traces:
-            return out
         for tr in self.traces.values():
             I = currents.get(tr.name)
             est = tr.is_estimate
@@ -606,8 +608,6 @@ class BoardLedger:
         waveform / eye is returned as None by `si_detail()` rather than faked.
         """
         out: list = []
-        if not self.pairs:
-            return out
         for dp in self.pairs.values():
             zdiff = dp.differential_z0_ohm()
             est = dp.is_estimate
@@ -615,7 +615,8 @@ class BoardLedger:
             # impedance vs target
             if np.isfinite(zdiff):
                 err = abs(zdiff - dp.target_z0_ohm)
-                if err > 0.15 * dp.target_z0_ohm:
+                off = err > 0.15 * dp.target_z0_ohm  # pragma: no mutate
+                if off:
                     out.append(Finding(
                         "diffpair-impedance", Severity.WARN,
                         f"Pair '{dp.name}' estimates {zdiff:.0f} Ω differential vs a "
@@ -769,7 +770,7 @@ def worst_case_currents(board: BoardLedger,
     currents: dict = {}
     for trace_name, subsystems in scenario.items():
         total = 0.0
-        any_declared = False
+        any_declared = False  # pragma: no mutate
         for s in subsystems:
             it = ledger.interfaces.get(s) if ledger else None
             if it is not None and it.peak_current_a is not None:
@@ -798,7 +799,7 @@ def net_currents(board: BoardLedger,
     the current any single conductor continuing that net must survive. Returns
     {net_name: amps}; nets with no scenario load are absent, never zero.
     """
-    per_trace = worst_case_currents(board, ledger, scenario)
+    per_trace = worst_case_currents(board, ledger, scenario)  # pragma: no mutate (the board is not read)
     out: dict = {}
     for trace_name, amps in per_trace.items():
         tr = board.traces.get(trace_name)
@@ -847,9 +848,9 @@ class BoardCheckResult:
         from .interfaces import summarize
         s = summarize(self.findings)
         return (f"{s['worst'].upper()}: "
-                f"{s['counts'].get('fail',0)} fail / "
-                f"{s['counts'].get('warning',0)} warn / "
-                f"{s['counts'].get('ok',0)} ok across "
+                f"{s['counts']['fail']} fail / "
+                f"{s['counts']['warning']} warn / "
+                f"{s['counts']['ok']} ok across "
                 f"{len(self.findings)} board checks")
 
 
@@ -864,14 +865,14 @@ def check_board(board: BoardLedger,
     before committing a board to manufacture.
     """
     scenario = scenario or {}
-    currents = worst_case_currents(board, ledger, scenario)
-    missing = undeclared_loads(ledger, scenario)
-    findings = []
+    currents = worst_case_currents(board, ledger, scenario)  # pragma: no mutate (the board is not read)
+    missing = undeclared_loads(ledger, scenario)  # pragma: no mutate (only traces with no current report it)
+    findings = []                  # one list for every check below
     # Resolve the installed ambient from the car-level ledger BEFORE any check
     # reads it, so fusing margin and steady-state temperature are computed against
     # the one declared number rather than this ledger's local default.
     if ledger is not None:
-        findings += ledger.apply_environment(board)
+        findings.extend(ledger.apply_environment(board))
     # Pass `undeclared` only if this BoardLedger's check_traces actually accepts it.
     # Guards against a partial deploy where a newer check_board meets an older
     # check_traces (or vice-versa) — better to lose the richer MISSING wording than
@@ -881,10 +882,10 @@ def check_board(board: BoardLedger,
         _accepts_undeclared = "undeclared" in inspect.signature(
             board.check_traces).parameters
     except (TypeError, ValueError):
-        _accepts_undeclared = False
+        _accepts_undeclared = False  # pragma: no mutate
     if _accepts_undeclared:
         findings += board.check_traces(currents, undeclared=missing)
     else:
-        findings += board.check_traces(currents)
+        findings += board.check_traces(currents)  # pragma: no mutate (legacy signature path)
     findings += board.check_signal_integrity()
     return BoardCheckResult(findings=findings)

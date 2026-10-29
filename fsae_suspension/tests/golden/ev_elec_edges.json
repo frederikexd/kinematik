@@ -1,0 +1,124 @@
+{
+ "csv_half": {
+  "avg_current_a": 11.569656748116168,
+  "cell_current_limit_a": 16.667,
+  "cell_message": "✅ Cell current OK — 4.8 A peak per cell (rated 16.7 A).",
+  "cell_overcurrent": false,
+  "current_profile_a": [
+   7.288439971655365,
+   14.487521743970605,
+   12.933008528722539,
+   0.0,
+   0.0
+  ],
+  "energy_empty": false,
+  "energy_message": "✅ Energy OK — lap uses 0.002 kWh (0.0% of 6.955 kWh usable pack).",
+  "energy_used_kwh": 0.00191943711908852,
+  "fuse_blown": false,
+  "fuse_max_a": 50.0,
+  "fuse_message": "✅ Fuse OK — peak 14.5 A vs 50 A limit (35.5 A headroom).",
+  "max_safe_power_kw": 25.2,
+  "max_safe_speed_ms": 31.6747149429886,
+  "ok": true,
+  "peak_cell_current_a": 4.829173914656868,
+  "peak_current_a": 14.487521743970605,
+  "peak_current_speed_ms": 6.25856,
+  "power_profile_kw": [
+   3.6733737457143043,
+   7.301710958961184,
+   6.518236298476159,
+   0.0,
+   0.0
+  ],
+  "speed_profile_ms": [
+   4.4704,
+   6.25856,
+   8.9408,
+   8.04672,
+   5.36448
+  ],
+  "summary": "✅ Electrically feasible — lap is within fuse, cell, and energy limits. Peak draw 14.5 A / 25.2 kW fuse ceiling.",
+  "usable_energy_kwh": 6.9552,
+  "warnings": []
+ },
+ "tiny_pack": {
+  "avg_current_a": 2.3376338734567903,
+  "cell_current_limit_a": 16.667,
+  "cell_message": "✅ Cell current OK — 1.1 A peak per cell (rated 16.7 A).",
+  "cell_overcurrent": false,
+  "current_profile_a": [
+   1.3939280202821864,
+   1.7163234567901233,
+   2.078590321869489,
+   2.4826536155202827,
+   2.9304383377425056,
+   3.423869488536154
+  ],
+  "energy_empty": false,
+  "energy_message": "✅ Energy OK — lap uses 0.003 kWh (0.6% of 0.464 kWh usable pack).",
+  "energy_used_kwh": 0.0026816733133906956,
+  "fuse_blown": false,
+  "fuse_max_a": 50.0,
+  "fuse_message": "✅ Fuse OK — peak 3.4 A vs 50 A limit (46.6 A headroom).",
+  "max_safe_power_kw": 25.2,
+  "max_safe_speed_ms": 31.6747149429886,
+  "ok": true,
+  "peak_cell_current_a": 1.1412898295120513,
+  "peak_current_a": 3.423869488536154,
+  "peak_current_speed_ms": 8.0,
+  "power_profile_kw": [
+   0.7025397222222219,
+   0.8650270222222222,
+   1.0476095222222226,
+   1.2512574222222224,
+   1.4769409222222227,
+   1.7256302222222215
+  ],
+  "speed_profile_ms": [
+   5.0,
+   5.6,
+   6.2,
+   6.8,
+   7.4,
+   8.0
+  ],
+  "summary": "✅ Electrically feasible — lap is within fuse, cell, and energy limits. Peak draw 3.4 A / 25.2 kW fuse ceiling.",
+  "usable_energy_kwh": 0.46368000000000004,
+  "warnings": [
+   "Pack capacity is below 10 Ah — double-check the Excel sheet values."
+  ]
+ },
+ "two": {
+  "avg_current_a": 9.196962962962964,
+  "cell_current_limit_a": 16.667,
+  "cell_message": "✅ Cell current OK — 3.6 A peak per cell (rated 16.7 A).",
+  "cell_overcurrent": false,
+  "current_profile_a": [
+   7.4512433862433864,
+   10.942682539682542
+  ],
+  "energy_empty": false,
+  "energy_message": "✅ Energy OK — lap uses 0.003 kWh (0.0% of 6.955 kWh usable pack).",
+  "energy_used_kwh": 0.0027854101010101016,
+  "fuse_blown": false,
+  "fuse_max_a": 50.0,
+  "fuse_message": "✅ Fuse OK — peak 10.9 A vs 50 A limit (39.1 A headroom).",
+  "max_safe_power_kw": 25.2,
+  "max_safe_speed_ms": 31.6747149429886,
+  "ok": true,
+  "peak_cell_current_a": 3.647560846560847,
+  "peak_current_a": 10.942682539682542,
+  "peak_current_speed_ms": 12.0,
+  "power_profile_kw": [
+   3.7554266666666667,
+   5.515112000000001
+  ],
+  "speed_profile_ms": [
+   10.0,
+   12.0
+  ],
+  "summary": "✅ Electrically feasible — lap is within fuse, cell, and energy limits. Peak draw 10.9 A / 25.2 kW fuse ceiling.",
+  "usable_energy_kwh": 6.9552,
+  "warnings": []
+ }
+}

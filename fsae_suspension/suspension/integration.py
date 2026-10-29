@@ -34,6 +34,7 @@ from __future__ import annotations
 import os
 import tempfile
 import numpy as np
+from ._num import vec as _vec
 #  trimesh is imported lazily — see _LazyTrimesh below.
 from dataclasses import dataclass
 
@@ -139,7 +140,7 @@ def load_part(path: str, offset=(0.0, 0.0, 0.0), scale=1.0,
     if any((rx, ry, rz)):
         R = trimesh.transformations.euler_matrix(rx, ry, rz, "sxyz")
         mesh.apply_transform(R)
-    mesh.apply_translation(np.asarray(offset, float))
+    mesh.apply_translation(_vec(offset))
 
     # Gentle unit sanity check: FSAE parts in mm are typically 10–3000 mm across.
     # A bounding box under ~5 mm usually means the file is in metres (needs scale 1000).

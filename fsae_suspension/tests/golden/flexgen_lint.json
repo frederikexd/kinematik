@@ -1,0 +1,527 @@
+{
+ "boom": [
+  {
+   "code": "UNSTABLE",
+   "detail": "[x] no stable equilibrium: FlexGen: no convergence (test)",
+   "level": "blocker"
+  },
+  {
+   "code": "SMOOTH_SPECIMEN",
+   "detail": "Fatigue screen uses smooth-specimen data with surface/size factors = 1 — a machined edge, a print layer line or a weld HAZ halves S_e. Coupon-test the real edge finish.",
+   "level": "ok"
+  }
+ ],
+ "buck": [
+  {
+   "code": "BUCKLED",
+   "detail": "[c0.5] axial -12009 N exceeds the computed critical load 6004 N — the blade buckles.",
+   "level": "blocker"
+  },
+  {
+   "code": "BUCKLING_MARGIN",
+   "detail": "[c1.5] buckling margin 1.50 < required FoS 2.0 (P_cr = 6004 N) — and near P_cr the blade's transverse rate collapses too.",
+   "level": "blocker"
+  },
+  {
+   "code": "BUCKLING_NEAR",
+   "detail": "[c2.2] buckling margin 2.20 within 25 % of the FoS 2.0 floor.",
+   "level": "warn"
+  },
+  {
+   "code": "SMOOTH_SPECIMEN",
+   "detail": "Fatigue screen uses smooth-specimen data with surface/size factors = 1 — a machined edge, a print layer line or a weld HAZ halves S_e. Coupon-test the real edge finish.",
+   "level": "ok"
+  }
+ ],
+ "buck_kw": [
+  {
+   "code": "PARASITIC_SOFT",
+   "detail": "Stiff/compliant plane stiffness ratio 225 < 1000000 — the blade will comply in the direction it is supposed to locate.",
+   "level": "warn"
+  },
+  {
+   "code": "BUCKLED",
+   "detail": "[c0.5] axial -12009 N exceeds the computed critical load 6004 N — the blade buckles.",
+   "level": "blocker"
+  },
+  {
+   "code": "BUCKLING_NEAR",
+   "detail": "[c1.5] buckling margin 1.50 within 25 % of the FoS 1.4 floor.",
+   "level": "warn"
+  },
+  {
+   "code": "SMOOTH_SPECIMEN",
+   "detail": "Fatigue screen uses smooth-specimen data with surface/size factors = 1 — a machined edge, a print layer line or a weld HAZ halves S_e. Coupon-test the real edge finish.",
+   "level": "ok"
+  }
+ ],
+ "cs": [
+  [
+   615.5423860569174,
+   0.0,
+   10.282372891902924
+  ],
+  [
+   74.99747193711258,
+   0.0,
+   2.5
+  ],
+  [
+   505.72386648641924,
+   1.6666666666666667,
+   9.328791104257107
+  ],
+  [
+   30.19625961827223,
+   -0.6666666666666666,
+   1.0
+  ],
+  [
+   351.91376531738524,
+   0.0,
+   6.640781118139785
+  ],
+  [
+   88.48290500897505,
+   0.0,
+   3.3333333333333335
+  ],
+  [
+   316.635325469897,
+   2.2222222222222223,
+   7.1434825790124705
+  ],
+  [
+   35.809987235753134,
+   -0.8888888888888888,
+   1.3333333333333333
+  ]
+ ],
+ "down": [
+  {
+   "feasible": true,
+   "flex_share": 0.3333333333333333,
+   "k_flex_wheel_n_mm": 10.0,
+   "k_spring_residual_n_mm": 20.0,
+   "k_wheel_target_n_mm": 30.0
+  },
+  {
+   "feasible": false,
+   "flex_share": 1.5,
+   "k_flex_wheel_n_mm": 45.0,
+   "k_spring_residual_n_mm": 0.0,
+   "k_wheel_target_n_mm": 30.0
+  },
+  {
+   "feasible": true,
+   "flex_share": 1.0,
+   "k_flex_wheel_n_mm": 30.0,
+   "k_spring_residual_n_mm": 0.0,
+   "k_wheel_target_n_mm": 30.0
+  }
+ ],
+ "g_g_hi": [
+  [
+   {
+    "code": "HCF",
+    "detail": "[g_hi] Goodman utilisation 0.67 × FoS 1.5 > 1 (σ_a=223, σ_m=0 MPa) — high-cycle fatigue risk.",
+    "level": "blocker"
+   },
+   {
+    "code": "SMOOTH_SPECIMEN",
+    "detail": "Fatigue screen uses smooth-specimen data with surface/size factors = 1 — a machined edge, a print layer line or a weld HAZ halves S_e. Coupon-test the real edge finish.",
+    "level": "ok"
+   }
+  ],
+  [
+   {
+    "code": "LAMINATE_FATIGUE",
+    "detail": "Carbon (axial, representative): no isotropic fatigue law exists for a laminate. This lint refuses to certify it — get coupon fatigue data for YOUR layup, then screen against that.",
+    "level": "blocker"
+   }
+  ]
+ ],
+ "g_g_lo": [
+  [
+   {
+    "code": "HCF_NEAR",
+    "detail": "[g_lo] Goodman utilisation 0.67 within 20 % of the FoS 1.5 limit.",
+    "level": "warn"
+   },
+   {
+    "code": "SMOOTH_SPECIMEN",
+    "detail": "Fatigue screen uses smooth-specimen data with surface/size factors = 1 — a machined edge, a print layer line or a weld HAZ halves S_e. Coupon-test the real edge finish.",
+    "level": "ok"
+   },
+   {
+    "code": "PASS",
+    "detail": "All 1 case(s) pass yield/HCF/buckling at FoS 1.5/1.5/2.0.",
+    "level": "ok"
+   }
+  ],
+  [
+   {
+    "code": "LAMINATE_FATIGUE",
+    "detail": "Carbon (axial, representative): no isotropic fatigue law exists for a laminate. This lint refuses to certify it — get coupon fatigue data for YOUR layup, then screen against that.",
+    "level": "blocker"
+   }
+  ]
+ ],
+ "g_g_mean": [
+  [
+   {
+    "code": "SMOOTH_SPECIMEN",
+    "detail": "Fatigue screen uses smooth-specimen data with surface/size factors = 1 — a machined edge, a print layer line or a weld HAZ halves S_e. Coupon-test the real edge finish.",
+    "level": "ok"
+   },
+   {
+    "code": "PASS",
+    "detail": "All 1 case(s) pass yield/HCF/buckling at FoS 1.5/1.5/2.0.",
+    "level": "ok"
+   }
+  ],
+  [
+   {
+    "code": "LAMINATE_FATIGUE",
+    "detail": "Carbon (axial, representative): no isotropic fatigue law exists for a laminate. This lint refuses to certify it — get coupon fatigue data for YOUR layup, then screen against that.",
+    "level": "blocker"
+   }
+  ]
+ ],
+ "g_kw": [
+  {
+   "code": "YIELD",
+   "detail": "[tau] von Mises 256 MPa × FoS 2.0 exceeds S_y 435 MPa.",
+   "level": "blocker"
+  },
+  {
+   "code": "SMOOTH_SPECIMEN",
+   "detail": "Fatigue screen uses smooth-specimen data with surface/size factors = 1 — a machined edge, a print layer line or a weld HAZ halves S_e. Coupon-test the real edge finish.",
+   "level": "ok"
+  }
+ ],
+ "g_near_hi": [
+  [
+   {
+    "code": "HCF_NEAR",
+    "detail": "[near_hi] Goodman utilisation 0.53 within 20 % of the FoS 1.5 limit.",
+    "level": "warn"
+   },
+   {
+    "code": "SMOOTH_SPECIMEN",
+    "detail": "Fatigue screen uses smooth-specimen data with surface/size factors = 1 — a machined edge, a print layer line or a weld HAZ halves S_e. Coupon-test the real edge finish.",
+    "level": "ok"
+   },
+   {
+    "code": "PASS",
+    "detail": "All 1 case(s) pass yield/HCF/buckling at FoS 1.5/1.5/2.0.",
+    "level": "ok"
+   }
+  ],
+  [
+   {
+    "code": "LAMINATE_FATIGUE",
+    "detail": "Carbon (axial, representative): no isotropic fatigue law exists for a laminate. This lint refuses to certify it — get coupon fatigue data for YOUR layup, then screen against that.",
+    "level": "blocker"
+   }
+  ]
+ ],
+ "g_near_lo": [
+  [
+   {
+    "code": "SMOOTH_SPECIMEN",
+    "detail": "Fatigue screen uses smooth-specimen data with surface/size factors = 1 — a machined edge, a print layer line or a weld HAZ halves S_e. Coupon-test the real edge finish.",
+    "level": "ok"
+   },
+   {
+    "code": "PASS",
+    "detail": "All 1 case(s) pass yield/HCF/buckling at FoS 1.5/1.5/2.0.",
+    "level": "ok"
+   }
+  ],
+  [
+   {
+    "code": "LAMINATE_FATIGUE",
+    "detail": "Carbon (axial, representative): no isotropic fatigue law exists for a laminate. This lint refuses to certify it — get coupon fatigue data for YOUR layup, then screen against that.",
+    "level": "blocker"
+   }
+  ]
+ ],
+ "g_neg_ax": [
+  [
+   {
+    "code": "SMOOTH_SPECIMEN",
+    "detail": "Fatigue screen uses smooth-specimen data with surface/size factors = 1 — a machined edge, a print layer line or a weld HAZ halves S_e. Coupon-test the real edge finish.",
+    "level": "ok"
+   },
+   {
+    "code": "PASS",
+    "detail": "All 1 case(s) pass yield/HCF/buckling at FoS 1.5/1.5/2.0.",
+    "level": "ok"
+   }
+  ],
+  [
+   {
+    "code": "LAMINATE_FATIGUE",
+    "detail": "Carbon (axial, representative): no isotropic fatigue law exists for a laminate. This lint refuses to certify it — get coupon fatigue data for YOUR layup, then screen against that.",
+    "level": "blocker"
+   }
+  ]
+ ],
+ "g_tau": [
+  [
+   {
+    "code": "SMOOTH_SPECIMEN",
+    "detail": "Fatigue screen uses smooth-specimen data with surface/size factors = 1 — a machined edge, a print layer line or a weld HAZ halves S_e. Coupon-test the real edge finish.",
+    "level": "ok"
+   },
+   {
+    "code": "PASS",
+    "detail": "All 1 case(s) pass yield/HCF/buckling at FoS 1.5/1.5/2.0.",
+    "level": "ok"
+   }
+  ],
+  [
+   {
+    "code": "LAMINATE_FATIGUE",
+    "detail": "Carbon (axial, representative): no isotropic fatigue law exists for a laminate. This lint refuses to certify it — get coupon fatigue data for YOUR layup, then screen against that.",
+    "level": "blocker"
+   }
+  ]
+ ],
+ "g_y_hi": [
+  [
+   {
+    "code": "YIELD",
+    "detail": "[y_hi] von Mises 290 MPa × FoS 1.5 exceeds S_y 435 MPa.",
+    "level": "blocker"
+   },
+   {
+    "code": "HCF",
+    "detail": "[y_hi] Goodman utilisation 0.87 × FoS 1.5 > 1 (σ_a=290, σ_m=0 MPa) — high-cycle fatigue risk.",
+    "level": "blocker"
+   },
+   {
+    "code": "SMOOTH_SPECIMEN",
+    "detail": "Fatigue screen uses smooth-specimen data with surface/size factors = 1 — a machined edge, a print layer line or a weld HAZ halves S_e. Coupon-test the real edge finish.",
+    "level": "ok"
+   }
+  ],
+  [
+   {
+    "code": "LAMINATE_FATIGUE",
+    "detail": "Carbon (axial, representative): no isotropic fatigue law exists for a laminate. This lint refuses to certify it — get coupon fatigue data for YOUR layup, then screen against that.",
+    "level": "blocker"
+   }
+  ]
+ ],
+ "g_y_lo": [
+  [
+   {
+    "code": "HCF",
+    "detail": "[y_lo] Goodman utilisation 0.87 × FoS 1.5 > 1 (σ_a=290, σ_m=0 MPa) — high-cycle fatigue risk.",
+    "level": "blocker"
+   },
+   {
+    "code": "SMOOTH_SPECIMEN",
+    "detail": "Fatigue screen uses smooth-specimen data with surface/size factors = 1 — a machined edge, a print layer line or a weld HAZ halves S_e. Coupon-test the real edge finish.",
+    "level": "ok"
+   }
+  ],
+  [
+   {
+    "code": "LAMINATE_FATIGUE",
+    "detail": "Carbon (axial, representative): no isotropic fatigue law exists for a laminate. This lint refuses to certify it — get coupon fatigue data for YOUR layup, then screen against that.",
+    "level": "blocker"
+   }
+  ]
+ ],
+ "g_zero": [
+  [
+   {
+    "code": "SMOOTH_SPECIMEN",
+    "detail": "Fatigue screen uses smooth-specimen data with surface/size factors = 1 — a machined edge, a print layer line or a weld HAZ halves S_e. Coupon-test the real edge finish.",
+    "level": "ok"
+   },
+   {
+    "code": "PASS",
+    "detail": "All 1 case(s) pass yield/HCF/buckling at FoS 1.5/1.5/2.0.",
+    "level": "ok"
+   }
+  ],
+  [
+   {
+    "code": "LAMINATE_FATIGUE",
+    "detail": "Carbon (axial, representative): no isotropic fatigue law exists for a laminate. This lint refuses to certify it — get coupon fatigue data for YOUR layup, then screen against that.",
+    "level": "blocker"
+   }
+  ]
+ ],
+ "lint_cf": [
+  {
+   "code": "LAMINATE_FATIGUE",
+   "detail": "Carbon (axial, representative): no isotropic fatigue law exists for a laminate. This lint refuses to certify it — get coupon fatigue data for YOUR layup, then screen against that.",
+   "level": "blocker"
+  }
+ ],
+ "lint_odd": [
+  {
+   "code": "NO_FATIGUE_DATA",
+   "detail": "No fatigue table entry for 'Unobtainium' — fatigue screen skipped; add coupon data.",
+   "level": "warn"
+  },
+  {
+   "code": "PASS",
+   "detail": "All 2 case(s) pass yield/HCF/buckling at FoS 1.5/1.5/2.0.",
+   "level": "ok"
+  }
+ ],
+ "lint_square": [
+  {
+   "code": "PARASITIC_SOFT",
+   "detail": "Stiff/compliant plane stiffness ratio 1 < 30 — the blade will comply in the direction it is supposed to locate.",
+   "level": "warn"
+  },
+  {
+   "code": "YIELD",
+   "detail": "[s] von Mises 2406 MPa × FoS 1.5 exceeds S_y 435 MPa.",
+   "level": "blocker"
+  },
+  {
+   "code": "HCF",
+   "detail": "[s] Goodman utilisation 7.18 × FoS 1.5 > 1 (σ_a=2405, σ_m=0 MPa) — high-cycle fatigue risk.",
+   "level": "blocker"
+  },
+  {
+   "code": "HCF_NEAR",
+   "detail": "[a] Goodman utilisation 0.59 within 20 % of the FoS 1.5 limit.",
+   "level": "warn"
+  },
+  {
+   "code": "SMOOTH_SPECIMEN",
+   "detail": "Fatigue screen uses smooth-specimen data with surface/size factors = 1 — a machined edge, a print layer line or a weld HAZ halves S_e. Coupon-test the real edge finish.",
+   "level": "ok"
+  }
+ ],
+ "lint_steel": [
+  {
+   "code": "SMOOTH_SPECIMEN",
+   "detail": "Fatigue screen uses smooth-specimen data with surface/size factors = 1 — a machined edge, a print layer line or a weld HAZ halves S_e. Coupon-test the real edge finish.",
+   "level": "ok"
+  },
+  {
+   "code": "PASS",
+   "detail": "All 2 case(s) pass yield/HCF/buckling at FoS 1.5/1.5/2.0.",
+   "level": "ok"
+  }
+ ],
+ "lint_thin": [
+  {
+   "code": "YIELD",
+   "detail": "[s] von Mises 799 MPa × FoS 1.5 exceeds S_y 435 MPa.",
+   "level": "blocker"
+  },
+  {
+   "code": "HCF",
+   "detail": "[s] Goodman utilisation 2.38 × FoS 1.5 > 1 (σ_a=798, σ_m=0 MPa) — high-cycle fatigue risk.",
+   "level": "blocker"
+  },
+  {
+   "code": "SMOOTH_SPECIMEN",
+   "detail": "Fatigue screen uses smooth-specimen data with surface/size factors = 1 — a machined edge, a print layer line or a weld HAZ halves S_e. Coupon-test the real edge finish.",
+   "level": "ok"
+  }
+ ],
+ "lint_ti": [
+  {
+   "code": "HCF",
+   "detail": "[s] Goodman utilisation 0.68 × FoS 1.5 > 1 (σ_a=348, σ_m=0 MPa) — high-cycle fatigue risk.",
+   "level": "blocker"
+  },
+  {
+   "code": "SMOOTH_SPECIMEN",
+   "detail": "Fatigue screen uses smooth-specimen data with surface/size factors = 1 — a machined edge, a print layer line or a weld HAZ halves S_e. Coupon-test the real edge finish.",
+   "level": "ok"
+  }
+ ],
+ "lint_travel": [
+  {
+   "code": "YIELD",
+   "detail": "[travel] von Mises 616 MPa × FoS 1.5 exceeds S_y 435 MPa.",
+   "level": "blocker"
+  },
+  {
+   "code": "HCF",
+   "detail": "[travel] Goodman utilisation 1.84 × FoS 1.5 > 1 (σ_a=616, σ_m=0 MPa) — high-cycle fatigue risk.",
+   "level": "blocker"
+  },
+  {
+   "code": "SMOOTH_SPECIMEN",
+   "detail": "Fatigue screen uses smooth-specimen data with surface/size factors = 1 — a machined edge, a print layer line or a weld HAZ halves S_e. Coupon-test the real edge finish.",
+   "level": "ok"
+  }
+ ],
+ "sp": [
+  {
+   "axial_preload_n": 0.0,
+   "energy_nmm": [
+    1851.5674869747752,
+    0.0,
+    1851.5674869747752
+   ],
+   "f_n": [
+    -619.3904833495617,
+    0.0,
+    619.3904833495617
+   ],
+   "k_at_ride_n_mm": 103.23174722492695,
+   "k_n_mm": [
+    103.23174722492695,
+    103.23174722492695,
+    103.23174722492695
+   ],
+   "z_mm": [
+    -6.0,
+    0.0,
+    6.0
+   ]
+  },
+  {
+   "axial_preload_n": -30.0,
+   "energy_nmm": [
+    821.2929642688061,
+    0.0,
+    821.2929642688061
+   ],
+   "f_n": [
+    -409.2501229047775,
+    0.0,
+    409.2501229047775
+   ],
+   "k_at_ride_n_mm": 102.31253072619438,
+   "k_n_mm": [
+    102.31253072619438,
+    102.31253072619438,
+    102.31253072619438
+   ],
+   "z_mm": [
+    -4.0,
+    0.0,
+    4.0
+   ]
+  }
+ ],
+ "sp_e": 1.8515674869747751,
+ "unstable": [
+  {
+   "code": "UNSTABLE",
+   "detail": "[huge] no stable equilibrium: FlexGen: no convergence at load fraction 1.00 of (0.0 N, 492000.0 N, 0.0 N·mm) — treat as unstable/post-buckled; do not use this blade here.",
+   "level": "blocker"
+  },
+  {
+   "code": "SMOOTH_SPECIMEN",
+   "detail": "Fatigue screen uses smooth-specimen data with surface/size factors = 1 — a machined edge, a print layer line or a weld HAZ halves S_e. Coupon-test the real edge finish.",
+   "level": "ok"
+  }
+ ]
+}

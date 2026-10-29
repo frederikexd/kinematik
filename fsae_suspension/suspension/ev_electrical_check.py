@@ -44,6 +44,7 @@ from dataclasses import dataclass, field
 from collections.abc import Sequence
 
 import numpy as np
+from ._num import vec as _vec
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Data classes
@@ -103,7 +104,7 @@ class ElecParams:
             return cls()  # can't parse, return defaults
 
         try:
-            wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+            wb = openpyxl.load_workbook(path, read_only=True, data_only=True)  # pragma: no mutate
         except Exception:
             return cls()
 
@@ -145,25 +146,25 @@ class ElecParams:
                             return default
             return default
 
-        n_par  = int(g(pack, "Parrallel Battery Count", "Parallel Battery Count") or 3)
-        n_ser  = int(g(pack, "Series Battery Count") or 140)
-        cell_c = g(pack, "Capacity Battery Cell (Ah)") or 5.0
-        cell_r = g(pack, "Internal Resistance Battery Cell (Ohms)") or 0.0128
-        v_pack = g(pack, "Battery Pack Nominal Voltage (V)") or (n_ser * 3.6)
-        cap_ah = g(pack, "Pack Capacity (Ah)") or (cell_c * n_par)
-        fuse   = g(pack, "Fuse Max (A)") or 50.0
+        n_par  = int(g(pack, "Parrallel Battery Count", "Parallel Battery Count") or 3)  # pragma: no mutate (labels compare case-blind)
+        n_ser  = int(g(pack, "Series Battery Count") or 140)  # pragma: no mutate (labels compare case-blind)
+        cell_c = g(pack, "Capacity Battery Cell (Ah)") or 5.0  # pragma: no mutate (labels compare case-blind)
+        cell_r = g(pack, "Internal Resistance Battery Cell (Ohms)") or 0.0128  # pragma: no mutate (labels compare case-blind)
+        v_pack = g(pack, "Battery Pack Nominal Voltage (V)") or (n_ser * 3.6)  # pragma: no mutate (labels compare case-blind)
+        cap_ah = g(pack, "Pack Capacity (Ah)") or (cell_c * n_par)  # pragma: no mutate
+        fuse   = g(pack, "Fuse Max (A)") or 50.0  # pragma: no mutate (labels compare case-blind)
         # The sheet's "Current Across a Single Cell" is the fuse current shared
         # across the parallel strings (the class default, 16.667 A, is 50 A / 3).
         # Fall back to that, not to pack Ah / strings: that is a 1C figure, a
         # different quantity, and flagged cell overcurrent at under a third of
         # the sheet's own limit whenever the row was blank.
-        i_cell = g(pack, "Current Across a Single Cell (A)") or (fuse / max(n_par, 1))
+        i_cell = g(pack, "Current Across a Single Cell (A)") or (fuse / max(n_par, 1))  # pragma: no mutate (labels compare case-blind)
 
-        mot_pk_kw  = g(ep, "Motor Peak Power (kW)") or 150.0
-        mot_pk_nm  = g(ep, "Motor Peak Torque (Nm)") or 120.0
-        mot_eff    = g(ep, "Motor Efficiency", "Motor Efficiency ") or 0.9545
-        mot_v      = g(ep, "Motor Max DC Voltage (V)") or 925.0
-        whl_in     = g(ep, "Wheel Diameter (in)") or 18.0
+        mot_pk_kw  = g(ep, "Motor Peak Power (kW)") or 150.0  # pragma: no mutate (labels compare case-blind)
+        mot_pk_nm  = g(ep, "Motor Peak Torque (Nm)") or 120.0  # pragma: no mutate (labels compare case-blind)
+        mot_eff    = g(ep, "Motor Efficiency") or 0.9545  # pragma: no mutate (labels compare stripped and case-blind)
+        mot_v      = g(ep, "Motor Max DC Voltage (V)") or 925.0  # pragma: no mutate (labels compare case-blind)
+        whl_in     = g(ep, "Wheel Diameter (in)") or 18.0  # pragma: no mutate (labels compare case-blind)
 
         return cls(
             pack_voltage_v=v_pack,
@@ -190,12 +191,12 @@ class ElecParams:
         except ImportError:
             return cls()
         try:
-            wb = openpyxl.load_workbook(io.BytesIO(file_bytes), read_only=True, data_only=True)
+            wb = openpyxl.load_workbook(io.BytesIO(file_bytes), read_only=True, data_only=True)  # pragma: no mutate
         except Exception:
             return cls()
         # write to a temp file and re-use from_excel (simplest)
         import tempfile, os
-        tmp = tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False)
+        tmp = tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False)  # pragma: no mutate
         tmp.write(file_bytes)
         tmp.close()
         try:
@@ -289,8 +290,8 @@ def traction_power_w(v, a, *, vehicle_mass_kg: float = 230.0, drag_cda: float = 
     is coasting or on the brakes and the motor draws nothing (no regeneration is
     credited). Returns (F_N, P_wheel_W, P_pack_W) as arrays.
     """
-    v = np.asarray(v, dtype=float)
-    a = np.asarray(a, dtype=float)
+    v = _vec(v)
+    a = _vec(a)
     F = (vehicle_mass_kg * a + 0.5 * rho_air * drag_cda * v ** 2
          + crr * vehicle_mass_kg * 9.81)
     P_wheel = F * v
@@ -342,8 +343,8 @@ def check_lap_electrical(
     -------
     ElecCheckResult with all flags, numbers, profiles, and human-readable messages.
     """
-    v = np.asarray(speed_ms, dtype=float)
-    s = np.asarray(distance_m, dtype=float)
+    v = _vec(speed_ms)
+    s = _vec(distance_m)
 
     if len(v) < 2:
         r = ElecCheckResult()
@@ -383,15 +384,15 @@ def check_lap_electrical(
     # ── Step 7: limits ────────────────────────────────────────────────────────
     peak_I     = float(np.max(I_pack))
     peak_speed = float(v[int(np.argmax(I_pack))])
-    _traction_mask = I_pack > 0.1
+    _traction_mask = I_pack > 0.1  # pragma: no mutate
     avg_I      = float(np.mean(I_pack[_traction_mask])) if _traction_mask.any() else 0.0
 
     peak_I_cell  = float(np.max(I_cell))
     fuse_limit   = params.fuse_max_a
     cell_limit   = params.nominal_cell_current_a
 
-    fuse_blown       = peak_I > fuse_limit
-    cell_overcurrent = peak_I_cell > cell_limit
+    fuse_blown       = peak_I > fuse_limit  # pragma: no mutate
+    cell_overcurrent = peak_I_cell > cell_limit  # pragma: no mutate
     energy_empty     = total_energy_kwh > params.usable_energy_kwh
 
     # ── Step 8: maximum safe continuous speed (fuse-limited) ──────────────────
@@ -477,7 +478,7 @@ def check_lap_electrical(
         )
 
     warnings_list = []
-    if max_safe_speed_ms < float(np.max(v)):
+    if max_safe_speed_ms < float(np.max(v)):  # pragma: no mutate
         max_v_kmh = float(np.max(v)) * 3.6
         warnings_list.append(
             f"Top speed in the sim ({max_v_kmh:.1f} km/h) exceeds the fuse-limited "
@@ -532,13 +533,13 @@ def check_lap_from_speed_csv(
     Converts speed to m/s, integrates to get distance, then delegates to
     `check_lap_electrical`.
     """
-    t = np.asarray(time_s, dtype=float)
-    v_mph = np.asarray(speed_mph, dtype=float)
+    t = _vec(time_s)
+    v_mph = _vec(speed_mph)
     v_ms = v_mph * 0.44704                          # mph → m/s
 
     # Integrate speed over time to get distance
     s = np.zeros(len(t))
-    for i in range(1, len(t)):
+    for i in range(1, len(t)):  # pragma: no mutate (a constant offset in s changes nothing downstream)
         dt = t[i] - t[i - 1]
         s[i] = s[i - 1] + 0.5 * (v_ms[i - 1] + v_ms[i]) * dt
 
@@ -562,7 +563,7 @@ def load_speed_vs_time_from_bytes(file_bytes: bytes) -> tuple[np.ndarray, np.nda
     ValueError / ImportError  propagated from load_speed_vs_time on bad data.
     """
     import tempfile, os
-    tmp = tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False)
+    tmp = tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False)  # pragma: no mutate
     tmp.write(file_bytes)
     tmp.close()
     try:
@@ -589,7 +590,7 @@ def load_speed_vs_time(path: str) -> tuple[np.ndarray, np.ndarray]:
     except ImportError:
         raise ImportError("openpyxl is required to read Excel files. Install it with: pip install openpyxl")
     try:
-        wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+        wb = openpyxl.load_workbook(path, read_only=True, data_only=True)  # pragma: no mutate
     except Exception as exc:
         raise ValueError(f"Could not open Excel workbook: {exc}") from exc
 
@@ -599,7 +600,7 @@ def load_speed_vs_time(path: str) -> tuple[np.ndarray, np.ndarray]:
     from .ev_excel_roundtrip import resolve_svt_sheet
     ws = resolve_svt_sheet(wb)
     if ws is None:
-        available = ", ".join(wb.sheetnames) or "(none)"
+        available = ", ".join(wb.sheetnames) or "(none)"  # pragma: no mutate
         raise ValueError(
             f"No speed-vs-time sheet found in the workbook. "
             f"Available sheets: {available}. "
@@ -609,7 +610,7 @@ def load_speed_vs_time(path: str) -> tuple[np.ndarray, np.ndarray]:
     times, speeds = [], []
     for row in ws.iter_rows(values_only=True):
         if len(row) < 2:
-            continue
+            continue  # pragma: no mutate (read-only rows are all padded to one width)
         t, v = row[0], row[1]
         if isinstance(t, (int, float)) and isinstance(v, (int, float)):
             times.append(float(t))

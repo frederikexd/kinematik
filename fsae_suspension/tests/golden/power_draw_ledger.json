@@ -1,0 +1,243 @@
+{
+ "drift": [
+  [
+   {
+    "check": "pack-sync",
+    "detail": {
+     "field": "voltage_v",
+     "now": 504.0,
+     "source": "wb.xlsx!P",
+     "was": 507.024
+    },
+    "message": "electrics.voltage_v was 507 V in the ledger but the workbook gives 504 V — the two had drifted. The workbook value now stands.",
+    "severity": "warning",
+    "subsystems": [
+     "electrics"
+    ]
+   }
+  ],
+  {
+   "brake_torque_nm": null,
+   "cg_x_mm": 1.0,
+   "cg_y_mm": 2.0,
+   "cg_z_mm": 3.0,
+   "cooling_airflow_cms": 0.2,
+   "downforce_n_at_v": null,
+   "drag_n_at_v": null,
+   "env_origin_mm": [
+    1.0,
+    2.0,
+    3.0
+   ],
+   "env_x_mm": 4.0,
+   "env_y_mm": 5.0,
+   "env_z_mm": 6.0,
+   "heat_reject_w": 99.0,
+   "is_estimate": false,
+   "mass_kg": 29.819999999999997,
+   "max_temp_c": 60.0,
+   "mount_load_n": 500.0,
+   "mount_points": 4,
+   "mounts_on": "chassis",
+   "name": "electrics",
+   "notes": "derived from the pack workbook: wb.xlsx!P",
+   "owner": "",
+   "peak_current_a": 50.0,
+   "peak_power_kw": null,
+   "peak_torque_nm": null,
+   "power_draw_w": 23706.666666666668,
+   "rationale": "",
+   "updated_by": "power_draw.to_interface",
+   "updated_on": "",
+   "voltage_v": 504.0
+  }
+ ],
+ "empty": [
+  [],
+  {
+   "brake_torque_nm": null,
+   "cg_x_mm": null,
+   "cg_y_mm": null,
+   "cg_z_mm": null,
+   "cooling_airflow_cms": null,
+   "downforce_n_at_v": null,
+   "drag_n_at_v": null,
+   "env_origin_mm": null,
+   "env_x_mm": null,
+   "env_y_mm": null,
+   "env_z_mm": null,
+   "heat_reject_w": null,
+   "is_estimate": false,
+   "mass_kg": 29.819999999999997,
+   "max_temp_c": null,
+   "mount_load_n": null,
+   "mount_points": null,
+   "mounts_on": null,
+   "name": "electrics",
+   "notes": "derived from the pack workbook: wb.xlsx!P",
+   "owner": "",
+   "peak_current_a": 50.0,
+   "peak_power_kw": null,
+   "peak_torque_nm": null,
+   "power_draw_w": 23706.666666666668,
+   "rationale": "",
+   "updated_by": "power_draw.to_interface",
+   "updated_on": "",
+   "voltage_v": 504.0
+  }
+ ],
+ "named": [
+  [
+   {
+    "check": "pack-sync",
+    "detail": {
+     "field": "mass_kg",
+     "now": 29.819999999999997,
+     "source": "workbook",
+     "was": 1.0
+    },
+    "message": "hv.mass_kg was 1 kg in the ledger but the workbook gives 29.82 kg — the two had drifted. The workbook value now stands.",
+    "severity": "warning",
+    "subsystems": [
+     "hv"
+    ]
+   },
+   {
+    "check": "pack-sync",
+    "detail": {
+     "field": "voltage_v",
+     "now": 504.0,
+     "source": "workbook",
+     "was": 1.0
+    },
+    "message": "hv.voltage_v was 1 V in the ledger but the workbook gives 504 V — the two had drifted. The workbook value now stands.",
+    "severity": "warning",
+    "subsystems": [
+     "hv"
+    ]
+   },
+   {
+    "check": "pack-sync",
+    "detail": {
+     "field": "peak_current_a",
+     "now": 50.0,
+     "source": "workbook",
+     "was": 1.0
+    },
+    "message": "hv.peak_current_a was 1 A in the ledger but the workbook gives 50 A — the two had drifted. The workbook value now stands.",
+    "severity": "warning",
+    "subsystems": [
+     "hv"
+    ]
+   },
+   {
+    "check": "pack-sync",
+    "detail": {
+     "field": "power_draw_w",
+     "now": 23706.666666666668,
+     "source": "workbook",
+     "was": 1.0
+    },
+    "message": "hv.power_draw_w was 1 W in the ledger but the workbook gives 2.371e+04 W — the two had drifted. The workbook value now stands.",
+    "severity": "warning",
+    "subsystems": [
+     "hv"
+    ]
+   }
+  ],
+  {
+   "brake_torque_nm": null,
+   "cg_x_mm": 7.0,
+   "cg_y_mm": null,
+   "cg_z_mm": null,
+   "cooling_airflow_cms": null,
+   "downforce_n_at_v": null,
+   "drag_n_at_v": null,
+   "env_origin_mm": null,
+   "env_x_mm": null,
+   "env_y_mm": null,
+   "env_z_mm": null,
+   "heat_reject_w": 8.0,
+   "is_estimate": false,
+   "mass_kg": 29.819999999999997,
+   "max_temp_c": null,
+   "mount_load_n": null,
+   "mount_points": null,
+   "mounts_on": null,
+   "name": "hv",
+   "notes": "derived from the pack workbook: (unnamed file)",
+   "owner": "",
+   "peak_current_a": 50.0,
+   "peak_power_kw": null,
+   "peak_torque_nm": null,
+   "power_draw_w": 23706.666666666668,
+   "rationale": "",
+   "updated_by": "power_draw.to_interface",
+   "updated_on": "",
+   "voltage_v": 504.0
+  }
+ ],
+ "zero": [
+  [
+   {
+    "check": "pack-sync",
+    "detail": {
+     "field": "voltage_v",
+     "now": 0.0,
+     "source": "workbook",
+     "was": 504.0
+    },
+    "message": "electrics.voltage_v was 504 V in the ledger but the workbook gives 0 V — the two had drifted. The workbook value now stands.",
+    "severity": "warning",
+    "subsystems": [
+     "electrics"
+    ]
+   },
+   {
+    "check": "pack-sync",
+    "detail": {
+     "field": "peak_current_a",
+     "now": 50.0,
+     "source": "workbook",
+     "was": 0.0
+    },
+    "message": "electrics.peak_current_a was 0 A in the ledger but the workbook gives 50 A — the two had drifted. The workbook value now stands.",
+    "severity": "warning",
+    "subsystems": [
+     "electrics"
+    ]
+   }
+  ],
+  {
+   "brake_torque_nm": null,
+   "cg_x_mm": null,
+   "cg_y_mm": null,
+   "cg_z_mm": null,
+   "cooling_airflow_cms": null,
+   "downforce_n_at_v": null,
+   "drag_n_at_v": null,
+   "env_origin_mm": null,
+   "env_x_mm": null,
+   "env_y_mm": null,
+   "env_z_mm": null,
+   "heat_reject_w": null,
+   "is_estimate": false,
+   "mass_kg": 0.0,
+   "max_temp_c": null,
+   "mount_load_n": null,
+   "mount_points": null,
+   "mounts_on": null,
+   "name": "electrics",
+   "notes": "derived from the pack workbook: (unnamed file)",
+   "owner": "",
+   "peak_current_a": 50.0,
+   "peak_power_kw": null,
+   "peak_torque_nm": null,
+   "power_draw_w": 0.0,
+   "rationale": "",
+   "updated_by": "power_draw.to_interface",
+   "updated_on": "",
+   "voltage_v": 0.0
+  }
+ ]
+}

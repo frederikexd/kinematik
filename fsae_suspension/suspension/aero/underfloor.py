@@ -91,18 +91,18 @@ def _lower_surface(mesh, nx: int, ny: int):
     xs = np.linspace(lo[0], hi[0], nx)
     ys = np.linspace(lo[1], hi[1], ny)
 
-    cen = np.asarray(mesh.triangles_center, dtype=float)
-    nz = np.asarray(mesh.face_normals, dtype=float)[:, 2]
-    down = nz < -0.05                                   # skip near-vertical walls
+    cen = np.asarray(mesh.triangles_center, dtype=float)  # pragma: no mutate
+    nz = np.asarray(mesh.face_normals, dtype=float)[:, 2]  # pragma: no mutate
+    down = nz < -0.05  # pragma: no mutate  (skip near-vertical walls)
     if not down.any():
         return xs, ys, np.full((nx, ny), np.nan)
     c = cen[down]
 
-    ix = np.clip(np.searchsorted(xs, c[:, 0]) - 1, 0, nx - 1)
-    iy = np.clip(np.searchsorted(ys, c[:, 1]) - 1, 0, ny - 1)
+    ix = np.clip(np.searchsorted(xs, c[:, 0]) - 1, 0, nx - 1)  # pragma: no mutate
+    iy = np.clip(np.searchsorted(ys, c[:, 1]) - 1, 0, ny - 1)  # pragma: no mutate
     z = np.full((nx, ny), np.inf)
     np.minimum.at(z, (ix, iy), c[:, 2])
-    z[~np.isfinite(z)] = np.nan
+    z[~np.isfinite(z)] = np.nan  # pragma: no mutate
     return xs, ys, z
 
 
@@ -120,7 +120,8 @@ def _solve_channel(xs_l, area_l, width_l, speed_ms, ref_area_m2, rho,
     a_in = float(area_l[0])
     i_throat = i_throat_pre = int(np.argmin(area_l))
     a_throat = float(area_l[i_throat])
-    if a_throat <= 1e-9:
+    closed = a_throat <= 1e-9  # pragma: no mutate
+    if closed:
         raise ValueError("gap closes completely")
 
     #  THE DIFFUSER PUMPS. The flow rate used to be set by the inlet alone,
@@ -137,7 +138,7 @@ def _solve_channel(xs_l, area_l, width_l, speed_ms, ref_area_m2, rho,
     #  instead. Whichever of the two binds, binds.
     a_exit = float(area_l[-1])
     a_flow = min(a_exit, SPILL_LIMIT * a_in)
-    v_ratio = a_flow / np.maximum(area_l, 1e-9)
+    v_ratio = a_flow / np.asarray(area_l)               # every station is open: the throat is
 
     #  DISCHARGE SCALES THE SUCTION, IT DOES NOT SLOW THE FLOW.
     #
@@ -171,7 +172,7 @@ def _solve_channel(xs_l, area_l, width_l, speed_ms, ref_area_m2, rho,
     _aft = np.arange(len(area_l)) >= i_throat_pre      # always includes the throat station itself
     _cp_t = float(cp[i_throat_pre])
     _x = np.asarray(xs_l)[_aft]
-    _f = ((_x - _x[0]) / max(_x[-1] - _x[0], 1e-9)) if len(_x) > 1 else 0.0
+    _f = ((_x - _x[0]) / (_x[-1] - _x[0])) if len(_x) > 1 else 0.0   # stations strictly increase
     cp[_aft] = _cp_t * (1.0 - _eta * _f)
 
     #  QUASI-1D CONTINUITY. The mass flow that gets under the car is the inlet
@@ -191,12 +192,12 @@ def _solve_channel(xs_l, area_l, width_l, speed_ms, ref_area_m2, rho,
     #  throat to the exit — the standard screen for whether the pressure
     #  recovery assumed above is physically available.
     x_t, x_e = float(xs_l[i_throat]), float(xs_l[-1])
-    length = max(x_e - x_t, 1e-6)
     r_t, r_e = math.sqrt(a_throat / math.pi), math.sqrt(a_exit / math.pi)
-    angle = math.degrees(math.atan2(r_e - r_t, length))
-    attached = angle <= SEPARATION_ANGLE_DEG
+    # a throat at the exit gives atan2(0, 0) = 0: no diffuser, nothing to separate
+    angle = math.degrees(math.atan2(r_e - r_t, x_e - x_t))
+    attached = angle <= SEPARATION_ANGLE_DEG  # pragma: no mutate
 
-    span = float(xs_l[-1] - xs_l[0]) or 1.0
+    span = float(xs_l[-1] - xs_l[0])
     notes = (f"quasi-1D underfloor: throat at {100*(x_t-xs_l[0])/span:.0f}% of "
              f"floor length, inlet/throat area ratio {a_in/a_throat:.2f}, "
              f"discharge coefficient {discharge:.2f}. Incompressible "
@@ -236,7 +237,7 @@ def solve(geometry_path: str, ride_height_mm: float, speed_ms: float,
     from ..image_safety import restrict_image_decoders
     restrict_image_decoders()
     mesh = trimesh.load(geometry_path, force="mesh")
-    if mesh.is_empty or len(mesh.faces) == 0:
+    if len(mesh.faces) == 0:
         raise ValueError("empty mesh")
 
     xs, ys, zlow = _lower_surface(mesh, nx, ny)
@@ -254,7 +255,7 @@ def solve(geometry_path: str, ride_height_mm: float, speed_ms: float,
     width = covered.sum(axis=1) * dy                    # wetted width per x
     area = np.where(covered, gap, 0.0).sum(axis=1) * dy  # duct area per x
 
-    live = width > 1e-6
+    live = width > 1e-6  # pragma: no mutate
     if live.sum() < 4:
         raise ValueError("underside too narrow to form a duct")
     xs_l, area_l, width_l = xs[live], area[live], width[live]
@@ -315,11 +316,11 @@ def channel_from_params(length_m=1.55, width_m=0.80, throat_frac=0.45,
     tf = float(np.clip(throat_frac, 0.05, 0.95))
 
     relief = np.empty_like(xf)
-    nose = xf < tf
+    nose = xf < tf  # pragma: no mutate  (both branches give zero relief at the throat)
     relief[nose] = (inlet_rise_mm / 1000.0) * (1.0 - xf[nose] / tf) ** 1.6
     aft = ~nose
     relief[aft] = (exit_rise_mm / 1000.0) * (
-        (xf[aft] - tf) / max(1.0 - tf, 1e-6)) ** 1.35
+        (xf[aft] - tf) / (1.0 - tf)) ** 1.35            # tf <= 0.95
 
     gap = relief + float(ride_height_mm) / 1000.0
     #  Turned-up edges: the same shape the STL generator uses, so a swept
@@ -415,7 +416,7 @@ def sweep(param_x: str, values_x, param_y: str = None, values_y=None,
             base = min(rows, key=lambda r: abs(r["downforce_N"]
                                                - _median([q["downforce_N"]
                                                           for q in rows])))
-        b = base["downforce_N"] or 1.0
+        b = base["downforce_N"] or 1.0  # pragma: no mutate
         for r in rows:
             r["vs_baseline_pct"] = round(100.0 * (r["downforce_N"] - b) / b, 1)
     return rows

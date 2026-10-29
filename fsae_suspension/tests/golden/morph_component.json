@@ -1,0 +1,3181 @@
+{
+ "bad_dom": {
+  "coarsen_premium": null,
+  "domain": "chassis tab",
+  "fan": null,
+  "findings": [
+   {
+    "check": "run",
+    "detail": {},
+    "message": "domain construction failed: float division by zero",
+    "severity": "error"
+   }
+  ],
+  "fos": null,
+  "fos_case_deg": "NaN",
+  "limits": {
+   "accuracy_mm": 0.05,
+   "haz_mm": 0.0,
+   "min_rib_haz_mm": 1.1,
+   "min_rib_mm": 1.1,
+   "process": "cnc",
+   "web_floor_mm": 1.0
+  },
+  "mass_g": 0.0,
+  "n_solves": 0,
+  "rounds": [],
+  "suggested_thickness_mm": null,
+  "verdict": "SOLVER_LIMITED",
+  "vm_max_MPa": "NaN",
+  "warnings": []
+ },
+ "cnc": [
+  {
+   "coarsen_premium": null,
+   "domain": "chassis tab",
+   "fan": null,
+   "findings": [],
+   "fos": 5.845,
+   "fos_case_deg": -120.0,
+   "limits": {
+    "accuracy_mm": 0.05,
+    "haz_mm": 0.0,
+    "min_rib_haz_mm": 1.1,
+    "min_rib_mm": 1.1,
+    "process": "cnc",
+    "web_floor_mm": 1.0
+   },
+   "mass_g": 11.7,
+   "n_solves": 18,
+   "rounds": [
+    {
+     "accepted": true,
+     "compliance": 8.833,
+     "filter_mm": 3.0,
+     "iterations": 8,
+     "viol_frac": 0.0,
+     "viol_haz_frac": 0.0,
+     "volfrac": 0.4
+    }
+   ],
+   "suggested_thickness_mm": null,
+   "verdict": "FORGEABLE",
+   "vm_max_MPa": 78.7,
+   "warnings": []
+  },
+  [
+   [
+    0.93656298470588,
+    0.8396240168255402,
+    0.8966844778003137,
+    0.9930524163780666
+   ],
+   [
+    0.09435376135390017,
+    0.9565941721639467,
+    1.0,
+    0.9897376801662818
+   ],
+   [
+    0.002907534741809739,
+    1.0,
+    0.0,
+    1.0
+   ],
+   [
+    5.151643720026816e-07,
+    1.0,
+    0.0,
+    1.0
+   ],
+   [
+    2.2911053926961593e-11,
+    0.0035802148670779545,
+    0.05292922168413973,
+    5.2215703973002e-07
+   ]
+  ],
+  [
+   [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   [
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   [
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   [
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   [
+    false,
+    false,
+    true,
+    true,
+    true,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true,
+    false
+   ],
+   [
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    false
+   ],
+   [
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    true,
+    true,
+    true,
+    false,
+    false,
+    true,
+    true,
+    true,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ]
+  ],
+  [
+   51.9672641373794,
+   19.129990143599812,
+   11.301805594788679,
+   10.182906747421185,
+   8.708078250289786,
+   8.968518821322558,
+   8.892802465295237,
+   8.833217157073305
+  ],
+  [
+   [
+    [
+     0.930346121866977,
+     -0.3666825514352654
+    ],
+    [
+     0.9969194761681565,
+     0.07843186875631968
+    ],
+    [
+     0.975745336725277,
+     0.2189087432216354
+    ]
+   ],
+   [
+    [
+     0.934924610731929,
+     0.35484640655888156
+    ],
+    [
+     0.9645380318913135,
+     0.26394390509203175
+    ],
+    [
+     0.9996132495030361,
+     0.02780919664393219
+    ]
+   ],
+   [
+    [
+     0.9932265500002776,
+     -0.11619389129616915
+    ],
+    [
+     0.9495096681223386,
+     -0.31373777289673993
+    ],
+    [
+     0.956615463275047,
+     0.2913534887779228
+    ]
+   ],
+   [
+    [
+     0.9564027793834211,
+     -0.29205089211927976
+    ],
+    [
+     0.34690228493628034,
+     -0.9379012766309617
+    ],
+    [
+     0.7109734640561199,
+     0.7032188374951578
+    ]
+   ]
+  ],
+  [
+   [
+    0.048085201072455064,
+    5.096687476289354,
+    4.430773704521229
+   ],
+   [
+    0.0,
+    2.5997619092580635,
+    3.2652000826859187
+   ],
+   [
+    0.0,
+    0.0,
+    3.691898724974042
+   ],
+   [
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
+  {
+   "anchor": "bottom_edge",
+   "anchor_bores": [],
+   "h_mm": 2.0,
+   "height_mm": 30.0,
+   "load_bore": [
+    12.0,
+    15.0,
+    5.0
+   ],
+   "material": "Steel 4130",
+   "name": "chassis tab",
+   "ring_mm": 4.0,
+   "thickness_mm": 4.0,
+   "width_mm": 24.0,
+   "yield_MPa": 460.0
+  },
+  true,
+  "# 🕸️🔩 MorphMesh — chassis tab\n\n🟢 FORGEABLE — grown, converged, and buildable at the shop's own limits on the first attempt.\n\n## The shop's declared limits\n- process **cnc** — positional accuracy ±0.05 mm, web floor 1.0 mm → minimum rib **1.1 mm**; no weld zone declared.\n\n## Growth rounds — enforce, grow, measure, accept/reject\n| round | enforced scale | iters | compliance | vol | thin-rib viol | HAZ viol | outcome |\n|---|---|---|---|---|---|---|---|\n| 1 | 3.0 mm | 8 | 8.83 | 40% | 0.0% | 0.0% | ACCEPTED |\n\n## The finished shape\n- mass **12 g** at 4.0 mm Steel 4130\n- worst von Mises FoS **5.84** (79 MPa, governing case at -120°) vs the standing 1.5 rule.\n\n---\n*Scope: 2D plane-stress plate, linear elastic, quasi-static; the load fan inherits Ghost Topology's time-scale separation whole. The HAZ rule is a screening heuristic, not a welding simulation. This is a starting shape for the CAD seat and the FEA queue — validate before manufacturing.*"
+ ],
+ "coarse": [
+  {
+   "coarsen_premium": {
+    "d_compliance_frac": 0.2577,
+    "d_filter_mm": 2.88
+   },
+   "domain": "chassis tab",
+   "fan": null,
+   "findings": [
+    {
+     "check": "domain",
+     "detail": {
+      "min_rib_mm": 5.0,
+      "ring_mm": 4.0
+     },
+     "message": "bore boss ring grown 4.0 → 5.0 mm to meet the declared minimum rib (hand_weld).",
+     "severity": "info"
+    },
+    {
+     "check": "fabrication",
+     "detail": {
+      "empty": false,
+      "filter_mm": 3.0,
+      "n_viol": 0,
+      "n_viol_haz": 0,
+      "ok": false,
+      "r_bulk_px": 1,
+      "r_haz_px": 1,
+      "viol_frac": 0.3,
+      "viol_haz_frac": 0.05
+     },
+     "message": "round 1 REJECTED: 30.0% of the shape is thinner than the 5.0 mm rib the shop can hold, 5.0% of the weld zone under the 8.0 mm HAZ rule — re-growing coarser.",
+     "severity": "warn"
+    },
+    {
+     "check": "fabrication",
+     "detail": {
+      "empty": false,
+      "filter_mm": 4.199999999999999,
+      "n_viol": 0,
+      "n_viol_haz": 0,
+      "ok": false,
+      "r_bulk_px": 1,
+      "r_haz_px": 1,
+      "viol_frac": 0.3,
+      "viol_haz_frac": 0.1
+     },
+     "message": "round 2 REJECTED: 30.0% of the shape is thinner than the 5.0 mm rib the shop can hold, 10.0% of the weld zone under the 8.0 mm HAZ rule — re-growing coarser.",
+     "severity": "warn"
+    },
+    {
+     "check": "fabrication",
+     "detail": {
+      "d_compliance_frac": 0.2577,
+      "d_filter_mm": 2.88
+     },
+     "message": "the shop-buildable shape is 25.8% more compliant than the first (rejected) shape — the stiffness premium paid for manufacturability.",
+     "severity": "info"
+    }
+   ],
+   "fos": 6.843,
+   "fos_case_deg": -120.0,
+   "limits": {
+    "accuracy_mm": 1.5,
+    "haz_mm": 8.0,
+    "min_rib_haz_mm": 8.0,
+    "min_rib_mm": 5.0,
+    "process": "hand_weld",
+    "web_floor_mm": 2.0
+   },
+   "mass_g": 13.4,
+   "n_solves": 50,
+   "rounds": [
+    {
+     "accepted": false,
+     "compliance": 8.437,
+     "filter_mm": 3.0,
+     "iterations": 8,
+     "viol_frac": 0.3,
+     "viol_haz_frac": 0.05,
+     "volfrac": 0.4
+    },
+    {
+     "accepted": false,
+     "compliance": 9.256,
+     "filter_mm": 4.2,
+     "iterations": 8,
+     "viol_frac": 0.3,
+     "viol_haz_frac": 0.1,
+     "volfrac": 0.4001
+    },
+    {
+     "accepted": true,
+     "compliance": 10.611,
+     "filter_mm": 5.88,
+     "iterations": 8,
+     "viol_frac": 0.0,
+     "viol_haz_frac": 0.0,
+     "volfrac": 0.3998
+    }
+   ],
+   "suggested_thickness_mm": null,
+   "verdict": "COARSENED",
+   "vm_max_MPa": 67.2,
+   "warnings": []
+  },
+  "# 🕸️🔩 MorphMesh — chassis tab\n\n🟡 COARSENED — the unconstrained ribs were REJECTED by the declared fabrication limits; a coarser pattern passed. The premium is printed below.\n\n## The shop's declared limits\n- process **hand_weld** — positional accuracy ±1.5 mm, web floor 2.0 mm → minimum rib **5.0 mm**; HAZ 8.0 mm deep at the weld, minimum rib inside it **8.0 mm**.\n\n## Growth rounds — enforce, grow, measure, accept/reject\n| round | enforced scale | iters | compliance | vol | thin-rib viol | HAZ viol | outcome |\n|---|---|---|---|---|---|---|---|\n| 1 | 3.0 mm | 8 | 8.44 | 40% | 30.0% | 5.0% | REJECTED |\n| 2 | 4.2 mm | 8 | 9.26 | 40% | 30.0% | 10.0% | REJECTED |\n| 3 | 5.9 mm | 8 | 10.61 | 40% | 0.0% | 0.0% | ACCEPTED |\n\n**Manufacturability premium:** the buildable shape is 25.8% more compliant than the first (rejected) shape, at +2.9 mm enforced scale.\n\n## The finished shape\n- mass **13 g** at 4.0 mm Steel 4130\n- worst von Mises FoS **6.84** (67 MPa, governing case at -120°) vs the standing 1.5 rule.\n\n## Findings\n- **[info]** bore boss ring grown 4.0 → 5.0 mm to meet the declared minimum rib (hand_weld).\n- **[warn]** round 1 REJECTED: 30.0% of the shape is thinner than the 5.0 mm rib the shop can hold, 5.0% of the weld zone under the 8.0 mm HAZ rule — re-growing coarser.\n- **[warn]** round 2 REJECTED: 30.0% of the shape is thinner than the 5.0 mm rib the shop can hold, 10.0% of the weld zone under the 8.0 mm HAZ rule — re-growing coarser.\n- **[info]** the shop-buildable shape is 25.8% more compliant than the first (rejected) shape — the stiffness premium paid for manufacturability.\n\n---\n*Scope: 2D plane-stress plate, linear elastic, quasi-static; the load fan inherits Ghost Topology's time-scale separation whole. The HAZ rule is a screening heuristic, not a welding simulation. This is a starting shape for the CAD seat and the FEA queue — validate before manufacturing.*"
+ ],
+ "hw": [
+  {
+   "coarsen_premium": null,
+   "domain": "chassis tab",
+   "fan": {
+    "cases": [
+     {
+      "F_N": 2500.0,
+      "angle_deg": -70.0,
+      "n_instants": 5,
+      "t_hi_ms": 500.0,
+      "t_lo_ms": 0.0,
+      "weight": 0.6
+     },
+     {
+      "F_N": 1800.0,
+      "angle_deg": -120.0,
+      "n_instants": 5,
+      "t_hi_ms": 500.0,
+      "t_lo_ms": 0.0,
+      "weight": 0.4
+     }
+    ],
+    "inplane_share": 0.97,
+    "member": "LF",
+    "n_instants": 18,
+    "peak_F_N": 2500.0,
+    "reversal_share": 0.0,
+    "span_deg": 50.0,
+    "warnings": [
+     "fan warning"
+    ]
+   },
+   "findings": [
+    {
+     "check": "domain",
+     "detail": {
+      "min_rib_mm": 5.0,
+      "ring_mm": 4.0
+     },
+     "message": "bore boss ring grown 4.0 → 5.0 mm to meet the declared minimum rib (hand_weld).",
+     "severity": "info"
+    }
+   ],
+   "fos": 6.808,
+   "fos_case_deg": -70.0,
+   "limits": {
+    "accuracy_mm": 1.5,
+    "haz_mm": 8.0,
+    "min_rib_haz_mm": 8.0,
+    "min_rib_mm": 5.0,
+    "process": "hand_weld",
+    "web_floor_mm": 2.0
+   },
+   "mass_g": 13.9,
+   "n_solves": 18,
+   "rounds": [
+    {
+     "accepted": true,
+     "compliance": 6.561,
+     "filter_mm": 3.0,
+     "iterations": 8,
+     "viol_frac": 0.0,
+     "viol_haz_frac": 0.0,
+     "volfrac": 0.5
+    }
+   ],
+   "suggested_thickness_mm": null,
+   "verdict": "FORGEABLE",
+   "vm_max_MPa": 67.6,
+   "warnings": [
+    "fan warning"
+   ]
+  },
+  [
+   [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   [
+    0.1829774100638979,
+    1.0,
+    0.0,
+    1.0
+   ],
+   [
+    0.05842046103560509,
+    1.0,
+    0.0,
+    1.0
+   ],
+   [
+    2.3584717178594933e-08,
+    0.04464805832058678,
+    0.36969167445676043,
+    0.003576198010773931
+   ]
+  ],
+  [
+   [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   [
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   [
+    false,
+    true,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true
+   ],
+   [
+    false,
+    true,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    false
+   ],
+   [
+    false,
+    true,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    false
+   ],
+   [
+    false,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true,
+    false
+   ],
+   [
+    false,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ]
+  ],
+  [
+   25.137962954027216,
+   12.71150760490583,
+   8.123286954668758,
+   6.947771881001764,
+   7.19428070914239,
+   6.58372962188489,
+   6.568791120107215,
+   6.561084376384299
+  ],
+  [
+   [
+    [
+     0.986169705142925,
+     -0.16573868787436555
+    ],
+    [
+     0.9950976830985063,
+     0.09889692154958446
+    ],
+    [
+     0.9853162459475986,
+     0.17073926165862208
+    ]
+   ],
+   [
+    [
+     0.9813775543276148,
+     -0.19208877078566952
+    ],
+    [
+     0.9694456977487617,
+     0.24530601117057185
+    ],
+    [
+     0.9993142030600985,
+     0.03702868566881775
+    ]
+   ],
+   [
+    [
+     0.5517855449478833,
+     -0.8339860384841987
+    ],
+    [
+     0.9612384706923912,
+     -0.27571833900006154
+    ],
+    [
+     0.962749035267686,
+     0.27039655155186426
+    ]
+   ],
+   [
+    [
+     0.09337678201540689,
+     0.9956308435260768
+    ],
+    [
+     0.9793472263299285,
+     -0.20218558375877288
+    ],
+    [
+     0.8011309164258478,
+     0.5984891433824687
+    ]
+   ]
+  ],
+  [
+   [
+    2.921450638482021,
+    4.4343988401072325,
+    4.864454583754311
+   ],
+   [
+    1.4981420931435885,
+    4.275899044325802,
+    4.545343292235277
+   ],
+   [
+    0.0,
+    0.0,
+    3.666146005579872
+   ],
+   [
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
+  {
+   "anchor": "bottom_edge",
+   "anchor_bores": [],
+   "h_mm": 2.0,
+   "height_mm": 30.0,
+   "load_bore": [
+    12.0,
+    15.0,
+    5.0
+   ],
+   "material": "Steel 4130",
+   "name": "chassis tab",
+   "ring_mm": 5.0,
+   "thickness_mm": 4.0,
+   "width_mm": 24.0,
+   "yield_MPa": 460.0
+  },
+  true,
+  "# 🕸️🔩 MorphMesh — chassis tab\n\n🟢 FORGEABLE — grown, converged, and buildable at the shop's own limits on the first attempt.\n\n## The transient load fan — member LF (LCA front leg)\n- 18 audited instants, peak 2500 N, fan span 50°, 97% of exposure in the bracket plane.\n\n| case | angle | peak force | exposure | instants | window |\n|---|---|---|---|---|---|\n| 1 | -70° | 2500 N | 60% | 5 | 0–500 ms |\n| 2 | -120° | 1800 N | 40% | 5 | 0–500 ms |\n\n## The shop's declared limits\n- process **hand_weld** — positional accuracy ±1.5 mm, web floor 2.0 mm → minimum rib **5.0 mm**; HAZ 8.0 mm deep at the weld, minimum rib inside it **8.0 mm**.\n\n## Growth rounds — enforce, grow, measure, accept/reject\n| round | enforced scale | iters | compliance | vol | thin-rib viol | HAZ viol | outcome |\n|---|---|---|---|---|---|---|---|\n| 1 | 3.0 mm | 8 | 6.56 | 50% | 0.0% | 0.0% | ACCEPTED |\n\n## The finished shape\n- mass **14 g** at 4.0 mm Steel 4130\n- worst von Mises FoS **6.81** (68 MPa, governing case at -70°) vs the standing 1.5 rule.\n\n## Findings\n- **[info]** bore boss ring grown 4.0 → 5.0 mm to meet the declared minimum rib (hand_weld).\n\n## Warnings\n- fan warning\n\n---\n*Scope: 2D plane-stress plate, linear elastic, quasi-static; the load fan inherits Ghost Topology's time-scale separation whole. The HAZ rule is a screening heuristic, not a welding simulation. This is a starting shape for the CAD seat and the FEA queue — validate before manufacturing.*"
+ ],
+ "no_anchor": {
+  "coarsen_premium": null,
+  "domain": "chassis tab",
+  "fan": null,
+  "findings": [
+   {
+    "check": "run",
+    "detail": {},
+    "message": "anchor leaves no free/fixed dof split — check the anchor declaration.",
+    "severity": "error"
+   }
+  ],
+  "fos": null,
+  "fos_case_deg": "NaN",
+  "limits": {
+   "accuracy_mm": 0.05,
+   "haz_mm": 0.0,
+   "min_rib_haz_mm": 1.1,
+   "min_rib_mm": 1.1,
+   "process": "cnc",
+   "web_floor_mm": 1.0
+  },
+  "mass_g": 0.0,
+  "n_solves": 0,
+  "rounds": [],
+  "suggested_thickness_mm": null,
+  "verdict": "SOLVER_LIMITED",
+  "vm_max_MPa": "NaN",
+  "warnings": []
+ },
+ "piv": [
+  {
+   "coarsen_premium": null,
+   "domain": "pivot bracket (bellcrank web)",
+   "fan": null,
+   "findings": [],
+   "fos": 25.007,
+   "fos_case_deg": 0.0,
+   "limits": {
+    "accuracy_mm": 0.05,
+    "haz_mm": 0.0,
+    "min_rib_haz_mm": 1.1,
+    "min_rib_mm": 1.1,
+    "process": "cnc",
+    "web_floor_mm": 1.0
+   },
+   "mass_g": 4.2,
+   "n_solves": 9,
+   "rounds": [
+    {
+     "accepted": true,
+     "compliance": 671124.894,
+     "filter_mm": 3.0,
+     "iterations": 8,
+     "viol_frac": 0.0,
+     "viol_haz_frac": 0.0,
+     "volfrac": 0.35
+    }
+   ],
+   "suggested_thickness_mm": null,
+   "verdict": "FORGEABLE",
+   "vm_max_MPa": 17.2,
+   "warnings": []
+  },
+  [
+   [
+    1.4924068501787277e-11,
+    0.00015313435265503752,
+    0.0012156619426837783,
+    0.0025708386490539813,
+    0.0007413895603527975
+   ],
+   [
+    0.21034721426380057,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   [
+    1.0,
+    0.0,
+    1.0,
+    1.0,
+    0.0
+   ],
+   [
+    0.004407112615572971,
+    0.13561560675838474,
+    0.9505320641518044,
+    0.9539825212214194,
+    0.6118857487834487
+   ]
+  ],
+  [
+   [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false
+   ],
+   [
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false
+   ],
+   [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   [
+    true,
+    true,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false,
+    true,
+    true
+   ],
+   [
+    true,
+    true,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false,
+    true,
+    true
+   ],
+   [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   [
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false
+   ],
+   [
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ]
+  ],
+  [
+   671136.6366838805,
+   671128.576692166,
+   671126.1127407232,
+   671125.1670753555,
+   671124.952451522,
+   671124.9157746423,
+   671124.9006997078,
+   671124.8937378471
+  ],
+  [
+   [
+    [
+     0.8725570286906738,
+     -0.4885122635947871
+    ],
+    [
+     0.999867804919348,
+     0.016259541376210027
+    ],
+    [
+     0.9983711664946732,
+     0.057052729225390245
+    ],
+    [
+     0.9704252185233294,
+     0.2414019371379366
+    ]
+   ],
+   [
+    [
+     0.37841313626475703,
+     -0.9256368069076933
+    ],
+    [
+     1.0,
+     0.0
+    ],
+    [
+     0.9971881133464844,
+     -0.07493908593303586
+    ],
+    [
+     0.9949665617984687,
+     0.10020748925571368
+    ]
+   ],
+   [
+    [
+     0.057478987401210865,
+     -0.9983467163302193
+    ],
+    [
+     0.83588493960121,
+     0.5489046982381199
+    ],
+    [
+     0.9969078727461765,
+     0.07857921644234624
+    ],
+    [
+     0.9931045732838115,
+     -0.11723184943853185
+    ]
+   ]
+  ],
+  [
+   [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.20625555681542157,
+    0.0,
+    13.925772379955076,
+    13.070506722202543
+   ],
+   [
+    0.0,
+    6.277632853177601,
+    11.503347376607127,
+    7.918414484176253
+   ]
+  ],
+  {
+   "anchor": "bores",
+   "anchor_bores": [
+    [
+     6.6,
+     12.0,
+     3.0
+    ]
+   ],
+   "h_mm": 2.0,
+   "height_mm": 24.0,
+   "load_bore": [
+    24.599999999999998,
+    12.0,
+    2.0
+   ],
+   "material": "Aluminium 7075",
+   "name": "pivot bracket (bellcrank web)",
+   "ring_mm": 4.0,
+   "thickness_mm": 4.0,
+   "width_mm": 30.0,
+   "yield_MPa": 430.0
+  },
+  true,
+  "# 🕸️🔩 MorphMesh — pivot bracket (bellcrank web)\n\n🟢 FORGEABLE — grown, converged, and buildable at the shop's own limits on the first attempt.\n\n## The shop's declared limits\n- process **cnc** — positional accuracy ±0.05 mm, web floor 1.0 mm → minimum rib **1.1 mm**; no weld zone declared.\n\n## Growth rounds — enforce, grow, measure, accept/reject\n| round | enforced scale | iters | compliance | vol | thin-rib viol | HAZ viol | outcome |\n|---|---|---|---|---|---|---|---|\n| 1 | 3.0 mm | 8 | 671124.89 | 35% | 0.0% | 0.0% | ACCEPTED |\n\n## The finished shape\n- mass **4 g** at 4.0 mm Aluminium 7075\n- worst von Mises FoS **25.01** (17 MPa, governing case at 0°) vs the standing 1.5 rule.\n\n---\n*Scope: 2D plane-stress plate, linear elastic, quasi-static; the load fan inherits Ghost Topology's time-scale separation whole. The HAZ rule is a screening heuristic, not a welding simulation. This is a starting shape for the CAD seat and the FEA queue — validate before manufacturing.*"
+ ],
+ "rounds1": [
+  {
+   "coarsen_premium": null,
+   "domain": "chassis tab",
+   "fan": null,
+   "findings": [],
+   "fos": 5.845,
+   "fos_case_deg": -120.0,
+   "limits": {
+    "accuracy_mm": 0.05,
+    "haz_mm": 0.0,
+    "min_rib_haz_mm": 1.1,
+    "min_rib_mm": 1.1,
+    "process": "cnc",
+    "web_floor_mm": 1.0
+   },
+   "mass_g": 11.7,
+   "n_solves": 18,
+   "rounds": [
+    {
+     "accepted": true,
+     "compliance": 8.833,
+     "filter_mm": 3.0,
+     "iterations": 8,
+     "viol_frac": 0.0,
+     "viol_haz_frac": 0.0,
+     "volfrac": 0.4
+    }
+   ],
+   "suggested_thickness_mm": null,
+   "verdict": "FORGEABLE",
+   "vm_max_MPa": 78.7,
+   "warnings": []
+  },
+  [
+   [
+    0.93656298470588,
+    0.8396240168255402,
+    0.8966844778003137,
+    0.9930524163780666
+   ],
+   [
+    0.09435376135390017,
+    0.9565941721639467,
+    1.0,
+    0.9897376801662818
+   ],
+   [
+    0.002907534741809739,
+    1.0,
+    0.0,
+    1.0
+   ],
+   [
+    5.151643720026816e-07,
+    1.0,
+    0.0,
+    1.0
+   ],
+   [
+    2.2911053926961593e-11,
+    0.0035802148670779545,
+    0.05292922168413973,
+    5.2215703973002e-07
+   ]
+  ],
+  [
+   [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   [
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   [
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   [
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   [
+    false,
+    false,
+    true,
+    true,
+    true,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true,
+    false
+   ],
+   [
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    false
+   ],
+   [
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    true,
+    true,
+    true,
+    false,
+    false,
+    true,
+    true,
+    true,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ]
+  ],
+  [
+   51.9672641373794,
+   19.129990143599812,
+   11.301805594788679,
+   10.182906747421185,
+   8.708078250289786,
+   8.968518821322558,
+   8.892802465295237,
+   8.833217157073305
+  ],
+  [
+   [
+    [
+     0.930346121866977,
+     -0.3666825514352654
+    ],
+    [
+     0.9969194761681565,
+     0.07843186875631968
+    ],
+    [
+     0.975745336725277,
+     0.2189087432216354
+    ]
+   ],
+   [
+    [
+     0.934924610731929,
+     0.35484640655888156
+    ],
+    [
+     0.9645380318913135,
+     0.26394390509203175
+    ],
+    [
+     0.9996132495030361,
+     0.02780919664393219
+    ]
+   ],
+   [
+    [
+     0.9932265500002776,
+     -0.11619389129616915
+    ],
+    [
+     0.9495096681223386,
+     -0.31373777289673993
+    ],
+    [
+     0.956615463275047,
+     0.2913534887779228
+    ]
+   ],
+   [
+    [
+     0.9564027793834211,
+     -0.29205089211927976
+    ],
+    [
+     0.34690228493628034,
+     -0.9379012766309617
+    ],
+    [
+     0.7109734640561199,
+     0.7032188374951578
+    ]
+   ]
+  ],
+  [
+   [
+    0.048085201072455064,
+    5.096687476289354,
+    4.430773704521229
+   ],
+   [
+    0.0,
+    2.5997619092580635,
+    3.2652000826859187
+   ],
+   [
+    0.0,
+    0.0,
+    3.691898724974042
+   ],
+   [
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
+  {
+   "anchor": "bottom_edge",
+   "anchor_bores": [],
+   "h_mm": 2.0,
+   "height_mm": 30.0,
+   "load_bore": [
+    12.0,
+    15.0,
+    5.0
+   ],
+   "material": "Steel 4130",
+   "name": "chassis tab",
+   "ring_mm": 4.0,
+   "thickness_mm": 4.0,
+   "width_mm": 24.0,
+   "yield_MPa": 460.0
+  },
+  true,
+  "# 🕸️🔩 MorphMesh — chassis tab\n\n🟢 FORGEABLE — grown, converged, and buildable at the shop's own limits on the first attempt.\n\n## The shop's declared limits\n- process **cnc** — positional accuracy ±0.05 mm, web floor 1.0 mm → minimum rib **1.1 mm**; no weld zone declared.\n\n## Growth rounds — enforce, grow, measure, accept/reject\n| round | enforced scale | iters | compliance | vol | thin-rib viol | HAZ viol | outcome |\n|---|---|---|---|---|---|---|---|\n| 1 | 3.0 mm | 8 | 8.83 | 40% | 0.0% | 0.0% | ACCEPTED |\n\n## The finished shape\n- mass **12 g** at 4.0 mm Steel 4130\n- worst von Mises FoS **5.84** (79 MPa, governing case at -120°) vs the standing 1.5 rule.\n\n---\n*Scope: 2D plane-stress plate, linear elastic, quasi-static; the load fan inherits Ghost Topology's time-scale separation whole. The HAZ rule is a screening heuristic, not a welding simulation. This is a starting shape for the CAD seat and the FEA queue — validate before manufacturing.*"
+ ],
+ "screen_fail": {
+  "coarsen_premium": null,
+  "domain": "chassis tab",
+  "fan": null,
+  "findings": [],
+  "fos": null,
+  "fos_case_deg": "NaN",
+  "limits": {
+   "accuracy_mm": 0.05,
+   "haz_mm": 0.0,
+   "min_rib_haz_mm": 1.1,
+   "min_rib_mm": 1.1,
+   "process": "cnc",
+   "web_floor_mm": 1.0
+  },
+  "mass_g": 11.8,
+  "n_solves": 8,
+  "rounds": [
+   {
+    "accepted": true,
+    "compliance": 10.183,
+    "filter_mm": 3.0,
+    "iterations": 4,
+    "viol_frac": 0.0,
+    "viol_haz_frac": 0.0,
+    "volfrac": 0.4
+   }
+  ],
+  "suggested_thickness_mm": null,
+  "verdict": "FORGEABLE",
+  "vm_max_MPa": 0.0,
+  "warnings": [
+   "structural screen failed on the final shape: late"
+  ]
+ },
+ "simp_fail": {
+  "coarsen_premium": null,
+  "domain": "chassis tab",
+  "fan": null,
+  "findings": [
+   {
+    "check": "run",
+    "detail": {},
+    "message": "FE/optimiser failed: singular",
+    "severity": "error"
+   }
+  ],
+  "fos": null,
+  "fos_case_deg": "NaN",
+  "limits": {
+   "accuracy_mm": 0.05,
+   "haz_mm": 0.0,
+   "min_rib_haz_mm": 1.1,
+   "min_rib_mm": 1.1,
+   "process": "cnc",
+   "web_floor_mm": 1.0
+  },
+  "mass_g": 0.0,
+  "n_solves": 0,
+  "rounds": [],
+  "suggested_thickness_mm": null,
+  "verdict": "SOLVER_LIMITED",
+  "vm_max_MPa": "NaN",
+  "warnings": []
+ },
+ "solid_one": {
+  "coarsen_premium": null,
+  "domain": "chassis tab",
+  "fan": null,
+  "findings": [
+   {
+    "check": "fabrication",
+    "detail": {
+     "empty": false,
+     "filter_mm": 3.0,
+     "n_viol": 0,
+     "n_viol_haz": 0,
+     "ok": false,
+     "r_bulk_px": 1,
+     "r_haz_px": 0,
+     "viol_frac": 0.0,
+     "viol_haz_frac": 0.0
+    },
+    "message": "round 1 REJECTED: 0.0% of the shape is thinner than the 1.1 mm rib the shop can hold — re-growing coarser.",
+    "severity": "warn"
+   },
+   {
+    "check": "fabrication",
+    "detail": {
+     "empty": false,
+     "filter_mm": 4.199999999999999,
+     "n_viol": 0,
+     "n_viol_haz": 0,
+     "ok": false,
+     "r_bulk_px": 1,
+     "r_haz_px": 0,
+     "viol_frac": 0.0,
+     "viol_haz_frac": 0.0
+    },
+    "message": "round 2 REJECTED: 0.0% of the shape is thinner than the 1.1 mm rib the shop can hold — re-growing coarser.",
+    "severity": "warn"
+   },
+   {
+    "check": "fabrication",
+    "detail": {
+     "empty": false,
+     "filter_mm": 5.879999999999999,
+     "n_viol": 0,
+     "n_viol_haz": 0,
+     "ok": false,
+     "r_bulk_px": 1,
+     "r_haz_px": 0,
+     "viol_frac": 0.0,
+     "viol_haz_frac": 0.0
+    },
+    "message": "round 3 REJECTED: 0.0% of the shape is thinner than the 1.1 mm rib the shop can hold — re-growing coarser.",
+    "severity": "warn"
+   },
+   {
+    "check": "fabrication",
+    "detail": {
+     "empty": false,
+     "filter_mm": 8.231999999999998,
+     "n_viol": 0,
+     "n_viol_haz": 0,
+     "ok": false,
+     "r_bulk_px": 1,
+     "r_haz_px": 0,
+     "viol_frac": 0.0,
+     "viol_haz_frac": 0.0
+    },
+    "message": "round 4 REJECTED: 0.0% of the shape is thinner than the 1.1 mm rib the shop can hold — re-growing coarser.",
+    "severity": "warn"
+   },
+   {
+    "check": "fabrication",
+    "detail": {
+     "empty": false,
+     "n_viol": 0,
+     "n_viol_haz": 0,
+     "ok": false,
+     "r_bulk_px": 1,
+     "r_haz_px": 0,
+     "viol_frac": 0.0,
+     "viol_haz_frac": 0.0
+    },
+    "message": "no shape within the 40% volume budget satisfies the declared cnc limits — the bulk rib width is the binding constraint. Widen the budget, thicken the plate, or improve the process class.",
+    "severity": "error"
+   }
+  ],
+  "fos": 7.538,
+  "fos_case_deg": -70.0,
+  "limits": {
+   "accuracy_mm": 0.05,
+   "haz_mm": 0.0,
+   "min_rib_haz_mm": 1.1,
+   "min_rib_mm": 1.1,
+   "process": "cnc",
+   "web_floor_mm": 1.0
+  },
+  "mass_g": 22.6,
+  "n_solves": 10,
+  "rounds": [
+   {
+    "accepted": false,
+    "compliance": 4.0,
+    "filter_mm": 3.0,
+    "iterations": 2,
+    "viol_frac": 0.0,
+    "viol_haz_frac": 0.0,
+    "volfrac": 1.0
+   },
+   {
+    "accepted": false,
+    "compliance": 4.0,
+    "filter_mm": 4.2,
+    "iterations": 2,
+    "viol_frac": 0.0,
+    "viol_haz_frac": 0.0,
+    "volfrac": 1.0
+   },
+   {
+    "accepted": false,
+    "compliance": 4.0,
+    "filter_mm": 5.88,
+    "iterations": 2,
+    "viol_frac": 0.0,
+    "viol_haz_frac": 0.0,
+    "volfrac": 1.0
+   },
+   {
+    "accepted": false,
+    "compliance": 4.0,
+    "filter_mm": 8.23,
+    "iterations": 2,
+    "viol_frac": 0.0,
+    "viol_haz_frac": 0.0,
+    "volfrac": 1.0
+   }
+  ],
+  "suggested_thickness_mm": null,
+  "verdict": "UNBUILDABLE",
+  "vm_max_MPa": 61.0,
+  "warnings": []
+ },
+ "starved": [
+  {
+   "coarsen_premium": null,
+   "domain": "chassis tab",
+   "fan": {
+    "cases": [
+     {
+      "F_N": 2500.0,
+      "angle_deg": -70.0,
+      "n_instants": 5,
+      "t_hi_ms": 500.0,
+      "t_lo_ms": 0.0,
+      "weight": 0.6
+     },
+     {
+      "F_N": 1800.0,
+      "angle_deg": -120.0,
+      "n_instants": 5,
+      "t_hi_ms": 500.0,
+      "t_lo_ms": 0.0,
+      "weight": 0.4
+     }
+    ],
+    "inplane_share": 0.97,
+    "member": "LF",
+    "n_instants": 18,
+    "peak_F_N": 2500.0,
+    "reversal_share": 0.0,
+    "span_deg": 50.0,
+    "warnings": [
+     "fan warning"
+    ]
+   },
+   "findings": [
+    {
+     "check": "run",
+     "detail": {},
+     "message": "no load cases — the fan is empty; nothing to grow.",
+     "severity": "error"
+    }
+   ],
+   "fos": null,
+   "fos_case_deg": "NaN",
+   "limits": {
+    "accuracy_mm": 0.05,
+    "haz_mm": 0.0,
+    "min_rib_haz_mm": 1.1,
+    "min_rib_mm": 1.1,
+    "process": "cnc",
+    "web_floor_mm": 1.0
+   },
+   "mass_g": 0.0,
+   "n_solves": 0,
+   "rounds": [],
+   "suggested_thickness_mm": null,
+   "verdict": "LOAD_STARVED",
+   "vm_max_MPa": "NaN",
+   "warnings": [
+    "fan warning"
+   ]
+  },
+  {
+   "coarsen_premium": null,
+   "domain": "chassis tab",
+   "fan": null,
+   "findings": [
+    {
+     "check": "run",
+     "detail": {},
+     "message": "peak case amplitude 0.50 N is negligible.",
+     "severity": "error"
+    }
+   ],
+   "fos": null,
+   "fos_case_deg": "NaN",
+   "limits": {
+    "accuracy_mm": 0.05,
+    "haz_mm": 0.0,
+    "min_rib_haz_mm": 1.1,
+    "min_rib_mm": 1.1,
+    "process": "cnc",
+    "web_floor_mm": 1.0
+   },
+   "mass_g": 0.0,
+   "n_solves": 0,
+   "rounds": [],
+   "suggested_thickness_mm": null,
+   "verdict": "LOAD_STARVED",
+   "vm_max_MPa": "NaN",
+   "warnings": []
+  }
+ ],
+ "tol": [
+  {
+   "coarsen_premium": null,
+   "domain": "chassis tab",
+   "fan": null,
+   "findings": [],
+   "fos": 6.403,
+   "fos_case_deg": -120.0,
+   "limits": {
+    "accuracy_mm": 0.05,
+    "haz_mm": 0.0,
+    "min_rib_haz_mm": 1.1,
+    "min_rib_mm": 1.1,
+    "process": "cnc",
+    "web_floor_mm": 1.0
+   },
+   "mass_g": 12.3,
+   "n_solves": 4,
+   "rounds": [
+    {
+     "accepted": true,
+     "compliance": 59.522,
+     "filter_mm": 3.0,
+     "iterations": 1,
+     "viol_frac": 0.0,
+     "viol_haz_frac": 0.0,
+     "volfrac": 0.4
+    }
+   ],
+   "suggested_thickness_mm": null,
+   "verdict": "FORGEABLE",
+   "vm_max_MPa": 71.8,
+   "warnings": []
+  },
+  [
+   [
+    0.6295803799710146,
+    0.6295803799710146,
+    0.6295803799710146,
+    0.6295803799710146
+   ],
+   [
+    0.6295803799710143,
+    0.7638760183890835,
+    1.0,
+    0.6408066876376896
+   ],
+   [
+    0.25249564946551467,
+    1.0,
+    0.0,
+    1.0
+   ],
+   [
+    0.1474174842347212,
+    1.0,
+    0.0,
+    1.0
+   ],
+   [
+    0.1474174842347212,
+    0.1644211808726585,
+    0.29656166235998743,
+    0.1474174842347212
+   ]
+  ],
+  [
+   [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   [
+    false,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   [
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    false
+   ],
+   [
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    true,
+    true,
+    true,
+    false,
+    false,
+    true,
+    true,
+    true,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ]
+  ],
+  [
+   59.522321281843546
+  ],
+  [
+   [
+    [
+     0.9759974673205761,
+     -0.21778187202754248
+    ],
+    [
+     0.9987854706781935,
+     0.0492705141249778
+    ],
+    [
+     0.9757762894977627,
+     0.2187707312552992
+    ]
+   ],
+   [
+    [
+     0.8954815637287309,
+     -0.44509860595372214
+    ],
+    [
+     0.9658594788557087,
+     0.2590665302669931
+    ],
+    [
+     0.9991856249790034,
+     0.0403495580560469
+    ]
+   ],
+   [
+    [
+     0.9968273779199369,
+     -0.07959383537224013
+    ],
+    [
+     0.9480199464963747,
+     -0.3182109065462886
+    ],
+    [
+     0.9469395811452362,
+     0.3214116202947314
+    ]
+   ],
+   [
+    [
+     0.9518580438923078,
+     -0.30653917250085577
+    ],
+    [
+     0.29459149916061533,
+     -0.955623277564073
+    ],
+    [
+     0.7025122541516824,
+     0.7116716467351514
+    ]
+   ]
+  ],
+  [
+   [
+    2.385378619234812,
+    4.553557757566065,
+    4.449563888477561
+   ],
+   [
+    0.006719289051582145,
+    2.926043202786044,
+    4.228985023660986
+   ],
+   [
+    0.0,
+    0.0,
+    3.428707285065265
+   ],
+   [
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
+  {
+   "anchor": "bottom_edge",
+   "anchor_bores": [],
+   "h_mm": 2.0,
+   "height_mm": 30.0,
+   "load_bore": [
+    12.0,
+    15.0,
+    5.0
+   ],
+   "material": "Steel 4130",
+   "name": "chassis tab",
+   "ring_mm": 4.0,
+   "thickness_mm": 4.0,
+   "width_mm": 24.0,
+   "yield_MPa": 460.0
+  },
+  true,
+  "# 🕸️🔩 MorphMesh — chassis tab\n\n🟢 FORGEABLE — grown, converged, and buildable at the shop's own limits on the first attempt.\n\n## The shop's declared limits\n- process **cnc** — positional accuracy ±0.05 mm, web floor 1.0 mm → minimum rib **1.1 mm**; no weld zone declared.\n\n## Growth rounds — enforce, grow, measure, accept/reject\n| round | enforced scale | iters | compliance | vol | thin-rib viol | HAZ viol | outcome |\n|---|---|---|---|---|---|---|---|\n| 1 | 3.0 mm | 1 | 59.52 | 40% | 0.0% | 0.0% | ACCEPTED |\n\n## The finished shape\n- mass **12 g** at 4.0 mm Steel 4130\n- worst von Mises FoS **6.40** (72 MPa, governing case at -120°) vs the standing 1.5 rule.\n\n---\n*Scope: 2D plane-stress plate, linear elastic, quasi-static; the load fan inherits Ghost Topology's time-scale separation whole. The HAZ rule is a screening heuristic, not a welding simulation. This is a starting shape for the CAD seat and the FEA queue — validate before manufacturing.*"
+ ],
+ "unb_bulk": [
+  {
+   "coarsen_premium": null,
+   "domain": "chassis tab",
+   "fan": null,
+   "findings": [
+    {
+     "check": "domain",
+     "detail": {
+      "min_rib_mm": 5.0,
+      "ring_mm": 4.0
+     },
+     "message": "bore boss ring grown 4.0 → 5.0 mm to meet the declared minimum rib (hand_weld).",
+     "severity": "info"
+    },
+    {
+     "check": "fabrication",
+     "detail": {
+      "empty": false,
+      "filter_mm": 3.0,
+      "n_viol": 0,
+      "n_viol_haz": 0,
+      "ok": false,
+      "r_bulk_px": 1,
+      "r_haz_px": 1,
+      "viol_frac": 0.4,
+      "viol_haz_frac": 0.1
+     },
+     "message": "round 1 REJECTED: 40.0% of the shape is thinner than the 5.0 mm rib the shop can hold, 10.0% of the weld zone under the 8.0 mm HAZ rule — re-growing coarser.",
+     "severity": "warn"
+    },
+    {
+     "check": "fabrication",
+     "detail": {
+      "empty": false,
+      "filter_mm": 4.199999999999999,
+      "n_viol": 0,
+      "n_viol_haz": 0,
+      "ok": false,
+      "r_bulk_px": 1,
+      "r_haz_px": 1,
+      "viol_frac": 0.4,
+      "viol_haz_frac": 0.1
+     },
+     "message": "round 2 REJECTED: 40.0% of the shape is thinner than the 5.0 mm rib the shop can hold, 10.0% of the weld zone under the 8.0 mm HAZ rule — re-growing coarser.",
+     "severity": "warn"
+    },
+    {
+     "check": "fabrication",
+     "detail": {
+      "empty": false,
+      "n_viol": 0,
+      "n_viol_haz": 0,
+      "ok": false,
+      "r_bulk_px": 1,
+      "r_haz_px": 1,
+      "viol_frac": 0.4,
+      "viol_haz_frac": 0.1
+     },
+     "message": "no shape within the 40% volume budget satisfies the declared hand_weld limits — the bulk rib width is the binding constraint. Widen the budget, thicken the plate, or improve the process class.",
+     "severity": "error"
+    }
+   ],
+   "fos": 6.845,
+   "fos_case_deg": -120.0,
+   "limits": {
+    "accuracy_mm": 1.5,
+    "haz_mm": 8.0,
+    "min_rib_haz_mm": 8.0,
+    "min_rib_mm": 5.0,
+    "process": "hand_weld",
+    "web_floor_mm": 2.0
+   },
+   "mass_g": 13.2,
+   "n_solves": 34,
+   "rounds": [
+    {
+     "accepted": false,
+     "compliance": 8.437,
+     "filter_mm": 3.0,
+     "iterations": 8,
+     "viol_frac": 0.4,
+     "viol_haz_frac": 0.1,
+     "volfrac": 0.4
+    },
+    {
+     "accepted": false,
+     "compliance": 9.256,
+     "filter_mm": 4.2,
+     "iterations": 8,
+     "viol_frac": 0.4,
+     "viol_haz_frac": 0.1,
+     "volfrac": 0.4001
+    }
+   ],
+   "suggested_thickness_mm": null,
+   "verdict": "UNBUILDABLE",
+   "vm_max_MPa": 67.2,
+   "warnings": []
+  },
+  "# 🕸️🔩 MorphMesh — chassis tab\n\n🔴 UNBUILDABLE — no shape inside the volume budget satisfies the declared shop limits.\n\n## The shop's declared limits\n- process **hand_weld** — positional accuracy ±1.5 mm, web floor 2.0 mm → minimum rib **5.0 mm**; HAZ 8.0 mm deep at the weld, minimum rib inside it **8.0 mm**.\n\n## Growth rounds — enforce, grow, measure, accept/reject\n| round | enforced scale | iters | compliance | vol | thin-rib viol | HAZ viol | outcome |\n|---|---|---|---|---|---|---|---|\n| 1 | 3.0 mm | 8 | 8.44 | 40% | 40.0% | 10.0% | REJECTED |\n| 2 | 4.2 mm | 8 | 9.26 | 40% | 40.0% | 10.0% | REJECTED |\n\n## Findings\n- **[info]** bore boss ring grown 4.0 → 5.0 mm to meet the declared minimum rib (hand_weld).\n- **[warn]** round 1 REJECTED: 40.0% of the shape is thinner than the 5.0 mm rib the shop can hold, 10.0% of the weld zone under the 8.0 mm HAZ rule — re-growing coarser.\n- **[warn]** round 2 REJECTED: 40.0% of the shape is thinner than the 5.0 mm rib the shop can hold, 10.0% of the weld zone under the 8.0 mm HAZ rule — re-growing coarser.\n- **[error]** no shape within the 40% volume budget satisfies the declared hand_weld limits — the bulk rib width is the binding constraint. Widen the budget, thicken the plate, or improve the process class.\n\n---\n*Scope: 2D plane-stress plate, linear elastic, quasi-static; the load fan inherits Ghost Topology's time-scale separation whole. The HAZ rule is a screening heuristic, not a welding simulation. This is a starting shape for the CAD seat and the FEA queue — validate before manufacturing.*"
+ ],
+ "unb_haz": [
+  {
+   "coarsen_premium": null,
+   "domain": "chassis tab",
+   "fan": null,
+   "findings": [
+    {
+     "check": "domain",
+     "detail": {
+      "min_rib_mm": 5.0,
+      "ring_mm": 4.0
+     },
+     "message": "bore boss ring grown 4.0 → 5.0 mm to meet the declared minimum rib (hand_weld).",
+     "severity": "info"
+    },
+    {
+     "check": "fabrication",
+     "detail": {
+      "empty": false,
+      "filter_mm": 3.0,
+      "n_viol": 0,
+      "n_viol_haz": 0,
+      "ok": false,
+      "r_bulk_px": 1,
+      "r_haz_px": 1,
+      "viol_frac": 0.05,
+      "viol_haz_frac": 0.3
+     },
+     "message": "round 1 REJECTED: 5.0% of the shape is thinner than the 5.0 mm rib the shop can hold, 30.0% of the weld zone under the 8.0 mm HAZ rule — re-growing coarser.",
+     "severity": "warn"
+    },
+    {
+     "check": "fabrication",
+     "detail": {
+      "empty": false,
+      "filter_mm": 4.199999999999999,
+      "n_viol": 0,
+      "n_viol_haz": 0,
+      "ok": false,
+      "r_bulk_px": 1,
+      "r_haz_px": 1,
+      "viol_frac": 0.05,
+      "viol_haz_frac": 0.3
+     },
+     "message": "round 2 REJECTED: 5.0% of the shape is thinner than the 5.0 mm rib the shop can hold, 30.0% of the weld zone under the 8.0 mm HAZ rule — re-growing coarser.",
+     "severity": "warn"
+    },
+    {
+     "check": "fabrication",
+     "detail": {
+      "empty": false,
+      "n_viol": 0,
+      "n_viol_haz": 0,
+      "ok": false,
+      "r_bulk_px": 1,
+      "r_haz_px": 1,
+      "viol_frac": 0.05,
+      "viol_haz_frac": 0.3
+     },
+     "message": "no shape within the 40% volume budget satisfies the declared hand_weld limits — the weld heat-affected zone is the binding constraint. Widen the budget, thicken the plate, or improve the process class.",
+     "severity": "error"
+    }
+   ],
+   "fos": 6.845,
+   "fos_case_deg": -120.0,
+   "limits": {
+    "accuracy_mm": 1.5,
+    "haz_mm": 8.0,
+    "min_rib_haz_mm": 8.0,
+    "min_rib_mm": 5.0,
+    "process": "hand_weld",
+    "web_floor_mm": 2.0
+   },
+   "mass_g": 13.2,
+   "n_solves": 34,
+   "rounds": [
+    {
+     "accepted": false,
+     "compliance": 8.437,
+     "filter_mm": 3.0,
+     "iterations": 8,
+     "viol_frac": 0.05,
+     "viol_haz_frac": 0.3,
+     "volfrac": 0.4
+    },
+    {
+     "accepted": false,
+     "compliance": 9.256,
+     "filter_mm": 4.2,
+     "iterations": 8,
+     "viol_frac": 0.05,
+     "viol_haz_frac": 0.3,
+     "volfrac": 0.4001
+    }
+   ],
+   "suggested_thickness_mm": null,
+   "verdict": "UNBUILDABLE",
+   "vm_max_MPa": 67.2,
+   "warnings": []
+  },
+  "# 🕸️🔩 MorphMesh — chassis tab\n\n🔴 UNBUILDABLE — no shape inside the volume budget satisfies the declared shop limits.\n\n## The shop's declared limits\n- process **hand_weld** — positional accuracy ±1.5 mm, web floor 2.0 mm → minimum rib **5.0 mm**; HAZ 8.0 mm deep at the weld, minimum rib inside it **8.0 mm**.\n\n## Growth rounds — enforce, grow, measure, accept/reject\n| round | enforced scale | iters | compliance | vol | thin-rib viol | HAZ viol | outcome |\n|---|---|---|---|---|---|---|---|\n| 1 | 3.0 mm | 8 | 8.44 | 40% | 5.0% | 30.0% | REJECTED |\n| 2 | 4.2 mm | 8 | 9.26 | 40% | 5.0% | 30.0% | REJECTED |\n\n## Findings\n- **[info]** bore boss ring grown 4.0 → 5.0 mm to meet the declared minimum rib (hand_weld).\n- **[warn]** round 1 REJECTED: 5.0% of the shape is thinner than the 5.0 mm rib the shop can hold, 30.0% of the weld zone under the 8.0 mm HAZ rule — re-growing coarser.\n- **[warn]** round 2 REJECTED: 5.0% of the shape is thinner than the 5.0 mm rib the shop can hold, 30.0% of the weld zone under the 8.0 mm HAZ rule — re-growing coarser.\n- **[error]** no shape within the 40% volume budget satisfies the declared hand_weld limits — the weld heat-affected zone is the binding constraint. Widen the budget, thicken the plate, or improve the process class.\n\n---\n*Scope: 2D plane-stress plate, linear elastic, quasi-static; the load fan inherits Ghost Topology's time-scale separation whole. The HAZ rule is a screening heuristic, not a welding simulation. This is a starting shape for the CAD seat and the FEA queue — validate before manufacturing.*"
+ ],
+ "void": [
+  {
+   "coarsen_premium": null,
+   "domain": "chassis tab",
+   "fan": null,
+   "findings": [
+    {
+     "check": "fabrication",
+     "detail": {
+      "empty": true,
+      "filter_mm": 3.0,
+      "n_viol": 0,
+      "n_viol_haz": 0,
+      "ok": false,
+      "r_bulk_px": 0,
+      "r_haz_px": 0,
+      "viol_frac": 1.0,
+      "viol_haz_frac": 0.0
+     },
+     "message": "round 1 REJECTED: 100.0% of the shape is thinner than the 1.1 mm rib the shop can hold — re-growing coarser.",
+     "severity": "warn"
+    },
+    {
+     "check": "fabrication",
+     "detail": {
+      "empty": true,
+      "filter_mm": 4.199999999999999,
+      "n_viol": 0,
+      "n_viol_haz": 0,
+      "ok": false,
+      "r_bulk_px": 0,
+      "r_haz_px": 0,
+      "viol_frac": 1.0,
+      "viol_haz_frac": 0.0
+     },
+     "message": "round 2 REJECTED: 100.0% of the shape is thinner than the 1.1 mm rib the shop can hold — re-growing coarser.",
+     "severity": "warn"
+    },
+    {
+     "check": "fabrication",
+     "detail": {
+      "empty": true,
+      "filter_mm": 5.879999999999999,
+      "n_viol": 0,
+      "n_viol_haz": 0,
+      "ok": false,
+      "r_bulk_px": 0,
+      "r_haz_px": 0,
+      "viol_frac": 1.0,
+      "viol_haz_frac": 0.0
+     },
+     "message": "round 3 REJECTED: 100.0% of the shape is thinner than the 1.1 mm rib the shop can hold — re-growing coarser.",
+     "severity": "warn"
+    },
+    {
+     "check": "fabrication",
+     "detail": {
+      "empty": true,
+      "filter_mm": 8.231999999999998,
+      "n_viol": 0,
+      "n_viol_haz": 0,
+      "ok": false,
+      "r_bulk_px": 0,
+      "r_haz_px": 0,
+      "viol_frac": 1.0,
+      "viol_haz_frac": 0.0
+     },
+     "message": "round 4 REJECTED: 100.0% of the shape is thinner than the 1.1 mm rib the shop can hold — re-growing coarser.",
+     "severity": "warn"
+    },
+    {
+     "check": "fabrication",
+     "detail": {
+      "empty": true,
+      "n_viol": 0,
+      "n_viol_haz": 0,
+      "ok": false,
+      "r_bulk_px": 0,
+      "r_haz_px": 0,
+      "viol_frac": 1.0,
+      "viol_haz_frac": 0.0
+     },
+     "message": "no shape within the 40% volume budget satisfies the declared cnc limits — the bulk rib width is the binding constraint. Widen the budget, thicken the plate, or improve the process class.",
+     "severity": "error"
+    }
+   ],
+   "fos": null,
+   "fos_case_deg": "NaN",
+   "limits": {
+    "accuracy_mm": 0.05,
+    "haz_mm": 0.0,
+    "min_rib_haz_mm": 1.1,
+    "min_rib_mm": 1.1,
+    "process": "cnc",
+    "web_floor_mm": 1.0
+   },
+   "mass_g": 0.0,
+   "n_solves": 0,
+   "rounds": [
+    {
+     "accepted": false,
+     "compliance": "NaN",
+     "filter_mm": 3.0,
+     "iterations": 0,
+     "viol_frac": 1.0,
+     "viol_haz_frac": 0.0,
+     "volfrac": 0.0
+    },
+    {
+     "accepted": false,
+     "compliance": "NaN",
+     "filter_mm": 4.2,
+     "iterations": 0,
+     "viol_frac": 1.0,
+     "viol_haz_frac": 0.0,
+     "volfrac": 0.0
+    },
+    {
+     "accepted": false,
+     "compliance": "NaN",
+     "filter_mm": 5.88,
+     "iterations": 0,
+     "viol_frac": 1.0,
+     "viol_haz_frac": 0.0,
+     "volfrac": 0.0
+    },
+    {
+     "accepted": false,
+     "compliance": "NaN",
+     "filter_mm": 8.23,
+     "iterations": 0,
+     "viol_frac": 1.0,
+     "viol_haz_frac": 0.0,
+     "volfrac": 0.0
+    }
+   ],
+   "suggested_thickness_mm": null,
+   "verdict": "UNBUILDABLE",
+   "vm_max_MPa": 0.0,
+   "warnings": []
+  },
+  "inf",
+  0.0
+ ],
+ "weak": [
+  {
+   "coarsen_premium": null,
+   "domain": "chassis tab",
+   "fan": null,
+   "findings": [
+    {
+     "check": "structure",
+     "detail": {
+      "fos": 0.3353427712755262,
+      "suggested_thickness_mm": 2.2365175702081284,
+      "vm_max_MPa": 1371.7307763943188
+     },
+     "message": "worst von Mises FoS 0.34 < 1.5 (case at -90°, 1372 MPa). Plane-stress FoS is linear in thickness: 2.2 mm plate restores the rule.",
+     "severity": "warn"
+    }
+   ],
+   "fos": 0.335,
+   "fos_case_deg": -90.0,
+   "limits": {
+    "accuracy_mm": 0.05,
+    "haz_mm": 0.0,
+    "min_rib_haz_mm": 1.1,
+    "min_rib_mm": 1.1,
+    "process": "cnc",
+    "web_floor_mm": 1.0
+   },
+   "mass_g": 1.4,
+   "n_solves": 9,
+   "rounds": [
+    {
+     "accepted": true,
+     "compliance": 661.737,
+     "filter_mm": 3.0,
+     "iterations": 8,
+     "viol_frac": 0.0,
+     "viol_haz_frac": 0.0,
+     "volfrac": 0.4
+    }
+   ],
+   "suggested_thickness_mm": 2.24,
+   "verdict": "FORGEABLE",
+   "vm_max_MPa": 1371.7,
+   "warnings": []
+  },
+  [
+   [
+    0.9723166515944492,
+    1.0,
+    1.0,
+    1.0
+   ],
+   [
+    0.16500404722779713,
+    1.0,
+    1.0,
+    1.0
+   ],
+   [
+    0.011081843540272512,
+    1.0,
+    0.0,
+    1.0
+   ],
+   [
+    9.06742134674003e-07,
+    1.0,
+    0.0,
+    1.0
+   ],
+   [
+    3.575875382310119e-14,
+    0.003604572784064647,
+    0.05295885739660826,
+    4.7051752092788395e-06
+   ]
+  ],
+  [
+   [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   [
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false
+   ],
+   [
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false
+   ],
+   [
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false
+   ],
+   [
+    false,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true,
+    false
+   ],
+   [
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    true,
+    true,
+    true,
+    false,
+    false,
+    true,
+    true,
+    true,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ]
+  ],
+  [
+   3940.261876073505,
+   1477.123372193912,
+   868.5315964930779,
+   769.20076963489,
+   682.0548961676379,
+   671.2991705763241,
+   664.9278725671669,
+   661.7373672050086
+  ],
+  [
+   [
+    [
+     0.9302760739582987,
+     -0.36686022709028293
+    ],
+    [
+     0.9996923003173553,
+     -0.02480533584119886
+    ],
+    [
+     0.9978165153930474,
+     0.06604696517536951
+    ]
+   ],
+   [
+    [
+     0.967423248463584,
+     -0.2531644886870326
+    ],
+    [
+     0.9815847845091269,
+     0.19102698976890914
+    ],
+    [
+     0.9998662938816859,
+     -0.01635219738451687
+    ]
+   ],
+   [
+    [
+     0.990899804312408,
+     -0.1346015520476323
+    ],
+    [
+     0.9331239810228493,
+     -0.3595547747424156
+    ],
+    [
+     0.9776742740479839,
+     0.21012618557606708
+    ]
+   ],
+   [
+    [
+     0.9594487054121669,
+     -0.28188327669962426
+    ],
+    [
+     0.43017906221062696,
+     -0.9027435817747947
+    ],
+    [
+     0.6913245186047381,
+     0.7225444000031604
+    ]
+   ]
+  ],
+  [
+   [
+    0.8587818788351456,
+    207.06292369258176,
+    198.57164670673245
+   ],
+   [
+    0.0,
+    139.15434162336663,
+    112.92219082069226
+   ],
+   [
+    0.0,
+    0.0,
+    117.50953275692416
+   ],
+   [
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
+  {
+   "anchor": "bottom_edge",
+   "anchor_bores": [],
+   "h_mm": 2.0,
+   "height_mm": 30.0,
+   "load_bore": [
+    12.0,
+    15.0,
+    5.0
+   ],
+   "material": "Steel 4130",
+   "name": "chassis tab",
+   "ring_mm": 4.0,
+   "thickness_mm": 0.5,
+   "width_mm": 24.0,
+   "yield_MPa": 460.0
+  },
+  true,
+  "# 🕸️🔩 MorphMesh — chassis tab\n\n🟢 FORGEABLE — grown, converged, and buildable at the shop's own limits on the first attempt.\n\n## The shop's declared limits\n- process **cnc** — positional accuracy ±0.05 mm, web floor 1.0 mm → minimum rib **1.1 mm**; no weld zone declared.\n\n## Growth rounds — enforce, grow, measure, accept/reject\n| round | enforced scale | iters | compliance | vol | thin-rib viol | HAZ viol | outcome |\n|---|---|---|---|---|---|---|---|\n| 1 | 3.0 mm | 8 | 661.74 | 40% | 0.0% | 0.0% | ACCEPTED |\n\n## The finished shape\n- mass **1 g** at 0.5 mm Steel 4130\n- worst von Mises FoS **0.34** (1372 MPa, governing case at -90°) vs the standing 1.5 rule — **2.2 mm plate restores it**.\n\n## Findings\n- **[warn]** worst von Mises FoS 0.34 < 1.5 (case at -90°, 1372 MPa). Plane-stress FoS is linear in thickness: 2.2 mm plate restores the rule.\n\n---\n*Scope: 2D plane-stress plate, linear elastic, quasi-static; the load fan inherits Ghost Topology's time-scale separation whole. The HAZ rule is a screening heuristic, not a welding simulation. This is a starting shape for the CAD seat and the FEA queue — validate before manufacturing.*"
+ ]
+}

@@ -42,6 +42,7 @@ import re
 from dataclasses import dataclass, field as _dcfield
 
 import numpy as np
+from ._num import vec as _vec
 
 from .kinematics import Hardpoints, SuspensionKinematics
 
@@ -415,7 +416,7 @@ def frame_stats(axes, bends=(), cluster_tols_mm=(20, 30, 37, 40, 50),
     how many lie in a tube envelope, on a bend, or elsewhere.
     """
     axes = list(axes)
-    p = [(np.asarray(a[0], float), np.asarray(a[1], float)) for a in axes]
+    p = [(_vec(a[0]), _vec(a[1])) for a in axes]
     straight = sum(float(np.linalg.norm(b - a)) for a, b in p)
     arc = sum(float(r) * math.radians(float(t)) for r, t in bends)
     ends = (np.array([q for ab in p for q in ab])
@@ -440,7 +441,7 @@ def frame_stats(axes, bends=(), cluster_tols_mm=(20, 30, 37, 40, 50),
            "total_m": (straight + arc) / 1000.0, "nodes": nodes,
            "walls_mm": walls, "sizes_mm": sizes}
     if vertices is not None and len(vertices):
-        V = np.asarray(vertices, float)
+        V = _vec(vertices)
         inside = np.zeros(len(V), bool)
         radii = ([0.5 * float(x) for x in od_mm] if od_mm
                  else [outer_radius_mm] * len(p))
@@ -567,7 +568,7 @@ def actuation_summary(hp: Hardpoints, travel_mm: float = 25.0, n: int = 11,
                           "rocker_pushrod, rocker_spring and spring_inner "
                           "must all be defined"}
     trv, mr = kin.motion_ratio_curve(-travel_mm, travel_mm, n)
-    mr = np.asarray(mr, float)
+    mr = _vec(mr)
     i0 = int(np.argmin(np.abs(np.asarray(trv))))
     s0 = kin.solve_at_travel(0.0)
     lengths, seed = [], 0.0
@@ -576,14 +577,14 @@ def actuation_summary(hp: Hardpoints, travel_mm: float = 25.0, n: int = 11,
                                            seed=seed)
         lengths.append(L if ok else math.nan)
     lengths = np.asarray(lengths)
-    pro = np.asarray(s0.pushrod_outer if s0.pushrod_outer is not None
-                     else hp.pushrod_outer, float)
+    pro = _vec(s0.pushrod_outer if s0.pushrod_outer is not None
+                     else hp.pushrod_outer)
     push_len = float(np.linalg.norm(np.asarray(hp.rocker_pushrod) - pro))
     body = getattr(hp, "pushrod_attach", "lower")
     if body in ("lower", "upper"):
-        fi = np.asarray(getattr(hp, f"{body}_front_inner"), float)
-        ri = np.asarray(getattr(hp, f"{body}_rear_inner"), float)
-        bj = np.asarray(getattr(s0, f"{body}_outer"), float)
+        fi = _vec(getattr(hp, f"{body}_front_inner"))
+        ri = _vec(getattr(hp, f"{body}_rear_inner"))
+        bj = _vec(getattr(s0, f"{body}_outer"))
         mid = 0.5 * (fi + ri)
         arm = bj - mid
         frac = float((pro - mid) @ arm / (arm @ arm))

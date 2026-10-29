@@ -125,11 +125,11 @@ def test_upright_motion_is_rigid_and_exact():
     """The upright's pose at any wheel position maps its three joints exactly, by a proper rotation."""
     kin = SuspensionKinematics(HP)
     s0 = kin.solve_at_travel(0.0)
-    R, t = ac._upright_motion(kin, s0, s0)
+    R, t = ac._upright_motion(s0, s0)
     assert np.allclose(R, np.eye(3), atol=1e-9) and np.allclose(t, 0.0, atol=1e-6)
     for z in (-25.0, 25.0):
         st = kin.solve_at_travel(z)
-        R, t = ac._upright_motion(kin, s0, st)
+        R, t = ac._upright_motion(s0, st)
         assert np.allclose(R.T @ R, np.eye(3), atol=1e-9) and np.linalg.det(R) == pytest.approx(1.0)
         for k in ("lower_outer", "upper_outer", "tie_rod_outer", "wheel_center"):
             assert np.allclose(R @ np.asarray(getattr(s0, k), float) + t, np.asarray(getattr(st, k), float), atol=1e-3)

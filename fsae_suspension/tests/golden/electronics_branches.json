@@ -1,0 +1,197 @@
+{
+ "si": [
+  {
+   "check": "diffpair-impedance",
+   "detail": {
+    "estimate": true,
+    "pair": "can",
+    "target_ohm": 120.0,
+    "z_diff_ohm": 107.85844226162155
+   },
+   "message": "Pair 'can' estimates 108 Ω differential, within 15 % of the 120 Ω target (analytic estimate, not field-solved).",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "si-crosstalk",
+   "detail": {
+    "aggressor": "fail",
+    "coupled_len_mm": 20.0,
+    "edge_v_per_ns": 5.0,
+    "estimate": true,
+    "gap_mm": 0.3,
+    "method": "geometric screening, not field-solved",
+    "pair": "can",
+    "sw_voltage_v": 400.0
+   },
+   "message": "CAN pair 'can' runs 0.30 mm from powertrain's switching net 'hv_inverter' (400 V, 5 V/ns edges) for ~20 mm — the differential pair is exposed to motor-controller noise. Move the route or add a guard ground (estimated routing).",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "powertrain"
+   ]
+  },
+  {
+   "check": "si-crosstalk",
+   "detail": {
+    "aggressor": "warn",
+    "coupled_len_mm": 20.0,
+    "estimate": true,
+    "gap_mm": 1.2,
+    "method": "geometric screening, not field-solved",
+    "pair": "can"
+   },
+   "message": "CAN pair 'can' passes within 1.20 mm of powertrain's 'hv_inverter' for ~20 mm — tighten spacing-to-HV or add isolation (estimated routing).",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "powertrain"
+   ]
+  },
+  {
+   "check": "si-crosstalk",
+   "detail": {
+    "aggressor": "ok",
+    "estimate": true,
+    "gap_mm": 5.0,
+    "pair": "can"
+   },
+   "message": "CAN pair 'can' clears 'hv_inverter' by 5.0 mm (> 2 mm) (estimated routing).",
+   "severity": "ok",
+   "subsystems": [
+    "electrics",
+    "powertrain"
+   ]
+  }
+ ],
+ "traces": [
+  {
+   "check": "trace-fusing",
+   "detail": {
+    "current_a": 2.0,
+    "estimate": true,
+    "fusing_a": 0.3158548083217421,
+    "trace": "t0"
+   },
+   "message": "Trace 't0' carries 2.0 A but fuses (melts) at 0.3 A — the copper physically fails under this load (estimated geometry).",
+   "severity": "fail",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  },
+  {
+   "check": "trace-heating",
+   "detail": {
+    "ceiling_c": 105.0,
+    "current_a": 2.0,
+    "estimate": true,
+    "rise_c": 298.77638098296296,
+    "temp_c": 328.77638098296296,
+    "trace": "t0"
+   },
+   "message": "Trace 't0' runs to 329 °C at 2.0 A (rise 299 °C over 30 °C ambient), past the 105 °C ceiling — widen it (estimated geometry).",
+   "severity": "fail",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  },
+  {
+   "check": "trace-vdrop",
+   "detail": {
+    "estimate": true,
+    "trace": "t0",
+    "vdrop_v": 1.7545097883225238
+   },
+   "message": "Trace 't0' drops 1755 mV at 2.0 A (> 5 % of a 5.0 V rail) (estimated geometry).",
+   "severity": "warning",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  },
+  {
+   "check": "trace-fusing",
+   "detail": {
+    "current_a": 2.0,
+    "estimate": true,
+    "fusing_a": 3.1585480832174206,
+    "safety_factor": 2.0,
+    "trace": "t1"
+   },
+   "message": "Trace 't1' at 2.0 A is within 2x of its 3.2 A fusing current — thin margin to melt (estimated geometry).",
+   "severity": "warning",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  },
+  {
+   "check": "trace-fusing",
+   "detail": {
+    "current_a": 28.0,
+    "estimate": true,
+    "fusing_a": 31.585480832174202,
+    "safety_factor": 2.0,
+    "trace": "t2"
+   },
+   "message": "Trace 't2' at 28.0 A is within 2x of its 31.6 A fusing current — thin margin to melt (estimated geometry).",
+   "severity": "warning",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  },
+  {
+   "check": "trace-heating",
+   "detail": {
+    "ceiling_c": 105.0,
+    "current_a": 28.0,
+    "estimate": true,
+    "temp_c": 90.91554887041107,
+    "trace": "t2"
+   },
+   "message": "Trace 't2' reaches 91 °C at 28.0 A — within 20 °C of the 105 °C ceiling (estimated geometry).",
+   "severity": "warning",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  },
+  {
+   "check": "trace-fusing",
+   "detail": {
+    "current_a": 30.0,
+    "estimate": true,
+    "fusing_a": 31.585480832174202,
+    "safety_factor": 2.0,
+    "trace": "t3"
+   },
+   "message": "Trace 't3' at 30.0 A is within 2x of its 31.6 A fusing current — thin margin to melt (estimated geometry).",
+   "severity": "warning",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  },
+  {
+   "check": "trace-heating",
+   "detail": {
+    "ceiling_c": 105.0,
+    "current_a": 30.0,
+    "estimate": true,
+    "temp_c": 101.25681337189354,
+    "trace": "t3"
+   },
+   "message": "Trace 't3' reaches 101 °C at 30.0 A — within 20 °C of the 105 °C ceiling (estimated geometry).",
+   "severity": "warning",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  }
+ ]
+}

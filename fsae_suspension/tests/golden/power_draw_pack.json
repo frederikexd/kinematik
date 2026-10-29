@@ -1,0 +1,842 @@
+{
+ "aps": [
+  [
+   {
+    "check": "pd-power-ceiling",
+    "detail": {
+     "fuse_limited_kw": 23.706666666666667,
+     "pack_ceiling_kw": 106.31249999999999
+    },
+    "message": "[BatteryPackConfig!B1,B11] The pack's own resistance caps electrical output at 106 kW (at I = V_oc/2R, where half the energy is burnt inside the pack). The 50 A fuse caps usable output at 23.7 kW once sag is included. Neither number appears anywhere in the workbook, and both are worth having next to the motor rating before anyone sizes a controller.",
+    "severity": "warning",
+    "subsystems": [
+     "electrics",
+     "powertrain"
+    ]
+   }
+  ],
+  [
+   {
+    "check": "pd-pack-resistance",
+    "detail": {
+     "correct": 0.5973333333333334,
+     "sheet": 1.792
+    },
+    "message": "[BatteryPackConfig!B11] Pack internal resistance reads 1.7920 ohm; for 140S3P it is 0.5973 ohm. The formula multiplies the TOTAL cell count by R_cell/P, which cancels to S*R_cell and discards the parallel benefit entirely — so it is high by exactly the parallel count, 3x. This value feeds every joule-heating figure and both EMF columns, so those are all high by the same factor.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics",
+     "powertrain"
+    ]
+   },
+   {
+    "check": "pd-power-ceiling",
+    "detail": {
+     "fuse_limited_kw": 23.706666666666667,
+     "pack_ceiling_kw": 106.31249999999999
+    },
+    "message": "[BatteryPackConfig!B1,B11] The pack's own resistance caps electrical output at 106 kW (at I = V_oc/2R, where half the energy is burnt inside the pack). The 50 A fuse caps usable output at 23.7 kW once sag is included. Neither number appears anywhere in the workbook, and both are worth having next to the motor rating before anyone sizes a controller.",
+    "severity": "warning",
+    "subsystems": [
+     "electrics",
+     "powertrain"
+    ]
+   }
+  ],
+  [
+   {
+    "check": "pd-power-ceiling",
+    "detail": {
+     "fuse_limited_kw": 23.706666666666667,
+     "pack_ceiling_kw": 106.31249999999999
+    },
+    "message": "[BatteryPackConfig!B1,B11] The pack's own resistance caps electrical output at 106 kW (at I = V_oc/2R, where half the energy is burnt inside the pack). The 50 A fuse caps usable output at 23.7 kW once sag is included. Neither number appears anywhere in the workbook, and both are worth having next to the motor rating before anyone sizes a controller.",
+    "severity": "warning",
+    "subsystems": [
+     "electrics",
+     "powertrain"
+    ]
+   }
+  ],
+  [
+   {
+    "check": "pd-pack-resistance",
+    "detail": {
+     "correct": 0.5973333333333334,
+     "sheet": 0.5973313333333334
+    },
+    "message": "[BatteryPackConfig!B11] Pack internal resistance reads 0.5973 ohm; for 140S3P it is 0.5973 ohm. The formula multiplies the TOTAL cell count by R_cell/P, which cancels to S*R_cell and discards the parallel benefit entirely — so it is high by exactly the parallel count, 1x. This value feeds every joule-heating figure and both EMF columns, so those are all high by the same factor.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics",
+     "powertrain"
+    ]
+   },
+   {
+    "check": "pd-power-ceiling",
+    "detail": {
+     "fuse_limited_kw": 23.706666666666667,
+     "pack_ceiling_kw": 106.31249999999999
+    },
+    "message": "[BatteryPackConfig!B1,B11] The pack's own resistance caps electrical output at 106 kW (at I = V_oc/2R, where half the energy is burnt inside the pack). The 50 A fuse caps usable output at 23.7 kW once sag is included. Neither number appears anywhere in the workbook, and both are worth having next to the motor rating before anyone sizes a controller.",
+    "severity": "warning",
+    "subsystems": [
+     "electrics",
+     "powertrain"
+    ]
+   }
+  ],
+  [
+   {
+    "check": "pd-joule-units",
+    "detail": {},
+    "message": "[BatteryPackConfig!B19] 'Joule (KWh)' computes I^2*R/1000, which is kW — a power, not an energy. Sheet1 then multiplies it by 1000 and labels the result watts, so the downstream use is consistent with kW and only the label is wrong. Energy would need this integrated over time.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics",
+     "cooling"
+    ]
+   },
+   {
+    "check": "pd-power-ceiling",
+    "detail": {
+     "fuse_limited_kw": 23.706666666666667,
+     "pack_ceiling_kw": 106.31249999999999
+    },
+    "message": "[BatteryPackConfig!B1,B11] The pack's own resistance caps electrical output at 106 kW (at I = V_oc/2R, where half the energy is burnt inside the pack). The 50 A fuse caps usable output at 23.7 kW once sag is included. Neither number appears anywhere in the workbook, and both are worth having next to the motor rating before anyone sizes a controller.",
+    "severity": "warning",
+    "subsystems": [
+     "electrics",
+     "powertrain"
+    ]
+   }
+  ],
+  [
+   {
+    "check": "pd-power-ceiling",
+    "detail": {
+     "fuse_limited_kw": 23.706666666666667,
+     "pack_ceiling_kw": 106.31249999999999
+    },
+    "message": "[BatteryPackConfig!B1,B11] The pack's own resistance caps electrical output at 106 kW (at I = V_oc/2R, where half the energy is burnt inside the pack). The 50 A fuse caps usable output at 23.7 kW once sag is included. Neither number appears anywhere in the workbook, and both are worth having next to the motor rating before anyone sizes a controller.",
+    "severity": "warning",
+    "subsystems": [
+     "electrics",
+     "powertrain"
+    ]
+   }
+  ]
+ ],
+ "bms0": [
+  {
+   "check": "pd-bms-channels",
+   "detail": {
+    "boards": 9,
+    "channels": 140
+   },
+   "message": "140S3P needs 140 monitored series groups, not 420 — parallel cells share a node and cannot be measured separately. At 16 channels per board that is 9 x BQ79616-Q1 boards (4 channels spare), comfortably inside the 35-board daisy-chain limit.",
+   "severity": "info",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  }
+ ],
+ "bms1": [
+  {
+   "check": "pd-bms-channels",
+   "detail": {
+    "boards": 7,
+    "channels": 100
+   },
+   "message": "100S2P needs 100 monitored series groups, not 200 — parallel cells share a node and cannot be measured separately. At 16 channels per board that is 7 x BQ79616-Q1 boards (12 channels spare), comfortably inside the 35-board daisy-chain limit.",
+   "severity": "info",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "pd-cell-count-over",
+   "detail": {},
+   "message": "[BatteryPackConfig!B7,B10] 200 cells against a declared maximum of 150.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "bms16_0": [
+  {
+   "check": "pd-bms-channels",
+   "detail": {
+    "boards": 12,
+    "channels": 140
+   },
+   "message": "140S3P needs 140 monitored series groups, not 420 — parallel cells share a node and cannot be measured separately. At 12 channels per board that is 12 x BQ79616-Q1 boards (4 channels spare), comfortably inside the 35-board daisy-chain limit.",
+   "severity": "info",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  }
+ ],
+ "bms16_1": [
+  {
+   "check": "pd-bms-channels",
+   "detail": {
+    "boards": 9,
+    "channels": 100
+   },
+   "message": "100S2P needs 100 monitored series groups, not 200 — parallel cells share a node and cannot be measured separately. At 12 channels per board that is 9 x BQ79616-Q1 boards (8 channels spare), comfortably inside the 35-board daisy-chain limit.",
+   "severity": "info",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "pd-cell-count-over",
+   "detail": {},
+   "message": "[BatteryPackConfig!B7,B10] 200 cells against a declared maximum of 150.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "bms16_2": [
+  {
+   "check": "pd-bms-channels",
+   "detail": {
+    "boards": 1,
+    "channels": 10
+   },
+   "message": "10S1P needs 10 monitored series groups, not 10 — parallel cells share a node and cannot be measured separately. At 12 channels per board that is 1 x BQ79616-Q1 boards (2 channels spare), comfortably inside the 35-board daisy-chain limit.",
+   "severity": "info",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  }
+ ],
+ "bms16_3": [
+  {
+   "check": "pd-bms-channels",
+   "detail": {
+    "boards": 2,
+    "channels": 20
+   },
+   "message": "20S1P needs 20 monitored series groups, not 20 — parallel cells share a node and cannot be measured separately. At 12 channels per board that is 2 x BQ79616-Q1 boards (4 channels spare), comfortably inside the 35-board daisy-chain limit.",
+   "severity": "info",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  }
+ ],
+ "bms16_4": [
+  {
+   "check": "pd-bms-channels",
+   "detail": {
+    "boards": 12,
+    "channels": 140
+   },
+   "message": "140S4P needs 140 monitored series groups, not 560 — parallel cells share a node and cannot be measured separately. At 12 channels per board that is 12 x BQ79616-Q1 boards (4 channels spare), comfortably inside the 35-board daisy-chain limit.",
+   "severity": "info",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  }
+ ],
+ "bms2": [
+  {
+   "check": "pd-bms-channels",
+   "detail": {
+    "boards": 1,
+    "channels": 10
+   },
+   "message": "10S1P needs 10 monitored series groups, not 10 — parallel cells share a node and cannot be measured separately. At 16 channels per board that is 1 x BQ79616-Q1 boards (6 channels spare), comfortably inside the 35-board daisy-chain limit.",
+   "severity": "info",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  }
+ ],
+ "bms3": [
+  {
+   "check": "pd-bms-channels",
+   "detail": {
+    "boards": 2,
+    "channels": 20
+   },
+   "message": "20S1P needs 20 monitored series groups, not 20 — parallel cells share a node and cannot be measured separately. At 16 channels per board that is 2 x BQ79616-Q1 boards (12 channels spare), comfortably inside the 35-board daisy-chain limit.",
+   "severity": "info",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  }
+ ],
+ "bms4": [
+  {
+   "check": "pd-bms-channels",
+   "detail": {
+    "boards": 9,
+    "channels": 140
+   },
+   "message": "140S4P needs 140 monitored series groups, not 560 — parallel cells share a node and cannot be measured separately. At 16 channels per board that is 9 x BQ79616-Q1 boards (4 channels spare), comfortably inside the 35-board daisy-chain limit.",
+   "severity": "info",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  }
+ ],
+ "elec0": "ElecParams(pack_voltage_v=504.0, pack_capacity_ah=15.0, n_parallel=3, n_series=140, cell_capacity_ah=5.0, cell_r_ohm=0.0128, fuse_max_a=50.0, nominal_cell_current_a=16.667, motor_peak_power_kw=150.0, motor_peak_torque_nm=120.0, motor_efficiency=0.9545, motor_max_dc_v=925.0, wheel_diameter_in=18.0, pack_energy_kwh=7.56, usable_energy_kwh=6.9552, max_power_from_fuse_kw=25.2)",
+ "elec1": "ElecParams(pack_voltage_v=400.0, pack_capacity_ah=6.0, n_parallel=2, n_series=100, cell_capacity_ah=5.0, cell_r_ohm=0.0128, fuse_max_a=50.0, nominal_cell_current_a=16.667, motor_peak_power_kw=150.0, motor_peak_torque_nm=120.0, motor_efficiency=0.9545, motor_max_dc_v=925.0, wheel_diameter_in=18.0, pack_energy_kwh=2.4, usable_energy_kwh=2.208, max_power_from_fuse_kw=20.0)",
+ "elec2": "ElecParams(pack_voltage_v=36.0, pack_capacity_ah=5.0, n_parallel=1, n_series=10, cell_capacity_ah=5.0, cell_r_ohm=0.0128, fuse_max_a=50.0, nominal_cell_current_a=16.667, motor_peak_power_kw=150.0, motor_peak_torque_nm=120.0, motor_efficiency=0.9545, motor_max_dc_v=925.0, wheel_diameter_in=18.0, pack_energy_kwh=0.18, usable_energy_kwh=0.1656, max_power_from_fuse_kw=1.8)",
+ "elec3": "ElecParams(pack_voltage_v=72.0, pack_capacity_ah=0.5, n_parallel=1, n_series=20, cell_capacity_ah=5.0, cell_r_ohm=0.0128, fuse_max_a=50.0, nominal_cell_current_a=16.667, motor_peak_power_kw=150.0, motor_peak_torque_nm=120.0, motor_efficiency=0.9545, motor_max_dc_v=925.0, wheel_diameter_in=18.0, pack_energy_kwh=0.036, usable_energy_kwh=0.03312, max_power_from_fuse_kw=3.6)",
+ "elec4": "ElecParams(pack_voltage_v=504.0, pack_capacity_ah=20.0, n_parallel=4, n_series=140, cell_capacity_ah=5.0, cell_r_ohm=0.0128, fuse_max_a=50.0, nominal_cell_current_a=16.667, motor_peak_power_kw=150.0, motor_peak_torque_nm=120.0, motor_efficiency=0.9545, motor_max_dc_v=925.0, wheel_diameter_in=18.0, pack_energy_kwh=10.08, usable_energy_kwh=9.2736, max_power_from_fuse_kw=25.2)",
+ "iface0": {
+  "brake_torque_nm": null,
+  "cg_x_mm": null,
+  "cg_y_mm": null,
+  "cg_z_mm": null,
+  "cooling_airflow_cms": null,
+  "downforce_n_at_v": null,
+  "drag_n_at_v": null,
+  "env_origin_mm": null,
+  "env_x_mm": null,
+  "env_y_mm": null,
+  "env_z_mm": null,
+  "heat_reject_w": null,
+  "is_estimate": false,
+  "mass_kg": 29.819999999999997,
+  "max_temp_c": null,
+  "mount_load_n": null,
+  "mount_points": null,
+  "mounts_on": null,
+  "name": "electrics",
+  "notes": "derived from the pack workbook: (unnamed file)",
+  "owner": "",
+  "peak_current_a": 50.0,
+  "peak_power_kw": null,
+  "peak_torque_nm": null,
+  "power_draw_w": 23706.666666666668,
+  "rationale": "",
+  "updated_by": "power_draw.to_interface",
+  "updated_on": "",
+  "voltage_v": 504.0
+ },
+ "iface1": {
+  "brake_torque_nm": null,
+  "cg_x_mm": null,
+  "cg_y_mm": null,
+  "cg_z_mm": null,
+  "cooling_airflow_cms": null,
+  "downforce_n_at_v": null,
+  "drag_n_at_v": null,
+  "env_origin_mm": null,
+  "env_x_mm": null,
+  "env_y_mm": null,
+  "env_z_mm": null,
+  "heat_reject_w": null,
+  "is_estimate": false,
+  "mass_kg": 10.0,
+  "max_temp_c": null,
+  "mount_load_n": null,
+  "mount_points": null,
+  "mounts_on": null,
+  "name": "electrics",
+  "notes": "derived from the pack workbook: (unnamed file)",
+  "owner": "",
+  "peak_current_a": 80.0,
+  "peak_power_kw": null,
+  "peak_torque_nm": null,
+  "power_draw_w": 25600.0,
+  "rationale": "",
+  "updated_by": "power_draw.to_interface",
+  "updated_on": "",
+  "voltage_v": 400.0
+ },
+ "iface2": {
+  "brake_torque_nm": null,
+  "cg_x_mm": null,
+  "cg_y_mm": null,
+  "cg_z_mm": null,
+  "cooling_airflow_cms": null,
+  "downforce_n_at_v": null,
+  "drag_n_at_v": null,
+  "env_origin_mm": null,
+  "env_x_mm": null,
+  "env_y_mm": null,
+  "env_z_mm": null,
+  "heat_reject_w": null,
+  "is_estimate": false,
+  "mass_kg": 0.71,
+  "max_temp_c": null,
+  "mount_load_n": null,
+  "mount_points": null,
+  "mounts_on": null,
+  "name": "electrics",
+  "notes": "derived from the pack workbook: (unnamed file)",
+  "owner": "",
+  "peak_current_a": 50.0,
+  "peak_power_kw": null,
+  "peak_torque_nm": null,
+  "power_draw_w": -10700.0,
+  "rationale": "",
+  "updated_by": "power_draw.to_interface",
+  "updated_on": "",
+  "voltage_v": 36.0
+ },
+ "iface3": {
+  "brake_torque_nm": null,
+  "cg_x_mm": null,
+  "cg_y_mm": null,
+  "cg_z_mm": null,
+  "cooling_airflow_cms": null,
+  "downforce_n_at_v": null,
+  "drag_n_at_v": null,
+  "env_origin_mm": null,
+  "env_x_mm": null,
+  "env_y_mm": null,
+  "env_z_mm": null,
+  "heat_reject_w": null,
+  "is_estimate": false,
+  "mass_kg": 1.42,
+  "max_temp_c": null,
+  "mount_load_n": null,
+  "mount_points": null,
+  "mounts_on": null,
+  "name": "electrics",
+  "notes": "derived from the pack workbook: (unnamed file)",
+  "owner": "",
+  "peak_current_a": 20.0,
+  "peak_power_kw": null,
+  "peak_torque_nm": null,
+  "power_draw_w": -160.0,
+  "rationale": "",
+  "updated_by": "power_draw.to_interface",
+  "updated_on": "",
+  "voltage_v": 72.0
+ },
+ "iface4": {
+  "brake_torque_nm": null,
+  "cg_x_mm": null,
+  "cg_y_mm": null,
+  "cg_z_mm": null,
+  "cooling_airflow_cms": null,
+  "downforce_n_at_v": null,
+  "drag_n_at_v": null,
+  "env_origin_mm": null,
+  "env_x_mm": null,
+  "env_y_mm": null,
+  "env_z_mm": null,
+  "heat_reject_w": null,
+  "is_estimate": false,
+  "mass_kg": 39.76,
+  "max_temp_c": null,
+  "mount_load_n": null,
+  "mount_points": null,
+  "mounts_on": null,
+  "name": "electrics",
+  "notes": "derived from the pack workbook: (unnamed file)",
+  "owner": "",
+  "peak_current_a": 50.0,
+  "peak_power_kw": null,
+  "peak_torque_nm": null,
+  "power_draw_w": 24080.0,
+  "rationale": "",
+  "updated_by": "power_draw.to_interface",
+  "updated_on": "",
+  "voltage_v": 504.0
+ },
+ "iface_kw": {
+  "brake_torque_nm": null,
+  "cg_x_mm": null,
+  "cg_y_mm": null,
+  "cg_z_mm": null,
+  "cooling_airflow_cms": null,
+  "downforce_n_at_v": null,
+  "drag_n_at_v": null,
+  "env_origin_mm": null,
+  "env_x_mm": null,
+  "env_y_mm": null,
+  "env_z_mm": null,
+  "heat_reject_w": 12.0,
+  "is_estimate": true,
+  "mass_kg": 29.819999999999997,
+  "max_temp_c": null,
+  "mount_load_n": null,
+  "mount_points": null,
+  "mounts_on": null,
+  "name": "hv",
+  "notes": "derived from the pack workbook: src.xlsx!S",
+  "owner": "",
+  "peak_current_a": 50.0,
+  "peak_power_kw": null,
+  "peak_torque_nm": null,
+  "power_draw_w": 23706.666666666668,
+  "rationale": "",
+  "updated_by": "power_draw.to_interface",
+  "updated_on": "",
+  "voltage_v": 504.0
+ },
+ "mf0_0": [
+  {
+   "check": "pd-motor-exceeds-pack",
+   "detail": {
+    "ceiling_kw": 106.31249999999999,
+    "rated_kw": 150.0
+   },
+   "message": "[ElecPropulsion!B2, BatteryPackConfig!B11] The motor is rated 150 kW peak. This pack cannot deliver more than 106 kW into any load, because at 0.597 ohm the maximum-power point is V_oc/2R and beyond it output falls. The motor rating is unreachable by 44 kW regardless of controller settings.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "powertrain"
+   ]
+  },
+  {
+   "check": "pd-motor-exceeds-fuse",
+   "detail": {
+    "fuse_kw": 23.706666666666667,
+    "rated_kw": 150.0
+   },
+   "message": "[BatteryPackConfig!B1, ElecPropulsion!B2] The 50 A fuse limits usable output to 23.7 kW with sag included, against a 150 kW motor — a factor of 6.3. Either the fuse is sized for a much smaller envelope than the motor, or the motor is specified far above what the car will ever use. Both are defensible; having neither written down next to the other is not.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "powertrain"
+   ]
+  }
+ ],
+ "mf0_1": [],
+ "mf0_2": [
+  {
+   "check": "pd-motor-exceeds-pack",
+   "detail": {
+    "ceiling_kw": 106.31249999999999,
+    "rated_kw": 10000.0
+   },
+   "message": "[ElecPropulsion!B2, BatteryPackConfig!B11] The motor is rated 10000 kW peak. This pack cannot deliver more than 106 kW into any load, because at 0.597 ohm the maximum-power point is V_oc/2R and beyond it output falls. The motor rating is unreachable by 9894 kW regardless of controller settings.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "powertrain"
+   ]
+  },
+  {
+   "check": "pd-motor-exceeds-fuse",
+   "detail": {
+    "fuse_kw": 23.706666666666667,
+    "rated_kw": 10000.0
+   },
+   "message": "[BatteryPackConfig!B1, ElecPropulsion!B2] The 50 A fuse limits usable output to 23.7 kW with sag included, against a 10000 kW motor — a factor of 421.8. Either the fuse is sized for a much smaller envelope than the motor, or the motor is specified far above what the car will ever use. Both are defensible; having neither written down next to the other is not.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "powertrain"
+   ]
+  }
+ ],
+ "mf1_0": [
+  {
+   "check": "pd-motor-exceeds-pack",
+   "detail": {
+    "ceiling_kw": 40.0,
+    "rated_kw": 150.0
+   },
+   "message": "[ElecPropulsion!B2, BatteryPackConfig!B11] The motor is rated 150 kW peak. This pack cannot deliver more than 40 kW into any load, because at 1.000 ohm the maximum-power point is V_oc/2R and beyond it output falls. The motor rating is unreachable by 110 kW regardless of controller settings.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "powertrain"
+   ]
+  },
+  {
+   "check": "pd-motor-exceeds-fuse",
+   "detail": {
+    "fuse_kw": 25.6,
+    "rated_kw": 150.0
+   },
+   "message": "[BatteryPackConfig!B1, ElecPropulsion!B2] The 80 A fuse limits usable output to 25.6 kW with sag included, against a 150 kW motor — a factor of 5.9. Either the fuse is sized for a much smaller envelope than the motor, or the motor is specified far above what the car will ever use. Both are defensible; having neither written down next to the other is not.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "powertrain"
+   ]
+  }
+ ],
+ "mf1_1": [],
+ "mf1_2": [
+  {
+   "check": "pd-motor-exceeds-pack",
+   "detail": {
+    "ceiling_kw": 40.0,
+    "rated_kw": 10000.0
+   },
+   "message": "[ElecPropulsion!B2, BatteryPackConfig!B11] The motor is rated 10000 kW peak. This pack cannot deliver more than 40 kW into any load, because at 1.000 ohm the maximum-power point is V_oc/2R and beyond it output falls. The motor rating is unreachable by 9960 kW regardless of controller settings.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "powertrain"
+   ]
+  },
+  {
+   "check": "pd-motor-exceeds-fuse",
+   "detail": {
+    "fuse_kw": 25.6,
+    "rated_kw": 10000.0
+   },
+   "message": "[BatteryPackConfig!B1, ElecPropulsion!B2] The 80 A fuse limits usable output to 25.6 kW with sag included, against a 10000 kW motor — a factor of 390.6. Either the fuse is sized for a much smaller envelope than the motor, or the motor is specified far above what the car will ever use. Both are defensible; having neither written down next to the other is not.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "powertrain"
+   ]
+  }
+ ],
+ "mf2_0": [
+  {
+   "check": "pd-motor-exceeds-pack",
+   "detail": {
+    "ceiling_kw": 0.0648,
+    "rated_kw": 150.0
+   },
+   "message": "[ElecPropulsion!B2, BatteryPackConfig!B11] The motor is rated 150 kW peak. This pack cannot deliver more than 0 kW into any load, because at 5.000 ohm the maximum-power point is V_oc/2R and beyond it output falls. The motor rating is unreachable by 150 kW regardless of controller settings.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "powertrain"
+   ]
+  },
+  {
+   "check": "pd-motor-exceeds-fuse",
+   "detail": {
+    "fuse_kw": -10.7,
+    "rated_kw": 150.0
+   },
+   "message": "[BatteryPackConfig!B1, ElecPropulsion!B2] The 50 A fuse limits usable output to -10.7 kW with sag included, against a 150 kW motor — a factor of -14.0. Either the fuse is sized for a much smaller envelope than the motor, or the motor is specified far above what the car will ever use. Both are defensible; having neither written down next to the other is not.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "powertrain"
+   ]
+  }
+ ],
+ "mf2_1": [
+  {
+   "check": "pd-motor-exceeds-pack",
+   "detail": {
+    "ceiling_kw": 0.0648,
+    "rated_kw": 10.0
+   },
+   "message": "[ElecPropulsion!B2, BatteryPackConfig!B11] The motor is rated 10 kW peak. This pack cannot deliver more than 0 kW into any load, because at 5.000 ohm the maximum-power point is V_oc/2R and beyond it output falls. The motor rating is unreachable by 10 kW regardless of controller settings.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "powertrain"
+   ]
+  },
+  {
+   "check": "pd-motor-exceeds-fuse",
+   "detail": {
+    "fuse_kw": -10.7,
+    "rated_kw": 10.0
+   },
+   "message": "[BatteryPackConfig!B1, ElecPropulsion!B2] The 50 A fuse limits usable output to -10.7 kW with sag included, against a 10 kW motor — a factor of -0.9. Either the fuse is sized for a much smaller envelope than the motor, or the motor is specified far above what the car will ever use. Both are defensible; having neither written down next to the other is not.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "powertrain"
+   ]
+  }
+ ],
+ "mf2_2": [
+  {
+   "check": "pd-motor-exceeds-pack",
+   "detail": {
+    "ceiling_kw": 0.0648,
+    "rated_kw": 10000.0
+   },
+   "message": "[ElecPropulsion!B2, BatteryPackConfig!B11] The motor is rated 10000 kW peak. This pack cannot deliver more than 0 kW into any load, because at 5.000 ohm the maximum-power point is V_oc/2R and beyond it output falls. The motor rating is unreachable by 10000 kW regardless of controller settings.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "powertrain"
+   ]
+  },
+  {
+   "check": "pd-motor-exceeds-fuse",
+   "detail": {
+    "fuse_kw": -10.7,
+    "rated_kw": 10000.0
+   },
+   "message": "[BatteryPackConfig!B1, ElecPropulsion!B2] The 50 A fuse limits usable output to -10.7 kW with sag included, against a 10000 kW motor — a factor of -934.6. Either the fuse is sized for a much smaller envelope than the motor, or the motor is specified far above what the car will ever use. Both are defensible; having neither written down next to the other is not.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "powertrain"
+   ]
+  }
+ ],
+ "mf3_0": [
+  {
+   "check": "pd-motor-exceeds-pack",
+   "detail": {
+    "ceiling_kw": 0.324,
+    "rated_kw": 150.0
+   },
+   "message": "[ElecPropulsion!B2, BatteryPackConfig!B11] The motor is rated 150 kW peak. This pack cannot deliver more than 0 kW into any load, because at 4.000 ohm the maximum-power point is V_oc/2R and beyond it output falls. The motor rating is unreachable by 150 kW regardless of controller settings.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "powertrain"
+   ]
+  },
+  {
+   "check": "pd-motor-exceeds-fuse",
+   "detail": {
+    "fuse_kw": -0.16,
+    "rated_kw": 150.0
+   },
+   "message": "[BatteryPackConfig!B1, ElecPropulsion!B2] The 20 A fuse limits usable output to -0.2 kW with sag included, against a 150 kW motor — a factor of -937.5. Either the fuse is sized for a much smaller envelope than the motor, or the motor is specified far above what the car will ever use. Both are defensible; having neither written down next to the other is not.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "powertrain"
+   ]
+  }
+ ],
+ "mf3_1": [
+  {
+   "check": "pd-motor-exceeds-pack",
+   "detail": {
+    "ceiling_kw": 0.324,
+    "rated_kw": 10.0
+   },
+   "message": "[ElecPropulsion!B2, BatteryPackConfig!B11] The motor is rated 10 kW peak. This pack cannot deliver more than 0 kW into any load, because at 4.000 ohm the maximum-power point is V_oc/2R and beyond it output falls. The motor rating is unreachable by 10 kW regardless of controller settings.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "powertrain"
+   ]
+  },
+  {
+   "check": "pd-motor-exceeds-fuse",
+   "detail": {
+    "fuse_kw": -0.16,
+    "rated_kw": 10.0
+   },
+   "message": "[BatteryPackConfig!B1, ElecPropulsion!B2] The 20 A fuse limits usable output to -0.2 kW with sag included, against a 10 kW motor — a factor of -62.5. Either the fuse is sized for a much smaller envelope than the motor, or the motor is specified far above what the car will ever use. Both are defensible; having neither written down next to the other is not.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "powertrain"
+   ]
+  }
+ ],
+ "mf3_2": [
+  {
+   "check": "pd-motor-exceeds-pack",
+   "detail": {
+    "ceiling_kw": 0.324,
+    "rated_kw": 10000.0
+   },
+   "message": "[ElecPropulsion!B2, BatteryPackConfig!B11] The motor is rated 10000 kW peak. This pack cannot deliver more than 0 kW into any load, because at 4.000 ohm the maximum-power point is V_oc/2R and beyond it output falls. The motor rating is unreachable by 10000 kW regardless of controller settings.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "powertrain"
+   ]
+  },
+  {
+   "check": "pd-motor-exceeds-fuse",
+   "detail": {
+    "fuse_kw": -0.16,
+    "rated_kw": 10000.0
+   },
+   "message": "[BatteryPackConfig!B1, ElecPropulsion!B2] The 20 A fuse limits usable output to -0.2 kW with sag included, against a 10000 kW motor — a factor of -62500.0. Either the fuse is sized for a much smaller envelope than the motor, or the motor is specified far above what the car will ever use. Both are defensible; having neither written down next to the other is not.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "powertrain"
+   ]
+  }
+ ],
+ "mf4_0": [
+  {
+   "check": "pd-motor-exceeds-pack",
+   "detail": {
+    "ceiling_kw": 141.75,
+    "rated_kw": 150.0
+   },
+   "message": "[ElecPropulsion!B2, BatteryPackConfig!B11] The motor is rated 150 kW peak. This pack cannot deliver more than 142 kW into any load, because at 0.448 ohm the maximum-power point is V_oc/2R and beyond it output falls. The motor rating is unreachable by 8 kW regardless of controller settings.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "powertrain"
+   ]
+  },
+  {
+   "check": "pd-motor-exceeds-fuse",
+   "detail": {
+    "fuse_kw": 24.08,
+    "rated_kw": 150.0
+   },
+   "message": "[BatteryPackConfig!B1, ElecPropulsion!B2] The 50 A fuse limits usable output to 24.1 kW with sag included, against a 150 kW motor — a factor of 6.2. Either the fuse is sized for a much smaller envelope than the motor, or the motor is specified far above what the car will ever use. Both are defensible; having neither written down next to the other is not.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "powertrain"
+   ]
+  }
+ ],
+ "mf4_1": [],
+ "mf4_2": [
+  {
+   "check": "pd-motor-exceeds-pack",
+   "detail": {
+    "ceiling_kw": 141.75,
+    "rated_kw": 10000.0
+   },
+   "message": "[ElecPropulsion!B2, BatteryPackConfig!B11] The motor is rated 10000 kW peak. This pack cannot deliver more than 142 kW into any load, because at 0.448 ohm the maximum-power point is V_oc/2R and beyond it output falls. The motor rating is unreachable by 9858 kW regardless of controller settings.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "powertrain"
+   ]
+  },
+  {
+   "check": "pd-motor-exceeds-fuse",
+   "detail": {
+    "fuse_kw": 24.08,
+    "rated_kw": 10000.0
+   },
+   "message": "[BatteryPackConfig!B1, ElecPropulsion!B2] The 50 A fuse limits usable output to 24.1 kW with sag included, against a 10000 kW motor — a factor of 415.3. Either the fuse is sized for a much smaller envelope than the motor, or the motor is specified far above what the car will ever use. Both are defensible; having neither written down next to the other is not.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "powertrain"
+   ]
+  }
+ ],
+ "part_name": [
+  "X",
+  "3"
+ ],
+ "stack0": "StackSpec(part='BQ79616-Q1', boards=9, cells_per_board=16, balancing=None, isolated=None, nfault_to_interrupt=None, thermistors_per_board=None, response_overhead_bytes=None)",
+ "stack1": "StackSpec(part='BQ79616-Q1', boards=7, cells_per_board=16, balancing=None, isolated=None, nfault_to_interrupt=None, thermistors_per_board=None, response_overhead_bytes=None)",
+ "stack2": "StackSpec(part='BQ79616-Q1', boards=1, cells_per_board=16, balancing=None, isolated=None, nfault_to_interrupt=None, thermistors_per_board=None, response_overhead_bytes=None)",
+ "stack3": "StackSpec(part='BQ79616-Q1', boards=2, cells_per_board=16, balancing=None, isolated=None, nfault_to_interrupt=None, thermistors_per_board=None, response_overhead_bytes=None)",
+ "stack4": "StackSpec(part='BQ79616-Q1', boards=9, cells_per_board=16, balancing=None, isolated=None, nfault_to_interrupt=None, thermistors_per_board=None, response_overhead_bytes=None)",
+ "stack_p0": "StackSpec(part='BQ79656-Q1', boards=10, cells_per_board=14, balancing=None, isolated=None, nfault_to_interrupt=None, thermistors_per_board=None, response_overhead_bytes=None)",
+ "stack_p1": "StackSpec(part='BQ79656-Q1', boards=8, cells_per_board=14, balancing=None, isolated=None, nfault_to_interrupt=None, thermistors_per_board=None, response_overhead_bytes=None)",
+ "stack_p2": "StackSpec(part='BQ79656-Q1', boards=1, cells_per_board=14, balancing=None, isolated=None, nfault_to_interrupt=None, thermistors_per_board=None, response_overhead_bytes=None)",
+ "stack_p3": "StackSpec(part='BQ79656-Q1', boards=2, cells_per_board=14, balancing=None, isolated=None, nfault_to_interrupt=None, thermistors_per_board=None, response_overhead_bytes=None)",
+ "stack_p4": "StackSpec(part='BQ79656-Q1', boards=10, cells_per_board=14, balancing=None, isolated=None, nfault_to_interrupt=None, thermistors_per_board=None, response_overhead_bytes=None)"
+}

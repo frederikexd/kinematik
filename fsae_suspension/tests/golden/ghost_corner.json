@@ -1,0 +1,916 @@
+{
+ "init": [
+  35.0,
+  700.0,
+  1200.0,
+  40.0,
+  [
+   "LF",
+   "LR",
+   "PR",
+   "TR",
+   "UF",
+   "UR"
+  ]
+ ],
+ "rigid": [
+  -1.4999999999999998,
+  -1.4999999999999998,
+  -1.7314075075048596,
+  -1.1721046181673922
+ ],
+ "rigid_nc": -1.4999999999999998,
+ "si_brake": [
+  {
+   "camber_ghost_deg": -2.2345549311531085,
+   "camber_rigid_deg": -2.2310812672433173,
+   "d_camber_deg": -0.0034736639097912025,
+   "d_cp_lateral_mm": 0.00927859201863157,
+   "d_ic_mm": [
+    -8.284821109459244,
+    0.13629173700269348
+   ],
+   "d_rc_height_mm": -0.07236611417889804,
+   "d_toe_deg": 0.006999340093809931,
+   "feedback_converged": true,
+   "feedback_dFy_N": 4.286622117743377,
+   "load_N": {
+    "Fx": -1500.0,
+    "Fy": 504.2866221177434,
+    "Fz": 1900.0
+   },
+   "loop_gain": 0.006943244374535442,
+   "min_fos": 5.747452382753057,
+   "min_fos_member": "LR",
+   "t_s": 0.25,
+   "travel_mm": 34.285714285714285,
+   "warnings": []
+  },
+  {
+   "LF": {
+    "delta_N": -2.238936854003896,
+    "ghost_N": -3037.395037541028,
+    "rigid_N": -3035.1561006870243,
+    "share_shift": -0.00010581274203871893
+   },
+   "LR": {
+    "delta_N": 4.024065226503808,
+    "ghost_N": 4107.2530551408545,
+    "rigid_N": 4103.228989914351,
+    "share_shift": -6.944168722489152e-05
+   },
+   "PR": {
+    "delta_N": -0.9346033983179041,
+    "ghost_N": -3723.838853380128,
+    "rigid_N": -3722.90424998181,
+    "share_shift": -0.0002635079919280914
+   },
+   "TR": {
+    "delta_N": 0.506134133952628,
+    "ghost_N": 430.2262098431435,
+    "rigid_N": 429.7200757091909,
+    "share_shift": -1.0203951329168515e-06
+   },
+   "UF": {
+    "delta_N": 4.588648753923053,
+    "ghost_N": 763.6703266176102,
+    "rigid_N": 759.0816778636871,
+    "share_shift": 0.00027089455785977296
+   },
+   "UR": {
+    "delta_N": -4.081179398876202,
+    "ghost_N": -1485.9299727391196,
+    "rigid_N": -1481.8487933402434,
+    "share_shift": 0.00016888825846470001
+   }
+  },
+  {
+   "LF": {
+    "force_N": -3037.395037541028,
+    "fos": 7.77187065448355,
+    "fos_buckle": 9.306758279264526,
+    "fos_yield": 7.77187065448355,
+    "length_mm": 389.3824424583523,
+    "mode": "yield (compression)",
+    "stress_MPa": 59.18780953136791
+   },
+   "LR": {
+    "force_N": 4107.2530551408545,
+    "fos": 5.747452382753057,
+    "fos_buckle": "inf",
+    "fos_yield": 5.747452382753057,
+    "length_mm": 402.4085828321064,
+    "mode": "yield (tension)",
+    "stress_MPa": 80.0354608209312
+   },
+   "PR": {
+    "force_N": -3723.838853380128,
+    "fos": 6.339222046870179,
+    "fos_buckle": 32.53312723660696,
+    "fos_yield": 6.339222046870179,
+    "length_mm": 188.09093976761358,
+    "mode": "yield (compression)",
+    "stress_MPa": 72.56410906557733
+   },
+   "TR": {
+    "force_N": 430.2262098431435,
+    "fos": 54.869370620041245,
+    "fos_buckle": "inf",
+    "fos_yield": 54.869370620041245,
+    "length_mm": 330.3163996824014,
+    "mode": "yield (tension)",
+    "stress_MPa": 8.383547957664804
+   },
+   "UF": {
+    "force_N": 763.6703266176102,
+    "fos": 30.911560310185187,
+    "fos_buckle": "inf",
+    "fos_yield": 30.911560310185187,
+    "length_mm": 320.24916722810417,
+    "mode": "yield (tension)",
+    "stress_MPa": 14.881164049439217
+   },
+   "UR": {
+    "force_N": -1485.9299727391196,
+    "fos": 15.886509991331573,
+    "fos_buckle": 27.664518431427183,
+    "fos_yield": 15.886509991331573,
+    "length_mm": 322.89810245135743,
+    "mode": "yield (compression)",
+    "stress_MPa": 28.955384175064104
+   }
+  },
+  [
+   -8.284821109459244,
+   0.13629173700269348
+  ],
+  34.285714285714285,
+  {
+   "F_wc_extra": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "Fx": -1500.0,
+   "Fx_wc": 0.0,
+   "Fy": 500.0,
+   "Fz": 1900.0,
+   "M_wc_extra": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "Mz": 10000.0
+  }
+ ],
+ "si_cap": {
+  "camber_ghost_deg": -1.9327136682888382,
+  "camber_rigid_deg": -1.9633586560325218,
+  "d_camber_deg": 0.030644987743683627,
+  "d_cp_lateral_mm": -0.13965168185200127,
+  "d_ic_mm": [
+   4.189235470962558,
+   -0.0847346850784163
+  ],
+  "d_rc_height_mm": 0.010938630685544126,
+  "d_toe_deg": -0.030572919067075963,
+  "feedback_converged": true,
+  "feedback_dFy_N": -13.76862388182235,
+  "load_N": {
+   "Fx": 200.0,
+   "Fy": -3013.7686238818224,
+   "Fz": 1500.0
+  },
+  "loop_gain": 0.004854907459140897,
+  "min_fos": 9.994506404808014,
+  "min_fos_member": "PR",
+  "t_s": 0.0,
+  "travel_mm": 22.857142857142858,
+  "warnings": [
+   "feedback polish hit its iteration cap — closed-loop force carries ± a few N."
+  ]
+ },
+ "si_clamp": [
+  {
+   "camber_ghost_deg": -2.3600605171225766,
+   "camber_rigid_deg": -2.374182477289675,
+   "d_camber_deg": 0.014121960167098768,
+   "d_cp_lateral_mm": -0.06838144879350239,
+   "d_ic_mm": [
+    1.7623754513747372,
+    -0.0361544788669903
+   ],
+   "d_rc_height_mm": 0.0034215796687675493,
+   "d_toe_deg": -0.017230609667306964,
+   "feedback_converged": true,
+   "feedback_dFy_N": 23.218684427772132,
+   "load_N": {
+    "Fx": 0.0,
+    "Fy": -1976.7813155722279,
+    "Fz": 4000.0
+   },
+   "loop_gain": -0.014586498102668394,
+   "min_fos": 3.350219342879024,
+   "min_fos_member": "PR",
+   "t_s": 0.25,
+   "travel_mm": 40.0,
+   "warnings": [
+    "baseline travel 94.3 mm clamped to ±40 mm (outside the solver-honest range)"
+   ]
+  },
+  {
+   "LF": {
+    "delta_N": -0.1589794565604734,
+    "ghost_N": -1092.7553201426897,
+    "rigid_N": -1092.5963406861292,
+    "share_shift": 1.0673033195712778e-05
+   },
+   "LR": {
+    "delta_N": -0.4101493639163891,
+    "ghost_N": -1067.5538363024775,
+    "rigid_N": -1067.1436869385611,
+    "share_shift": 3.6028319600867054e-05
+   },
+   "PR": {
+    "delta_N": 0.9179182459520234,
+    "ghost_N": -7046.1778595227615,
+    "rigid_N": -7047.095777768714,
+    "share_shift": -0.0001263806557487701
+   },
+   "TR": {
+    "delta_N": -0.15606391033651335,
+    "ghost_N": -164.78903525093443,
+    "rigid_N": -164.63297134059792,
+    "share_shift": 1.4879524752715867e-05
+   },
+   "UF": {
+    "delta_N": 0.22483304198905785,
+    "ghost_N": 155.9017321392999,
+    "rigid_N": 155.67689909731084,
+    "share_shift": 2.183131767545185e-05
+   },
+   "UR": {
+    "delta_N": 0.448330099048178,
+    "ghost_N": 427.290768422564,
+    "rigid_N": 426.8424383235158,
+    "share_shift": 4.296846052402603e-05
+   }
+  },
+  {
+   "LF": {
+    "force_N": -1092.7553201426897,
+    "fos": 21.60249501714311,
+    "fos_buckle": 25.859269854904156,
+    "fos_yield": 21.60249501714311,
+    "length_mm": 389.45441160298026,
+    "mode": "yield (compression)",
+    "stress_MPa": 21.29383664409863
+   },
+   "LR": {
+    "force_N": -1067.5538363024775,
+    "fos": 22.11245986441339,
+    "fos_buckle": 24.817355509952183,
+    "fos_yield": 22.11245986441339,
+    "length_mm": 402.2106610310906,
+    "mode": "yield (compression)",
+    "stress_MPa": 20.80275115570925
+   },
+   "PR": {
+    "force_N": -7046.1778595227615,
+    "fos": 3.350219342879024,
+    "fos_buckle": 17.192462200156577,
+    "fos_yield": 3.350219342879024,
+    "length_mm": 188.0963559247394,
+    "mode": "yield (compression)",
+    "stress_MPa": 137.3044427606633
+   },
+   "TR": {
+    "force_N": -164.78903525093443,
+    "fos": 143.25128684922754,
+    "fos_buckle": 238.40369766264774,
+    "fos_yield": 143.25128684922754,
+    "length_mm": 330.2977174857048,
+    "mode": "yield (compression)",
+    "stress_MPa": 3.211140438020299
+   },
+   "UF": {
+    "force_N": 155.9017321392999,
+    "fos": 151.41744119460228,
+    "fos_buckle": "inf",
+    "fos_yield": 151.41744119460228,
+    "length_mm": 320.23066585703754,
+    "mode": "yield (tension)",
+    "stress_MPa": 3.0379591437475573
+   },
+   "UR": {
+    "force_N": 427.290768422564,
+    "fos": 55.246317268886024,
+    "fos_buckle": "inf",
+    "fos_yield": 55.246317268886024,
+    "length_mm": 322.9568275674202,
+    "mode": "yield (tension)",
+    "stress_MPa": 8.326346854237572
+   }
+  },
+  [
+   1.7623754513747372,
+   -0.0361544788669903
+  ],
+  40.0,
+  {
+   "F_wc_extra": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "Fx": 0.0,
+   "Fx_wc": 0.0,
+   "Fy": -2000.0,
+   "Fz": 4000.0,
+   "M_wc_extra": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "Mz": 0.0
+  }
+ ],
+ "si_div": {
+  "camber_ghost_deg": -1.9328722557015088,
+  "camber_rigid_deg": -1.9633586560325218,
+  "d_camber_deg": 0.03048640033101302,
+  "d_cp_lateral_mm": -0.13893569170750197,
+  "d_ic_mm": [
+   4.1738790356967,
+   -0.08439739863547402
+  ],
+  "d_rc_height_mm": 0.01094001742487194,
+  "d_toe_deg": -0.03042939479128133,
+  "feedback_converged": false,
+  "feedback_dFy_N": 0.0,
+  "load_N": {
+   "Fx": 200.0,
+   "Fy": -3000.0,
+   "Fz": 1500.0
+  },
+  "loop_gain": 10.411142509326407,
+  "min_fos": 9.98804195101857,
+  "min_fos_member": "PR",
+  "t_s": 0.0,
+  "travel_mm": 22.857142857142858,
+  "warnings": [
+   "tyre-force feedback loop gain +10.41 (|g| ≥ 1): compliance-induced instability — each deflection increment recruits more force than caused it; no quasi-static equilibrium on this branch. Values shown are OPEN-LOOP."
+  ]
+ },
+ "si_kw": {
+  "camber_ghost_deg": -1.9316728226659448,
+  "camber_rigid_deg": -1.9633586560325218,
+  "d_camber_deg": 0.03168583336657704,
+  "d_cp_lateral_mm": -0.14435091962650404,
+  "d_ic_mm": [
+   4.290010641232129,
+   -0.08694807020674489
+  ],
+  "d_rc_height_mm": 0.010929485706910214,
+  "d_toe_deg": -0.03151490695749748,
+  "feedback_converged": true,
+  "feedback_dFy_N": -104.13593452824307,
+  "load_N": {
+   "Fx": 200.0,
+   "Fy": -3104.135934528243,
+   "Fz": 1500.0
+  },
+  "loop_gain": 0.035274348877459435,
+  "min_fos": 9.78489503997901,
+  "min_fos_member": "LR",
+  "t_s": 0.0,
+  "travel_mm": 22.857142857142858,
+  "warnings": []
+ },
+ "si_lat": [
+  {
+   "camber_ghost_deg": -1.9330526905794956,
+   "camber_rigid_deg": -1.9633586560325218,
+   "d_camber_deg": 0.030305965453026218,
+   "d_cp_lateral_mm": -0.13812106613681863,
+   "d_ic_mm": [
+    4.156406433545271,
+    -0.08401363176517407
+   ],
+   "d_rc_height_mm": 0.010941593074576872,
+   "d_toe_deg": -0.030266098441424975,
+   "feedback_converged": true,
+   "feedback_dFy_N": 15.665396966528533,
+   "load_N": {
+    "Fx": 200.0,
+    "Fy": -2984.3346030334715,
+    "Fz": 1500.0
+   },
+   "loop_gain": -0.005468275848651827,
+   "min_fos": 9.980697148363111,
+   "min_fos_member": "PR",
+   "t_s": 0.25,
+   "travel_mm": 22.857142857142858,
+   "warnings": []
+  },
+  {
+   "LF": {
+    "delta_N": 0.4156385344276714,
+    "ghost_N": -1897.5842956420715,
+    "rigid_N": -1897.9999341764992,
+    "share_shift": -6.158760468044644e-05
+   },
+   "LR": {
+    "delta_N": -1.1450774436916618,
+    "ghost_N": -2335.769062451757,
+    "rigid_N": -2334.623985008065,
+    "share_shift": 0.00011380921017684065
+   },
+   "PR": {
+    "delta_N": 0.7855480903131138,
+    "ghost_N": -2365.1896262788246,
+    "rigid_N": -2365.9751743691377,
+    "share_shift": -0.00010737961742834923
+   },
+   "TR": {
+    "delta_N": -0.00982660557303916,
+    "ghost_N": -450.6238184613645,
+    "rigid_N": -450.6139918557915,
+    "share_shift": -2.2035359206890037e-06
+   },
+   "UF": {
+    "delta_N": 0.10055356363113788,
+    "ghost_N": 658.7134610700657,
+    "rigid_N": 658.6129075064346,
+    "share_shift": 6.643778832540748e-06
+   },
+   "UR": {
+    "delta_N": 0.5095654697508962,
+    "ghost_N": 1029.6712022064125,
+    "rigid_N": 1029.1616367366616,
+    "share_shift": 5.0717769020117154e-05
+   }
+  },
+  {
+   "LF": {
+    "force_N": -1897.5842956420715,
+    "fos": 12.440154259577495,
+    "fos_buckle": 14.893766849951287,
+    "fos_yield": 12.440154259577495,
+    "length_mm": 389.424622332732,
+    "mode": "yield (compression)",
+    "stress_MPa": 36.977033435566334
+   },
+   "LR": {
+    "force_N": -2335.769062451757,
+    "fos": 10.106410662687953,
+    "fos_buckle": 11.345406936885649,
+    "fos_yield": 10.106410662687953,
+    "length_mm": 402.1621850303698,
+    "mode": "yield (compression)",
+    "stress_MPa": 45.51566479465184
+   },
+   "PR": {
+    "force_N": -2365.1896262788246,
+    "fos": 9.980697148363111,
+    "fos_buckle": 51.21786753215807,
+    "fos_yield": 9.980697148363111,
+    "length_mm": 188.09727011563743,
+    "mode": "yield (compression)",
+    "stress_MPa": 46.08896484505018
+   },
+   "TR": {
+    "force_N": -450.6238184613645,
+    "fos": 52.38569376767869,
+    "fos_buckle": 87.18680317217027,
+    "fos_yield": 52.38569376767869,
+    "length_mm": 330.2887436270374,
+    "mode": "yield (compression)",
+    "stress_MPa": 8.781023346565169
+   },
+   "UF": {
+    "force_N": 658.7134610700657,
+    "fos": 35.8368892598479,
+    "fos_buckle": "inf",
+    "fos_yield": 35.8368892598479,
+    "length_mm": 320.2459722504305,
+    "mode": "yield (tension)",
+    "stress_MPa": 12.83593552622855
+   },
+   "UR": {
+    "force_N": 1029.6712022064125,
+    "fos": 22.92599939452018,
+    "fos_buckle": "inf",
+    "fos_yield": 22.92599939452018,
+    "length_mm": 322.9753217394278,
+    "mode": "yield (tension)",
+    "stress_MPa": 20.064556056385058
+   }
+  },
+  [
+   4.156406433545271,
+   -0.08401363176517407
+  ],
+  22.857142857142858,
+  {
+   "F_wc_extra": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "Fx": 200.0,
+   "Fx_wc": 0.0,
+   "Fy": -3000.0,
+   "Fz": 1500.0,
+   "M_wc_extra": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "Mz": 0.0
+  }
+ ],
+ "si_mid": {
+  "camber_ghost_deg": -2.2345549311531085,
+  "camber_rigid_deg": -2.2310812672433173,
+  "d_camber_deg": -0.0034736639097912025,
+  "d_cp_lateral_mm": 0.00927859201863157,
+  "d_ic_mm": [
+   -8.284821109459244,
+   0.13629173700269348
+  ],
+  "d_rc_height_mm": -0.07236611417889804,
+  "d_toe_deg": 0.006999340093809931,
+  "feedback_converged": true,
+  "feedback_dFy_N": 4.286622117743377,
+  "load_N": {
+   "Fx": -1500.0,
+   "Fy": 504.2866221177434,
+   "Fz": 1900.0
+  },
+  "loop_gain": 0.006943244374535442,
+  "min_fos": 0.8632967784625483,
+  "min_fos_member": "LF",
+  "t_s": 0.0,
+  "travel_mm": 34.285714285714285,
+  "warnings": [
+   "LF transient FoS 0.86 < 1.0: yield onset — the elastic model (and every geometry number) is VOID beyond this instant; a yielded link does not spring back."
+  ]
+ },
+ "si_nc": [
+  "inner compliance loop did not fully converge at this instant — treat the last digit with care."
+ ],
+ "si_none": {
+  "camber_ghost_deg": -1.501398872209718,
+  "camber_rigid_deg": -1.4999999999999998,
+  "d_camber_deg": -0.0013988722097182382,
+  "d_cp_lateral_mm": 0.005505853125100657,
+  "d_ic_mm": [
+   -0.06840547388583218,
+   0.001952577102002806
+  ],
+  "d_rc_height_mm": 0.0006265352127385881,
+  "d_toe_deg": 0.0004877075532063345,
+  "feedback_converged": true,
+  "feedback_dFy_N": 0.0,
+  "load_N": {
+   "Fx": 0.0,
+   "Fy": -10.0,
+   "Fz": 700.0
+  },
+  "loop_gain": 0.0,
+  "min_fos": "inf",
+  "min_fos_member": "",
+  "t_s": 0.0,
+  "travel_mm": 0.0,
+  "warnings": []
+ },
+ "si_part": [
+  {
+   "camber_ghost_deg": -1.501398872209718,
+   "camber_rigid_deg": -1.4999999999999998,
+   "d_camber_deg": -0.0013988722097182382,
+   "d_cp_lateral_mm": 0.005505853125100657,
+   "d_ic_mm": [
+    -0.06840547388583218,
+    0.001952577102002806
+   ],
+   "d_rc_height_mm": 0.0006265352127385881,
+   "d_toe_deg": 0.0004877075532063345,
+   "feedback_converged": true,
+   "feedback_dFy_N": 0.0,
+   "load_N": {
+    "Fx": 0.0,
+    "Fy": -10.0,
+    "Fz": 700.0
+   },
+   "loop_gain": 0.0,
+   "min_fos": 273.2669862794242,
+   "min_fos_member": "UF",
+   "t_s": 0.0,
+   "travel_mm": 0.0,
+   "warnings": []
+  },
+  [
+   "UF"
+  ]
+ ],
+ "si_polish": {
+  "camber_ghost_deg": -1.931672822671014,
+  "camber_rigid_deg": -1.9633586560325218,
+  "d_camber_deg": 0.031685833361507765,
+  "d_cp_lateral_mm": -0.1443509196035393,
+  "d_ic_mm": [
+   4.290010640738274,
+   -0.0869480701958878
+  ],
+  "d_rc_height_mm": 0.010929485706938635,
+  "d_toe_deg": -0.03151490695286756,
+  "feedback_converged": true,
+  "feedback_dFy_N": -104.135934086431,
+  "load_N": {
+   "Fx": 200.0,
+   "Fy": -3104.135934086431,
+   "Fz": 1500.0
+  },
+  "loop_gain": 0.035274348877459435,
+  "min_fos": 9.784895041126987,
+  "min_fos_member": "LR",
+  "t_s": 0.0,
+  "travel_mm": 22.857142857142858,
+  "warnings": [
+   "feedback polish hit its iteration cap — closed-loop force carries ± a few N."
+  ]
+ },
+ "si_small": [
+  {
+   "camber_ghost_deg": -1.501398872209718,
+   "camber_rigid_deg": -1.4999999999999998,
+   "d_camber_deg": -0.0013988722097182382,
+   "d_cp_lateral_mm": 0.005505853125100657,
+   "d_ic_mm": [
+    -0.06840547388583218,
+    0.001952577102002806
+   ],
+   "d_rc_height_mm": 0.0006265352127385881,
+   "d_toe_deg": 0.0004877075532063345,
+   "feedback_converged": true,
+   "feedback_dFy_N": 0.0,
+   "load_N": {
+    "Fx": 0.0,
+    "Fy": -10.0,
+    "Fz": 700.0
+   },
+   "loop_gain": 0.0,
+   "min_fos": 18.581153702072278,
+   "min_fos_member": "PR",
+   "t_s": 0.25,
+   "travel_mm": 0.0,
+   "warnings": []
+  },
+  {
+   "LF": {
+    "delta_N": 0.027972634606371116,
+    "ghost_N": 106.59835731540736,
+    "rigid_N": 106.57038468080098,
+    "share_shift": 1.6745578270055406e-05
+   },
+   "LR": {
+    "delta_N": -0.017398816227778724,
+    "ghost_N": 28.427463928568482,
+    "rigid_N": 28.44486274479626,
+    "share_shift": -1.158105452437816e-05
+   },
+   "PR": {
+    "delta_N": -0.007540338267062907,
+    "ghost_N": -1270.4400241684868,
+    "rigid_N": -1270.4324838302198,
+    "share_shift": -1.0761775108614202e-05
+   },
+   "TR": {
+    "delta_N": 0.00034473543557211883,
+    "ghost_N": 26.212462909293308,
+    "rigid_N": 26.212118173857736,
+    "share_shift": -9.993694708582135e-08
+   },
+   "UF": {
+    "delta_N": -0.026839571446259924,
+    "ghost_N": -86.3852662180017,
+    "rigid_N": -86.35842664655544,
+    "share_shift": 1.626282604643564e-05
+   },
+   "UR": {
+    "delta_N": 0.015774911616389886,
+    "ghost_N": -31.097774468507208,
+    "rigid_N": -31.113549380123597,
+    "share_shift": -1.0565637736367761e-05
+   }
+  },
+  {
+   "LF": {
+    "force_N": 106.59835731540736,
+    "fos": 221.45032956269685,
+    "fos_buckle": "inf",
+    "fos_yield": 221.45032956269685,
+    "length_mm": 389.49881187430253,
+    "mode": "yield (tension)",
+    "stress_MPa": 2.077215242390349
+   },
+   "LR": {
+    "force_N": 28.427463928568482,
+    "fos": 830.4026492710007,
+    "fos_buckle": "inf",
+    "fos_yield": 830.4026492710007,
+    "length_mm": 402.2525630311456,
+    "mode": "yield (tension)",
+    "stress_MPa": 0.5539481363695405
+   },
+   "PR": {
+    "force_N": -1270.4400241684868,
+    "fos": 18.581153702072278,
+    "fos_buckle": 95.35432803364138,
+    "fos_yield": 18.581153702072278,
+    "length_mm": 188.09572839769774,
+    "mode": "yield (compression)",
+    "stress_MPa": 24.756266880710324
+   },
+   "TR": {
+    "force_N": 26.212462909293308,
+    "fos": 900.5731907004349,
+    "fos_buckle": "inf",
+    "fos_yield": 900.5731907004349,
+    "length_mm": 330.303714295628,
+    "mode": "yield (tension)",
+    "stress_MPa": 0.5107858025867146
+   },
+   "UF": {
+    "force_N": -86.3852662180017,
+    "fos": 273.2669862794242,
+    "fos_buckle": 483.8457546883776,
+    "fos_yield": 273.2669862794242,
+    "length_mm": 320.22329077141774,
+    "mode": "yield (compression)",
+    "stress_MPa": 1.683335430536184
+   },
+   "UR": {
+    "force_N": -31.097774468507208,
+    "fos": 759.0974518850272,
+    "fos_buckle": 1321.514827192495,
+    "fos_yield": 759.0974518850272,
+    "length_mm": 322.94275564181555,
+    "mode": "yield (compression)",
+    "stress_MPa": 0.6059828008349994
+   }
+  },
+  [
+   -0.06840547388583218,
+   0.001952577102002806
+  ],
+  0.0,
+  {
+   "F_wc_extra": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "Fx": 0.0,
+   "Fx_wc": 0.0,
+   "Fy": -10.0,
+   "Fz": 700.0,
+   "M_wc_extra": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "Mz": 0.0
+  }
+ ],
+ "si_tol": {
+  "camber_ghost_deg": -1.9328722557015088,
+  "camber_rigid_deg": -1.9633586560325218,
+  "d_camber_deg": 0.03048640033101302,
+  "d_cp_lateral_mm": -0.13893569170750197,
+  "d_ic_mm": [
+   4.1738790356967,
+   -0.08439739863547402
+  ],
+  "d_rc_height_mm": 0.01094001742487194,
+  "d_toe_deg": -0.03042939479128133,
+  "feedback_converged": true,
+  "feedback_dFy_N": 0.0,
+  "load_N": {
+   "Fx": 200.0,
+   "Fy": -3000.0,
+   "Fz": 1500.0
+  },
+  "loop_gain": 0.0,
+  "min_fos": 9.98804195101857,
+  "min_fos_member": "PR",
+  "t_s": 0.0,
+  "travel_mm": 22.857142857142858,
+  "warnings": []
+ },
+ "si_weak": {
+  "camber_ghost_deg": -1.9330526905794956,
+  "camber_rigid_deg": -1.9633586560325218,
+  "d_camber_deg": 0.030305965453026218,
+  "d_cp_lateral_mm": -0.13812106613681863,
+  "d_ic_mm": [
+   4.156406433545271,
+   -0.08401363176517407
+  ],
+  "d_rc_height_mm": 0.010941593074576872,
+  "d_toe_deg": -0.030266098441424975,
+  "feedback_converged": true,
+  "feedback_dFy_N": 15.665396966528533,
+  "load_N": {
+   "Fx": 200.0,
+   "Fy": -2984.3346030334715,
+   "Fz": 1500.0
+  },
+  "loop_gain": -0.005468275848651827,
+  "min_fos": 0.11717320709905456,
+  "min_fos_member": "LR",
+  "t_s": 0.0,
+  "travel_mm": 22.857142857142858,
+  "warnings": [
+   "LR transient FoS 0.12 < 1.0: yield onset — the elastic model (and every geometry number) is VOID beyond this instant; a yielded link does not spring back."
+  ]
+ },
+ "soft": [
+  1150.0,
+  {
+   "material": "Aluminium 6061",
+   "od_mm": 12.0,
+   "wall_mm": 1.0,
+   "yield_MPa": 276.0
+  },
+  {
+   "camber_ghost_deg": -1.480771318529034,
+   "camber_rigid_deg": -2.088595489895659,
+   "d_camber_deg": 0.6078241713666248,
+   "d_cp_lateral_mm": -2.693473773051096,
+   "d_ic_mm": [
+    80.70784771031958,
+    -1.6144831288035562
+   ],
+   "d_rc_height_mm": 0.23487025544424966,
+   "d_toe_deg": -0.7108292980170886,
+   "feedback_converged": true,
+   "feedback_dFy_N": 360.9031957560992,
+   "load_N": {
+    "Fx": 200.0,
+    "Fy": -2639.096804243901,
+    "Fz": 1500.0
+   },
+   "loop_gain": -0.14493641289520387,
+   "min_fos": 1.0449939667336368,
+   "min_fos_member": "LR",
+   "t_s": 0.0,
+   "travel_mm": 28.333333333333332,
+   "warnings": [
+    "LR transient FoS 1.04 is under the 1.50 rule during this event, though the static case may pass."
+   ]
+  }
+ ],
+ "travel": [
+  [
+   0.0,
+   null
+  ],
+  [
+   20.0,
+   null
+  ],
+  [
+   40.0,
+   "baseline travel 41.0 mm clamped to ±40 mm (outside the solver-honest range)"
+  ],
+  [
+   -40.0,
+   "baseline travel -45.0 mm clamped to ±40 mm (outside the solver-honest range)"
+  ],
+  [
+   -20.0,
+   null
+  ]
+ ],
+ "travel_none": [
+  [
+   0.0,
+   null
+  ],
+  [
+   0.0,
+   null
+  ],
+  [
+   0.0,
+   null
+  ],
+  [
+   0.0,
+   null
+  ]
+ ]
+}

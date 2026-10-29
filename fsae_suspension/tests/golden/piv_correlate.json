@@ -1,0 +1,567 @@
+{
+ "all_sep": {
+  "angle_rms_deg": "NaN",
+  "coverage_piv": 1.0,
+  "mag_bias_pct": 0.0,
+  "mag_rms_pct": 0.0,
+  "n_compared": 20,
+  "piv_provenance": "tunnel [xz-plane @ y=0.000 m (sheet 1.0 mm)], Nd:YAG double-pulse, dt=20 us, 0.100 mm/px, 1.0 um mist (good tracer, St=0.00), moving-belt floor — WARNING: freestream shift 4.0 px outside the 4-16 px window-quarter band at dt=20 us; retune Δt before trusting vectors",
+  "plane_label": "xz-plane @ y=0.000 m (sheet 1.0 mm)",
+  "sep_cfd_frac": 1.0,
+  "sep_iou": 1.0,
+  "sep_piv_frac": 1.0,
+  "summary": "[PIV field correlation] xz-plane @ y=0.000 m (sheet 1.0 mm): 20 vector(s) compared (100% of PIV windows valid). FIELD MATCHES — magnitude, angle and separation all inside tolerance; the CFD reproduces the real flow here, not just the integrated force. |V| RMS 0.0% (bias +0.0%), angle RMS n/a, separation IoU 1.00.",
+  "tolerances": {
+   "angle_rms_deg": 8.0,
+   "mag_rms_pct": 8.0,
+   "sep_iou_min": 0.5
+  },
+  "within_tol": true
+ },
+ "angle": {
+  "angle_rms_deg": 20.754159277467988,
+  "coverage_piv": 1.0,
+  "mag_bias_pct": -9.841668187071202,
+  "mag_rms_pct": 9.861139470370064,
+  "n_compared": 20,
+  "piv_provenance": "tunnel [xz-plane @ y=0.000 m (sheet 1.0 mm)], Nd:YAG double-pulse, dt=20 us, 0.100 mm/px, 1.0 um mist (good tracer, St=0.00), moving-belt floor — WARNING: freestream shift 4.0 px outside the 4-16 px window-quarter band at dt=20 us; retune Δt before trusting vectors",
+  "plane_label": "xz-plane @ y=0.000 m (sheet 1.0 mm)",
+  "sep_cfd_frac": 0.0,
+  "sep_iou": 1.0,
+  "sep_piv_frac": 0.0,
+  "summary": "[PIV field correlation] xz-plane @ y=0.000 m (sheet 1.0 mm): 20 vector(s) compared (100% of PIV windows valid). FIELD MISMATCH. |V| RMS 9.9% (bias -9.8%), angle RMS 20.8 deg, separation IoU 1.00.  Both fields fully attached on this plane — no separation to disagree on.  Magnitude RMS 9.9% > 8% (bias -9.8%).  Flow-angle RMS 20.8 deg > 8 deg.",
+  "tolerances": {
+   "angle_rms_deg": 8.0,
+   "mag_rms_pct": 8.0,
+   "sep_iou_min": 0.5
+  },
+  "within_tol": false
+ },
+ "both_sep": {
+  "angle_rms_deg": 0.0,
+  "coverage_piv": 1.0,
+  "mag_bias_pct": 0.0,
+  "mag_rms_pct": 0.0,
+  "n_compared": 20,
+  "piv_provenance": "tunnel [xz-plane @ y=0.000 m (sheet 1.0 mm)], Nd:YAG double-pulse, dt=20 us, 0.100 mm/px, 1.0 um mist (good tracer, St=0.00), moving-belt floor — WARNING: freestream shift 4.0 px outside the 4-16 px window-quarter band at dt=20 us; retune Δt before trusting vectors",
+  "plane_label": "xz-plane @ y=0.000 m (sheet 1.0 mm)",
+  "sep_cfd_frac": 0.1,
+  "sep_iou": 1.0,
+  "sep_piv_frac": 0.1,
+  "summary": "[PIV field correlation] xz-plane @ y=0.000 m (sheet 1.0 mm): 20 vector(s) compared (100% of PIV windows valid). FIELD MATCHES — magnitude, angle and separation all inside tolerance; the CFD reproduces the real flow here, not just the integrated force. |V| RMS 0.0% (bias +0.0%), angle RMS 0.0 deg, separation IoU 1.00.",
+  "tolerances": {
+   "angle_rms_deg": 8.0,
+   "mag_rms_pct": 8.0,
+   "sep_iou_min": 0.5
+  },
+  "within_tol": true
+ },
+ "cfd_sep": {
+  "angle_rms_deg": 0.0,
+  "coverage_piv": 1.0,
+  "mag_bias_pct": -8.556201206484456,
+  "mag_rms_pct": 27.059964166426475,
+  "n_compared": 20,
+  "piv_provenance": "tunnel [xz-plane @ y=0.000 m (sheet 1.0 mm)], Nd:YAG double-pulse, dt=20 us, 0.100 mm/px, 1.0 um mist (good tracer, St=0.00), moving-belt floor — WARNING: freestream shift 4.0 px outside the 4-16 px window-quarter band at dt=20 us; retune Δt before trusting vectors",
+  "plane_label": "xz-plane @ y=0.000 m (sheet 1.0 mm)",
+  "sep_cfd_frac": 0.1,
+  "sep_iou": 0.0,
+  "sep_piv_frac": 0.0,
+  "summary": "[PIV field correlation] xz-plane @ y=0.000 m (sheet 1.0 mm): 20 vector(s) compared (100% of PIV windows valid). FIELD MISMATCH. |V| RMS 27.1% (bias -8.6%), angle RMS 0.0 deg, separation IoU 0.00.  SEPARATION DISAGREES (IoU 0.00): CFD separates more (10%) than reality (0%) — likely under-resolved/over-diffusive near the wall.  Magnitude RMS 27.1% > 8% (bias -8.6%).",
+  "tolerances": {
+   "angle_rms_deg": 8.0,
+   "mag_rms_pct": 8.0,
+   "sep_iou_min": 0.5
+  },
+  "within_tol": false
+ },
+ "degenerate": [
+  [
+   [
+    1.0
+   ]
+  ],
+  [
+   [
+    1.0
+   ]
+  ],
+  [
+   [
+    true
+   ]
+  ]
+ ],
+ "grid": [
+  [
+   [
+    [
+     "NaN",
+     20.0,
+     20.25,
+     21.0,
+     22.0,
+     "NaN"
+    ],
+    [
+     "NaN",
+     19.669999999999998,
+     19.92,
+     20.67,
+     21.669999999999998,
+     "NaN"
+    ],
+    [
+     "NaN",
+     19.1,
+     19.35,
+     20.1,
+     21.1,
+     "NaN"
+    ],
+    [
+     "NaN",
+     "NaN",
+     "NaN",
+     "NaN",
+     "NaN",
+     "NaN"
+    ]
+   ],
+   [
+    [
+     "NaN",
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     "NaN"
+    ],
+    [
+     "NaN",
+     1.22,
+     1.22,
+     1.22,
+     1.22,
+     "NaN"
+    ],
+    [
+     "NaN",
+     1.6,
+     1.6,
+     1.6,
+     1.6,
+     "NaN"
+    ],
+    [
+     "NaN",
+     "NaN",
+     "NaN",
+     "NaN",
+     "NaN",
+     "NaN"
+    ]
+   ],
+   [
+    [
+     false,
+     true,
+     true,
+     true,
+     true,
+     false
+    ],
+    [
+     false,
+     true,
+     true,
+     true,
+     true,
+     false
+    ],
+    [
+     false,
+     true,
+     true,
+     true,
+     true,
+     false
+    ],
+    [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   ]
+  ],
+  [
+   [
+    [
+     "NaN",
+     20.0,
+     20.25,
+     21.0,
+     22.0,
+     "NaN"
+    ],
+    [
+     "NaN",
+     19.669999999999998,
+     19.92,
+     20.67,
+     21.669999999999998,
+     "NaN"
+    ],
+    [
+     "NaN",
+     19.1,
+     19.35,
+     20.1,
+     21.1,
+     "NaN"
+    ],
+    [
+     "NaN",
+     "NaN",
+     "NaN",
+     "NaN",
+     "NaN",
+     "NaN"
+    ]
+   ],
+   [
+    [
+     "NaN",
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     "NaN"
+    ],
+    [
+     "NaN",
+     1.22,
+     1.22,
+     1.22,
+     1.22,
+     "NaN"
+    ],
+    [
+     "NaN",
+     1.6,
+     1.6,
+     1.6,
+     1.6,
+     "NaN"
+    ],
+    [
+     "NaN",
+     "NaN",
+     "NaN",
+     "NaN",
+     "NaN",
+     "NaN"
+    ]
+   ],
+   [
+    [
+     false,
+     true,
+     true,
+     true,
+     true,
+     false
+    ],
+    [
+     false,
+     true,
+     true,
+     true,
+     true,
+     false
+    ],
+    [
+     false,
+     true,
+     true,
+     true,
+     true,
+     false
+    ],
+    [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   ]
+  ],
+  [
+   [
+    [
+     "NaN",
+     20.0,
+     20.25,
+     21.0,
+     22.0,
+     "NaN"
+    ],
+    [
+     "NaN",
+     19.669999999999998,
+     19.92,
+     20.67,
+     21.669999999999998,
+     "NaN"
+    ],
+    [
+     "NaN",
+     19.1,
+     19.35,
+     20.1,
+     21.1,
+     "NaN"
+    ],
+    [
+     "NaN",
+     "NaN",
+     "NaN",
+     "NaN",
+     "NaN",
+     "NaN"
+    ]
+   ],
+   [
+    [
+     "NaN",
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     "NaN"
+    ],
+    [
+     "NaN",
+     1.22,
+     1.22,
+     1.22,
+     1.22,
+     "NaN"
+    ],
+    [
+     "NaN",
+     1.6,
+     1.6,
+     1.6,
+     1.6,
+     "NaN"
+    ],
+    [
+     "NaN",
+     "NaN",
+     "NaN",
+     "NaN",
+     "NaN",
+     "NaN"
+    ]
+   ],
+   [
+    [
+     false,
+     true,
+     true,
+     true,
+     true,
+     false
+    ],
+    [
+     false,
+     true,
+     true,
+     true,
+     true,
+     false
+    ],
+    [
+     false,
+     true,
+     true,
+     true,
+     true,
+     false
+    ],
+    [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ]
+   ]
+  ]
+ ],
+ "mag": {
+  "angle_rms_deg": 0.8520282283294548,
+  "coverage_piv": 1.0,
+  "mag_bias_pct": -30.77594910340223,
+  "mag_rms_pct": 30.79867254888319,
+  "n_compared": 20,
+  "piv_provenance": "tunnel [xz-plane @ y=0.000 m (sheet 1.0 mm)], Nd:YAG double-pulse, dt=20 us, 0.100 mm/px, 1.0 um mist (good tracer, St=0.00), moving-belt floor — WARNING: freestream shift 4.0 px outside the 4-16 px window-quarter band at dt=20 us; retune Δt before trusting vectors",
+  "plane_label": "xz-plane @ y=0.000 m (sheet 1.0 mm)",
+  "sep_cfd_frac": 0.0,
+  "sep_iou": 1.0,
+  "sep_piv_frac": 0.0,
+  "summary": "[PIV field correlation] xz-plane @ y=0.000 m (sheet 1.0 mm): 20 vector(s) compared (100% of PIV windows valid). FIELD MISMATCH. |V| RMS 30.8% (bias -30.8%), angle RMS 0.9 deg, separation IoU 1.00.  Both fields fully attached on this plane — no separation to disagree on.  Magnitude RMS 30.8% > 8% (bias -30.8%).",
+  "tolerances": {
+   "angle_rms_deg": 8.0,
+   "mag_rms_pct": 8.0,
+   "sep_iou_min": 0.5
+  },
+  "within_tol": false
+ },
+ "match": {
+  "angle_rms_deg": 0.0,
+  "coverage_piv": 1.0,
+  "mag_bias_pct": 0.0,
+  "mag_rms_pct": 0.0,
+  "n_compared": 20,
+  "piv_provenance": "tunnel [xz-plane @ y=0.000 m (sheet 1.0 mm)], Nd:YAG double-pulse, dt=20 us, 0.100 mm/px, 1.0 um mist (good tracer, St=0.00), moving-belt floor — WARNING: freestream shift 4.0 px outside the 4-16 px window-quarter band at dt=20 us; retune Δt before trusting vectors",
+  "plane_label": "xz-plane @ y=0.000 m (sheet 1.0 mm)",
+  "sep_cfd_frac": 0.0,
+  "sep_iou": 1.0,
+  "sep_piv_frac": 0.0,
+  "summary": "[PIV field correlation] xz-plane @ y=0.000 m (sheet 1.0 mm): 20 vector(s) compared (100% of PIV windows valid). FIELD MATCHES — magnitude, angle and separation all inside tolerance; the CFD reproduces the real flow here, not just the integrated force. |V| RMS 0.0% (bias +0.0%), angle RMS 0.0 deg, separation IoU 1.00.  Both fields fully attached on this plane — no separation to disagree on.",
+  "tolerances": {
+   "angle_rms_deg": 8.0,
+   "mag_rms_pct": 8.0,
+   "sep_iou_min": 0.5
+  },
+  "within_tol": true
+ },
+ "nan_cfd": {
+  "angle_rms_deg": "NaN",
+  "coverage_piv": 1.0,
+  "mag_bias_pct": "NaN",
+  "mag_rms_pct": "NaN",
+  "n_compared": 0,
+  "piv_provenance": "tunnel [xz-plane @ y=0.000 m (sheet 1.0 mm)], Nd:YAG double-pulse, dt=20 us, 0.100 mm/px, 1.0 um mist (good tracer, St=0.00), moving-belt floor — WARNING: freestream shift 4.0 px outside the 4-16 px window-quarter band at dt=20 us; retune Δt before trusting vectors",
+  "plane_label": "xz-plane @ y=0.000 m (sheet 1.0 mm)",
+  "sep_cfd_frac": "NaN",
+  "sep_iou": "NaN",
+  "sep_piv_frac": "NaN",
+  "summary": "[PIV correlation] nothing to compare — the PIV valid windows and the CFD slice extent do not overlap. Export the CFD on the SAME plane and coordinate frame as the laser sheet.",
+  "tolerances": {
+   "angle_rms_deg": 8.0,
+   "mag_rms_pct": 8.0,
+   "sep_iou_min": 0.5
+  },
+  "within_tol": false
+ },
+ "none": {
+  "angle_rms_deg": "NaN",
+  "coverage_piv": 0.0,
+  "mag_bias_pct": "NaN",
+  "mag_rms_pct": "NaN",
+  "n_compared": 0,
+  "piv_provenance": "tunnel [xz-plane @ y=0.000 m (sheet 1.0 mm)], Nd:YAG double-pulse, dt=20 us, 0.100 mm/px, 1.0 um mist (good tracer, St=0.00), moving-belt floor — WARNING: freestream shift 4.0 px outside the 4-16 px window-quarter band at dt=20 us; retune Δt before trusting vectors",
+  "plane_label": "xz-plane @ y=0.000 m (sheet 1.0 mm)",
+  "sep_cfd_frac": "NaN",
+  "sep_iou": "NaN",
+  "sep_piv_frac": "NaN",
+  "summary": "[PIV correlation] nothing to compare — the PIV valid windows and the CFD slice extent do not overlap. Export the CFD on the SAME plane and coordinate frame as the laser sheet.",
+  "tolerances": {
+   "angle_rms_deg": 8.0,
+   "mag_rms_pct": 8.0,
+   "sep_iou_min": 0.5
+  },
+  "within_tol": false
+ },
+ "none_noprov": {
+  "angle_rms_deg": "NaN",
+  "coverage_piv": 0.0,
+  "mag_bias_pct": "NaN",
+  "mag_rms_pct": "NaN",
+  "n_compared": 0,
+  "piv_provenance": "",
+  "plane_label": "xz-plane @ y=0.000 m (sheet 1.0 mm)",
+  "sep_cfd_frac": "NaN",
+  "sep_iou": "NaN",
+  "sep_piv_frac": "NaN",
+  "summary": "[PIV correlation] nothing to compare — the PIV valid windows and the CFD slice extent do not overlap. Export the CFD on the SAME plane and coordinate frame as the laser sheet.",
+  "tolerances": {
+   "angle_rms_deg": 8.0,
+   "mag_rms_pct": 8.0,
+   "sep_iou_min": 0.5
+  },
+  "within_tol": false
+ },
+ "noprov": {
+  "angle_rms_deg": 0.0,
+  "coverage_piv": 1.0,
+  "mag_bias_pct": 0.0,
+  "mag_rms_pct": 0.0,
+  "n_compared": 20,
+  "piv_provenance": "",
+  "plane_label": "xz-plane @ y=0.000 m (sheet 1.0 mm)",
+  "sep_cfd_frac": 0.0,
+  "sep_iou": 1.0,
+  "sep_piv_frac": 0.0,
+  "summary": "[PIV field correlation] xz-plane @ y=0.000 m (sheet 1.0 mm): 20 vector(s) compared (100% of PIV windows valid). FIELD MATCHES — magnitude, angle and separation all inside tolerance; the CFD reproduces the real flow here, not just the integrated force. |V| RMS 0.0% (bias +0.0%), angle RMS 0.0 deg, separation IoU 1.00.  Both fields fully attached on this plane — no separation to disagree on.",
+  "tolerances": {
+   "angle_rms_deg": 8.0,
+   "mag_rms_pct": 8.0,
+   "sep_iou_min": 0.5
+  },
+  "within_tol": true
+ },
+ "orient": "PIV and CFD planes have different orientations — cannot overlay unlike planes",
+ "outside": {
+  "angle_rms_deg": "NaN",
+  "coverage_piv": 1.0,
+  "mag_bias_pct": "NaN",
+  "mag_rms_pct": "NaN",
+  "n_compared": 0,
+  "piv_provenance": "tunnel [xz-plane @ y=0.000 m (sheet 1.0 mm)], Nd:YAG double-pulse, dt=20 us, 0.100 mm/px, 1.0 um mist (good tracer, St=0.00), moving-belt floor — WARNING: freestream shift 4.0 px outside the 4-16 px window-quarter band at dt=20 us; retune Δt before trusting vectors",
+  "plane_label": "xz-plane @ y=0.000 m (sheet 1.0 mm)",
+  "sep_cfd_frac": "NaN",
+  "sep_iou": "NaN",
+  "sep_piv_frac": "NaN",
+  "summary": "[PIV correlation] nothing to compare — the PIV valid windows and the CFD slice extent do not overlap. Export the CFD on the SAME plane and coordinate frame as the laser sheet.",
+  "tolerances": {
+   "angle_rms_deg": 8.0,
+   "mag_rms_pct": 8.0,
+   "sep_iou_min": 0.5
+  },
+  "within_tol": false
+ },
+ "piv_sep": {
+  "angle_rms_deg": 0.0,
+  "coverage_piv": 1.0,
+  "mag_bias_pct": 8.556201206484456,
+  "mag_rms_pct": 27.059964166426475,
+  "n_compared": 20,
+  "piv_provenance": "tunnel [xz-plane @ y=0.000 m (sheet 1.0 mm)], Nd:YAG double-pulse, dt=20 us, 0.100 mm/px, 1.0 um mist (good tracer, St=0.00), moving-belt floor — WARNING: freestream shift 4.0 px outside the 4-16 px window-quarter band at dt=20 us; retune Δt before trusting vectors",
+  "plane_label": "xz-plane @ y=0.000 m (sheet 1.0 mm)",
+  "sep_cfd_frac": 0.0,
+  "sep_iou": 0.0,
+  "sep_piv_frac": 0.1,
+  "summary": "[PIV field correlation] xz-plane @ y=0.000 m (sheet 1.0 mm): 20 vector(s) compared (100% of PIV windows valid). FIELD MISMATCH. |V| RMS 27.1% (bias +8.6%), angle RMS 0.0 deg, separation IoU 0.00.  SEPARATION DISAGREES (IoU 0.00): the real flow separates over 10% of the plane but CFD only 0% — CFD is running ATTACHED where the car actually stalls; do not trust the simulated separation point for this part.  Magnitude RMS 27.1% > 8% (bias +8.6%).",
+  "tolerances": {
+   "angle_rms_deg": 8.0,
+   "mag_rms_pct": 8.0,
+   "sep_iou_min": 0.5
+  },
+  "within_tol": false
+ },
+ "tol": {
+  "angle_rms_deg": 8.0,
+  "mag_rms_pct": 8.0,
+  "sep_iou_min": 0.5
+ }
+}

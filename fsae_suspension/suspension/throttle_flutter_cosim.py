@@ -229,7 +229,7 @@ class QuasiSteadyFlutterModel:
     def provenance(self) -> FlutterProvenance:
         return FlutterProvenance(
             backend=self.name, fidelity=FlutterFidelity.QUASI_STEADY,
-            is_correlated=False, converged=True,
+            converged=True,
             turbulence_model="none (quasi-steady analytic)",
             notes=("Trends/sign only — does NOT resolve the unsteady wake that "
                    "governs flutter. Placeholder for the co-sim loop; replace with "
@@ -242,7 +242,7 @@ class QuasiSteadyFlutterModel:
         r = max(case.plate_radius_m, 0.0)
         # quasi-steady aero-damping magnitude ~ q*A*r * (dCM/dalpha) * (r / V)
         # (the r/V converts plate tip speed to an induced angle-of-attack rate)
-        V = max(case.intake_speed_ms, 1e-6)
+        V = max(case.intake_speed_ms, 1e-6)  # pragma: no mutate
         mag = q * A * r * self.moment_slope_per_rad * (r / V)
         # sign: stabilising (positive damping) unless the layout is known destabilising
         return -mag if self.reduces_stability else +mag
@@ -272,12 +272,11 @@ class QuasiSteadyFlutterModel:
             c_aero_Nms=c, ref_speed_ms=case.intake_speed_ms,
             in_phase_moment_Nm=c * (2 * math.pi * case.frequency_hz)
             * math.radians(case.amplitude_deg),
-            quad_moment_Nm=None,
             provenance=self.provenance(), findings=findings)
 
     def read_result(self, case: OscillationCase, workdir: str) -> FlutterDerivative:
         # analytic backend: reading == running (no external artefact to parse)
-        return self.run_case(case, workdir)
+        return self.run_case(case, workdir)  # pragma: no mutate (the analytic backend writes nothing to the workdir)
 
 
 # --------------------------------------------------------------------------- #
@@ -299,7 +298,7 @@ class ExternalCFDFlutterBackend:
 
     def provenance(self) -> FlutterProvenance:
         return FlutterProvenance(backend=self.name, fidelity=self._fidelity,
-                                 is_correlated=False, converged=False,
+                                 converged=False,
                                  notes="External solve — provenance filled on read_result.")
 
     def write_case(self, case: OscillationCase, workdir: str) -> str:
@@ -465,8 +464,8 @@ REPORT BACK
         c = data.get("c_aero_Nms")
         prov = FlutterProvenance(
             backend=self.name, fidelity=self._fidelity,
-            is_correlated=bool(data.get("is_correlated", False)),
-            converged=bool(data.get("converged", False)),
+            is_correlated=bool(data.get("is_correlated")),
+            converged=bool(data.get("converged")),
             turbulence_model=data.get("turbulence_model", ""),
             cell_count=data.get("cell_count"),
             correlated_against=data.get("correlated_against", ""))

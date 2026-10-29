@@ -1235,7 +1235,7 @@ endurance:     P̄ = h A (T − T∞) + ε σ A (T⁴ − T∞⁴)        solved
 transient:     C_r dT_r/dt = q_rotor − q_cond − h A (T_r − T∞) − q_rad;   C_p dT_p/dt = q_pad + q_cond − ½ h A_pad (T_p − T∞)
 ```
 
-The convection coefficient combines a rotating-disc and a cross-flow correlation, `h = √(h_rot² + h_x²) · duct gain` (floor 12 W/m²K), with `Nu_r = 0.015 Re_r^0.8`, `Re_r = ω r² / ν` with the rotor turning with the wheel, `ω = v / R_wheel` (228 mm by default), and `Nu_x = 0.037 Re_x^0.8 Pr^(1/3)` on the rotor diameter. The design loop of §12 thins the ring until the pad and fluid limits bind.
+The convection coefficient combines a rotating-disc and a cross-flow correlation, `h = √(h_rot² + h_x²) · duct gain` (floor 12 W/m²K), with `Nu_r = 0.015 Re_r^0.8`, `Re_r = ω r² / ν` with the rotor turning with the wheel, `ω = v / R_wheel` (228 mm by default), and `Nu_x = 0.037 Re_x^0.8 Pr^(1/3)` on the rotor diameter. A calibrated parameter set replaces this with its fitted `h = (h₀ + h₁ v) · duct gain`; the endurance equilibrium and the duct-gain calculator both take `h` from `convection_h`, so the gain the calculator asks for gives the target temperature. The design loop of §12 thins the ring until the pad and fluid limits bind.
 
 ### 22.4 Throttle Return Redundancy (`throttle_return.py`)
 
@@ -1321,14 +1321,14 @@ Rebound is a declared multiple of bump; wheel rates go to the shaft through MR²
 
 ```
 F       = C_rr m g + ½ ρ CdA v² + m a
-P_wheel = F v,        P_elec = P_wheel / η
+P_wheel = F v,        P_elec = max(P_wheel, 0) / η        (coasting and braking draw nothing)
 P       = (V_oc − I R) I   →   I = (V_oc − √(V_oc² − 4 R P)) / (2R)      (low-current root)
 R_pack  = S · R_cell / P_par,     P_max = V_oc² / (4 R_pack)
 I_cell  = I_pack / P_par,         joule heat = I² R
 gear:   ω_motor = ω_wheel · reduction,   F_t = T / r_pitch,   F_r = F_t tan(pressure angle)
 ```
 
-The electrical check flags peak pack current against the fuse, peak cell current against its rated C, and lap energy against usable pack energy, and returns the fastest lap the current limit allows. `power_draw` also audits the team workbook (inverted gear ratio, current proportional to voltage, efficiency multiplied rather than divided).
+The electrical check flags peak pack current against the fuse, peak cell current against its rated C, and lap energy against usable pack energy, and returns the fastest lap the current limit allows. `power_draw` also audits the team workbook (inverted gear ratio, current proportional to voltage, efficiency multiplied rather than divided). The workbook round trip (`ev_excel_roundtrip.py`) reports pack current from the same road load, `I = max(F v, 0) / (η V_pack)` with `a = dv/dt`, rather than from the workbook's `V · PF · RPM / 1000`, which depends on speed alone; it keeps that formula's column only for comparison. Motor speed and torque are checked in the gear the workbook's own sheets select, `N = ROUND(1/ThermalLoad!B2, 0)`, with the ratio cell read as 1/N: `ω_motor = N ω_wheel`, `T_motor = F r / (N η)`, against the declared max RPM, peak torque and peak power. The exported workbook carries the same model as live formulas (`KX_RoadLoad`), feeds the propulsion current and power blocks from it, divides by the ratio cell, and corrects the other audited cells; each change is listed on its `KX_Corrections` sheet.
 
 ### 25.2 Architecture and Energy over an Event (`ev_powertrain.py`)
 

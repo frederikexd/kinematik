@@ -1,0 +1,597 @@
+# Files held to the per-file mutation floor, grouped with the tests that pin them.
+#
+# scripts/mutation_gate.py runs one group at a time: it points [tool.mutmut] in pyproject.toml at the group's files
+# and tests, runs mutmut, and fails if any file in the group scores under `floor` (killed / tested, the same
+# definition mutmut uses). .github/workflows/mutation.yml runs the groups a push touches, and every group monthly.
+# A file joins by getting a group here once it has reached the floor; files not listed are measured by the manual
+# baseline run (workflow_dispatch with baseline: true) and are not held to a floor yet.
+
+floor = 99.0
+
+[[group]]
+name = "core"
+files = ["suspension/kinematics.py", "suspension/loadpath.py"]
+floor = 99.0        # 100% measured 2026-10-23 (1679 of 1679); a group may hold itself above the shared floor
+tests = [
+    "tests/test_kinematics.py",
+    "tests/test_load_case_physics.py",
+    "tests/test_invariants_property.py",
+    "tests/test_core_solver_edges.py",
+    "tests/test_lotus_benchmark.py",
+    "tests/test_adams_view_benchmark.py",
+    "tests/test_motion_ratio_antidive.py",
+    "tests/test_accuracy_invariants.py",
+    "tests/test_actuation.py",
+    "tests/test_mutation_gaps.py",
+]
+# two full actuation syntheses (about 25 s each) would run against every mutant of the solver
+deselect = ["tests/test_actuation.py::test_synthesis_meets_every_band"]
+
+[[group]]
+name = "compliance"
+files = ["suspension/elastokinematics.py", "suspension/compliance.py"]
+tests = [
+    "tests/test_compliance.py",
+    "tests/test_elastokinematics.py",
+    "tests/test_core_solver_edges.py",
+    "tests/test_load_case_physics.py",
+    "tests/test_mutation_compliance.py",
+]
+deselect = []
+
+[[group]]
+name = "generic_compliance"
+files = ["suspension/generic_compliance.py"]
+tests = ["tests/test_generic_compliance.py", "tests/test_mutation_generic_compliance.py"]
+deselect = []
+
+[[group]]
+name = "compliance_margin"
+files = ["suspension/compliance_margin.py"]
+tests = ["tests/test_mutation_compliance_margin.py"]
+deselect = []
+
+[[group]]
+name = "joints"
+files = ["suspension/joints.py"]
+tests = ["tests/test_mutation_joints.py"]
+deselect = []
+
+[[group]]
+name = "joint_wear"
+files = ["suspension/joint_wear.py"]
+tests = ["tests/test_mutation_joint_wear.py"]
+deselect = []
+
+[[group]]
+name = "frame_fe"
+files = ["suspension/frame_fe.py"]
+tests = ["tests/test_mutation_frame_fe.py"]
+deselect = []
+
+[[group]]
+name = "halfshaft"
+files = ["suspension/halfshaft.py"]
+tests = ["tests/test_mutation_halfshaft.py"]
+deselect = []
+
+[[group]]
+name = "damper"
+files = ["suspension/damper.py"]
+tests = ["tests/test_mutation_damper.py"]
+deselect = []
+
+[[group]]
+name = "quarter_car"
+files = ["suspension/contact_patch.py", "suspension/damper_synthesis.py"]
+tests = ["tests/test_mutation_contact_patch.py"]
+deselect = []
+
+[[group]]
+name = "steering_feel"
+files = ["suspension/steering_feel.py"]
+tests = ["tests/test_mutation_steering_feel.py"]
+deselect = []
+
+[[group]]
+name = "dynamic_ackermann"
+files = ["suspension/dynamic_ackermann.py"]
+tests = ["tests/test_mutation_dynamic_ackermann.py"]
+deselect = []
+
+[[group]]
+name = "steering_response"
+files = ["suspension/steering_response.py"]
+tests = ["tests/test_mutation_steering_response.py"]
+deselect = []
+
+[[group]]
+name = "permanent_set"
+files = ["suspension/permanent_set.py"]
+tests = ["tests/test_mutation_permanent_set.py"]
+deselect = []
+
+[[group]]
+name = "strain_thermal"
+files = ["suspension/strain_thermal.py"]
+tests = ["tests/test_mutation_strain_thermal.py"]
+deselect = []
+
+[[group]]
+name = "transducer"
+files = ["suspension/transducer.py"]
+tests = ["tests/test_mutation_transducer.py"]
+deselect = []
+
+[[group]]
+name = "measurement_fits"
+files = ["suspension/measurement_fits.py"]
+tests = ["tests/test_mutation_measurement_fits.py"]
+deselect = []
+
+[[group]]
+name = "calibration"
+files = ["suspension/calibration.py"]
+tests = ["tests/test_mutation_calibration.py"]
+deselect = []
+
+[[group]]
+name = "setup_checks"
+files = ["suspension/setup_checks.py"]
+tests = ["tests/test_mutation_setup_checks.py"]
+deselect = []
+
+[[group]]
+name = "robustness"
+files = ["suspension/robustness.py"]
+tests = ["tests/test_mutation_robustness.py"]
+deselect = []
+
+[[group]]
+name = "target_derivation"
+files = ["suspension/target_derivation.py"]
+tests = ["tests/test_mutation_target_derivation.py", "tests/test_mutation_robustness.py"]
+deselect = []
+
+[[group]]
+name = "steering_margin"
+files = ["suspension/steering_margin.py"]
+tests = ["tests/test_mutation_steering_margin.py"]
+deselect = []
+
+[[group]]
+name = "bolted_joint"
+files = ["suspension/bolted_joint.py"]
+tests = ["tests/test_mutation_bolted_joint.py"]
+deselect = []
+
+[[group]]
+name = "num"
+files = ["suspension/_num.py"]
+tests = ["tests/test_mutation_num.py"]
+deselect = []
+
+[[group]]
+name = "bracket_fos"
+files = ["suspension/bracket_fos.py"]
+tests = ["tests/test_mutation_bracket_fos.py"]
+deselect = []
+
+[[group]]
+name = "printed_parts"
+files = ["suspension/printed_parts.py"]
+tests = ["tests/test_mutation_printed_parts.py"]
+deselect = []
+
+[[group]]
+name = "tiremodel"
+files = ["suspension/tiremodel.py"]
+tests = ["tests/test_mutation_tiremodel.py"]
+deselect = []
+
+[[group]]
+name = "tirefit"
+files = ["suspension/tirefit.py"]
+tests = ["tests/test_mutation_tirefit.py"]
+deselect = []
+
+[[group]]
+name = "tire_field"
+files = ["suspension/tire_field.py"]
+tests = ["tests/test_mutation_tire_field.py"]
+deselect = []
+
+[[group]]
+name = "tire_utilisation"
+files = ["suspension/tire_utilisation.py"]
+tests = ["tests/test_mutation_tire_utilisation.py"]
+deselect = []
+
+[[group]]
+name = "tire_thermal"
+files = ["suspension/tire_thermal.py"]
+tests = ["tests/test_mutation_tire_thermal.py"]
+deselect = []
+
+[[group]]
+name = "brake_bias"
+files = ["suspension/brake_bias.py"]
+tests = ["tests/test_mutation_brake_bias.py"]
+deselect = []
+
+[[group]]
+name = "dynamics"
+files = ["suspension/dynamics.py"]
+tests = ["tests/test_mutation_dynamics.py"]
+deselect = []
+
+[[group]]
+name = "setup"
+files = ["suspension/setup.py"]
+tests = ["tests/test_mutation_setup.py"]
+deselect = []
+
+[[group]]
+name = "torque_distribution"
+files = ["suspension/torque_distribution.py"]
+tests = ["tests/test_mutation_torque_distribution.py"]
+deselect = []
+
+[[group]]
+name = "driveline"
+files = ["suspension/driveline.py"]
+tests = ["tests/test_mutation_driveline.py"]
+deselect = []
+
+[[group]]
+name = "tire_cosim_driver"
+files = ["suspension/tire_cosim_driver.py"]
+tests = ["tests/test_mutation_tire_cosim_driver.py"]
+deselect = []
+
+[[group]]
+name = "brake_thermal"
+files = ["suspension/brake_thermal.py"]
+tests = ["tests/test_mutation_brake_thermal.py"]
+deselect = []
+
+[[group]]
+name = "cooling"
+files = ["suspension/cooling.py"]
+tests = ["tests/test_mutation_cooling.py"]
+deselect = []
+
+[[group]]
+name = "pcm_cooling"
+files = ["suspension/pcm_cooling.py"]
+tests = ["tests/test_mutation_pcm_cooling.py"]
+deselect = []
+
+[[group]]
+name = "thermic_patch"
+files = ["suspension/thermic_patch.py"]
+tests = ["tests/test_mutation_thermic_patch.py"]
+deselect = []
+
+[[group]]
+name = "degradation"
+files = ["suspension/degradation.py"]
+tests = ["tests/test_mutation_degradation.py"]
+deselect = []
+
+[[group]]
+name = "mountpoints"
+files = ["suspension/mountpoints.py"]
+tests = [
+    "tests/test_mountpoints.py",
+    "tests/test_mutation_mountpoints.py",
+]
+deselect = []
+
+[[group]]
+name = "ev_powertrain"
+files = ["suspension/ev_powertrain.py"]
+tests = [
+    "tests/test_mutation_ev_powertrain.py",
+]
+deselect = []
+
+[[group]]
+name = "throttle_dynamics"
+files = ["suspension/throttle_dynamics.py"]
+tests = [
+    "tests/test_throttle_dynamics.py",
+    "tests/test_mutation_throttle_dynamics.py",
+]
+deselect = []
+
+[[group]]
+name = "tire_cosim"
+files = ["suspension/tire_cosim.py"]
+tests = [
+    "tests/test_tire_cosim.py",
+    "tests/test_mutation_tire_cosim.py",
+]
+deselect = []
+
+[[group]]
+name = "fit_forecast"
+files = ["suspension/fit_forecast.py"]
+tests = [
+    "tests/test_fit_forecast.py",
+    "tests/test_mutation_fit_forecast.py",
+]
+deselect = []
+
+[[group]]
+name = "chassis"
+files = ["suspension/chassis.py"]
+tests = [
+    "tests/test_chassis.py",
+    "tests/test_mutation_chassis.py",
+]
+deselect = []
+
+[[group]]
+name = "underfloor"
+files = ["suspension/aero/underfloor.py"]
+tests = [
+    "tests/test_underfloor.py",
+    "tests/test_mutation_underfloor.py",
+]
+deselect = []
+
+[[group]]
+name = "lapsim"
+files = ["suspension/lapsim.py"]
+tests = [
+    "tests/test_lapsim.py",
+    "tests/test_mutation_lapsim.py",
+]
+deselect = []
+
+[[group]]
+name = "ggv"
+files = ["suspension/ggv.py"]
+tests = [
+    "tests/test_mutation_ggv.py",
+]
+deselect = []
+
+[[group]]
+name = "flex"
+files = ["suspension/flex.py"]
+tests = [
+    "tests/test_mutation_flex.py",
+]
+deselect = []
+
+[[group]]
+name = "tractive_system"
+files = ["suspension/tractive_system.py"]
+tests = [
+    "tests/test_tractive_and_pcm.py",
+    "tests/test_mutation_tractive_system.py",
+]
+deselect = []
+
+[[group]]
+name = "pack_thermal"
+files = ["suspension/pack_thermal.py"]
+tests = [
+    "tests/test_pack_thermal.py",
+    "tests/test_mutation_pack_thermal.py",
+]
+deselect = []
+
+[[group]]
+name = "ice_powertrain"
+files = ["suspension/ice_powertrain.py"]
+tests = [
+    "tests/test_mutation_ice_powertrain.py",
+]
+deselect = []
+
+[[group]]
+name = "wiring"
+files = ["suspension/wiring.py"]
+tests = [
+    "tests/test_mutation_wiring.py",
+]
+deselect = []
+
+[[group]]
+name = "vortex_lattice"
+files = ["suspension/aero/vortex_lattice.py"]
+tests = [
+    "tests/test_mutation_vortex_lattice.py",
+]
+deselect = []
+
+[[group]]
+name = "brakes"
+files = ["suspension/brakes.py"]
+tests = [
+    "tests/test_mutation_brakes.py",
+]
+deselect = []
+
+[[group]]
+name = "transient"
+files = ["suspension/transient.py"]
+tests = [
+    "tests/test_mutation_transient.py",
+]
+deselect = []
+
+[[group]]
+name = "laptime"
+files = ["suspension/laptime.py"]
+tests = [
+    "tests/test_laptime.py",
+    "tests/test_mutation_laptime.py",
+]
+deselect = []
+
+[[group]]
+name = "throttle_return"
+files = ["suspension/throttle_return.py"]
+tests = [
+    "tests/test_throttle_return.py",
+    "tests/test_mutation_throttle_return.py",
+]
+deselect = []
+
+[[group]]
+name = "pedal_box"
+files = ["suspension/pedal_box.py"]
+tests = [
+    "tests/test_mutation_pedal_box.py",
+]
+deselect = []
+
+[[group]]
+name = "electronics"
+files = ["suspension/electronics.py"]
+tests = [
+    "tests/test_electronics.py",
+    "tests/test_mutation_electronics.py",
+]
+deselect = []
+
+[[group]]
+name = "power_draw"
+files = ["suspension/power_draw.py"]
+tests = [
+    "tests/test_mutation_power_draw.py",
+]
+deselect = []
+
+[[group]]
+name = "fuse_test"
+files = ["suspension/fuse_test.py"]
+tests = [
+    "tests/test_mutation_fuse_test.py",
+]
+deselect = []
+
+[[group]]
+name = "topology"
+files = ["suspension/topology.py"]
+tests = [
+    "tests/test_mutation_topology.py",
+    "tests/test_topology.py",
+]
+deselect = []
+
+[[group]]
+name = "phantom_envelope"
+files = ["suspension/phantom_envelope.py"]
+tests = [
+    "tests/test_mutation_phantom_envelope.py",
+]
+deselect = []
+
+[[group]]
+name = "panel_method"
+files = ["suspension/aero/panel_method.py"]
+tests = [
+    "tests/test_mutation_panel_method.py",
+]
+deselect = []
+
+[[group]]
+name = "pressure_tap"
+files = ["suspension/aero/pressure_tap.py"]
+tests = [
+    "tests/test_mutation_pressure_tap.py",
+]
+deselect = []
+
+[[group]]
+name = "piv"
+files = ["suspension/aero/piv.py"]
+tests = [
+    "tests/test_mutation_piv.py",
+]
+deselect = []
+
+[[group]]
+name = "coupling"
+files = ["suspension/aero/coupling.py"]
+tests = [
+    "tests/test_mutation_coupling.py",
+]
+deselect = []
+
+[[group]]
+name = "aeromap"
+files = ["suspension/aero/aeromap.py"]
+tests = [
+    "tests/test_mutation_aeromap.py",
+]
+deselect = []
+
+[[group]]
+name = "engine"
+files = ["powertrain/engine.py"]
+tests = [
+    "tests/test_mutation_engine.py",
+]
+deselect = []
+
+[[group]]
+name = "ev_electrical_check"
+files = ["suspension/ev_electrical_check.py"]
+tests = [
+    "tests/test_mutation_ev_electrical_check.py",
+]
+deselect = []
+
+[[group]]
+name = "actuation"
+files = ["suspension/actuation.py"]
+tests = [
+    "tests/test_mutation_actuation.py",
+]
+deselect = ["tests/test_actuation.py::test_synthesis_meets_every_band"]
+
+[[group]]
+name = "flexgen"
+files = ["suspension/flexgen.py"]
+tests = [
+    "tests/test_mutation_flexgen.py",
+]
+deselect = []
+
+[[group]]
+name = "ghost_topology"
+files = ["suspension/ghost_topology.py"]
+tests = [
+    "tests/test_mutation_ghost_topology.py",
+]
+deselect = []
+
+[[group]]
+name = "morphmesh"
+files = ["suspension/morphmesh.py"]
+tests = [
+    "tests/test_mutation_morphmesh.py",
+]
+deselect = []
+
+[[group]]
+name = "simulforge"
+files = ["suspension/simulforge.py"]
+tests = [
+    "tests/test_mutation_simulforge.py",
+]
+deselect = []
+
+[[group]]
+name = "throttle_flutter_cosim"
+files = ["suspension/throttle_flutter_cosim.py"]
+tests = [
+    "tests/test_mutation_throttle_flutter_cosim.py",
+]
+deselect = []

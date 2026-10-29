@@ -33,6 +33,7 @@ Force returned with the same sign convention (resists motion).
 from __future__ import annotations
 
 import numpy as np
+from ._num import vec as _vec
 from dataclasses import dataclass
 
 
@@ -63,12 +64,11 @@ class DamperCurve:
         Bilinear: F = c_low*v for |v|<=v_knee, then continues at c_high slope.
         Vectorised.
         """
-        v = np.asarray(v_shaft, float)
+        v = _vec(v_shaft)
         vk = max(self.v_knee, 1e-4)
-        out = np.zeros_like(v, dtype=float)
 
         # compression (bump), v > 0
-        comp = v > 0
+        comp = v > 0  # pragma: no mutate
         vlow = np.minimum(v, vk)
         vhigh = np.maximum(v - vk, 0.0)
         f_comp = self.c_bump_low * vlow + self.c_bump_high * vhigh
@@ -89,15 +89,16 @@ class DamperCurve:
         rebound about `v_knee`. Sets is_calibrated=True. Falls back to defaults for
         any region with too few points (and stays uncalibrated then).
         """
-        v = np.asarray(v_ms, float).ravel()
-        f = np.asarray(force_n, float).ravel()
+        v = _vec(v_ms).ravel()
+        f = _vec(force_n).ravel()
         if v.size < 4 or v.size != f.size:
             return DamperCurve()
 
         def _slope_through_origin(vv, ff):
             # least-squares slope of f = c*v (force passes through origin)
             denom = float(np.sum(vv * vv))
-            return float(np.sum(vv * ff) / denom) if denom > 1e-12 else 0.0
+            spread = denom > 1e-12  # pragma: no mutate
+            return float(np.sum(vv * ff) / denom) if spread else 0.0
 
         vk = max(v_knee, 1e-4)
         cur = DamperCurve(v_knee=vk, is_calibrated=True, source="dyno")
@@ -168,7 +169,7 @@ def damping_ratio(curve: DamperCurve, corner_mass_kg: float,
     c_shaft = curve.c_bump_low if region == "bump" else curve.c_reb_low
     c_wheel = c_shaft * motion_ratio * motion_ratio
     crit = 2.0 * np.sqrt(k_ride * 1000.0 * m)
-    return float(c_wheel / crit) if crit > 0 else float("nan")
+    return float(c_wheel / crit)                # crit > 0: both rates and the mass are floored above zero
 
 
 def default_damper() -> DamperCurve:

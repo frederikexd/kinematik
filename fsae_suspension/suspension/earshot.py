@@ -779,5 +779,5 @@ def _self_test() -> None:
           f"miss probability as booked {d.miss_probability:.0%}")
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no mutate block (the command-line entry point)
     _self_test()

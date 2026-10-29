@@ -374,5 +374,5 @@ def _report() -> str:
     return "\n".join(L)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no mutate block (the command-line entry point)
     print(_report())

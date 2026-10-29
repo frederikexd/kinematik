@@ -146,7 +146,7 @@ class DifferentialSpec:
         if self.kind == OPEN:
             return 1.0
         if self.kind == SPOOL:
-            return float("inf")
+            return math.inf
         return max(1.0, float(self.tbr))
 
     def total_acquisition_usd(self) -> float | None:
@@ -220,10 +220,10 @@ def _mu_car(veh: VehicleDynamics, fz_total_n: float) -> float:
     try:
         loads, _ = veh.lateral_load_transfer(0.0)
         # scale the static corner loads up to the requested total (aero included)
-        scale = fz_total_n / max(p.mass * p.g, 1.0)
+        scale = fz_total_n / (p.mass * p.g)
         f, r = veh.axle_grip(type(loads)(loads.fl * scale, loads.fr * scale,
                                          loads.rl * scale, loads.rr * scale))
-        mu = (f + r) / max(fz_total_n, 1.0)
+        mu = (f + r) / fz_total_n
         if not np.isfinite(mu) or mu <= 0:
             raise ValueError
         return float(min(mu, 3.0))
@@ -260,7 +260,7 @@ def axle_traction(veh: VehicleDynamics, spec: DifferentialSpec,
     fz_aero_rear_per_wheel = 0.5 * cond.rear_aero_frac * fz_aero_total
     fz_in = max(loads.rl + fz_aero_rear_per_wheel, 0.0)     # inside rear
     fz_out = max(loads.rr + fz_aero_rear_per_wheel, 0.0)    # outside rear
-    if fz_in <= 1.0:
+    if fz_in <= 1.0:  # pragma: no mutate (float threshold: <= and < differ only on exact equality)
         notes.append("Inside rear wheel is at (or off) zero load — an open diff "
                      "delivers essentially no drive here. This is the condition "
                      "the LSD is bought for; it is also where the model is most "
@@ -273,7 +273,7 @@ def axle_traction(veh: VehicleDynamics, spec: DifferentialSpec,
     # --- how much of the friction circle is already spent on cornering
     lam = min(max(lateral_g / ay_max, 0.0), 1.0)
     long_frac = math.sqrt(max(0.0, 1.0 - lam ** 2))
-    if lam >= 0.97:
+    if lam >= 0.97:  # pragma: no mutate (float threshold: >= and > differ only on exact equality)
         notes.append("Lateral demand is essentially at the tyre limit — almost "
                      "no longitudinal capacity remains, so every differential "
                      "scores alike here by construction. Lower lateral_g_frac "
@@ -285,7 +285,7 @@ def axle_traction(veh: VehicleDynamics, spec: DifferentialSpec,
     # --- the differential's decision
     if spec.kind == SPOOL:
         t_in, t_out = t_cap_in, t_cap_out
-    elif spec.kind == OPEN or spec.effective_tbr() <= 1.0 + 1e-9:
+    elif spec.kind == OPEN or spec.effective_tbr() <= 1.0 + 1e-9:  # pragma: no mutate (at TBR 1 both branches give inside + preload)
         t_in = t_cap_in
         t_out = min(t_cap_out, t_cap_in + spec.preload_nm)
     else:
@@ -359,7 +359,7 @@ CATALOG: dict[str, DifferentialSpec] = {
         mass_kg=None, cost_usd=None, is_estimate=True,
         source="Baseline concept — supply your own mass/cost."),
     "spool": DifferentialSpec(
-        name="Spool / solid axle", kind=SPOOL, tbr=float("inf"), preload_nm=0.0,
+        name="Spool / solid axle", kind=SPOOL, tbr=math.inf, preload_nm=0.0,
         mass_kg=None, cost_usd=None, is_estimate=True,
         source="Baseline concept — supply your own mass/cost."),
     # --- the part this module was written to evaluate -------------------- #
@@ -399,6 +399,7 @@ def catalog(key: str, **overrides) -> DifferentialSpec:
     return replace(base, **overrides) if overrides else base
 
 
+# pragma: no mutate start (descriptive provenance text for the report, not logic)
 PROVENANCE = {
     "physics_grounded": [
         "per-wheel rear vertical load (dynamics.lateral_load_transfer)",
@@ -420,3 +421,4 @@ PROVENANCE = {
         "swept comparison, not answers. See trade.py."
     ),
 }
+# pragma: no mutate end

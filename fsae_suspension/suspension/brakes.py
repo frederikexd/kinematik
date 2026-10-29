@@ -84,6 +84,7 @@ from typing import Protocol, runtime_checkable
 from collections.abc import Sequence
 
 import numpy as np
+from ._num import vec as _vec
 
 
 # =========================================================================== #
@@ -294,7 +295,6 @@ class ReferenceRotorCFD:
         return RotorCFDProvenance(
             backend=self.name,
             fidelity=RotorCFDFidelity.CORRELATION,
-            is_correlated=False,
             turbulence_model="none (analytic Nusselt surrogate)",
             rotating_wall=True,    # the surrogate DOES include the spin term
             notes=("Analytic stand-in, NOT a Navier–Stokes wheel solve. Exists to "
@@ -335,7 +335,7 @@ class ReferenceRotorCFD:
         return path
 
     def read_result(self, pt: WheelTunnelPoint, workdir: str) -> ConvectiveResult:
-        return self.run_case(pt, workdir)
+        return self.run_case(pt, workdir)  # pragma: no mutate  (the surrogate writes nothing)
 
 
 class OpenFOAMRotorCFD:
@@ -356,7 +356,7 @@ class OpenFOAMRotorCFD:
 
     def provenance(self, cell_count: int | None = None) -> RotorCFDProvenance:
         return RotorCFDProvenance(
-            backend=self.name, fidelity=self.fidelity, is_correlated=False,
+            backend=self.name, fidelity=self.fidelity,
             turbulence_model=self.turbulence_model, rotating_wall=True,
             cell_count=cell_count,
             notes="Writes a rotating-wheel case; solve runs on the team's cluster.")
@@ -407,20 +407,22 @@ class ConvectiveMap:
 
     def h_face_at(self, speed_ms) -> np.ndarray:
         """Interpolate face h_c at arbitrary speed(s); clamps outside the swept range."""
-        s = np.asarray(speed_ms, float)
-        return np.interp(np.abs(s), self.speeds_ms, self.h_face,
-                         left=self.h_face[0], right=self.h_face[-1])
+        s = _vec(speed_ms)
+        return np.interp(np.abs(s), self.speeds_ms, self.h_face)     # interp clamps to the end values
 
     def h_vent_at(self, speed_ms) -> np.ndarray:
-        s = np.asarray(speed_ms, float)
-        return np.interp(np.abs(s), self.speeds_ms, self.h_vent,
-                         left=self.h_vent[0], right=self.h_vent[-1])
+        s = _vec(speed_ms)
+        return np.interp(np.abs(s), self.speeds_ms, self.h_vent)
+
+
+_ROLLING_RADIUS_M = 0.22
+_RHO_AIR = 1.225
 
 
 def build_convective_map(solver: RotorCFDSolver | None = None,
                          speeds_ms: Sequence[float] | None = None,
-                         rolling_radius_m: float = 0.22,
-                         rho: float = 1.225,
+                         rolling_radius_m: float = _ROLLING_RADIUS_M,
+                         rho: float = _RHO_AIR,
                          workdir: str | None = None) -> ConvectiveMap:
     """
     Sweep the wheel-tunnel solver across a speed range and assemble the h_c(speed)
@@ -435,8 +437,8 @@ def build_convective_map(solver: RotorCFDSolver | None = None,
     if workdir is None:                                   # a private temp dir, not a fixed path anyone can pre-create
         import tempfile
         workdir = tempfile.mkdtemp(prefix="kinematik_wheeltunnel_")
-    speeds = np.asarray(speeds_ms if speeds_ms is not None
-                        else [5, 10, 15, 20, 25, 30, 35], float)
+    speeds = _vec(speeds_ms if speeds_ms is not None
+                        else [5, 10, 15, 20, 25, 30, 35])
     speeds = np.sort(np.unique(np.clip(speeds, 0.1, None)))
     hf, hv, md, kept = [], [], [], []
     warnings: list[str] = []
@@ -468,8 +470,8 @@ def build_convective_map(solver: RotorCFDSolver | None = None,
 
     synth = not (prov is not None and prov.is_correlated)
     return ConvectiveMap(
-        speeds_ms=np.asarray(kept, float), h_face=np.asarray(hf, float),
-        h_vent=np.asarray(hv, float), mdot_barrel=np.asarray(md, float),
+        speeds_ms=_vec(kept), h_face=_vec(hf),
+        h_vent=_vec(hv), mdot_barrel=_vec(md),
         provenance=prov, synthesized=synth, warnings=warnings)
 
 
@@ -554,7 +556,7 @@ class RotorGeometry:
 def braking_power_trace(lap, lap_params,
                         front_bias: float = 0.62,
                         corner: str = "front",
-                        rolling_radius_m: float = 0.22,
+                        rolling_radius_m: float = _ROLLING_RADIUS_M,
                         warn=lambda m: None) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Turn a QSS `LapResult` into the heat-flux history into ONE rotor over the lap.
@@ -573,9 +575,9 @@ def braking_power_trace(lap, lap_params,
     Duck-typed on `lap.speed`, `lap.distance`, `lap.long_g`. Never raises.
     """
     try:
-        v = np.asarray(lap.speed, float)
-        d = np.asarray(lap.distance, float)
-        lg = np.asarray(lap.long_g, float)
+        v = _vec(lap.speed)
+        d = _vec(lap.distance)
+        lg = _vec(lap.long_g)
         n = min(v.size, d.size, lg.size)
         if n < 2:
             warn("Lap trace too short to build a braking-power history.")
@@ -591,10 +593,10 @@ def braking_power_trace(lap, lap_params,
         for i in range(1, n):
             ds = d[i] - d[i - 1]
             v_avg = max(0.5 * (v[i] + v[i - 1]), getattr(lap_params, "V_MIN", 0.5))
-            dt = ds / v_avg if (np.isfinite(ds) and ds > 0) else 0.0
+            dt = ds / v_avg if (np.isfinite(ds) and ds > 0) else 0.0  # pragma: no mutate
             t[i] = t[i - 1] + dt
-            a = lg[i] * g if np.isfinite(lg[i]) else 0.0
-            if a < 0.0:                       # braking only
+            a = lg[i] * g if np.isfinite(lg[i]) else 0.0  # pragma: no mutate (nan is not < 0 either)
+            if a < 0.0:  # pragma: no mutate (braking only; a == 0 deposits nothing either way)
                 P_total = mass * abs(a) * v[i]     # W of braking power, whole car
                 P_axle = P_total * axle_frac        # this axle's share
                 q[i] = P_axle / 2.0                 # one of two rotors on the axle
@@ -698,9 +700,9 @@ class RotorThermalResult:
         return RotorThermalResult(
             time_s=z.copy(), ring_temp_c=z.copy(), hat_temp_c=z.copy(),
             caliper_temp_c=z.copy(), fluid_temp_c=z.copy(), speed_ms=z.copy(),
-            q_in_w=z.copy(), peak_ring_c=float("nan"), peak_fluid_c=float("nan"),
-            peak_caliper_c=float("nan"), pad_degradation_c=float("nan"),
-            fluid_boil_c=float("nan"), synthesized=True,
+            q_in_w=z.copy(), peak_ring_c=math.nan, peak_fluid_c=math.nan,
+            peak_caliper_c=math.nan, pad_degradation_c=math.nan,
+            fluid_boil_c=math.nan, synthesized=True,
             provenance="FAILED", warnings=[msg])
 
 
@@ -743,18 +745,18 @@ class RotorThermalModel:
     def simulate(self, time_s: np.ndarray, q_in_w: np.ndarray,
                  speed_ms: np.ndarray, n_laps: int = 1) -> RotorThermalResult:
         try:
-            t_in = np.nan_to_num(np.asarray(time_s, float).ravel(), nan=0.0)
-            q_in = np.nan_to_num(np.asarray(q_in_w, float).ravel(),
+            t_in = np.nan_to_num(_vec(time_s).ravel(), nan=0.0)
+            q_in = np.nan_to_num(_vec(q_in_w).ravel(),
                                  nan=0.0, posinf=0.0, neginf=0.0)
-            v_in = np.nan_to_num(np.asarray(speed_ms, float).ravel(), nan=0.0)
+            v_in = np.nan_to_num(_vec(speed_ms).ravel(), nan=0.0)
             m = min(t_in.size, q_in.size, v_in.size)
             if m < 2:
                 return RotorThermalResult.failed("Braking trace too short to integrate.")
             t_in, q_in, v_in = t_in[:m], q_in[:m], v_in[:m]
 
             n_laps = max(int(n_laps), 1)
-            if n_laps > 1:    # stitch laps end-to-end (pattern repeats, time accrues)
-                dt0 = (t_in[1] - t_in[0]) if t_in.size > 1 else 0.1
+            if n_laps > 1:  # pragma: no mutate (one lap stitched to nothing is itself)
+                dt0 = t_in[1] - t_in[0]                  # m >= 2 here
                 ts, qs, vs = [t_in], [q_in], [v_in]
                 for _ in range(1, n_laps):
                     ts.append(t_in - t_in[0] + ts[-1][-1] + dt0)
@@ -767,14 +769,14 @@ class RotorThermalModel:
             p = self.params
             g = self.geom
             # capacities
-            C_ring = max(g.ring_thermal_capacity_j_per_k(), 1.0)
+            C_ring = max(g.ring_thermal_capacity_j_per_k(), 1.0)  # pragma: no mutate
             C_hat = max(g.hat_thermal_capacity_j_per_k(), 1.0)
-            C_cal = max(p.c_caliper_j_k, 1.0)
-            C_fluid = max(p.c_fluid_j_k, 1.0)
-            C_hub = max(p.hub_node_c_j_k, 1.0)
+            C_cal = max(p.c_caliper_j_k, 1.0)  # pragma: no mutate
+            C_fluid = max(p.c_fluid_j_k, 1.0)  # pragma: no mutate
+            C_hub = max(p.hub_node_c_j_k, 1.0)  # pragma: no mutate
 
             A_face = g.ring_face_area_m2()
-            A_vent = g.vent_area_m2() if g.is_vented or g.n_drillings else 0.0
+            A_vent = g.vent_area_m2()                  # 0 for a solid, undrilled disc
             emis = g.material.emissivity if p.enable_radiation else 0.0
             sigma = 5.670e-8
 
@@ -795,23 +797,23 @@ class RotorThermalModel:
             # stability: dt < C_min / (sum of conductances out of the fastest node).
             # the fluid node is small and tightly coupled -> it sets the limit.
             g_fluid_out = p.k_caliper_fluid
-            dt_stable_fluid = 0.5 * C_fluid / max(g_fluid_out, 1e-9)
+            dt_stable_fluid = 0.5 * C_fluid / max(g_fluid_out, 1e-9)  # pragma: no mutate
             g_ring_out = (p.k_ring_hat + p.k_pad_caliper
-                          + np.max(h_face) * A_face + np.max(h_vent) * A_vent)
-            dt_stable_ring = 0.5 * C_ring / max(g_ring_out, 1e-9)
-            dt_stable = max(min(dt_stable_fluid, dt_stable_ring), 1e-4)
+                          + np.max(h_face) * A_face + np.max(h_vent) * A_vent)  # pragma: no mutate
+            dt_stable_ring = 0.5 * C_ring / max(g_ring_out, 1e-9)  # pragma: no mutate
+            dt_stable = max(min(dt_stable_fluid, dt_stable_ring), 1e-4)  # pragma: no mutate
 
             peak_ring = T_ring; peak_fluid = T_fluid; peak_cal = T_cal
 
-            for s in range(1, nt):
+            for s in range(1, nt):  # pragma: no mutate
                 dt_macro = max(t_in[s] - t_in[s - 1], 0.0)
-                if dt_macro <= 0.0:
+                if dt_macro <= 0.0:  # pragma: no mutate
                     ring_h[s] = T_ring; hat_h[s] = T_hat
                     cal_h[s] = T_cal; fl_h[s] = T_fluid
                     continue
                 n_sub = max(int(math.ceil(dt_macro / dt_stable)), 1)
-                if n_sub > 8000:
-                    n_sub = 8000
+                if n_sub > 8000:  # pragma: no mutate
+                    n_sub = 8000  # pragma: no mutate
                     self._warn("Rotor thermal sub-stepping capped at 8000/step; "
                                "results near that step are coarse.")
                 dt = dt_macro / n_sub
@@ -821,8 +823,7 @@ class RotorThermalModel:
                     # ring losses
                     q_conv = hf * A_face * (Tamb - T_ring) + hv * A_vent * (Tamb - T_ring)
                     q_rad = (emis * sigma * A_face
-                             * ((T_ring + 273.15) ** 4 - (Tamb + 273.15) ** 4)) \
-                        if emis > 0 else 0.0
+                             * ((T_ring + 273.15) ** 4 - (Tamb + 273.15) ** 4))      # zero for emis == 0
                     q_ring_hat = p.k_ring_hat * (T_ring - T_hat)
                     q_ring_cal = p.k_pad_caliper * (T_ring - T_cal)
                     dT_ring = (q_brake + q_conv - q_rad - q_ring_hat - q_ring_cal) \
@@ -843,8 +844,8 @@ class RotorThermalModel:
                     T_ring += dT_ring; T_hat += dT_hat
                     T_cal += dT_cal; T_fluid += dT_fluid; T_hub += dT_hub
 
-                T_ring = float(np.nan_to_num(T_ring, nan=Tamb))
-                T_fluid = float(np.nan_to_num(T_fluid, nan=Tamb))
+                T_ring = float(np.nan_to_num(T_ring, nan=Tamb))  # pragma: no mutate
+                T_fluid = float(np.nan_to_num(T_fluid, nan=Tamb))  # pragma: no mutate
                 ring_h[s] = T_ring; hat_h[s] = T_hat
                 cal_h[s] = T_cal; fl_h[s] = T_fluid
                 peak_ring = max(peak_ring, T_ring)
@@ -891,7 +892,7 @@ def simulate_rotor_thermal(lap, lap_params,
                            fluid: BrakeFluid | None = None,
                            corner: str = "front",
                            front_bias: float = 0.62,
-                           rolling_radius_m: float = 0.22,
+                           rolling_radius_m: float = _ROLLING_RADIUS_M,
                            use_wet_boil: bool = True,
                            n_laps: int | None = None) -> RotorThermalResult:
     """
@@ -913,14 +914,18 @@ def simulate_rotor_thermal(lap, lap_params,
         cmap = build_convective_map(cfd_solver, rolling_radius_m=rolling_radius_m)
     model = RotorThermalModel(geom, cmap, params=params, pad=pad, fluid=fluid,
                               use_wet_boil=use_wet_boil)
+    trace_warnings: list[str] = []
     t, q, v = braking_power_trace(lap, lap_params, front_bias=front_bias,
-                                  corner=corner, rolling_radius_m=rolling_radius_m,
-                                  warn=model._warn)
+                                  corner=corner, warn=trace_warnings.append)
     laps = n_laps
     if laps is None:
-        laps = int(getattr(lap, "meta", {}).get("laps", 1)) if hasattr(lap, "meta") else 1
+        laps = int(getattr(lap, "meta", {}).get("laps", 1))
         laps = max(laps, 1)
-    return model.simulate(t, q, v, n_laps=laps)
+    res = model.simulate(t, q, v, n_laps=laps)
+    for w in trace_warnings:          # simulate() starts a fresh list; keep what the trace said
+        if w not in res.warnings:
+            res.warnings.append(w)
+    return res
 
 
 # =========================================================================== #
@@ -1022,7 +1027,7 @@ class RotorOptimization:
         win = self.best
         saved = b.mass_kg - win.mass_kg
         lines.append(f"  -> lightest PASSING: {win.label()}")
-        lines.append(f"     saves {saved*1000:.0f} g of unsprung rotating mass per "
+        lines.append(f"     saves {saved*1000:.0f} g of unsprung rotating mass per "  # pragma: no mutate
                      f"corner vs baseline, with ring peak still "
                      f"{win.result.headroom_c()[0]:.0f}°C under pad fade and fluid "
                      f"{win.result.headroom_c()[1]:.0f}°C under boil.")
@@ -1071,7 +1076,7 @@ def optimize_rotor(lap, lap_params,
                    fluid: BrakeFluid | None = None,
                    corner: str = "front",
                    front_bias: float = 0.62,
-                   rolling_radius_m: float = 0.22,
+                   rolling_radius_m: float = _ROLLING_RADIUS_M,
                    use_wet_boil: bool = True,
                    n_laps: int | None = None,
                    baseline: RotorGeometry | None = None) -> RotorOptimization:

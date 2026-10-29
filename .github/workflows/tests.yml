@@ -58,7 +58,7 @@ jobs:
           pytest -n auto -q -p no:cacheprovider \
             tests/test_core_solver_edges.py tests/test_invariants_property.py tests/test_kinematics.py \
             tests/test_compliance.py tests/test_elastokinematics.py tests/test_load_case_physics.py \
-            tests/test_motion_ratio_antidive.py \
+            tests/test_motion_ratio_antidive.py tests/test_mutation_compliance.py \
             --cov=suspension.kinematics --cov=suspension.loadpath \
             --cov=suspension.elastokinematics --cov=suspension.compliance \
             --cov-branch --cov-report=term-missing --cov-fail-under=100
