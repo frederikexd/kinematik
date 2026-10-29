@@ -12,6 +12,11 @@ import json
 
 from tests._golden import check, plain
 
+
+def check(name, results, _check=check):
+    """Iterative solves agree across CPUs (different LAPACK/SIMD paths) only to about 1e-8, so compare at 1e-7."""
+    _check(name, results, rel=1e-7)
+
 HP = Hardpoints.default()
 
 
@@ -265,7 +270,9 @@ def test_characterized_full_fans():
     h2.rocker_pushrod = None
     res["pr"] = [mm.load_fan_from_audit(NS(instants=pr), HP, member="pr"),
                  mm.load_fan_from_audit(NS(instants=pr), h2, member="PR")]
-    res["hp_outer"] = mm.load_fan_from_audit(NS(instants=[_inst(0.0, 900.0), _inst(0.1, 500.0)]), HP)
+    hp = mm.load_fan_from_audit(NS(instants=[_inst(0.0, 900.0), _inst(0.1, 500.0)]), HP)
+    # every force lies on one line, so the second plane axis (and the normal) is any vector across it: not recorded
+    res["hp_outer"] = {k: v for k, v in vars(hp).items() if k not in ("e2", "normal", "nrm")}
     check("morph_fan_full", res)
 
 

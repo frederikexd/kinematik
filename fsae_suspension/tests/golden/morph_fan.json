@@ -43,7 +43,7 @@
   "cases": [
    {
     "F_N": 900.0,
-    "angle_deg": 0.0,
+    "angle_deg": -0.0,
     "n_instants": 2,
     "t_hi_ms": 100.0,
     "t_lo_ms": 0.0,
@@ -308,7 +308,7 @@
   "cases": [
    {
     "F_N": 800.0,
-    "angle_deg": -180.0,
+    "angle_deg": 180.0,
     "n_instants": 3,
     "t_hi_ms": 20.0,
     "t_lo_ms": 0.0,
@@ -365,7 +365,7 @@
   "cases": [
    {
     "F_N": 800.0,
-    "angle_deg": -180.0,
+    "angle_deg": 180.0,
     "n_instants": 3,
     "t_hi_ms": 20.0,
     "t_lo_ms": 0.0,

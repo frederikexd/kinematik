@@ -6,6 +6,12 @@ import math
 
 import numpy as np
 import pytest
+from tests._golden import check
+
+
+def check(name, results, _check=check):
+    """Iterative solves agree across CPUs (different LAPACK/SIMD paths) only to about 1e-8, so compare at 1e-7."""
+    _check(name, results, rel=1e-7)
 
 from suspension import topology as tp
 
@@ -308,7 +314,6 @@ def test_the_builder():
 
 
 def test_characterized_builder_and_sweep():
-    from tests._golden import check
     res = {}
     m = _arm(steer=True)
     res["names"] = {n: [p.name, p.role, p.carrier] for n, p in m.points.items()}
@@ -339,7 +344,6 @@ class _BodyHeight(tp.Constraint):
 
 
 def test_characterized_two_bodies_and_custom_constraints():
-    from tests._golden import check
     b = tp.MechanismBuilder("two")
     b.ground("G", [10, 20, 30]).ground("Y", [10, 70, 30]).ground("H", [40, 20, 90]).ground("K", [45, 75, 95])
     b.free("P", [10 + L, 20, 30]).free("Q", [40 + L, 25, 92]).free("M", [70, 40, 60])
@@ -350,7 +354,14 @@ def test_characterized_two_bodies_and_custom_constraints():
     b.constraint(_BodyHeight("arm", 31.0))
     m = b.finish(carrier="arm", wheel_center="W", contact_patch="C", drive_point="P")
     res = {"static": {n: p.pos for n, p in m.points.items()}}
-    res["solves"] = [[r["positions"], r["max_residual"] < 1e9] for r in (m.solve(4.0), m.solve(-3.0, steer=0.0))]
+    # M is coincident with itself and revolves about the z axis through G, so it may sit anywhere on that circle and
+    # each LAPACK picks a different point: record the circle (radius about G's axis, height), not the point
+    def fixed(pos):
+        out = {k: v for k, v in pos.items() if k != "M"}
+        out["M_radius"] = float(np.hypot(pos["M"][0] - 10.0, pos["M"][1] - 20.0))
+        out["M_z"] = float(pos["M"][2])
+        return out
+    res["solves"] = [[fixed(r["positions"]), r["max_residual"] < 1e9] for r in (m.solve(4.0), m.solve(-3.0, steer=0.0))]
     res["resid"] = m._residuals(m._get_free() + 0.01)
     res["dflt_sweep"] = [len(_arm().sweep()), [r["travel"] for r in _arm().sweep()][:3]]
     check("topology_two_bodies", res)

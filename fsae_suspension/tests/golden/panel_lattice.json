@@ -14,7 +14,7 @@
   "c_side": 1.197725764704935e-09,
   "converged": false,
   "force_monitor_range": 0.0,
-  "notes": "panel solve: 48 panels, Cd(pressure)=-0.000 + Cd(friction)=0.005  [+ circulation: C_L +0.0000 and induced drag -0.00000 from a lattice on the mean camber surface, superposed on the source solve. Thickness and blockage come from the panels, lift from the circulation.]  [WARNING: the lattice did not converge at this attitude, so the lift term — which now dominates the result — is unreliable. Check the ride height against the mean chord.]  [WARNING: mean panel size 165 mm exceeds the 30 mm ride height — panels are point sources at their centroids, so the ground image is being evaluated inside the range where that approximation fails. Ride-height trends can INVERT. Refine the mesh or raise max_panels.]",
+  "notes": "panel solve: 48 panels, Cd(pressure)=+0.000 + Cd(friction)=0.005  [+ circulation: C_L +0.0000 and induced drag -0.00000 from a lattice on the mean camber surface, superposed on the source solve. Thickness and blockage come from the panels, lift from the circulation.]  [WARNING: the lattice did not converge at this attitude, so the lift term — which now dominates the result — is unreliable. Check the ride height against the mean chord.]  [WARNING: mean panel size 165 mm exceeds the 30 mm ride height — panels are point sources at their centroids, so the ground image is being evaluated inside the range where that approximation fails. Ride-height trends can INVERT. Refine the mesh or raise max_panels.]",
   "provenance": {
    "backend": "panel-method",
    "cell_count": 48,

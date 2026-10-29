@@ -10,7 +10,7 @@
   -7.046813875260724e-09,
   null,
   true,
-  "panel solve: 320 panels, Cd(pressure)=-0.000 + Cd(friction)=0.004"
+  "panel solve: 320 panels, Cd(pressure)=+0.000 + Cd(friction)=0.004"
  ],
  "big_True": [
   -0.04855765465091881,
