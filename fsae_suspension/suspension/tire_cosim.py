@@ -261,8 +261,6 @@ class ReferenceTireModel:
         return TireProvenance(
             backend="reference-pacejka",
             fidelity=TireFidelity.HANDLING,
-            is_calibrated=False,
-            parameter_file=None,
             notes="Pacejka MF5.2 wrapped in the co-sim contract. Handling-only: no "
                   "structural or thermal channels — those are None by design, not "
                   "zero. Attach FTire/CDTire for those.")
@@ -280,16 +278,15 @@ class ReferenceTireModel:
 
     def step(self, ws: WheelState) -> TireOutput:
         """Advance the slip-relaxation state one step and return handling forces."""
+        Fz = max(float(ws.Fz), 0.0)
+        # the lag advances even with no load (and before any force law can fail)
+        self._relax(ws)
+        out = TireOutput(Fz=Fz)
+        # everything structural/thermal is honestly absent
+        out.synthesized = list(self._absent)
+        if Fz <= 1.0:
+            return out              # no load -> no force
         try:
-            Fz = max(float(ws.Fz), 0.0)
-            if Fz <= 1.0:
-                # no load -> no force; still advance the lag toward target
-                self._relax(ws)
-                out = TireOutput(Fx=0.0, Fy=0.0, Fz=Fz)
-                out.synthesized = list(self._absent)
-                return out
-
-            self._relax(ws)
             gamma = float(ws.gamma)
 
             # pure lateral from the lagged slip, pure-ish long from kappa demand
@@ -297,34 +294,32 @@ class ReferenceTireModel:
             fy_max = float(self.lateral.peak_force(Fz, abs(gamma)))
             fx_max = self.mu_x_ratio * fy_max
 
-            # longitudinal force from slip ratio, capped to the ellipse given lateral use
-            # (a simple saturating map; the reference backend is handling-grade, the
-            #  real Fx(kappa) curve is a structural/empirical backend's job)
-            fx_demand = float(np.clip(ws.kappa, -1.0, 1.0)) * fx_max
-            if fy_max > 1e-6:
-                use_y = min(abs(fy_pure) / fy_max, 1.0)
+            # longitudinal force from slip ratio, capped to the ellipse given lateral
+            # use (a simple saturating map; the reference backend is handling-grade,
+            # the real Fx(kappa) curve is a structural/empirical backend's job). The
+            # ellipse cap below is never wider than fx_max, so |kappa| > 1 saturates.
+            fx_demand = float(ws.kappa) * fx_max
+            has_fy = fy_max > 1e-6  # pragma: no mutate
+            if has_fy:
+                use_y = abs(fy_pure) / fy_max
                 fx_avail = fx_max * max(1.0 - use_y ** self.ell_ky, 0.0) ** (1.0 / self.ell_kx)
             else:
                 fx_avail = fx_max
             Fx = float(np.clip(fx_demand, -fx_avail, fx_avail))
 
-            if fx_max > 1e-6:
-                use_x = min(abs(Fx) / fx_max, 1.0)
+            has_fx = fx_max > 1e-6  # pragma: no mutate
+            if has_fx:
+                use_x = abs(Fx) / fx_max
                 fy_avail = fy_max * max(1.0 - use_x ** self.ell_kx, 0.0) ** (1.0 / self.ell_ky)
             else:
                 fy_avail = abs(fy_pure)
             Fy = float(np.clip(fy_pure, -fy_avail, fy_avail))
-
-            out = TireOutput(Fx=Fx, Fy=Fy, Fz=Fz)
-            # everything structural/thermal is honestly absent
-            out.synthesized = list(self._absent)
-            return out
         except Exception as e:
             self._warn(f"reference backend step failed ({type(e).__name__}); "
                        f"returned zero force for this sample.")
-            out = TireOutput(Fx=0.0, Fy=0.0, Fz=max(float(ws.Fz), 0.0))
-            out.synthesized = list(self._absent)
             return out
+        out.Fx, out.Fy = Fx, Fy
+        return out
 
     def _relax(self, ws: WheelState):
         """Advance the lateral relaxation state — the one real internal state here."""
@@ -460,8 +455,8 @@ def make_tire_backend(kind: str = "reference", **kw) -> StructuralTireModel:
     raise a clear, actionable error (by design — the seam is here, the binary is
     not). `reference` and `thermal` always work and need no binary.
     """
-    kind = (kind or "reference").lower()
-    if kind in ("reference", "pacejka", "default"):
+    kind = (kind or "").lower()
+    if kind in ("", "reference", "pacejka", "default"):
         return ReferenceTireModel(lateral=kw.get("lateral"))
     if kind in ("thermal", "lumped-thermal", "lumped_thermal"):
         # Lumped 3-node thermal channel on the Pacejka core. Real energy-balance

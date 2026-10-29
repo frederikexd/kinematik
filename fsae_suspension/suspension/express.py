@@ -73,6 +73,7 @@ from dataclasses import dataclass, field as _dcfield, asdict
 from collections.abc import Callable, Iterable, Sequence
 
 import numpy as np
+from ._num import vec as _vec
 
 
 __all__ = [
@@ -642,7 +643,7 @@ def parse_request(text: str) -> Ask:
         #  bare number pays a declared penalty, and a quantity of the WRONG
         #  dimension is not a candidate at all.
         best: Quantity | None = None
-        best_score = float("inf")
+        best_score = math.inf
         for q in qtys:
             if q.claimed_by is not None:
                 continue
@@ -1204,7 +1205,7 @@ def _hardpoints_from_json(obj) -> object | None:
             return Hardpoints.from_dict(candidate)
         except Exception:                                    # noqa: BLE001
             try:
-                kw = {k: (np.asarray(v, float)
+                kw = {k: (_vec(v)
                           if isinstance(v, (list, tuple)) else v)
                       for k, v in candidate.items()}
                 return Hardpoints(**kw)
@@ -1543,7 +1544,7 @@ def _job_rates(ctx: Ctx) -> list[Artifact]:
     mr_real = bool(kin.motion_ratio_is_real())
     wheel_rate = float(kin.wheel_rate(k_spring))
     f_ride = (math.sqrt(wheel_rate * 1000.0 / corner_mass) / (2 * math.pi)
-              if corner_mass > 0 and wheel_rate > 0 else float("nan"))
+              if corner_mass > 0 and wheel_rate > 0 else math.nan)
     curve = kin.motion_ratio_curve(-25.0, 25.0, 21)
 
     zeta_b = damping_ratio(default_damper(), corner_mass, wheel_rate, mr,
@@ -1616,10 +1617,10 @@ def _job_load_transfer(ctx: Ctx) -> list[Artifact]:
     rows = [("lateral", g_lat, loads.fl, loads.fr, loads.rl, loads.rr),
             ("longitudinal", g_lon, lon_f, lon_f, lon_r, lon_r)]
 
-    ltd_f = float(detail.get("ltd_front", float("nan")))
-    ltd_r = float(detail.get("ltd_rear", float("nan")))
+    ltd_f = float(detail.get("ltd_front", math.nan))
+    ltd_r = float(detail.get("ltd_rear", math.nan))
     total = ltd_f + ltd_r
-    tlltd = ltd_f / total if total else float("nan")
+    tlltd = ltd_f / total if total else math.nan
 
     md = _md("Load transfer and balance", [
         f"At **{g_lat:g} g** lateral, **{g_lon:g} g** longitudinal.",
@@ -1666,13 +1667,13 @@ def _job_rc_migration(ctx: Ctx) -> list[Artifact]:
     vd = VehicleDynamics(p, front_kin=kin, rear_kin=kin)
     res = vd.roll_center_migration(kin, p.track_front, -25.0, 25.0, 21)
     if isinstance(res, tuple) and len(res) == 2:
-        trav, rc = np.asarray(res[0], float), np.asarray(res[1], float)
+        trav, rc = _vec(res[0]), _vec(res[1])
     else:
-        arr = np.asarray(res, float)
+        arr = _vec(res)
         trav, rc = arr[:, 0], arr[:, 1]
     fin = np.isfinite(rc)
     swing = (float(np.nanmax(rc[fin]) - np.nanmin(rc[fin]))
-             if fin.any() else float("nan"))
+             if fin.any() else math.nan)
     md = _md("Roll-centre migration", [
         f"Roll-centre height across ±25 mm of travel, {trav.size} stations.",
         "",
@@ -1834,7 +1835,7 @@ def _job_measured_vs_model(ctx: Ctx) -> list[Artifact]:
     ay = db.series["ay"]
     fin = ay[np.isfinite(ay)]
     #  the 99.5th percentile, not the max — one spike is a bump, not a limit
-    meas = float(np.percentile(np.abs(fin), 99.5)) if fin.size else float("nan")
+    meas = float(np.percentile(np.abs(fin), 99.5)) if fin.size else math.nan
     kin = SuspensionKinematics(ctx.hardpoints)
     p = VehicleParams(
         mass=float(ctx.ask.param("mass_kg", 280.0)),
@@ -1845,8 +1846,8 @@ def _job_measured_vs_model(ctx: Ctx) -> list[Artifact]:
         model = vd.max_lateral_g()
         model = float(model[0] if isinstance(model, tuple) else model)
     except Exception as err:                                 # noqa: BLE001
-        model = float("nan")
-    ratio = meas / model if model and np.isfinite(model) and model else float("nan")
+        model = math.nan
+    ratio = meas / model if model and np.isfinite(model) and model else math.nan
     if not np.isfinite(ratio):
         verdict = "The model could not produce a limit to compare against."
     elif ratio < 0.80:
@@ -2252,7 +2253,7 @@ def _demo_csv(n: int = 600) -> bytes:
     return out.getvalue().encode("utf-8")
 
 
-def _selftest() -> int:
+def _selftest() -> int:  # pragma: no mutate block (a self-test, not the feature)
     fails = 0
 
     def check(name, cond, detail=""):
@@ -2408,7 +2409,7 @@ def main(argv: list[str] | None = None) -> int:
     return 1 if run.failed else 0
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no mutate block (the command-line entry point)
     import sys
     #  Under `python3 -m suspension.express` this file is __main__, and the
     #  `from .express import ...` inside express_jobs imports a SECOND copy of

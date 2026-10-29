@@ -121,7 +121,9 @@ Self-test: ``python3 -m suspension.inverse_genesis``
 
 from __future__ import annotations
 
+import math
 import numpy as np
+from ._num import vec as _vec
 from dataclasses import dataclass, field as _dcfield, fields as _dcfields
 from collections.abc import Sequence
 
@@ -174,7 +176,7 @@ def curves_of(hp: Hardpoints, stations_mm: np.ndarray,
     anywhere in the sweep fails the whole geometry — a corner the solver
     cannot follow is not a candidate, it's a cliff.
     """
-    stations = np.asarray(stations_mm, float)
+    stations = _vec(stations_mm)
     lo, hi = float(stations.min()), float(stations.max())
     if hi - lo < 1e-9:                       # single station: give it width
         lo, hi = lo - 1.0, hi + 1.0
@@ -222,9 +224,9 @@ class TargetCurve:
         if self.channel not in CHANNELS:
             raise ValueError(f"Unknown channel '{self.channel}'. "
                              f"Channels: {', '.join(CHANNELS)}.")
-        self.travel_mm = np.asarray(self.travel_mm, float).ravel()
-        self.target = np.asarray(self.target, float).ravel()
-        self.band = np.asarray(self.band, float).ravel()
+        self.travel_mm = _vec(self.travel_mm).ravel()
+        self.target = _vec(self.target).ravel()
+        self.band = _vec(self.band).ravel()
         if not (len(self.travel_mm) == len(self.target) == len(self.band)):
             raise ValueError(f"TargetCurve '{self.channel}': travel, target "
                              "and band must have equal length.")
@@ -311,15 +313,15 @@ class KeepOutBox:
     label: str = "keep-out box"
 
     def __post_init__(self):
-        self.lo = np.asarray(self.lo, float).reshape(3)
-        self.hi = np.asarray(self.hi, float).reshape(3)
+        self.lo = _vec(self.lo).reshape(3)
+        self.hi = _vec(self.hi).reshape(3)
         if np.any(self.hi <= self.lo):
             raise ValueError(f"KeepOutBox '{self.label}': hi must exceed lo "
                              "on every axis.")
 
     def clearances(self, points, probe_radius_mm: float = 0.0) -> np.ndarray:
         """Signed skin clearance in mm, positive clear and negative penetrating."""
-        pts = np.asarray(points, float)
+        pts = _vec(points)
         if pts.ndim == 1:
             pts = pts[None, :]
         # outside: Euclidean distance to the box; inside: −(distance to the
@@ -364,8 +366,8 @@ class PointSpacing:
 
     def gap(self, hp: Hardpoints) -> float:
         """Signed gap in mm along the declared axis."""
-        pa = np.asarray(getattr(hp, self.a), float)
-        pb = np.asarray(getattr(hp, self.b), float)
+        pa = _vec(getattr(hp, self.a))
+        pb = _vec(getattr(hp, self.b))
         if self.axis == "dist":
             return float(np.linalg.norm(pb - pa))
         k = _AXES.index(self.axis)
@@ -489,8 +491,8 @@ class PropertyBound:
     the band you actually want.
     """
     prop: str
-    lo: float = float("-inf")
-    hi: float = float("inf")
+    lo: float = -math.inf
+    hi: float = math.inf
     label: str = ""
 
     def __post_init__(self):
@@ -502,15 +504,15 @@ class PropertyBound:
         self.hi = float(self.hi)
         if self.hi < self.lo:
             raise ValueError(f"PropertyBound '{self.prop}': hi < lo.")
-        if self.lo == float("-inf") and self.hi == float("inf"):
+        if self.lo == -math.inf and self.hi == math.inf:
             raise ValueError(
                 f"PropertyBound '{self.prop}': declare at least one side; an "
                 "unbounded bound is not a constraint.")
         if not self.label:
             name = _PROPERTY_LABELS[self.prop]
-            if self.lo == float("-inf"):
+            if self.lo == -math.inf:
                 self.label = f"{name} <= {self.hi:g}"
-            elif self.hi == float("inf"):
+            elif self.hi == math.inf:
                 self.label = f"{name} >= {self.lo:g}"
             else:
                 self.label = f"{self.lo:g} <= {name} <= {self.hi:g}"
@@ -526,7 +528,7 @@ class PropertyBound:
         """
         v = float(value)
         if not np.isfinite(v):
-            return float("-inf")
+            return -math.inf
         return float(min(v - self.lo, self.hi - v))
 
 
@@ -644,7 +646,7 @@ def properties_of(hp: Hardpoints, ctx: SolvedPropertyBounds,
             out["rc_migration_mm_per_mm"] = float(
                 np.linalg.lstsq(A, rc, rcond=None)[0][0])
         else:
-            out["rc_migration_mm_per_mm"] = float("nan")
+            out["rc_migration_mm_per_mm"] = math.nan
     if want & _PITCH_PROPERTIES:
         try:
             if "anti_dive_pct" in want:
@@ -690,9 +692,9 @@ def properties_of(hp: Hardpoints, ctx: SolvedPropertyBounds,
                 mag = spec.wheel_load_magnitude()
                 fmax = max((abs(v) for v in (r.all_member_forces
                                              or r.member_forces).values()),
-                           default=float("nan"))
+                           default=math.nan)
                 out["member_force_ratio"] = (float(fmax / mag) if mag > 0
-                                             else float("nan"))
+                                             else math.nan)
         if want & {"lash_toe_deg", "lash_camber_deg"}:
             try:
                 db = _ek.lash_deadband(hp, spec.joint_lash_mm)
@@ -735,11 +737,11 @@ def mechanical_trail_mm(state) -> float:
     """Ground-level mechanical trail (mm): contact patch behind the point
     where the kingpin axis meets the ground, positive for the usual trail.
     Corner frame, x rearward, ground at the contact patch height."""
-    lo = np.asarray(state.lower_outer, float); up = np.asarray(state.upper_outer, float)
-    cp = np.asarray(state.contact_patch, float)
+    lo = _vec(state.lower_outer); up = _vec(state.upper_outer)
+    cp = _vec(state.contact_patch)
     d = up - lo
     if abs(d[2]) < 1e-9:
-        return float("nan")
+        return math.nan
     t = (cp[2] - lo[2]) / d[2]
     ground = lo + t * d
     return float(cp[0] - ground[0])
@@ -793,7 +795,7 @@ class SteerEffort:
         """
         dtoe = (self._toe_at(hp, h) - self._toe_at(hp, -h)) / (2.0 * h)
         if abs(dtoe) < 1e-9:
-            return float("inf")
+            return math.inf
         return (360.0 / self.rack_c_mm_per_rev) / abs(dtoe)
 
     def lock_sw_deg(self, hp) -> float:
@@ -822,9 +824,9 @@ class SteerEffort:
         lo, hi = 0.0, float(self.rack_travel_max_mm)
         try:
             if _reach_at(hi) < target:
-                return float("inf")
+                return math.inf
         except Exception:
-            return float("inf")
+            return math.inf
         for _ in range(40):
             mid = 0.5 * (lo + hi)
             try:
@@ -950,10 +952,10 @@ class SolvedPropertyBounds:
         vals = self.evaluate(hp)
         if vals is None:
             return [("(sweep)", "geometry does not solve over the bound "
-                                "evaluation range", float("-inf"))]
+                                "evaluation range", -math.inf)]
         out: list[tuple[str, str, float]] = []
         for b in self.bounds:
-            m = b.margin(vals.get(b.prop, float("nan")))
+            m = b.margin(vals.get(b.prop, math.nan))
             if m < -1e-12:
                 out.append((b.prop, b.label, m))
         return out
@@ -1042,7 +1044,7 @@ def joint_swing(hp: Hardpoints, travel_mm: tuple[float, float] = (-25.0, 25.0),
 
     def direction(h, s, link):
         inn, out = _ENVELOPE_LINKS[link]
-        v = np.asarray(getattr(s, out), float) - np.asarray(getattr(h, inn), float)
+        v = _vec(getattr(s, out)) - _vec(getattr(h, inn))
         return v / np.linalg.norm(v)
 
     d0 = {l: direction(hp, s0, l) for l in links}
@@ -1097,7 +1099,7 @@ def joint_misalignment(hp: Hardpoints, travel_mm: tuple[float, float] = (-25.0, 
     deg, "_worst": (joint, deg, where)}.
     """
     def _unit(v):
-        v = np.asarray(v, float)
+        v = _vec(v)
         return v / np.linalg.norm(v)
 
     racks = [0.0] + ([-abs(rack_travel_mm), abs(rack_travel_mm)] if rack_travel_mm else [])
@@ -1164,7 +1166,7 @@ class NodeAttachment:
             raise ValueError(f"NodeAttachment: unknown point(s) {bad}.")
         if float(self.max_offset_mm) <= 0.0:
             raise ValueError("NodeAttachment.max_offset_mm must be > 0.")
-        self._arr = np.asarray(self.nodes, float)
+        self._arr = _vec(self.nodes)
 
     @property
     def label(self) -> str:
@@ -1176,9 +1178,9 @@ class NodeAttachment:
         """Distance in mm from each listed pickup to its nearest node."""
         arr = getattr(self, "_arr", None)
         if arr is None:
-            arr = self._arr = np.asarray(self.nodes, float)
+            arr = self._arr = _vec(self.nodes)
         return {p: float(np.min(np.linalg.norm(
-            arr - np.asarray(getattr(hp, p), float), axis=1)))
+            arr - _vec(getattr(hp, p)), axis=1)))
             for p in self.points}
 
     def violations(self, hp: Hardpoints) -> list[tuple[str, str, float]]:
@@ -1239,22 +1241,22 @@ class ToolAccess:
         out = {}
         t = np.linspace(0.0, 1.0, self.samples)
         for p in self.points:
-            a = np.asarray(getattr(hp, p), float)
-            b = np.asarray(getattr(hp, _PIVOT_PARTNER[p]), float)
+            a = _vec(getattr(hp, p))
+            b = _vec(getattr(hp, _PIVOT_PARTNER[p]))
             ax = a - b
             n = np.linalg.norm(ax)
             if n < 1e-9:
-                out[p] = float("-inf")
+                out[p] = -math.inf
                 continue
             ax /= n
-            best = float("-inf")
+            best = -math.inf
             for sgn in (1.0, -1.0):          # outward past this pickup, or back
                 d = ax * sgn
                 # the path from the far side starts past the partner pickup
                 s0 = a if sgn > 0 else b
                 pts = s0 + d * (self.start_offset_mm + t[:, None] * self.reach_mm)
                 c = min((float(np.min(obs.clearances(pts, self.tool_radius_mm)))
-                         for obs in obstacles), default=float("inf"))
+                         for obs in obstacles), default=math.inf)
                 best = max(best, c)
             out[p] = best
         return out
@@ -1438,17 +1440,17 @@ class WheelEnvelope:
         """(violations, worst margin mm). Violations are (item, where, margin mm)."""
         c = float(self.clearance_mm)
         vio: list[tuple[str, str, float]] = []
-        worst = float("inf")
+        worst = math.inf
         for rack, h, states in self._states(hp):
             tag = f"rack {rack:+g} mm" if rack else "centre"
             if not states or any(not getattr(s, "converged", True)
                                  for s in states):
-                vio.append(("(sweep)", f"does not solve, {tag}", float("-inf")))
-                worst = float("-inf")
+                vio.append(("(sweep)", f"does not solve, {tag}", -math.inf))
+                worst = -math.inf
                 continue
             for s in states:
                 ax = spin_axis(s.camber, s.toe)
-                wc = np.asarray(s.wheel_center, float)
+                wc = _vec(s.wheel_center)
                 where = f"{s.travel:+.1f} mm travel, {tag}"
 
                 # upright-fixed reference direction for sector angles: global
@@ -1460,14 +1462,14 @@ class WheelEnvelope:
                     rear = -rear
 
                 def frame(p):
-                    d = np.asarray(p, float) - wc
+                    d = _vec(p) - wc
                     a = float(d @ ax)
                     rv = d - a * ax
                     th = float(np.degrees(np.arctan2(rv @ rear, rv @ up)))
                     return a, float(np.linalg.norm(rv)), th
 
                 def sector_margin(a, rad, th, pad):
-                    m = float("inf")
+                    m = math.inf
                     for sec in self.sectors:
                         m = min(m, -sec.depth(rad, th, a, pad))
                     return m
@@ -1488,9 +1490,9 @@ class WheelEnvelope:
                         vio.append((name, where, m))
                 for link in self.links:
                     inner_n, outer_n = _ENVELOPE_LINKS[link]
-                    pin = np.asarray(getattr(h, inner_n), float)
-                    pout = np.asarray(getattr(s, outer_n), float)
-                    link_worst = float("inf")
+                    pin = _vec(getattr(h, inner_n))
+                    pout = _vec(getattr(s, outer_n))
+                    link_worst = math.inf
                     lr = self.link_radius_mm
                     for t in np.linspace(0.0, 1.0, self.samples_per_link,
                                          endpoint=False):
@@ -1525,7 +1527,7 @@ class WheelEnvelope:
                 sw = joint_swing(hp, self.travel_mm, self.n_travel,
                                  self.rack_travel_mm, self.links)
             except Exception:
-                return v + [("(joints)", "swing does not solve", float("-inf"))]
+                return v + [("(joints)", "swing does not solve", -math.inf)]
             lim = float(self.joint_swing_limit_deg)
             for k, a in sw.items():
                 if k != "_worst" and a > lim + 1e-9:
@@ -1584,8 +1586,8 @@ class LegalVolume:
                 raise ValueError(
                     f"'{name}' is not a designable hardpoint. Allowed: "
                     f"{', '.join(DESIGNABLE_POINTS)}.")
-            lo = np.asarray(lo, float).reshape(3)
-            hi = np.asarray(hi, float).reshape(3)
+            lo = _vec(lo).reshape(3)
+            hi = _vec(hi).reshape(3)
             if np.any(hi < lo):
                 raise ValueError(f"LegalVolume box for '{name}': hi < lo.")
             norm[name] = (lo, hi)
@@ -1606,7 +1608,7 @@ class LegalVolume:
         for p in points:
             h = abs(float(half_mm[p] if isinstance(half_mm, dict)
                           else half_mm))
-            c = np.asarray(getattr(hp, p), float)
+            c = _vec(getattr(hp, p))
             boxes[p] = (c - h, c + h)
         return LegalVolume(boxes=boxes, **kw)
 
@@ -1630,7 +1632,7 @@ class LegalVolume:
         """
         lo, hi = [], []
         for p in self.points():
-            c = np.asarray(getattr(hp, p), float)
+            c = _vec(getattr(hp, p))
             blo, bhi = self.boxes[p]
             lo.append(blo - c)
             hi.append(bhi - c)
@@ -1655,10 +1657,10 @@ class LegalVolume:
         Clearance in mm.
         """
         out: list[tuple[str, str, float]] = []
-        pts = np.array([np.asarray(getattr(hp, p), float)
+        pts = np.array([_vec(getattr(hp, p))
                         for p in self.points()])
         for obs in self.keep_out:
-            cl = np.asarray(obs.clearances(pts, self.probe_radius_mm), float)
+            cl = _vec(obs.clearances(pts, self.probe_radius_mm))
             lab = getattr(obs, "label", None) or \
                 getattr(obs, "kind", None) or obs.__class__.__name__
             for p, c in zip(self.points(), cl):
@@ -1823,13 +1825,13 @@ def genesis_solve(hp: Hardpoints, targets: GenesisTargets,
     coords = volume.coords()
     x, _ = volume.clamp(hp, np.zeros(len(coords))
                         if start_shift is None
-                        else np.asarray(start_shift, float))
+                        else _vec(start_shift))
     hp_x = _shifted(hp, volume, x)
     r, ok = targets.residual(hp_x)
     if not ok:
         # a start the solver can't follow is discarded honestly
         return Candidate(ok=False, hit=False, shifts={}, shift_vec=x,
-                         residual=r, max_band_frac=float("inf"),
+                         residual=r, max_band_frac=math.inf,
                          worst_row="(nominal/start does not solve)",
                          iterations=0, clamped=[], keepout_rejections=0)
     if volume.keepout_violations(hp_x):
@@ -2347,7 +2349,7 @@ def render_genesis_md(res: GenesisResult,
             bounds = (res.property_bounds.bounds
                       if res.property_bounds is not None else [])
             for b in bounds:
-                v = w.properties.get(b.prop, float("nan"))
+                v = w.properties.get(b.prop, math.nan)
                 m = b.margin(v)
                 L.append(f"| {_PROPERTY_LABELS[b.prop]} | {b.label} | "
                          f"{v:.3f} | {m:+.3f} |")
@@ -2452,8 +2454,8 @@ def band_sweep(hp: Hardpoints, targets: GenesisTargets, volume: LegalVolume,
             r = run(GenesisTargets(curves=curves, track_mm=targets.track_mm))
             move = None
             if r.winner_hp is not None and ref_hp is not None:
-                move = max(float(np.linalg.norm(np.asarray(getattr(r.winner_hp, p), float)
-                                                - np.asarray(getattr(ref_hp, p), float)))
+                move = max(float(np.linalg.norm(_vec(getattr(r.winner_hp, p))
+                                                - _vec(getattr(ref_hp, p))))
                            for p in DESIGNABLE_POINTS)
             rows.append({"channel": ch, "scale": float(sc),
                          "verdict": r.winner.verdict if r.winner else "NO_FIT",
@@ -2501,7 +2503,7 @@ if __name__ == "__main__":   # pragma: no cover
     print()
     print("=== 2 · the boundary filter is a wall, not a penalty ===")
     # a keep-out box sitting exactly on the truth's upper-front tab position
-    tgt = np.asarray(hp_truth.upper_front_inner, float)
+    tgt = _vec(hp_truth.upper_front_inner)
     ko = KeepOutBox(tgt - 3.0, tgt + 3.0, label="exhaust primary (test)")
     volume_ko = LegalVolume.around(
         hp, 8.0, points=["upper_front_inner", "upper_rear_inner"],

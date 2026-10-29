@@ -1,0 +1,633 @@
+{
+ "as": [
+  {
+   "dof": 0,
+   "measured": false,
+   "n_levels": 0,
+   "sigma_ln": 0.3,
+   "source": "module prior (not your fuses)"
+  },
+  {
+   "dof": 0,
+   "measured": false,
+   "n_levels": 0,
+   "sigma_ln": 0.4,
+   "source": "caller-supplied scalar (unverified)"
+  },
+  {
+   "dof": 0,
+   "measured": false,
+   "n_levels": 0,
+   "sigma_ln": 0.1,
+   "source": "caller-supplied scalar (unverified)"
+  }
+ ],
+ "chi2": [
+  "NaN",
+  "NaN",
+  "NaN",
+  "NaN",
+  "NaN",
+  "NaN",
+  "NaN",
+  "NaN",
+  1.0000000000000002e-27,
+  1.2444283018481397e-08,
+  0.005217069550436868,
+  0.005217069550436868,
+  0.002928566935528118,
+  0.07899396330589845,
+  0.1966536193799725,
+  0.1966536193799725,
+  0.5033451354333738,
+  1.1279930270865648,
+  1.6091110248380107,
+  1.6091110248380107,
+  14.926520427820005,
+  18.489733710874578,
+  20.601769616398485,
+  20.601769616398485
+ ],
+ "chi2_d": 5.2184883003696125,
+ "chi2_err": [
+  "no lower-tail z tabulated for p=0.2; use one of [0.01, 0.05, 0.1]",
+  "no lower-tail z tabulated for p=0.5; use one of [0.01, 0.05, 0.1]",
+  "no lower-tail z tabulated for p=-0.95; use one of [0.01, 0.05, 0.1]",
+  "no lower-tail z tabulated for p=1.05; use one of [0.01, 0.05, 0.1]"
+ ],
+ "consts": [
+  0.3,
+  0.3,
+  8,
+  [
+   1.5,
+   2.0,
+   3.0,
+   5.0,
+   10.0,
+   20.0
+  ]
+ ],
+ "m0": [
+  {
+   "dof": 0,
+   "measured": true,
+   "n_levels": 0,
+   "sigma_ln": 0.2,
+   "source": "prior"
+  },
+  "inf",
+  0.2,
+  0.2,
+  0.2,
+  true
+ ],
+ "m1": [
+  {
+   "dof": 1,
+   "measured": true,
+   "n_levels": 0,
+   "sigma_ln": 0.2,
+   "source": "prior"
+  },
+  0.7071067811865475,
+  1792.8545422510851,
+  6324555320336.758,
+  2.7689600024779537,
+  true
+ ],
+ "m9": [
+  {
+   "dof": 9,
+   "measured": true,
+   "n_levels": 0,
+   "sigma_ln": 0.25,
+   "source": "prior"
+  },
+  0.23570226039551587,
+  0.41192976556261,
+  0.5249826941288231,
+  0.367235717675513,
+  true
+ ],
+ "pilot": [
+  9,
+  51,
+  3,
+  3
+ ],
+ "pool_many": {
+  "dof": 8,
+  "measured": true,
+  "n_levels": 2,
+  "sigma_ln": 0.14343702164120098,
+  "source": "measured, 2 level(s), 8 dof"
+ },
+ "pool_mid": {
+  "dof": 8,
+  "measured": true,
+  "n_levels": 2,
+  "sigma_ln": 0.29978992644850494,
+  "source": "measured, 2 level(s), 8 dof"
+ },
+ "pool_near": {
+  "dof": 8,
+  "measured": true,
+  "n_levels": 2,
+  "sigma_ln": 0.20016892871284137,
+  "source": "measured, 2 level(s), 8 dof"
+ },
+ "pool_none": null,
+ "pool_thin": null,
+ "pool_tight": {
+  "dof": 8,
+  "measured": true,
+  "n_levels": 2,
+  "sigma_ln": 0.007905952748517343,
+  "source": "measured, 2 level(s), 8 dof"
+ },
+ "pool_two": {
+  "dof": 3,
+  "measured": true,
+  "n_levels": 2,
+  "sigma_ln": 0.15637521588492617,
+  "source": "measured, 2 level(s), 3 dof"
+ },
+ "pool_wide": {
+  "dof": 8,
+  "measured": true,
+  "n_levels": 2,
+  "sigma_ln": 1.025917935907278,
+  "source": "measured, 2 level(s), 8 dof"
+ },
+ "prior": [
+  {
+   "dof": 0,
+   "measured": false,
+   "n_levels": 0,
+   "sigma_ln": 0.3,
+   "source": "module prior (not your fuses)"
+  },
+  "inf",
+  0.3,
+  0.3,
+  0.3,
+  true
+ ],
+ "prior2": [
+  {
+   "dof": 0,
+   "measured": false,
+   "n_levels": 0,
+   "sigma_ln": 0.5,
+   "source": "module prior (not your fuses)"
+  },
+  "inf",
+  0.5,
+  0.5,
+  0.5,
+  true
+ ],
+ "ref2_many": {
+  "additional": 38,
+  "finding": {
+   "check": "scatter-measured",
+   "detail": {
+    "additional": 38,
+    "dof": 8,
+    "n_required": 42,
+    "sigma_ln": 0.14343702164120098
+   },
+   "message": "Pilot gives sigma_ln = 0.143 (8 dof, itself uncertain by ±25%). Sizing on the 0.246 upper bound rather than the point estimate costs 27 extra fuses per level and is what stops the test being under-sized half the time. Your parts scatter 2.1x TIGHTER than the prior: 42 per level instead of 62, which is 20 fewer fuses per level for the same precision.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  "n_point_estimate": 15,
+  "n_prior": 62,
+  "n_required": 42,
+  "n_upper_bound": 42,
+  "pilot_adequate": true,
+  "scatter": {
+   "dof": 8,
+   "measured": true,
+   "n_levels": 2,
+   "sigma_ln": 0.14343702164120098,
+   "source": "measured, 2 level(s), 8 dof"
+  }
+ },
+ "ref2_mid": {
+  "additional": 178,
+  "finding": {
+   "check": "scatter-measured",
+   "detail": {
+    "additional": 178,
+    "dof": 8,
+    "n_required": 182,
+    "sigma_ln": 0.29978992644850494
+   },
+   "message": "Pilot gives sigma_ln = 0.300 (8 dof, itself uncertain by ±25%). Sizing on the 0.514 upper bound rather than the point estimate costs 120 extra fuses per level and is what stops the test being under-sized half the time. Measured scatter is close to the prior; 182 per level against 62.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  "n_point_estimate": 62,
+  "n_prior": 62,
+  "n_required": 182,
+  "n_upper_bound": 182,
+  "pilot_adequate": true,
+  "scatter": {
+   "dof": 8,
+   "measured": true,
+   "n_levels": 2,
+   "sigma_ln": 0.29978992644850494,
+   "source": "measured, 2 level(s), 8 dof"
+  }
+ },
+ "ref2_near": {
+  "additional": 78,
+  "finding": {
+   "check": "scatter-measured",
+   "detail": {
+    "additional": 78,
+    "dof": 8,
+    "n_required": 82,
+    "sigma_ln": 0.20016892871284137
+   },
+   "message": "Pilot gives sigma_ln = 0.200 (8 dof, itself uncertain by ±25%). Sizing on the 0.343 upper bound rather than the point estimate costs 54 extra fuses per level and is what stops the test being under-sized half the time. Your parts scatter 1.5x TIGHTER than the prior: 82 per level instead of 62, which is -20 fewer fuses per level for the same precision.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  "n_point_estimate": 28,
+  "n_prior": 62,
+  "n_required": 82,
+  "n_upper_bound": 82,
+  "pilot_adequate": true,
+  "scatter": {
+   "dof": 8,
+   "measured": true,
+   "n_levels": 2,
+   "sigma_ln": 0.20016892871284137,
+   "source": "measured, 2 level(s), 8 dof"
+  }
+ },
+ "ref2_none": {
+  "finding": {
+   "check": "pilot-too-thin",
+   "detail": {},
+   "message": "The pilot has no current level with two or more samples, so it measures no spread at all and cannot size anything. A pilot of one fuse per level is a set of anecdotes; put at least 9 on one level.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  "n_required": null,
+  "scatter": null
+ },
+ "ref2_thin": {
+  "finding": {
+   "check": "pilot-too-thin",
+   "detail": {},
+   "message": "The pilot has no current level with two or more samples, so it measures no spread at all and cannot size anything. A pilot of one fuse per level is a set of anecdotes; put at least 9 on one level.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  "n_required": null,
+  "scatter": null
+ },
+ "ref2_tight": {
+  "additional": 0,
+  "finding": {
+   "check": "scatter-measured",
+   "detail": {
+    "additional": 0,
+    "dof": 8,
+    "n_required": 3,
+    "sigma_ln": 0.007905952748517343
+   },
+   "message": "Pilot gives sigma_ln = 0.008 (8 dof, itself uncertain by ±25%). Sizing on the 0.014 upper bound rather than the point estimate costs 0 extra fuses per level and is what stops the test being under-sized half the time. Your parts scatter 37.9x TIGHTER than the prior: 3 per level instead of 62, which is 59 fewer fuses per level for the same precision.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  "n_point_estimate": 3,
+  "n_prior": 62,
+  "n_required": 3,
+  "n_upper_bound": 3,
+  "pilot_adequate": true,
+  "scatter": {
+   "dof": 8,
+   "measured": true,
+   "n_levels": 2,
+   "sigma_ln": 0.007905952748517343,
+   "source": "measured, 2 level(s), 8 dof"
+  }
+ },
+ "ref2_two": {
+  "additional": 13,
+  "finding": {
+   "check": "pilot-underpowered",
+   "detail": {
+    "dof": 3,
+    "n_point": 17,
+    "n_upper": 154,
+    "recommended_pilot": 9,
+    "sigma_ln": 0.15637521588492617
+   },
+   "message": "The pilot gives sigma_ln = 0.156 but only 3 degrees of freedom, so sigma is itself uncertain by ±41%. Sizing rigorously on the upper bound would demand 154 per level, which is not a real recommendation — it is the cost of not knowing sigma, not the cost of the scatter. Use the point estimate (17 per level) with that caveat, or spend 5 more fuses to reach a 9-sample pilot and get a bound worth acting on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  "n_point_estimate": 17,
+  "n_prior": 62,
+  "n_required": 17,
+  "n_upper_bound": 154,
+  "pilot_adequate": false,
+  "scatter": {
+   "dof": 3,
+   "measured": true,
+   "n_levels": 2,
+   "sigma_ln": 0.15637521588492617,
+   "source": "measured, 2 level(s), 3 dof"
+  }
+ },
+ "ref2_wide": {
+  "additional": 2125,
+  "finding": {
+   "check": "scatter-measured",
+   "detail": {
+    "additional": 2125,
+    "dof": 8,
+    "n_required": 2129,
+    "sigma_ln": 1.025917935907278
+   },
+   "message": "Pilot gives sigma_ln = 1.026 (8 dof, itself uncertain by ±25%). Sizing on the 1.759 upper bound rather than the point estimate costs 1404 extra fuses per level and is what stops the test being under-sized half the time. Your parts scatter 3.4x WIDER than the prior, so the test needs 2129 per level, not 62. Sizing on the prior would have finished the session believing a median it had not actually pinned down.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  "n_point_estimate": 725,
+  "n_prior": 62,
+  "n_required": 2129,
+  "n_upper_bound": 2129,
+  "pilot_adequate": true,
+  "scatter": {
+   "dof": 8,
+   "measured": true,
+   "n_levels": 2,
+   "sigma_ln": 1.025917935907278,
+   "source": "measured, 2 level(s), 8 dof"
+  }
+ },
+ "ref_many": {
+  "additional": 0,
+  "finding": {
+   "check": "scatter-measured",
+   "detail": {
+    "additional": 0,
+    "dof": 8,
+    "n_required": 7,
+    "sigma_ln": 0.14343702164120098
+   },
+   "message": "Pilot gives sigma_ln = 0.143 (8 dof, itself uncertain by ±25%). Sizing on the 0.246 upper bound rather than the point estimate costs 4 extra fuses per level and is what stops the test being under-sized half the time. Your parts scatter 2.1x TIGHTER than the prior: 7 per level instead of 11, which is 4 fewer fuses per level for the same precision.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  "n_point_estimate": 3,
+  "n_prior": 11,
+  "n_required": 7,
+  "n_upper_bound": 7,
+  "pilot_adequate": true,
+  "scatter": {
+   "dof": 8,
+   "measured": true,
+   "n_levels": 2,
+   "sigma_ln": 0.14343702164120098,
+   "source": "measured, 2 level(s), 8 dof"
+  }
+ },
+ "ref_mid": {
+  "additional": 21,
+  "finding": {
+   "check": "scatter-measured",
+   "detail": {
+    "additional": 21,
+    "dof": 8,
+    "n_required": 31,
+    "sigma_ln": 0.29978992644850494
+   },
+   "message": "Pilot gives sigma_ln = 0.300 (8 dof, itself uncertain by ±25%). Sizing on the 0.514 upper bound rather than the point estimate costs 20 extra fuses per level and is what stops the test being under-sized half the time. Measured scatter is close to the prior; 31 per level against 11.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  "n_point_estimate": 11,
+  "n_prior": 11,
+  "n_required": 31,
+  "n_upper_bound": 31,
+  "pilot_adequate": true,
+  "scatter": {
+   "dof": 8,
+   "measured": true,
+   "n_levels": 2,
+   "sigma_ln": 0.29978992644850494,
+   "source": "measured, 2 level(s), 8 dof"
+  }
+ },
+ "ref_near": {
+  "additional": 4,
+  "finding": {
+   "check": "scatter-measured",
+   "detail": {
+    "additional": 4,
+    "dof": 8,
+    "n_required": 14,
+    "sigma_ln": 0.20016892871284137
+   },
+   "message": "Pilot gives sigma_ln = 0.200 (8 dof, itself uncertain by ±25%). Sizing on the 0.343 upper bound rather than the point estimate costs 9 extra fuses per level and is what stops the test being under-sized half the time. Your parts scatter 1.5x TIGHTER than the prior: 14 per level instead of 11, which is -3 fewer fuses per level for the same precision.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  "n_point_estimate": 5,
+  "n_prior": 11,
+  "n_required": 14,
+  "n_upper_bound": 14,
+  "pilot_adequate": true,
+  "scatter": {
+   "dof": 8,
+   "measured": true,
+   "n_levels": 2,
+   "sigma_ln": 0.20016892871284137,
+   "source": "measured, 2 level(s), 8 dof"
+  }
+ },
+ "ref_none": {
+  "finding": {
+   "check": "pilot-too-thin",
+   "detail": {},
+   "message": "The pilot has no current level with two or more samples, so it measures no spread at all and cannot size anything. A pilot of one fuse per level is a set of anecdotes; put at least 9 on one level.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  "n_required": null,
+  "scatter": null
+ },
+ "ref_thin": {
+  "finding": {
+   "check": "pilot-too-thin",
+   "detail": {},
+   "message": "The pilot has no current level with two or more samples, so it measures no spread at all and cannot size anything. A pilot of one fuse per level is a set of anecdotes; put at least 9 on one level.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  "n_required": null,
+  "scatter": null
+ },
+ "ref_tight": {
+  "additional": 0,
+  "finding": {
+   "check": "scatter-measured",
+   "detail": {
+    "additional": 0,
+    "dof": 8,
+    "n_required": 3,
+    "sigma_ln": 0.007905952748517343
+   },
+   "message": "Pilot gives sigma_ln = 0.008 (8 dof, itself uncertain by ±25%). Sizing on the 0.014 upper bound rather than the point estimate costs 0 extra fuses per level and is what stops the test being under-sized half the time. Your parts scatter 37.9x TIGHTER than the prior: 3 per level instead of 11, which is 8 fewer fuses per level for the same precision.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  "n_point_estimate": 3,
+  "n_prior": 11,
+  "n_required": 3,
+  "n_upper_bound": 3,
+  "pilot_adequate": true,
+  "scatter": {
+   "dof": 8,
+   "measured": true,
+   "n_levels": 2,
+   "sigma_ln": 0.007905952748517343,
+   "source": "measured, 2 level(s), 8 dof"
+  }
+ },
+ "ref_two": {
+  "additional": 0,
+  "finding": {
+   "check": "pilot-underpowered",
+   "detail": {
+    "dof": 3,
+    "n_point": 3,
+    "n_upper": 26,
+    "recommended_pilot": 9,
+    "sigma_ln": 0.15637521588492617
+   },
+   "message": "The pilot gives sigma_ln = 0.156 but only 3 degrees of freedom, so sigma is itself uncertain by ±41%. Sizing rigorously on the upper bound would demand 26 per level, which is not a real recommendation — it is the cost of not knowing sigma, not the cost of the scatter. Use the point estimate (3 per level) with that caveat, or spend 4 more fuses to reach a 9-sample pilot and get a bound worth acting on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  "n_point_estimate": 3,
+  "n_prior": 11,
+  "n_required": 3,
+  "n_upper_bound": 26,
+  "pilot_adequate": false,
+  "scatter": {
+   "dof": 3,
+   "measured": true,
+   "n_levels": 2,
+   "sigma_ln": 0.15637521588492617,
+   "source": "measured, 2 level(s), 3 dof"
+  }
+ },
+ "ref_wide": {
+  "additional": 348,
+  "finding": {
+   "check": "scatter-measured",
+   "detail": {
+    "additional": 348,
+    "dof": 8,
+    "n_required": 358,
+    "sigma_ln": 1.025917935907278
+   },
+   "message": "Pilot gives sigma_ln = 1.026 (8 dof, itself uncertain by ±25%). Sizing on the 1.759 upper bound rather than the point estimate costs 236 extra fuses per level and is what stops the test being under-sized half the time. Your parts scatter 3.4x WIDER than the prior, so the test needs 358 per level, not 11. Sizing on the prior would have finished the session believing a median it had not actually pinned down.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  "n_point_estimate": 122,
+  "n_prior": 11,
+  "n_required": 358,
+  "n_upper_bound": 358,
+  "pilot_adequate": true,
+  "scatter": {
+   "dof": 8,
+   "measured": true,
+   "n_levels": 2,
+   "sigma_ln": 1.025917935907278,
+   "source": "measured, 2 level(s), 8 dof"
+  }
+ },
+ "sn": [
+  11,
+  146,
+  3,
+  20,
+  8,
+  26,
+  5,
+  10
+ ],
+ "um": [
+  {
+   "dof": 9,
+   "measured": false,
+   "n_levels": 0,
+   "sigma_ln": 0.2,
+   "source": "prior"
+  },
+  "inf",
+  0.2,
+  0.2,
+  0.2,
+  true
+ ]
+}

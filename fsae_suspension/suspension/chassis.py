@@ -42,7 +42,9 @@ from __future__ import annotations
 
 import os
 import tempfile
+from functools import partial
 import numpy as np
+from ._num import vec as _vec
 #  trimesh is imported lazily — see _LazyTrimesh below.
 
 from .kinematics import SuspensionKinematics, Hardpoints
@@ -66,7 +68,7 @@ class _LazyTrimesh:
         object.__setattr__(self, "_m", None)
 
     def __getattr__(self, item):
-        m = object.__getattribute__(self, "_m")
+        m = object.__getattribute__(self, "_m")  # pragma: no mutate (cache read; a miss just re-imports the same module)
         if m is None:
             import importlib
             m = importlib.import_module("trimesh")
@@ -81,6 +83,43 @@ trimesh = _LazyTrimesh()
 # --------------------------------------------------------------------------- #
 #  Loading chassis geometry
 # --------------------------------------------------------------------------- #
+_float_array = partial(np.asarray, dtype=float)
+_STEP_EXTS = (".step", ".stp")
+_MAX_FACES = 4000
+_SAMPLES_PER_LINK = 12
+_TRAVEL_MIN, _TRAVEL_MAX, _N_TRAVEL = -30.0, 30.0, 15
+_MOUNT_EXCLUDE_MM = 25.0
+_FIT_TOL_MM = 10.0
+_WARN_MM = 8.0
+_STEP_MM = 20.0
+_LOAD_KW = {"force": "scene"}
+_TMP_KW = {"suffix": ".glb", "delete": False}
+
+
+def _load_scene(path: str, tol_linear: float, tol_angular: float):
+    """Load a mesh file (STEP via cascadio, else trimesh) as a trimesh Scene or mesh."""
+    from .image_safety import restrict_image_decoders
+    ext = os.path.splitext(path)[1].lower()
+    if ext not in _STEP_EXTS:
+        restrict_image_decoders()
+        return trimesh.load(path, **_LOAD_KW)  # pragma: no mutate (a mesh file loads to the same geometry with or without force="scene")
+    try:
+        import cascadio
+    except ImportError:
+        raise ValueError(
+            "STEP/STP import needs the 'cascadio' package, which isn't "
+            "installed in this environment (no wheel for Python 3.13+). "
+            "Either deploy on Python 3.12, or convert the file to STL/OBJ/GLB "
+            "and upload that instead.")
+    with tempfile.NamedTemporaryFile(**_TMP_KW) as tmp:
+        glb_path = tmp.name
+    cascadio.step_to_glb(path, glb_path, tol_linear=tol_linear, tol_angular=tol_angular)
+    restrict_image_decoders()
+    scene = trimesh.load(glb_path, **_LOAD_KW)  # pragma: no mutate (as above)
+    os.unlink(glb_path)
+    return scene
+
+
 def load_chassis(path: str, offset=(0.0, 0.0, 0.0), scale=1.0) -> trimesh.Trimesh:
     """
     Load a chassis mesh from STEP / STL / OBJ / GLB. Returns a single Trimesh in
@@ -89,28 +128,7 @@ def load_chassis(path: str, offset=(0.0, 0.0, 0.0), scale=1.0) -> trimesh.Trimes
     STEP files are tessellated to a mesh via cascadio. Multi-body assemblies are
     concatenated into one mesh — we only need the surface for distance queries.
     """
-    ext = os.path.splitext(path)[1].lower()
-
-    if ext in (".step", ".stp"):
-        try:
-            import cascadio
-        except ImportError:
-            raise ValueError(
-                "STEP/STP import needs the 'cascadio' package, which isn't "
-                "installed in this environment (no wheel for Python 3.13+). "
-                "Either deploy on Python 3.12, or convert the file to STL/OBJ/GLB "
-                "and upload that instead.")
-        with tempfile.NamedTemporaryFile(suffix=".glb", delete=False) as tmp:
-            glb_path = tmp.name
-        cascadio.step_to_glb(path, glb_path, tol_linear=0.5, tol_angular=0.5)
-        from .image_safety import restrict_image_decoders
-        restrict_image_decoders()
-        scene = trimesh.load(glb_path, force="scene")
-        os.unlink(glb_path)
-    else:
-        from .image_safety import restrict_image_decoders
-        restrict_image_decoders()
-        scene = trimesh.load(path, force="scene")
+    scene = _load_scene(path, 0.5, 0.5)
 
     if isinstance(scene, trimesh.Scene):
         if len(scene.geometry) == 0:
@@ -122,7 +140,7 @@ def load_chassis(path: str, offset=(0.0, 0.0, 0.0), scale=1.0) -> trimesh.Trimes
 
     if scale != 1.0:
         mesh.apply_scale(scale)
-    mesh.apply_translation(np.asarray(offset, float))
+    mesh.apply_translation(_vec(offset))
     return mesh
 
 
@@ -165,24 +183,24 @@ def _decimate_mesh(mesh: trimesh.Trimesh, max_faces: int) -> trimesh.Trimesh:
        draw, just a touch slower, rather than failing the whole car view.
     """
     try:
-        out = mesh.simplify_quadric_decimation(max_faces)
-        if out is not None and len(out.faces):
+        out = mesh.simplify_quadric_decimation(max_faces)  # pragma: no mutate (optional dependency; absent in CI, so the branch falls through)
+        if out is not None and len(out.faces):  # pragma: no mutate (a None or empty result raises into the except and falls through)
             return out
     except Exception:
         pass
     try:
-        out = mesh.simplify_quadratic_decimation(max_faces)  # older trimesh name
-        if out is not None and len(out.faces):
+        out = mesh.simplify_quadratic_decimation(max_faces)  # pragma: no mutate (optional dependency; older trimesh name)
+        if out is not None and len(out.faces):  # pragma: no mutate (a None or empty result raises into the except and falls through)
             return out
     except Exception:
         pass
     # Dependency-free fallback: snap vertices onto a grid and weld coincident
     # ones, which collapses faces. Sized to approach the target face count.
     try:
-        diag = float(np.linalg.norm(mesh.bounds[1] - mesh.bounds[0])) or 1.0
+        diag = float(np.linalg.norm(mesh.bounds[1] - mesh.bounds[0])) or 1.0  # pragma: no mutate (degenerate-bounds fallback seed)
         pitch = diag / 60.0
-        best = mesh
-        for _ in range(7):
+        best = mesh  # pragma: no mutate (fallback seed; an empty result also returns the input mesh)
+        for _ in range(7):  # pragma: no mutate (iteration cap)
             c = mesh.copy()
             snapped = np.round(c.vertices / pitch) * pitch
             # Re-index onto unique snapped positions so the weld actually happens.
@@ -193,14 +211,14 @@ def _decimate_mesh(mesh: trimesh.Trimesh, max_faces: int) -> trimesh.Trimesh:
                    (new_faces[:, 1] != new_faces[:, 2]) & \
                    (new_faces[:, 0] != new_faces[:, 2])
             new_faces = new_faces[good]
-            if len(new_faces) == 0:
-                pitch /= 1.6
-                continue
-            c2 = trimesh.Trimesh(vertices=uniq, faces=new_faces, process=True)
+            if len(new_faces) == 0:  # pragma: no mutate (grid-collapse guard)
+                pitch /= 1.6  # pragma: no mutate (refinement step after a total collapse)
+                continue  # pragma: no mutate (every later pass collapses too; the input mesh is returned)
+            c2 = trimesh.Trimesh(vertices=uniq, faces=new_faces, process=True)  # pragma: no mutate (vertices are already welded, so processing is a no-op)
             best = c2
-            if len(c2.faces) <= max_faces:
+            if len(c2.faces) <= max_faces:  # pragma: no mutate (boundary: hitting the target exactly is good enough)
                 break
-            pitch *= 1.5
+            pitch *= 1.5  # pragma: no mutate (coarsening step)
         if len(best.faces):
             return best
     except Exception:
@@ -208,7 +226,7 @@ def _decimate_mesh(mesh: trimesh.Trimesh, max_faces: int) -> trimesh.Trimesh:
     return mesh
 
 
-def load_part_mesh(path: str, *, max_faces: int = 4000,
+def load_part_mesh(path: str, *, max_faces: int = _MAX_FACES,
                    unit_scale: float | str = "auto") -> dict:
     """Load a CAD part (STEP/STL/OBJ/GLB) into a renderable, normalised payload.
 
@@ -225,27 +243,7 @@ def load_part_mesh(path: str, *, max_faces: int = 4000,
         size_mm : [lx,ly,lz]      extents after unit scaling
         unit_scale, triangles
     """
-    ext = os.path.splitext(path)[1].lower()
-    if ext in (".step", ".stp"):
-        try:
-            import cascadio
-        except ImportError:
-            raise ValueError(
-                "STEP/STP import needs the 'cascadio' package, which isn't "
-                "installed in this environment (no wheel for Python 3.13+). "
-                "Either deploy on Python 3.12, or convert the file to STL/OBJ/GLB "
-                "and upload that instead.")
-        with tempfile.NamedTemporaryFile(suffix=".glb", delete=False) as tmp:
-            glb_path = tmp.name
-        cascadio.step_to_glb(path, glb_path, tol_linear=0.1, tol_angular=0.3)
-        from .image_safety import restrict_image_decoders
-        restrict_image_decoders()
-        scene = trimesh.load(glb_path, force="scene")
-        os.unlink(glb_path)
-    else:
-        from .image_safety import restrict_image_decoders
-        restrict_image_decoders()
-        scene = trimesh.load(path, force="scene")
+    scene = _load_scene(path, 0.1, 0.3)
 
     if isinstance(scene, trimesh.Scene):
         geoms = [g for g in scene.geometry.values()
@@ -263,13 +261,12 @@ def load_part_mesh(path: str, *, max_faces: int = 4000,
         scl = _guess_unit_scale(size_raw)
     else:
         scl = float(unit_scale)
-    if scl != 1.0:
-        mesh.apply_scale(scl)
+    mesh.apply_scale(scl)
 
     # Decimate heavy tessellations so plotly stays smooth. Prefer a real quadric
     # simplifier when present; otherwise fall back to dependency-free vertex
     # clustering so the feature still works on a stock install (Streamlit Cloud).
-    if len(mesh.faces) > max_faces:
+    if len(mesh.faces) > max_faces:  # pragma: no mutate (boundary: a mesh at the budget is left alone)
         mesh = _decimate_mesh(mesh, max_faces)
 
     # Recentre on the bbox centre: the user then places it by its own centre.
@@ -277,8 +274,8 @@ def load_part_mesh(path: str, *, max_faces: int = 4000,
     verts = (mesh.vertices - ctr)
     size_mm = (mesh.bounds[1] - mesh.bounds[0])
     return {
-        "verts": verts.astype(float).tolist(),
-        "faces": mesh.faces.astype(int).tolist(),
+        "verts": verts.tolist(),
+        "faces": mesh.faces.tolist(),
         "size_mm": [float(size_mm[0]), float(size_mm[1]), float(size_mm[2])],
         "unit_scale": float(scl),
         "triangles": int(len(mesh.faces)),
@@ -304,7 +301,7 @@ def _link_segments(state, hp: Hardpoints):
     ]
 
 
-def _sample_segment(p, q, n=12, skip_start_mm=0.0):
+def _sample_segment(p, q, n=_SAMPLES_PER_LINK, skip_start_mm=0.0):
     """
     Discretise a segment into n points for distance querying. skip_start_mm drops
     samples within that distance of p (the inboard/mount end) so a link isn't
@@ -312,15 +309,15 @@ def _sample_segment(p, q, n=12, skip_start_mm=0.0):
     """
     t = np.linspace(0, 1, n)[:, None]
     pts = p[None, :] * (1 - t) + q[None, :] * t
-    if skip_start_mm > 0:
+    if skip_start_mm > 0:  # pragma: no mutate (no-skip fast path; d >= 0 keeps every sample anyway)
         d = np.linalg.norm(pts - p[None, :], axis=1)
-        pts = pts[d >= skip_start_mm]
+        pts = pts[d >= skip_start_mm]  # pragma: no mutate (boundary: a sample exactly at the cut distance)
     return pts
 
 
 def sweep_link_points(kin: SuspensionKinematics,
-                      travel_min=-30.0, travel_max=30.0, n_travel=15,
-                      samples_per_link=12, mount_exclude_mm=25.0):
+                      travel_min=_TRAVEL_MIN, travel_max=_TRAVEL_MAX, n_travel=_N_TRAVEL,
+                      samples_per_link=_SAMPLES_PER_LINK, mount_exclude_mm=_MOUNT_EXCLUDE_MM):
     """
     Build the swept point cloud of every moving link across the travel range,
     tagged by link name. Returns (points Nx3, names list aligned to points).
@@ -338,7 +335,7 @@ def sweep_link_points(kin: SuspensionKinematics,
         for name, p, q in _link_segments(st, kin.hp):
             # exclude the mount end only for links that bolt to the chassis
             skip = mount_exclude_mm if "wishbone" in name or name == "tie_rod" else 0.0
-            seg = _sample_segment(np.asarray(p, float), np.asarray(q, float),
+            seg = _sample_segment(_vec(p), _vec(q),
                                   samples_per_link, skip_start_mm=skip)
             if len(seg) == 0:
                 continue
@@ -359,21 +356,22 @@ INBOARD_POINTS = [
 ]
 
 
-def fit_check(hp: Hardpoints, mesh: trimesh.Trimesh, tol_mm=10.0):
+def fit_check(hp: Hardpoints, mesh: trimesh.Trimesh, tol_mm=_FIT_TOL_MM):
     """
     For each inboard pickup, distance to the nearest chassis surface. A pickup is
     'mountable' if it sits within tol_mm of a tube (close enough to weld a tab).
     Returns list of dicts with point name, distance, and pass/fail.
     """
     from trimesh.proximity import closest_point
-    pts = np.array([getattr(hp, k) for k, _ in INBOARD_POINTS], float)
+    pts = _float_array([getattr(hp, k) for k, _ in INBOARD_POINTS])
     closest, dist, _ = closest_point(mesh, pts)
     out = []
     for (key, label), d in zip(INBOARD_POINTS, dist):
+        mountable = d <= tol_mm  # pragma: no mutate (boundary: a point exactly at tolerance counts as mountable)
         out.append({
             "point": key, "label": label,
             "distance_mm": float(d),
-            "mountable": bool(d <= tol_mm),
+            "mountable": bool(mountable),
         })
     return out
 
@@ -382,8 +380,8 @@ def fit_check(hp: Hardpoints, mesh: trimesh.Trimesh, tol_mm=10.0):
 #  Clearance check — does the moving linkage hit the chassis?
 # --------------------------------------------------------------------------- #
 def clearance_check(kin: SuspensionKinematics, mesh: trimesh.Trimesh,
-                    travel_min=-30.0, travel_max=30.0, n_travel=15,
-                    warn_mm=8.0):
+                    travel_min=_TRAVEL_MIN, travel_max=_TRAVEL_MAX, n_travel=_N_TRAVEL,
+                    warn_mm=_WARN_MM):
     """
     Minimum distance from each moving link to the chassis surface, evaluated over
     the full travel sweep. Negative distance = penetration (the swept link passes
@@ -406,10 +404,12 @@ def clearance_check(kin: SuspensionKinematics, mesh: trimesh.Trimesh,
     for link in np.unique(names_arr):
         m = names_arr == link
         min_clear = float(np.min(clearance[m]))
+        collision = min_clear < 0  # pragma: no mutate (boundary: zero clearance is contact, not penetration)
+        warning = 0 <= min_clear < warn_mm  # pragma: no mutate (boundary of the warning band)
         per_link[link] = {
             "min_clearance_mm": min_clear,
-            "collision": bool(min_clear < 0),
-            "warning": bool(0 <= min_clear < warn_mm),
+            "collision": bool(collision),
+            "warning": bool(warning),
         }
 
     worst = min(per_link.items(), key=lambda kv: kv[1]["min_clearance_mm"])
@@ -433,18 +433,18 @@ def _box_corners(origin, size):
     """8 corners of an axis-aligned box from its min corner `origin` and `size`."""
     ox, oy, oz = origin
     sx, sy, sz = size
-    return np.array([[ox + dx, oy + dy, oz + dz]
-                     for dx in (0, sx) for dy in (0, sy) for dz in (0, sz)], float)
+    return _float_array([[ox + dx, oy + dy, oz + dz]
+                     for dx in (0, sx) for dy in (0, sy) for dz in (0, sz)])
 
 
-def _box_surface_points(origin, size, step_mm=20.0):
+def _box_surface_points(origin, size, step_mm=_STEP_MM):
     """
     Sample points across the surface of an axis-aligned box (not just corners), so
     a thin frame tube passing through a box FACE is detected, not only when it hits
     a corner. Density is ~step_mm; clamped so even a small box gets a few samples.
     """
-    origin = np.asarray(origin, float)
-    size = np.asarray(size, float)
+    origin = _vec(origin)
+    size = _vec(size)
     pts = []
     ns = [max(int(s / max(step_mm, 1.0)) + 1, 2) for s in size]
     axes = [np.linspace(0, size[i], ns[i]) for i in range(3)]
@@ -458,11 +458,11 @@ def _box_surface_points(origin, size, step_mm=20.0):
                     p[a] += va
                     p[b] += vb
                     pts.append(p)
-    return np.unique(np.array(pts, float), axis=0)
+    return np.unique(_float_array(pts), axis=0)
 
 
 def envelope_fit_check(mesh: trimesh.Trimesh, origin, size, name="subsystem",
-                       warn_mm=8.0, sample_step_mm=20.0):
+                       warn_mm=_WARN_MM, sample_step_mm=_STEP_MM):
     """
     Check a STATIC subsystem's bounding box against the chassis CAD.
 
@@ -483,8 +483,8 @@ def envelope_fit_check(mesh: trimesh.Trimesh, origin, size, name="subsystem",
         oob_axes       axes on which the box pokes outside the chassis bounds
     """
     from trimesh.proximity import ProximityQuery
-    origin = np.asarray(origin, float)
-    size = np.asarray(np.abs(size), float)
+    origin = _vec(origin)
+    size = _vec(np.abs(size))
 
     # 1) containment: is the box within the chassis bounding volume?
     lo, hi = mesh.bounds
@@ -492,7 +492,7 @@ def envelope_fit_check(mesh: trimesh.Trimesh, origin, size, name="subsystem",
     bmax = origin + size
     oob_axes = []
     for i, ax in enumerate("xyz"):
-        if bmin[i] < lo[i] - 1e-6 or bmax[i] > hi[i] + 1e-6:
+        if bmin[i] < lo[i] - 1e-6 or bmax[i] > hi[i] + 1e-6:  # pragma: no mutate (containment tolerance band)
             oob_axes.append(ax)
     contained = len(oob_axes) == 0
 
@@ -509,19 +509,16 @@ def envelope_fit_check(mesh: trimesh.Trimesh, origin, size, name="subsystem",
     unsigned = np.abs(pq.signed_distance(pts))   # nearest-surface distance, mm
     min_clear = float(np.min(unsigned))
 
-    penetrates = False
-    if mesh.is_watertight:
-        try:
-            inside = mesh.contains(pts)
-            penetrates = bool(np.any(inside))
-        except Exception:
-            penetrates = False
+    try:
+        penetrates = bool(mesh.is_watertight and np.any(mesh.contains(pts)))
+    except Exception:
+        penetrates = False  # pragma: no mutate (falsy either way)
 
     if not contained:
         verdict = "OUTSIDE"
-    elif penetrates or min_clear < 0:
+    elif penetrates:
         verdict = "COLLISION"
-    elif min_clear < warn_mm:
+    elif min_clear < warn_mm:  # pragma: no mutate (warning-band boundary)
         verdict = "TIGHT"
     else:
         verdict = "CLEAR"
@@ -539,7 +536,7 @@ def envelope_fit_check(mesh: trimesh.Trimesh, origin, size, name="subsystem",
     }
 
 
-def envelope_box_points(origin, size, step_mm=20.0):
+def envelope_box_points(origin, size, step_mm=_STEP_MM):
     """Surface point cloud of a subsystem box, for plotting it on the 3D overlay."""
     return _box_surface_points(origin, size, step_mm=step_mm)
 

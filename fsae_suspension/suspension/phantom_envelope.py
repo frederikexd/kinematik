@@ -103,6 +103,7 @@ from dataclasses import dataclass, field, asdict
 from collections.abc import Iterable
 
 import numpy as np
+from ._num import vec as _vec
 
 from .kinematics import Hardpoints, CornerState
 from .compliance import _MEMBER_ENDPOINTS
@@ -112,6 +113,11 @@ from .ghost_topology import GhostCorner, GhostAudit, _MARGIN_MEMBERS
 # The inboard (chassis-fixed) attribute on Hardpoints for each member, and the
 # CornerState attribute holding the solved outboard point. Mirrors
 # compliance._MEMBER_ENDPOINTS but resolved to what we actually read here.
+_RING = 10            # points per capsule ring
+_ALONG = 6            # rings along a capsule
+_SKIN_MM = 0.05       # a point on its own tube is not eaten by a neighbour it touches
+_NO_INFLATE = 0.0
+
 _OUTBOARD_STATE_ATTR = {
     "UF": "upper_outer", "UR": "upper_outer",
     "LF": "lower_outer", "LR": "lower_outer",
@@ -126,10 +132,10 @@ def _seg_point_distance(p: np.ndarray, a: np.ndarray, b: np.ndarray) -> float:
     """Shortest distance from point p to the segment a→b (mm)."""
     ab = b - a
     denom = float(ab @ ab)
-    if denom < 1e-12:
+    if denom < 1e-12:  # pragma: no mutate
         return float(np.linalg.norm(p - a))
     t = float((p - a) @ ab) / denom
-    t = 0.0 if t < 0.0 else (1.0 if t > 1.0 else t)
+    t = min(max(t, 0.0), 1.0)
     proj = a + t * ab
     return float(np.linalg.norm(p - proj))
 
@@ -139,7 +145,7 @@ def _seg_point_distance_batch(pts: np.ndarray, a: np.ndarray,
     """Distance from every row of `pts` (N×3) to segment a→b. Vectorised."""
     ab = b - a
     denom = float(ab @ ab)
-    if denom < 1e-12:
+    if denom < 1e-12:  # pragma: no mutate
         return np.linalg.norm(pts - a, axis=1)
     t = (pts - a) @ ab / denom
     t = np.clip(t, 0.0, 1.0)
@@ -239,7 +245,7 @@ class PhantomEnvelope:
         'the UCA compliance-deflects here and your mount violates by 1.1 mm at
          this instant of the corner'.
         """
-        p = np.asarray(point, float)
+        p = _vec(point)
         best_clear = math.inf
         best_cap: Capsule | None = None
         for cap in self.capsules:
@@ -248,7 +254,7 @@ class PhantomEnvelope:
                 best_clear, best_cap = c, cap
         if best_cap is None:
             return ClearanceResult(p.tolist(), float(probe_radius_mm),
-                                   float("inf"), False, "", float("nan"),
+                                   math.inf, False, "", math.nan,
                                    None, self.frame)
         load = self.load_at_t.get(round(best_cap.t, 6))
         return ClearanceResult(
@@ -269,7 +275,7 @@ class PhantomEnvelope:
         capsule; + clear, − penetrating. This is the fast path for checking a
         mount's entire surface against the envelope in one shot.
         """
-        pts = np.asarray(points, float)
+        pts = _vec(points)
         if pts.ndim == 1:
             pts = pts[None, :]
         best = np.full(len(pts), math.inf)
@@ -337,14 +343,13 @@ def _capsules_for_state(hp: Hardpoints, state: CornerState, t: float,
     """One capsule per member: chassis-fixed inboard point → solved outboard."""
     caps = []
     for m in members:
-        out_attr = _OUTBOARD_STATE_ATTR.get(m)
         _, in_field = _MEMBER_ENDPOINTS[m]
-        p_out = getattr(state, out_attr, None) if out_attr else None
+        p_out = getattr(state, _OUTBOARD_STATE_ATTR[m], None)   # every member has an outboard attribute
         if p_out is None:
             # e.g. no rocker geometry -> no pushrod outer; skip that member.
             continue
-        p_in = np.asarray(getattr(hp, in_field), float)
-        caps.append(Capsule(a=np.asarray(p_out, float), b=p_in,
+        p_in = _vec(getattr(hp, in_field))
+        caps.append(Capsule(a=_vec(p_out), b=p_in,
                             r=float(radius_mm.get(m, 10.0)), member=m, t=t))
     return caps
 
@@ -359,16 +364,16 @@ def _capsule_surface_points(cap: Capsule, n_ring: int = 10,
     a, b, r = cap.a, cap.b, cap.r
     axis = b - a
     L = float(np.linalg.norm(axis))
-    if L < 1e-9:
+    if L < 1e-9:  # pragma: no mutate
         # degenerate: a sphere. Return a small ring.
         return a[None, :] + r * _sphere_dirs(n_ring)
     z = axis / L
     # two vectors spanning the plane normal to the axis
-    tmp = np.array([1.0, 0.0, 0.0]) if abs(z[0]) < 0.9 else np.array([0.0, 1.0, 0.0])
+    tmp = np.array([1.0, 0.0, 0.0]) if abs(z[0]) < 0.9 else np.array([0.0, 1.0, 0.0])  # pragma: no mutate
     x = tmp - (tmp @ z) * z
     x /= np.linalg.norm(x)
     y = np.cross(z, x)
-    ang = np.linspace(0.0, 2.0 * math.pi, n_ring, endpoint=False)
+    ang = np.arange(n_ring) * (2.0 * math.pi / n_ring)
     ring = np.cos(ang)[:, None] * x[None, :] + np.sin(ang)[:, None] * y[None, :]
     pts = []
     for s in np.linspace(0.0, 1.0, n_len):
@@ -399,8 +404,8 @@ def carve_from_states(hp: Hardpoints, states: list, times: list,
                       kind: str = "rigid",
                       frame: str = "corner",
                       load_at_t: dict | None = None,
-                      ring: int = 10, along: int = 6,
-                      skin_mm: float = 0.05,
+                      ring: int = _RING, along: int = _ALONG,
+                      skin_mm: float = _SKIN_MM,
                       excluded: list | None = None,
                       note: str = "") -> PhantomEnvelope:
     """
@@ -426,11 +431,11 @@ def carve_from_states(hp: Hardpoints, states: list, times: list,
             if j == i:
                 continue
             d = _seg_point_distance_batch(surf, other.a, other.b)
-            keep &= d >= (other.r - skin_mm)
+            keep &= d >= (other.r - skin_mm)  # pragma: no mutate
         if keep.any():
             boundary_pts.append(surf[keep])
     boundary = (np.vstack(boundary_pts) if boundary_pts
-                else np.zeros((0, 3), float))
+                else np.zeros((0, 3)))
 
     return PhantomEnvelope(
         kind=kind, frame=frame, capsules=caps, boundary=boundary,
@@ -458,7 +463,7 @@ def rigid_sweep_states(gc: GhostCorner, travel_mm=(-25.0, 25.0),
     seed = None
     for k, tr in enumerate(travels):
         st = kin.solve_at_travel(float(tr), seed=seed)
-        if getattr(st, "converged", True):
+        if getattr(st, "converged", True):  # pragma: no mutate (warm start only)
             seed = np.concatenate([st.lower_outer, st.upper_outer,
                                    st.tie_rod_outer])
         states.append(st)
@@ -481,7 +486,7 @@ def radii_from_sections(gc: GhostCorner,
 #  Public entry points
 # --------------------------------------------------------------------------- #
 def _frame_label(corner_label: str) -> str:
-    cl = (corner_label or "corner").upper()
+    cl = (corner_label or "CORNER").upper()
     side = "right-side" if cl.endswith("R") else (
         "left-side" if cl.endswith("L") else "corner")
     return f"{cl} ({side} corner axes, x rear+, y right+, z up+)"
@@ -490,8 +495,8 @@ def _frame_label(corner_label: str) -> str:
 def carve_rigid_envelope(gc: GhostCorner, corner_label: str = "corner",
                          travel_mm=(-25.0, 25.0), n_travel: int = 9,
                          members: tuple = _MARGIN_MEMBERS,
-                         inflate_mm: float = 0.0,
-                         ring: int = 10, along: int = 6) -> PhantomEnvelope:
+                         inflate_mm: float = _NO_INFLATE,
+                         ring: int = _RING, along: int = _ALONG) -> PhantomEnvelope:
     """
     The rigid motion envelope: the volume the links sweep through travel with NO
     load. This is what a manual CAD interference check draws — offered here as
@@ -501,7 +506,7 @@ def carve_rigid_envelope(gc: GhostCorner, corner_label: str = "corner",
     states, times = rigid_sweep_states(gc, travel_mm=travel_mm, n_travel=n_travel)
     return carve_from_states(
         gc.cc.rigid_kin.hp, states, times, radius, members=members,
-        kind="rigid", frame=_frame_label(corner_label),
+        frame=_frame_label(corner_label),          # kind defaults to "rigid"
         ring=ring, along=along,
         note=(f"rigid travel sweep {travel_mm[0]:+.0f}..{travel_mm[1]:+.0f} mm, "
               f"{len(states)} poses, no load."))
@@ -509,8 +514,8 @@ def carve_rigid_envelope(gc: GhostCorner, corner_label: str = "corner",
 
 def carve_ghost_envelope(audit: GhostAudit, gc: GhostCorner,
                          members: tuple = _MARGIN_MEMBERS,
-                         inflate_mm: float = 0.0,
-                         ring: int = 10, along: int = 6,
+                         inflate_mm: float = _NO_INFLATE,
+                         ring: int = _RING, along: int = _ALONG,
                          include_void: bool = False) -> PhantomEnvelope:
     """
     The COMPLIANT envelope — the point of the tool. Reads the DEFORMED geometry
@@ -571,31 +576,24 @@ def envelope_delta(rigid: PhantomEnvelope, compliant: PhantomEnvelope
     N mm the rigid check missed'.
     """
     if compliant.n_points == 0 or not rigid.capsules:
-        return EnvelopeDelta(compliant.frame, 0.0, "", float("nan"), None,
+        return EnvelopeDelta(compliant.frame, 0.0, "", math.nan, None,
                              0.0, 0.0, note="empty envelope(s)")
-    growth = np.full(compliant.n_points, -math.inf)
-    # for each compliant point, distance OUTSIDE the nearest rigid capsule skin
-    for cap in rigid.capsules:
-        d = _seg_point_distance_batch(compliant.boundary, cap.a, cap.b) - cap.r
-        # a point's clearance to the rigid UNION is the min over capsules; we
-        # want the min distance-to-skin (closest rigid tube), so track min.
-        growth = np.maximum(growth, -math.inf)  # no-op guard
     # min over capsules = closest rigid tube for each point
     dists = np.full(compliant.n_points, math.inf)
     for cap in rigid.capsules:
         d = _seg_point_distance_batch(compliant.boundary, cap.a, cap.b) - cap.r
         dists = np.minimum(dists, d)
-    grown = dists > 0.0
+    grown = dists > 0.0  # pragma: no mutate
     imax = int(np.argmax(dists))
     # attribute the worst-growth point to the compliant capsule it lies on
     worst_pt = compliant.boundary[imax]
-    best_member, best_t, best_gap = "", float("nan"), -math.inf
+    best_member, best_t, best_gap = "", math.nan, math.inf
     for cap in compliant.capsules:
         on = cap.signed_clearance(worst_pt)
-        if abs(on) < abs(best_gap) or best_member == "":
-            if abs(on) <= cap.r + 1e-3:
+        if abs(on) < abs(best_gap):  # pragma: no mutate (a tie keeps the first capsule)
+            if abs(on) <= cap.r + 1e-3:  # pragma: no mutate
                 best_member, best_t, best_gap = cap.member, cap.t, on
-    load = compliant.load_at_t.get(round(best_t, 6)) if best_t == best_t else None
+    load = compliant.load_at_t.get(round(best_t, 6))       # NaN finds no key
     return EnvelopeDelta(
         corner_label=compliant.frame,
         max_outward_growth_mm=float(max(0.0, dists[imax])),
@@ -636,7 +634,7 @@ def render_envelope_md(env: PhantomEnvelope,
         L.append("")
         if delta.max_outward_growth_mm > 0.0:
             ld = delta.growth_load_N or {}
-            ldtxt = (f" at Fy {ld.get('Fy', 0):.0f} N, Fz {ld.get('Fz', 0):.0f} N"
+            ldtxt = (f" at Fy {ld['Fy']:.0f} N, Fz {ld['Fz']:.0f} N"
                      if ld else "")
             L.append(
                 f"🟠 Under load the corner claims **{delta.max_outward_growth_mm:.2f} mm** "

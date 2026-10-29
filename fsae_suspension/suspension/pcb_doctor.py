@@ -810,7 +810,7 @@ def required_width_mm(current_a: float, dT_c: float, copper_oz: float,
     """Minimum finished trace width for a current at a temperature-rise budget."""
     a_mm2 = required_area_mil2(current_a, dT_c, external) / MM2_TO_MIL2
     t_mm = copper_oz * OZ_TO_UM / 1000.0
-    return a_mm2 / t_mm if t_mm > 0 else float("inf")
+    return a_mm2 / t_mm if t_mm > 0 else math.inf
 
 
 def trace_ampacity_a(width_mm: float, dT_c: float, copper_oz: float,

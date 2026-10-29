@@ -1,0 +1,752 @@
+{
+ "al": [
+  34.55751918948772,
+  527.0021676396877,
+  "inf",
+  "inf",
+  3981.886341266536,
+  [
+   {
+    "force_N": 5000.0,
+    "fos": 1.907575059259722,
+    "fos_buckle": "inf",
+    "fos_yield": 1.907575059259722,
+    "length_mm": 250.0,
+    "mode": "yield (tension)",
+    "stress_MPa": 144.68631190172306
+   },
+   {
+    "force_N": 5000.0,
+    "fos": 1.907575059259722,
+    "fos_buckle": "inf",
+    "fos_yield": 1.907575059259722,
+    "length_mm": 900.0,
+    "mode": "yield (tension)",
+    "stress_MPa": 144.68631190172306
+   },
+   {
+    "force_N": -5000.0,
+    "fos": 1.1467832662847623,
+    "fos_buckle": 1.1467832662847623,
+    "fos_yield": 1.907575059259722,
+    "length_mm": 250.0,
+    "mode": "buckling",
+    "stress_MPa": 144.68631190172306
+   },
+   {
+    "force_N": -5000.0,
+    "fos": 0.08848636313925635,
+    "fos_buckle": 0.08848636313925635,
+    "fos_yield": 1.907575059259722,
+    "length_mm": 900.0,
+    "mode": "buckling",
+    "stress_MPa": 144.68631190172306
+   },
+   {
+    "force_N": -200.0,
+    "fos": 28.66958165711906,
+    "fos_buckle": 28.66958165711906,
+    "fos_yield": 47.689376481493056,
+    "length_mm": 250.0,
+    "mode": "buckling",
+    "stress_MPa": 5.787452476068922
+   },
+   {
+    "force_N": -200.0,
+    "fos": 2.2121590784814087,
+    "fos_buckle": 2.2121590784814087,
+    "fos_yield": 47.689376481493056,
+    "length_mm": 900.0,
+    "mode": "buckling",
+    "stress_MPa": 5.787452476068922
+   },
+   {
+    "force_N": 0.0,
+    "fos": "inf",
+    "fos_buckle": "inf",
+    "fos_yield": "inf",
+    "length_mm": 250.0,
+    "mode": "yield (tension)",
+    "stress_MPa": 0.0
+   },
+   {
+    "force_N": 0.0,
+    "fos": "inf",
+    "fos_buckle": "inf",
+    "fos_yield": "inf",
+    "length_mm": 900.0,
+    "mode": "yield (tension)",
+    "stress_MPa": 0.0
+   },
+   {
+    "force_N": -1e-300,
+    "fos": 5.733916331423812e+303,
+    "fos_buckle": 5.733916331423812e+303,
+    "fos_yield": 9.53787529629861e+303,
+    "length_mm": 250.0,
+    "mode": "buckling",
+    "stress_MPa": 2.893726238034461e-302
+   },
+   {
+    "force_N": -1e-300,
+    "fos": 4.4243181569628176e+302,
+    "fos_buckle": 4.4243181569628176e+302,
+    "fos_yield": 9.53787529629861e+303,
+    "length_mm": 900.0,
+    "mode": "buckling",
+    "stress_MPa": 2.893726238034461e-302
+   }
+  ]
+ ],
+ "consts": [
+  [
+   "UF",
+   "UR",
+   "LF",
+   "LR",
+   "TR",
+   "PR"
+  ],
+  [
+   "FEEDBACK_DIVERGENT",
+   "COMPLIANCE_INVERTED",
+   "MARGIN_BREACHED",
+   "COMPLIANCE_DEGRADED",
+   "RIGID_FAITHFUL"
+  ],
+  {
+   "FL": 0,
+   "FR": 1,
+   "RL": 2,
+   "RR": 3
+  },
+  [
+   "FR",
+   "RR"
+  ],
+  {
+   "camber_inversion": 0.05,
+   "degraded_camber": 0.5,
+   "degraded_cp_mm": 2.0,
+   "degraded_rc_mm": 10.0,
+   "degraded_toe": 0.2,
+   "fos_limit": 1.5,
+   "slew_limit_ms": 5.0,
+   "toe_flip_deg": 0.05
+  }
+ ],
+ "d": [
+  51.317915996389296,
+  2118.355461784704,
+  "inf",
+  "inf",
+  47622.25255204343,
+  [
+   {
+    "force_N": 5000.0,
+    "fos": 4.7212482716678155,
+    "fos_buckle": "inf",
+    "fos_yield": 4.7212482716678155,
+    "length_mm": 250.0,
+    "mode": "yield (tension)",
+    "stress_MPa": 97.43185986648011
+   },
+   {
+    "force_N": 5000.0,
+    "fos": 4.7212482716678155,
+    "fos_buckle": "inf",
+    "fos_yield": 4.7212482716678155,
+    "length_mm": 900.0,
+    "mode": "yield (tension)",
+    "stress_MPa": 97.43185986648011
+   },
+   {
+    "force_N": -5000.0,
+    "fos": 4.7212482716678155,
+    "fos_buckle": 13.715208734988508,
+    "fos_yield": 4.7212482716678155,
+    "length_mm": 250.0,
+    "mode": "yield (compression)",
+    "stress_MPa": 97.43185986648011
+   },
+   {
+    "force_N": -5000.0,
+    "fos": 1.0582722789342984,
+    "fos_buckle": 1.0582722789342984,
+    "fos_yield": 4.7212482716678155,
+    "length_mm": 900.0,
+    "mode": "buckling",
+    "stress_MPa": 97.43185986648011
+   },
+   {
+    "force_N": -200.0,
+    "fos": 118.03120679169538,
+    "fos_buckle": 342.88021837471274,
+    "fos_yield": 118.03120679169538,
+    "length_mm": 250.0,
+    "mode": "yield (compression)",
+    "stress_MPa": 3.8972743946592043
+   },
+   {
+    "force_N": -200.0,
+    "fos": 26.456806973357462,
+    "fos_buckle": 26.456806973357462,
+    "fos_yield": 118.03120679169538,
+    "length_mm": 900.0,
+    "mode": "buckling",
+    "stress_MPa": 3.8972743946592043
+   },
+   {
+    "force_N": 0.0,
+    "fos": "inf",
+    "fos_buckle": "inf",
+    "fos_yield": "inf",
+    "length_mm": 250.0,
+    "mode": "yield (tension)",
+    "stress_MPa": 0.0
+   },
+   {
+    "force_N": 0.0,
+    "fos": "inf",
+    "fos_buckle": "inf",
+    "fos_yield": "inf",
+    "length_mm": 900.0,
+    "mode": "yield (tension)",
+    "stress_MPa": 0.0
+   },
+   {
+    "force_N": -1e-300,
+    "fos": 2.360624135833908e+304,
+    "fos_buckle": 6.857604367494254e+304,
+    "fos_yield": 2.360624135833908e+304,
+    "length_mm": 250.0,
+    "mode": "yield (compression)",
+    "stress_MPa": 1.9486371973296022e-302
+   },
+   {
+    "force_N": -1e-300,
+    "fos": 5.291361394671492e+303,
+    "fos_buckle": 5.291361394671492e+303,
+    "fos_yield": 2.360624135833908e+304,
+    "length_mm": 900.0,
+    "mode": "buckling",
+    "stress_MPa": 1.9486371973296022e-302
+   }
+  ]
+ ],
+ "dfy": [
+  0.25,
+  0.0
+ ],
+ "odd": [
+  52.02477434344698,
+  1247.814212627576,
+  "inf",
+  "inf",
+  28051.818801796107,
+  [
+   {
+    "force_N": 5000.0,
+    "fos": 3.121486460606819,
+    "fos_buckle": "inf",
+    "fos_yield": 3.121486460606819,
+    "length_mm": 250.0,
+    "mode": "yield (tension)",
+    "stress_MPa": 96.1080574226421
+   },
+   {
+    "force_N": 5000.0,
+    "fos": 3.121486460606819,
+    "fos_buckle": "inf",
+    "fos_yield": 3.121486460606819,
+    "length_mm": 900.0,
+    "mode": "yield (tension)",
+    "stress_MPa": 96.1080574226421
+   },
+   {
+    "force_N": -5000.0,
+    "fos": 3.121486460606819,
+    "fos_buckle": 8.078923814917278,
+    "fos_yield": 3.121486460606819,
+    "length_mm": 250.0,
+    "mode": "yield (compression)",
+    "stress_MPa": 96.1080574226421
+   },
+   {
+    "force_N": -5000.0,
+    "fos": 0.6233737511510246,
+    "fos_buckle": 0.6233737511510246,
+    "fos_yield": 3.121486460606819,
+    "length_mm": 900.0,
+    "mode": "buckling",
+    "stress_MPa": 96.1080574226421
+   },
+   {
+    "force_N": -200.0,
+    "fos": 78.03716151517047,
+    "fos_buckle": 201.97309537293197,
+    "fos_yield": 78.03716151517047,
+    "length_mm": 250.0,
+    "mode": "yield (compression)",
+    "stress_MPa": 3.844322296905684
+   },
+   {
+    "force_N": -200.0,
+    "fos": 15.584343778775615,
+    "fos_buckle": 15.584343778775615,
+    "fos_yield": 78.03716151517047,
+    "length_mm": 900.0,
+    "mode": "buckling",
+    "stress_MPa": 3.844322296905684
+   },
+   {
+    "force_N": 0.0,
+    "fos": "inf",
+    "fos_buckle": "inf",
+    "fos_yield": "inf",
+    "length_mm": 250.0,
+    "mode": "yield (tension)",
+    "stress_MPa": 0.0
+   },
+   {
+    "force_N": 0.0,
+    "fos": "inf",
+    "fos_buckle": "inf",
+    "fos_yield": "inf",
+    "length_mm": 900.0,
+    "mode": "yield (tension)",
+    "stress_MPa": 0.0
+   },
+   {
+    "force_N": -1e-300,
+    "fos": 1.5607432303034092e+304,
+    "fos_buckle": 4.039461907458639e+304,
+    "fos_yield": 1.5607432303034092e+304,
+    "length_mm": 250.0,
+    "mode": "yield (compression)",
+    "stress_MPa": 1.9221611484528423e-302
+   },
+   {
+    "force_N": -1e-300,
+    "fos": 3.116868755755123e+303,
+    "fos_buckle": 3.116868755755123e+303,
+    "fos_yield": 1.5607432303034092e+304,
+    "length_mm": 900.0,
+    "mode": "buckling",
+    "stress_MPa": 1.9221611484528423e-302
+   }
+  ]
+ ],
+ "rc": [
+  -64.28571428571428,
+  "NaN",
+  "NaN",
+  "NaN",
+  43.63636363636363,
+  "NaN"
+ ],
+ "solid": [
+  78.53981633974483,
+  490.8738521234052,
+  "inf",
+  "inf",
+  11035.219999065039,
+  [
+   {
+    "force_N": 5000.0,
+    "fos": 7.225663103256524,
+    "fos_buckle": "inf",
+    "fos_yield": 7.225663103256524,
+    "length_mm": 250.0,
+    "mode": "yield (tension)",
+    "stress_MPa": 63.66197723675813
+   },
+   {
+    "force_N": 5000.0,
+    "fos": 7.225663103256524,
+    "fos_buckle": "inf",
+    "fos_yield": 7.225663103256524,
+    "length_mm": 900.0,
+    "mode": "yield (tension)",
+    "stress_MPa": 63.66197723675813
+   },
+   {
+    "force_N": -5000.0,
+    "fos": 3.178143359730731,
+    "fos_buckle": 3.178143359730731,
+    "fos_yield": 7.225663103256524,
+    "length_mm": 250.0,
+    "mode": "buckling",
+    "stress_MPa": 63.66197723675813
+   },
+   {
+    "force_N": -5000.0,
+    "fos": 0.2452271110903342,
+    "fos_buckle": 0.2452271110903342,
+    "fos_yield": 7.225663103256524,
+    "length_mm": 900.0,
+    "mode": "buckling",
+    "stress_MPa": 63.66197723675813
+   },
+   {
+    "force_N": -200.0,
+    "fos": 79.45358399326828,
+    "fos_buckle": 79.45358399326828,
+    "fos_yield": 180.6415775814131,
+    "length_mm": 250.0,
+    "mode": "buckling",
+    "stress_MPa": 2.5464790894703255
+   },
+   {
+    "force_N": -200.0,
+    "fos": 6.130677777258355,
+    "fos_buckle": 6.130677777258355,
+    "fos_yield": 180.6415775814131,
+    "length_mm": 900.0,
+    "mode": "buckling",
+    "stress_MPa": 2.5464790894703255
+   },
+   {
+    "force_N": 0.0,
+    "fos": "inf",
+    "fos_buckle": "inf",
+    "fos_yield": "inf",
+    "length_mm": 250.0,
+    "mode": "yield (tension)",
+    "stress_MPa": 0.0
+   },
+   {
+    "force_N": 0.0,
+    "fos": "inf",
+    "fos_buckle": "inf",
+    "fos_yield": "inf",
+    "length_mm": 900.0,
+    "mode": "yield (tension)",
+    "stress_MPa": 0.0
+   },
+   {
+    "force_N": -1e-300,
+    "fos": 1.5890716798653656e+304,
+    "fos_buckle": 1.5890716798653656e+304,
+    "fos_yield": 3.612831551628262e+304,
+    "length_mm": 250.0,
+    "mode": "buckling",
+    "stress_MPa": 1.2732395447351628e-302
+   },
+   {
+    "force_N": -1e-300,
+    "fos": 1.226135555451671e+303,
+    "fos_buckle": 1.226135555451671e+303,
+    "fos_yield": 3.612831551628262e+304,
+    "length_mm": 900.0,
+    "mode": "buckling",
+    "stress_MPa": 1.2732395447351628e-302
+   }
+  ]
+ ],
+ "tire": [
+  {
+   "dFy_dcamber_N_per_deg": 0.0,
+   "dFy_dtoe_N_per_deg": -0.0,
+   "note": "representative FSAE magnitudes scaled by Fz — override from your tyre fit for a final number"
+  },
+  {
+   "dFy_dcamber_N_per_deg": 0.0,
+   "dFy_dtoe_N_per_deg": -0.0,
+   "note": "representative FSAE magnitudes scaled by Fz — override from your tyre fit for a final number"
+  },
+  {
+   "dFy_dcamber_N_per_deg": 67.5,
+   "dFy_dtoe_N_per_deg": -450.0,
+   "note": "representative FSAE magnitudes scaled by Fz — override from your tyre fit for a final number"
+  },
+  {
+   "dFy_dcamber_N_per_deg": -0.0,
+   "dFy_dtoe_N_per_deg": 0.0,
+   "note": "representative FSAE magnitudes scaled by Fz — override from your tyre fit for a final number"
+  },
+  {
+   "dFy_dcamber_N_per_deg": -0.0,
+   "dFy_dtoe_N_per_deg": 0.0,
+   "note": "representative FSAE magnitudes scaled by Fz — override from your tyre fit for a final number"
+  },
+  {
+   "dFy_dcamber_N_per_deg": -0.0,
+   "dFy_dtoe_N_per_deg": 0.0,
+   "note": "representative FSAE magnitudes scaled by Fz — override from your tyre fit for a final number"
+  },
+  {
+   "dFy_dcamber_N_per_deg": -0.0,
+   "dFy_dtoe_N_per_deg": 0.0,
+   "note": "representative FSAE magnitudes scaled by Fz — override from your tyre fit for a final number"
+  },
+  {
+   "dFy_dcamber_N_per_deg": -0.0,
+   "dFy_dtoe_N_per_deg": 0.0,
+   "note": "representative FSAE magnitudes scaled by Fz — override from your tyre fit for a final number"
+  },
+  {
+   "dFy_dcamber_N_per_deg": -67.5,
+   "dFy_dtoe_N_per_deg": 450.0,
+   "note": "representative FSAE magnitudes scaled by Fz — override from your tyre fit for a final number"
+  }
+ ],
+ "tire_kw": {
+  "dFy_dcamber_N_per_deg": 60.0,
+  "dFy_dtoe_N_per_deg": -400.0,
+  "note": "representative FSAE magnitudes scaled by Fz — override from your tyre fit for a final number"
+ },
+ "uni": [
+  {
+   "LF": {
+    "material": "Steel 4130",
+    "od_mm": 19.05,
+    "wall_mm": 0.9,
+    "yield_MPa": 460.0
+   },
+   "LR": {
+    "material": "Steel 4130",
+    "od_mm": 19.05,
+    "wall_mm": 0.9,
+    "yield_MPa": 460.0
+   },
+   "PR": {
+    "material": "Steel 4130",
+    "od_mm": 19.05,
+    "wall_mm": 0.9,
+    "yield_MPa": 460.0
+   },
+   "TR": {
+    "material": "Steel 4130",
+    "od_mm": 19.05,
+    "wall_mm": 0.9,
+    "yield_MPa": 460.0
+   },
+   "UF": {
+    "material": "Steel 4130",
+    "od_mm": 19.05,
+    "wall_mm": 0.9,
+    "yield_MPa": 460.0
+   },
+   "UR": {
+    "material": "Steel 4130",
+    "od_mm": 19.05,
+    "wall_mm": 0.9,
+    "yield_MPa": 460.0
+   }
+  },
+  {
+   "LF": {
+    "material": "Aluminium 7075",
+    "od_mm": 16.0,
+    "wall_mm": 1.2,
+    "yield_MPa": 500.0
+   },
+   "LR": {
+    "material": "Aluminium 7075",
+    "od_mm": 16.0,
+    "wall_mm": 1.2,
+    "yield_MPa": 500.0
+   },
+   "PR": {
+    "material": "Aluminium 7075",
+    "od_mm": 16.0,
+    "wall_mm": 1.2,
+    "yield_MPa": 500.0
+   },
+   "TR": {
+    "material": "Aluminium 7075",
+    "od_mm": 12.0,
+    "wall_mm": 1.0,
+    "yield_MPa": 500.0
+   },
+   "UF": {
+    "material": "Aluminium 7075",
+    "od_mm": 16.0,
+    "wall_mm": 1.2,
+    "yield_MPa": 500.0
+   },
+   "UR": {
+    "material": "Aluminium 7075",
+    "od_mm": 16.0,
+    "wall_mm": 1.2,
+    "yield_MPa": 500.0
+   }
+  },
+  {
+   "LF": {
+    "material": "Steel 4130",
+    "od_mm": 19.05,
+    "wall_mm": 0.9,
+    "yield_MPa": 460.0
+   },
+   "LR": {
+    "material": "Steel 4130",
+    "od_mm": 19.05,
+    "wall_mm": 0.9,
+    "yield_MPa": 460.0
+   },
+   "PR": {
+    "material": "Steel 4130",
+    "od_mm": 19.05,
+    "wall_mm": 0.9,
+    "yield_MPa": 460.0
+   },
+   "TR": {
+    "material": "Steel 4130",
+    "od_mm": 10.0,
+    "wall_mm": 0.9,
+    "yield_MPa": 460.0
+   },
+   "UF": {
+    "material": "Steel 4130",
+    "od_mm": 19.05,
+    "wall_mm": 0.9,
+    "yield_MPa": 460.0
+   },
+   "UR": {
+    "material": "Steel 4130",
+    "od_mm": 19.05,
+    "wall_mm": 0.9,
+    "yield_MPa": 460.0
+   }
+  },
+  {
+   "LF": {
+    "material": "Steel 4130",
+    "od_mm": 19.05,
+    "wall_mm": 0.9,
+    "yield_MPa": 460.0
+   },
+   "LR": {
+    "material": "Steel 4130",
+    "od_mm": 19.05,
+    "wall_mm": 0.9,
+    "yield_MPa": 460.0
+   },
+   "PR": {
+    "material": "Steel 4130",
+    "od_mm": 19.05,
+    "wall_mm": 0.9,
+    "yield_MPa": 460.0
+   },
+   "TR": {
+    "material": "Steel 4130",
+    "od_mm": 19.05,
+    "wall_mm": 2.0,
+    "yield_MPa": 460.0
+   },
+   "UF": {
+    "material": "Steel 4130",
+    "od_mm": 19.05,
+    "wall_mm": 0.9,
+    "yield_MPa": 460.0
+   },
+   "UR": {
+    "material": "Steel 4130",
+    "od_mm": 19.05,
+    "wall_mm": 0.9,
+    "yield_MPa": 460.0
+   }
+  }
+ ],
+ "zero": [
+  0.0,
+  0.0,
+  "inf",
+  "inf",
+  0.0,
+  [
+   {
+    "force_N": 5000.0,
+    "fos": 0.0,
+    "fos_buckle": "inf",
+    "fos_yield": 0.0,
+    "length_mm": 250.0,
+    "mode": "yield (tension)",
+    "stress_MPa": "inf"
+   },
+   {
+    "force_N": 5000.0,
+    "fos": 0.0,
+    "fos_buckle": "inf",
+    "fos_yield": 0.0,
+    "length_mm": 900.0,
+    "mode": "yield (tension)",
+    "stress_MPa": "inf"
+   },
+   {
+    "force_N": -5000.0,
+    "fos": 0.0,
+    "fos_buckle": 0.0,
+    "fos_yield": 0.0,
+    "length_mm": 250.0,
+    "mode": "yield (compression)",
+    "stress_MPa": "inf"
+   },
+   {
+    "force_N": -5000.0,
+    "fos": 0.0,
+    "fos_buckle": 0.0,
+    "fos_yield": 0.0,
+    "length_mm": 900.0,
+    "mode": "yield (compression)",
+    "stress_MPa": "inf"
+   },
+   {
+    "force_N": -200.0,
+    "fos": 0.0,
+    "fos_buckle": 0.0,
+    "fos_yield": 0.0,
+    "length_mm": 250.0,
+    "mode": "yield (compression)",
+    "stress_MPa": "inf"
+   },
+   {
+    "force_N": -200.0,
+    "fos": 0.0,
+    "fos_buckle": 0.0,
+    "fos_yield": 0.0,
+    "length_mm": 900.0,
+    "mode": "yield (compression)",
+    "stress_MPa": "inf"
+   },
+   {
+    "force_N": 0.0,
+    "fos": 0.0,
+    "fos_buckle": "inf",
+    "fos_yield": 0.0,
+    "length_mm": 250.0,
+    "mode": "yield (tension)",
+    "stress_MPa": "inf"
+   },
+   {
+    "force_N": 0.0,
+    "fos": 0.0,
+    "fos_buckle": "inf",
+    "fos_yield": 0.0,
+    "length_mm": 900.0,
+    "mode": "yield (tension)",
+    "stress_MPa": "inf"
+   },
+   {
+    "force_N": -1e-300,
+    "fos": 0.0,
+    "fos_buckle": 0.0,
+    "fos_yield": 0.0,
+    "length_mm": 250.0,
+    "mode": "yield (compression)",
+    "stress_MPa": "inf"
+   },
+   {
+    "force_N": -1e-300,
+    "fos": 0.0,
+    "fos_buckle": 0.0,
+    "fos_yield": 0.0,
+    "length_mm": 900.0,
+    "mode": "yield (compression)",
+    "stress_MPa": "inf"
+   }
+  ]
+ ]
+}

@@ -1,0 +1,417 @@
+{
+ "bspd": [
+  {
+   "check": "bspd-reaction",
+   "detail": {},
+   "message": "BSPD reaction 650ms within 750ms.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics",
+    "tractive"
+   ]
+  },
+  {
+   "check": "bspd-reaction",
+   "detail": {
+    "reaction_s": 0.8505
+   },
+   "message": "BSPD reacts in 850ms — slower than the 750ms limit. It must open the shutdown loop faster.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "tractive"
+   ]
+  }
+ ],
+ "bypass": [
+  {
+   "check": "shutdown-failsafe",
+   "detail": {},
+   "message": "All shutdown nodes are normally-closed (open-to-trip, fail-safe).",
+   "severity": "ok",
+   "subsystems": [
+    "electrics",
+    "glv"
+   ]
+  },
+  {
+   "check": "shutdown-completeness",
+   "detail": {
+    "present": [
+     "ams",
+     "bspd",
+     "estop",
+     "imd",
+     "inertia",
+     "interlock",
+     "master_switch",
+     "other"
+    ]
+   },
+   "message": "All 7 rule-required shutdown nodes present (ams, bspd, estop, imd, inertia, interlock, master_switch, other).",
+   "severity": "ok",
+   "subsystems": [
+    "electrics",
+    "glv"
+   ]
+  },
+  {
+   "check": "shutdown-single-fault",
+   "detail": {
+    "not_in_series": [
+     "l1",
+     "l2"
+    ]
+   },
+   "message": "Opening node(s) l1, l2 does NOT open the chain — they are not actually in series with the contactor coil. Re-route.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "glv"
+   ]
+  }
+ ],
+ "chain": [
+  {
+   "check": "shutdown-failsafe",
+   "detail": {
+    "normally_open_nodes": [
+     "a",
+     "b"
+    ]
+   },
+   "message": "Shutdown nodes wired normally-OPEN: a, b. A safety loop must be normally-CLOSED so a broken wire opens it (fail-safe).",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "glv"
+   ]
+  },
+  {
+   "check": "shutdown-completeness",
+   "detail": {
+    "missing": [
+     "master_switch",
+     "ams",
+     "interlock",
+     "inertia",
+     "estop"
+    ],
+    "present": [
+     "bspd",
+     "imd"
+    ]
+   },
+   "message": "Shutdown circuit is missing rule-required node(s): master_switch, ams, interlock, inertia, estop. The tractive system can't be enabled at tech without them.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "glv"
+   ]
+  },
+  {
+   "check": "shutdown-single-fault",
+   "detail": {},
+   "message": "Any single node opening drops the contactor coil (true series loop).",
+   "severity": "ok",
+   "subsystems": [
+    "electrics",
+    "glv"
+   ]
+  },
+  {
+   "check": "shutdown-provenance",
+   "detail": {
+    "estimate_nodes": [
+     "a",
+     "b"
+    ]
+   },
+   "message": "Shutdown nodes still on placeholder/estimate values: a, b. Confirm against the as-wired loom.",
+   "severity": "info",
+   "subsystems": [
+    "electrics",
+    "glv"
+   ]
+  }
+ ],
+ "crash": [
+  [
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  [
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  false
+ ],
+ "gate": [
+  {
+   "check": "precharge-time",
+   "detail": {
+    "t_to_fraction_s": 1.3815510557964275,
+    "tau_s": 0.6
+   },
+   "message": "Precharge reaches 90% of pack voltage in 1.38s (≤ 5.0s).",
+   "severity": "ok",
+   "subsystems": [
+    "electrics",
+    "battery-pack"
+   ]
+  },
+  {
+   "check": "precharge-resistor-energy",
+   "detail": {
+    "pulse_energy_j": 47.99999999999999
+   },
+   "message": "Precharge pulse energy 48.0J ≤ resistor rating 60.0J.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics",
+    "battery-pack"
+   ]
+  },
+  {
+   "check": "discharge-time",
+   "detail": {
+    "limit_s": 1.0,
+    "t_to_safe_s": 3.1083205985349918
+   },
+   "message": "Bus bleeds to 30V in 3.11s — over the 1s safe-discharge limit. Lower the discharge resistor.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "battery-pack"
+   ]
+  },
+  {
+   "check": "shutdown-failsafe",
+   "detail": {},
+   "message": "All shutdown nodes are normally-closed (open-to-trip, fail-safe).",
+   "severity": "ok",
+   "subsystems": [
+    "electrics",
+    "glv"
+   ]
+  },
+  {
+   "check": "shutdown-completeness",
+   "detail": {
+    "present": [
+     "ams",
+     "bspd",
+     "estop",
+     "imd",
+     "inertia",
+     "interlock",
+     "master_switch",
+     "other"
+    ]
+   },
+   "message": "All 7 rule-required shutdown nodes present (ams, bspd, estop, imd, inertia, interlock, master_switch, other).",
+   "severity": "ok",
+   "subsystems": [
+    "electrics",
+    "glv"
+   ]
+  },
+  {
+   "check": "shutdown-single-fault",
+   "detail": {
+    "not_in_series": [
+     "l1",
+     "l2"
+    ]
+   },
+   "message": "Opening node(s) l1, l2 does NOT open the chain — they are not actually in series with the contactor coil. Re-route.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "glv"
+   ]
+  },
+  {
+   "check": "bspd-reaction",
+   "detail": {
+    "reaction_s": 0.2
+   },
+   "message": "BSPD reacts in 200ms — slower than the 100ms limit. It must open the shutdown loop faster.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "tractive"
+   ]
+  }
+ ],
+ "pc": {
+  "hot": [
+   {
+    "check": "precharge-time",
+    "detail": {
+     "t_to_fraction_s": 1.3815510557964275,
+     "tau_s": 0.6
+    },
+    "message": "Precharge reaches 90% of pack voltage in 1.38s (≤ 5.0s) (on ESTIMATE values).",
+    "severity": "ok",
+    "subsystems": [
+     "electrics",
+     "battery-pack"
+    ]
+   },
+   {
+    "check": "precharge-resistor-energy",
+    "detail": {
+     "pulse_energy_j": 47.99999999999999,
+     "rating_j": 10.0
+    },
+    "message": "Each precharge dumps 48.0J in the resistor (½·C·V²) but it is rated for 10.0J per pulse — it will cook. Use a higher-energy resistor.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics",
+     "battery-pack"
+    ]
+   },
+   {
+    "check": "discharge-time",
+    "detail": {
+     "t_to_safe_s": 2.2765439818630573
+    },
+    "message": "Bus bleeds below 60V in 2.28s (≤ 5s) (on ESTIMATE values).",
+    "severity": "ok",
+    "subsystems": [
+     "electrics",
+     "battery-pack"
+    ]
+   }
+  ],
+  "ok": [
+   {
+    "check": "precharge-time",
+    "detail": {
+     "t_to_fraction_s": 1.3815510557964275,
+     "tau_s": 0.6
+    },
+    "message": "Precharge reaches 90% of pack voltage in 1.38s (≤ 5.0s).",
+    "severity": "ok",
+    "subsystems": [
+     "electrics",
+     "battery-pack"
+    ]
+   },
+   {
+    "check": "precharge-resistor-energy",
+    "detail": {
+     "pulse_energy_j": 47.99999999999999
+    },
+    "message": "Precharge pulse energy 48.0J ≤ resistor rating 60.0J.",
+    "severity": "ok",
+    "subsystems": [
+     "electrics",
+     "battery-pack"
+    ]
+   },
+   {
+    "check": "discharge-time",
+    "detail": {
+     "t_to_safe_s": 2.2765439818630573
+    },
+    "message": "Bus bleeds below 60V in 2.28s (≤ 5s).",
+    "severity": "ok",
+    "subsystems": [
+     "electrics",
+     "battery-pack"
+    ]
+   }
+  ],
+  "slowbleed": [
+   {
+    "check": "precharge-time",
+    "detail": {
+     "t_to_fraction_s": 1.3815510557964275,
+     "tau_s": 0.6
+    },
+    "message": "Precharge reaches 90% of pack voltage in 1.38s (≤ 5.0s) (on ESTIMATE values).",
+    "severity": "ok",
+    "subsystems": [
+     "electrics",
+     "battery-pack"
+    ]
+   },
+   {
+    "check": "precharge-resistor-energy",
+    "detail": {
+     "pulse_energy_j": 47.99999999999999
+    },
+    "message": "Each precharge dumps 48.0J (½·C·V²) in the precharge resistor; its per-pulse energy rating is not declared, so survival can't be checked. Add resistor_energy_rating_j.",
+    "severity": "missing",
+    "subsystems": [
+     "electrics",
+     "battery-pack"
+    ]
+   },
+   {
+    "check": "discharge-time",
+    "detail": {
+     "limit_s": 5.0,
+     "t_to_safe_s": 10.244447918383758
+    },
+    "message": "Bus bleeds to 60V in 10.24s — over the 5s safe-discharge limit (on ESTIMATE values). Lower the discharge resistor.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics",
+     "battery-pack"
+    ]
+   }
+  ],
+  "unrated": [
+   {
+    "check": "precharge-time",
+    "detail": {
+     "t_to_fraction_s": 0.4605170185988092,
+     "tau_s": 0.2
+    },
+    "message": "Precharge reaches 90% of pack voltage in 0.46s (≤ 5.0s) (on ESTIMATE values).",
+    "severity": "ok",
+    "subsystems": [
+     "electrics",
+     "battery-pack"
+    ]
+   },
+   {
+    "check": "precharge-resistor-energy",
+    "detail": {
+     "pulse_energy_j": 18.0
+    },
+    "message": "Each precharge dumps 18.0J (½·C·V²) in the precharge resistor; its per-pulse energy rating is not declared, so survival can't be checked. Add resistor_energy_rating_j.",
+    "severity": "missing",
+    "subsystems": [
+     "electrics",
+     "battery-pack"
+    ]
+   },
+   {
+    "check": "discharge-time",
+    "detail": {},
+    "message": "No discharge (bleed) resistor declared — the bus can't be shown to fall below 60V within 5s. Add discharge_r_ohm.",
+    "severity": "missing",
+    "subsystems": [
+     "electrics",
+     "battery-pack"
+    ]
+   }
+  ]
+ }
+}

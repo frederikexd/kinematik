@@ -1,0 +1,2802 @@
+{
+ "active": [
+  true,
+  true
+ ],
+ "aero": [
+  0.007908850902167237,
+  0.010025004130753142,
+  1.755899840426728e-05,
+  1.3501730960599568e-18,
+  0.0039544254510836185,
+  0.005012502065376571,
+  8.77949920213364e-06,
+  6.750865480299784e-19
+ ],
+ "cam": [
+  1.0,
+  0.9916666666666667,
+  0.9833333333333333,
+  0.5166666666666666,
+  1.95,
+  2.0
+ ],
+ "inertia": [
+  {
+   "I_kgm2": 2.666666666666667e-06,
+   "is_estimate": true,
+   "source": "geometry estimate"
+  },
+  {
+   "I_kgm2": 2.666666666666667e-06,
+   "is_estimate": true,
+   "source": "geometry estimate"
+  },
+  {
+   "I_kgm2": 2.666666666666667e-06,
+   "is_estimate": true,
+   "source": "geometry estimate"
+  }
+ ],
+ "k": 39892578.125,
+ "ped_default": [
+  "TIGHT",
+  [
+   {
+    "allow_MPa": 370.0,
+    "fos": 111.0,
+    "governs": false,
+    "mode": "direct tension (section)",
+    "stress_MPa": 3.3333333333333335
+   },
+   {
+    "allow_MPa": 370.0,
+    "fos": 2.775,
+    "governs": true,
+    "mode": "root bending",
+    "stress_MPa": 133.33333333333334
+   }
+  ],
+  [
+   "COVERAGE: screened direct tension (section), root bending. NOT screened: pivot-bolt bearing; pivot-lug tear-out; weld-throat shear (if fabricated/welded). This is a bending-governed screen only — supply the pivot-bolt and weld geometry to screen those modes before you trust a pass."
+  ],
+  [
+   {
+    "check": "bracket-fos",
+    "detail": {
+     "bracket": "brake pedal",
+     "fos": 2.775,
+     "fos_target": 1.5,
+     "governing_mode": "root bending",
+     "material": "Steel 1018 CR (cold-rolled)"
+    },
+    "message": "chassis bracket 'brake pedal' meets FoS ≥ 1.50 on yield (governing root bending, FoS 2.77, Steel 1018 CR (cold-rolled)). Screening only — confirm with SolidWorks/FEA before sign-off.",
+    "severity": "ok",
+    "subsystems": [
+     "chassis"
+    ]
+   },
+   {
+    "check": "brake-pedal-2000N-coverage",
+    "detail": {
+     "demoted_from_pass": true,
+     "load_N": 2000.0,
+     "not_screened": [
+      "pivot-bolt bearing",
+      "pivot-lug tear-out",
+      "weld-throat shear (if fabricated/welded)"
+     ],
+     "screened": [
+      "direct tension (section)",
+      "root bending"
+     ]
+    },
+    "message": "Brake pedal screened at 2000 N on 2 mode(s) only; NOT checked: pivot-bolt bearing, pivot-lug tear-out, weld-throat shear (if fabricated/welded). Result demoted from PASS to TIGHT because an incomplete screen must not read as a clean pedal. Add the pivot lug and weld geometry, or take this straight to SolidWorks/ANSYS for those modes — don't let a bending-only pass be the last word.",
+    "severity": "warning",
+    "subsystems": [
+     "brakes"
+    ]
+   }
+  ]
+ ],
+ "ped_edge_none": [
+  "TIGHT",
+  [
+   {
+    "allow_MPa": 370.0,
+    "fos": 111.0,
+    "governs": false,
+    "mode": "direct tension (section)",
+    "stress_MPa": 3.3333333333333335
+   },
+   {
+    "allow_MPa": 370.0,
+    "fos": 83.25,
+    "governs": false,
+    "mode": "direct tension (net section at hole)",
+    "stress_MPa": 4.444444444444445
+   },
+   {
+    "allow_MPa": 370.0,
+    "fos": 2.775,
+    "governs": true,
+    "mode": "root bending",
+    "stress_MPa": 133.33333333333334
+   },
+   {
+    "allow_MPa": 370.0,
+    "fos": 27.75,
+    "governs": false,
+    "mode": "bolt-hole bearing",
+    "stress_MPa": 13.333333333333334
+   }
+  ],
+  [
+   "COVERAGE: screened bolt-hole bearing, direct tension (net section at hole), direct tension (section), root bending. NOT screened: pivot-lug tear-out; weld-throat shear (if fabricated/welded). This is a bending-governed screen only — supply the pivot-bolt and weld geometry to screen those modes before you trust a pass."
+  ],
+  [
+   {
+    "check": "bracket-fos",
+    "detail": {
+     "bracket": "brake pedal",
+     "fos": 2.775,
+     "fos_target": 1.5,
+     "governing_mode": "root bending",
+     "material": "Steel 1018 CR (cold-rolled)"
+    },
+    "message": "chassis bracket 'brake pedal' meets FoS ≥ 1.50 on yield (governing root bending, FoS 2.77, Steel 1018 CR (cold-rolled)). Screening only — confirm with SolidWorks/FEA before sign-off.",
+    "severity": "ok",
+    "subsystems": [
+     "chassis"
+    ]
+   },
+   {
+    "check": "brake-pedal-2000N-coverage",
+    "detail": {
+     "demoted_from_pass": true,
+     "load_N": 2000.0,
+     "not_screened": [
+      "pivot-lug tear-out",
+      "weld-throat shear (if fabricated/welded)"
+     ],
+     "screened": [
+      "bolt-hole bearing",
+      "direct tension (net section at hole)",
+      "direct tension (section)",
+      "root bending"
+     ]
+    },
+    "message": "Brake pedal screened at 2000 N on 4 mode(s) only; NOT checked: pivot-lug tear-out, weld-throat shear (if fabricated/welded). Result demoted from PASS to TIGHT because an incomplete screen must not read as a clean pedal. Add the pivot lug and weld geometry, or take this straight to SolidWorks/ANSYS for those modes — don't let a bending-only pass be the last word.",
+    "severity": "warning",
+    "subsystems": [
+     "brakes"
+    ]
+   }
+  ]
+ ],
+ "ped_fos": [
+  "FAIL",
+  [
+   {
+    "allow_MPa": 370.0,
+    "fos": 111.0,
+    "governs": false,
+    "mode": "direct tension (section)",
+    "stress_MPa": 3.3333333333333335
+   },
+   {
+    "allow_MPa": 370.0,
+    "fos": 2.775,
+    "governs": true,
+    "mode": "root bending",
+    "stress_MPa": 133.33333333333334
+   }
+  ],
+  [],
+  [
+   {
+    "check": "bracket-fos",
+    "detail": {
+     "allow_MPa": 370.0,
+     "bracket": "brake pedal",
+     "estimate": true,
+     "fos": 2.775,
+     "fos_target": 3.0,
+     "governing_mode": "root bending",
+     "material": "Steel 1018 CR (cold-rolled)",
+     "stress_MPa": 133.33333333333334
+    },
+    "message": "chassis bracket 'brake pedal' FAILS the FoS rule: governing mode is root bending at FoS 2.77 vs required 3.00 (Steel 1018 CR (cold-rolled)) (estimated geometry/load). Thicken/widen, shorten the lever, add weld/bolt area, or move to a stronger material before fab.",
+    "severity": "fail",
+    "subsystems": [
+     "chassis"
+    ]
+   }
+  ]
+ ],
+ "ped_full": [
+  "FAIL",
+  [
+   {
+    "allow_MPa": 503.0,
+    "fos": 120.71999999999998,
+    "governs": false,
+    "mode": "direct tension (section)",
+    "stress_MPa": 4.166666666666667
+   },
+   {
+    "allow_MPa": 503.0,
+    "fos": 90.54,
+    "governs": false,
+    "mode": "direct tension (net section at hole)",
+    "stress_MPa": 5.555555555555555
+   },
+   {
+    "allow_MPa": 503.0,
+    "fos": 3.0180000000000002,
+    "governs": false,
+    "mode": "root bending",
+    "stress_MPa": 166.66666666666666
+   },
+   {
+    "allow_MPa": 503.0,
+    "fos": 60.35999999999999,
+    "governs": false,
+    "mode": "bolt-hole bearing",
+    "stress_MPa": 8.333333333333334
+   },
+   {
+    "allow_MPa": 290.231,
+    "fos": 69.65544,
+    "governs": false,
+    "mode": "hole tear-out (shear)",
+    "stress_MPa": 4.166666666666667
+   },
+   {
+    "allow_MPa": 290.231,
+    "fos": 1.9600798233364567,
+    "governs": true,
+    "mode": "weld throat shear",
+    "stress_MPa": 148.07101044791506
+   }
+  ],
+  [
+   "High strength but essentially NOT weldable for structure — bolt it, don't weld it."
+  ],
+  [
+   {
+    "check": "bracket-fos",
+    "detail": {
+     "allow_MPa": 290.231,
+     "bracket": "brake pedal",
+     "estimate": false,
+     "fos": 1.9600798233364567,
+     "fos_target": 2.0,
+     "governing_mode": "weld throat shear",
+     "material": "Aluminium 7075-T6",
+     "stress_MPa": 148.07101044791506
+    },
+    "message": "chassis bracket 'brake pedal' FAILS the FoS rule: governing mode is weld throat shear at FoS 1.96 vs required 2.00 (Aluminium 7075-T6). Thicken/widen, shorten the lever, add weld/bolt area, or move to a stronger material before fab.",
+    "severity": "fail",
+    "subsystems": [
+     "chassis"
+    ]
+   }
+  ]
+ ],
+ "ped_pivot_default_bolts": [
+  "PASS",
+  [
+   {
+    "allow_MPa": 370.0,
+    "fos": 111.0,
+    "governs": false,
+    "mode": "direct tension (section)",
+    "stress_MPa": 3.3333333333333335
+   },
+   {
+    "allow_MPa": 370.0,
+    "fos": 83.25,
+    "governs": false,
+    "mode": "direct tension (net section at hole)",
+    "stress_MPa": 4.444444444444445
+   },
+   {
+    "allow_MPa": 370.0,
+    "fos": 2.775,
+    "governs": false,
+    "mode": "root bending",
+    "stress_MPa": 133.33333333333334
+   },
+   {
+    "allow_MPa": 370.0,
+    "fos": 27.75,
+    "governs": false,
+    "mode": "bolt-hole bearing",
+    "stress_MPa": 13.333333333333334
+   },
+   {
+    "allow_MPa": 213.48999999999998,
+    "fos": 32.0235,
+    "governs": false,
+    "mode": "hole tear-out (shear)",
+    "stress_MPa": 6.666666666666667
+   },
+   {
+    "allow_MPa": 213.48999999999998,
+    "fos": 1.8022602749366028,
+    "governs": true,
+    "mode": "weld throat shear",
+    "stress_MPa": 118.45680835833204
+   }
+  ],
+  [
+   "Low-carbon mild steel — welds readily and needs no post-weld heat treat; as-welded strength stays close to parent. This is the team's switch-to material."
+  ],
+  [
+   {
+    "check": "bracket-fos",
+    "detail": {
+     "bracket": "brake pedal",
+     "fos": 1.8022602749366028,
+     "fos_target": 1.5,
+     "governing_mode": "weld throat shear",
+     "material": "Steel 1018 CR (cold-rolled)"
+    },
+    "message": "chassis bracket 'brake pedal' meets FoS ≥ 1.50 on yield (governing weld throat shear, FoS 1.80, Steel 1018 CR (cold-rolled)). Screening only — confirm with SolidWorks/FEA before sign-off.",
+    "severity": "ok",
+    "subsystems": [
+     "chassis"
+    ]
+   }
+  ]
+ ],
+ "ped_pivot_small": [
+  "FAIL",
+  [
+   {
+    "allow_MPa": 370.0,
+    "fos": 111.0,
+    "governs": false,
+    "mode": "direct tension (section)",
+    "stress_MPa": 3.3333333333333335
+   },
+   {
+    "allow_MPa": 370.0,
+    "fos": 108.78,
+    "governs": false,
+    "mode": "direct tension (net section at hole)",
+    "stress_MPa": 3.401360544217687
+   },
+   {
+    "allow_MPa": 370.0,
+    "fos": 2.775,
+    "governs": false,
+    "mode": "root bending",
+    "stress_MPa": 133.33333333333334
+   },
+   {
+    "allow_MPa": 370.0,
+    "fos": 2.22,
+    "governs": false,
+    "mode": "bolt-hole bearing",
+    "stress_MPa": 166.66666666666666
+   },
+   {
+    "allow_MPa": 213.48999999999998,
+    "fos": 1.6011749999999998,
+    "governs": false,
+    "mode": "hole tear-out (shear)",
+    "stress_MPa": 133.33333333333334
+   },
+   {
+    "allow_MPa": 213.48999999999998,
+    "fos": 3.1696844451581736e-05,
+    "governs": true,
+    "mode": "weld throat shear",
+    "stress_MPa": 6735370.781975315
+   }
+  ],
+  [
+   "Low-carbon mild steel — welds readily and needs no post-weld heat treat; as-welded strength stays close to parent. This is the team's switch-to material."
+  ],
+  [
+   {
+    "check": "bracket-fos",
+    "detail": {
+     "allow_MPa": 213.48999999999998,
+     "bracket": "brake pedal",
+     "estimate": true,
+     "fos": 3.1696844451581736e-05,
+     "fos_target": 1.5,
+     "governing_mode": "weld throat shear",
+     "material": "Steel 1018 CR (cold-rolled)",
+     "stress_MPa": 6735370.781975315
+    },
+    "message": "chassis bracket 'brake pedal' FAILS the FoS rule: governing mode is weld throat shear at FoS 0.00 vs required 1.50 (Steel 1018 CR (cold-rolled)) (estimated geometry/load). Thicken/widen, shorten the lever, add weld/bolt area, or move to a stronger material before fab.",
+    "severity": "fail",
+    "subsystems": [
+     "chassis"
+    ]
+   }
+  ]
+ ],
+ "ped_thick": [
+  "TIGHT",
+  [
+   {
+    "allow_MPa": 370.0,
+    "fos": 88.8,
+    "governs": false,
+    "mode": "direct tension (section)",
+    "stress_MPa": 4.166666666666667
+   },
+   {
+    "allow_MPa": 370.0,
+    "fos": 1.5786666666666667,
+    "governs": true,
+    "mode": "root bending",
+    "stress_MPa": 234.375
+   }
+  ],
+  [
+   "COVERAGE: screened direct tension (section), root bending. NOT screened: pivot-bolt bearing; pivot-lug tear-out; weld-throat shear (if fabricated/welded). This is a bending-governed screen only — supply the pivot-bolt and weld geometry to screen those modes before you trust a pass."
+  ],
+  [
+   {
+    "check": "bracket-fos",
+    "detail": {
+     "bracket": "brake pedal",
+     "estimate": true,
+     "fos": 1.5786666666666667,
+     "fos_target": 1.5,
+     "governing_mode": "root bending",
+     "material": "Steel 1018 CR (cold-rolled)"
+    },
+    "message": "chassis bracket 'brake pedal' passes but is TIGHT: root bending at FoS 1.58, just over the 1.50 floor (Steel 1018 CR (cold-rolled)) (estimated geometry/load). No margin for the rushed-manufacturing variation the FoS buffer is meant to absorb — worth one more pass or an FEA confirm.",
+    "severity": "warning",
+    "subsystems": [
+     "chassis"
+    ]
+   },
+   {
+    "check": "brake-pedal-2000N-coverage",
+    "detail": {
+     "demoted_from_pass": false,
+     "load_N": 2000.0,
+     "not_screened": [
+      "pivot-bolt bearing",
+      "pivot-lug tear-out",
+      "weld-throat shear (if fabricated/welded)"
+     ],
+     "screened": [
+      "direct tension (section)",
+      "root bending"
+     ]
+    },
+    "message": "Brake pedal screened at 2000 N on 2 mode(s) only; NOT checked: pivot-bolt bearing, pivot-lug tear-out, weld-throat shear (if fabricated/welded). Add the pivot lug and weld geometry, or take this straight to SolidWorks/ANSYS for those modes — don't let a bending-only pass be the last word.",
+    "severity": "warning",
+    "subsystems": [
+     "brakes"
+    ]
+   }
+  ]
+ ],
+ "ped_tight": [
+  "FAIL",
+  [
+   {
+    "allow_MPa": 370.0,
+    "fos": 27.75,
+    "governs": false,
+    "mode": "direct tension (section)",
+    "stress_MPa": 13.333333333333334
+   },
+   {
+    "allow_MPa": 370.0,
+    "fos": 0.185,
+    "governs": true,
+    "mode": "root bending",
+    "stress_MPa": 2000.0
+   }
+  ],
+  [],
+  [
+   {
+    "check": "bracket-fos",
+    "detail": {
+     "allow_MPa": 370.0,
+     "bracket": "brake pedal",
+     "estimate": true,
+     "fos": 0.185,
+     "fos_target": 1.5,
+     "governing_mode": "root bending",
+     "material": "Steel 1018 CR (cold-rolled)",
+     "stress_MPa": 2000.0
+    },
+    "message": "chassis bracket 'brake pedal' FAILS the FoS rule: governing mode is root bending at FoS 0.18 vs required 1.50 (Steel 1018 CR (cold-rolled)) (estimated geometry/load). Thicken/widen, shorten the lever, add weld/bolt area, or move to a stronger material before fab.",
+    "severity": "fail",
+    "subsystems": [
+     "chassis"
+    ]
+   }
+  ]
+ ],
+ "red_clean": [
+  {
+   "cases": [
+    {
+     "closes": true,
+     "label": "all springs healthy",
+     "margin": 6.333333333333333,
+     "net_closed_Nm": 1.9000000000000001,
+     "net_open_Nm": 4.2
+    },
+    {
+     "closes": true,
+     "label": "without 'a'",
+     "margin": 2.999999999999999,
+     "net_closed_Nm": 0.8999999999999999,
+     "net_open_Nm": 2.2
+    },
+    {
+     "closes": true,
+     "label": "without 'b'",
+     "margin": 2.333333333333333,
+     "net_closed_Nm": 0.7,
+     "net_open_Nm": 1.7
+    }
+   ],
+   "findings": [
+    {
+     "check": "throttle-return-redundancy",
+     "detail": {
+      "estimate": false,
+      "margin_target": 1.0,
+      "resistance_Nm": 0.30000000000000004,
+      "worst_case": "without 'b'",
+      "worst_margin": 2.333333333333333
+     },
+     "message": "Throttle is single-fault tolerant: with any one of 2 springs removed it still makes net closing torque across full travel, worst-case margin 2.33 over 0.30 N·m resistance (without 'b'). Meets the two-independent-return-spring rule.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes",
+      "powertrain"
+     ]
+    }
+   ],
+   "is_estimate": false,
+   "margin_target": 1.0,
+   "n_springs": 2,
+   "notes": [],
+   "verdict": "PASS",
+   "worst_case": "without 'b'",
+   "worst_margin": 2.333333333333333
+  },
+  [
+   {
+    "check": "throttle-return-redundancy",
+    "detail": {
+     "estimate": false,
+     "margin_target": 1.0,
+     "resistance_Nm": 0.30000000000000004,
+     "worst_case": "without 'b'",
+     "worst_margin": 2.333333333333333
+    },
+    "message": "Throttle is single-fault tolerant: with any one of 2 springs removed it still makes net closing torque across full travel, worst-case margin 2.33 over 0.30 N·m resistance (without 'b'). Meets the two-independent-return-spring rule.",
+    "severity": "ok",
+    "subsystems": [
+     "brakes",
+     "powertrain"
+    ]
+   }
+  ],
+  "THROTTLE RETURN-SPRING REDUNDANCY — PASS\n  springs: 2   margin target: 1.00   [measured/datasheet k]\n  governing single-failure case: without 'b' (margin 2.33)\n  cases (net CLOSING torque, N·m; negative = hangs open):\n    - all springs healthy          closed=   1.90  open=   4.20  [closes]\n    - without 'a'                  closed=   0.90  open=   2.20  [closes]\n    - without 'b'                  closed=   0.70  open=   1.70  [closes]\n  [OK] Throttle is single-fault tolerant: with any one of 2 springs removed it still makes net closing torque across full travel, worst-case margin 2.33 over 0.30 N·m resistance (without 'b'). Meets the two-independent-return-spring rule."
+ ],
+ "red_dead": [
+  {
+   "cases": [
+    {
+     "closes": true,
+     "label": "all springs healthy",
+     "margin": 3.1666666666666665,
+     "net_closed_Nm": 1.9,
+     "net_open_Nm": 3.8000000000000003
+    },
+    {
+     "closes": true,
+     "label": "without 'weak'",
+     "margin": 2.5,
+     "net_closed_Nm": 1.5,
+     "net_open_Nm": 2.9
+    },
+    {
+     "closes": false,
+     "label": "without 'strong'",
+     "margin": -0.16666666666666663,
+     "net_closed_Nm": -0.09999999999999998,
+     "net_open_Nm": 0.7999999999999999
+    },
+    {
+     "closes": true,
+     "label": "without 'mid'",
+     "margin": 3.0,
+     "net_closed_Nm": 1.7999999999999998,
+     "net_open_Nm": 3.3
+    }
+   ],
+   "findings": [
+    {
+     "check": "throttle-return-redundancy",
+     "detail": {
+      "estimate": false,
+      "net_closed": -0.09999999999999998,
+      "net_open": 0.7999999999999999,
+      "resistance_Nm": 0.6,
+      "worst_case": "without 'strong'"
+     },
+     "message": "Throttle does NOT return to closed with one spring failed: without 'strong' gives net closing torque -0.10 N·m (<= 0 means it hangs open) against 0.60 N·m of resistance. This is the rule the pedal-box must pass. Increase the other spring's preload/rate, or reduce friction/cable drag, until every single-failure case closes with margin.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes",
+      "powertrain"
+     ]
+    }
+   ],
+   "is_estimate": false,
+   "margin_target": 1.0,
+   "n_springs": 3,
+   "notes": [],
+   "verdict": "FAIL",
+   "worst_case": "without 'strong'",
+   "worst_margin": -0.16666666666666663
+  },
+  [
+   {
+    "check": "throttle-return-redundancy",
+    "detail": {
+     "estimate": false,
+     "net_closed": -0.09999999999999998,
+     "net_open": 0.7999999999999999,
+     "resistance_Nm": 0.6,
+     "worst_case": "without 'strong'"
+    },
+    "message": "Throttle does NOT return to closed with one spring failed: without 'strong' gives net closing torque -0.10 N·m (<= 0 means it hangs open) against 0.60 N·m of resistance. This is the rule the pedal-box must pass. Increase the other spring's preload/rate, or reduce friction/cable drag, until every single-failure case closes with margin.",
+    "severity": "fail",
+    "subsystems": [
+     "brakes",
+     "powertrain"
+    ]
+   }
+  ],
+  "THROTTLE RETURN-SPRING REDUNDANCY — FAIL\n  springs: 3   margin target: 1.00   [measured/datasheet k]\n  governing single-failure case: without 'strong' (margin -0.17)\n  cases (net CLOSING torque, N·m; negative = hangs open):\n    - all springs healthy          closed=   1.90  open=   3.80  [closes]\n    - without 'weak'               closed=   1.50  open=   2.90  [closes]\n    - without 'strong'             closed=  -0.10  open=   0.80  [HANGS OPEN]\n    - without 'mid'                closed=   1.80  open=   3.30  [closes]\n  [FAIL] Throttle does NOT return to closed with one spring failed: without 'strong' gives net closing torque -0.10 N·m (<= 0 means it hangs open) against 0.60 N·m of resistance. This is the rule the pedal-box must pass. Increase the other spring's preload/rate, or reduce friction/cable drag, until every single-failure case closes with margin."
+ ],
+ "red_dead_est": [
+  {
+   "cases": [
+    {
+     "closes": true,
+     "label": "all springs healthy",
+     "margin": 3.2,
+     "net_closed_Nm": 1.6,
+     "net_open_Nm": 2.7
+    },
+    {
+     "closes": true,
+     "label": "without 'a'",
+     "margin": 3.0,
+     "net_closed_Nm": 1.5,
+     "net_open_Nm": 2.5
+    },
+    {
+     "closes": false,
+     "label": "without 'b'",
+     "margin": -0.8,
+     "net_closed_Nm": -0.4,
+     "net_open_Nm": -0.3
+    }
+   ],
+   "findings": [
+    {
+     "check": "throttle-return-redundancy",
+     "detail": {
+      "estimate": true,
+      "net_closed": -0.4,
+      "net_open": -0.3,
+      "resistance_Nm": 0.5,
+      "worst_case": "without 'b'"
+     },
+     "message": "Throttle does NOT return to closed with one spring failed: without 'b' gives net closing torque -0.40 N·m (<= 0 means it hangs open) against 0.50 N·m of resistance (using an ESTIMATED spring rate — measure or datasheet k to confirm). This is the rule the pedal-box must pass. Increase the other spring's preload/rate, or reduce friction/cable drag, until every single-failure case closes with margin.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes",
+      "powertrain"
+     ]
+    }
+   ],
+   "is_estimate": true,
+   "margin_target": 1.0,
+   "n_springs": 2,
+   "notes": [
+    "At least one spring rate is an estimate. Back out k on the bench with k_from_deflection() (hang a known load, measure travel) or from geometry with k_compression_spring(), then re-run."
+   ],
+   "verdict": "FAIL",
+   "worst_case": "without 'b'",
+   "worst_margin": -0.8
+  },
+  [
+   {
+    "check": "throttle-return-redundancy",
+    "detail": {
+     "estimate": true,
+     "net_closed": -0.4,
+     "net_open": -0.3,
+     "resistance_Nm": 0.5,
+     "worst_case": "without 'b'"
+    },
+    "message": "Throttle does NOT return to closed with one spring failed: without 'b' gives net closing torque -0.40 N·m (<= 0 means it hangs open) against 0.50 N·m of resistance (using an ESTIMATED spring rate — measure or datasheet k to confirm). This is the rule the pedal-box must pass. Increase the other spring's preload/rate, or reduce friction/cable drag, until every single-failure case closes with margin.",
+    "severity": "fail",
+    "subsystems": [
+     "brakes",
+     "powertrain"
+    ]
+   }
+  ],
+  "THROTTLE RETURN-SPRING REDUNDANCY — FAIL\n  springs: 2   margin target: 1.00   [ESTIMATED k]\n  governing single-failure case: without 'b' (margin -0.80)\n  cases (net CLOSING torque, N·m; negative = hangs open):\n    - all springs healthy          closed=   1.60  open=   2.70  [closes]\n    - without 'a'                  closed=   1.50  open=   2.50  [closes]\n    - without 'b'                  closed=  -0.40  open=  -0.30  [HANGS OPEN]\n  [FAIL] Throttle does NOT return to closed with one spring failed: without 'b' gives net closing torque -0.40 N·m (<= 0 means it hangs open) against 0.50 N·m of resistance (using an ESTIMATED spring rate — measure or datasheet k to confirm). This is the rule the pedal-box must pass. Increase the other spring's preload/rate, or reduce friction/cable drag, until every single-failure case closes with margin.\n  note: At least one spring rate is an estimate. Back out k on the bench with k_from_deflection() (hang a known load, measure travel) or from geometry with k_compression_spring(), then re-run."
+ ],
+ "red_few": [
+  {
+   "cases": [],
+   "findings": [
+    {
+     "check": "throttle-return-redundancy",
+     "detail": {
+      "n_springs": 1,
+      "rule": "two independent return springs"
+     },
+     "message": "Throttle has 1 return spring(s). FSAE requires AT LEAST TWO, arranged so the throttle still returns to closed if any one fails. Sensors (TPS/APPS) do not count. Add a second, independent return spring.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes",
+      "powertrain"
+     ]
+    }
+   ],
+   "is_estimate": true,
+   "margin_target": 1.0,
+   "n_springs": 1,
+   "notes": [
+    "need >= 2 return springs"
+   ],
+   "verdict": "FAIL",
+   "worst_case": "(insufficient springs)",
+   "worst_margin": 0.0
+  },
+  [
+   {
+    "check": "throttle-return-redundancy",
+    "detail": {
+     "n_springs": 1,
+     "rule": "two independent return springs"
+    },
+    "message": "Throttle has 1 return spring(s). FSAE requires AT LEAST TWO, arranged so the throttle still returns to closed if any one fails. Sensors (TPS/APPS) do not count. Add a second, independent return spring.",
+    "severity": "fail",
+    "subsystems": [
+     "brakes",
+     "powertrain"
+    ]
+   }
+  ],
+  "THROTTLE RETURN-SPRING REDUNDANCY — FAIL\n  springs: 1   margin target: 1.00   [ESTIMATED k]\n  governing single-failure case: (insufficient springs) (margin 0.00)\n  cases (net CLOSING torque, N·m; negative = hangs open):\n  [FAIL] Throttle has 1 return spring(s). FSAE requires AT LEAST TWO, arranged so the throttle still returns to closed if any one fails. Sensors (TPS/APPS) do not count. Add a second, independent return spring.\n  note: need >= 2 return springs"
+ ],
+ "red_tight": [
+  {
+   "cases": [
+    {
+     "closes": true,
+     "label": "all springs healthy",
+     "margin": 3.0,
+     "net_closed_Nm": 1.5,
+     "net_open_Nm": 5.5
+    },
+    {
+     "closes": true,
+     "label": "without 'a'",
+     "margin": 1.0,
+     "net_closed_Nm": 0.5,
+     "net_open_Nm": 2.5
+    },
+    {
+     "closes": true,
+     "label": "without 'b'",
+     "margin": 1.0,
+     "net_closed_Nm": 0.5,
+     "net_open_Nm": 2.5
+    }
+   ],
+   "findings": [
+    {
+     "check": "throttle-return-redundancy",
+     "detail": {
+      "estimate": false,
+      "margin_target": 1.0,
+      "resistance_Nm": 0.5,
+      "worst_case": "without 'a'",
+      "worst_margin": 1.0
+     },
+     "message": "Throttle is single-fault tolerant but TIGHT: worst single-failure case (without 'a') closes with margin 1.00 over resistance, just over the 1.00 floor. It returns, but there's little buffer for in-car stiction the bench test won't show — worth more preload or less drag.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes",
+      "powertrain"
+     ]
+    }
+   ],
+   "is_estimate": false,
+   "margin_target": 1.0,
+   "n_springs": 2,
+   "notes": [],
+   "verdict": "TIGHT",
+   "worst_case": "without 'a'",
+   "worst_margin": 1.0
+  },
+  [
+   {
+    "check": "throttle-return-redundancy",
+    "detail": {
+     "estimate": false,
+     "margin_target": 1.0,
+     "resistance_Nm": 0.5,
+     "worst_case": "without 'a'",
+     "worst_margin": 1.0
+    },
+    "message": "Throttle is single-fault tolerant but TIGHT: worst single-failure case (without 'a') closes with margin 1.00 over resistance, just over the 1.00 floor. It returns, but there's little buffer for in-car stiction the bench test won't show — worth more preload or less drag.",
+    "severity": "warning",
+    "subsystems": [
+     "brakes",
+     "powertrain"
+    ]
+   }
+  ],
+  "THROTTLE RETURN-SPRING REDUNDANCY — TIGHT\n  springs: 2   margin target: 1.00   [measured/datasheet k]\n  governing single-failure case: without 'a' (margin 1.00)\n  cases (net CLOSING torque, N·m; negative = hangs open):\n    - all springs healthy          closed=   1.50  open=   5.50  [closes]\n    - without 'a'                  closed=   0.50  open=   2.50  [closes]\n    - without 'b'                  closed=   0.50  open=   2.50  [closes]\n  [WARNING] Throttle is single-fault tolerant but TIGHT: worst single-failure case (without 'a') closes with margin 1.00 over resistance, just over the 1.00 floor. It returns, but there's little buffer for in-car stiction the bench test won't show — worth more preload or less drag."
+ ],
+ "red_under": [
+  {
+   "cases": [
+    {
+     "closes": true,
+     "label": "all springs healthy",
+     "margin": 2.7,
+     "net_closed_Nm": 1.35,
+     "net_open_Nm": 5.5
+    },
+    {
+     "closes": true,
+     "label": "without 'a'",
+     "margin": 0.8999999999999999,
+     "net_closed_Nm": 0.44999999999999996,
+     "net_open_Nm": 2.5
+    },
+    {
+     "closes": true,
+     "label": "without 'b'",
+     "margin": 0.8,
+     "net_closed_Nm": 0.4,
+     "net_open_Nm": 2.5
+    }
+   ],
+   "findings": [
+    {
+     "check": "throttle-return-redundancy",
+     "detail": {
+      "estimate": true,
+      "margin_target": 1.0,
+      "resistance_Nm": 0.5,
+      "worst_case": "without 'b'",
+      "worst_margin": 0.8
+     },
+     "message": "Throttle returns with one spring failed but with too little authority: worst single-failure margin 0.80 over resistance is below the 1.00 target (without 'b') (using an ESTIMATED spring rate — measure or datasheet k to confirm). A sticky pivot or a cold, draggy cable could hang it. Add preload/rate or cut resistance.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes",
+      "powertrain"
+     ]
+    }
+   ],
+   "is_estimate": true,
+   "margin_target": 1.0,
+   "n_springs": 2,
+   "notes": [
+    "At least one spring rate is an estimate. Back out k on the bench with k_from_deflection() (hang a known load, measure travel) or from geometry with k_compression_spring(), then re-run."
+   ],
+   "verdict": "FAIL",
+   "worst_case": "without 'b'",
+   "worst_margin": 0.8
+  },
+  [
+   {
+    "check": "throttle-return-redundancy",
+    "detail": {
+     "estimate": true,
+     "margin_target": 1.0,
+     "resistance_Nm": 0.5,
+     "worst_case": "without 'b'",
+     "worst_margin": 0.8
+    },
+    "message": "Throttle returns with one spring failed but with too little authority: worst single-failure margin 0.80 over resistance is below the 1.00 target (without 'b') (using an ESTIMATED spring rate — measure or datasheet k to confirm). A sticky pivot or a cold, draggy cable could hang it. Add preload/rate or cut resistance.",
+    "severity": "fail",
+    "subsystems": [
+     "brakes",
+     "powertrain"
+    ]
+   }
+  ],
+  "THROTTLE RETURN-SPRING REDUNDANCY — FAIL\n  springs: 2   margin target: 1.00   [ESTIMATED k]\n  governing single-failure case: without 'b' (margin 0.80)\n  cases (net CLOSING torque, N·m; negative = hangs open):\n    - all springs healthy          closed=   1.35  open=   5.50  [closes]\n    - without 'a'                  closed=   0.45  open=   2.50  [closes]\n    - without 'b'                  closed=   0.40  open=   2.50  [closes]\n  [FAIL] Throttle returns with one spring failed but with too little authority: worst single-failure margin 0.80 over resistance is below the 1.00 target (without 'b') (using an ESTIMATED spring rate — measure or datasheet k to confirm). A sticky pivot or a cold, draggy cable could hang it. Add preload/rate or cut resistance.\n  note: At least one spring rate is an estimate. Back out k on the bench with k_from_deflection() (hang a known load, measure travel) or from geometry with k_compression_spring(), then re-run."
+ ],
+ "red_zero_r": [
+  {
+   "cases": [
+    {
+     "closes": true,
+     "label": "all springs healthy",
+     "margin": "inf",
+     "net_closed_Nm": 2.0,
+     "net_open_Nm": 4.0
+    },
+    {
+     "closes": true,
+     "label": "without 'a'",
+     "margin": "inf",
+     "net_closed_Nm": 1.0,
+     "net_open_Nm": 2.0
+    },
+    {
+     "closes": true,
+     "label": "without 'b'",
+     "margin": "inf",
+     "net_closed_Nm": 1.0,
+     "net_open_Nm": 2.0
+    }
+   ],
+   "findings": [
+    {
+     "check": "throttle-return-redundancy",
+     "detail": {
+      "estimate": false,
+      "margin_target": 1.0,
+      "resistance_Nm": 0.0,
+      "worst_case": "without 'a'",
+      "worst_margin": "inf"
+     },
+     "message": "Throttle is single-fault tolerant: with any one of 2 springs removed it still makes net closing torque across full travel, worst-case margin inf over 0.00 N·m resistance (without 'a'). Meets the two-independent-return-spring rule.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes",
+      "powertrain"
+     ]
+    },
+    {
+     "check": "throttle-return-resistance-coverage",
+     "detail": {
+      "demoted_from_pass": true,
+      "resistance_Nm": 0.0
+     },
+     "message": "Return checked against ZERO resistance — friction, cable/rod drag and sensor detent were all left at 0. A return that closes only against zero drag is the throttle version of a pedal screened in bending alone; it will hang on real in-car stiction. Result demoted from PASS to TIGHT because a zero-resistance screen must not read as a validated return. Measure the pivot/cable drag (worst-case, cold) and re-run before you trust this.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes",
+      "powertrain"
+     ]
+    }
+   ],
+   "is_estimate": false,
+   "margin_target": 1.0,
+   "n_springs": 2,
+   "notes": [
+    "Resistance was zero — this is an OPTIMISTIC check. Put real friction/stiction and cable-drag numbers in ReturnResistance; a return that only just closes against zero drag will hang in the car."
+   ],
+   "verdict": "TIGHT",
+   "worst_case": "without 'a'",
+   "worst_margin": "inf"
+  },
+  [
+   {
+    "check": "throttle-return-redundancy",
+    "detail": {
+     "estimate": false,
+     "margin_target": 1.0,
+     "resistance_Nm": 0.0,
+     "worst_case": "without 'a'",
+     "worst_margin": "inf"
+    },
+    "message": "Throttle is single-fault tolerant: with any one of 2 springs removed it still makes net closing torque across full travel, worst-case margin inf over 0.00 N·m resistance (without 'a'). Meets the two-independent-return-spring rule.",
+    "severity": "ok",
+    "subsystems": [
+     "brakes",
+     "powertrain"
+    ]
+   },
+   {
+    "check": "throttle-return-resistance-coverage",
+    "detail": {
+     "demoted_from_pass": true,
+     "resistance_Nm": 0.0
+    },
+    "message": "Return checked against ZERO resistance — friction, cable/rod drag and sensor detent were all left at 0. A return that closes only against zero drag is the throttle version of a pedal screened in bending alone; it will hang on real in-car stiction. Result demoted from PASS to TIGHT because a zero-resistance screen must not read as a validated return. Measure the pivot/cable drag (worst-case, cold) and re-run before you trust this.",
+    "severity": "warning",
+    "subsystems": [
+     "brakes",
+     "powertrain"
+    ]
+   }
+  ],
+  "THROTTLE RETURN-SPRING REDUNDANCY — TIGHT\n  springs: 2   margin target: 1.00   [measured/datasheet k]\n  governing single-failure case: without 'a' (margin inf)\n  cases (net CLOSING torque, N·m; negative = hangs open):\n    - all springs healthy          closed=   2.00  open=   4.00  [closes]\n    - without 'a'                  closed=   1.00  open=   2.00  [closes]\n    - without 'b'                  closed=   1.00  open=   2.00  [closes]\n  [OK] Throttle is single-fault tolerant: with any one of 2 springs removed it still makes net closing torque across full travel, worst-case margin inf over 0.00 N·m resistance (without 'a'). Meets the two-independent-return-spring rule.\n  [WARNING] Return checked against ZERO resistance — friction, cable/rod drag and sensor detent were all left at 0. A return that closes only against zero drag is the throttle version of a pedal screened in bending alone; it will hang on real in-car stiction. Result demoted from PASS to TIGHT because a zero-resistance screen must not read as a validated return. Measure the pivot/cable drag (worst-case, cold) and re-run before you trust this.\n  note: Resistance was zero — this is an OPTIMISTIC check. Put real friction/stiction and cable-drag numbers in ReturnResistance; a return that only just closes against zero drag will hang in the car."
+ ],
+ "red_zero_r_est": [
+  {
+   "cases": [
+    {
+     "closes": true,
+     "label": "all springs healthy",
+     "margin": "inf",
+     "net_closed_Nm": 2.0,
+     "net_open_Nm": 4.0
+    },
+    {
+     "closes": true,
+     "label": "without 'a'",
+     "margin": "inf",
+     "net_closed_Nm": 1.0,
+     "net_open_Nm": 2.0
+    },
+    {
+     "closes": true,
+     "label": "without 'b'",
+     "margin": "inf",
+     "net_closed_Nm": 1.0,
+     "net_open_Nm": 2.0
+    }
+   ],
+   "findings": [
+    {
+     "check": "throttle-return-redundancy",
+     "detail": {
+      "estimate": true,
+      "margin_target": 1.0,
+      "resistance_Nm": 0.0,
+      "worst_case": "without 'a'",
+      "worst_margin": "inf"
+     },
+     "message": "Throttle is single-fault tolerant: with any one of 2 springs removed it still makes net closing torque across full travel, worst-case margin inf over 0.00 N·m resistance (without 'a') (using an ESTIMATED spring rate — measure or datasheet k to confirm). Meets the two-independent-return-spring rule.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes",
+      "powertrain"
+     ]
+    },
+    {
+     "check": "throttle-return-resistance-coverage",
+     "detail": {
+      "demoted_from_pass": true,
+      "resistance_Nm": 0.0
+     },
+     "message": "Return checked against ZERO resistance — friction, cable/rod drag and sensor detent were all left at 0. A return that closes only against zero drag is the throttle version of a pedal screened in bending alone; it will hang on real in-car stiction. Result demoted from PASS to TIGHT because a zero-resistance screen must not read as a validated return. Measure the pivot/cable drag (worst-case, cold) and re-run before you trust this.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes",
+      "powertrain"
+     ]
+    }
+   ],
+   "is_estimate": true,
+   "margin_target": 1.0,
+   "n_springs": 2,
+   "notes": [
+    "Resistance was zero — this is an OPTIMISTIC check. Put real friction/stiction and cable-drag numbers in ReturnResistance; a return that only just closes against zero drag will hang in the car.",
+    "At least one spring rate is an estimate. Back out k on the bench with k_from_deflection() (hang a known load, measure travel) or from geometry with k_compression_spring(), then re-run."
+   ],
+   "verdict": "TIGHT",
+   "worst_case": "without 'a'",
+   "worst_margin": "inf"
+  },
+  [
+   {
+    "check": "throttle-return-redundancy",
+    "detail": {
+     "estimate": true,
+     "margin_target": 1.0,
+     "resistance_Nm": 0.0,
+     "worst_case": "without 'a'",
+     "worst_margin": "inf"
+    },
+    "message": "Throttle is single-fault tolerant: with any one of 2 springs removed it still makes net closing torque across full travel, worst-case margin inf over 0.00 N·m resistance (without 'a') (using an ESTIMATED spring rate — measure or datasheet k to confirm). Meets the two-independent-return-spring rule.",
+    "severity": "ok",
+    "subsystems": [
+     "brakes",
+     "powertrain"
+    ]
+   },
+   {
+    "check": "throttle-return-resistance-coverage",
+    "detail": {
+     "demoted_from_pass": true,
+     "resistance_Nm": 0.0
+    },
+    "message": "Return checked against ZERO resistance — friction, cable/rod drag and sensor detent were all left at 0. A return that closes only against zero drag is the throttle version of a pedal screened in bending alone; it will hang on real in-car stiction. Result demoted from PASS to TIGHT because a zero-resistance screen must not read as a validated return. Measure the pivot/cable drag (worst-case, cold) and re-run before you trust this.",
+    "severity": "warning",
+    "subsystems": [
+     "brakes",
+     "powertrain"
+    ]
+   }
+  ],
+  "THROTTLE RETURN-SPRING REDUNDANCY — TIGHT\n  springs: 2   margin target: 1.00   [ESTIMATED k]\n  governing single-failure case: without 'a' (margin inf)\n  cases (net CLOSING torque, N·m; negative = hangs open):\n    - all springs healthy          closed=   2.00  open=   4.00  [closes]\n    - without 'a'                  closed=   1.00  open=   2.00  [closes]\n    - without 'b'                  closed=   1.00  open=   2.00  [closes]\n  [OK] Throttle is single-fault tolerant: with any one of 2 springs removed it still makes net closing torque across full travel, worst-case margin inf over 0.00 N·m resistance (without 'a') (using an ESTIMATED spring rate — measure or datasheet k to confirm). Meets the two-independent-return-spring rule.\n  [WARNING] Return checked against ZERO resistance — friction, cable/rod drag and sensor detent were all left at 0. A return that closes only against zero drag is the throttle version of a pedal screened in bending alone; it will hang on real in-car stiction. Result demoted from PASS to TIGHT because a zero-resistance screen must not read as a validated return. Measure the pivot/cable drag (worst-case, cold) and re-run before you trust this.\n  note: Resistance was zero — this is an OPTIMISTIC check. Put real friction/stiction and cable-drag numbers in ReturnResistance; a return that only just closes against zero drag will hang in the car.\n  note: At least one spring rate is an estimate. Back out k on the bench with k_from_deflection() (hang a known load, measure travel) or from geometry with k_compression_spring(), then re-run."
+ ],
+ "red_zero_r_fail": [
+  {
+   "cases": [
+    {
+     "closes": true,
+     "label": "all springs healthy",
+     "margin": "inf",
+     "net_closed_Nm": 1.0,
+     "net_open_Nm": 2.5
+    },
+    {
+     "closes": true,
+     "label": "without 'a'",
+     "margin": "inf",
+     "net_closed_Nm": 1.0,
+     "net_open_Nm": 2.0
+    },
+    {
+     "closes": false,
+     "label": "without 'b'",
+     "margin": "inf",
+     "net_closed_Nm": 0.0,
+     "net_open_Nm": 0.5
+    }
+   ],
+   "findings": [
+    {
+     "check": "throttle-return-redundancy",
+     "detail": {
+      "estimate": false,
+      "net_closed": 0.0,
+      "net_open": 0.5,
+      "resistance_Nm": 0.0,
+      "worst_case": "without 'b'"
+     },
+     "message": "Throttle does NOT return to closed with one spring failed: without 'b' gives net closing torque 0.00 N·m (<= 0 means it hangs open) against 0.00 N·m of resistance. This is the rule the pedal-box must pass. Increase the other spring's preload/rate, or reduce friction/cable drag, until every single-failure case closes with margin.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes",
+      "powertrain"
+     ]
+    },
+    {
+     "check": "throttle-return-resistance-coverage",
+     "detail": {
+      "demoted_from_pass": false,
+      "resistance_Nm": 0.0
+     },
+     "message": "Return checked against ZERO resistance — friction, cable/rod drag and sensor detent were all left at 0. A return that closes only against zero drag is the throttle version of a pedal screened in bending alone; it will hang on real in-car stiction. Measure the pivot/cable drag (worst-case, cold) and re-run before you trust this.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes",
+      "powertrain"
+     ]
+    }
+   ],
+   "is_estimate": false,
+   "margin_target": 1.0,
+   "n_springs": 2,
+   "notes": [
+    "Resistance was zero — this is an OPTIMISTIC check. Put real friction/stiction and cable-drag numbers in ReturnResistance; a return that only just closes against zero drag will hang in the car."
+   ],
+   "verdict": "FAIL",
+   "worst_case": "without 'a'",
+   "worst_margin": "inf"
+  },
+  [
+   {
+    "check": "throttle-return-redundancy",
+    "detail": {
+     "estimate": false,
+     "net_closed": 0.0,
+     "net_open": 0.5,
+     "resistance_Nm": 0.0,
+     "worst_case": "without 'b'"
+    },
+    "message": "Throttle does NOT return to closed with one spring failed: without 'b' gives net closing torque 0.00 N·m (<= 0 means it hangs open) against 0.00 N·m of resistance. This is the rule the pedal-box must pass. Increase the other spring's preload/rate, or reduce friction/cable drag, until every single-failure case closes with margin.",
+    "severity": "fail",
+    "subsystems": [
+     "brakes",
+     "powertrain"
+    ]
+   },
+   {
+    "check": "throttle-return-resistance-coverage",
+    "detail": {
+     "demoted_from_pass": false,
+     "resistance_Nm": 0.0
+    },
+    "message": "Return checked against ZERO resistance — friction, cable/rod drag and sensor detent were all left at 0. A return that closes only against zero drag is the throttle version of a pedal screened in bending alone; it will hang on real in-car stiction. Measure the pivot/cable drag (worst-case, cold) and re-run before you trust this.",
+    "severity": "warning",
+    "subsystems": [
+     "brakes",
+     "powertrain"
+    ]
+   }
+  ],
+  "THROTTLE RETURN-SPRING REDUNDANCY — FAIL\n  springs: 2   margin target: 1.00   [measured/datasheet k]\n  governing single-failure case: without 'a' (margin inf)\n  cases (net CLOSING torque, N·m; negative = hangs open):\n    - all springs healthy          closed=   1.00  open=   2.50  [closes]\n    - without 'a'                  closed=   1.00  open=   2.00  [closes]\n    - without 'b'                  closed=   0.00  open=   0.50  [HANGS OPEN]\n  [FAIL] Throttle does NOT return to closed with one spring failed: without 'b' gives net closing torque 0.00 N·m (<= 0 means it hangs open) against 0.00 N·m of resistance. This is the rule the pedal-box must pass. Increase the other spring's preload/rate, or reduce friction/cable drag, until every single-failure case closes with margin.\n  [WARNING] Return checked against ZERO resistance — friction, cable/rod drag and sensor detent were all left at 0. A return that closes only against zero drag is the throttle version of a pedal screened in bending alone; it will hang on real in-car stiction. Measure the pivot/cable drag (worst-case, cold) and re-run before you trust this.\n  note: Resistance was zero — this is an OPTIMISTIC check. Put real friction/stiction and cable-drag numbers in ReturnResistance; a return that only just closes against zero drag will hang in the car."
+ ],
+ "single": {
+  "all springs healthy": {
+   "findings": [
+    {
+     "check": "throttle-snap",
+     "detail": {
+      "estimate": true,
+      "peak_speed_rad_s": 62.341170631146326,
+      "return_time_s": 0.035000000000000024
+     },
+     "message": "Throttle returns to closed in 35 ms (ESTIMATED inertia/rate — confirm with measured values). Peak return speed 62.3 rad/s.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes",
+      "powertrain"
+     ]
+    }
+   ],
+   "hung_at_deg": 0.0,
+   "is_estimate": true,
+   "n_trace": 36,
+   "peak_speed_rad_s": 62.341170631146326,
+   "return_time_s": 0.035000000000000024,
+   "returns": true,
+   "theta_open_deg": 70.0
+  },
+  "without 'a'": {
+   "findings": [
+    {
+     "check": "throttle-snap",
+     "detail": {
+      "estimate": true,
+      "peak_speed_rad_s": 45.48626225721824,
+      "return_time_s": 0.048000000000000036
+     },
+     "message": "Throttle returns to closed in 48 ms (ESTIMATED inertia/rate — confirm with measured values). Peak return speed 45.5 rad/s.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes",
+      "powertrain"
+     ]
+    }
+   ],
+   "hung_at_deg": 0.0,
+   "is_estimate": true,
+   "n_trace": 49,
+   "peak_speed_rad_s": 45.48626225721824,
+   "return_time_s": 0.048000000000000036,
+   "returns": true,
+   "theta_open_deg": 70.0
+  },
+  "without 'b'": {
+   "findings": [
+    {
+     "check": "throttle-snap",
+     "detail": {
+      "estimate": true,
+      "peak_speed_rad_s": 49.49291439017075,
+      "return_time_s": 0.04400000000000003
+     },
+     "message": "Throttle returns to closed in 44 ms (ESTIMATED inertia/rate — confirm with measured values). Peak return speed 49.5 rad/s.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes",
+      "powertrain"
+     ]
+    }
+   ],
+   "hung_at_deg": 0.0,
+   "is_estimate": true,
+   "n_trace": 45,
+   "peak_speed_rad_s": 49.49291439017075,
+   "return_time_s": 0.04400000000000003,
+   "returns": true,
+   "theta_open_deg": 70.0
+  },
+  "without 'c'": {
+   "findings": [
+    {
+     "check": "throttle-snap",
+     "detail": {
+      "estimate": true,
+      "peak_speed_rad_s": 55.69764433206494,
+      "return_time_s": 0.04000000000000003
+     },
+     "message": "Throttle returns to closed in 40 ms (ESTIMATED inertia/rate — confirm with measured values). Peak return speed 55.7 rad/s.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes",
+      "powertrain"
+     ]
+    }
+   ],
+   "hung_at_deg": 0.0,
+   "is_estimate": true,
+   "n_trace": 41,
+   "peak_speed_rad_s": 55.69764433206494,
+   "return_time_s": 0.04000000000000003,
+   "returns": true,
+   "theta_open_deg": 70.0
+  }
+ },
+ "single_default": {
+  "all springs healthy": [
+   {
+    "findings": [
+     {
+      "check": "throttle-snap",
+      "detail": {
+       "estimate": true,
+       "peak_speed_rad_s": 71.14140414966069,
+       "return_time_s": 0.04000000000000002
+      },
+      "message": "Throttle returns to closed in 40 ms (ESTIMATED inertia/rate — confirm with measured values). Peak return speed 71.1 rad/s.",
+      "severity": "ok",
+      "subsystems": [
+       "brakes",
+       "powertrain"
+      ]
+     }
+    ],
+    "hung_at_deg": 0.0,
+    "is_estimate": true,
+    "n_trace": 21,
+    "peak_speed_rad_s": 71.14140414966069,
+    "return_time_s": 0.04000000000000002,
+    "returns": true,
+    "theta_open_deg": 90.0
+   },
+   [
+    0.04000000000000002,
+    0.0,
+    -71.14140414966069
+   ]
+  ],
+  "without 'a'": [
+   {
+    "findings": [
+     {
+      "check": "throttle-snap",
+      "detail": {
+       "estimate": true,
+       "peak_speed_rad_s": 47.168183962914206,
+       "return_time_s": 0.06000000000000004
+      },
+      "message": "Throttle returns to closed in 60 ms (ESTIMATED inertia/rate — confirm with measured values). Peak return speed 47.2 rad/s.",
+      "severity": "ok",
+      "subsystems": [
+       "brakes",
+       "powertrain"
+      ]
+     }
+    ],
+    "hung_at_deg": 0.0,
+    "is_estimate": true,
+    "n_trace": 31,
+    "peak_speed_rad_s": 47.168183962914206,
+    "return_time_s": 0.06000000000000004,
+    "returns": true,
+    "theta_open_deg": 90.0
+   },
+   [
+    0.06000000000000004,
+    0.0,
+    -47.168183962914206
+   ]
+  ],
+  "without 'b'": [
+   {
+    "findings": [
+     {
+      "check": "throttle-snap",
+      "detail": {
+       "estimate": true,
+       "peak_speed_rad_s": 53.42591468821601,
+       "return_time_s": 0.054000000000000034
+      },
+      "message": "Throttle returns to closed in 54 ms (ESTIMATED inertia/rate — confirm with measured values). Peak return speed 53.4 rad/s.",
+      "severity": "ok",
+      "subsystems": [
+       "brakes",
+       "powertrain"
+      ]
+     }
+    ],
+    "hung_at_deg": 0.0,
+    "is_estimate": true,
+    "n_trace": 28,
+    "peak_speed_rad_s": 53.42591468821601,
+    "return_time_s": 0.054000000000000034,
+    "returns": true,
+    "theta_open_deg": 90.0
+   },
+   [
+    0.054000000000000034,
+    0.0,
+    -53.42591468821601
+   ]
+  ]
+ },
+ "snap_aero_hold": [
+  {
+   "findings": [
+    {
+     "check": "throttle-snap",
+     "detail": {
+      "T_aero_open": 2.700346192119914e-16,
+      "T_resist": 0.6,
+      "estimate": true,
+      "net_start": 0.5999999999999998
+     },
+     "message": "Throttle HANGS at wide-open: spring closing torque 0.600 N·m can't overcome static friction+drag 0.600 N·m (aero is holding it open with 0.000 N·m at 60 m/s), so it never starts to return. Time-domain single-fault failure — increase preload/rate, cut friction/drag/backlash, or reduce aero hold.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes",
+      "powertrain"
+     ]
+    }
+   ],
+   "hung_at_deg": 60.0,
+   "is_estimate": true,
+   "n_trace": 1,
+   "peak_speed_rad_s": 0.0,
+   "return_time_s": "inf",
+   "returns": false,
+   "theta_open_deg": 60.0
+  },
+  [
+   {
+    "check": "throttle-snap",
+    "detail": {
+     "T_aero_open": 2.700346192119914e-16,
+     "T_resist": 0.6,
+     "estimate": true,
+     "net_start": 0.5999999999999998
+    },
+    "message": "Throttle HANGS at wide-open: spring closing torque 0.600 N·m can't overcome static friction+drag 0.600 N·m (aero is holding it open with 0.000 N·m at 60 m/s), so it never starts to return. Time-domain single-fault failure — increase preload/rate, cut friction/drag/backlash, or reduce aero hold.",
+    "severity": "fail",
+    "subsystems": [
+     "brakes",
+     "powertrain"
+    ]
+   }
+  ],
+  [
+   [
+    0.0,
+    60.0,
+    0.0
+   ]
+  ],
+  [
+   [
+    0.0,
+    60.0,
+    0.0
+   ]
+  ]
+ ],
+ "snap_aero_mid": [
+  {
+   "findings": [
+    {
+     "check": "throttle-snap",
+     "detail": {
+      "estimate": true,
+      "hung_at_deg": 82.70254653280074,
+      "t_max_s": 0.5
+     },
+     "message": "Throttle does NOT fully return within 500 ms — still at 82.7° (friction/drag too high for the spring). Time-domain single-fault failure: add preload/rate or reduce friction.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes",
+      "powertrain"
+     ]
+    }
+   ],
+   "hung_at_deg": 82.70254653280074,
+   "is_estimate": true,
+   "n_trace": 501,
+   "peak_speed_rad_s": 9.037693627094676,
+   "return_time_s": "inf",
+   "returns": false,
+   "theta_open_deg": 90.0
+  },
+  [
+   {
+    "check": "throttle-snap",
+    "detail": {
+     "estimate": true,
+     "hung_at_deg": 82.70254653280074,
+     "t_max_s": 0.5
+    },
+    "message": "Throttle does NOT fully return within 500 ms — still at 82.7° (friction/drag too high for the spring). Time-domain single-fault failure: add preload/rate or reduce friction.",
+    "severity": "fail",
+    "subsystems": [
+     "brakes",
+     "powertrain"
+    ]
+   }
+  ],
+  [
+   [
+    0.0,
+    90.0,
+    0.0
+   ],
+   [
+    0.025000000000000015,
+    81.12117120166911,
+    -8.772467871738046
+   ],
+   [
+    0.05000000000000004,
+    76.18299115487575,
+    3.3317485125270463
+   ],
+   [
+    0.07500000000000005,
+    85.76650119917662,
+    6.3165789603077815
+   ],
+   [
+    0.10000000000000007,
+    86.2341335190533,
+    -5.318034523209281
+   ],
+   [
+    0.12500000000000008,
+    77.95363385415384,
+    -2.9725783023057257
+   ],
+   [
+    0.1500000000000001,
+    80.82678787226614,
+    5.501513737779834
+   ],
+   [
+    0.17500000000000013,
+    86.4912131868473,
+    0.12234343012431803
+   ],
+   [
+    0.20000000000000015,
+    82.0858325241155,
+    -4.474685444169548
+   ],
+   [
+    0.22500000000000017,
+    79.45474946085113,
+    1.4393857846938252
+   ],
+   [
+    0.25000000000000017,
+    83.64420003304235,
+    2.760690992115441
+   ],
+   [
+    0.2750000000000002,
+    84.04672884858203,
+    -1.8244178334731938
+   ],
+   [
+    0.3000000000000002,
+    81.18144726865792,
+    -1.034619047949236
+   ],
+   [
+    0.32500000000000023,
+    81.75803939817487,
+    1.2070940130279866
+   ],
+   [
+    0.35000000000000026,
+    82.96773670673664,
+    0.013638349120600246
+   ],
+   [
+    0.3750000000000003,
+    82.82286428763955,
+    -0.11874891422296985
+   ],
+   [
+    0.4000000000000003,
+    82.7546396752261,
+    -0.003347292156850038
+   ],
+   [
+    0.4250000000000003,
+    82.73739484334091,
+    -0.0016914748689535533
+   ],
+   [
+    0.45000000000000034,
+    82.72112016267847,
+    -0.016293154751970792
+   ],
+   [
+    0.47500000000000037,
+    82.70661122333519,
+    -0.009993449482344341
+   ],
+   [
+    0.5000000000000003,
+    82.70254653280074,
+    -0.010721166531303594
+   ]
+  ],
+  [
+   [
+    0.4980000000000004,
+    82.70275983595606,
+    -0.008803597174331466
+   ],
+   [
+    0.4990000000000004,
+    82.70268072476833,
+    -0.007290050440747636
+   ],
+   [
+    0.5000000000000003,
+    82.70254653280074,
+    -0.010721166531303594
+   ]
+  ]
+ ],
+ "snap_clean": [
+  {
+   "findings": [
+    {
+     "check": "throttle-snap",
+     "detail": {
+      "estimate": false,
+      "peak_speed_rad_s": 84.06482171339465,
+      "return_time_s": 0.03300000000000002
+     },
+     "message": "Throttle returns to closed in 33 ms. Peak return speed 84.1 rad/s.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes",
+      "powertrain"
+     ]
+    }
+   ],
+   "hung_at_deg": 0.0,
+   "is_estimate": false,
+   "n_trace": 67,
+   "peak_speed_rad_s": 84.06482171339465,
+   "return_time_s": 0.03300000000000002,
+   "returns": true,
+   "theta_open_deg": 90.0
+  },
+  [
+   {
+    "check": "throttle-snap",
+    "detail": {
+     "estimate": false,
+     "peak_speed_rad_s": 84.06482171339465,
+     "return_time_s": 0.03300000000000002
+    },
+    "message": "Throttle returns to closed in 33 ms. Peak return speed 84.1 rad/s.",
+    "severity": "ok",
+    "subsystems": [
+     "brakes",
+     "powertrain"
+    ]
+   }
+  ],
+  [
+   [
+    0.0,
+    90.0,
+    0.0
+   ],
+   [
+    0.012500000000000008,
+    75.48680372877499,
+    -39.81206041526768
+   ],
+   [
+    0.02500000000000002,
+    34.961321585428955,
+    -71.35593548115236
+   ]
+  ],
+  [
+   [
+    0.03200000000000002,
+    3.8650150597063746,
+    -82.85308133299169
+   ],
+   [
+    0.03250000000000002,
+    1.4825142670835685,
+    -83.4721640577881
+   ],
+   [
+    0.03300000000000002,
+    0.0,
+    -84.06482171339465
+   ]
+  ]
+ ],
+ "snap_hung": [
+  {
+   "findings": [
+    {
+     "check": "throttle-snap",
+     "detail": {
+      "T_aero_open": 0.0,
+      "T_resist": 0.2,
+      "estimate": true,
+      "net_start": 0.2
+     },
+     "message": "Throttle HANGS at wide-open: spring closing torque 0.200 N·m can't overcome static friction+drag 0.200 N·m, so it never starts to return. Time-domain single-fault failure — increase preload/rate, cut friction/drag/backlash, or reduce aero hold.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes",
+      "powertrain"
+     ]
+    }
+   ],
+   "hung_at_deg": 80.0,
+   "is_estimate": true,
+   "n_trace": 1,
+   "peak_speed_rad_s": 0.0,
+   "return_time_s": "inf",
+   "returns": false,
+   "theta_open_deg": 80.0
+  },
+  [
+   {
+    "check": "throttle-snap",
+    "detail": {
+     "T_aero_open": 0.0,
+     "T_resist": 0.2,
+     "estimate": true,
+     "net_start": 0.2
+    },
+    "message": "Throttle HANGS at wide-open: spring closing torque 0.200 N·m can't overcome static friction+drag 0.200 N·m, so it never starts to return. Time-domain single-fault failure — increase preload/rate, cut friction/drag/backlash, or reduce aero hold.",
+    "severity": "fail",
+    "subsystems": [
+     "brakes",
+     "powertrain"
+    ]
+   }
+  ],
+  [
+   [
+    0.0,
+    80.0,
+    0.0
+   ]
+  ],
+  [
+   [
+    0.0,
+    80.0,
+    0.0
+   ]
+  ]
+ ],
+ "snap_lash": [
+  {
+   "findings": [
+    {
+     "check": "throttle-snap",
+     "detail": {
+      "T_aero_open": 0.0,
+      "T_resist": 0.19,
+      "estimate": true,
+      "net_start": 0.18
+     },
+     "message": "Throttle HANGS at wide-open: spring torque through the cable backlash 0.180 N·m can't overcome static friction+drag 0.190 N·m, so it never starts to return. Time-domain single-fault failure — increase preload/rate, cut friction/drag/backlash, or reduce aero hold.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes",
+      "powertrain"
+     ]
+    },
+    {
+     "check": "throttle-snap-aero",
+     "detail": {
+      "aero_torque_coeff": 0.0,
+      "intake_speed_ms": 20.0
+     },
+     "message": "Aero load on the plate was requested at 20 m/s but no torque coefficient was supplied, so it was modelled as ZERO — the return-time here ignores intake aero. The aero torque on a throttle plate needs a flow-bench or CFD coefficient; KinematiK won't invent one. Measure it (or get it from CFD) and set aero_torque_coeff to include the effect.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes",
+      "powertrain"
+     ]
+    }
+   ],
+   "hung_at_deg": 90.0,
+   "is_estimate": true,
+   "n_trace": 1,
+   "peak_speed_rad_s": 0.0,
+   "return_time_s": "inf",
+   "returns": false,
+   "theta_open_deg": 90.0
+  },
+  [
+   {
+    "check": "throttle-snap",
+    "detail": {
+     "T_aero_open": 0.0,
+     "T_resist": 0.19,
+     "estimate": true,
+     "net_start": 0.18
+    },
+    "message": "Throttle HANGS at wide-open: spring torque through the cable backlash 0.180 N·m can't overcome static friction+drag 0.190 N·m, so it never starts to return. Time-domain single-fault failure — increase preload/rate, cut friction/drag/backlash, or reduce aero hold.",
+    "severity": "fail",
+    "subsystems": [
+     "brakes",
+     "powertrain"
+    ]
+   },
+   {
+    "check": "throttle-snap-aero",
+    "detail": {
+     "aero_torque_coeff": 0.0,
+     "intake_speed_ms": 20.0
+    },
+    "message": "Aero load on the plate was requested at 20 m/s but no torque coefficient was supplied, so it was modelled as ZERO — the return-time here ignores intake aero. The aero torque on a throttle plate needs a flow-bench or CFD coefficient; KinematiK won't invent one. Measure it (or get it from CFD) and set aero_torque_coeff to include the effect.",
+    "severity": "warning",
+    "subsystems": [
+     "brakes",
+     "powertrain"
+    ]
+   }
+  ],
+  [
+   [
+    0.0,
+    90.0,
+    0.0
+   ]
+  ],
+  [
+   [
+    0.0,
+    90.0,
+    0.0
+   ]
+  ]
+ ],
+ "snap_rich": [
+  {
+   "findings": [
+    {
+     "check": "throttle-snap",
+     "detail": {
+      "estimate": true,
+      "peak_speed_rad_s": 74.83130896495467,
+      "return_time_s": 0.04200000000000003
+     },
+     "message": "Throttle returns to closed in 42 ms (ESTIMATED inertia/rate — confirm with measured values). Peak return speed 74.8 rad/s.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes",
+      "powertrain"
+     ]
+    }
+   ],
+   "hung_at_deg": 0.0,
+   "is_estimate": true,
+   "n_trace": 43,
+   "peak_speed_rad_s": 74.83130896495467,
+   "return_time_s": 0.04200000000000003,
+   "returns": true,
+   "theta_open_deg": 90.0
+  },
+  [
+   {
+    "check": "throttle-snap",
+    "detail": {
+     "estimate": true,
+     "peak_speed_rad_s": 74.83130896495467,
+     "return_time_s": 0.04200000000000003
+    },
+    "message": "Throttle returns to closed in 42 ms (ESTIMATED inertia/rate — confirm with measured values). Peak return speed 74.8 rad/s.",
+    "severity": "ok",
+    "subsystems": [
+     "brakes",
+     "powertrain"
+    ]
+   }
+  ],
+  [
+   [
+    0.0,
+    90.0,
+    0.0
+   ],
+   [
+    0.025000000000000015,
+    57.45237913208871,
+    -46.06778971656388
+   ]
+  ],
+  [
+   [
+    0.04000000000000003,
+    6.126107269989941,
+    -72.16702907811697
+   ],
+   [
+    0.04100000000000003,
+    1.9517345263167345,
+    -73.53352485175421
+   ],
+   [
+    0.04200000000000003,
+    0.0,
+    -74.83130896495467
+   ]
+  ]
+ ],
+ "snap_slow": [
+  {
+   "findings": [
+    {
+     "check": "throttle-snap",
+     "detail": {
+      "estimate": true,
+      "peak_speed_rad_s": 3.395138923014865,
+      "return_time_s": 0.8150000000000006
+     },
+     "message": "Throttle returns to closed in 815 ms (ESTIMATED inertia/rate — confirm with measured values). Peak return speed 3.4 rad/s.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes",
+      "powertrain"
+     ]
+    }
+   ],
+   "hung_at_deg": 0.0,
+   "is_estimate": true,
+   "n_trace": 816,
+   "peak_speed_rad_s": 3.395138923014865,
+   "return_time_s": 0.8150000000000006,
+   "returns": true,
+   "theta_open_deg": 90.0
+  },
+  [
+   {
+    "check": "throttle-snap",
+    "detail": {
+     "estimate": true,
+     "peak_speed_rad_s": 3.395138923014865,
+     "return_time_s": 0.8150000000000006
+    },
+    "message": "Throttle returns to closed in 815 ms (ESTIMATED inertia/rate — confirm with measured values). Peak return speed 3.4 rad/s.",
+    "severity": "ok",
+    "subsystems": [
+     "brakes",
+     "powertrain"
+    ]
+   }
+  ],
+  [
+   [
+    0.0,
+    90.0,
+    0.0
+   ],
+   [
+    0.025000000000000015,
+    89.90451758796821,
+    -0.1333038621501551
+   ],
+   [
+    0.05000000000000004,
+    89.61819697535917,
+    -0.2664309441018207
+   ],
+   [
+    0.07500000000000005,
+    89.14141786471042,
+    -0.3992047000926149
+   ],
+   [
+    0.10000000000000007,
+    88.47481253407042,
+    -0.5314490529214748
+   ],
+   [
+    0.12500000000000008,
+    87.61926499850647,
+    -0.6629886274524889
+   ],
+   [
+    0.1500000000000001,
+    86.57590983777276,
+    -0.7936489831876862
+   ],
+   [
+    0.17500000000000013,
+    85.34613069169363,
+    -0.9232568456003654
+   ],
+   [
+    0.20000000000000015,
+    83.9315584252571,
+    -1.0516403359221727
+   ],
+   [
+    0.22500000000000017,
+    82.33406896585186,
+    -1.178629199079206
+   ],
+   [
+    0.25000000000000017,
+    80.55578081551663,
+    -1.304055029474862
+   ],
+   [
+    0.2750000000000002,
+    78.59905224149965,
+    -1.4277514943200134
+   ],
+   [
+    0.3000000000000002,
+    76.4664781488557,
+    -1.5495545542143363
+   ],
+   [
+    0.32500000000000023,
+    74.16088663922643,
+    -1.6693026806862814
+   ],
+   [
+    0.35000000000000026,
+    71.68533526036883,
+    -1.786837070403185
+   ],
+   [
+    0.3750000000000003,
+    69.04310695140454,
+    -1.9020018557674523
+   ],
+   [
+    0.4000000000000003,
+    66.23770568916801,
+    -2.0146443116195307
+   ],
+   [
+    0.4250000000000003,
+    63.27285184142639,
+    -2.12461505777356
+   ],
+   [
+    0.45000000000000034,
+    60.15247723313388,
+    -2.2317682571171007
+   ],
+   [
+    0.47500000000000037,
+    56.880719932263354,
+    -2.3359618090122325
+   ],
+   [
+    0.5000000000000003,
+    53.4619187621296,
+    -2.4370575377415507
+   ],
+   [
+    0.5250000000000004,
+    49.90060754748237,
+    -2.5349213757491507
+   ],
+   [
+    0.5500000000000004,
+    46.20150910199907,
+    -2.6294235414335914
+   ],
+   [
+    0.5750000000000004,
+    42.36952896515076,
+    -2.7204387112570725
+   ],
+   [
+    0.6000000000000004,
+    38.40974889674748,
+    -2.8078461859425623
+   ],
+   [
+    0.6250000000000004,
+    34.327420137789886,
+    -2.8915300505384964
+   ],
+   [
+    0.6500000000000005,
+    30.12795644656426,
+    -2.971379328138769
+   ],
+   [
+    0.6750000000000005,
+    25.81692691921613,
+    -3.047288127054151
+   ],
+   [
+    0.7000000000000005,
+    21.400048604323416,
+    -3.119155781239994
+   ],
+   [
+    0.7250000000000005,
+    16.88317892126331,
+    -3.1868869837939533
+   ],
+   [
+    0.7500000000000006,
+    12.272307892427072,
+    -3.2503919133467276
+   ],
+   [
+    0.7750000000000006,
+    7.573550199584169,
+    -3.309586353178186
+   ],
+   [
+    0.8000000000000006,
+    2.793137074929948,
+    -3.3643918029009097
+   ]
+  ],
+  [
+   [
+    0.8130000000000006,
+    0.2771524620327871,
+    -3.39113174582666
+   ],
+   [
+    0.8140000000000006,
+    0.0827974041055609,
+    -3.3931384119197783
+   ],
+   [
+    0.8150000000000006,
+    0.0,
+    -3.395138923014865
+   ]
+  ]
+ ],
+ "snap_slow_measured": [
+  {
+   "findings": [
+    {
+     "check": "throttle-snap",
+     "detail": {
+      "estimate": false,
+      "peak_speed_rad_s": 3.395138923014865,
+      "return_time_s": 0.8150000000000006
+     },
+     "message": "Throttle returns to closed in 815 ms. Peak return speed 3.4 rad/s.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes",
+      "powertrain"
+     ]
+    }
+   ],
+   "hung_at_deg": 0.0,
+   "is_estimate": false,
+   "n_trace": 816,
+   "peak_speed_rad_s": 3.395138923014865,
+   "return_time_s": 0.8150000000000006,
+   "returns": true,
+   "theta_open_deg": 90.0
+  },
+  [
+   {
+    "check": "throttle-snap",
+    "detail": {
+     "estimate": false,
+     "peak_speed_rad_s": 3.395138923014865,
+     "return_time_s": 0.8150000000000006
+    },
+    "message": "Throttle returns to closed in 815 ms. Peak return speed 3.4 rad/s.",
+    "severity": "ok",
+    "subsystems": [
+     "brakes",
+     "powertrain"
+    ]
+   }
+  ],
+  [
+   [
+    0.0,
+    90.0,
+    0.0
+   ],
+   [
+    0.025000000000000015,
+    89.90451758796821,
+    -0.1333038621501551
+   ],
+   [
+    0.05000000000000004,
+    89.61819697535917,
+    -0.2664309441018207
+   ],
+   [
+    0.07500000000000005,
+    89.14141786471042,
+    -0.3992047000926149
+   ],
+   [
+    0.10000000000000007,
+    88.47481253407042,
+    -0.5314490529214748
+   ],
+   [
+    0.12500000000000008,
+    87.61926499850647,
+    -0.6629886274524889
+   ],
+   [
+    0.1500000000000001,
+    86.57590983777276,
+    -0.7936489831876862
+   ],
+   [
+    0.17500000000000013,
+    85.34613069169363,
+    -0.9232568456003654
+   ],
+   [
+    0.20000000000000015,
+    83.9315584252571,
+    -1.0516403359221727
+   ],
+   [
+    0.22500000000000017,
+    82.33406896585186,
+    -1.178629199079206
+   ],
+   [
+    0.25000000000000017,
+    80.55578081551663,
+    -1.304055029474862
+   ],
+   [
+    0.2750000000000002,
+    78.59905224149965,
+    -1.4277514943200134
+   ],
+   [
+    0.3000000000000002,
+    76.4664781488557,
+    -1.5495545542143363
+   ],
+   [
+    0.32500000000000023,
+    74.16088663922643,
+    -1.6693026806862814
+   ],
+   [
+    0.35000000000000026,
+    71.68533526036883,
+    -1.786837070403185
+   ],
+   [
+    0.3750000000000003,
+    69.04310695140454,
+    -1.9020018557674523
+   ],
+   [
+    0.4000000000000003,
+    66.23770568916801,
+    -2.0146443116195307
+   ],
+   [
+    0.4250000000000003,
+    63.27285184142639,
+    -2.12461505777356
+   ],
+   [
+    0.45000000000000034,
+    60.15247723313388,
+    -2.2317682571171007
+   ],
+   [
+    0.47500000000000037,
+    56.880719932263354,
+    -2.3359618090122325
+   ],
+   [
+    0.5000000000000003,
+    53.4619187621296,
+    -2.4370575377415507
+   ],
+   [
+    0.5250000000000004,
+    49.90060754748237,
+    -2.5349213757491507
+   ],
+   [
+    0.5500000000000004,
+    46.20150910199907,
+    -2.6294235414335914
+   ],
+   [
+    0.5750000000000004,
+    42.36952896515076,
+    -2.7204387112570725
+   ],
+   [
+    0.6000000000000004,
+    38.40974889674748,
+    -2.8078461859425623
+   ],
+   [
+    0.6250000000000004,
+    34.327420137789886,
+    -2.8915300505384964
+   ],
+   [
+    0.6500000000000005,
+    30.12795644656426,
+    -2.971379328138769
+   ],
+   [
+    0.6750000000000005,
+    25.81692691921613,
+    -3.047288127054151
+   ],
+   [
+    0.7000000000000005,
+    21.400048604323416,
+    -3.119155781239994
+   ],
+   [
+    0.7250000000000005,
+    16.88317892126331,
+    -3.1868869837939533
+   ],
+   [
+    0.7500000000000006,
+    12.272307892427072,
+    -3.2503919133467276
+   ],
+   [
+    0.7750000000000006,
+    7.573550199584169,
+    -3.309586353178186
+   ],
+   [
+    0.8000000000000006,
+    2.793137074929948,
+    -3.3643918029009097
+   ]
+  ],
+  [
+   [
+    0.8130000000000006,
+    0.2771524620327871,
+    -3.39113174582666
+   ],
+   [
+    0.8140000000000006,
+    0.0827974041055609,
+    -3.3931384119197783
+   ],
+   [
+    0.8150000000000006,
+    0.0,
+    -3.395138923014865
+   ]
+  ]
+ ],
+ "snap_stall": [
+  {
+   "findings": [
+    {
+     "check": "throttle-snap",
+     "detail": {
+      "estimate": true,
+      "hung_at_deg": 4.071232419536791,
+      "t_max_s": 2.0
+     },
+     "message": "Throttle does NOT fully return within 2000 ms — stalled at 4.1° (friction/drag too high for the spring). Time-domain single-fault failure: add preload/rate or reduce friction.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes",
+      "powertrain"
+     ]
+    }
+   ],
+   "hung_at_deg": 4.071232419536791,
+   "is_estimate": true,
+   "n_trace": 1295,
+   "peak_speed_rad_s": 16.710176104930184,
+   "return_time_s": "inf",
+   "returns": false,
+   "theta_open_deg": 90.0
+  },
+  [
+   {
+    "check": "throttle-snap",
+    "detail": {
+     "estimate": true,
+     "hung_at_deg": 4.071232419536791,
+     "t_max_s": 2.0
+    },
+    "message": "Throttle does NOT fully return within 2000 ms — stalled at 4.1° (friction/drag too high for the spring). Time-domain single-fault failure: add preload/rate or reduce friction.",
+    "severity": "fail",
+    "subsystems": [
+     "brakes",
+     "powertrain"
+    ]
+   }
+  ],
+  [
+   [
+    0.0,
+    90.0,
+    0.0
+   ],
+   [
+    0.025000000000000015,
+    83.04921707052094,
+    -9.413764498386417
+   ],
+   [
+    0.05000000000000004,
+    64.61253745133281,
+    -15.55587731789682
+   ],
+   [
+    0.07500000000000005,
+    41.09742904064807,
+    -16.291713812306593
+   ],
+   [
+    0.10000000000000007,
+    20.676312543554562,
+    -11.365541994805293
+   ],
+   [
+    0.12500000000000008,
+    10.446325355961688,
+    -2.4893994142794122
+   ],
+   [
+    0.1500000000000001,
+    9.897030090140168,
+    -0.2884433089978151
+   ],
+   [
+    0.17500000000000013,
+    9.79598364593083,
+    -0.04839017427471495
+   ],
+   [
+    0.20000000000000015,
+    9.739638021533752,
+    -0.32516992461332994
+   ],
+   [
+    0.22500000000000017,
+    9.61641853735959,
+    -0.04169352487391645
+   ],
+   [
+    0.25000000000000017,
+    9.469729005405275,
+    -0.13259833005618177
+   ],
+   [
+    0.2750000000000002,
+    9.360484307966127,
+    -0.1840803250608855
+   ],
+   [
+    0.3000000000000002,
+    9.223713095901692,
+    -0.20113536969526585
+   ],
+   [
+    0.32500000000000023,
+    9.064801596002305,
+    -0.18280931669788336
+   ],
+   [
+    0.35000000000000026,
+    8.912606087151321,
+    -0.12843890070585862
+   ],
+   [
+    0.3750000000000003,
+    8.801563646196186,
+    -0.17954091311849152
+   ],
+   [
+    0.4000000000000003,
+    8.654536478229465,
+    -0.060143754716610875
+   ],
+   [
+    0.4250000000000003,
+    8.518491956321942,
+    -0.3081082799027147
+   ],
+   [
+    0.45000000000000034,
+    8.39523529355031,
+    -0.12295974438040488
+   ],
+   [
+    0.47500000000000037,
+    8.26192662416528,
+    -0.3057611942784495
+   ],
+   [
+    0.5000000000000003,
+    8.120248935051476,
+    -0.053901174679120395
+   ],
+   [
+    0.5250000000000004,
+    7.986409385324637,
+    -0.16747694656253564
+   ],
+   [
+    0.5500000000000004,
+    7.852061496279728,
+    -0.24674634940531476
+   ],
+   [
+    0.5750000000000004,
+    7.69754305727538,
+    -0.29055977786706777
+   ],
+   [
+    0.6000000000000004,
+    7.5638063536873785,
+    -0.29870960060887597
+   ],
+   [
+    0.6250000000000004,
+    7.430936440957749,
+    -0.27339726048281177
+   ],
+   [
+    0.6500000000000005,
+    7.300751033147548,
+    -0.21460574102313765
+   ],
+   [
+    0.6750000000000005,
+    7.175438884671744,
+    -0.1231781612579535
+   ],
+   [
+    0.7000000000000005,
+    7.064858839529389,
+    -0.0024302232299288906
+   ],
+   [
+    0.7250000000000005,
+    6.930010145818377,
+    -0.25219011538817926
+   ],
+   [
+    0.7500000000000006,
+    6.804784167284653,
+    -0.0695625328484365
+   ],
+   [
+    0.7750000000000006,
+    6.67717185121261,
+    -0.25505943356514493
+   ],
+   [
+    0.8000000000000006,
+    6.547562698293005,
+    -0.008250864630195476
+   ],
+   [
+    0.8250000000000006,
+    6.416882498016703,
+    -0.12884030743197625
+   ],
+   [
+    0.8500000000000006,
+    6.296528890178789,
+    -0.21815925358067442
+   ],
+   [
+    0.8750000000000007,
+    6.175921601892153,
+    -0.021329833154923428
+   ],
+   [
+    0.9000000000000007,
+    6.0360035803261,
+    -0.04809879659250102
+   ],
+   [
+    0.9250000000000007,
+    5.884303182722032,
+    -0.03728724607496006
+   ],
+   [
+    0.9500000000000007,
+    5.773542235773889,
+    0.007347381357024785
+   ],
+   [
+    0.9750000000000008,
+    5.644374425823797,
+    -0.31816928109858633
+   ],
+   [
+    1.0000000000000007,
+    5.518139641998498,
+    -0.21266885073813388
+   ],
+   [
+    1.024999999999998,
+    5.394372783093717,
+    -0.07537783016239885
+   ],
+   [
+    1.0499999999999952,
+    5.281605444693623,
+    -0.3092010979573221
+   ],
+   [
+    1.0749999999999924,
+    5.1531441865336225,
+    -0.11306471551115263
+   ],
+   [
+    1.0999999999999897,
+    5.0299282030183905,
+    -0.2858586120247453
+   ],
+   [
+    1.124999999999987,
+    4.910276403688792,
+    -0.028131391184212984
+   ],
+   [
+    1.1499999999999841,
+    4.781117888931462,
+    -0.13892956777177012
+   ],
+   [
+    1.1749999999999814,
+    4.65382674567107,
+    -0.2173994733819983
+   ],
+   [
+    1.1999999999999786,
+    4.530005426457892,
+    -0.01562240613661775
+   ],
+   [
+    1.2249999999999759,
+    4.416647738914068,
+    -0.03366506062046548
+   ],
+   [
+    1.2499999999999731,
+    4.28721466055351,
+    -0.02166532359868334
+   ],
+   [
+    1.2749999999999704,
+    4.163716480873732,
+    0.02263434374293502
+   ]
+  ],
+  [
+   [
+    1.2919999999999685,
+    4.086665453616157,
+    0.02141798475915946
+   ],
+   [
+    1.2929999999999684,
+    4.078128399606604,
+    -0.11944135351006932
+   ],
+   [
+    1.2939999999999683,
+    4.072981430767593,
+    -0.2601749780902742
+   ]
+  ]
+ ],
+ "snap_tiny_open": [
+  {
+   "findings": [
+    {
+     "check": "throttle-snap",
+     "detail": {
+      "estimate": true,
+      "peak_speed_rad_s": 0.30233008197100375,
+      "return_time_s": 0.0002
+     },
+     "message": "Throttle returns to closed in 0 ms (ESTIMATED inertia/rate — confirm with measured values). Peak return speed 0.3 rad/s.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes",
+      "powertrain"
+     ]
+    }
+   ],
+   "hung_at_deg": 0.0,
+   "is_estimate": true,
+   "n_trace": 3,
+   "peak_speed_rad_s": 0.30233008197100375,
+   "return_time_s": 0.0002,
+   "returns": true,
+   "theta_open_deg": 0.0
+  },
+  [
+   {
+    "check": "throttle-snap",
+    "detail": {
+     "estimate": true,
+     "peak_speed_rad_s": 0.30233008197100375,
+     "return_time_s": 0.0002
+    },
+    "message": "Throttle returns to closed in 0 ms (ESTIMATED inertia/rate — confirm with measured values). Peak return speed 0.3 rad/s.",
+    "severity": "ok",
+    "subsystems": [
+     "brakes",
+     "powertrain"
+    ]
+   }
+  ],
+  [
+   [
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
+  [
+   [
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0001,
+    0.00037676381721443275,
+    -0.20176760295344076
+   ],
+   [
+    0.0002,
+    0.0,
+    -0.30233008197100375
+   ]
+  ]
+ ],
+ "torsion": {
+  "is_estimate": false,
+  "name": "tor",
+  "torque_closed_Nm": 0.6,
+  "torque_open_Nm": 1.8
+ }
+}

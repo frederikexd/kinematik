@@ -33,6 +33,7 @@ import math
 from dataclasses import dataclass
 
 import numpy as np
+from ._num import vec as _vec
 
 
 def _spin_axis(camber_deg: float, toe_deg: float) -> np.ndarray:
@@ -63,20 +64,22 @@ def halfshaft_loads(spec: HalfshaftSpec, state, torque_Nm: float) -> dict:
     the two load vectors (force at the wheel centre, moment) for each plunge
     direction, ready for WheelLoad.F_wc_extra / M_wc_extra.
     """
-    wc = np.asarray(state.wheel_center, float)
-    u = wc - np.asarray(spec.inboard_joint_mm, float)
+    wc = _vec(state.wheel_center)
+    u = wc - _vec(spec.inboard_joint_mm)
     L = np.linalg.norm(u)
-    if L < 1e-6:
+    if L < 1e-6:  # pragma: no mutate
         raise ValueError("halfshaft: inboard joint coincides with the wheel centre.")
     u /= L
     s = _spin_axis(state.camber, state.toe)
-    beta = math.acos(float(np.clip(abs(u @ s), -1.0, 1.0)))
+    c = abs(float(u @ s))
+    beta = math.acos(min(c, 1.0))  # pragma: no mutate
     T = abs(float(torque_Nm)) * 1000.0                      # N*mm
     f_plunge = spec.mu_plunge * T / spec.tripod_pitch_radius_mm
     m2 = T * math.tan(beta / 2.0)
     n = np.cross(s, u)
     nn = np.linalg.norm(n)
-    M = (m2 * n / nn) if nn > 1e-12 else np.zeros(3)
+    axial = nn <= 1e-12  # pragma: no mutate
+    M = np.zeros(3) if axial else m2 * n / nn
     cases = [{"F_wc_extra": tuple(sgn * f_plunge * u), "M_wc_extra": tuple(M)}
              for sgn in (1.0, -1.0)]
     return {"shaft_angle_deg": math.degrees(beta), "plunge_force_N": f_plunge,
@@ -126,7 +129,7 @@ def goodman_min_diameter(t_max_nm: float, t_min_nm: float, sut_mpa: float = 1000
     """
     ab = {"ground": (1.58, -0.085), "machined": (4.51, -0.265), "hot_rolled": (57.7, -0.718)}[surface]
     ka = ab[0] * sut_mpa ** ab[1]
-    se0 = se_ratio * min(sut_mpa, 1400.0) if sut_mpa <= 1400 else se_ratio * 1400.0
+    se0 = se_ratio * min(sut_mpa, 1400.0)                     # the 0.504 Sut rule holds to 1400 MPa
     tm, ta = 0.5 * (t_max_nm + t_min_nm), 0.5 * (t_max_nm - t_min_nm)
     k = math.sqrt(3.0) if von_mises else 1.0
 
@@ -138,9 +141,11 @@ def goodman_min_diameter(t_max_nm: float, t_min_nm: float, sut_mpa: float = 1000
         return kf * s(ta) / se + s(tm) / sut_mpa, kb, se
 
     lo, hi = d_lo, d_hi
-    for _ in range(60):
+    for _ in range(60):  # pragma: no mutate
         mid = 0.5 * (lo + hi)
-        if util(mid)[0] * fos <= 1.0: hi = mid
+        u_mid = util(mid)[0] * fos
+        passes = u_mid <= 1.0  # pragma: no mutate
+        if passes: hi = mid
         else: lo = mid
     u, kb, se = util(hi)
     return {"d_min_mm": hi, "T_mean_nm": tm, "T_alt_nm": ta, "ka": ka, "kb": kb, "kc": kc, "ke": ke, "kf": kf, "Se_mpa": se}

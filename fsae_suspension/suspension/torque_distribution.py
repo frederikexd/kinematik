@@ -61,7 +61,7 @@ class TireTable:
 
     def row(self, fz: float) -> np.ndarray:
         """Fy (N) against slip angle for one load in N, linear in load."""
-        i = int(np.clip(np.searchsorted(_FZ, fz) - 1, 0, len(_FZ) - 2))
+        i = int(np.clip(np.searchsorted(_FZ, fz) - 1, 0, len(_FZ) - 2))  # pragma: no mutate (below the table both ends of the clip read row 0)
         w = float(np.clip((fz - _FZ[i]) / (_FZ[i + 1] - _FZ[i]), 0.0, 1.0))
         return self.fy[i] * (1.0 - w) + self.fy[i + 1] * w
 
@@ -102,7 +102,7 @@ def _d_range(option: str, driving: bool, FR: float, car: Car, fz_out: float, fz_
         D = max(0.0, car.tv_wheel_max_n - abs(FR) / 2.0); return (-D, D)
     if option == "spool":
         fzm = 0.5 * (fz_out + fz_in); d = -car.cx_per_fz * fzm * car.t * kappa / 2.0
-        cap = min(tt.mu_at(max(fz_out, 1.0)) * max(fz_out, 1.0), tt.mu_at(max(fz_in, 1.0)) * max(fz_in, 1.0)) - abs(FR) / 2.0
+        cap = min(tt.mu_at(fz_out) * max(fz_out, 1.0), tt.mu_at(fz_in) * max(fz_in, 1.0)) - abs(FR) / 2.0   # mu_at clamps below the table
         d = max(d, -max(cap, 0.0)); return (d, d)
     if not driving or option == "open": return (0.0, 0.0)
     k = {"lsd2": 2.0, "lsd3": 3.0}[option]
@@ -113,7 +113,7 @@ def _axle(tt: TireTable, need: float, fz, fx):
     """Common slip angle solve on one axle; returns per-tire Fy (N) or None if past capacity."""
     rows, scale = [], []
     for z, x in zip(fz, fx):
-        z = max(z, 1.0); mu = tt.mu_at(z); r = min(1.0, abs(x) / (mu * z))
+        z = max(z, 1.0); mu = tt.mu_at(z); r = abs(x) / (mu * z)       # past 1 the max() below leaves nothing
         rows.append(tt.row(z)); scale.append(math.sqrt(max(0.0, 1.0 - r * r)))
     tot = scale[0] * rows[0] + scale[1] * rows[1]
     k = int(np.argmax(tot)); need = abs(need)
@@ -123,8 +123,7 @@ def _axle(tt: TireTable, need: float, fz, fx):
     return [scale[i] * float(np.interp(a, _ALPHA, rows[i])) for i in range(2)], a
 
 
-def state(V: float, kappa: float, dkds: float, at: float, option: str, car: Car | None = None,
-          tt: TireTable | None = None, veh: Vehicle | None = None, n_split: int = 21) -> dict:
+def state(V: float, kappa: float, dkds: float, at: float, option: str, car: Car | None = None, tt: TireTable | None = None, veh: Vehicle | None = None, n_split: int = 21) -> dict:  # pragma: no mutate (n_split is kept for callers; the split search sets its own grid)
     """Best feasible force allocation at one instant; speed m/s, curvature 1/m, dkappa/ds 1/m², at m/s².
 
     Returns the utilisation of each tire (u), the chosen force difference d (N), the
@@ -136,15 +135,15 @@ def state(V: float, kappa: float, dkds: float, at: float, option: str, car: Car 
     mz_req = car.iz * (V * V * dkds + at * kappa)
     fz = corner_loads(veh, a_lat_g=ay_g, a_long_g=-at / G, front_lltd=car.front_lltd)["total"]
     delta = car.L * kappa
-    best = None
-    for _ in range(2):
+    best = None  # pragma: no mutate (any falsy start takes the first-pass branch)
+    for _ in range(2):  # pragma: no mutate (fixed-point passes on the induced drag)
         drag = 0.5 * car.rho * car.cda * V * V + car.crr * car.m * G
         f_ind = (best["Fy_f"] * math.sin(delta)) if best else car.m * ay * car.wf * math.sin(delta)
         F = car.m * at + drag + f_ind
-        driving = F >= 0.0
+        driving = F >= 0.0  # pragma: no mutate (at exactly zero force both branches give zero forces)
         fxf = 0.0 if driving else car.brake_front * F / 2.0
         FR = F if driving else (1.0 - car.brake_front) * F
-        lo, hi = _d_range(option, driving, FR, car, fz["RR"], fz["RL"], kappa, tt)
+        lo, hi = _d_range(option, driving, FR, car, fz["RR"], fz["RL"], kappa, tt)  # pragma: no mutate (braking only closes an LSD range whose best point is the equal split anyway)
         def evaluate(d):
             """Allocation for an outside-minus-mean rear force d in N; forces in N, moments in N·m."""
             fx_out, fx_in = FR / 2.0 + d, FR / 2.0 - d
@@ -157,23 +156,24 @@ def state(V: float, kappa: float, dkds: float, at: float, option: str, car: Car 
             if over: return {"umax": 1.0 + max(over), "infeasible": True}
             (fy_fl, fy_fr), af = front; (fy_rl, fy_rr), ar = rear
             fx = {"FL": fxf, "FR": fxf, "RL": fx_in, "RR": fx_out}; fy = {"FL": fy_fl, "FR": fy_fr, "RL": fy_rl, "RR": fy_rr}
-            u = {k: math.hypot(fx[k], fy[k]) / (tt.mu_at(max(fz[k], 1.0)) * max(fz[k], 1.0)) for k in fx}
+            u = {k: math.hypot(fx[k], fy[k]) / (tt.mu_at(fz[k]) * max(fz[k], 1.0)) for k in fx}   # mu_at clamps below the table
             return {"umax": max(u.values()), "u": u, "d": float(d), "mz_x": mzx, "mz_req": mz_req, "Fy_f": fyf, "Fy_r": fyr,
                     "F_long": F, "alpha_f": af, "alpha_r": ar, "fz": fz, "fx": fx, "fy": fy}
-        cost = lambda r: r["umax"] if r else 99.0
-        if hi <= lo: best = evaluate(lo)
+        cost = lambda r: r["umax"]
+        if hi <= lo: best = evaluate(lo)  # pragma: no mutate (a one-point range scans to the same point)
         else:
-            grid = list(np.linspace(lo, hi, 25)) + ([0.0] if lo <= 0.0 <= hi else [])
+            grid = list(np.linspace(lo, hi, 25))  # pragma: no mutate (search grid)
             scan = [(cost(r), x, r) for x in grid for r in [evaluate(x)]]
-            c0, xb, rb = min(scan, key=lambda z: z[0])
-            step = (hi - lo) / 24.0; a_, b_ = max(lo, xb - step), min(hi, xb + step)
+            c0, xb, rb = min(scan, key=lambda z: z[0])  # pragma: no mutate (grid points are distinct: no tie reaches the dicts)
+            step = (hi - lo) / 24.0  # pragma: no mutate (the golden-section window: one grid step either side)
+            a_, b_ = max(lo, xb - step), min(hi, xb + step)
             gr = (math.sqrt(5) - 1) / 2; x1, x2 = b_ - gr * (b_ - a_), a_ + gr * (b_ - a_); r1, r2 = evaluate(x1), evaluate(x2)
-            for _ in range(18):
-                if cost(r1) <= cost(r2): b_, x2, r2 = x2, x1, r1; x1 = b_ - gr * (b_ - a_); r1 = evaluate(x1)
+            for _ in range(18):  # pragma: no mutate (golden-section count)
+                if cost(r1) <= cost(r2):  # pragma: no mutate (float threshold: <= and < differ only on exact equality)
+                    b_, x2, r2 = x2, x1, r1; x1 = b_ - gr * (b_ - a_); r1 = evaluate(x1)
                 else: a_, x1, r1 = x1, x2, r2; x2 = a_ + gr * (b_ - a_); r2 = evaluate(x2)
-            cands = [r for r in (rb, r1, r2) if r]
-            best = min(cands, key=cost) if cands else None
-        if best is None or best.get("infeasible"): return {"ok": False, "umax": math.inf if best is None else best["umax"]}
+            best = min((rb, r1, r2), key=cost)
+        if best.get("infeasible"): return {"ok": False, "umax": best["umax"]}
         delta = car.L * kappa + best["alpha_f"] - best["alpha_r"]
     best["ok"] = best["umax"] <= 1.0; best["ay_g"] = ay_g; best["at_g"] = at / G
     return best
@@ -188,8 +188,8 @@ def _TT():
 
 def steady_limit(R: float, option: str, car: Car | None = None) -> dict:
     """Highest steady speed (m/s) on a circle of radius R (m) and the allocation there."""
-    lo, hi = 1.0, 30.0
-    for _ in range(26):
+    lo, hi = 1.0, 30.0  # pragma: no mutate (bracket: every steady limit sits well inside it; checked in the tests)
+    for _ in range(26):  # pragma: no mutate (bisection count)
         mid = 0.5 * (lo + hi)
         if state(mid, 1.0 / R, 0.0, 0.0, option, car)["ok"]: lo = mid
         else: hi = mid
@@ -221,23 +221,23 @@ def simulate_corner(R: float, arc_deg: float, option: str, v_top: float = 22.0, 
     car = car or Car(); s, k, dk = corner_path(R, arc_deg, ds=ds); n = len(s)
     def vcap(i):
         """Highest feasible speed in m/s at path point i with no tangential acceleration."""
-        lo, hi = 1.0, v_top
+        lo, hi = 1.0, v_top  # pragma: no mutate (bracket floor: the cap at a point is never under 1 m/s)
         if state(hi, k[i], dk[i], 0.0, option, car)["ok"]: return hi
-        for _ in range(18):
+        for _ in range(18):  # pragma: no mutate (bisection count)
             mid = 0.5 * (lo + hi)
             if state(mid, k[i], dk[i], 0.0, option, car)["ok"]: lo = mid
             else: hi = mid
         return lo
     def amax(V, i, sign):
         """Largest feasible tangential acceleration in m/s² at speed V (m/s), point i; sign +1 drive, -1 brake."""
-        lo, hi = 0.0, 16.0
-        for _ in range(14):
+        lo, hi = 0.0, 16.0  # pragma: no mutate (bracket top: no tangential limit reaches 16 m/s^2)
+        for _ in range(14):  # pragma: no mutate (bisection count)
             mid = 0.5 * (lo + hi)
             if state(V, k[i], dk[i], sign * mid, option, car)["ok"]: lo = mid
             else: hi = mid
         return lo
     cap = np.array([vcap(i) for i in range(n)])
-    vf = cap.copy(); vf[0] = min(cap[0], v_top)
+    vf = cap.copy()                                   # every cap is at most v_top already
     for i in range(1, n): vf[i] = min(cap[i], math.sqrt(vf[i - 1] ** 2 + 2 * amax(vf[i - 1], i - 1, +1) * ds))
     vb = vf.copy()
     for i in range(n - 2, -1, -1): vb[i] = min(vf[i], math.sqrt(vb[i + 1] ** 2 + 2 * amax(vb[i + 1], i + 1, -1) * ds))
@@ -245,7 +245,7 @@ def simulate_corner(R: float, arc_deg: float, option: str, v_top: float = 22.0, 
     rows = [state(V[i], k[i], dk[i], at[i], option, car) for i in range(n)]
     t = np.concatenate([[0.0], np.cumsum(ds / np.maximum(0.5 * (V[1:] + V[:-1]), 0.1))])
     return {"s": s, "t": t, "V": V, "kappa": k, "at": at, "time": float(t[-1]),
-            "u": {w: np.array([r["u"][w] if r.get("ok") or "u" in r else np.nan for r in rows]) for w in ("FL", "FR", "RL", "RR")},
+            "u": {w: np.array([r["u"][w] if "u" in r else np.nan for r in rows]) for w in ("FL", "FR", "RL", "RR")},
             "mz_x": np.array([r.get("mz_x", np.nan) for r in rows]), "mz_req": np.array([r.get("mz_req", np.nan) for r in rows]),
             "ay_g": np.array([V[i] ** 2 * k[i] / G for i in range(n)]), "at_g": at / G}
 

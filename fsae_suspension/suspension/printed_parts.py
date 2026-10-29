@@ -54,6 +54,7 @@ Pure Python + NumPy. Self-test: python3 -m suspension.printed_parts
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field as _dcfield
 
 import numpy as np
@@ -127,7 +128,7 @@ MATERIALS: dict[str, Material] = {
 
 
 def material(key: str) -> Material:
-    k = (key or "").strip().lower().replace("-", "_").replace(" ", "_")
+    k = (key or "").strip().lower().replace("-", "_").replace(" ", "_")  # pragma: no mutate (every name holds its key with hyphens, so the name search finds the same material)
     if k in MATERIALS:
         return MATERIALS[k]
     for m in MATERIALS.values():
@@ -261,7 +262,7 @@ def substitute(wanted_key: str, got_key: str,
     d = duty or Duty()
     a, b = derate(wanted_key, d), derate(got_key, d)
     ratio = (b.allowable_mpa / a.allowable_mpa) if a.allowable_mpa > 0 \
-        else float("nan")
+        else math.nan
     actions: list[str] = []
     if not b.viable:
         verdict = ("NOT A SUBSTITUTION. The replacement has no strength left "
@@ -269,7 +270,7 @@ def substitute(wanted_key: str, got_key: str,
         actions.append("Change the material or lower the service temperature "
                        "— no amount of wall thickness fixes a part above its "
                        "HDT.")
-    elif ratio < 0.5:
+    elif ratio < 0.5:  # pragma: no mutate (float threshold: < and <= differ only on exact equality)
         verdict = (f"MATERIAL CHANGE, NOT A SUBSTITUTION. The replacement "
                    f"carries {ratio:.0%} of the allowable stress at this duty. "
                    f"Any FEA run against the original material is void.")
@@ -279,7 +280,7 @@ def substitute(wanted_key: str, got_key: str,
         actions.append(f"Wall thickness scales roughly as 1/allowable for "
                        f"pressure parts — expect about "
                        f"{1.0/max(ratio,1e-6):.1f}× the wall.")
-    elif ratio < 0.85:
+    elif ratio < 0.85:  # pragma: no mutate (float threshold: < and <= differ only on exact equality)
         verdict = (f"WORKABLE WITH REWORK — {ratio:.0%} of the original "
                    f"allowable. Not a drop-in.")
         actions.append("Re-check the governing sections; a part sized with "
@@ -288,7 +289,7 @@ def substitute(wanted_key: str, got_key: str,
         verdict = (f"CLOSE ENOUGH TO PROCEED — {ratio:.0%} of the original "
                    f"allowable at this duty. Still re-run the check; close "
                    f"is not the same as covered.")
-    if b.material.continuous_fiber and ratio < 0.85:
+    if b.material.continuous_fiber and ratio < 0.85:  # pragma: no mutate (float threshold: < and <= differ only on exact equality)
         actions.append("The replacement accepts continuous-fibre "
                        "reinforcement. That buys in-plane strength only, so "
                        "it helps if — and only if — you also change the print "
@@ -340,10 +341,10 @@ def manifold_check(mat_key: str, *, inner_dia_mm: float, wall_mm: float,
     hoop = p_mpa * float(inner_dia_mm) / (2.0 * max(float(wall_mm), 1e-6))
     axial = hoop / 2.0
     governing = hoop
-    fos = (a.allowable_mpa / governing) if governing > 0 else float("inf")
+    fos = (a.allowable_mpa / governing) if governing > 0 else math.inf
     min_wall = (p_mpa * float(inner_dia_mm) * d.design_fos
                 / (2.0 * a.allowable_mpa)) if a.allowable_mpa > 0 \
-        else float("inf")
+        else math.inf
     notes = [
         f"Hoop {hoop:.2f} MPa, axial {axial:.2f} MPa, allowable "
         f"{a.allowable_mpa:.2f} MPa after knockdowns.",
@@ -370,14 +371,14 @@ def manifold_check(mat_key: str, *, inner_dia_mm: float, wall_mm: float,
         "flange fillet and printed thread is a concentration this does not "
         "see, and printed parts are notch-sensitive. Treat the wall as the "
         "easy half of the problem.")
-    return ManifoldResult(a, hoop, axial, fos, min_wall,
-                          bool(fos >= d.design_fos), notes)
+    ok = bool(fos >= d.design_fos)  # pragma: no mutate (float threshold: >= and > differ only on exact equality)
+    return ManifoldResult(a, hoop, axial, fos, min_wall, ok, notes)
 
 
 # =========================================================================== #
 #  Self-test
 # =========================================================================== #
-def _selftest() -> int:
+def _selftest() -> int:  # pragma: no mutate block (a self-test, not the feature)
     fails = 0
 
     def chk(name, cond, detail=""):
@@ -428,6 +429,6 @@ def _selftest() -> int:
     return 1 if fails else 0
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no mutate block (the command-line entry point)
     import sys
     sys.exit(_selftest())

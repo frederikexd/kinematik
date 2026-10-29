@@ -25,6 +25,7 @@ from __future__ import annotations
 import math
 
 import numpy as np
+from ._num import vec as _vec
 
 from .kinematics import Hardpoints, SuspensionKinematics
 
@@ -70,8 +71,8 @@ def camber_per_shim(hp: Hardpoints, shim_mm: float = 0.5, direction: str = "late
 
 def upper_arm_span_mm(hp: Hardpoints) -> float:
     """Lateral distance from the upper pivot axis midpoint to the upper ball joint."""
-    mid = 0.5 * (np.asarray(hp.upper_front_inner, float) + np.asarray(hp.upper_rear_inner, float))
-    return float(abs(np.asarray(hp.upper_outer, float)[1] - mid[1]))
+    mid = 0.5 * (_vec(hp.upper_front_inner) + _vec(hp.upper_rear_inner))
+    return float(abs(_vec(hp.upper_outer)[1] - mid[1]))
 
 
 def toe_arm_mm(hp: Hardpoints, dl_mm: float = 0.05) -> float:
@@ -80,9 +81,9 @@ def toe_arm_mm(hp: Hardpoints, dl_mm: float = 0.05) -> float:
     Lengthens the tie rod by ``dl_mm`` along its own axis (moving the inner
     joint) and solves the toe change: arm = dl / tan(d toe).
     """
-    ti, to = np.asarray(hp.tie_rod_inner, float), np.asarray(hp.tie_rod_outer, float)
+    ti, to = _vec(hp.tie_rod_inner), _vec(hp.tie_rod_outer)
     u = (ti - to) / np.linalg.norm(ti - to)
-    dt = _toe(hp, {"tie_rod_inner": u * dl_mm}) - _toe(hp)
+    dt = _toe(hp, {"tie_rod_inner": u * dl_mm})          # toe is reported against this corner's own static toe
     return dl_mm / math.tan(math.radians(abs(dt)))
 
 
@@ -99,7 +100,7 @@ def toe_thread_resolution(arm_mm: float, tpi: float = 24.0, band_deg: float = 0.
 
 def link_lengths(hp: Hardpoints) -> dict:
     """Pin-to-pin length (mm) of each link."""
-    return {k: float(np.linalg.norm(np.asarray(getattr(hp, a), float) - np.asarray(getattr(hp, b), float)))
+    return {k: float(np.linalg.norm(_vec(getattr(hp, a)) - _vec(getattr(hp, b))))
             for k, (a, b) in LINKS.items()}
 
 
@@ -112,8 +113,7 @@ def tube_mass_g(hp: Hardpoints, od_mm: float = 15.875, wall_mm: float = 0.889,
     return {"g_per_m": lin, "lengths_mm": L, "total_g": lin * sum(L.values()) / 1000.0}
 
 
-def bom_cost(tube_ft: float, usd_per_ft: float, rod_ends: int, usd_rod_end: float,
-             ptfe_joints: int = 0, usd_ptfe: float = 0.0, other_usd: float = 0.0) -> dict:
+def bom_cost(tube_ft: float, usd_per_ft: float, rod_ends: int, usd_rod_end: float, ptfe_joints: int = 0, usd_ptfe: float = 0.0, other_usd: float = 0.0) -> dict:  # pragma: no mutate (no PTFE joints by default: count and price both zero)
     """Structural bill of materials from declared quantities and prices. Units: tube length in ft, prices in USD; quantities are dimensionless counts."""
     tube = tube_ft * usd_per_ft
     joints = rod_ends * usd_rod_end + ptfe_joints * usd_ptfe

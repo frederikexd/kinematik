@@ -1,0 +1,2495 @@
+{
+ "adjust_edge": {
+  "as_dict": {
+   "available_mm": 420.0,
+   "deficit_mm": -45.11875900004179,
+   "findings": [
+    {
+     "check": "mc_body_length_source",
+     "detail": {},
+     "message": "Master-cylinder body length came from the 'standard racing' catalogue placeholder (112.0 mm), not from your part. Put a caliper on the cylinder and pass mc_body_mm -- body lengths differ by 20.0 mm to 40.0 mm across families and that is most of the deficit you are chasing.",
+     "severity": "missing",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "mc_outlet_stack",
+     "detail": {},
+     "message": "The line exit behind the cylinders is carrying 42.0 mm of the stack ('straight fitting + hardline bend'), which includes the bend radius the hardline needs to turn away from the cylinder. This is the segment most often missing from a CAD envelope check, because the fitting is modelled but the bend is not.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "pedal_box_envelope",
+     "detail": {},
+     "message": "Fits with 45.1 mm to spare.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes",
+      "chassis"
+     ]
+    }
+   ],
+   "installed_mm": 374.8812409999582,
+   "is_estimate": true,
+   "notes": [
+    "Some segments came from catalogue placeholders. The RANKING of segments is trustworthy; the absolute total is provisional until the real parts are measured."
+   ],
+   "segments": [
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 81.56770083329849,
+     "measured": false,
+     "name": "Pedal pad to pivot (X projection of the lever)",
+     "note": "90.0 mm arm at 25 deg from X. A more upright pedal projects less."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 10.0,
+     "measured": false,
+     "name": "Pedal arc clearance (pad sweep under braking)",
+     "note": "Room the pad needs to travel without touching anything."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 16.3135401666597,
+     "measured": false,
+     "name": "Pivot to balance-bar clevis",
+     "note": "Lever/ratio = 18.0 mm arm. Raising the pedal ratio pulls this in."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 38.0,
+     "measured": false,
+     "name": "Balance bar + clevises + spherical bearing",
+     "note": "Bar hardware between the pedal and the two pushrods."
+    },
+    {
+     "adjustable_mm": 3.0,
+     "length_mm": 55.0,
+     "measured": false,
+     "name": "Pushrod",
+     "note": "3.0 mm can be wound out before thread engagement hits the 12.0 mm floor."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 112.0,
+     "measured": false,
+     "name": "Master cylinder body",
+     "note": "The part. Only a different part changes this."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 42.0,
+     "measured": false,
+     "name": "MC outlet fitting + hardline bend radius",
+     "note": "'straight fitting + hardline bend'. A 90 deg banjo or a bulkhead elbow is the cheapest length in the whole stack."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 8.0,
+     "measured": false,
+     "name": "Mount plate / bulkhead flange",
+     "note": ""
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 12.0,
+     "measured": false,
+     "name": "Clearance to the front bulkhead",
+     "note": "Assembly and tolerance gap. Do not spend this one."
+    }
+   ],
+   "verdict": "FITS"
+  },
+  "fits": true,
+  "r": {
+   "available_mm": 420.0,
+   "deficit_mm": -45.11875900004179,
+   "findings": [
+    {
+     "check": "mc_body_length_source",
+     "detail": {},
+     "message": "Master-cylinder body length came from the 'standard racing' catalogue placeholder (112.0 mm), not from your part. Put a caliper on the cylinder and pass mc_body_mm -- body lengths differ by 20.0 mm to 40.0 mm across families and that is most of the deficit you are chasing.",
+     "severity": "missing",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "mc_outlet_stack",
+     "detail": {},
+     "message": "The line exit behind the cylinders is carrying 42.0 mm of the stack ('straight fitting + hardline bend'), which includes the bend radius the hardline needs to turn away from the cylinder. This is the segment most often missing from a CAD envelope check, because the fitting is modelled but the bend is not.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "pedal_box_envelope",
+     "detail": {},
+     "message": "Fits with 45.1 mm to spare.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes",
+      "chassis"
+     ]
+    }
+   ],
+   "installed_mm": 374.8812409999582,
+   "is_estimate": true,
+   "notes": [
+    "Some segments came from catalogue placeholders. The RANKING of segments is trustworthy; the absolute total is provisional until the real parts are measured."
+   ],
+   "segments": [
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 81.56770083329849,
+     "measured": false,
+     "name": "Pedal pad to pivot (X projection of the lever)",
+     "note": "90.0 mm arm at 25 deg from X. A more upright pedal projects less."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 10.0,
+     "measured": false,
+     "name": "Pedal arc clearance (pad sweep under braking)",
+     "note": "Room the pad needs to travel without touching anything."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 16.3135401666597,
+     "measured": false,
+     "name": "Pivot to balance-bar clevis",
+     "note": "Lever/ratio = 18.0 mm arm. Raising the pedal ratio pulls this in."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 38.0,
+     "measured": false,
+     "name": "Balance bar + clevises + spherical bearing",
+     "note": "Bar hardware between the pedal and the two pushrods."
+    },
+    {
+     "adjustable_mm": 3.0,
+     "length_mm": 55.0,
+     "measured": false,
+     "name": "Pushrod",
+     "note": "3.0 mm can be wound out before thread engagement hits the 12.0 mm floor."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 112.0,
+     "measured": false,
+     "name": "Master cylinder body",
+     "note": "The part. Only a different part changes this."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 42.0,
+     "measured": false,
+     "name": "MC outlet fitting + hardline bend radius",
+     "note": "'straight fitting + hardline bend'. A 90 deg banjo or a bulkhead elbow is the cheapest length in the whole stack."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 8.0,
+     "measured": false,
+     "name": "Mount plate / bulkhead flange",
+     "note": ""
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 12.0,
+     "measured": false,
+     "name": "Clearance to the front bulkhead",
+     "note": "Assembly and tolerance gap. Do not spend this one."
+    }
+   ],
+   "verdict": "FITS"
+  },
+  "summary": "Pedal box stack-up: 374.9 mm installed vs 420.0 mm available -> FITS\n      112.0 mm  Master cylinder body  [catalogue/estimate]\n       81.6 mm  Pedal pad to pivot (X projection of the lever)  [catalogue/estimate]\n       55.0 mm  Pushrod  [catalogue/estimate, 3.0 mm of it adjustable]\n       42.0 mm  MC outlet fitting + hardline bend radius  [catalogue/estimate]\n       38.0 mm  Balance bar + clevises + spherical bearing  [catalogue/estimate]\n       16.3 mm  Pivot to balance-bar clevis  [catalogue/estimate]\n       12.0 mm  Clearance to the front bulkhead  [catalogue/estimate]\n       10.0 mm  Pedal arc clearance (pad sweep under braking)  [catalogue/estimate]\n        8.0 mm  Mount plate / bulkhead flange  [catalogue/estimate]",
+  "waterfall": [
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 112.0,
+    "measured": false,
+    "name": "Master cylinder body",
+    "note": "The part. Only a different part changes this."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 81.56770083329849,
+    "measured": false,
+    "name": "Pedal pad to pivot (X projection of the lever)",
+    "note": "90.0 mm arm at 25 deg from X. A more upright pedal projects less."
+   },
+   {
+    "adjustable_mm": 3.0,
+    "length_mm": 55.0,
+    "measured": false,
+    "name": "Pushrod",
+    "note": "3.0 mm can be wound out before thread engagement hits the 12.0 mm floor."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 42.0,
+    "measured": false,
+    "name": "MC outlet fitting + hardline bend radius",
+    "note": "'straight fitting + hardline bend'. A 90 deg banjo or a bulkhead elbow is the cheapest length in the whole stack."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 38.0,
+    "measured": false,
+    "name": "Balance bar + clevises + spherical bearing",
+    "note": "Bar hardware between the pedal and the two pushrods."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 16.3135401666597,
+    "measured": false,
+    "name": "Pivot to balance-bar clevis",
+    "note": "Lever/ratio = 18.0 mm arm. Raising the pedal ratio pulls this in."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 12.0,
+    "measured": false,
+    "name": "Clearance to the front bulkhead",
+    "note": "Assembly and tolerance gap. Do not spend this one."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 10.0,
+    "measured": false,
+    "name": "Pedal arc clearance (pad sweep under braking)",
+    "note": "Room the pad needs to travel without touching anything."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 8.0,
+    "measured": false,
+    "name": "Mount plate / bulkhead flange",
+    "note": ""
+   }
+  ]
+ },
+ "default_fits": {
+  "as_dict": {
+   "available_mm": 480.0,
+   "deficit_mm": -105.11875900004179,
+   "findings": [
+    {
+     "check": "mc_body_length_source",
+     "detail": {},
+     "message": "Master-cylinder body length came from the 'standard racing' catalogue placeholder (112.0 mm), not from your part. Put a caliper on the cylinder and pass mc_body_mm -- body lengths differ by 20.0 mm to 40.0 mm across families and that is most of the deficit you are chasing.",
+     "severity": "missing",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "mc_outlet_stack",
+     "detail": {},
+     "message": "The line exit behind the cylinders is carrying 42.0 mm of the stack ('straight fitting + hardline bend'), which includes the bend radius the hardline needs to turn away from the cylinder. This is the segment most often missing from a CAD envelope check, because the fitting is modelled but the bend is not.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "pedal_box_envelope",
+     "detail": {},
+     "message": "Fits with 105.1 mm to spare.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes",
+      "chassis"
+     ]
+    }
+   ],
+   "installed_mm": 374.8812409999582,
+   "is_estimate": true,
+   "notes": [
+    "Some segments came from catalogue placeholders. The RANKING of segments is trustworthy; the absolute total is provisional until the real parts are measured."
+   ],
+   "segments": [
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 81.56770083329849,
+     "measured": false,
+     "name": "Pedal pad to pivot (X projection of the lever)",
+     "note": "90.0 mm arm at 25 deg from X. A more upright pedal projects less."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 10.0,
+     "measured": false,
+     "name": "Pedal arc clearance (pad sweep under braking)",
+     "note": "Room the pad needs to travel without touching anything."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 16.3135401666597,
+     "measured": false,
+     "name": "Pivot to balance-bar clevis",
+     "note": "Lever/ratio = 18.0 mm arm. Raising the pedal ratio pulls this in."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 38.0,
+     "measured": false,
+     "name": "Balance bar + clevises + spherical bearing",
+     "note": "Bar hardware between the pedal and the two pushrods."
+    },
+    {
+     "adjustable_mm": 8.0,
+     "length_mm": 55.0,
+     "measured": false,
+     "name": "Pushrod",
+     "note": "8.0 mm can be wound out before thread engagement hits the 12.0 mm floor."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 112.0,
+     "measured": false,
+     "name": "Master cylinder body",
+     "note": "The part. Only a different part changes this."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 42.0,
+     "measured": false,
+     "name": "MC outlet fitting + hardline bend radius",
+     "note": "'straight fitting + hardline bend'. A 90 deg banjo or a bulkhead elbow is the cheapest length in the whole stack."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 8.0,
+     "measured": false,
+     "name": "Mount plate / bulkhead flange",
+     "note": ""
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 12.0,
+     "measured": false,
+     "name": "Clearance to the front bulkhead",
+     "note": "Assembly and tolerance gap. Do not spend this one."
+    }
+   ],
+   "verdict": "FITS"
+  },
+  "fits": true,
+  "r": {
+   "available_mm": 480.0,
+   "deficit_mm": -105.11875900004179,
+   "findings": [
+    {
+     "check": "mc_body_length_source",
+     "detail": {},
+     "message": "Master-cylinder body length came from the 'standard racing' catalogue placeholder (112.0 mm), not from your part. Put a caliper on the cylinder and pass mc_body_mm -- body lengths differ by 20.0 mm to 40.0 mm across families and that is most of the deficit you are chasing.",
+     "severity": "missing",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "mc_outlet_stack",
+     "detail": {},
+     "message": "The line exit behind the cylinders is carrying 42.0 mm of the stack ('straight fitting + hardline bend'), which includes the bend radius the hardline needs to turn away from the cylinder. This is the segment most often missing from a CAD envelope check, because the fitting is modelled but the bend is not.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "pedal_box_envelope",
+     "detail": {},
+     "message": "Fits with 105.1 mm to spare.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes",
+      "chassis"
+     ]
+    }
+   ],
+   "installed_mm": 374.8812409999582,
+   "is_estimate": true,
+   "notes": [
+    "Some segments came from catalogue placeholders. The RANKING of segments is trustworthy; the absolute total is provisional until the real parts are measured."
+   ],
+   "segments": [
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 81.56770083329849,
+     "measured": false,
+     "name": "Pedal pad to pivot (X projection of the lever)",
+     "note": "90.0 mm arm at 25 deg from X. A more upright pedal projects less."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 10.0,
+     "measured": false,
+     "name": "Pedal arc clearance (pad sweep under braking)",
+     "note": "Room the pad needs to travel without touching anything."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 16.3135401666597,
+     "measured": false,
+     "name": "Pivot to balance-bar clevis",
+     "note": "Lever/ratio = 18.0 mm arm. Raising the pedal ratio pulls this in."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 38.0,
+     "measured": false,
+     "name": "Balance bar + clevises + spherical bearing",
+     "note": "Bar hardware between the pedal and the two pushrods."
+    },
+    {
+     "adjustable_mm": 8.0,
+     "length_mm": 55.0,
+     "measured": false,
+     "name": "Pushrod",
+     "note": "8.0 mm can be wound out before thread engagement hits the 12.0 mm floor."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 112.0,
+     "measured": false,
+     "name": "Master cylinder body",
+     "note": "The part. Only a different part changes this."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 42.0,
+     "measured": false,
+     "name": "MC outlet fitting + hardline bend radius",
+     "note": "'straight fitting + hardline bend'. A 90 deg banjo or a bulkhead elbow is the cheapest length in the whole stack."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 8.0,
+     "measured": false,
+     "name": "Mount plate / bulkhead flange",
+     "note": ""
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 12.0,
+     "measured": false,
+     "name": "Clearance to the front bulkhead",
+     "note": "Assembly and tolerance gap. Do not spend this one."
+    }
+   ],
+   "verdict": "FITS"
+  },
+  "summary": "Pedal box stack-up: 374.9 mm installed vs 480.0 mm available -> FITS\n      112.0 mm  Master cylinder body  [catalogue/estimate]\n       81.6 mm  Pedal pad to pivot (X projection of the lever)  [catalogue/estimate]\n       55.0 mm  Pushrod  [catalogue/estimate, 8.0 mm of it adjustable]\n       42.0 mm  MC outlet fitting + hardline bend radius  [catalogue/estimate]\n       38.0 mm  Balance bar + clevises + spherical bearing  [catalogue/estimate]\n       16.3 mm  Pivot to balance-bar clevis  [catalogue/estimate]\n       12.0 mm  Clearance to the front bulkhead  [catalogue/estimate]\n       10.0 mm  Pedal arc clearance (pad sweep under braking)  [catalogue/estimate]\n        8.0 mm  Mount plate / bulkhead flange  [catalogue/estimate]",
+  "waterfall": [
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 112.0,
+    "measured": false,
+    "name": "Master cylinder body",
+    "note": "The part. Only a different part changes this."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 81.56770083329849,
+    "measured": false,
+    "name": "Pedal pad to pivot (X projection of the lever)",
+    "note": "90.0 mm arm at 25 deg from X. A more upright pedal projects less."
+   },
+   {
+    "adjustable_mm": 8.0,
+    "length_mm": 55.0,
+    "measured": false,
+    "name": "Pushrod",
+    "note": "8.0 mm can be wound out before thread engagement hits the 12.0 mm floor."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 42.0,
+    "measured": false,
+    "name": "MC outlet fitting + hardline bend radius",
+    "note": "'straight fitting + hardline bend'. A 90 deg banjo or a bulkhead elbow is the cheapest length in the whole stack."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 38.0,
+    "measured": false,
+    "name": "Balance bar + clevises + spherical bearing",
+    "note": "Bar hardware between the pedal and the two pushrods."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 16.3135401666597,
+    "measured": false,
+    "name": "Pivot to balance-bar clevis",
+    "note": "Lever/ratio = 18.0 mm arm. Raising the pedal ratio pulls this in."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 12.0,
+    "measured": false,
+    "name": "Clearance to the front bulkhead",
+    "note": "Assembly and tolerance gap. Do not spend this one."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 10.0,
+    "measured": false,
+    "name": "Pedal arc clearance (pad sweep under braking)",
+    "note": "Room the pad needs to travel without touching anything."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 8.0,
+    "measured": false,
+    "name": "Mount plate / bulkhead flange",
+    "note": ""
+   }
+  ]
+ },
+ "edge_tight_band": {
+  "as_dict": {
+   "available_mm": 384.8812409999582,
+   "deficit_mm": -10.0,
+   "findings": [
+    {
+     "check": "mc_body_length_source",
+     "detail": {},
+     "message": "Master-cylinder body length came from the 'standard racing' catalogue placeholder (112.0 mm), not from your part. Put a caliper on the cylinder and pass mc_body_mm -- body lengths differ by 20.0 mm to 40.0 mm across families and that is most of the deficit you are chasing.",
+     "severity": "missing",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "mc_outlet_stack",
+     "detail": {},
+     "message": "The line exit behind the cylinders is carrying 42.0 mm of the stack ('straight fitting + hardline bend'), which includes the bend radius the hardline needs to turn away from the cylinder. This is the segment most often missing from a CAD envelope check, because the fitting is modelled but the bend is not.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "pedal_box_envelope",
+     "detail": {},
+     "message": "Fits with 10.0 mm to spare.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes",
+      "chassis"
+     ]
+    }
+   ],
+   "installed_mm": 374.8812409999582,
+   "is_estimate": true,
+   "notes": [
+    "Some segments came from catalogue placeholders. The RANKING of segments is trustworthy; the absolute total is provisional until the real parts are measured."
+   ],
+   "segments": [
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 81.56770083329849,
+     "measured": false,
+     "name": "Pedal pad to pivot (X projection of the lever)",
+     "note": "90.0 mm arm at 25 deg from X. A more upright pedal projects less."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 10.0,
+     "measured": false,
+     "name": "Pedal arc clearance (pad sweep under braking)",
+     "note": "Room the pad needs to travel without touching anything."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 16.3135401666597,
+     "measured": false,
+     "name": "Pivot to balance-bar clevis",
+     "note": "Lever/ratio = 18.0 mm arm. Raising the pedal ratio pulls this in."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 38.0,
+     "measured": false,
+     "name": "Balance bar + clevises + spherical bearing",
+     "note": "Bar hardware between the pedal and the two pushrods."
+    },
+    {
+     "adjustable_mm": 8.0,
+     "length_mm": 55.0,
+     "measured": false,
+     "name": "Pushrod",
+     "note": "8.0 mm can be wound out before thread engagement hits the 12.0 mm floor."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 112.0,
+     "measured": false,
+     "name": "Master cylinder body",
+     "note": "The part. Only a different part changes this."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 42.0,
+     "measured": false,
+     "name": "MC outlet fitting + hardline bend radius",
+     "note": "'straight fitting + hardline bend'. A 90 deg banjo or a bulkhead elbow is the cheapest length in the whole stack."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 8.0,
+     "measured": false,
+     "name": "Mount plate / bulkhead flange",
+     "note": ""
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 12.0,
+     "measured": false,
+     "name": "Clearance to the front bulkhead",
+     "note": "Assembly and tolerance gap. Do not spend this one."
+    }
+   ],
+   "verdict": "FITS"
+  },
+  "fits": true,
+  "r": {
+   "available_mm": 384.8812409999582,
+   "deficit_mm": -10.0,
+   "findings": [
+    {
+     "check": "mc_body_length_source",
+     "detail": {},
+     "message": "Master-cylinder body length came from the 'standard racing' catalogue placeholder (112.0 mm), not from your part. Put a caliper on the cylinder and pass mc_body_mm -- body lengths differ by 20.0 mm to 40.0 mm across families and that is most of the deficit you are chasing.",
+     "severity": "missing",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "mc_outlet_stack",
+     "detail": {},
+     "message": "The line exit behind the cylinders is carrying 42.0 mm of the stack ('straight fitting + hardline bend'), which includes the bend radius the hardline needs to turn away from the cylinder. This is the segment most often missing from a CAD envelope check, because the fitting is modelled but the bend is not.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "pedal_box_envelope",
+     "detail": {},
+     "message": "Fits with 10.0 mm to spare.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes",
+      "chassis"
+     ]
+    }
+   ],
+   "installed_mm": 374.8812409999582,
+   "is_estimate": true,
+   "notes": [
+    "Some segments came from catalogue placeholders. The RANKING of segments is trustworthy; the absolute total is provisional until the real parts are measured."
+   ],
+   "segments": [
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 81.56770083329849,
+     "measured": false,
+     "name": "Pedal pad to pivot (X projection of the lever)",
+     "note": "90.0 mm arm at 25 deg from X. A more upright pedal projects less."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 10.0,
+     "measured": false,
+     "name": "Pedal arc clearance (pad sweep under braking)",
+     "note": "Room the pad needs to travel without touching anything."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 16.3135401666597,
+     "measured": false,
+     "name": "Pivot to balance-bar clevis",
+     "note": "Lever/ratio = 18.0 mm arm. Raising the pedal ratio pulls this in."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 38.0,
+     "measured": false,
+     "name": "Balance bar + clevises + spherical bearing",
+     "note": "Bar hardware between the pedal and the two pushrods."
+    },
+    {
+     "adjustable_mm": 8.0,
+     "length_mm": 55.0,
+     "measured": false,
+     "name": "Pushrod",
+     "note": "8.0 mm can be wound out before thread engagement hits the 12.0 mm floor."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 112.0,
+     "measured": false,
+     "name": "Master cylinder body",
+     "note": "The part. Only a different part changes this."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 42.0,
+     "measured": false,
+     "name": "MC outlet fitting + hardline bend radius",
+     "note": "'straight fitting + hardline bend'. A 90 deg banjo or a bulkhead elbow is the cheapest length in the whole stack."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 8.0,
+     "measured": false,
+     "name": "Mount plate / bulkhead flange",
+     "note": ""
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 12.0,
+     "measured": false,
+     "name": "Clearance to the front bulkhead",
+     "note": "Assembly and tolerance gap. Do not spend this one."
+    }
+   ],
+   "verdict": "FITS"
+  },
+  "summary": "Pedal box stack-up: 374.9 mm installed vs 384.9 mm available -> FITS\n      112.0 mm  Master cylinder body  [catalogue/estimate]\n       81.6 mm  Pedal pad to pivot (X projection of the lever)  [catalogue/estimate]\n       55.0 mm  Pushrod  [catalogue/estimate, 8.0 mm of it adjustable]\n       42.0 mm  MC outlet fitting + hardline bend radius  [catalogue/estimate]\n       38.0 mm  Balance bar + clevises + spherical bearing  [catalogue/estimate]\n       16.3 mm  Pivot to balance-bar clevis  [catalogue/estimate]\n       12.0 mm  Clearance to the front bulkhead  [catalogue/estimate]\n       10.0 mm  Pedal arc clearance (pad sweep under braking)  [catalogue/estimate]\n        8.0 mm  Mount plate / bulkhead flange  [catalogue/estimate]",
+  "waterfall": [
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 112.0,
+    "measured": false,
+    "name": "Master cylinder body",
+    "note": "The part. Only a different part changes this."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 81.56770083329849,
+    "measured": false,
+    "name": "Pedal pad to pivot (X projection of the lever)",
+    "note": "90.0 mm arm at 25 deg from X. A more upright pedal projects less."
+   },
+   {
+    "adjustable_mm": 8.0,
+    "length_mm": 55.0,
+    "measured": false,
+    "name": "Pushrod",
+    "note": "8.0 mm can be wound out before thread engagement hits the 12.0 mm floor."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 42.0,
+    "measured": false,
+    "name": "MC outlet fitting + hardline bend radius",
+    "note": "'straight fitting + hardline bend'. A 90 deg banjo or a bulkhead elbow is the cheapest length in the whole stack."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 38.0,
+    "measured": false,
+    "name": "Balance bar + clevises + spherical bearing",
+    "note": "Bar hardware between the pedal and the two pushrods."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 16.3135401666597,
+    "measured": false,
+    "name": "Pivot to balance-bar clevis",
+    "note": "Lever/ratio = 18.0 mm arm. Raising the pedal ratio pulls this in."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 12.0,
+    "measured": false,
+    "name": "Clearance to the front bulkhead",
+    "note": "Assembly and tolerance gap. Do not spend this one."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 10.0,
+    "measured": false,
+    "name": "Pedal arc clearance (pad sweep under braking)",
+    "note": "Room the pad needs to travel without touching anything."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 8.0,
+    "measured": false,
+    "name": "Mount plate / bulkhead flange",
+    "note": ""
+   }
+  ]
+ },
+ "exact": {
+  "as_dict": {
+   "available_mm": 374.8812409999582,
+   "deficit_mm": 0.0,
+   "findings": [
+    {
+     "check": "mc_body_length_source",
+     "detail": {},
+     "message": "Master-cylinder body length came from the 'standard racing' catalogue placeholder (112.0 mm), not from your part. Put a caliper on the cylinder and pass mc_body_mm -- body lengths differ by 20.0 mm to 40.0 mm across families and that is most of the deficit you are chasing.",
+     "severity": "missing",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "mc_outlet_stack",
+     "detail": {},
+     "message": "The line exit behind the cylinders is carrying 42.0 mm of the stack ('straight fitting + hardline bend'), which includes the bend radius the hardline needs to turn away from the cylinder. This is the segment most often missing from a CAD envelope check, because the fitting is modelled but the bend is not.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "pedal_box_envelope",
+     "detail": {},
+     "message": "It fits with only -0.0 mm to spare, inside the 10.0 mm tight band. One fitting change or one thicker mount plate puts it over.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes",
+      "chassis"
+     ]
+    }
+   ],
+   "installed_mm": 374.8812409999582,
+   "is_estimate": true,
+   "notes": [
+    "Some segments came from catalogue placeholders. The RANKING of segments is trustworthy; the absolute total is provisional until the real parts are measured."
+   ],
+   "segments": [
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 81.56770083329849,
+     "measured": false,
+     "name": "Pedal pad to pivot (X projection of the lever)",
+     "note": "90.0 mm arm at 25 deg from X. A more upright pedal projects less."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 10.0,
+     "measured": false,
+     "name": "Pedal arc clearance (pad sweep under braking)",
+     "note": "Room the pad needs to travel without touching anything."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 16.3135401666597,
+     "measured": false,
+     "name": "Pivot to balance-bar clevis",
+     "note": "Lever/ratio = 18.0 mm arm. Raising the pedal ratio pulls this in."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 38.0,
+     "measured": false,
+     "name": "Balance bar + clevises + spherical bearing",
+     "note": "Bar hardware between the pedal and the two pushrods."
+    },
+    {
+     "adjustable_mm": 8.0,
+     "length_mm": 55.0,
+     "measured": false,
+     "name": "Pushrod",
+     "note": "8.0 mm can be wound out before thread engagement hits the 12.0 mm floor."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 112.0,
+     "measured": false,
+     "name": "Master cylinder body",
+     "note": "The part. Only a different part changes this."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 42.0,
+     "measured": false,
+     "name": "MC outlet fitting + hardline bend radius",
+     "note": "'straight fitting + hardline bend'. A 90 deg banjo or a bulkhead elbow is the cheapest length in the whole stack."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 8.0,
+     "measured": false,
+     "name": "Mount plate / bulkhead flange",
+     "note": ""
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 12.0,
+     "measured": false,
+     "name": "Clearance to the front bulkhead",
+     "note": "Assembly and tolerance gap. Do not spend this one."
+    }
+   ],
+   "verdict": "TIGHT"
+  },
+  "fits": true,
+  "r": {
+   "available_mm": 374.8812409999582,
+   "deficit_mm": 0.0,
+   "findings": [
+    {
+     "check": "mc_body_length_source",
+     "detail": {},
+     "message": "Master-cylinder body length came from the 'standard racing' catalogue placeholder (112.0 mm), not from your part. Put a caliper on the cylinder and pass mc_body_mm -- body lengths differ by 20.0 mm to 40.0 mm across families and that is most of the deficit you are chasing.",
+     "severity": "missing",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "mc_outlet_stack",
+     "detail": {},
+     "message": "The line exit behind the cylinders is carrying 42.0 mm of the stack ('straight fitting + hardline bend'), which includes the bend radius the hardline needs to turn away from the cylinder. This is the segment most often missing from a CAD envelope check, because the fitting is modelled but the bend is not.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "pedal_box_envelope",
+     "detail": {},
+     "message": "It fits with only -0.0 mm to spare, inside the 10.0 mm tight band. One fitting change or one thicker mount plate puts it over.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes",
+      "chassis"
+     ]
+    }
+   ],
+   "installed_mm": 374.8812409999582,
+   "is_estimate": true,
+   "notes": [
+    "Some segments came from catalogue placeholders. The RANKING of segments is trustworthy; the absolute total is provisional until the real parts are measured."
+   ],
+   "segments": [
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 81.56770083329849,
+     "measured": false,
+     "name": "Pedal pad to pivot (X projection of the lever)",
+     "note": "90.0 mm arm at 25 deg from X. A more upright pedal projects less."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 10.0,
+     "measured": false,
+     "name": "Pedal arc clearance (pad sweep under braking)",
+     "note": "Room the pad needs to travel without touching anything."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 16.3135401666597,
+     "measured": false,
+     "name": "Pivot to balance-bar clevis",
+     "note": "Lever/ratio = 18.0 mm arm. Raising the pedal ratio pulls this in."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 38.0,
+     "measured": false,
+     "name": "Balance bar + clevises + spherical bearing",
+     "note": "Bar hardware between the pedal and the two pushrods."
+    },
+    {
+     "adjustable_mm": 8.0,
+     "length_mm": 55.0,
+     "measured": false,
+     "name": "Pushrod",
+     "note": "8.0 mm can be wound out before thread engagement hits the 12.0 mm floor."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 112.0,
+     "measured": false,
+     "name": "Master cylinder body",
+     "note": "The part. Only a different part changes this."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 42.0,
+     "measured": false,
+     "name": "MC outlet fitting + hardline bend radius",
+     "note": "'straight fitting + hardline bend'. A 90 deg banjo or a bulkhead elbow is the cheapest length in the whole stack."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 8.0,
+     "measured": false,
+     "name": "Mount plate / bulkhead flange",
+     "note": ""
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 12.0,
+     "measured": false,
+     "name": "Clearance to the front bulkhead",
+     "note": "Assembly and tolerance gap. Do not spend this one."
+    }
+   ],
+   "verdict": "TIGHT"
+  },
+  "summary": "Pedal box stack-up: 374.9 mm installed vs 374.9 mm available -> TIGHT\n      112.0 mm  Master cylinder body  [catalogue/estimate]\n       81.6 mm  Pedal pad to pivot (X projection of the lever)  [catalogue/estimate]\n       55.0 mm  Pushrod  [catalogue/estimate, 8.0 mm of it adjustable]\n       42.0 mm  MC outlet fitting + hardline bend radius  [catalogue/estimate]\n       38.0 mm  Balance bar + clevises + spherical bearing  [catalogue/estimate]\n       16.3 mm  Pivot to balance-bar clevis  [catalogue/estimate]\n       12.0 mm  Clearance to the front bulkhead  [catalogue/estimate]\n       10.0 mm  Pedal arc clearance (pad sweep under braking)  [catalogue/estimate]\n        8.0 mm  Mount plate / bulkhead flange  [catalogue/estimate]",
+  "waterfall": [
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 112.0,
+    "measured": false,
+    "name": "Master cylinder body",
+    "note": "The part. Only a different part changes this."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 81.56770083329849,
+    "measured": false,
+    "name": "Pedal pad to pivot (X projection of the lever)",
+    "note": "90.0 mm arm at 25 deg from X. A more upright pedal projects less."
+   },
+   {
+    "adjustable_mm": 8.0,
+    "length_mm": 55.0,
+    "measured": false,
+    "name": "Pushrod",
+    "note": "8.0 mm can be wound out before thread engagement hits the 12.0 mm floor."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 42.0,
+    "measured": false,
+    "name": "MC outlet fitting + hardline bend radius",
+    "note": "'straight fitting + hardline bend'. A 90 deg banjo or a bulkhead elbow is the cheapest length in the whole stack."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 38.0,
+    "measured": false,
+    "name": "Balance bar + clevises + spherical bearing",
+    "note": "Bar hardware between the pedal and the two pushrods."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 16.3135401666597,
+    "measured": false,
+    "name": "Pivot to balance-bar clevis",
+    "note": "Lever/ratio = 18.0 mm arm. Raising the pedal ratio pulls this in."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 12.0,
+    "measured": false,
+    "name": "Clearance to the front bulkhead",
+    "note": "Assembly and tolerance gap. Do not spend this one."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 10.0,
+    "measured": false,
+    "name": "Pedal arc clearance (pad sweep under braking)",
+    "note": "Room the pad needs to travel without touching anything."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 8.0,
+    "measured": false,
+    "name": "Mount plate / bulkhead flange",
+    "note": ""
+   }
+  ]
+ },
+ "measured": {
+  "as_dict": {
+   "available_mm": 420.0,
+   "deficit_mm": 81915081.84410362,
+   "findings": [
+    {
+     "check": "mc_body_length_source",
+     "detail": {},
+     "message": "Master-cylinder body length 96.5 mm is a measured value.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "pedal_box_envelope",
+     "detail": {},
+     "message": "The assembly is 81915081.8 mm longer than the 420.0 mm available. Run shorten_options() against this deficit -- the pushrod alone can only return 8.0 mm of it.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes",
+      "chassis"
+     ]
+    }
+   ],
+   "installed_mm": 81915501.84410362,
+   "is_estimate": false,
+   "notes": [],
+   "segments": [
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 81.91520442889917,
+     "measured": false,
+     "name": "Pedal pad to pivot (X projection of the lever)",
+     "note": "100.0 mm arm at 35 deg from X. A more upright pedal projects less."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 8.0,
+     "measured": false,
+     "name": "Pedal arc clearance (pad sweep under braking)",
+     "note": "Room the pad needs to travel without touching anything."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 81915204.42889918,
+     "measured": false,
+     "name": "Pivot to balance-bar clevis",
+     "note": "Lever/ratio = 100000000.0 mm arm. Raising the pedal ratio pulls this in."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 30.0,
+     "measured": false,
+     "name": "Balance bar + clevises + spherical bearing",
+     "note": "Bar hardware between the pedal and the two pushrods."
+    },
+    {
+     "adjustable_mm": 8.0,
+     "length_mm": 50.0,
+     "measured": false,
+     "name": "Pushrod",
+     "note": "8.0 mm can be wound out before thread engagement hits the 12.0 mm floor."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 96.5,
+     "measured": true,
+     "name": "Master cylinder body",
+     "note": "The part. Only a different part changes this."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 15.0,
+     "measured": false,
+     "name": "MC outlet fitting + hardline bend radius",
+     "note": "'straight fitting + hardline bend'. A 90 deg banjo or a bulkhead elbow is the cheapest length in the whole stack."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 6.0,
+     "measured": false,
+     "name": "Mount plate / bulkhead flange",
+     "note": ""
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 10.0,
+     "measured": false,
+     "name": "Clearance to the front bulkhead",
+     "note": "Assembly and tolerance gap. Do not spend this one."
+    }
+   ],
+   "verdict": "DOES NOT FIT"
+  },
+  "fits": false,
+  "r": {
+   "available_mm": 420.0,
+   "deficit_mm": 81915081.84410362,
+   "findings": [
+    {
+     "check": "mc_body_length_source",
+     "detail": {},
+     "message": "Master-cylinder body length 96.5 mm is a measured value.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "pedal_box_envelope",
+     "detail": {},
+     "message": "The assembly is 81915081.8 mm longer than the 420.0 mm available. Run shorten_options() against this deficit -- the pushrod alone can only return 8.0 mm of it.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes",
+      "chassis"
+     ]
+    }
+   ],
+   "installed_mm": 81915501.84410362,
+   "is_estimate": false,
+   "notes": [],
+   "segments": [
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 81.91520442889917,
+     "measured": false,
+     "name": "Pedal pad to pivot (X projection of the lever)",
+     "note": "100.0 mm arm at 35 deg from X. A more upright pedal projects less."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 8.0,
+     "measured": false,
+     "name": "Pedal arc clearance (pad sweep under braking)",
+     "note": "Room the pad needs to travel without touching anything."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 81915204.42889918,
+     "measured": false,
+     "name": "Pivot to balance-bar clevis",
+     "note": "Lever/ratio = 100000000.0 mm arm. Raising the pedal ratio pulls this in."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 30.0,
+     "measured": false,
+     "name": "Balance bar + clevises + spherical bearing",
+     "note": "Bar hardware between the pedal and the two pushrods."
+    },
+    {
+     "adjustable_mm": 8.0,
+     "length_mm": 50.0,
+     "measured": false,
+     "name": "Pushrod",
+     "note": "8.0 mm can be wound out before thread engagement hits the 12.0 mm floor."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 96.5,
+     "measured": true,
+     "name": "Master cylinder body",
+     "note": "The part. Only a different part changes this."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 15.0,
+     "measured": false,
+     "name": "MC outlet fitting + hardline bend radius",
+     "note": "'straight fitting + hardline bend'. A 90 deg banjo or a bulkhead elbow is the cheapest length in the whole stack."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 6.0,
+     "measured": false,
+     "name": "Mount plate / bulkhead flange",
+     "note": ""
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 10.0,
+     "measured": false,
+     "name": "Clearance to the front bulkhead",
+     "note": "Assembly and tolerance gap. Do not spend this one."
+    }
+   ],
+   "verdict": "DOES NOT FIT"
+  },
+  "summary": "Pedal box stack-up: 81915501.8 mm installed vs 420.0 mm available -> DOES NOT FIT (need to find 81915081.8 mm)\n    81915204.4 mm  Pivot to balance-bar clevis  [catalogue/estimate]\n       96.5 mm  Master cylinder body  [measured]\n       81.9 mm  Pedal pad to pivot (X projection of the lever)  [catalogue/estimate]\n       50.0 mm  Pushrod  [catalogue/estimate, 8.0 mm of it adjustable]\n       30.0 mm  Balance bar + clevises + spherical bearing  [catalogue/estimate]\n       15.0 mm  MC outlet fitting + hardline bend radius  [catalogue/estimate]\n       10.0 mm  Clearance to the front bulkhead  [catalogue/estimate]\n        8.0 mm  Pedal arc clearance (pad sweep under braking)  [catalogue/estimate]\n        6.0 mm  Mount plate / bulkhead flange  [catalogue/estimate]",
+  "waterfall": [
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 81915204.42889918,
+    "measured": false,
+    "name": "Pivot to balance-bar clevis",
+    "note": "Lever/ratio = 100000000.0 mm arm. Raising the pedal ratio pulls this in."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 96.5,
+    "measured": true,
+    "name": "Master cylinder body",
+    "note": "The part. Only a different part changes this."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 81.91520442889917,
+    "measured": false,
+    "name": "Pedal pad to pivot (X projection of the lever)",
+    "note": "100.0 mm arm at 35 deg from X. A more upright pedal projects less."
+   },
+   {
+    "adjustable_mm": 8.0,
+    "length_mm": 50.0,
+    "measured": false,
+    "name": "Pushrod",
+    "note": "8.0 mm can be wound out before thread engagement hits the 12.0 mm floor."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 30.0,
+    "measured": false,
+    "name": "Balance bar + clevises + spherical bearing",
+    "note": "Bar hardware between the pedal and the two pushrods."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 15.0,
+    "measured": false,
+    "name": "MC outlet fitting + hardline bend radius",
+    "note": "'straight fitting + hardline bend'. A 90 deg banjo or a bulkhead elbow is the cheapest length in the whole stack."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 10.0,
+    "measured": false,
+    "name": "Clearance to the front bulkhead",
+    "note": "Assembly and tolerance gap. Do not spend this one."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 8.0,
+    "measured": false,
+    "name": "Pedal arc clearance (pad sweep under braking)",
+    "note": "Room the pad needs to travel without touching anything."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 6.0,
+    "measured": false,
+    "name": "Mount plate / bulkhead flange",
+    "note": ""
+   }
+  ]
+ },
+ "over": {
+  "as_dict": {
+   "available_mm": 300.0,
+   "deficit_mm": 49.489574830002766,
+   "findings": [
+    {
+     "check": "mc_body_length_source",
+     "detail": {},
+     "message": "Master-cylinder body length came from the 'compact racing (short body)' catalogue placeholder (88.0 mm), not from your part. Put a caliper on the cylinder and pass mc_body_mm -- body lengths differ by 20.0 mm to 40.0 mm across families and that is most of the deficit you are chasing.",
+     "severity": "missing",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "mc_outlet_stack",
+     "detail": {},
+     "message": "The line exit behind the cylinders is carrying 42.0 mm of the stack ('straight fitting + hardline bend'), which includes the bend radius the hardline needs to turn away from the cylinder. This is the segment most often missing from a CAD envelope check, because the fitting is modelled but the bend is not.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "pushrod_adjustment_exhausted",
+     "detail": {},
+     "message": "The pushrod has only 1.0 mm of length left before thread engagement drops under the 1.5x8.0 mm = 12.0 mm minimum. Winding it out past that is not an adjustment, it is a failure mode -- the deficit has to come from somewhere else.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "pedal_box_envelope",
+     "detail": {},
+     "message": "The assembly is 49.5 mm longer than the 300.0 mm available. Run shorten_options() against this deficit -- the pushrod alone can only return 1.0 mm of it.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes",
+      "chassis"
+     ]
+    }
+   ],
+   "installed_mm": 349.48957483000277,
+   "is_estimate": true,
+   "notes": [
+    "Cylinders tilted 8 deg: the pushrod and body only cost cos(8 deg) = 0.990 of their true length along X.",
+    "Some segments came from catalogue placeholders. The RANKING of segments is trustworthy; the absolute total is provisional until the real parts are measured."
+   ],
+   "segments": [
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 81.56770083329849,
+     "measured": false,
+     "name": "Pedal pad to pivot (X projection of the lever)",
+     "note": "90.0 mm arm at 25 deg from X. A more upright pedal projects less."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 10.0,
+     "measured": false,
+     "name": "Pedal arc clearance (pad sweep under braking)",
+     "note": "Room the pad needs to travel without touching anything."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 16.3135401666597,
+     "measured": false,
+     "name": "Pivot to balance-bar clevis",
+     "note": "Lever/ratio = 18.0 mm arm. Raising the pedal ratio pulls this in."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 38.0,
+     "measured": false,
+     "name": "Balance bar + clevises + spherical bearing",
+     "note": "Bar hardware between the pedal and the two pushrods."
+    },
+    {
+     "adjustable_mm": 0.9902680687415704,
+     "length_mm": 54.46474378078637,
+     "measured": false,
+     "name": "Pushrod",
+     "note": "1.0 mm can be wound out before thread engagement hits the 12.0 mm floor."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 87.1435900492582,
+     "measured": false,
+     "name": "Master cylinder body",
+     "note": "The part. Only a different part changes this."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 42.0,
+     "measured": false,
+     "name": "MC outlet fitting + hardline bend radius",
+     "note": "'straight fitting + hardline bend'. A 90 deg banjo or a bulkhead elbow is the cheapest length in the whole stack."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 8.0,
+     "measured": false,
+     "name": "Mount plate / bulkhead flange",
+     "note": ""
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 12.0,
+     "measured": false,
+     "name": "Clearance to the front bulkhead",
+     "note": "Assembly and tolerance gap. Do not spend this one."
+    }
+   ],
+   "verdict": "DOES NOT FIT"
+  },
+  "fits": false,
+  "r": {
+   "available_mm": 300.0,
+   "deficit_mm": 49.489574830002766,
+   "findings": [
+    {
+     "check": "mc_body_length_source",
+     "detail": {},
+     "message": "Master-cylinder body length came from the 'compact racing (short body)' catalogue placeholder (88.0 mm), not from your part. Put a caliper on the cylinder and pass mc_body_mm -- body lengths differ by 20.0 mm to 40.0 mm across families and that is most of the deficit you are chasing.",
+     "severity": "missing",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "mc_outlet_stack",
+     "detail": {},
+     "message": "The line exit behind the cylinders is carrying 42.0 mm of the stack ('straight fitting + hardline bend'), which includes the bend radius the hardline needs to turn away from the cylinder. This is the segment most often missing from a CAD envelope check, because the fitting is modelled but the bend is not.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "pushrod_adjustment_exhausted",
+     "detail": {},
+     "message": "The pushrod has only 1.0 mm of length left before thread engagement drops under the 1.5x8.0 mm = 12.0 mm minimum. Winding it out past that is not an adjustment, it is a failure mode -- the deficit has to come from somewhere else.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "pedal_box_envelope",
+     "detail": {},
+     "message": "The assembly is 49.5 mm longer than the 300.0 mm available. Run shorten_options() against this deficit -- the pushrod alone can only return 1.0 mm of it.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes",
+      "chassis"
+     ]
+    }
+   ],
+   "installed_mm": 349.48957483000277,
+   "is_estimate": true,
+   "notes": [
+    "Cylinders tilted 8 deg: the pushrod and body only cost cos(8 deg) = 0.990 of their true length along X.",
+    "Some segments came from catalogue placeholders. The RANKING of segments is trustworthy; the absolute total is provisional until the real parts are measured."
+   ],
+   "segments": [
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 81.56770083329849,
+     "measured": false,
+     "name": "Pedal pad to pivot (X projection of the lever)",
+     "note": "90.0 mm arm at 25 deg from X. A more upright pedal projects less."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 10.0,
+     "measured": false,
+     "name": "Pedal arc clearance (pad sweep under braking)",
+     "note": "Room the pad needs to travel without touching anything."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 16.3135401666597,
+     "measured": false,
+     "name": "Pivot to balance-bar clevis",
+     "note": "Lever/ratio = 18.0 mm arm. Raising the pedal ratio pulls this in."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 38.0,
+     "measured": false,
+     "name": "Balance bar + clevises + spherical bearing",
+     "note": "Bar hardware between the pedal and the two pushrods."
+    },
+    {
+     "adjustable_mm": 0.9902680687415704,
+     "length_mm": 54.46474378078637,
+     "measured": false,
+     "name": "Pushrod",
+     "note": "1.0 mm can be wound out before thread engagement hits the 12.0 mm floor."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 87.1435900492582,
+     "measured": false,
+     "name": "Master cylinder body",
+     "note": "The part. Only a different part changes this."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 42.0,
+     "measured": false,
+     "name": "MC outlet fitting + hardline bend radius",
+     "note": "'straight fitting + hardline bend'. A 90 deg banjo or a bulkhead elbow is the cheapest length in the whole stack."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 8.0,
+     "measured": false,
+     "name": "Mount plate / bulkhead flange",
+     "note": ""
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 12.0,
+     "measured": false,
+     "name": "Clearance to the front bulkhead",
+     "note": "Assembly and tolerance gap. Do not spend this one."
+    }
+   ],
+   "verdict": "DOES NOT FIT"
+  },
+  "summary": "Pedal box stack-up: 349.5 mm installed vs 300.0 mm available -> DOES NOT FIT (need to find 49.5 mm)\n       87.1 mm  Master cylinder body  [catalogue/estimate]\n       81.6 mm  Pedal pad to pivot (X projection of the lever)  [catalogue/estimate]\n       54.5 mm  Pushrod  [catalogue/estimate, 1.0 mm of it adjustable]\n       42.0 mm  MC outlet fitting + hardline bend radius  [catalogue/estimate]\n       38.0 mm  Balance bar + clevises + spherical bearing  [catalogue/estimate]\n       16.3 mm  Pivot to balance-bar clevis  [catalogue/estimate]\n       12.0 mm  Clearance to the front bulkhead  [catalogue/estimate]\n       10.0 mm  Pedal arc clearance (pad sweep under braking)  [catalogue/estimate]\n        8.0 mm  Mount plate / bulkhead flange  [catalogue/estimate]",
+  "waterfall": [
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 87.1435900492582,
+    "measured": false,
+    "name": "Master cylinder body",
+    "note": "The part. Only a different part changes this."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 81.56770083329849,
+    "measured": false,
+    "name": "Pedal pad to pivot (X projection of the lever)",
+    "note": "90.0 mm arm at 25 deg from X. A more upright pedal projects less."
+   },
+   {
+    "adjustable_mm": 0.9902680687415704,
+    "length_mm": 54.46474378078637,
+    "measured": false,
+    "name": "Pushrod",
+    "note": "1.0 mm can be wound out before thread engagement hits the 12.0 mm floor."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 42.0,
+    "measured": false,
+    "name": "MC outlet fitting + hardline bend radius",
+    "note": "'straight fitting + hardline bend'. A 90 deg banjo or a bulkhead elbow is the cheapest length in the whole stack."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 38.0,
+    "measured": false,
+    "name": "Balance bar + clevises + spherical bearing",
+    "note": "Bar hardware between the pedal and the two pushrods."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 16.3135401666597,
+    "measured": false,
+    "name": "Pivot to balance-bar clevis",
+    "note": "Lever/ratio = 18.0 mm arm. Raising the pedal ratio pulls this in."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 12.0,
+    "measured": false,
+    "name": "Clearance to the front bulkhead",
+    "note": "Assembly and tolerance gap. Do not spend this one."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 10.0,
+    "measured": false,
+    "name": "Pedal arc clearance (pad sweep under braking)",
+    "note": "Room the pad needs to travel without touching anything."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 8.0,
+    "measured": false,
+    "name": "Mount plate / bulkhead flange",
+    "note": ""
+   }
+  ]
+ },
+ "tight": {
+  "as_dict": {
+   "available_mm": 379.8812409999582,
+   "deficit_mm": -5.0,
+   "findings": [
+    {
+     "check": "mc_body_length_source",
+     "detail": {},
+     "message": "Master-cylinder body length came from the 'standard racing' catalogue placeholder (112.0 mm), not from your part. Put a caliper on the cylinder and pass mc_body_mm -- body lengths differ by 20.0 mm to 40.0 mm across families and that is most of the deficit you are chasing.",
+     "severity": "missing",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "mc_outlet_stack",
+     "detail": {},
+     "message": "The line exit behind the cylinders is carrying 42.0 mm of the stack ('straight fitting + hardline bend'), which includes the bend radius the hardline needs to turn away from the cylinder. This is the segment most often missing from a CAD envelope check, because the fitting is modelled but the bend is not.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "pedal_box_envelope",
+     "detail": {},
+     "message": "It fits with only 5.0 mm to spare, inside the 10.0 mm tight band. One fitting change or one thicker mount plate puts it over.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes",
+      "chassis"
+     ]
+    }
+   ],
+   "installed_mm": 374.8812409999582,
+   "is_estimate": true,
+   "notes": [
+    "Some segments came from catalogue placeholders. The RANKING of segments is trustworthy; the absolute total is provisional until the real parts are measured."
+   ],
+   "segments": [
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 81.56770083329849,
+     "measured": false,
+     "name": "Pedal pad to pivot (X projection of the lever)",
+     "note": "90.0 mm arm at 25 deg from X. A more upright pedal projects less."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 10.0,
+     "measured": false,
+     "name": "Pedal arc clearance (pad sweep under braking)",
+     "note": "Room the pad needs to travel without touching anything."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 16.3135401666597,
+     "measured": false,
+     "name": "Pivot to balance-bar clevis",
+     "note": "Lever/ratio = 18.0 mm arm. Raising the pedal ratio pulls this in."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 38.0,
+     "measured": false,
+     "name": "Balance bar + clevises + spherical bearing",
+     "note": "Bar hardware between the pedal and the two pushrods."
+    },
+    {
+     "adjustable_mm": 8.0,
+     "length_mm": 55.0,
+     "measured": false,
+     "name": "Pushrod",
+     "note": "8.0 mm can be wound out before thread engagement hits the 12.0 mm floor."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 112.0,
+     "measured": false,
+     "name": "Master cylinder body",
+     "note": "The part. Only a different part changes this."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 42.0,
+     "measured": false,
+     "name": "MC outlet fitting + hardline bend radius",
+     "note": "'straight fitting + hardline bend'. A 90 deg banjo or a bulkhead elbow is the cheapest length in the whole stack."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 8.0,
+     "measured": false,
+     "name": "Mount plate / bulkhead flange",
+     "note": ""
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 12.0,
+     "measured": false,
+     "name": "Clearance to the front bulkhead",
+     "note": "Assembly and tolerance gap. Do not spend this one."
+    }
+   ],
+   "verdict": "TIGHT"
+  },
+  "fits": true,
+  "r": {
+   "available_mm": 379.8812409999582,
+   "deficit_mm": -5.0,
+   "findings": [
+    {
+     "check": "mc_body_length_source",
+     "detail": {},
+     "message": "Master-cylinder body length came from the 'standard racing' catalogue placeholder (112.0 mm), not from your part. Put a caliper on the cylinder and pass mc_body_mm -- body lengths differ by 20.0 mm to 40.0 mm across families and that is most of the deficit you are chasing.",
+     "severity": "missing",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "mc_outlet_stack",
+     "detail": {},
+     "message": "The line exit behind the cylinders is carrying 42.0 mm of the stack ('straight fitting + hardline bend'), which includes the bend radius the hardline needs to turn away from the cylinder. This is the segment most often missing from a CAD envelope check, because the fitting is modelled but the bend is not.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "pedal_box_envelope",
+     "detail": {},
+     "message": "It fits with only 5.0 mm to spare, inside the 10.0 mm tight band. One fitting change or one thicker mount plate puts it over.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes",
+      "chassis"
+     ]
+    }
+   ],
+   "installed_mm": 374.8812409999582,
+   "is_estimate": true,
+   "notes": [
+    "Some segments came from catalogue placeholders. The RANKING of segments is trustworthy; the absolute total is provisional until the real parts are measured."
+   ],
+   "segments": [
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 81.56770083329849,
+     "measured": false,
+     "name": "Pedal pad to pivot (X projection of the lever)",
+     "note": "90.0 mm arm at 25 deg from X. A more upright pedal projects less."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 10.0,
+     "measured": false,
+     "name": "Pedal arc clearance (pad sweep under braking)",
+     "note": "Room the pad needs to travel without touching anything."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 16.3135401666597,
+     "measured": false,
+     "name": "Pivot to balance-bar clevis",
+     "note": "Lever/ratio = 18.0 mm arm. Raising the pedal ratio pulls this in."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 38.0,
+     "measured": false,
+     "name": "Balance bar + clevises + spherical bearing",
+     "note": "Bar hardware between the pedal and the two pushrods."
+    },
+    {
+     "adjustable_mm": 8.0,
+     "length_mm": 55.0,
+     "measured": false,
+     "name": "Pushrod",
+     "note": "8.0 mm can be wound out before thread engagement hits the 12.0 mm floor."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 112.0,
+     "measured": false,
+     "name": "Master cylinder body",
+     "note": "The part. Only a different part changes this."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 42.0,
+     "measured": false,
+     "name": "MC outlet fitting + hardline bend radius",
+     "note": "'straight fitting + hardline bend'. A 90 deg banjo or a bulkhead elbow is the cheapest length in the whole stack."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 8.0,
+     "measured": false,
+     "name": "Mount plate / bulkhead flange",
+     "note": ""
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 12.0,
+     "measured": false,
+     "name": "Clearance to the front bulkhead",
+     "note": "Assembly and tolerance gap. Do not spend this one."
+    }
+   ],
+   "verdict": "TIGHT"
+  },
+  "summary": "Pedal box stack-up: 374.9 mm installed vs 379.9 mm available -> TIGHT\n      112.0 mm  Master cylinder body  [catalogue/estimate]\n       81.6 mm  Pedal pad to pivot (X projection of the lever)  [catalogue/estimate]\n       55.0 mm  Pushrod  [catalogue/estimate, 8.0 mm of it adjustable]\n       42.0 mm  MC outlet fitting + hardline bend radius  [catalogue/estimate]\n       38.0 mm  Balance bar + clevises + spherical bearing  [catalogue/estimate]\n       16.3 mm  Pivot to balance-bar clevis  [catalogue/estimate]\n       12.0 mm  Clearance to the front bulkhead  [catalogue/estimate]\n       10.0 mm  Pedal arc clearance (pad sweep under braking)  [catalogue/estimate]\n        8.0 mm  Mount plate / bulkhead flange  [catalogue/estimate]",
+  "waterfall": [
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 112.0,
+    "measured": false,
+    "name": "Master cylinder body",
+    "note": "The part. Only a different part changes this."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 81.56770083329849,
+    "measured": false,
+    "name": "Pedal pad to pivot (X projection of the lever)",
+    "note": "90.0 mm arm at 25 deg from X. A more upright pedal projects less."
+   },
+   {
+    "adjustable_mm": 8.0,
+    "length_mm": 55.0,
+    "measured": false,
+    "name": "Pushrod",
+    "note": "8.0 mm can be wound out before thread engagement hits the 12.0 mm floor."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 42.0,
+    "measured": false,
+    "name": "MC outlet fitting + hardline bend radius",
+    "note": "'straight fitting + hardline bend'. A 90 deg banjo or a bulkhead elbow is the cheapest length in the whole stack."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 38.0,
+    "measured": false,
+    "name": "Balance bar + clevises + spherical bearing",
+    "note": "Bar hardware between the pedal and the two pushrods."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 16.3135401666597,
+    "measured": false,
+    "name": "Pivot to balance-bar clevis",
+    "note": "Lever/ratio = 18.0 mm arm. Raising the pedal ratio pulls this in."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 12.0,
+    "measured": false,
+    "name": "Clearance to the front bulkhead",
+    "note": "Assembly and tolerance gap. Do not spend this one."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 10.0,
+    "measured": false,
+    "name": "Pedal arc clearance (pad sweep under braking)",
+    "note": "Room the pad needs to travel without touching anything."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 8.0,
+    "measured": false,
+    "name": "Mount plate / bulkhead flange",
+    "note": ""
+   }
+  ]
+ },
+ "unknown_family": {
+  "as_dict": {
+   "available_mm": 400.0,
+   "deficit_mm": -25.11875900004179,
+   "findings": [
+    {
+     "check": "mc_body_length_source",
+     "detail": {},
+     "message": "Master-cylinder body length came from the 'nope' catalogue placeholder (112.0 mm), not from your part. Put a caliper on the cylinder and pass mc_body_mm -- body lengths differ by 20.0 mm to 40.0 mm across families and that is most of the deficit you are chasing.",
+     "severity": "missing",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "mc_outlet_stack",
+     "detail": {},
+     "message": "The line exit behind the cylinders is carrying 42.0 mm of the stack ('??'), which includes the bend radius the hardline needs to turn away from the cylinder. This is the segment most often missing from a CAD envelope check, because the fitting is modelled but the bend is not.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "pedal_box_envelope",
+     "detail": {},
+     "message": "Fits with 25.1 mm to spare.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes",
+      "chassis"
+     ]
+    }
+   ],
+   "installed_mm": 374.8812409999582,
+   "is_estimate": true,
+   "notes": [
+    "Unknown outlet type '??'; used the straight-fitting stack.",
+    "Some segments came from catalogue placeholders. The RANKING of segments is trustworthy; the absolute total is provisional until the real parts are measured."
+   ],
+   "segments": [
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 81.56770083329849,
+     "measured": false,
+     "name": "Pedal pad to pivot (X projection of the lever)",
+     "note": "90.0 mm arm at 25 deg from X. A more upright pedal projects less."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 10.0,
+     "measured": false,
+     "name": "Pedal arc clearance (pad sweep under braking)",
+     "note": "Room the pad needs to travel without touching anything."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 16.3135401666597,
+     "measured": false,
+     "name": "Pivot to balance-bar clevis",
+     "note": "Lever/ratio = 18.0 mm arm. Raising the pedal ratio pulls this in."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 38.0,
+     "measured": false,
+     "name": "Balance bar + clevises + spherical bearing",
+     "note": "Bar hardware between the pedal and the two pushrods."
+    },
+    {
+     "adjustable_mm": 8.0,
+     "length_mm": 55.0,
+     "measured": false,
+     "name": "Pushrod",
+     "note": "8.0 mm can be wound out before thread engagement hits the 12.0 mm floor."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 112.0,
+     "measured": false,
+     "name": "Master cylinder body",
+     "note": "The part. Only a different part changes this."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 42.0,
+     "measured": false,
+     "name": "MC outlet fitting + hardline bend radius",
+     "note": "'??'. A 90 deg banjo or a bulkhead elbow is the cheapest length in the whole stack."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 8.0,
+     "measured": false,
+     "name": "Mount plate / bulkhead flange",
+     "note": ""
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 12.0,
+     "measured": false,
+     "name": "Clearance to the front bulkhead",
+     "note": "Assembly and tolerance gap. Do not spend this one."
+    }
+   ],
+   "verdict": "FITS"
+  },
+  "fits": true,
+  "r": {
+   "available_mm": 400.0,
+   "deficit_mm": -25.11875900004179,
+   "findings": [
+    {
+     "check": "mc_body_length_source",
+     "detail": {},
+     "message": "Master-cylinder body length came from the 'nope' catalogue placeholder (112.0 mm), not from your part. Put a caliper on the cylinder and pass mc_body_mm -- body lengths differ by 20.0 mm to 40.0 mm across families and that is most of the deficit you are chasing.",
+     "severity": "missing",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "mc_outlet_stack",
+     "detail": {},
+     "message": "The line exit behind the cylinders is carrying 42.0 mm of the stack ('??'), which includes the bend radius the hardline needs to turn away from the cylinder. This is the segment most often missing from a CAD envelope check, because the fitting is modelled but the bend is not.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "pedal_box_envelope",
+     "detail": {},
+     "message": "Fits with 25.1 mm to spare.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes",
+      "chassis"
+     ]
+    }
+   ],
+   "installed_mm": 374.8812409999582,
+   "is_estimate": true,
+   "notes": [
+    "Unknown outlet type '??'; used the straight-fitting stack.",
+    "Some segments came from catalogue placeholders. The RANKING of segments is trustworthy; the absolute total is provisional until the real parts are measured."
+   ],
+   "segments": [
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 81.56770083329849,
+     "measured": false,
+     "name": "Pedal pad to pivot (X projection of the lever)",
+     "note": "90.0 mm arm at 25 deg from X. A more upright pedal projects less."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 10.0,
+     "measured": false,
+     "name": "Pedal arc clearance (pad sweep under braking)",
+     "note": "Room the pad needs to travel without touching anything."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 16.3135401666597,
+     "measured": false,
+     "name": "Pivot to balance-bar clevis",
+     "note": "Lever/ratio = 18.0 mm arm. Raising the pedal ratio pulls this in."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 38.0,
+     "measured": false,
+     "name": "Balance bar + clevises + spherical bearing",
+     "note": "Bar hardware between the pedal and the two pushrods."
+    },
+    {
+     "adjustable_mm": 8.0,
+     "length_mm": 55.0,
+     "measured": false,
+     "name": "Pushrod",
+     "note": "8.0 mm can be wound out before thread engagement hits the 12.0 mm floor."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 112.0,
+     "measured": false,
+     "name": "Master cylinder body",
+     "note": "The part. Only a different part changes this."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 42.0,
+     "measured": false,
+     "name": "MC outlet fitting + hardline bend radius",
+     "note": "'??'. A 90 deg banjo or a bulkhead elbow is the cheapest length in the whole stack."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 8.0,
+     "measured": false,
+     "name": "Mount plate / bulkhead flange",
+     "note": ""
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 12.0,
+     "measured": false,
+     "name": "Clearance to the front bulkhead",
+     "note": "Assembly and tolerance gap. Do not spend this one."
+    }
+   ],
+   "verdict": "FITS"
+  },
+  "summary": "Pedal box stack-up: 374.9 mm installed vs 400.0 mm available -> FITS\n      112.0 mm  Master cylinder body  [catalogue/estimate]\n       81.6 mm  Pedal pad to pivot (X projection of the lever)  [catalogue/estimate]\n       55.0 mm  Pushrod  [catalogue/estimate, 8.0 mm of it adjustable]\n       42.0 mm  MC outlet fitting + hardline bend radius  [catalogue/estimate]\n       38.0 mm  Balance bar + clevises + spherical bearing  [catalogue/estimate]\n       16.3 mm  Pivot to balance-bar clevis  [catalogue/estimate]\n       12.0 mm  Clearance to the front bulkhead  [catalogue/estimate]\n       10.0 mm  Pedal arc clearance (pad sweep under braking)  [catalogue/estimate]\n        8.0 mm  Mount plate / bulkhead flange  [catalogue/estimate]",
+  "waterfall": [
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 112.0,
+    "measured": false,
+    "name": "Master cylinder body",
+    "note": "The part. Only a different part changes this."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 81.56770083329849,
+    "measured": false,
+    "name": "Pedal pad to pivot (X projection of the lever)",
+    "note": "90.0 mm arm at 25 deg from X. A more upright pedal projects less."
+   },
+   {
+    "adjustable_mm": 8.0,
+    "length_mm": 55.0,
+    "measured": false,
+    "name": "Pushrod",
+    "note": "8.0 mm can be wound out before thread engagement hits the 12.0 mm floor."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 42.0,
+    "measured": false,
+    "name": "MC outlet fitting + hardline bend radius",
+    "note": "'??'. A 90 deg banjo or a bulkhead elbow is the cheapest length in the whole stack."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 38.0,
+    "measured": false,
+    "name": "Balance bar + clevises + spherical bearing",
+    "note": "Bar hardware between the pedal and the two pushrods."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 16.3135401666597,
+    "measured": false,
+    "name": "Pivot to balance-bar clevis",
+    "note": "Lever/ratio = 18.0 mm arm. Raising the pedal ratio pulls this in."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 12.0,
+    "measured": false,
+    "name": "Clearance to the front bulkhead",
+    "note": "Assembly and tolerance gap. Do not spend this one."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 10.0,
+    "measured": false,
+    "name": "Pedal arc clearance (pad sweep under braking)",
+    "note": "Room the pad needs to travel without touching anything."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 8.0,
+    "measured": false,
+    "name": "Mount plate / bulkhead flange",
+    "note": ""
+   }
+  ]
+ },
+ "unmeasured_given": {
+  "as_dict": {
+   "available_mm": 420.0,
+   "deficit_mm": -85.11875900004179,
+   "findings": [
+    {
+     "check": "mc_outlet_stack",
+     "detail": {},
+     "message": "The line exit behind the cylinders is carrying 14.0 mm of the stack ('90 deg banjo'), which includes the bend radius the hardline needs to turn away from the cylinder. This is the segment most often missing from a CAD envelope check, because the fitting is modelled but the bend is not.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "pedal_box_envelope",
+     "detail": {},
+     "message": "Fits with 85.1 mm to spare.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes",
+      "chassis"
+     ]
+    }
+   ],
+   "installed_mm": 334.8812409999582,
+   "is_estimate": true,
+   "notes": [
+    "Some segments came from catalogue placeholders. The RANKING of segments is trustworthy; the absolute total is provisional until the real parts are measured."
+   ],
+   "segments": [
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 81.56770083329849,
+     "measured": false,
+     "name": "Pedal pad to pivot (X projection of the lever)",
+     "note": "90.0 mm arm at 25 deg from X. A more upright pedal projects less."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 10.0,
+     "measured": false,
+     "name": "Pedal arc clearance (pad sweep under braking)",
+     "note": "Room the pad needs to travel without touching anything."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 16.3135401666597,
+     "measured": false,
+     "name": "Pivot to balance-bar clevis",
+     "note": "Lever/ratio = 18.0 mm arm. Raising the pedal ratio pulls this in."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 38.0,
+     "measured": false,
+     "name": "Balance bar + clevises + spherical bearing",
+     "note": "Bar hardware between the pedal and the two pushrods."
+    },
+    {
+     "adjustable_mm": 8.0,
+     "length_mm": 55.0,
+     "measured": false,
+     "name": "Pushrod",
+     "note": "8.0 mm can be wound out before thread engagement hits the 12.0 mm floor."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 100.0,
+     "measured": false,
+     "name": "Master cylinder body",
+     "note": "The part. Only a different part changes this."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 14.0,
+     "measured": false,
+     "name": "MC outlet fitting + hardline bend radius",
+     "note": "'90 deg banjo'. A 90 deg banjo or a bulkhead elbow is the cheapest length in the whole stack."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 8.0,
+     "measured": false,
+     "name": "Mount plate / bulkhead flange",
+     "note": ""
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 12.0,
+     "measured": false,
+     "name": "Clearance to the front bulkhead",
+     "note": "Assembly and tolerance gap. Do not spend this one."
+    }
+   ],
+   "verdict": "FITS"
+  },
+  "fits": true,
+  "r": {
+   "available_mm": 420.0,
+   "deficit_mm": -85.11875900004179,
+   "findings": [
+    {
+     "check": "mc_outlet_stack",
+     "detail": {},
+     "message": "The line exit behind the cylinders is carrying 14.0 mm of the stack ('90 deg banjo'), which includes the bend radius the hardline needs to turn away from the cylinder. This is the segment most often missing from a CAD envelope check, because the fitting is modelled but the bend is not.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "pedal_box_envelope",
+     "detail": {},
+     "message": "Fits with 85.1 mm to spare.",
+     "severity": "ok",
+     "subsystems": [
+      "brakes",
+      "chassis"
+     ]
+    }
+   ],
+   "installed_mm": 334.8812409999582,
+   "is_estimate": true,
+   "notes": [
+    "Some segments came from catalogue placeholders. The RANKING of segments is trustworthy; the absolute total is provisional until the real parts are measured."
+   ],
+   "segments": [
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 81.56770083329849,
+     "measured": false,
+     "name": "Pedal pad to pivot (X projection of the lever)",
+     "note": "90.0 mm arm at 25 deg from X. A more upright pedal projects less."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 10.0,
+     "measured": false,
+     "name": "Pedal arc clearance (pad sweep under braking)",
+     "note": "Room the pad needs to travel without touching anything."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 16.3135401666597,
+     "measured": false,
+     "name": "Pivot to balance-bar clevis",
+     "note": "Lever/ratio = 18.0 mm arm. Raising the pedal ratio pulls this in."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 38.0,
+     "measured": false,
+     "name": "Balance bar + clevises + spherical bearing",
+     "note": "Bar hardware between the pedal and the two pushrods."
+    },
+    {
+     "adjustable_mm": 8.0,
+     "length_mm": 55.0,
+     "measured": false,
+     "name": "Pushrod",
+     "note": "8.0 mm can be wound out before thread engagement hits the 12.0 mm floor."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 100.0,
+     "measured": false,
+     "name": "Master cylinder body",
+     "note": "The part. Only a different part changes this."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 14.0,
+     "measured": false,
+     "name": "MC outlet fitting + hardline bend radius",
+     "note": "'90 deg banjo'. A 90 deg banjo or a bulkhead elbow is the cheapest length in the whole stack."
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 8.0,
+     "measured": false,
+     "name": "Mount plate / bulkhead flange",
+     "note": ""
+    },
+    {
+     "adjustable_mm": 0.0,
+     "length_mm": 12.0,
+     "measured": false,
+     "name": "Clearance to the front bulkhead",
+     "note": "Assembly and tolerance gap. Do not spend this one."
+    }
+   ],
+   "verdict": "FITS"
+  },
+  "summary": "Pedal box stack-up: 334.9 mm installed vs 420.0 mm available -> FITS\n      100.0 mm  Master cylinder body  [catalogue/estimate]\n       81.6 mm  Pedal pad to pivot (X projection of the lever)  [catalogue/estimate]\n       55.0 mm  Pushrod  [catalogue/estimate, 8.0 mm of it adjustable]\n       38.0 mm  Balance bar + clevises + spherical bearing  [catalogue/estimate]\n       16.3 mm  Pivot to balance-bar clevis  [catalogue/estimate]\n       14.0 mm  MC outlet fitting + hardline bend radius  [catalogue/estimate]\n       12.0 mm  Clearance to the front bulkhead  [catalogue/estimate]\n       10.0 mm  Pedal arc clearance (pad sweep under braking)  [catalogue/estimate]\n        8.0 mm  Mount plate / bulkhead flange  [catalogue/estimate]",
+  "waterfall": [
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 100.0,
+    "measured": false,
+    "name": "Master cylinder body",
+    "note": "The part. Only a different part changes this."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 81.56770083329849,
+    "measured": false,
+    "name": "Pedal pad to pivot (X projection of the lever)",
+    "note": "90.0 mm arm at 25 deg from X. A more upright pedal projects less."
+   },
+   {
+    "adjustable_mm": 8.0,
+    "length_mm": 55.0,
+    "measured": false,
+    "name": "Pushrod",
+    "note": "8.0 mm can be wound out before thread engagement hits the 12.0 mm floor."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 38.0,
+    "measured": false,
+    "name": "Balance bar + clevises + spherical bearing",
+    "note": "Bar hardware between the pedal and the two pushrods."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 16.3135401666597,
+    "measured": false,
+    "name": "Pivot to balance-bar clevis",
+    "note": "Lever/ratio = 18.0 mm arm. Raising the pedal ratio pulls this in."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 14.0,
+    "measured": false,
+    "name": "MC outlet fitting + hardline bend radius",
+    "note": "'90 deg banjo'. A 90 deg banjo or a bulkhead elbow is the cheapest length in the whole stack."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 12.0,
+    "measured": false,
+    "name": "Clearance to the front bulkhead",
+    "note": "Assembly and tolerance gap. Do not spend this one."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 10.0,
+    "measured": false,
+    "name": "Pedal arc clearance (pad sweep under braking)",
+    "note": "Room the pad needs to travel without touching anything."
+   },
+   {
+    "adjustable_mm": 0.0,
+    "length_mm": 8.0,
+    "measured": false,
+    "name": "Mount plate / bulkhead flange",
+    "note": ""
+   }
+  ]
+ }
+}

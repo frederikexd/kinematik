@@ -38,14 +38,14 @@ and its constraints — not writing a new solver.
 
 from __future__ import annotations
 
-import numpy as np
+from ._num import vec as _vec
 from .topology import (
     MechanismBuilder, Mechanism,
 )
 
 
 def _v(x):
-    return np.asarray(x, float).reshape(3)
+    return _vec(x).reshape(3)
 
 
 # --------------------------------------------------------------------------- #

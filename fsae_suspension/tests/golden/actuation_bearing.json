@@ -1,0 +1,183 @@
+{
+ "default": [
+  {
+   "bearing_P0_N": 1932.5791471896314,
+   "case": "1.5g corner",
+   "couple_Nmm": 0.0,
+   "passes": false,
+   "pivot_axial_N": 0.0,
+   "pivot_radial_N": 3865.1582943792628,
+   "pushrod_N": -2090.73413966632,
+   "s0": 1.2211660274984995,
+   "spring_N": -2209.889260665263
+  },
+  {
+   "bearing_P0_N": 1648.9898145286916,
+   "case": "1.5g braking",
+   "couple_Nmm": 0.0,
+   "passes": false,
+   "pivot_axial_N": 0.0,
+   "pivot_radial_N": 3297.979629057383,
+   "pushrod_N": -1783.9369250209954,
+   "s0": 1.4311792463524262,
+   "spring_N": -1885.6070590291786
+  },
+  {
+   "bearing_P0_N": 2025.8614988768422,
+   "case": "combined 1.06g",
+   "couple_Nmm": 0.0,
+   "passes": false,
+   "pivot_axial_N": 0.0,
+   "pivot_radial_N": 4051.7229977536845,
+   "pushrod_N": -2191.6503673843017,
+   "s0": 1.164936498032273,
+   "spring_N": -2316.556906077324
+  },
+  {
+   "bearing_P0_N": 3557.8945555218043,
+   "case": "3g vertical bump",
+   "couple_Nmm": 0.0,
+   "passes": false,
+   "pivot_axial_N": 0.0,
+   "pivot_radial_N": 7115.7891110436085,
+   "pushrod_N": -3849.0592343292337,
+   "s0": 0.6633136432717804,
+   "spring_N": -4068.42481988943
+  },
+  {
+   "bearing_P0_N": 2256.1879629127206,
+   "case": "kerb 2g+1g",
+   "couple_Nmm": 0.0,
+   "passes": false,
+   "pivot_axial_N": 0.0,
+   "pivot_radial_N": 4512.375925825441,
+   "pushrod_N": -2440.825881012664,
+   "s0": 1.0460121402975924,
+   "spring_N": -2579.933430686977
+  }
+ ],
+ "offset": [
+  {
+   "bearing_P0_N": 6750.111206190112,
+   "case": "1.5g corner",
+   "couple_Nmm": 96185.47365556567,
+   "passes": false,
+   "pivot_axial_N": 446.510605722726,
+   "pivot_radial_N": 3881.6750468236573,
+   "pushrod_N": -2146.620344201837,
+   "s0": 0.7407285372446616,
+   "spring_N": -2219.3326498017473
+  },
+  {
+   "bearing_P0_N": 5759.590566901256,
+   "case": "1.5g braking",
+   "couple_Nmm": 82071.08443361588,
+   "passes": false,
+   "pivot_axial_N": 380.9890228747067,
+   "pivot_radial_N": 3312.0726904409257,
+   "pushrod_N": -1831.6223107324927,
+   "s0": 0.8681172631842254,
+   "spring_N": -1893.6647122038696
+  },
+  {
+   "bearing_P0_N": 7075.927744353256,
+   "case": "combined 1.06g",
+   "couple_Nmm": 100828.18502590574,
+   "passes": false,
+   "pivot_axial_N": 468.0629232128876,
+   "pivot_radial_N": 4069.036986115939,
+   "pushrod_N": -2250.234105210254,
+   "s0": 0.7066211217306605,
+   "spring_N": -2326.4561117571197
+  },
+  {
+   "bearing_P0_N": 12427.011822307515,
+   "case": "3g vertical bump",
+   "couple_Nmm": 177078.27052624384,
+   "passes": false,
+   "pivot_axial_N": 822.0298016740151,
+   "pivot_radial_N": 7146.196591990648,
+   "pushrod_N": -3951.9462095586014,
+   "s0": 0.4023493396074981,
+   "spring_N": -4085.8101791608638
+  },
+  {
+   "bearing_P0_N": 7880.4118702591095,
+   "case": "kerb 2g+1g",
+   "couple_Nmm": 112291.65345405223,
+   "passes": false,
+   "pivot_axial_N": 521.2784456509668,
+   "pivot_radial_N": 4531.658395112995,
+   "pushrod_N": -2506.0701853141313,
+   "s0": 0.634484603383503,
+   "spring_N": -2590.9581076994655
+  }
+ ],
+ "plain": [
+  {
+   "bearing_P0_N": 2518.6137696241112,
+   "couple_Nmm": 0.0,
+   "passes": false,
+   "pivot_axial_N": 0.0,
+   "pivot_radial_N": 5037.2275392482225,
+   "pushrod_N": -2724.72762652143,
+   "s0": 0.9370233850314479,
+   "spring_N": -2880.0153045994944
+  }
+ ],
+ "select": [
+  {
+   "C0_N": 1000000.0,
+   "label": "big",
+   "meets": true,
+   "s0": 105.5330190044412,
+   "spacing_mm": 30.0
+  },
+  {
+   "C0_N": 5000.0,
+   "label": "x",
+   "meets": false,
+   "s0": 0.4023493396074981,
+   "spacing_mm": 20.0
+  },
+  {
+   "C0_N": 2360.0,
+   "label": "2 x 6001-2RS (declared)",
+   "meets": false,
+   "s0": 0.24905792485048125,
+   "spacing_mm": 30.0
+  }
+ ],
+ "spacing": [
+  {
+   "P0_N": 3557.8945555218043,
+   "required_C0_N": 10673.683666565412,
+   "spacing_mm": 10.0
+  },
+  {
+   "P0_N": 3557.8945555218043,
+   "required_C0_N": 10673.683666565412,
+   "spacing_mm": 40.0
+  }
+ ],
+ "spacing_d": [
+  {
+   "P0_N": 1932.5791471896312,
+   "required_C0_N": 3865.1582943792623,
+   "spacing_mm": 25.0
+  }
+ ],
+ "zero": [
+  {
+   "bearing_P0_N": 0.0,
+   "case": "0",
+   "couple_Nmm": 0.0,
+   "passes": true,
+   "pivot_axial_N": 0.0,
+   "pivot_radial_N": 0.0,
+   "pushrod_N": -0.0,
+   "s0": "inf",
+   "spring_N": -0.0
+  }
+ ]
+}

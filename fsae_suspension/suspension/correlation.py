@@ -41,6 +41,7 @@ import math
 from dataclasses import dataclass, field, asdict
 
 import numpy as np
+from ._num import vec as _vec
 
 
 G = 9.81
@@ -140,12 +141,12 @@ class CorrelationReport:
 # --------------------------------------------------------------------------- #
 def _pct_err(predicted: float, measured: float) -> float:
     if not (np.isfinite(predicted) and np.isfinite(measured)) or abs(measured) < 1e-9:
-        return float("nan")
+        return math.nan
     return 100.0 * (predicted - measured) / measured
 
 
 def _channel(channel, measured, predicted, unit, tol_pct, note=""):
-    err = (predicted - measured) if (np.isfinite(predicted) and np.isfinite(measured)) else float("nan")
+    err = (predicted - measured) if (np.isfinite(predicted) and np.isfinite(measured)) else math.nan
     epct = _pct_err(predicted, measured)
     within = bool(np.isfinite(epct) and abs(epct) <= tol_pct)
     return ChannelResult(channel=channel, measured=float(measured),
@@ -160,7 +161,7 @@ def skidpad_time_from_lateral_g(lat_g: float, radius_m: float = 9.125) -> float:
     *time* convert to the *g* the sim reports (and vice-versa) so the comparison
     is on the same channel. Returns NaN on non-physical input."""
     if not (np.isfinite(lat_g) and lat_g > 0 and np.isfinite(radius_m) and radius_m > 0):
-        return float("nan")
+        return math.nan
     v = math.sqrt(lat_g * G * radius_m)
     return (2.0 * math.pi * radius_m) / v
 
@@ -169,7 +170,7 @@ def lateral_g_from_skidpad_time(time_s: float, radius_m: float = 9.125) -> float
     """Inverse of the above: infer the steady-state lateral g a measured skidpad
     time implies. a_lat = v^2 / R, v = 2*pi*R / t."""
     if not (np.isfinite(time_s) and time_s > 0 and np.isfinite(radius_m) and radius_m > 0):
-        return float("nan")
+        return math.nan
     v = (2.0 * math.pi * radius_m) / time_s
     return (v * v / radius_m) / G
 
@@ -249,8 +250,8 @@ def _extract_trace(lap_result):
     if dist is None or spd is None:
         return None, None
     try:
-        dist = np.asarray(dist, float).ravel()
-        spd = np.asarray(spd, float).ravel()
+        dist = _vec(dist).ravel()
+        spd = _vec(spd).ravel()
     except Exception:
         return None, None
     if dist.size < 2 or spd.size < 2 or dist.size != spd.size:
@@ -280,26 +281,26 @@ def correlate_speed_trace(measured_distance, measured_speed,
         predicted_distance, predicted_speed = _extract_trace(lap_result)
 
     try:
-        md = np.asarray(measured_distance, float).ravel()
-        ms = np.asarray(measured_speed, float).ravel()
+        md = _vec(measured_distance).ravel()
+        ms = _vec(measured_speed).ravel()
         if measured_speed_kmh:
             ms = ms / 3.6
-        pd_ = np.asarray(predicted_distance, float).ravel()
-        ps = np.asarray(predicted_speed, float).ravel()
+        pd_ = _vec(predicted_distance).ravel()
+        ps = _vec(predicted_speed).ravel()
     except Exception as e:
-        tr = TraceResult(ok=False, n_points=0, mean_measured_speed=float("nan"),
-                         rmse=float("nan"), rmse_frac=float("nan"), bias=float("nan"),
-                         bias_frac=float("nan"), peak_speed_error=float("nan"),
-                         r2=float("nan"), within_tol=False,
+        tr = TraceResult(ok=False, n_points=0, mean_measured_speed=math.nan,
+                         rmse=math.nan, rmse_frac=math.nan, bias=math.nan,
+                         bias_frac=math.nan, peak_speed_error=math.nan,
+                         r2=math.nan, within_tol=False,
                          note=f"could not parse traces: {e}")
         return _finish([], tr, tol, context="Speed trace")
 
     bad = (md.size < 2 or ms.size != md.size or pd_.size < 2 or ps.size != pd_.size)
     if bad:
-        tr = TraceResult(ok=False, n_points=0, mean_measured_speed=float("nan"),
-                         rmse=float("nan"), rmse_frac=float("nan"), bias=float("nan"),
-                         bias_frac=float("nan"), peak_speed_error=float("nan"),
-                         r2=float("nan"), within_tol=False,
+        tr = TraceResult(ok=False, n_points=0, mean_measured_speed=math.nan,
+                         rmse=math.nan, rmse_frac=math.nan, bias=math.nan,
+                         bias_frac=math.nan, peak_speed_error=math.nan,
+                         r2=math.nan, within_tol=False,
                          note="trace arrays missing, too short, or mismatched lengths")
         return _finish([], tr, tol, context="Speed trace")
 
@@ -313,10 +314,10 @@ def correlate_speed_trace(measured_distance, measured_speed,
     mask = (md >= lo) & (md <= hi)
     if mask.sum() < 2:
         tr = TraceResult(ok=False, n_points=int(mask.sum()),
-                         mean_measured_speed=float("nan"), rmse=float("nan"),
-                         rmse_frac=float("nan"), bias=float("nan"),
-                         bias_frac=float("nan"), peak_speed_error=float("nan"),
-                         r2=float("nan"), within_tol=False,
+                         mean_measured_speed=math.nan, rmse=math.nan,
+                         rmse_frac=math.nan, bias=math.nan,
+                         bias_frac=math.nan, peak_speed_error=math.nan,
+                         r2=math.nan, within_tol=False,
                          note="measured and predicted distance ranges do not overlap")
         return _finish([], tr, tol, context="Speed trace")
 
@@ -337,10 +338,10 @@ def correlate_speed_trace(measured_distance, measured_speed,
     if denom > 1e-9 and meas_std > 0.05 * max(mean_meas, 1e-9):
         r2 = float(1.0 - np.sum(resid ** 2) / denom)
     else:
-        r2 = float("nan")
+        r2 = math.nan
 
-    rmse_frac = rmse / mean_meas if mean_meas > 1e-9 else float("nan")
-    bias_frac = abs(bias) / mean_meas if mean_meas > 1e-9 else float("nan")
+    rmse_frac = rmse / mean_meas if mean_meas > 1e-9 else math.nan
+    bias_frac = abs(bias) / mean_meas if mean_meas > 1e-9 else math.nan
     within = bool(np.isfinite(rmse_frac) and rmse_frac <= tol["trace_rmse_frac"]
                   and np.isfinite(bias_frac) and bias_frac <= tol["trace_bias_frac"])
 

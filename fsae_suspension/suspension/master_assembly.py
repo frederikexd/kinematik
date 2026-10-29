@@ -25,6 +25,7 @@ from dataclasses import dataclass, field
 from collections.abc import Iterable, Sequence
 
 import numpy as np
+from ._num import vec as _vec
 
 # --------------------------------------------------------------------------
 #  Constants (defaults mirror assembly_slots column defaults in the schema)
@@ -147,7 +148,7 @@ def slot_frame(anchors: np.ndarray, axis_pair=(0, 1), secondary=2
     hold its previous frame instead (updateSlot kernel does exactly that);
     the identity fallback only exists so a cold start is still renderable.
     """
-    a = np.asarray(anchors, float).reshape(-1, 3)
+    a = _vec(anchors).reshape(-1, 3)
     c = a.mean(axis=0)
     u = a[axis_pair[0]] - a[axis_pair[1]]
     nu = np.linalg.norm(u)
@@ -170,7 +171,7 @@ def slot_frame(anchors: np.ndarray, axis_pair=(0, 1), secondary=2
 # --------------------------------------------------------------------------
 def fit_envelope_dummy(anchors: np.ndarray, sd: SlotDef) -> SlotFit:
     """Case A: k>=3 anchors → oriented box sized to the anchor cloud."""
-    a = np.asarray(anchors, float).reshape(-1, 3)
+    a = _vec(anchors).reshape(-1, 3)
     c, R, err = slot_frame(a, sd.axis_pair, sd.secondary)
     flags: list[Flag] = []
     if err:
@@ -190,8 +191,8 @@ def fit_envelope_dummy(anchors: np.ndarray, sd: SlotDef) -> SlotFit:
 def fit_bridge_dummy(p0, p1, sd: SlotDef) -> SlotFit:
     """Case B: two anchors → cylinder of radius r spanning p0→p1.
     Local +z is the cylinder axis (matches the unit-primitive convention)."""
-    p0 = np.asarray(p0, float)
-    p1 = np.asarray(p1, float)
+    p0 = _vec(p0)
+    p1 = _vec(p1)
     d = p1 - p0
     ell = float(np.linalg.norm(d))
     flags: list[Flag] = []
@@ -231,7 +232,7 @@ class Registration:
     confidence: str               # 'solved' | 'roll_assumed' | 'low_confidence'
 
     def apply(self, pts: np.ndarray) -> np.ndarray:
-        return (self.uniform_scale * np.asarray(pts, float)) @ self.rotation.T \
+        return (self.uniform_scale * _vec(pts)) @ self.rotation.T \
                + self.translation
 
     def quaternion(self) -> np.ndarray:
@@ -260,8 +261,8 @@ def register_part(connectors_local: np.ndarray, anchors_world: np.ndarray,
     1000) and is the ONLY scaling ever applied to true CAD — uniform, known
     a priori, never estimated from the fit.
     """
-    q = unit_scale * np.asarray(connectors_local, float).reshape(-1, 3)
-    p = np.asarray(anchors_world, float).reshape(-1, 3)
+    q = unit_scale * _vec(connectors_local).reshape(-1, 3)
+    p = _vec(anchors_world).reshape(-1, 3)
     n = len(q)
     if n == 0 or n != len(p):
         raise ValueError("register_part: need equal, non-empty point sets")

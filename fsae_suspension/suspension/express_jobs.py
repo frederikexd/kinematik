@@ -33,9 +33,11 @@ Every job obeys the same three rules as the first tranche:
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 import numpy as np
+from ._num import vec as _vec
 
 from .express import (JOBS, Artifact, Ctx, Job, register_job, _csv_bytes,
                       _fnum, _md)
@@ -125,9 +127,9 @@ def _job_compliance(ctx: Ctx) -> list[Artifact]:
     d_camber = float(res.compliant.camber) - float(res.rigid.camber)
     d_toe = float(res.compliant.toe) - float(res.rigid.toe)
     rows = sorted(
-        ((m, float(res.member_forces.get(m, float("nan"))),
-          float(res.member_deflection.get(m, float("nan"))),
-          float(res.member_stiffness.get(m, float("nan"))))
+        ((m, float(res.member_forces.get(m, math.nan)),
+          float(res.member_deflection.get(m, math.nan)),
+          float(res.member_stiffness.get(m, math.nan)))
          for m in res.member_forces),
         key=lambda r: -abs(r[2] if np.isfinite(r[2]) else 0.0))
     worst = rows[0] if rows else None
@@ -190,14 +192,14 @@ def _job_lap_events(ctx: Ctx) -> list[Artifact]:
     rows, lines = [], []
     for name in sorted(res):
         r = res[name]
-        rows.append((name, float(getattr(r, "lap_time", float("nan"))),
-                     float(getattr(r, "event_time", float("nan"))),
-                     float(getattr(r, "avg_speed", float("nan"))),
-                     float(getattr(r, "top_speed", float("nan"))),
+        rows.append((name, float(getattr(r, "lap_time", math.nan)),
+                     float(getattr(r, "event_time", math.nan)),
+                     float(getattr(r, "avg_speed", math.nan)),
+                     float(getattr(r, "top_speed", math.nan)),
                      bool(getattr(r, "ok", True))))
     auto = res.get("autocross")
     endurance_s = (float(auto.lap_time) * laps
-                   if auto is not None else float("nan"))
+                   if auto is not None else math.nan)
 
     md = _md("Event times — the whole FSAE dynamic weekend", [
         f"Vehicle: **{p.mass:g} kg**, **{ctx.ask.param('power_kw', 60.0):g} "
@@ -239,28 +241,28 @@ def _job_ggv(ctx: Ctx) -> list[Artifact]:
                         weight_dist_front=p.weight_dist_front,
                         track_front=p.track_front, track_rear=p.track_rear,
                         wheelbase=p.wheelbase)
-    speeds = np.asarray(res.speeds, float)
-    lat = np.asarray(res.long_g, float)          # (n_speed, n_theta)
-    lng = np.asarray(res.lat_g, float)
+    speeds = _vec(res.speeds)
+    lat = _vec(res.long_g)          # (n_speed, n_theta)
+    lng = _vec(res.lat_g)
     #  the grid orientation varies with the generator's conventions, so the
     #  per-speed envelope is taken as the max magnitude on each axis rather
     #  than assumed — a wrong transpose would otherwise be invisible.
-    grid = np.asarray(res.theta, float)
+    grid = _vec(res.theta)
     rows = []
     for i, v in enumerate(speeds):
-        row_lat = float(np.nanmax(np.abs(grid[i]))) if grid.ndim == 2 else float("nan")
+        row_lat = float(np.nanmax(np.abs(grid[i]))) if grid.ndim == 2 else math.nan
         rows.append((float(v),
-                     float(np.asarray(res.max_lat_g, float).ravel()[i]
+                     float(_vec(res.max_lat_g).ravel()[i]
                            if np.asarray(res.max_lat_g).size > i
-                           else float("nan")),
-                     float(np.asarray(res.max_accel_g, float).ravel()[i]
+                           else math.nan),
+                     float(_vec(res.max_accel_g).ravel()[i]
                            if np.asarray(res.max_accel_g).size > i
-                           else float("nan")),
-                     float(np.asarray(res.max_brake_g, float).ravel()[i]
+                           else math.nan),
+                     float(_vec(res.max_brake_g).ravel()[i]
                            if np.asarray(res.max_brake_g).size > i
-                           else float("nan")),
+                           else math.nan),
                      row_lat))
-    mlat = np.asarray(res.max_lat_g, float).ravel()
+    mlat = _vec(res.max_lat_g).ravel()
 
     md = _md("The g-g-v envelope", [
         f"Grip model: **{res.grip_model}** · {speeds.size} speed stations "
@@ -409,7 +411,7 @@ def _job_chassis_rules(ctx: Ctx) -> list[Artifact]:
         _rulebook_footer(),
     ])
     rows = [(p.get("point", ""), p.get("n", ""),
-             p.get("belt_tension_N", float("nan")), p.get("mounts_to", ""))
+             p.get("belt_tension_N", math.nan), p.get("mounts_to", ""))
             for p in pts]
     csvb = _csv_bytes(["point", "count", "belt_tension_N", "mounts_to"], rows)
     return [Artifact("frames/harness_and_seat.md", md, "md"),
@@ -534,8 +536,8 @@ def _job_roll_correlation(ctx: Ctx) -> list[Artifact]:
     good = np.isfinite(roll_deg) & np.isfinite(ay)
     roll_deg, ay_g = roll_deg[good], ay[good]
     if roll_deg.size < 20:
-        grad_meas = float("nan")
-        r2 = float("nan")
+        grad_meas = math.nan
+        r2 = math.nan
     else:
         A = np.vstack([ay_g, np.ones_like(ay_g)]).T
         coef, *_ = np.linalg.lstsq(A, roll_deg, rcond=None)
@@ -543,13 +545,13 @@ def _job_roll_correlation(ctx: Ctx) -> list[Artifact]:
         pred = A @ coef
         ss_res = float(np.sum((roll_deg - pred) ** 2))
         ss_tot = float(np.sum((roll_deg - roll_deg.mean()) ** 2))
-        r2 = 1.0 - ss_res / ss_tot if ss_tot > 0 else float("nan")
+        r2 = 1.0 - ss_res / ss_tot if ss_tot > 0 else math.nan
 
     g_ref = 1.0
     _loads, detail = vd.lateral_load_transfer(g_ref)
-    grad_model = float(detail.get("roll_angle", float("nan"))) / g_ref
+    grad_model = float(detail.get("roll_angle", math.nan)) / g_ref
     ratio = (grad_meas / grad_model
-             if grad_model and np.isfinite(grad_model) else float("nan"))
+             if grad_model and np.isfinite(grad_model) else math.nan)
 
     if not np.isfinite(ratio):
         verdict = "Not enough usable samples to fit a gradient."
@@ -644,7 +646,7 @@ def _job_brake_bias(ctx: Ctx) -> list[Artifact]:
         slope = float(np.linalg.lstsq(pr_m[:, None], pf_m, rcond=None)[0][0])
         bias_meas = slope / (1.0 + slope)
     else:
-        slope, bias_meas = float("nan"), float("nan")
+        slope, bias_meas = math.nan, math.nan
     declared = float(ctx.ask.param("brake_bias_front", 0.62))
     delta = bias_meas - declared
 
@@ -693,15 +695,15 @@ def _job_energy_from_log(ctx: Ctx) -> list[Artifact]:
     t, v, i = t[good], v[good], i[good]
     p_w = v * i
     #  trapezoid over the real timebase, not a nominal dt
-    e_j = float(np.trapezoid(p_w, t)) if t.size > 1 else float("nan")
+    e_j = float(np.trapezoid(p_w, t)) if t.size > 1 else math.nan
     e_kwh = e_j / 3.6e6
-    duration = float(t[-1] - t[0]) if t.size > 1 else float("nan")
+    duration = float(t[-1] - t[0]) if t.size > 1 else math.nan
 
     laps_logged = float(ctx.ask.param("logged_laps", 0.0)) or None
     if laps_logged is None:
         #  no lap count given: report per-minute and say so rather than
         #  inventing a lap length
-        per_lap = float("nan")
+        per_lap = math.nan
         lap_note = ("No lap count given, so energy per lap cannot be formed. "
                     "Add 'this log is 4 laps' to your sentence and this job "
                     "will divide it for you.")
@@ -793,10 +795,10 @@ def _job_aero(ctx: Ctx) -> list[Artifact]:
         q = 0.5 * rho * v * v
         lift, drag = q * float(cla), q * float(cda)
         rows.append((float(v), float(cla), float(cda), lift, drag,
-                     lift / drag if drag else float("nan"),
+                     lift / drag if drag else math.nan,
                      lift / (p.mass * 9.80665)))
     v_eq = float(np.interp(1.0, [r[6] for r in rows], speeds)) \
-        if rows[-1][6] >= 1.0 else float("nan")
+        if rows[-1][6] >= 1.0 else math.nan
 
     mapped = bool(getattr(prov, "is_mapped", False))
     source = ("a correlated aero map" if mapped else
@@ -943,9 +945,9 @@ def _job_pcb(ctx: Ctx) -> list[Artifact]:
         except Exception:                                    # noqa: BLE001
             continue
         rows.append((nid, str(nets.get(nid, "")),
-                     float(res.get("current_a", float("nan"))),
-                     float(res.get("min_width_mm", float("nan"))),
-                     float(res.get("required_width_mm", float("nan"))),
+                     float(res.get("current_a", math.nan)),
+                     float(res.get("min_width_mm", math.nan)),
+                     float(res.get("required_width_mm", math.nan)),
                      str(res.get("verdict", ""))))
         for f in res.get("findings", []) or []:
             findings.append(f)
@@ -1034,7 +1036,7 @@ def _job_pack_thermal(ctx: Ctx) -> list[Artifact]:
                 "Warnings: " + "; ".join(getattr(res, "warnings", []) or
                                          ["(none reported)"]),
             ]), "md")]
-    temps = np.asarray(res.final_temp_c, float)
+    temps = _vec(res.final_temp_c)
     peak = float(np.nanmax(temps))
     md = _md("Pack thermal — one autocross lap", [
         f"Layout **{res.rows} × {res.cols}** cells.",
@@ -1259,8 +1261,8 @@ def _corner_histories(ctx: Ctx, n_max: int = 240):
                      "to measure load)" if pots else ""))
         try:
             _loads, detail = vd.lateral_load_transfer(1.0)
-            ltd_f = float(detail.get("ltd_front", float("nan")))
-            ltd_r = float(detail.get("ltd_rear", float("nan")))
+            ltd_f = float(detail.get("ltd_front", math.nan))
+            ltd_r = float(detail.get("ltd_rear", math.nan))
             tlltd = ltd_f / (ltd_f + ltd_r) if (ltd_f + ltd_r) else 0.5
         except Exception:                                    # noqa: BLE001
             tlltd = 0.5
@@ -1325,8 +1327,8 @@ def _job_ghost(ctx: Ctx) -> list[Artifact]:
                         if callable(getattr(a, "summary", None)) else {})
 
     def _fos(c):
-        v = summaries[c].get("worst_fos", float("inf"))
-        return float(v) if v is not None and np.isfinite(v) else float("inf")
+        v = summaries[c].get("worst_fos", math.inf)
+        return float(v) if v is not None and np.isfinite(v) else math.inf
     worst_corner = min(_CORNERS, key=_fos)
     ctx.results["ghost_topology"] = GhostSweep(
         by_corner=audits, summaries=summaries, worst_corner=worst_corner,
@@ -1334,17 +1336,17 @@ def _job_ghost(ctx: Ctx) -> list[Artifact]:
 
     measured = source.startswith("measured")
     rows = [(c, str(summaries[c].get("verdict", "?")),
-             float(summaries[c].get("worst_fos", float("nan"))),
+             float(summaries[c].get("worst_fos", math.nan)),
              str(summaries[c].get("worst_fos_member", "—")),
-             float(summaries[c].get("max_d_camber_deg", float("nan"))),
-             float(summaries[c].get("max_d_toe_deg", float("nan"))),
-             float(summaries[c].get("max_loop_gain", float("nan"))))
+             float(summaries[c].get("max_d_camber_deg", math.nan)),
+             float(summaries[c].get("max_d_toe_deg", math.nan)),
+             float(summaries[c].get("max_loop_gain", math.nan)))
             for c in _CORNERS]
 
     #  the asymmetry the symmetric model could never have shown you
     def _spread(i):
         vals = [r[i] for r in rows if np.isfinite(r[i])]
-        return (max(vals) - min(vals)) if vals else float("nan")
+        return (max(vals) - min(vals)) if vals else math.nan
 
     def _pair(a, b):
         """Side-to-side gap, absolute AND relative.
@@ -1355,13 +1357,13 @@ def _job_ghost(ctx: Ctx) -> list[Artifact]:
         one; the absolute is printed because people ask for it.
         """
         try:
-            va = float(summaries[a].get("worst_fos", float("nan")))
-            vb = float(summaries[b].get("worst_fos", float("nan")))
+            va = float(summaries[a].get("worst_fos", math.nan))
+            vb = float(summaries[b].get("worst_fos", math.nan))
             gap = abs(va - vb)
             mean = 0.5 * (va + vb)
-            return gap, (gap / mean if mean else float("nan"))
+            return gap, (gap / mean if mean else math.nan)
         except Exception:                                    # noqa: BLE001
-            return float("nan"), float("nan")
+            return math.nan, math.nan
 
     front_gap, front_rel = _pair("FL", "FR")
     rear_gap, rear_rel = _pair("RL", "RR")
@@ -1432,10 +1434,10 @@ def _job_ghost(ctx: Ctx) -> list[Artifact]:
     for c in _CORNERS:
         for inst in (getattr(audits[c], "instants", []) or []):
             ld = getattr(inst, "load", None)
-            inst_rows.append((c, float(getattr(inst, "t", float("nan"))),
-                              float(getattr(ld, "Fx", float("nan"))) if ld else None,
-                              float(getattr(ld, "Fy", float("nan"))) if ld else None,
-                              float(getattr(ld, "Fz", float("nan"))) if ld else None))
+            inst_rows.append((c, float(getattr(inst, "t", math.nan)),
+                              float(getattr(ld, "Fx", math.nan)) if ld else None,
+                              float(getattr(ld, "Fy", math.nan)) if ld else None,
+                              float(getattr(ld, "Fz", math.nan)) if ld else None))
     return [
         Artifact("ghost/ghost_audit.md",
                  _md("Ghost topology — all four corners", lines), "md"),
@@ -1470,7 +1472,7 @@ def _asymmetry_note(front_rel: float, rear_rel: float) -> str:
     """Commentary that answers the numbers. A side-to-side gap is either
     worth chasing or it is not, and saying which is the entire value."""
     worst = max([g for g in (front_rel, rear_rel) if np.isfinite(g)],
-                default=float("nan"))
+                default=math.nan)
     if not np.isfinite(worst):
         return ("The pairs could not be compared — at least one corner "
                 "produced no factor of safety.")

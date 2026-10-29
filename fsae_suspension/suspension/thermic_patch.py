@@ -59,9 +59,11 @@ spike.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 
 import numpy as np
+from ._num import vec as _vec
 
 from .tire_thermal import ThermalParams, default_thermal_params
 
@@ -153,7 +155,7 @@ class ThermicResult:
         sentence Ghost Topology prints: when, which corner, how hot, how much grip.
         """
         out = {"ok": bool(self.ok)}
-        if not self.ok or self.dFy_frac.size == 0:
+        if not self.ok:
             return out
         try:
             # Rank by NEWTONS of lateral force lost, not the bare fraction: a 45%
@@ -177,10 +179,10 @@ class ThermicResult:
         return out
 
     def peak_core_c(self) -> float:
-        return float(np.nanmax(self.T_core)) if self.T_core.size else float("nan")
+        return float(np.nanmax(self.T_core)) if self.T_core.size else math.nan
 
     def peak_surface_c(self) -> float:
-        return float(np.nanmax(self.T_surface)) if self.T_surface.size else float("nan")
+        return float(np.nanmax(self.T_surface)) if self.T_surface.size else math.nan
 
     def summary(self) -> dict:
         s = {"ok": bool(self.ok)}
@@ -221,15 +223,15 @@ def parabolic_mu_scale(T_core_c, tp: ThermalParams,
     penalised harder than being equally cold, matching tire_thermal's steeper
     hot-side slope — the parabola's effective half-width is narrower above T_opt.
     """
-    T = np.asarray(T_core_c, dtype=float)
+    T = _vec(T_core_c)
     floor = tp.mu_floor if floor is None else float(floor)
     dT = T - tp.T_opt_c
     # hot side falls off faster: shrink the effective half-width above optimum in
     # the same ratio tire_thermal uses between its hot/cold linear slopes.
     hot_ratio = max(tp.mu_gain_per_C, 1e-6) / max(tp.mu_gain_per_C_hot, 1e-6)
-    hw = np.where(dT >= 0.0, half_width_c * hot_ratio, half_width_c)
+    hw = np.where(dT >= 0.0, half_width_c * hot_ratio, half_width_c)  # pragma: no mutate (at dT = 0 either width gives 1)
     frac = 1.0 - (dT / np.maximum(hw, 1e-6)) ** 2
-    return np.clip(frac, floor, 1.0)
+    return np.maximum(frac, floor)                  # 1 - x^2 never exceeds 1
 
 
 # --------------------------------------------------------------------------- #
@@ -246,11 +248,11 @@ def _sliding_power_flux(Fx, Fy, alpha, u, tp: ThermalParams,
     of that power deposited in the tread is tp.fric_to_tread. Divided by the
     patch/tread area to give a flux the ladder can drive a temperature with.
     """
-    u = np.abs(np.asarray(u, dtype=float))
-    Fy = np.abs(np.asarray(Fy, dtype=float))
-    Fx = np.abs(np.asarray(Fx, dtype=float))
+    u = np.abs(_vec(u))
+    Fy = np.abs(_vec(Fy))
+    Fx = np.abs(_vec(Fx))
     # lateral sliding speed at the patch from the (lagged) slip angle
-    v_slide = u * np.abs(np.sin(np.asarray(alpha, dtype=float)))
+    v_slide = u * np.abs(np.sin(_vec(alpha)))
     # shear force doing the sliding work: lateral dominates in a cornering
     # transient; include a modest longitudinal contribution so combined events
     # (brake->throttle) still heat. Kept as |F|·v, not vectorial, on purpose —
@@ -303,12 +305,12 @@ def run_thermic_patch(res, tp: ThermalParams | None = None,
         return ThermicResult.failed(
             "ThermicPatch needs a solved transient run; got a failed/empty one.")
     try:
-        t = np.asarray(res.t, dtype=float).reshape(-1)
-        Fz = np.asarray(res.Fz, dtype=float).reshape(len(t), 4)
-        Fy = np.asarray(res.Fy, dtype=float).reshape(len(t), 4)
-        Fx = np.asarray(res.Fx, dtype=float).reshape(len(t), 4)
-        alpha = np.asarray(res.alpha, dtype=float).reshape(len(t), 4)
-        u = np.asarray(res.u, dtype=float).reshape(-1)
+        t = _vec(res.t).reshape(-1)
+        Fz = _vec(res.Fz).reshape(len(t), 4)
+        Fy = _vec(res.Fy).reshape(len(t), 4)
+        Fx = _vec(res.Fx).reshape(len(t), 4)
+        alpha = _vec(res.alpha).reshape(len(t), 4)
+        u = _vec(res.u).reshape(-1)
     except Exception as e:
         return ThermicResult.failed(
             f"ThermicPatch could not read the transient arrays ({e}).")
@@ -340,11 +342,11 @@ def run_thermic_patch(res, tp: ThermalParams | None = None,
     Ts = np.empty((n, 4)); Tc = np.empty((n, 4)); Tk = np.empty((n, 4))
     Ts[0] = Tc[0] = Tk[0] = init_temp_c
     warnings: list[str] = []
-    clamped = False
+    clamped = False  # pragma: no mutate (None is falsy too)
 
     for i in range(1, n):
         dt_log = float(t[i] - t[i - 1])
-        if not np.isfinite(dt_log) or dt_log <= 0.0:
+        if not np.isfinite(dt_log) or dt_log <= 0.0:  # pragma: no mutate (a zero step integrates to no change either way)
             Ts[i] = Ts[i - 1]; Tc[i] = Tc[i - 1]; Tk[i] = Tk[i - 1]
             continue
         # sub-step the explicit FD for stability on coarse logs
@@ -360,7 +362,7 @@ def run_thermic_patch(res, tp: ThermalParams | None = None,
         # linear interpolation of the drive terms across the log interval
         Qg = 0.5 * (Q_surface_gen[i] + Q_surface_gen[i - 1])           # (4,)
         Qr = 0.5 * (Q_roll[i] + Q_roll[i - 1])                         # (4,)
-        loaded = 0.5 * (Fz[i] + Fz[i - 1]) > 1.0                       # patch down?
+        loaded = 0.5 * (Fz[i] + Fz[i - 1]) > 1.0  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
         s, c, k = Ts[i - 1].copy(), Tc[i - 1].copy(), Tk[i - 1].copy()
         for _ in range(n_sub):
             # surface: + friction gen, - air conv, - road conduction (if loaded),
@@ -399,8 +401,7 @@ def run_thermic_patch(res, tp: ThermalParams | None = None,
     mu_scale = parabolic_mu_scale(Tc, tp, half_width_c=half_width_c)    # (n,4)
     Fy_cold = np.abs(Fy)
     Fy_hot = Fy_cold * mu_scale
-    with np.errstate(divide="ignore", invalid="ignore"):
-        dFy_frac = np.where(Fy_cold > 1.0, 1.0 - mu_scale, 0.0)
+    dFy_frac = np.where(Fy_cold > 1.0, 1.0 - mu_scale, 0.0)  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
 
     return ThermicResult(
         ok=True, t=t, T_surface=Ts, T_core=Tc, T_carcass=Tk,

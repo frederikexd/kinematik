@@ -1,0 +1,101 @@
+{
+ "default": {
+  "c_aero_Nms": 8.820000000000002e-06,
+  "findings": [
+   {
+    "check": "flutter-cosim",
+    "detail": {
+     "backend": "reference-quasisteady",
+     "c_aero": 8.820000000000002e-06
+    },
+    "message": "Aero-damping derivative from the QUASI-STEADY reference backend — trends and sign only, NOT a flutter prediction. It does not resolve the unsteady wake. Use it to exercise the flutter loop; run a URANS/DES forced-oscillation case (or a flow rig) for an engineering number.",
+    "severity": "warning",
+    "subsystems": [
+     "brakes",
+     "powertrain"
+    ]
+   }
+  ],
+  "in_phase_moment_Nm": 0.00011606654775681088,
+  "provenance": {
+   "backend": "reference-quasisteady",
+   "cell_count": null,
+   "converged": true,
+   "correlated_against": "",
+   "fidelity": "quasi_steady",
+   "is_correlated": false,
+   "notes": "Trends/sign only — does NOT resolve the unsteady wake that governs flutter. Placeholder for the co-sim loop; replace with URANS/DES or a flow rig before trusting a flutter call.",
+   "turbulence_model": "none (quasi-steady analytic)"
+  },
+  "quad_moment_Nm": null,
+  "ref_speed_ms": 40.0
+ },
+ "ext": {
+  "c_aero_Nms": null,
+  "findings": [
+   {
+    "check": "flutter-cosim",
+    "detail": {},
+    "message": "Backend 'external-urans' does not solve inside KinematiK. It has written the forced-oscillation case to '<T>/b'. Run it in your CFD solver on your cluster, then call read_result() to parse the derivative. KinematiK will not fabricate an aero-damping number.",
+    "severity": "warning",
+    "subsystems": [
+     "brakes",
+     "powertrain"
+    ]
+   }
+  ],
+  "in_phase_moment_Nm": null,
+  "provenance": {
+   "backend": "external-urans",
+   "cell_count": null,
+   "converged": false,
+   "correlated_against": "",
+   "fidelity": "urans",
+   "is_correlated": false,
+   "notes": "External solve — provenance filled on read_result.",
+   "turbulence_model": ""
+  },
+  "quad_moment_Nm": null,
+  "ref_speed_ms": 40.0
+ },
+ "files": [
+  "flutter_oscillation_case.json",
+  "external-urans_flutter_case.json"
+ ],
+ "seen": [
+  {
+   "prefix": "kinematik_flutter_"
+  }
+ ],
+ "tmp": {
+  "c_aero_Nms": 8.820000000000002e-06,
+  "findings": [
+   {
+    "check": "flutter-cosim",
+    "detail": {
+     "backend": "reference-quasisteady",
+     "c_aero": 8.820000000000002e-06
+    },
+    "message": "Aero-damping derivative from the QUASI-STEADY reference backend — trends and sign only, NOT a flutter prediction. It does not resolve the unsteady wake. Use it to exercise the flutter loop; run a URANS/DES forced-oscillation case (or a flow rig) for an engineering number.",
+    "severity": "warning",
+    "subsystems": [
+     "brakes",
+     "powertrain"
+    ]
+   }
+  ],
+  "in_phase_moment_Nm": 0.00011606654775681088,
+  "provenance": {
+   "backend": "reference-quasisteady",
+   "cell_count": null,
+   "converged": true,
+   "correlated_against": "",
+   "fidelity": "quasi_steady",
+   "is_correlated": false,
+   "notes": "Trends/sign only — does NOT resolve the unsteady wake that governs flutter. Placeholder for the co-sim loop; replace with URANS/DES or a flow rig before trusting a flutter call.",
+   "turbulence_model": "none (quasi-steady analytic)"
+  },
+  "quad_moment_Nm": null,
+  "ref_speed_ms": 40.0
+ }
+}

@@ -1,0 +1,518 @@
+{
+ "board": [
+  {
+   "check": "trace-fusing",
+   "detail": {
+    "current_a": 8.5,
+    "estimate": true,
+    "fusing_a": 0.9205058154364882,
+    "trace": "fan"
+   },
+   "message": "Trace 'fan' carries 8.5 A but fuses (melts) at 0.9 A — the copper physically fails under this load (estimated geometry).",
+   "severity": "fail",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  },
+  {
+   "check": "trace-heating",
+   "detail": {
+    "ceiling_c": 105.0,
+    "current_a": 8.5,
+    "estimate": true,
+    "rise_c": 1063.0,
+    "temp_c": 1118.0,
+    "trace": "fan"
+   },
+   "message": "Trace 'fan' runs to 1118 °C at 8.5 A (rise 1063 °C over 55 °C ambient), past the 105 °C ceiling — widen it (estimated geometry).",
+   "severity": "fail",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  },
+  {
+   "check": "trace-vdrop",
+   "detail": {
+    "estimate": true,
+    "trace": "fan",
+    "vdrop_v": 7.4605422950191596
+   },
+   "message": "Trace 'fan' drops 7461 mV at 8.5 A (> 5 % of a 5.0 V rail) (estimated geometry).",
+   "severity": "warning",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  },
+  {
+   "check": "trace-current",
+   "detail": {
+    "copper_oz": 1.0,
+    "trace": "dsh",
+    "undeclared_loads": [
+     "dash"
+    ],
+    "width_mm": 0.25
+   },
+   "message": "Trace 'dsh' (electrics->dash) has selected load(s) [dash], but that subsystem has no declared peak current — cannot check heating or drop. Declare each one's peak current in the Integration tab.",
+   "severity": "missing",
+   "subsystems": [
+    "dash",
+    "electrics"
+   ]
+  },
+  {
+   "check": "trace-fusing",
+   "detail": {
+    "current_a": 0.4,
+    "estimate": true,
+    "fusing_a": 0.6136705436243255,
+    "safety_factor": 2.0,
+    "trace": "tn"
+   },
+   "message": "Trace 'tn' at 0.4 A is within 2x of its 0.6 A fusing current — thin margin to melt (estimated geometry).",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "tiny"
+   ]
+  },
+  {
+   "check": "diffpair-impedance",
+   "detail": {
+    "estimate": true,
+    "pair": "unrouted",
+    "target_ohm": 120.0,
+    "z_diff_ohm": 107.85844226162155
+   },
+   "message": "Pair 'unrouted' estimates 108 Ω differential, within 15 % of the 120 Ω target (analytic estimate, not field-solved).",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "diffpair-route",
+   "detail": {},
+   "message": "Pair 'unrouted' has no routed centreline — cannot check its distance to noisy nets yet.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "diffpair-impedance",
+   "detail": {
+    "estimate": true,
+    "pair": "can",
+    "target_ohm": 40.0,
+    "z_diff_ohm": 107.85844226162155
+   },
+   "message": "Pair 'can' estimates 108 Ω differential vs a 40 Ω target (170 % off) (analytic estimate, not field-solved) — retune width/spacing or confirm on a field solver.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "si-crosstalk",
+   "detail": {
+    "aggressor": "inv",
+    "coupled_len_mm": 10.0,
+    "edge_v_per_ns": 5.0,
+    "estimate": true,
+    "gap_mm": 0.3,
+    "method": "geometric screening, not field-solved",
+    "pair": "can",
+    "sw_voltage_v": 400.0
+   },
+   "message": "CAN pair 'can' runs 0.30 mm from powertrain's switching net 'hv_inverter' (400 V, 5 V/ns edges) for ~10 mm — the differential pair is exposed to motor-controller noise. Move the route or add a guard ground (estimated routing).",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "powertrain"
+   ]
+  },
+  {
+   "check": "si-crosstalk",
+   "detail": {
+    "aggressor": "far",
+    "coupled_len_mm": 10.0,
+    "estimate": true,
+    "gap_mm": 1.5,
+    "method": "geometric screening, not field-solved",
+    "pair": "can"
+   },
+   "message": "CAN pair 'can' passes within 1.50 mm of aero's 'hv_inverter' for ~10 mm — tighten spacing-to-HV or add isolation (estimated routing).",
+   "severity": "warning",
+   "subsystems": [
+    "aero",
+    "electrics"
+   ]
+  },
+  "FAIL: 3 fail / 4 warn / 1 ok across 10 board checks"
+ ],
+ "board_noledger": [
+  {
+   "check": "trace-current",
+   "detail": {
+    "copper_oz": 1.0,
+    "trace": "fan",
+    "undeclared_loads": [
+     "cooling"
+    ],
+    "width_mm": 0.3
+   },
+   "message": "Trace 'fan' (electrics->cooling) has selected load(s) [cooling], but that subsystem has no declared peak current — cannot check heating or drop. Declare each one's peak current in the Integration tab.",
+   "severity": "missing",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  },
+  {
+   "check": "trace-current",
+   "detail": {
+    "copper_oz": 1.0,
+    "trace": "dsh",
+    "undeclared_loads": [
+     "dash"
+    ],
+    "width_mm": 0.25
+   },
+   "message": "Trace 'dsh' (electrics->dash) has selected load(s) [dash], but that subsystem has no declared peak current — cannot check heating or drop. Declare each one's peak current in the Integration tab.",
+   "severity": "missing",
+   "subsystems": [
+    "dash",
+    "electrics"
+   ]
+  },
+  {
+   "check": "trace-current",
+   "detail": {
+    "copper_oz": 1.0,
+    "trace": "tn",
+    "undeclared_loads": [
+     "tiny"
+    ],
+    "width_mm": 0.2
+   },
+   "message": "Trace 'tn' (electrics->tiny) has selected load(s) [tiny], but that subsystem has no declared peak current — cannot check heating or drop. Declare each one's peak current in the Integration tab.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics",
+    "tiny"
+   ]
+  },
+  {
+   "check": "trace-survival",
+   "detail": {},
+   "message": "All checked traces survive their worst-case current with margin to fusing, the 105 °C ceiling, and the ECU brown-out threshold.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics",
+    "ecu"
+   ]
+  },
+  {
+   "check": "diffpair-impedance",
+   "detail": {
+    "estimate": true,
+    "pair": "unrouted",
+    "target_ohm": 120.0,
+    "z_diff_ohm": 107.85844226162155
+   },
+   "message": "Pair 'unrouted' estimates 108 Ω differential, within 15 % of the 120 Ω target (analytic estimate, not field-solved).",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "diffpair-route",
+   "detail": {},
+   "message": "Pair 'unrouted' has no routed centreline — cannot check its distance to noisy nets yet.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "diffpair-impedance",
+   "detail": {
+    "estimate": true,
+    "pair": "can",
+    "target_ohm": 40.0,
+    "z_diff_ohm": 107.85844226162155
+   },
+   "message": "Pair 'can' estimates 108 Ω differential vs a 40 Ω target (170 % off) (analytic estimate, not field-solved) — retune width/spacing or confirm on a field solver.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "si-crosstalk",
+   "detail": {
+    "aggressor": "inv",
+    "coupled_len_mm": 10.0,
+    "edge_v_per_ns": 5.0,
+    "estimate": true,
+    "gap_mm": 0.3,
+    "method": "geometric screening, not field-solved",
+    "pair": "can",
+    "sw_voltage_v": 400.0
+   },
+   "message": "CAN pair 'can' runs 0.30 mm from powertrain's switching net 'hv_inverter' (400 V, 5 V/ns edges) for ~10 mm — the differential pair is exposed to motor-controller noise. Move the route or add a guard ground (estimated routing).",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "powertrain"
+   ]
+  },
+  {
+   "check": "si-crosstalk",
+   "detail": {
+    "aggressor": "far",
+    "coupled_len_mm": 10.0,
+    "estimate": true,
+    "gap_mm": 1.5,
+    "method": "geometric screening, not field-solved",
+    "pair": "can"
+   },
+   "message": "CAN pair 'can' passes within 1.50 mm of aero's 'hv_inverter' for ~10 mm — tighten spacing-to-HV or add isolation (estimated routing).",
+   "severity": "warning",
+   "subsystems": [
+    "aero",
+    "electrics"
+   ]
+  }
+ ],
+ "minpar": [
+  1.1774896188189277,
+  1.1774896188189277
+ ],
+ "nets": {
+  "fan_pwr": 8.5,
+  "tiny_net": 0.4
+ },
+ "nets_blank_first": {
+  "s_net": 0.4
+ },
+ "old_board": [
+  {
+   "check": "trace-fusing",
+   "detail": {
+    "current_a": 8.5,
+    "estimate": true,
+    "fusing_a": 0.9205058154364882,
+    "trace": "fan"
+   },
+   "message": "Trace 'fan' carries 8.5 A but fuses (melts) at 0.9 A — the copper physically fails under this load (estimated geometry).",
+   "severity": "fail",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  },
+  {
+   "check": "trace-heating",
+   "detail": {
+    "ceiling_c": 105.0,
+    "current_a": 8.5,
+    "estimate": true,
+    "rise_c": 1063.0,
+    "temp_c": 1118.0,
+    "trace": "fan"
+   },
+   "message": "Trace 'fan' runs to 1118 °C at 8.5 A (rise 1063 °C over 55 °C ambient), past the 105 °C ceiling — widen it (estimated geometry).",
+   "severity": "fail",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  },
+  {
+   "check": "trace-vdrop",
+   "detail": {
+    "estimate": true,
+    "trace": "fan",
+    "vdrop_v": 7.4605422950191596
+   },
+   "message": "Trace 'fan' drops 7461 mV at 8.5 A (> 5 % of a 5.0 V rail) (estimated geometry).",
+   "severity": "warning",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  }
+ ],
+ "runlen": [
+  20.0,
+  20.0
+ ],
+ "seg": {
+  "collinear_gap": 3.0,
+  "crossing": 0.0,
+  "parallel_back": 3.1622776601683795,
+  "parallel_offset": 4.123105625617661,
+  "points": 5.0,
+  "pt_before": 5.0,
+  "pt_beyond": 5.830951894845301,
+  "seg_to_pt_before": 3.605551275463989,
+  "seg_to_pt_beyond": 5.0
+ },
+ "si": [
+  {
+   "check": "diffpair-impedance",
+   "detail": {
+    "estimate": true,
+    "pair": "unrouted",
+    "target_ohm": 120.0,
+    "z_diff_ohm": 107.85844226162155
+   },
+   "message": "Pair 'unrouted' estimates 108 Ω differential, within 15 % of the 120 Ω target (analytic estimate, not field-solved).",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "diffpair-route",
+   "detail": {},
+   "message": "Pair 'unrouted' has no routed centreline — cannot check its distance to noisy nets yet.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "diffpair-impedance",
+   "detail": {
+    "estimate": true,
+    "pair": "can",
+    "target_ohm": 40.0,
+    "z_diff_ohm": 107.85844226162155
+   },
+   "message": "Pair 'can' estimates 108 Ω differential vs a 40 Ω target (170 % off) (analytic estimate, not field-solved) — retune width/spacing or confirm on a field solver.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "si-crosstalk",
+   "detail": {
+    "aggressor": "inv",
+    "coupled_len_mm": 10.0,
+    "edge_v_per_ns": 5.0,
+    "estimate": true,
+    "gap_mm": 0.3,
+    "method": "geometric screening, not field-solved",
+    "pair": "can",
+    "sw_voltage_v": 400.0
+   },
+   "message": "CAN pair 'can' runs 0.30 mm from powertrain's switching net 'hv_inverter' (400 V, 5 V/ns edges) for ~10 mm — the differential pair is exposed to motor-controller noise. Move the route or add a guard ground (estimated routing).",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "powertrain"
+   ]
+  },
+  {
+   "check": "si-crosstalk",
+   "detail": {
+    "aggressor": "far",
+    "coupled_len_mm": 10.0,
+    "estimate": true,
+    "gap_mm": 1.5,
+    "method": "geometric screening, not field-solved",
+    "pair": "can"
+   },
+   "message": "CAN pair 'can' passes within 1.50 mm of aero's 'hv_inverter' for ~10 mm — tighten spacing-to-HV or add isolation (estimated routing).",
+   "severity": "warning",
+   "subsystems": [
+    "aero",
+    "electrics"
+   ]
+  }
+ ],
+ "summary": [
+  "MISSING: 0 fail / 0 warn / 0 ok across 1 board checks",
+  "WARNING: 0 fail / 1 warn / 0 ok across 1 board checks",
+  "FAIL: 1 fail / 0 warn / 0 ok across 1 board checks",
+  "OK: 0 fail / 0 warn / 1 ok across 1 board checks",
+  "OK: 0 fail / 0 warn / 0 ok across 0 board checks"
+ ],
+ "traces": [
+  {
+   "check": "trace-fusing",
+   "detail": {
+    "current_a": 8.5,
+    "estimate": true,
+    "fusing_a": 0.9205058154364882,
+    "trace": "fan"
+   },
+   "message": "Trace 'fan' carries 8.5 A but fuses (melts) at 0.9 A — the copper physically fails under this load (estimated geometry).",
+   "severity": "fail",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  },
+  {
+   "check": "trace-heating",
+   "detail": {
+    "ceiling_c": 105.0,
+    "current_a": 8.5,
+    "estimate": true,
+    "rise_c": 1063.0,
+    "temp_c": 1118.0,
+    "trace": "fan"
+   },
+   "message": "Trace 'fan' runs to 1118 °C at 8.5 A (rise 1063 °C over 55 °C ambient), past the 105 °C ceiling — widen it (estimated geometry).",
+   "severity": "fail",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  },
+  {
+   "check": "trace-vdrop",
+   "detail": {
+    "estimate": true,
+    "trace": "fan",
+    "vdrop_v": 7.4605422950191596
+   },
+   "message": "Trace 'fan' drops 7461 mV at 8.5 A (> 5 % of a 5.0 V rail) (estimated geometry).",
+   "severity": "warning",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  },
+  {
+   "check": "trace-fusing",
+   "detail": {
+    "current_a": 0.4,
+    "estimate": true,
+    "fusing_a": 0.6136705436243255,
+    "safety_factor": 2.0,
+    "trace": "tn"
+   },
+   "message": "Trace 'tn' at 0.4 A is within 2x of its 0.6 A fusing current — thin margin to melt (estimated geometry).",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "tiny"
+   ]
+  }
+ ],
+ "z0": [
+  109.68370324537858,
+  171.38116591439248,
+  66.07261324386377
+ ]
+}

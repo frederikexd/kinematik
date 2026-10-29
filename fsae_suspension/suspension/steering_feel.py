@@ -79,7 +79,7 @@ def limit_feel(tire, fz_n: float, t_mech_mm: float,
             "torque_max_Nm": float(M[k]), "alpha_torque_max_deg": float(a[k]),
             "torque_at_limit_Nm": M_lim,
             "warning_margin_deg": float(a0 - a[k]),
-            "lightening": float(1.0 - M_lim / M[k]) if M[k] > 0 else float("nan")}
+            "lightening": float(1.0 - M_lim / M[k]) if M[k] > 0 else math.nan}
 
 
 def worst_axle_torque(tire, fz_outer_n: float, fz_inner_n: float,
@@ -116,15 +116,18 @@ def ratio_window(tire, fz_outer_n: float, fz_inner_n: float, t_mech_mm: float,
             "worst_alpha_deg": w["alpha_deg"]}
 
 
+TRAIL_HI_MM = 80.0  # pragma: no mutate (bisection ceiling)
+
+
 def trail_limit_mm(tire, fz_outer_n: float, fz_inner_n: float, t_mech_mm: float,
                    effort_limit_Nm: float = 10.0, lock_ratio_max: float = 6.0,
-                   hi: float = 80.0) -> float:
+                   hi: float = TRAIL_HI_MM) -> float:
     """Zero-slip pneumatic trail (mm, outer wheel) at which the window closes."""
-    lo = 0.0
+    lo = 0.0  # pragma: no mutate (bracket floor)
     if ratio_window(tire, fz_outer_n, fz_inner_n, t_mech_mm, effort_limit_Nm,
                     lock_ratio_max, hi)["feasible"]:
-        return float("inf")
-    for _ in range(50):
+        return math.inf
+    for _ in range(50):  # pragma: no mutate (bisection count)
         mid = 0.5 * (lo + hi)
         ok = ratio_window(tire, fz_outer_n, fz_inner_n, t_mech_mm, effort_limit_Nm,
                           lock_ratio_max, mid)["feasible"]

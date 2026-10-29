@@ -31,6 +31,8 @@ from .cfd import Attitude, CoeffResult, CFDProvenance, SolverFidelity
 
 
 _AXES = ("roll_deg", "pitch_deg", "yaw_deg", "ride_height_mm", "speed_ms")
+_REF_AREA_M2 = 1.0
+_REF_LENGTH_M = 1.55
 
 
 @dataclass
@@ -51,8 +53,8 @@ class AeroMap:
     get back coefficients, clamped to the solved envelope.
     """
 
-    def __init__(self, reference_area_m2: float = 1.0,
-                 reference_length_m: float = 1.55,
+    def __init__(self, reference_area_m2: float = _REF_AREA_M2,
+                 reference_length_m: float = _REF_LENGTH_M,
                  provenance: CFDProvenance | None = None):
         self.reference_area_m2 = reference_area_m2
         self.reference_length_m = reference_length_m
@@ -70,8 +72,8 @@ class AeroMap:
         return True
 
     @classmethod
-    def from_results(cls, results, reference_area_m2=1.0,
-                     reference_length_m=1.55) -> AeroMap:
+    def from_results(cls, results, reference_area_m2=_REF_AREA_M2,
+                     reference_length_m=_REF_LENGTH_M) -> AeroMap:
         m = cls(reference_area_m2, reference_length_m)
         for r in results:
             m.add(r)
@@ -108,7 +110,7 @@ class AeroMap:
         q = {}
         for a in _AXES:
             v = getattr(attitude, a)
-            lo, hi = env.get(a, (v, v))
+            lo, hi = env[a]                    # a non-empty map spans every axis
             if v < lo:
                 v, clamped = lo, True
             elif v > hi:
@@ -141,8 +143,9 @@ class AeroMap:
         def bracket(a):
             vals = grids[a]
             x = q[a]
-            lo = max([v for v in vals if v <= x], default=vals[0])
-            hi = min([v for v in vals if v >= x], default=vals[-1])
+            # the query is clamped to the envelope, so both sides always have a value
+            lo = max(v for v in vals if v <= x)
+            hi = min(v for v in vals if v >= x)
             return lo, hi
 
         if axes:
@@ -155,14 +158,11 @@ class AeroMap:
                         d = dict(c); d[a] = val; nxt.append(d)
                 corners = nxt
             # gather corner values; bail to IDW if any corner is absent/missing chan
-            total_w = 0.0
             acc = 0.0
-            have_all = True
             for c in corners:
                 key = self._corner_key(c)
                 r = self._points.get(key)
                 if r is None:
-                    have_all = False
                     break
                 cv = getattr(r, channel)
                 if cv is None:
@@ -174,9 +174,8 @@ class AeroMap:
                         frac = (q[a] - lo) / (hi - lo)
                         w *= (1 - frac) if c[a] == lo else frac
                 acc += w * cv
-                total_w += w
-            if have_all and total_w > 0:
-                return acc / total_w
+            else:
+                return acc                      # the multilinear weights sum to 1
 
         # Fallback: inverse-distance over all points (also the single-point answer).
         num = 0.0; den = 0.0
@@ -185,15 +184,12 @@ class AeroMap:
             if cv is None:
                 continue
             d2 = 0.0
-            for a in (axes or _AXES):
-                rng = 1.0
-                vals = self._axis_values(a)
-                if len(vals) > 1:
-                    rng = vals[-1] - vals[0]
-                d2 += ((getattr(r.attitude, a) - q[a]) / (rng or 1.0)) ** 2
-            if d2 < 1e-12:
+            for a in axes:                      # unswept axes are equal everywhere: no distance
+                rng = grids[a][-1] - grids[a][0]   # > 0 on a swept axis
+                d2 += ((getattr(r.attitude, a) - q[a]) / rng) ** 2
+            if d2 < 1e-12:  # pragma: no mutate (tolerance)
                 return cv
-            w = 1.0 / d2
+            w = d2 ** -1
             num += w * cv; den += w
         return (num / den) if den > 0 else None
 
@@ -217,13 +213,12 @@ class AeroMap:
             a = r.attitude
             w.writerow([a.roll_deg, a.pitch_deg, a.yaw_deg, a.ride_height_mm,
                         a.speed_ms, r.c_lift, r.c_drag,
-                        "" if r.c_side is None else r.c_side,
-                        "" if r.aero_balance_front is None else r.aero_balance_front,
+                        r.c_side, r.aero_balance_front,       # csv writes None as ""
                         int(r.converged)])
         return buf.getvalue()
 
     @classmethod
-    def from_csv(cls, text: str, reference_area_m2=1.0, reference_length_m=1.55,
+    def from_csv(cls, text: str, reference_area_m2=_REF_AREA_M2, reference_length_m=_REF_LENGTH_M,
                  provenance: CFDProvenance | None = None) -> AeroMap:
         m = cls(reference_area_m2, reference_length_m, provenance)
         rdr = csv.DictReader(io.StringIO(text))
@@ -232,13 +227,13 @@ class AeroMap:
                 v = (row.get(k) or "").strip()
                 return float(v) if v not in ("", None) else None
             att = Attitude(
-                float(row.get("roll_deg", 0) or 0),
-                float(row.get("pitch_deg", 0) or 0),
-                float(row.get("yaw_deg", 0) or 0),
-                float(row.get("ride_height_mm", 30) or 30),
-                float(row.get("speed_ms", 20) or 20),
+                float(row.get("roll_deg") or 0),
+                float(row.get("pitch_deg") or 0),
+                float(row.get("yaw_deg") or 0),
+                float(row.get("ride_height_mm") or 30),
+                float(row.get("speed_ms") or 20),
             )
-            conv = (row.get("converged", "1") or "1").strip().lower() in ("1", "true", "yes")
+            conv = (row.get("converged") or "1").strip().lower() in ("1", "true", "yes")
             res = CoeffResult(
                 attitude=att, c_lift=fnum("c_lift"), c_drag=fnum("c_drag"),
                 c_side=fnum("c_side"), aero_balance_front=fnum("aero_balance_front"),
@@ -248,7 +243,6 @@ class AeroMap:
         if provenance is None:
             m.provenance = CFDProvenance(
                 backend="imported-csv", fidelity=SolverFidelity.RANS,
-                is_correlated=False,
                 notes="Imported aero map; provenance is whatever the source was. "
                       "KinematiK did not run or validate this CFD.")
         return m

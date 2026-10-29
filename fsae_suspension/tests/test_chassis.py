@@ -9,6 +9,7 @@ import numpy as np, trimesh, sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from suspension import SuspensionKinematics, Hardpoints
 from suspension import chassis as ch
+from tests.test_mutation_chassis import _bounded_memory  # noqa: F401  (autouse memory cap)
 
 
 def _tube(p, q, r=12):

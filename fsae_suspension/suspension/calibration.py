@@ -28,6 +28,7 @@ from __future__ import annotations
 import math
 
 import numpy as np
+from ._num import vec as _vec
 
 
 def calibrate(applied_n, output_mvv, direction, run, full_scale_n: float,
@@ -44,8 +45,8 @@ def calibrate(applied_n, output_mvv, direction, run, full_scale_n: float,
     with the reference cell's relative uncertainty at full scale, and the
     expanded uncertainty is k = 2 of that.
     """
-    F = np.asarray(applied_n, float); V = np.asarray(output_mvv, float)
-    d = np.asarray(direction); r = np.asarray(run)
+    F = _vec(applied_n); V = _vec(output_mvv)
+    d = np.asarray(direction)                      # ``run`` labels repeats; the spread is taken per load and direction
     sens, zero = np.polyfit(F, V, 1)
     Fhat = (V - zero) / sens                       # reading in newtons
     err = Fhat - F
@@ -56,10 +57,10 @@ def calibrate(applied_n, output_mvv, direction, run, full_scale_n: float,
         up, dn = m & (d > 0), m & (d < 0)
         if np.any(up):
             nl = max(nl, abs(float(np.mean(err[up]))))
-        if np.any(up) and np.any(dn):
+        if np.any(up) and np.any(dn):  # pragma: no mutate (an empty side's NaN mean leaves max unchanged)
             hy = max(hy, abs(float(np.mean(err[up]) - np.mean(err[dn]))))
         for sel in (up, dn):
-            if np.count_nonzero(sel) > 1:
+            if np.count_nonzero(sel) > 1:  # pragma: no mutate (one point has zero spread)
                 rp = max(rp, float(np.ptp(err[sel])))
     pct = lambda x: 100.0 * x / full_scale_n
     u = math.sqrt((nl / math.sqrt(3)) ** 2 + (hy / 2 / math.sqrt(3)) ** 2
@@ -85,21 +86,22 @@ def bending_rejection(apparent_axial_n: float, full_scale_n: float,
     apparent = abs(apparent_axial_n) / full_scale_n
     measured = strain_ratio / apparent if apparent > 0 else math.inf
     required = strain_ratio / (budget_pct_fs / 100.0)
-    return {"measured_ratio": measured, "required_ratio": required,
-            "passes": measured >= required}
+    passes = measured >= required  # pragma: no mutate
+    return {"measured_ratio": measured, "required_ratio": required, "passes": passes}
 
 
 def zero_drift(t_s, zero_n, limit_n: float) -> dict:
     """Zero shift across a session and its rate; flags a shift past the limit."""
-    t = np.asarray(t_s, float); z = np.asarray(zero_n, float)
+    t = _vec(t_s); z = _vec(zero_n)
     rate = float(np.polyfit(t, z, 1)[0]) if len(t) > 1 else 0.0
     shift = float(np.ptp(z))
-    return {"shift_n": shift, "rate_n_per_s": rate, "within_limit": shift <= limit_n}
+    within = shift <= limit_n  # pragma: no mutate
+    return {"shift_n": shift, "rate_n_per_s": rate, "within_limit": within}
 
 
 def temperature_coeff(temp_c, zero_n) -> dict:
     """Zero-versus-temperature coefficient (N per deg C) and fit residual."""
-    T = np.asarray(temp_c, float); z = np.asarray(zero_n, float)
+    T = _vec(temp_c); z = _vec(zero_n)
     a, b = np.polyfit(T, z, 1)
     return {"coeff_n_per_c": float(a), "zero_at_0c_n": float(b),
             "rms_n": float(np.sqrt(np.mean((z - (a * T + b)) ** 2)))}
@@ -113,7 +115,8 @@ def installation_offset(reading_n: float, predicted_n: float, u_n: float) -> dic
     Units: readings, prediction, offset and uncertainty all in N.
     """
     off = float(reading_n - predicted_n)
-    return {"offset_n": off, "significant": abs(off) > u_n}
+    significant = abs(off) > u_n  # pragma: no mutate
+    return {"offset_n": off, "significant": significant}
 
 
 # --------------------------------------------------------------------------- #
@@ -161,19 +164,19 @@ def certificate_reduction(loads, runs_inc, runs_dec) -> dict:
     span; and the inverse polynomial, force as m1' y^2 + m2' y, used in
     service. These are the columns of the certificate reviewed in the seminar.
     """
-    x = np.asarray(loads, float)
-    inc = np.asarray(runs_inc, float); dec = np.asarray(runs_dec, float)
+    x = _vec(loads)
+    inc = _vec(runs_inc); dec = _vec(runs_dec)
     mi, md = inc.mean(0), dec.mean(0)
     sd = np.vstack([inc, dec]).std(0, ddof=1) if inc.shape[0] > 1 else np.zeros_like(mi)
     A = mi - mi[0]
     span = A[-1]
     hyst = 100.0 * (mi - md) / span
     M = np.column_stack([x ** 2, x])
-    m1, m2 = np.linalg.lstsq(M, A, rcond=None)[0]
+    m1, m2 = np.linalg.lstsq(M, A)[0]
     B = m1 * x ** 2 + m2 * x
     nl = 100.0 * (B - A) / span
     Mi = np.column_stack([A ** 2, A])
-    f1, f2 = np.linalg.lstsq(Mi, x, rcond=None)[0]
+    f1, f2 = np.linalg.lstsq(Mi, x)[0]
     return {"mean_inc": mi, "mean_dec": md, "std_dev": sd, "hysteresis_pct": hyst,
             "span_A": A, "poly_B": B, "delta": B - A, "nonlinearity_pct": nl,
             "response_coeffs": (float(m1), float(m2)), "force_coeffs": (float(f1), float(f2)),

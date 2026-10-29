@@ -271,51 +271,51 @@ class Tripwire:
 
 
 def _tw_total_mass(car: dict) -> float:
-    return car.get("mass_kg", float("nan"))
+    return car.get("mass_kg", math.nan)
 
 
 def _tw_cg_height(car: dict) -> float:
-    return car.get("cg_z_mm", float("nan"))
+    return car.get("cg_z_mm", math.nan)
 
 
 def _tw_specific_power(car: dict) -> float:
     m = car.get("mass_kg", 0.0)
-    return (car.get("peak_power_kw", float("nan")) * 1000.0 / m) if m else float("nan")
+    return (car.get("peak_power_kw", math.nan) * 1000.0 / m) if m else math.nan
 
 
 def _tw_heat_frac(car: dict) -> float:
     p = car.get("peak_power_kw", 0.0) * 1000.0
-    return (car.get("heat_reject_w", float("nan")) / p) if p else float("nan")
+    return (car.get("heat_reject_w", math.nan) / p) if p else math.nan
 
 
 def _tw_cooling_load(car: dict) -> float:
     v = car.get("cooling_airflow_cms", 0.0)
-    return (car.get("heat_reject_w", float("nan")) / v) if v else float("nan")
+    return (car.get("heat_reject_w", math.nan) / v) if v else math.nan
 
 
 def _tw_torque_per_power(car: dict) -> float:
     p = car.get("peak_power_kw", 0.0)
-    return (car.get("peak_torque_nm", float("nan")) / p) if p else float("nan")
+    return (car.get("peak_torque_nm", math.nan) / p) if p else math.nan
 
 
 def _tw_brake_ratio(car: dict) -> float:
     t = car.get("peak_torque_nm", 0.0)
-    return (car.get("brake_torque_nm", float("nan")) / t) if t else float("nan")
+    return (car.get("brake_torque_nm", math.nan) / t) if t else math.nan
 
 
 def _tw_pack_voltage(car: dict) -> float:
     a = car.get("peak_current_a", 0.0)
-    return (car.get("peak_power_kw", float("nan")) * 1000.0 / a) if a else float("nan")
+    return (car.get("peak_power_kw", math.nan) * 1000.0 / a) if a else math.nan
 
 
 def _tw_mount_g(car: dict) -> float:
     m = car.get("mass_kg", 0.0)
-    return (car.get("mount_load_n", float("nan")) / (9.81 * m)) if m else float("nan")
+    return (car.get("mount_load_n", math.nan) / (9.81 * m)) if m else math.nan
 
 
 def _tw_lv_frac(car: dict) -> float:
     p = car.get("peak_power_kw", 0.0) * 1000.0
-    return (car.get("power_draw_w", float("nan")) / p) if p else float("nan")
+    return (car.get("power_draw_w", math.nan) / p) if p else math.nan
 
 
 DEFAULT_TRIPWIRES: list[Tripwire] = [

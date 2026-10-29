@@ -70,9 +70,11 @@ integration board next to a melted trace and a suspension clash.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field, asdict
 
 import numpy as np
+from ._num import vec as _vec
 
 from .interfaces import Finding, Severity
 
@@ -198,7 +200,7 @@ def vertex_bend_radius_mm(path: np.ndarray) -> np.ndarray:
         # tan(half) is large for a nearly-straight corner -> large radius
         usable = min(leg_in, leg_out) / 2.0
         if turn < 1e-6:
-            radii.append(float("inf"))
+            radii.append(math.inf)
         else:
             radii.append(float(usable * np.tan(half)))
     return np.asarray(radii)
@@ -235,7 +237,7 @@ class Connector:
     notes: str = ""
 
     def as_array(self) -> np.ndarray:
-        return np.asarray(self.xyz_mm, dtype=float)
+        return _vec(self.xyz_mm)
 
     def as_dict(self):
         return asdict(self)
@@ -304,7 +306,7 @@ class WireRun:
     def as_polyline(self) -> np.ndarray:
         if not self.path_mm:
             return np.zeros((0, 3))
-        return np.asarray(self.path_mm, dtype=float)
+        return _vec(self.path_mm)
 
     @property
     def outside_diameter_mm(self) -> float:
@@ -361,7 +363,7 @@ class WireRun:
         L = self.cut_length_mm() * 1e-3
         A = awg_area_mm2(self.gauge_awg) * 1e-6
         if A <= 0:
-            return float("nan")
+            return math.nan
         return rho * L / A
 
     def voltage_drop_v(self, current_a: float, temp_c: float = 20.0) -> float:
@@ -506,7 +508,7 @@ def _polyline_aabb_clearance_detail(path: np.ndarray, lo: np.ndarray,
     approach on the centreline.
     """
     if path.shape[0] < 2:
-        return float("inf"), None
+        return math.inf, None
     P0 = path[:-1].astype(float)                 # (M,3) segment starts
     D = path[1:].astype(float) - P0              # (M,3) segment vectors
     M = P0.shape[0]
@@ -1029,8 +1031,8 @@ class HarnessLedger:
             est = w.is_estimate
             tag = " (estimated route)" if est else ""
             for ko in keepouts:
-                lo = np.asarray(ko.lo_mm, float)
-                hi = np.asarray(ko.hi_mm, float)
+                lo = _vec(ko.lo_mm)
+                hi = _vec(ko.hi_mm)
                 # inflate the box by half the wire OD: the centreline must clear by
                 # the conductor's own radius before its surface touches.
                 pad = w.outside_diameter_mm / 2.0
@@ -1152,8 +1154,8 @@ class HarnessLedger:
                 if draped is not None and draped.shape[0] >= 2:
                     pad = w.outside_diameter_mm / 2.0
                     for ko in keepouts:
-                        lo = np.asarray(ko.lo_mm, float) - pad
-                        hi = np.asarray(ko.hi_mm, float) + pad
+                        lo = _vec(ko.lo_mm) - pad
+                        hi = _vec(ko.hi_mm) + pad
                         g_taut, _ = _polyline_aabb_clearance_detail(
                             path.astype(float), lo, hi)
                         g_sag, at = _polyline_aabb_clearance_detail(

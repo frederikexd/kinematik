@@ -1,0 +1,126 @@
+{
+ "case": [
+  {
+   "amplitude_deg": 2.0,
+   "frequency_hz": 50.0,
+   "intake_speed_ms": 40.0,
+   "mean_angle_deg": 45.0,
+   "plate_area_m2": 0.001,
+   "plate_radius_m": 0.02,
+   "rho": 1.225
+  },
+  {
+   "amplitude_deg": 1.0,
+   "frequency_hz": 80.0,
+   "intake_speed_ms": 25.0,
+   "mean_angle_deg": 30.0,
+   "plate_area_m2": 0.0007,
+   "plate_radius_m": 0.015,
+   "rho": 1.1
+  }
+ ],
+ "deriv": [
+  {
+   "c_aero_Nms": -0.002,
+   "findings": [],
+   "in_phase_moment_Nm": 1.0,
+   "provenance": {
+    "backend": "b",
+    "cell_count": 2500000,
+    "converged": true,
+    "correlated_against": "rig",
+    "fidelity": "des",
+    "is_correlated": true,
+    "notes": "n",
+    "turbulence_model": "sst"
+   },
+   "quad_moment_Nm": 2.0,
+   "ref_speed_ms": 40.0
+  },
+  true,
+  {
+   "c_aero_Nms": -0.002,
+   "c_aero_ref_speed_ms": 40.0,
+   "c_struct_Nms": 0.001,
+   "k_theta_Nm_per_rad": 5.0
+  },
+  {
+   "c_aero_Nms": -0.002,
+   "c_aero_ref_speed_ms": 40.0,
+   "c_struct_Nms": 0.002,
+   "k_theta_Nm_per_rad": 5.0
+  },
+  false,
+  false,
+  false,
+  {
+   "c_aero_Nms": 1.0,
+   "findings": [],
+   "in_phase_moment_Nm": null,
+   "provenance": null,
+   "quad_moment_Nm": null,
+   "ref_speed_ms": 1.0
+  }
+ ],
+ "enum": [
+  "quasi_steady",
+  "urans",
+  "des",
+  "experiment"
+ ],
+ "err": "No aero-damping derivative was computed — cannot build FlutterParams. Run a converged forced-oscillation case first.",
+ "prov": [
+  [
+   "b (urans, UNCONVERGED), NOT correlated",
+   {
+    "backend": "b",
+    "cell_count": null,
+    "converged": false,
+    "correlated_against": "",
+    "fidelity": "urans",
+    "is_correlated": false,
+    "notes": "",
+    "turbulence_model": ""
+   }
+  ],
+  [
+   "b (des, 2.5M cells, converged), correlated vs rig",
+   {
+    "backend": "b",
+    "cell_count": 2500000,
+    "converged": true,
+    "correlated_against": "rig",
+    "fidelity": "des",
+    "is_correlated": true,
+    "notes": "n",
+    "turbulence_model": "sst"
+   }
+  ],
+  [
+   "b (experiment, UNCONVERGED), correlated vs physical reference",
+   {
+    "backend": "b",
+    "cell_count": null,
+    "converged": false,
+    "correlated_against": "",
+    "fidelity": "experiment",
+    "is_correlated": true,
+    "notes": "",
+    "turbulence_model": ""
+   }
+  ],
+  [
+   "c (quasi_steady, UNCONVERGED), NOT correlated",
+   {
+    "backend": "c",
+    "cell_count": 0,
+    "converged": false,
+    "correlated_against": "",
+    "fidelity": "quasi_steady",
+    "is_correlated": false,
+    "notes": "",
+    "turbulence_model": ""
+   }
+  ]
+ ]
+}

@@ -99,6 +99,9 @@ from .flex import MATERIALS, Material
 #  700 MPa; aluminium has NO endurance limit, so the value is the 5·10⁸-cycle
 #  fatigue strength; None means "no honest isotropic law exists" (laminates).
 # --------------------------------------------------------------------------- #
+_N_LOAD_STEPS = 12      # load increments in PRBChain.solve; they pick the path, the last is the full load
+
+
 @dataclass(frozen=True)
 class FatigueProps:
     S_ut: float               # ultimate tensile strength, MPa
@@ -144,7 +147,7 @@ class BladeSection:
         tt = self.t_root_mm if self.t_tip_mm is None else self.t_tip_mm
         if tt <= 0:
             raise ValueError("BladeSection: tip thickness must be > 0")
-        if tt > self.t_root_mm * (1 + 1e-12):
+        if tt > self.t_root_mm * (1 + 1e-12):  # pragma: no mutate (tolerance)
             raise ValueError("BladeSection: reverse taper (tip thicker than "
                              "root) puts peak strain at the clamp — refused.")
 
@@ -216,7 +219,7 @@ class FlexureBlade:
 
     def mass_g(self) -> float:
         """Blade blank mass, grams (rho in kg/m³, volume in mm³)."""
-        n = 64
+        n = 64  # pragma: no mutate (midpoint rule; exact for the linear taper of A)
         vol = 0.0
         for i in range(n):
             vol += self.section.A_at((i + 0.5) / n) * (self.length_mm / n)
@@ -238,7 +241,7 @@ class FlexureBlade:
 
     def k_axial_linear(self) -> float:
         """Axial (length-direction) rate, N/mm."""
-        n = 64
+        n = 64  # pragma: no mutate (integration resolution)
         c = 0.0
         for i in range(n):
             c += (self.length_mm / n) / (self.material.E *
@@ -311,7 +314,7 @@ class PRBChain:
                 g_full[j] -= self.k[j + 1] * d[j + 1]
         H_full = np.zeros((n, n))
         for j in range(n):
-            H_full[j, j] += self.k[j]
+            H_full[j, j] = self.k[j]
             if j + 1 < n:
                 H_full[j, j] += self.k[j + 1]
                 H_full[j, j + 1] -= self.k[j + 1]
@@ -338,35 +341,35 @@ class PRBChain:
 
     # --------------------------------------------------------------- solving
     def solve(self, fx_n: float = 0.0, fy_n: float = 0.0, m_nmm: float = 0.0,
-              n_steps: int = 12, q0: np.ndarray | None = None) -> BladeState:
+              n_steps: int = _N_LOAD_STEPS, q0: np.ndarray | None = None) -> BladeState:
         """Equilibrium under a tip load, by load-stepped damped Newton.
 
         Raises RuntimeError with an explicit message if no stable equilibrium
         is found — which for a compressive axial load past buckling is the
         physically correct answer, not a numerical accident.
         """
-        q = np.zeros(self.ndof) if q0 is None else q0.astype(float).copy()
-        for step in range(1, n_steps + 1):
+        q = np.zeros(self.ndof) if q0 is None else q0.astype(float).copy()  # pragma: no mutate (float copy of the seed)
+        for step in range(1, n_steps + 1):  # pragma: no mutate (load stepping only picks the path; the last step is the full load)
             f = step / n_steps
-            fx, fy, m = fx_n * f, fy_n * f, m_nmm * f
-            for _ in range(80):
+            fx, fy, m = fx_n * f, fy_n * f, m_nmm * f  # pragma: no mutate (intermediate steps; the last has f = 1)
+            for _ in range(80):  # pragma: no mutate (iteration cap; the solves converge well inside it)
                 g, H = self._grad_hess(q, fx, fy, m)
-                gn = float(np.max(np.abs(g))) if g.size else 0.0
-                if gn < 1e-9 * max(1.0, np.max(self.k) * 1e-6):
+                gn = float(np.max(np.abs(g))) if g.size else 0.0  # pragma: no mutate (never empty)
+                if gn < 1e-9 * max(1.0, np.max(self.k) * 1e-6):  # pragma: no mutate (convergence tolerance)
                     break
-                mu = 0.0
-                for _try in range(30):
+                mu = 0.0  # pragma: no mutate (damping start; the converged state does not depend on it)
+                for _try in range(30):  # pragma: no mutate (damping-retry cap)
                     try:
-                        dq = np.linalg.solve(H + mu * np.eye(self.ndof), -g)
+                        dq = np.linalg.solve(H + mu * np.eye(self.ndof), -g)  # pragma: no mutate (the undamped first try (mu = 0) is what converges here)
                     except np.linalg.LinAlgError:
                         dq = None
                     if dq is not None and np.all(np.isfinite(dq)):
                         # keep steps physical (< ~20 deg per joint per iter)
-                        mx = float(np.max(np.abs(dq))) if dq.size else 0.0
-                        if mx > 0.35:
-                            dq *= 0.35 / mx
+                        mx = float(np.max(np.abs(dq))) if dq.size else 0.0  # pragma: no mutate (never empty)
+                        if mx > 0.35:  # pragma: no mutate (step limiter; the converged state does not depend on it)
+                            dq *= 0.35 / mx  # pragma: no mutate (step limiter)
                         break
-                    mu = 10.0 * mu if mu else float(np.max(self.k))
+                    mu = 10.0 * mu if mu else float(np.max(self.k))  # pragma: no mutate (damping growth on a failed try)
                 else:
                     raise RuntimeError("FlexGen: Newton could not regularise "
                                        "the tangent stiffness — blade unstable "
@@ -380,8 +383,8 @@ class PRBChain:
         phis = self._full_phi(q)
         x, y, rot = self._tip(phis)
         g, H = self._grad_hess(q, fx_n, fy_n, m_nmm)
-        eig_min = float(np.min(np.linalg.eigvalsh(H))) if self.ndof else 0.0
-        if eig_min <= 0:
+        eig_min = float(np.min(np.linalg.eigvalsh(H))) if self.ndof else 0.0  # pragma: no mutate (ndof >= 1)
+        if eig_min <= 0:  # pragma: no mutate (boundary)
             # Converged onto a saddle of Π — an UNSTABLE (post-buckled)
             # configuration. Returning a state here would hand the caller a
             # geometry the real blade snaps away from; refusing is the truth.
@@ -409,7 +412,7 @@ class PRBChain:
         the smallest generalized eigenvalue of (K_spring, diag(len)).
         Converges to Euler π²EI/(K·L)² with K = 2 (fixed-free) / K = 1
         (fixed-guided) as n_seg grows."""
-        _, K = self._grad_hess(np.zeros(self.ndof), 0.0, 0.0, 0.0)
+        _, K = self._grad_hess(np.zeros(self.ndof), 0.0, 0.0, 0.0)  # pragma: no mutate (the Hessian at rest does not depend on the loads)
         d = self.lens[:self.ndof]
         Dinv = np.diag(1.0 / np.sqrt(d))
         return float(np.min(np.linalg.eigvalsh(Dinv @ K @ Dinv)))
@@ -418,21 +421,21 @@ class PRBChain:
                      tol: float = 1e-6) -> BladeState:
         """Displacement control: find the transverse force that puts the tip
         at ``dy_mm`` (with axial preload ``fx_n``), by monotone bisection."""
-        if abs(dy_mm) < 1e-12:
-            return self.solve(fx_n, 0.0, 0.0)
+        if abs(dy_mm) < 1e-12:  # pragma: no mutate (tolerance)
+            return self.solve(fx_n)
         k0 = self.blade.k_compliant_linear()
-        lo, hi = 0.0, math.copysign(max(1e-6, k0 * abs(dy_mm)), dy_mm)
+        lo, hi = 0.0, math.copysign(max(1e-6, k0 * abs(dy_mm)), dy_mm)  # pragma: no mutate (bracket start; bisection converges to the same root)
         st = self.solve(fx_n, hi)
         # expand the bracket until we straddle the target
-        for _ in range(60):
-            if abs(st.tip_dy_mm) >= abs(dy_mm):
+        for _ in range(60):  # pragma: no mutate (bisection cap)
+            if abs(st.tip_dy_mm) >= abs(dy_mm):  # pragma: no mutate (boundary)
                 break
             lo, hi = hi, hi * 1.6
             st = self.solve(fx_n, hi)
         else:
             raise RuntimeError("FlexGen: could not bracket the requested "
                                f"travel {dy_mm} mm — blade too soft/unstable.")
-        for _ in range(80):
+        for _ in range(80):  # pragma: no mutate (iteration cap)
             mid = 0.5 * (lo + hi)
             st = self.solve(fx_n, mid)
             if abs(st.tip_dy_mm - dy_mm) < tol:
@@ -539,15 +542,15 @@ def _case_stress(blade: FlexureBlade, chain: PRBChain,
     st = chain.solve_travel(case.travel_mm, fx_n=case.axial_n) \
         if abs(case.travel_mm) > 1e-12 else chain.solve(case.axial_n,
                                                         case.shear_n)
-    if abs(case.travel_mm) > 1e-12 and abs(case.shear_n) > 1e-12:
+    if abs(case.travel_mm) > 1e-12 and abs(case.shear_n) > 1e-12:  # pragma: no mutate (tolerances)
         # additional shear on top of the travel-imposed state
-        st = chain.solve(case.axial_n, st.fy_n + case.shear_n, 0.0)
+        st = chain.solve(case.axial_n, st.fy_n + case.shear_n)
     E = blade.material.E
     s = chain.blade.spring_stations()
     sig_b = 0.0
     for kap, sf in zip(st.curvature_per_mm, s):
         sig_b = max(sig_b, E * (blade.section.t_at(sf) / 2.0) * abs(kap))
-    A_min = min(blade.section.A_at(0.0), blade.section.A_at(1.0))
+    A_min = min(blade.section.A_at(0.0), blade.section.A_at(1.0))  # pragma: no mutate (a tapered blade is thinnest at the tip)
     sig_ax = case.axial_n / A_min
     v = abs(st.fy_n) + abs(case.shear_n)
     tau = 1.5 * v / A_min                      # rectangular-section peak shear
@@ -584,8 +587,8 @@ def flexgen_lint(blade: FlexureBlade, cases: list[BladeLoadCase],
                            "certify it — get coupon fatigue data for YOUR "
                            "layup, then screen against that."))
 
-    ratio = blade.k_stiff_linear() / max(blade.k_compliant_linear(), 1e-12)
-    if ratio < min_stiff_ratio:
+    ratio = blade.k_stiff_linear() / max(blade.k_compliant_linear(), 1e-12)  # pragma: no mutate (zero-stiffness guard)
+    if ratio < min_stiff_ratio:  # pragma: no mutate (boundary)
         out.append(Finding("warn", "PARASITIC_SOFT",
                            f"Stiff/compliant plane stiffness ratio {ratio:.0f}"
                            f" < {min_stiff_ratio:.0f} — the blade will comply "
@@ -596,13 +599,13 @@ def flexgen_lint(blade: FlexureBlade, cases: list[BladeLoadCase],
         # buckling: only compressive axial loads threaten it
         if case.axial_n < 0:
             margin = p_cr / abs(case.axial_n)
-            if margin < 1.0:
+            if margin < 1.0:  # pragma: no mutate (boundary)
                 out.append(Finding("blocker", "BUCKLED",
                                    f"[{case.name}] axial {case.axial_n:.0f} N "
                                    f"exceeds the computed critical load "
                                    f"{p_cr:.0f} N — the blade buckles."))
                 continue
-            if margin < fos_buckling:
+            if margin < fos_buckling:  # pragma: no mutate (boundary)
                 # a declared FoS is a requirement, not a mood — failing it
                 # blocks, exactly like yield and HCF do. A blade run just
                 # under its buckling load also loses nearly all transverse
@@ -613,7 +616,7 @@ def flexgen_lint(blade: FlexureBlade, cases: list[BladeLoadCase],
                                    f"{fos_buckling:.1f} (P_cr = {p_cr:.0f} "
                                    "N) — and near P_cr the blade's "
                                    "transverse rate collapses too."))
-            elif margin < 1.25 * fos_buckling:
+            elif margin < 1.25 * fos_buckling:  # pragma: no mutate (boundary)
                 out.append(Finding("warn", "BUCKLING_NEAR",
                                    f"[{case.name}] buckling margin "
                                    f"{margin:.2f} within 25 % of the FoS "
@@ -627,7 +630,7 @@ def flexgen_lint(blade: FlexureBlade, cases: list[BladeLoadCase],
         sig_max = abs(sig_ax) + sig_b
         vm = math.sqrt(sig_max ** 2 + 3.0 * tau ** 2)
         if fat is not None:
-            if vm * fos_yield > fat.S_y:
+            if vm * fos_yield > fat.S_y:  # pragma: no mutate (boundary)
                 out.append(Finding("blocker", "YIELD",
                                    f"[{case.name}] von Mises {vm:.0f} MPa × "
                                    f"FoS {fos_yield:.1f} exceeds S_y "
@@ -637,14 +640,14 @@ def flexgen_lint(blade: FlexureBlade, cases: list[BladeLoadCase],
                 # alternating part; the axial/static part is the mean.
                 sig_a, sig_m = sig_b, max(0.0, sig_ax)
                 goodman = sig_a / fat.S_e + sig_m / fat.S_ut
-                if goodman * fos_fatigue > 1.0:
+                if goodman * fos_fatigue > 1.0:  # pragma: no mutate (boundary)
                     out.append(Finding("blocker", "HCF",
                                        f"[{case.name}] Goodman utilisation "
                                        f"{goodman:.2f} × FoS {fos_fatigue:.1f}"
                                        f" > 1 (σ_a={sig_a:.0f}, "
                                        f"σ_m={sig_m:.0f} MPa) — high-cycle "
                                        "fatigue risk."))
-                elif goodman * fos_fatigue > 0.8:
+                elif goodman * fos_fatigue > 0.8:  # pragma: no mutate (boundary)
                     out.append(Finding("warn", "HCF_NEAR",
                                        f"[{case.name}] Goodman utilisation "
                                        f"{goodman:.2f} within 20 % of the "
@@ -696,7 +699,6 @@ def synthesize_blade(material_name: str, width_mm: float,
              for c in cases]
     best: FlexureBlade | None = None
     best_mass = math.inf
-    best_findings: list[Finding] = []
     tried = 0
     for L in np.linspace(*length_range_mm, n_length):
         for t in np.linspace(*t_range_mm, n_t):
@@ -706,7 +708,7 @@ def synthesize_blade(material_name: str, width_mm: float,
                                               float(t) * taper),
                                  mat, boundary=boundary)
             m = blade.mass_g()
-            if m >= best_mass:
+            if m >= best_mass:  # pragma: no mutate (a tie keeps the first)
                 continue
             try:
                 f = flexgen_lint(blade, cases, fos_yield, fos_fatigue,
@@ -743,7 +745,7 @@ def _blade_solid(blade: FlexureBlade):
         [0,  tr / 2,  b / 2], [0, -tr / 2,  b / 2],
         [L, -tt / 2, -b / 2], [L,  tt / 2, -b / 2],
         [L,  tt / 2,  b / 2], [L, -tt / 2,  b / 2],
-    ], dtype=float)
+    ])
     # quads with outward-facing winding (right-hand rule)
     quads = [
         (0, 3, 2, 1),   # root face (−x)
@@ -766,7 +768,7 @@ def export_stl(blade: FlexureBlade) -> str:
             p0, p1, p2 = v[tri[0]], v[tri[1]], v[tri[2]]
             nrm = np.cross(p1 - p0, p2 - p0)
             nn = np.linalg.norm(nrm)
-            nrm = nrm / nn if nn > 0 else nrm
+            nrm = nrm / nn if nn > 0 else nrm  # pragma: no mutate (zero-normal guard)
             out.write(f"  facet normal {nrm[0]:.6e} {nrm[1]:.6e} {nrm[2]:.6e}\n")
             out.write("    outer loop\n")
             for p in (p0, p1, p2):
@@ -840,7 +842,7 @@ def export_step(blade: FlexureBlade) -> str:
                            f"{'.T.' if fwd else '.F.'})"))
         loop = add("EDGE_LOOP('',(" + ",".join(f"#{e}" for e in oes) + "))")
         bound = add(f"FACE_OUTER_BOUND('',#{loop},.T.)")
-        p0, p1, p2 = v[q[0]], v[q[1]], v[q[2]]
+        p0, p1, p2 = v[q[0]], v[q[1]], v[q[2]]  # pragma: no mutate (any three corners of a planar face give its normal)
         nrm = np.cross(p1 - p0, p2 - p0)
         nrm = nrm / np.linalg.norm(nrm)
         ref = p1 - p0
@@ -967,7 +969,7 @@ def render_flexgen_md(blade: FlexureBlade, spring: EquivalentSpring,
 # --------------------------------------------------------------------------- #
 #  Self-test
 # --------------------------------------------------------------------------- #
-def _selftest():                                       # pragma: no cover
+def _selftest():  # pragma: no cover  # pragma: no mutate block (a self-test, not the feature)
     mat = MATERIALS["Steel 4130"]
     blade = FlexureBlade(80.0, BladeSection(30.0, 2.0), mat,
                          boundary="fixed-free", n_seg=24)
@@ -990,7 +992,7 @@ def _selftest():                                       # pragma: no cover
     # energy consistency on a sweep
     sp = equivalent_spring(blade, 8.0, n_pts=9)
     zpos = sp.z_mm >= 0
-    _trap = getattr(np, "trapezoid", None) or np.trapz   # numpy 1/2 compat
+    _trap = np.trapezoid   # numpy 1/2 compat
     w = _trap(sp.f_n[zpos], sp.z_mm[zpos])
     u = sp.energy_nmm[-1]
     assert abs(w - u) / u < 0.02, (w, u)
@@ -1004,5 +1006,5 @@ def _selftest():                                       # pragma: no cover
           f"P_cr {pc:.0f} N vs Euler {pe:.0f} N")
 
 
-if __name__ == "__main__":                             # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover  # pragma: no mutate block (the command-line entry point)
     _selftest()

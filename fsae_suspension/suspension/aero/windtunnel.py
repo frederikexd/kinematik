@@ -326,7 +326,7 @@ def downforce_to_clift(downforce_N: float, rho: float, area_m2: float,
     """
     q = 0.5 * rho * speed_ms * speed_ms
     if q <= 0 or area_m2 <= 0:
-        return float("nan")
+        return math.nan
     return -(downforce_N) / (q * area_m2)
 
 
@@ -334,7 +334,7 @@ def drag_to_cdrag(drag_N: float, rho: float, area_m2: float,
                   speed_ms: float) -> float:
     q = 0.5 * rho * speed_ms * speed_ms
     if q <= 0 or area_m2 <= 0:
-        return float("nan")
+        return math.nan
     return drag_N / (q * area_m2)
 
 
@@ -357,7 +357,7 @@ class PointCorrelation:
     @staticmethod
     def _pct(cfd, phys):
         if cfd is None or phys is None or abs(phys) < 1e-9:
-            return float("nan")
+            return math.nan
         return 100.0 * (cfd - phys) / phys
 
     @property
@@ -372,7 +372,7 @@ class PointCorrelation:
     def bal_err_pts(self) -> float:
         """Aero-balance error in percentage POINTS (e.g. 0.45 vs 0.42 -> +3.0 pts)."""
         if self.bal_cfd is None or self.bal_phys is None:
-            return float("nan")
+            return math.nan
         return 100.0 * (self.bal_cfd - self.bal_phys)
 
     def as_dict(self):
@@ -561,10 +561,10 @@ class VirtualWindTunnel:
         n_paired = sum(1 for p in points if p.paired)
 
         def _rms(xs):
-            return math.sqrt(sum(x * x for x in xs) / len(xs)) if xs else float("nan")
+            return math.sqrt(sum(x * x for x in xs) / len(xs)) if xs else math.nan
 
         def _bias(xs):
-            return (sum(xs) / len(xs)) if xs else float("nan")
+            return (sum(xs) / len(xs)) if xs else math.nan
 
         cl_rms = _rms(cl_errs)
         cd_rms = _rms(cd_errs)

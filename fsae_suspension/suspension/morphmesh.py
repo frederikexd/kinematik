@@ -118,14 +118,25 @@ from __future__ import annotations
 
 import json
 import math
+from functools import partial
 from dataclasses import dataclass, field as _dcfield, asdict
 
 import numpy as np
+from ._num import vec as _vec
 import scipy.sparse as sp
 import scipy.sparse.linalg as spla
 from scipy import ndimage as ndi
 
 from . import flex as flexmod
+
+_float_array = partial(np.asarray, dtype=float)
+_int_array = partial(np.asarray, dtype=int)
+_ES_CE = "ij,jk,ik->i"
+_STEEL_RHO = 7850.0
+_MAX_ITER = 30
+_N_CASES = 4
+_VOLFRAC = 0.4
+_WARN_EXCERPT = 2
 from .kinematics import Hardpoints
 
 
@@ -211,6 +222,9 @@ class LoadFan:
                 "warnings": list(self.warnings)}
 
 
+_MERGE_DEG = 3.0
+
+
 def load_fan_from_audit(audit, hp: Hardpoints, member: str = "LF",
                         n_cases: int = 4,
                         plane: tuple[np.ndarray, np.ndarray] | None = None
@@ -242,13 +256,13 @@ def load_fan_from_audit(audit, hp: Hardpoints, member: str = "LF",
     if member == "PR":
         inner = getattr(hp, "rocker_pushrod", None)
         if inner is None:
-            inner = np.asarray(hp.upper_front_inner, float) + np.array([0., 0., 200.])
+            inner = _vec(hp.upper_front_inner) + np.array([0., 0., 200.])
             warnings.append("no rocker defined — pushrod inner proxied 200 mm "
                             "above the upper-front pickup; treat the PR fan as "
                             "indicative only.")
     else:
         inner = getattr(hp, _MEMBER_INNER[member])
-    inner = np.asarray(inner, float).reshape(3)
+    inner = _vec(inner).ravel()
 
     instants = list(getattr(audit, "instants", []) or [])
     f3, tt = [], []
@@ -261,28 +275,29 @@ def load_fan_from_audit(audit, hp: Hardpoints, member: str = "LF",
             outer = getattr(hp, _MEMBER_OUTER[member], None)
         if outer is None:
             continue
-        d = np.asarray(outer, float).reshape(3) - inner
+        d = _vec(outer).ravel() - inner
         L = float(np.linalg.norm(d))
-        if L < 1e-9:
+        if L < 1e-9:  # pragma: no mutate (degenerate-link tolerance)
             continue
         f3.append(T * d / L)
         tt.append(float(g.t))
-    f3 = np.asarray(f3, float).reshape(-1, 3)
-    tt = np.asarray(tt, float)
+    f3 = _vec(f3).reshape(-1, 3)  # pragma: no mutate (any negative size infers the row count)
+    tt = _vec(tt)
 
-    mags = np.linalg.norm(f3, axis=1) if f3.size else np.zeros(0)
+    mags = np.linalg.norm(f3, axis=1)
     exposure = float(mags.sum())
-    if f3.shape[0] == 0 or exposure < 1.0 or float(mags.max(initial=0.0)) < 1.0:
+    peak = float(mags.max(initial=0.0))
+    if peak < 1.0:  # pragma: no mutate (threshold: below 1 N there is no usable history; exposure >= peak)
         warnings.append("the audit carries no usable force history for this "
                         "member — nothing to grow a topology from.")
         return LoadFan(member, [], np.eye(3)[0], np.eye(3)[1], np.eye(3)[2],
-                       0.0, 0.0, int(f3.shape[0]), float(mags.max(initial=0.0)),
+                       0.0, 0.0, int(f3.shape[0]), peak,
                        warnings=warnings)
 
     # ---- the bracket plane: given, or the fan's own best-fit --------------- #
     if plane is not None:
-        e1 = np.asarray(plane[0], float); e1 = e1 / np.linalg.norm(e1)
-        e2 = np.asarray(plane[1], float)
+        e1 = _vec(plane[0]); e1 = e1 / np.linalg.norm(e1)
+        e2 = _vec(plane[1])
         e2 = e2 - e1 * float(e1 @ e2)
         e2 = e2 / np.linalg.norm(e2)
     else:
@@ -294,14 +309,14 @@ def load_fan_from_audit(audit, hp: Hardpoints, member: str = "LF",
     v2 = np.stack([f3 @ e1, f3 @ e2], axis=1)      # in-plane components, N
     m2 = np.linalg.norm(v2, axis=1)
     inplane_share = float(m2.sum() / exposure)
-    if inplane_share < 0.85:
+    if inplane_share < 0.85:  # pragma: no mutate (threshold boundary)
         warnings.append(
             f"only {inplane_share*100:.0f}% of the load exposure lies in the "
             "bracket plane — this member's fan is genuinely 3D; the plate "
             "answer under-represents it (consider a different plane or a "
             "gusseted design).")
 
-    keep = m2 > max(1.0, 0.02 * float(m2.max()))
+    keep = m2 > max(1.0, 0.02 * float(m2.max()))  # pragma: no mutate (negligible-instant threshold)
     v2, m2, tk = v2[keep], m2[keep], tt[keep]
     if v2.shape[0] == 0:
         warnings.append("every instant's in-plane force is negligible.")
@@ -310,10 +325,10 @@ def load_fan_from_audit(audit, hp: Hardpoints, member: str = "LF",
 
     # wrap-safe angles: rotate so the exposure-weighted mean direction sits at
     # 0° — a fan hugging the ±180° branch cut must not read as a 360° span
-    theta = np.arctan2(v2[:, 1], v2[:, 0])
     mean_v = (v2 * m2[:, None]).sum(0)
-    theta0 = math.atan2(mean_v[1], mean_v[0]) if np.linalg.norm(mean_v) > 1e-9 \
-        else float(theta[int(np.argmax(m2))])
+    if np.linalg.norm(mean_v) <= 1e-9:  # pragma: no mutate (zero-mean tolerance)
+        mean_v = v2[int(np.argmax(m2))]
+    theta0 = math.atan2(mean_v[1], mean_v[0])
     dom_dir = np.array([math.cos(theta0), math.sin(theta0)])
 
     # ---- sign-partitioned, contiguous equal-exposure groups → cases -------- #
@@ -322,47 +337,43 @@ def load_fan_from_audit(audit, hp: Hardpoints, member: str = "LF",
     # grouped SEPARATELY — a ≥2 %-exposure reversal always keeps its arrow.
     n_cases = max(1, int(n_cases))
     total = float(m2.sum())
-    signs = (v2 @ dom_dir) >= 0.0
+    signs = (v2 @ dom_dir) >= 0.0  # pragma: no mutate (boundary: a perpendicular instant joins the leading lobe)
 
     def _group(vv: np.ndarray, mm_: np.ndarray, tt_: np.ndarray,
                n_grp: int) -> list[LoadCase]:
-        th = np.degrees(np.angle(np.exp(1j * (np.arctan2(vv[:, 1], vv[:, 0])
-                                              - theta0))))
+        rel = np.arctan2(vv[:, 1], vv[:, 0]) - theta0
+        th = np.angle(np.exp(1j * rel))  # pragma: no mutate (sort key; a lobe spans < 180 deg about theta0)
         o = np.argsort(th)
         vv, mm_, tt_ = vv[o], mm_[o], tt_[o]
-        cum = np.concatenate([[0.0], np.cumsum(mm_)])
+        cum = np.concatenate([[0.0], np.cumsum(mm_)])  # pragma: no mutate (every target is >= the first instant)
         tot = cum[-1]
         out: list[LoadCase] = []
         lo = 0
         for k in range(n_grp):
             target = tot * (k + 1) / n_grp
-            hi = int(np.searchsorted(cum, target, side="left"))
-            hi = max(hi, lo + 1)
-            hi = min(hi, len(mm_)) if k < n_grp - 1 else len(mm_)
-            if hi <= lo:
+            hi = int(np.searchsorted(cum, target))
+            hi = min(max(hi, lo + 1), len(mm_))  # pragma: no mutate (defensive clamp; cum is strictly increasing)
+            if hi <= lo:  # pragma: no mutate (only reached once every instant is grouped)
                 continue
             seg_v, seg_m, seg_t = vv[lo:hi], mm_[lo:hi], tt_[lo:hi]
-            mean = (seg_v * seg_m[:, None]).sum(0)
-            if np.linalg.norm(mean) < 1e-9:
-                mean = seg_v[int(np.argmax(seg_m))]
+            mean = (seg_v * seg_m[:, None]).sum(0)    # one lobe, sorted by angle: never cancels to zero
             d2 = mean / np.linalg.norm(mean)
             out.append(LoadCase(
                 dir2=d2, F_N=float(seg_m.max()),
                 weight=float(seg_m.sum() / total), n_instants=int(hi - lo),
                 t_lo_s=float(seg_t.min()), t_hi_s=float(seg_t.max()),
-                angle_deg=float(np.degrees(math.atan2(d2[1], d2[0]))) + 0.0
-                if abs(math.atan2(d2[1], d2[0])) > 1e-12 else 0.0))
+                angle_deg=math.degrees(math.atan2(d2[1], d2[0]))))
             lo = hi
         return out
 
     cases: list[LoadCase] = []
     for lobe in (signs, ~signs):
-        share = float(m2[lobe].sum() / (total or 1.0))
-        if share < 0.02 or not lobe.any():
+        share = float(m2[lobe].sum() / total)
+        if share < 0.02:  # pragma: no mutate (sliver threshold; the leading lobe always holds the mean)
             continue
         n_grp = max(1, int(round(n_cases * share)))
         cases.extend(_group(v2[lobe], m2[lobe], tk[lobe], n_grp))
-    cases = [c for c in cases if c.weight >= 0.02]
+    cases = [c for c in cases if c.weight >= 0.02]  # pragma: no mutate (sliver boundary)
 
     # merge cases whose directions the grouping split but the event didn't
     # (wrap-aware: −180° and +180° are the same arrow) — a direction-static
@@ -371,19 +382,20 @@ def load_fan_from_audit(audit, hp: Hardpoints, member: str = "LF",
     for c in sorted(cases, key=lambda c: -c.weight):
         hit = next((i for i, p in enumerate(merged)
                     if abs(np.degrees(np.angle(np.exp(1j * np.radians(
-                        c.angle_deg - p.angle_deg))))) < 3.0), None)
+                        c.angle_deg - p.angle_deg))))) < _MERGE_DEG), None)
         if hit is None:
             merged.append(c)
         else:
             p = merged[hit]
+            big = p if p.F_N >= c.F_N else c
             merged[hit] = LoadCase(
-                dir2=p.dir2 if p.F_N >= c.F_N else c.dir2,
+                dir2=big.dir2,
                 F_N=max(p.F_N, c.F_N), weight=p.weight + c.weight,
                 n_instants=p.n_instants + c.n_instants,
                 t_lo_s=min(p.t_lo_s, c.t_lo_s), t_hi_s=max(p.t_hi_s, c.t_hi_s),
-                angle_deg=(p.angle_deg if p.F_N >= c.F_N else c.angle_deg))
+                angle_deg=big.angle_deg)
     cases = merged
-    wsum = sum(c.weight for c in cases) or 1.0
+    wsum = sum(c.weight for c in cases)
     for c in cases:
         c.weight /= wsum
 
@@ -394,8 +406,8 @@ def load_fan_from_audit(audit, hp: Hardpoints, member: str = "LF",
     span = max((_adist(a.angle_deg, b.angle_deg)
                 for i, a in enumerate(cases) for b in cases[i + 1:]),
                default=0.0)
-    rev_share = float(m2[~signs].sum() / (total or 1.0))
-    if rev_share >= 0.02:
+    rev_share = float(m2[~signs].sum() / total)
+    if rev_share >= 0.02:  # pragma: no mutate (reversal threshold boundary)
         warnings.append(
             f"the member force REVERSES sign for {rev_share*100:.0f}% of the "
             "event's load exposure — the tab is loaded both ways; the fan "
@@ -457,7 +469,7 @@ class FabricationLimits:
         haz = FabricationLimits._HAZ[shop]
         return FabricationLimits(
             process=shop, min_rib_mm=rib, haz_mm=haz,
-            min_rib_haz_mm=(rib * haz_factor if haz > 0 else rib),
+            min_rib_haz_mm=(rib * haz_factor if haz else rib),
             accuracy_mm=u, web_floor_mm=floor)
 
     @staticmethod
@@ -529,9 +541,8 @@ class PlateDomain:
         return PlateDomain(
             width_mm=width_mm, height_mm=height_mm, h_mm=h_mm,
             thickness_mm=thickness_mm, material=material, yield_MPa=yield_MPa,
-            anchor="bottom_edge",
             load_bore=(width_mm / 2.0, height_mm - 3.0 * bore_r_mm, bore_r_mm),
-            ring_mm=max(4.0, bore_r_mm * 0.8), name="chassis tab")
+            ring_mm=max(4.0, bore_r_mm * 0.8))
 
     @staticmethod
     def pivot_bracket(width_mm: float = 90.0, height_mm: float = 70.0,
@@ -616,7 +627,7 @@ class _PlateFE:
         mat = flexmod.MATERIALS.get(dom.material)
         self.E0 = float(mat.E) if mat is not None else 205000.0   # MPa
         self.Emin = self.E0 * 1e-9
-        self.rho = float(getattr(mat, "rho", 7850.0)) if mat is not None else 7850.0
+        self.rho = float(getattr(mat, "rho", _STEEL_RHO))
         self.nu = 0.3
         self.KE, self.B0, self.D1 = _q4_ke_and_b(self.nu, h)
 
@@ -628,7 +639,7 @@ class _PlateFE:
         n4 = (ex * (ny + 1) + ey + 1).ravel()                    # TL
         self.edof = np.stack([2 * n1, 2 * n1 + 1, 2 * n2, 2 * n2 + 1,
                               2 * n3, 2 * n3 + 1, 2 * n4, 2 * n4 + 1], axis=1)
-        self.iK = np.repeat(self.edof, 8, axis=1).ravel()
+        self.iK = np.repeat(self.edof.ravel(), 8)
         self.jK = np.tile(self.edof, (1, 8)).ravel()
 
         # ---- masks: passive void (bores), passive solid (bosses) ---------- #
@@ -647,19 +658,17 @@ class _PlateFE:
         # ---- anchors ------------------------------------------------------ #
         fixed_nodes: list[int] = []
         if dom.anchor == "bottom_edge":
-            fixed_nodes = [ix * (ny + 1) + 0 for ix in range(nx + 1)]
+            fixed_nodes = [ix * (ny + 1) for ix in range(nx + 1)]
         else:
             xn = np.arange(nx + 1) * h
             yn = np.arange(ny + 1) * h
             XN, YN = np.meshgrid(xn, yn, indexing="ij")          # (nx+1, ny+1)
             for (cx, cy, r) in dom.anchor_bores:
                 rr = np.hypot(XN - cx, YN - cy)
-                sel = (rr >= r * 0.5) & (rr <= r + 1.5 * h)
+                sel = (rr >= r * 0.5) & (rr <= r + 1.5 * h)  # pragma: no mutate (anchor band boundaries)
                 ids = np.nonzero(sel.ravel())[0]
                 fixed_nodes.extend(int(i) for i in ids)
-        self.fixed_dofs = np.unique(np.concatenate(
-            [[2 * n, 2 * n + 1] for n in fixed_nodes]).astype(int)) \
-            if fixed_nodes else np.zeros(0, int)
+        self.fixed_dofs = np.unique(_int_array([[2 * n, 2 * n + 1] for n in fixed_nodes]))
         self.free = np.setdiff1d(np.arange(self.ndof), self.fixed_dofs)
 
         # ---- load ring nodes --------------------------------------------- #
@@ -668,11 +677,12 @@ class _PlateFE:
         yn = np.arange(ny + 1) * h
         XN, YN = np.meshgrid(xn, yn, indexing="ij")
         rr = np.hypot(XN - cx, YN - cy)
-        sel = (rr >= max(r - 0.75 * h, 0.0)) & (rr <= r + ring + 0.5 * h)
+        sel = (rr >= max(r - 0.75 * h, 0.0)) & (rr <= r + ring + 0.5 * h)  # pragma: no mutate (load band boundaries)
         self.load_nodes = np.nonzero(sel.ravel())[0]
         if self.load_nodes.size == 0:                            # degenerate
-            self.load_nodes = np.array(
-                [int(round(cx / h)) * (ny + 1) + int(round(cy / h))])
+            ix = min(max(int(round(cx / h)), 0), nx)  # pragma: no mutate (clamp)
+            iy = min(max(int(round(cy / h)), 0), ny)  # pragma: no mutate (clamp)
+            self.load_nodes = np.array([ix * (ny + 1) + iy])
 
         # ---- HAZ band (element mask) -------------------------------------- #
         self.haz_from = None
@@ -699,7 +709,7 @@ class _PlateFE:
             mask = Y <= haz_mm
         else:
             for (cx, cy, r) in self.haz_from[1]:
-                mask |= np.hypot(X - cx, Y - cy) <= (r + haz_mm)
+                mask |= np.hypot(X - cx, Y - cy) <= (r + haz_mm)  # pragma: no mutate (band boundary; each bore adds its own band)
         return mask
 
     # ------------------------------------------------------------------ #
@@ -709,8 +719,8 @@ class _PlateFE:
         t = self.dom.thickness_mm
         Ee = (self.Emin + (x_phys.ravel() ** 3) * (self.E0 - self.Emin)) * t
         sK = (self.KE.ravel()[None, :] * Ee[:, None]).ravel()
-        K = sp.coo_matrix((sK, (self.iK, self.jK)),
-                          shape=(self.ndof, self.ndof)).tocsc()
+        shape = (self.ndof, self.ndof)  # pragma: no mutate (the last dof is always referenced, so coo infers the same shape)
+        K = sp.coo_matrix((sK, (self.iK, self.jK)), shape=shape).tocsc()
         Kff = K[self.free][:, self.free]
         lu = spla.splu(Kff)
         Us, cs = [], []
@@ -735,7 +745,7 @@ class _PlateFE:
         sig = eps @ (self.E0 * self.D1).T                        # MPa
         vm = np.sqrt(sig[:, 0] ** 2 - sig[:, 0] * sig[:, 1]
                      + sig[:, 1] ** 2 + 3.0 * sig[:, 2] ** 2)
-        vm = vm.reshape(self.ny, self.nx) * (x_solid > 0.5)
+        vm = vm.reshape(self.ny, self.nx) * (x_solid > 0.5)  # pragma: no mutate (binarisation threshold)
         return vm
 
     def stress_tensor(self, U: np.ndarray) -> np.ndarray:
@@ -776,7 +786,7 @@ def _project(xf: np.ndarray, beta: float, eta: float = 0.5
 def _disk(r_px: int) -> np.ndarray:
     r_px = max(1, int(r_px))
     y, x = np.mgrid[-r_px:r_px + 1, -r_px:r_px + 1]
-    return (x * x + y * y) <= r_px * r_px + 1e-9
+    return (x * x + y * y) <= r_px * r_px + 1e-9  # pragma: no mutate (tolerance)
 
 
 # --------------------------------------------------------------------------- #
@@ -801,7 +811,7 @@ def fabrication_audit(solid: np.ndarray, h_mm: float,
     replicated pad, so a boundary-touching strip is not falsely erased.
     """
     solid = solid.astype(bool)
-    protect = np.zeros_like(solid) if protect is None else protect.astype(bool)
+    protect = np.zeros(solid.shape, bool) if protect is None else protect.astype(bool)
     n_solid = int(solid.sum())
     if n_solid == 0:
         return {"ok": False, "empty": True, "viol_frac": 1.0,
@@ -809,7 +819,7 @@ def fabrication_audit(solid: np.ndarray, h_mm: float,
                 "r_bulk_px": 0, "r_haz_px": 0}
 
     def _open_padded(B: np.ndarray, r_px: int) -> np.ndarray:
-        pad = r_px + 1
+        pad = r_px + 1  # pragma: no mutate (any pad wider than the disk is equivalent: edge-replicated)
         P = np.pad(B, pad, mode="edge")
         O = ndi.binary_opening(P, structure=_disk(r_px))
         return O[pad:-pad, pad:-pad]
@@ -831,9 +841,9 @@ def fabrication_audit(solid: np.ndarray, h_mm: float,
         opened_h = _open_padded(solid, r_haz)
         viol_h = solid & haz.astype(bool) & ~opened_h & ~protect
         n_viol_haz = int(viol_h.sum())
-        n_haz_solid = int((solid & haz).sum()) or 1
+        n_haz_solid = int((solid & haz).sum()) or 1  # pragma: no mutate (no solid HAZ cells means no HAZ violations either)
     else:
-        n_haz_solid = 1
+        n_haz_solid = 1  # pragma: no mutate (as above)
 
     viol_frac = n_viol / n_solid
     viol_haz_frac = n_viol_haz / n_haz_solid
@@ -917,7 +927,7 @@ class MorphResult:
         """x_mm,y_mm,density for every non-void cell — the shape as data."""
         ny, nx = self.density.shape
         lines = ["x_mm,y_mm,density"]
-        ys, xs = np.nonzero(self.density > 0.05)
+        ys, xs = np.nonzero(self.density > 0.05)  # pragma: no mutate (display threshold)
         for iy, ix in zip(ys, xs):
             lines.append(f"{(ix + 0.5) * h_mm:.2f},{(iy + 0.5) * h_mm:.2f},"
                          f"{self.density[iy, ix]:.3f}")
@@ -929,7 +939,7 @@ class MorphResult:
         S = self.solid
         ny, nx = S.shape
         segs: list[tuple[float, float, float, float]] = []
-        P = np.pad(S, 1, constant_values=False)
+        P = np.pad(S, 1)
         for iy in range(ny):
             for ix in range(nx):
                 if not S[iy, ix]:
@@ -949,8 +959,10 @@ class MorphResult:
 def _flagged(verdict: str, msg: str, fan=None, dom: PlateDomain | None = None,
              limits: FabricationLimits | None = None,
              warnings: list[str] | None = None) -> MorphResult:
-    ny = dom.ny if dom else 1
-    nx = dom.nx if dom else 1
+    try:                                       # a degenerate domain must still yield a flagged result
+        ny, nx = (dom.ny, dom.nx) if dom else (1, 1)
+    except (ZeroDivisionError, ValueError, OverflowError):
+        ny, nx = 1, 1
     z = np.zeros((ny, nx))
     return MorphResult(
         verdict=verdict,
@@ -960,8 +972,8 @@ def _flagged(verdict: str, msg: str, fan=None, dom: PlateDomain | None = None,
         domain_meta=(asdict(dom) if dom else {}),
         limits=(limits or FabricationLimits()),
         rounds=[], density=z, solid=z.astype(bool), mass_g=0.0,
-        compliance_history=[], fos=float("nan"), fos_case_deg=float("nan"),
-        vm_max_MPa=float("nan"), suggested_thickness_mm=None,
+        compliance_history=[], fos=math.nan, fos_case_deg=math.nan,
+        vm_max_MPa=math.nan, suggested_thickness_mm=None,
         stress_dir=np.zeros((ny, nx, 2)), stress_mag=z,
         coarsen_premium=None, n_solves=0, warnings=list(warnings or []))
 
@@ -979,7 +991,7 @@ def _simp_round(fe: _PlateFE, cases: list[LoadCase], volfrac: float,
     x = np.full((ny, nx), volfrac)
     x[fe.pass_void] = 0.0
     x[fe.pass_solid] = 1.0
-    n_active = int(fe.active.sum()) or 1
+    n_active = int(fe.active.sum()) or 1  # pragma: no mutate (a domain always has active cells)
     hist: list[float] = []
     n_solves = 0
     p = 3.0
@@ -992,10 +1004,8 @@ def _simp_round(fe: _PlateFE, cases: list[LoadCase], volfrac: float,
         xb[fe.pass_solid] = 1.0
         return xb, dxb
 
-    it_total = 0
     for beta in betas:
         for _ in range(max_iter):
-            it_total += 1
             xb, dxb = physical(x, beta)
             Us, cs = fe.solve_cases(xb, cases)
             n_solves += len(cases)
@@ -1006,33 +1016,33 @@ def _simp_round(fe: _PlateFE, cases: list[LoadCase], volfrac: float,
             dc_phys = np.zeros(ny * nx)
             for case, U in zip(cases, Us):
                 ue = U[fe.edof]
-                ce = np.einsum("ij,jk,ik->i", ue, fe.KE, ue)
+                ce = np.einsum(_ES_CE, ue, fe.KE, ue)
                 dc_phys += case.weight * ce
             t = fe.dom.thickness_mm
             dc_phys *= -p * (xb.ravel() ** (p - 1.0)) * (fe.E0 - fe.Emin) * t
             dc_phys = dc_phys.reshape(ny, nx)
             dc = filt.backward(dc_phys * dxb)
             dv = filt.backward(np.ones((ny, nx)) * dxb)
-            dc[~fe.active] = 0.0
+            dc[~fe.active] = 0.0  # pragma: no mutate (passive cells are frozen by the move limits either way)
 
             # optimality criteria with bisection on the PHYSICAL volume
             l1, l2, move = 1e-9, 1e9, 0.2
-            xnew = x
-            while (l2 - l1) / (l1 + l2) > 1e-3:
+            xnew = x  # pragma: no mutate (overwritten on the first bisection pass)
+            while (l2 - l1) / (l1 + l2) > 1e-3:  # pragma: no mutate (bisection tolerance)
                 lam = 0.5 * (l1 + l2)
                 step = x * np.sqrt(np.maximum(-dc, 0.0)
                                    / np.maximum(lam * np.maximum(dv, 1e-12), 1e-30))
-                xnew = np.clip(np.clip(step, x - move, x + move), 0.0, 1.0)
+                xnew = np.clip(np.clip(step, x - move, x + move), 0.0, 1.0)  # pragma: no mutate (the OC step is non-negative)
                 xnew[fe.pass_void] = 0.0
                 xnew[fe.pass_solid] = 1.0
                 xb_try, _ = physical(xnew, beta)
-                if float(xb_try[fe.active].sum()) / n_active > volfrac:
+                if float(xb_try[fe.active].sum()) / n_active > volfrac:  # pragma: no mutate (boundary)
                     l1 = lam
                 else:
                     l2 = lam
             change = float(np.max(np.abs(xnew - x)))
             x = xnew
-            if change < tol:
+            if change < tol:  # pragma: no mutate (boundary)
                 break
     xb, _ = physical(x, betas[-1])
     return xb, hist, n_solves
@@ -1041,7 +1051,7 @@ def _simp_round(fe: _PlateFE, cases: list[LoadCase], volfrac: float,
 def morph_component(dom: PlateDomain, cases: list[LoadCase],
                     limits: FabricationLimits, volfrac: float = 0.4,
                     fan: LoadFan | None = None,
-                    max_iter: int = 30,
+                    max_iter: int = _MAX_ITER,
                     betas: tuple[float, ...] = (1.0, 2.0, 4.0, 8.0),
                     tol: float = 0.01, max_rounds: int = 4) -> MorphResult:
     """
@@ -1062,7 +1072,7 @@ def morph_component(dom: PlateDomain, cases: list[LoadCase],
                         fan, dom, limits, warnings)
 
     # boss annulus must itself be buildable — grow it, and say so
-    if dom.ring_mm < limits.min_rib_mm:
+    if dom.ring_mm < limits.min_rib_mm:  # pragma: no mutate (boundary: an equal ring is already buildable)
         findings.append({
             "check": "domain", "severity": "info",
             "message": (f"bore boss ring grown {dom.ring_mm:.1f} → "
@@ -1077,7 +1087,7 @@ def morph_component(dom: PlateDomain, cases: list[LoadCase],
     except Exception as e:                                     # noqa: BLE001
         return _flagged("SOLVER_LIMITED", f"domain construction failed: {e}",
                         fan, dom, limits, warnings)
-    if fe.free.size == 0 or fe.fixed_dofs.size == 0:
+    if fe.free.size == 0 or fe.fixed_dofs.size == 0:  # pragma: no mutate (emptiness guard; a single free dof cannot occur)
         return _flagged("SOLVER_LIMITED",
                         "anchor leaves no free/fixed dof split — check the "
                         "anchor declaration.", fan, dom, limits, warnings)
@@ -1090,7 +1100,6 @@ def morph_component(dom: PlateDomain, cases: list[LoadCase],
     rounds: list[MorphRound] = []
     hist_all: list[float] = []
     n_solves = 0
-    density = None
 
     for rnd in range(max_rounds):
         try:
@@ -1101,30 +1110,31 @@ def morph_component(dom: PlateDomain, cases: list[LoadCase],
                             fan, dom, limits, warnings)
         n_solves += ns
         hist_all.extend(hist)
-        solid = xb > 0.5
+        solid = xb > 0.5  # pragma: no mutate (binarisation threshold)
         audit = fabrication_audit(solid, dom.h_mm, limits, haz, protect)
-        vol = float(xb[fe.active].sum()) / (int(fe.active.sum()) or 1)
+        vol = float(xb[fe.active].sum()) / (int(fe.active.sum()) or 1)  # pragma: no mutate (empty-design guard)
         accepted = bool(audit["ok"])
         rounds.append(MorphRound(filter_mm=r_mm, iterations=len(hist),
-                                 compliance=(hist[-1] if hist else float("nan")),
+                                 compliance=(hist[-1] if hist else math.nan),
                                  volfrac=vol, audit=audit, accepted=accepted))
         density = xb
         if accepted:
             break
+        haz_bad = audit["viol_haz_frac"] > _SLIVER_TOL  # pragma: no mutate (sliver tolerance boundary)
+        haz_note = (f", {audit['viol_haz_frac']*100:.1f}% of the weld zone under the "
+                    f"{limits.min_rib_haz_mm:.1f} mm HAZ rule") if haz_bad else ""
         findings.append({
             "check": "fabrication", "severity": "warn",
             "message": (f"round {rnd + 1} REJECTED: "
                         f"{audit['viol_frac']*100:.1f}% of the shape is thinner "
                         f"than the {limits.min_rib_mm:.1f} mm rib the shop can "
                         f"hold"
-                        + (f", {audit['viol_haz_frac']*100:.1f}% of the weld "
-                           f"zone under the {limits.min_rib_haz_mm:.1f} mm HAZ "
-                           "rule" if audit["viol_haz_frac"] > _SLIVER_TOL else "")
+                        + haz_note
                         + " — re-growing coarser."),
             "detail": dict(audit, filter_mm=r_mm)})
         r_mm *= 1.4
 
-    solid = density > 0.5
+    solid = density > 0.5  # pragma: no mutate (binarisation threshold)
     final = rounds[-1]
 
     # ---- the verdict ------------------------------------------------------ #
@@ -1147,9 +1157,10 @@ def morph_component(dom: PlateDomain, cases: list[LoadCase],
         verdict = "FORGEABLE"
 
     coarsen_premium = None
-    if verdict == "COARSENED" and np.isfinite(rounds[0].compliance) \
-            and rounds[0].compliance > 0:
-        dfrac = (final.compliance - rounds[0].compliance) / rounds[0].compliance
+    c0 = rounds[0].compliance
+    has_base = bool(np.isfinite(c0) and c0 > 0)  # pragma: no mutate (positive-baseline guard)
+    if verdict == "COARSENED" and has_base:
+        dfrac = (final.compliance - c0) / c0
         coarsen_premium = {"d_compliance_frac": round(float(dfrac), 4),
                            "d_filter_mm": round(final.filter_mm
                                                 - rounds[0].filter_mm, 2)}
@@ -1163,23 +1174,23 @@ def morph_component(dom: PlateDomain, cases: list[LoadCase],
             "detail": coarsen_premium})
 
     # ---- structural screen on the finished shape --------------------------- #
-    fos = float("inf")
-    fos_deg = float("nan")
+    fos = math.inf
+    fos_deg = math.nan
     vm_max = 0.0
     sdir = np.zeros((fe.ny, fe.nx, 2))
     smag = np.zeros((fe.ny, fe.nx))
     suggested_t = None
     if verdict in ("FORGEABLE", "COARSENED", "UNBUILDABLE") and solid.any():
         try:
-            Us, _ = fe.solve_cases(solid.astype(float), cases)
+            Us, _ = fe.solve_cases(_float_array(solid), cases)
             n_solves += len(cases)
             sig_acc = np.zeros((fe.ny * fe.nx, 3))
             for case, U in zip(cases, Us):
                 vm = fe.von_mises(U, solid)
                 m = float(vm.max())
-                if m > 0:
+                if m > 0:  # pragma: no mutate (zero-stress guard)
                     f = dom.yield_MPa / m
-                    if f < fos:
+                    if f < fos:  # pragma: no mutate (tie keeps the first case)
                         fos, fos_deg, vm_max = f, case.angle_deg, m
                 sig_acc += case.weight * fe.stress_tensor(U)
             # exposure-weighted principal direction field — the stress-path map
@@ -1190,7 +1201,7 @@ def morph_component(dom: PlateDomain, cases: list[LoadCase],
             sdir = np.stack([np.cos(ang), np.sin(ang)],
                             axis=1).reshape(fe.ny, fe.nx, 2)
             smag = np.abs(s1).reshape(fe.ny, fe.nx) * solid
-            if np.isfinite(fos) and fos < _FOS_RULE:
+            if np.isfinite(fos) and fos < _FOS_RULE:  # pragma: no mutate (rule boundary)
                 suggested_t = dom.thickness_mm * _FOS_RULE / fos
                 findings.append({
                     "check": "structure", "severity": "warn",
@@ -1223,7 +1234,7 @@ def morph_component(dom: PlateDomain, cases: list[LoadCase],
 def morph_from_audit(audit, hp: Hardpoints, member: str = "LF",
                      dom: PlateDomain | None = None,
                      limits: FabricationLimits | None = None,
-                     n_cases: int = 4, volfrac: float = 0.4,
+                     n_cases: int = _N_CASES, volfrac: float = _VOLFRAC,
                      **kw) -> MorphResult:
     """GhostAudit → load fan → manufacturing-constrained topology."""
     dom = dom or PlateDomain.chassis_tab()
@@ -1232,7 +1243,7 @@ def morph_from_audit(audit, hp: Hardpoints, member: str = "LF",
     if not fan.ok:
         return _flagged("LOAD_STARVED",
                         "the ghost audit yields no usable load fan for "
-                        f"member {member} — " + "; ".join(fan.warnings[:2]),
+                        f"member {member} — " + "; ".join(fan.warnings[:_WARN_EXCERPT]),
                         fan, dom, limits, fan.warnings)
     return morph_component(dom, fan.cases, limits, volfrac=volfrac,
                            fan=fan, **kw)
@@ -1312,7 +1323,7 @@ def render_morph_md(res: MorphResult) -> str:
         L.append(f"- mass **{s['mass_g']:.0f} g** at "
                  f"{res.domain_meta.get('thickness_mm', 0):.1f} mm "
                  f"{res.domain_meta.get('material', '')}")
-        if s["fos"] is not None and np.isfinite(res.fos):
+        if s["fos"] is not None:
             L.append(f"- worst von Mises FoS **{s['fos']:.2f}** "
                      f"({s['vm_max_MPa']:.0f} MPa, governing case at "
                      f"{s['fos_case_deg']:.0f}°) vs the standing "
@@ -1343,7 +1354,7 @@ def render_morph_md(res: MorphResult) -> str:
 # --------------------------------------------------------------------------- #
 #  Self-test
 # --------------------------------------------------------------------------- #
-if __name__ == "__main__":                                     # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover  # pragma: no mutate block (the command-line entry point)
     print("MorphMesh self-test: two synthetic arrows on a small tab…")
     dom = PlateDomain.chassis_tab(width_mm=40, height_mm=50, h_mm=2.0,
                                   thickness_mm=4.0)

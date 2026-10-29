@@ -1,0 +1,3477 @@
+{
+ "adc": [
+  {
+   "adc_sample_rate_hz": 500.0,
+   "detection_latency_s": 0.25,
+   "label": "proof-of-concept (operator keypress, millis)",
+   "latency_jitter_s": 0.08,
+   "serial_baud": 19200,
+   "serial_chars_in_path": 10,
+   "serial_in_timing_path": true,
+   "timer_resolution_s": 0.001
+  },
+  0.005208333333333333,
+  0.002,
+  0.2572083333333333,
+  0.08000052083163793,
+  0.8000052083163792,
+  1.6000104166327584,
+  "inf",
+  2000.0,
+  "inf",
+  "inf",
+  49.99999999999999
+ ],
+ "adc_f": [
+  {
+   "check": "instrument-budget",
+   "detail": {
+    "bias_s": 0.2572083333333333,
+    "floor_s": 0.8000052083163792,
+    "uncertainty_s": 0.08000052083163793
+   },
+   "message": "proof-of-concept (operator keypress, millis): timer resolution 1000 us, detection latency 257.2 ms, combined uncertainty ±80.0 ms. Shortest event measurable to 10% is 800 ms.",
+   "severity": "info",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "serial-in-timing-path",
+   "detail": {},
+   "message": "Blocking serial output sits between the start and stop marks: 10 characters at 19200 baud is 5 ms added to every reading, in one direction only. Buffer the results and print after the test, not during it.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": "inf",
+    "rel": "inf",
+    "time_s": 0.0
+   },
+   "message": "An expected blow time of 0.0 ms is noise, not a measurement: ±80.0 ms is inf% of it. Resolving this point to 5% needs detection at inf Hz or faster.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 166.66558160781847,
+    "rel": 0.6666666666666667,
+    "time_s": 0.12000078124745689
+   },
+   "message": "An expected blow time of 120.0 ms is noise, not a measurement: ±80.0 ms is 67% of it. Resolving this point to 5% needs detection at 167 Hz or faster.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 124.99918620586384,
+    "rel": 0.5,
+    "time_s": 0.16000104166327586
+   },
+   "message": "An expected blow time of 160.0 ms is dominated by the instrument: ±80.0 ms is 50% of it. Resolving this point to 5% needs detection at 125 Hz or faster.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 83.33279080390923,
+    "rel": 0.33333333333333337,
+    "time_s": 0.24000156249491378
+   },
+   "message": "An expected blow time of 240.0 ms is dominated by the instrument: ±80.0 ms is 33% of it. Resolving this point to 5% needs detection at 83 Hz or faster.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 62.49959310293192,
+    "rel": 0.25,
+    "time_s": 0.3200020833265517
+   },
+   "message": "An expected blow time of 320.0 ms is dominated by the instrument: ±80.0 ms is 25% of it. Resolving this point to 5% needs detection at 62 Hz or faster.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 49.99967448234554,
+    "rel": 0.2,
+    "time_s": 0.4000026041581896
+   },
+   "message": "An expected blow time of 400.0 ms is marginal: ±80.0 ms is 20% of it. Resolving this point to 5% needs detection at 50 Hz or faster.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 41.66639540195462,
+    "rel": 0.16666666666666669,
+    "time_s": 0.48000312498982756
+   },
+   "message": "An expected blow time of 480.0 ms is marginal: ±80.0 ms is 17% of it. Resolving this point to 5% needs detection at 42 Hz or faster.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 31.24979655146596,
+    "rel": 0.125,
+    "time_s": 0.6400041666531034
+   },
+   "message": "An expected blow time of 640.0 ms is marginal: ±80.0 ms is 12% of it. Resolving this point to 5% needs detection at 31 Hz or faster.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  }
+ ],
+ "baud0": [
+  {
+   "adc_sample_rate_hz": null,
+   "detection_latency_s": 0.25,
+   "label": "proof-of-concept (operator keypress, millis)",
+   "latency_jitter_s": 0.08,
+   "serial_baud": 0,
+   "serial_chars_in_path": 30,
+   "serial_in_timing_path": true,
+   "timer_resolution_s": 0.001
+  },
+  0.0,
+  0.0,
+  0.25,
+  0.08000052083163793,
+  0.8000052083163792,
+  1.6000104166327584,
+  "inf",
+  2000.0,
+  "inf",
+  "inf",
+  49.99999999999999
+ ],
+ "baud0_f": [
+  {
+   "check": "instrument-budget",
+   "detail": {
+    "bias_s": 0.25,
+    "floor_s": 0.8000052083163792,
+    "uncertainty_s": 0.08000052083163793
+   },
+   "message": "proof-of-concept (operator keypress, millis): timer resolution 1000 us, detection latency 250.0 ms, combined uncertainty ±80.0 ms. Shortest event measurable to 10% is 800 ms.",
+   "severity": "info",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "manual-detection",
+   "detail": {},
+   "message": "Blow detection is manual, so the 250 ms in this measurement is the operator's reaction time and not a property of the fuse. Every reading is biased long by roughly that much, and the bias is larger than most of the blow times worth measuring. Detect the current collapse on a shunt instead.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": "inf",
+    "rel": "inf",
+    "time_s": 0.0
+   },
+   "message": "An expected blow time of 0.0 ms is noise, not a measurement: ±80.0 ms is inf% of it. Resolving this point to 5% needs detection at inf Hz or faster.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 166.66558160781847,
+    "rel": 0.6666666666666667,
+    "time_s": 0.12000078124745689
+   },
+   "message": "An expected blow time of 120.0 ms is noise, not a measurement: ±80.0 ms is 67% of it. Resolving this point to 5% needs detection at 167 Hz or faster.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 124.99918620586384,
+    "rel": 0.5,
+    "time_s": 0.16000104166327586
+   },
+   "message": "An expected blow time of 160.0 ms is dominated by the instrument: ±80.0 ms is 50% of it. Resolving this point to 5% needs detection at 125 Hz or faster.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 83.33279080390923,
+    "rel": 0.33333333333333337,
+    "time_s": 0.24000156249491378
+   },
+   "message": "An expected blow time of 240.0 ms is dominated by the instrument: ±80.0 ms is 33% of it. Resolving this point to 5% needs detection at 83 Hz or faster.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 62.49959310293192,
+    "rel": 0.25,
+    "time_s": 0.3200020833265517
+   },
+   "message": "An expected blow time of 320.0 ms is dominated by the instrument: ±80.0 ms is 25% of it. Resolving this point to 5% needs detection at 62 Hz or faster.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 49.99967448234554,
+    "rel": 0.2,
+    "time_s": 0.4000026041581896
+   },
+   "message": "An expected blow time of 400.0 ms is marginal: ±80.0 ms is 20% of it. Resolving this point to 5% needs detection at 50 Hz or faster.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 41.66639540195462,
+    "rel": 0.16666666666666669,
+    "time_s": 0.48000312498982756
+   },
+   "message": "An expected blow time of 480.0 ms is marginal: ±80.0 ms is 17% of it. Resolving this point to 5% needs detection at 42 Hz or faster.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 31.24979655146596,
+    "rel": 0.125,
+    "time_s": 0.6400041666531034
+   },
+   "message": "An expected blow time of 640.0 ms is marginal: ±80.0 ms is 12% of it. Resolving this point to 5% needs detection at 31 Hz or faster.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  }
+ ],
+ "n_bare_0.0_(10000.0, 1.0)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_0.0_(40.0, 600.0)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_0.0_(50.0, 10.0)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_0.0_(50.0, None)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_0.0_(None, 10.0)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_0.0_(None, None)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_16.0_(10000.0, 1.0)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_16.0_(40.0, 600.0)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_16.0_(50.0, 10.0)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_16.0_(50.0, None)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_16.0_(None, 10.0)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_16.0_(None, None)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_6.0_(10000.0, 1.0)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_6.0_(40.0, 600.0)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_6.0_(50.0, 10.0)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_6.0_(50.0, None)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_6.0_(None, 10.0)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_6.0_(None, None)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_7.2_(10000.0, 1.0)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_7.2_(40.0, 600.0)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_7.2_(50.0, 10.0)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_7.2_(50.0, None)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_7.2_(None, 10.0)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_7.2_(None, None)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_7.5_(10000.0, 1.0)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_7.5_(40.0, 600.0)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_7.5_(50.0, 10.0)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_7.5_(50.0, None)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_7.5_(None, 10.0)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_7.5_(None, None)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_7.6_(10000.0, 1.0)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_7.6_(40.0, 600.0)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_7.6_(50.0, 10.0)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_7.6_(50.0, None)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_7.6_(None, 10.0)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_7.6_(None, None)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_None_(10000.0, 1.0)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_None_(40.0, 600.0)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_None_(50.0, 10.0)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_None_(50.0, None)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_None_(None, 10.0)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_bare_None_(None, None)": [
+  {
+   "check": "fuse-rating-undeclared",
+   "detail": {},
+   "message": "main GLV fuse has no declared rating; nuisance-trip margin cannot be checked.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_0.0_(10000.0, 1.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "main GLV fuse: 0.0 A against a derated 7.5 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-uncheckable",
+   "detail": {},
+   "message": "Inrush declared but the fuse has no curve to check it against.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_0.0_(40.0, 600.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "main GLV fuse: 0.0 A against a derated 7.5 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-uncheckable",
+   "detail": {},
+   "message": "Inrush declared but the fuse has no curve to check it against.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_0.0_(50.0, 10.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "main GLV fuse: 0.0 A against a derated 7.5 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-uncheckable",
+   "detail": {},
+   "message": "Inrush declared but the fuse has no curve to check it against.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_0.0_(50.0, None)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "main GLV fuse: 0.0 A against a derated 7.5 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_0.0_(None, 10.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "main GLV fuse: 0.0 A against a derated 7.5 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_0.0_(None, None)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "main GLV fuse: 0.0 A against a derated 7.5 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_16.0_(10000.0, 1.0)": [
+  {
+   "check": "nuisance-trip-likely",
+   "detail": {
+    "load_a": 16.0
+   },
+   "message": "main GLV fuse carries 16.0 A continuously against a derated limit of 7.5 A (75% of 10 A). Blade fuses are rated in still air at 25 degC; inside a hot sealed fusebox this one will open on a normal lap.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-uncheckable",
+   "detail": {},
+   "message": "Inrush declared but the fuse has no curve to check it against.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_16.0_(40.0, 600.0)": [
+  {
+   "check": "nuisance-trip-likely",
+   "detail": {
+    "load_a": 16.0
+   },
+   "message": "main GLV fuse carries 16.0 A continuously against a derated limit of 7.5 A (75% of 10 A). Blade fuses are rated in still air at 25 degC; inside a hot sealed fusebox this one will open on a normal lap.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-uncheckable",
+   "detail": {},
+   "message": "Inrush declared but the fuse has no curve to check it against.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_16.0_(50.0, 10.0)": [
+  {
+   "check": "nuisance-trip-likely",
+   "detail": {
+    "load_a": 16.0
+   },
+   "message": "main GLV fuse carries 16.0 A continuously against a derated limit of 7.5 A (75% of 10 A). Blade fuses are rated in still air at 25 degC; inside a hot sealed fusebox this one will open on a normal lap.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-uncheckable",
+   "detail": {},
+   "message": "Inrush declared but the fuse has no curve to check it against.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_16.0_(50.0, None)": [
+  {
+   "check": "nuisance-trip-likely",
+   "detail": {
+    "load_a": 16.0
+   },
+   "message": "main GLV fuse carries 16.0 A continuously against a derated limit of 7.5 A (75% of 10 A). Blade fuses are rated in still air at 25 degC; inside a hot sealed fusebox this one will open on a normal lap.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_16.0_(None, 10.0)": [
+  {
+   "check": "nuisance-trip-likely",
+   "detail": {
+    "load_a": 16.0
+   },
+   "message": "main GLV fuse carries 16.0 A continuously against a derated limit of 7.5 A (75% of 10 A). Blade fuses are rated in still air at 25 degC; inside a hot sealed fusebox this one will open on a normal lap.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_16.0_(None, None)": [
+  {
+   "check": "nuisance-trip-likely",
+   "detail": {
+    "load_a": 16.0
+   },
+   "message": "main GLV fuse carries 16.0 A continuously against a derated limit of 7.5 A (75% of 10 A). Blade fuses are rated in still air at 25 degC; inside a hot sealed fusebox this one will open on a normal lap.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_6.0_(10000.0, 1.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "main GLV fuse: 6.0 A against a derated 7.5 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-uncheckable",
+   "detail": {},
+   "message": "Inrush declared but the fuse has no curve to check it against.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_6.0_(40.0, 600.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "main GLV fuse: 6.0 A against a derated 7.5 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-uncheckable",
+   "detail": {},
+   "message": "Inrush declared but the fuse has no curve to check it against.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_6.0_(50.0, 10.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "main GLV fuse: 6.0 A against a derated 7.5 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-uncheckable",
+   "detail": {},
+   "message": "Inrush declared but the fuse has no curve to check it against.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_6.0_(50.0, None)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "main GLV fuse: 6.0 A against a derated 7.5 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_6.0_(None, 10.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "main GLV fuse: 6.0 A against a derated 7.5 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_6.0_(None, None)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "main GLV fuse: 6.0 A against a derated 7.5 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_7.2_(10000.0, 1.0)": [
+  {
+   "check": "nuisance-trip-marginal",
+   "detail": {},
+   "message": "main GLV fuse runs at 96% of its derated limit. Fine on the bench, marginal at 40 degC with the bodywork on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-uncheckable",
+   "detail": {},
+   "message": "Inrush declared but the fuse has no curve to check it against.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_7.2_(40.0, 600.0)": [
+  {
+   "check": "nuisance-trip-marginal",
+   "detail": {},
+   "message": "main GLV fuse runs at 96% of its derated limit. Fine on the bench, marginal at 40 degC with the bodywork on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-uncheckable",
+   "detail": {},
+   "message": "Inrush declared but the fuse has no curve to check it against.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_7.2_(50.0, 10.0)": [
+  {
+   "check": "nuisance-trip-marginal",
+   "detail": {},
+   "message": "main GLV fuse runs at 96% of its derated limit. Fine on the bench, marginal at 40 degC with the bodywork on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-uncheckable",
+   "detail": {},
+   "message": "Inrush declared but the fuse has no curve to check it against.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_7.2_(50.0, None)": [
+  {
+   "check": "nuisance-trip-marginal",
+   "detail": {},
+   "message": "main GLV fuse runs at 96% of its derated limit. Fine on the bench, marginal at 40 degC with the bodywork on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_7.2_(None, 10.0)": [
+  {
+   "check": "nuisance-trip-marginal",
+   "detail": {},
+   "message": "main GLV fuse runs at 96% of its derated limit. Fine on the bench, marginal at 40 degC with the bodywork on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_7.2_(None, None)": [
+  {
+   "check": "nuisance-trip-marginal",
+   "detail": {},
+   "message": "main GLV fuse runs at 96% of its derated limit. Fine on the bench, marginal at 40 degC with the bodywork on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_7.5_(10000.0, 1.0)": [
+  {
+   "check": "nuisance-trip-marginal",
+   "detail": {},
+   "message": "main GLV fuse runs at 100% of its derated limit. Fine on the bench, marginal at 40 degC with the bodywork on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-uncheckable",
+   "detail": {},
+   "message": "Inrush declared but the fuse has no curve to check it against.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_7.5_(40.0, 600.0)": [
+  {
+   "check": "nuisance-trip-marginal",
+   "detail": {},
+   "message": "main GLV fuse runs at 100% of its derated limit. Fine on the bench, marginal at 40 degC with the bodywork on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-uncheckable",
+   "detail": {},
+   "message": "Inrush declared but the fuse has no curve to check it against.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_7.5_(50.0, 10.0)": [
+  {
+   "check": "nuisance-trip-marginal",
+   "detail": {},
+   "message": "main GLV fuse runs at 100% of its derated limit. Fine on the bench, marginal at 40 degC with the bodywork on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-uncheckable",
+   "detail": {},
+   "message": "Inrush declared but the fuse has no curve to check it against.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_7.5_(50.0, None)": [
+  {
+   "check": "nuisance-trip-marginal",
+   "detail": {},
+   "message": "main GLV fuse runs at 100% of its derated limit. Fine on the bench, marginal at 40 degC with the bodywork on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_7.5_(None, 10.0)": [
+  {
+   "check": "nuisance-trip-marginal",
+   "detail": {},
+   "message": "main GLV fuse runs at 100% of its derated limit. Fine on the bench, marginal at 40 degC with the bodywork on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_7.5_(None, None)": [
+  {
+   "check": "nuisance-trip-marginal",
+   "detail": {},
+   "message": "main GLV fuse runs at 100% of its derated limit. Fine on the bench, marginal at 40 degC with the bodywork on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_7.6_(10000.0, 1.0)": [
+  {
+   "check": "nuisance-trip-likely",
+   "detail": {
+    "load_a": 7.6
+   },
+   "message": "main GLV fuse carries 7.6 A continuously against a derated limit of 7.5 A (75% of 10 A). Blade fuses are rated in still air at 25 degC; inside a hot sealed fusebox this one will open on a normal lap.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-uncheckable",
+   "detail": {},
+   "message": "Inrush declared but the fuse has no curve to check it against.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_7.6_(40.0, 600.0)": [
+  {
+   "check": "nuisance-trip-likely",
+   "detail": {
+    "load_a": 7.6
+   },
+   "message": "main GLV fuse carries 7.6 A continuously against a derated limit of 7.5 A (75% of 10 A). Blade fuses are rated in still air at 25 degC; inside a hot sealed fusebox this one will open on a normal lap.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-uncheckable",
+   "detail": {},
+   "message": "Inrush declared but the fuse has no curve to check it against.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_7.6_(50.0, 10.0)": [
+  {
+   "check": "nuisance-trip-likely",
+   "detail": {
+    "load_a": 7.6
+   },
+   "message": "main GLV fuse carries 7.6 A continuously against a derated limit of 7.5 A (75% of 10 A). Blade fuses are rated in still air at 25 degC; inside a hot sealed fusebox this one will open on a normal lap.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-uncheckable",
+   "detail": {},
+   "message": "Inrush declared but the fuse has no curve to check it against.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_7.6_(50.0, None)": [
+  {
+   "check": "nuisance-trip-likely",
+   "detail": {
+    "load_a": 7.6
+   },
+   "message": "main GLV fuse carries 7.6 A continuously against a derated limit of 7.5 A (75% of 10 A). Blade fuses are rated in still air at 25 degC; inside a hot sealed fusebox this one will open on a normal lap.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_7.6_(None, 10.0)": [
+  {
+   "check": "nuisance-trip-likely",
+   "detail": {
+    "load_a": 7.6
+   },
+   "message": "main GLV fuse carries 7.6 A continuously against a derated limit of 7.5 A (75% of 10 A). Blade fuses are rated in still air at 25 degC; inside a hot sealed fusebox this one will open on a normal lap.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_7.6_(None, None)": [
+  {
+   "check": "nuisance-trip-likely",
+   "detail": {
+    "load_a": 7.6
+   },
+   "message": "main GLV fuse carries 7.6 A continuously against a derated limit of 7.5 A (75% of 10 A). Blade fuses are rated in still air at 25 degC; inside a hot sealed fusebox this one will open on a normal lap.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_None_(10000.0, 1.0)": [
+  {
+   "check": "load-undeclared",
+   "detail": {},
+   "message": "main GLV fuse: continuous load current not declared, so nothing confirms this fuse can hold the circuit it protects.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-uncheckable",
+   "detail": {},
+   "message": "Inrush declared but the fuse has no curve to check it against.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_None_(40.0, 600.0)": [
+  {
+   "check": "load-undeclared",
+   "detail": {},
+   "message": "main GLV fuse: continuous load current not declared, so nothing confirms this fuse can hold the circuit it protects.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-uncheckable",
+   "detail": {},
+   "message": "Inrush declared but the fuse has no curve to check it against.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_None_(50.0, 10.0)": [
+  {
+   "check": "load-undeclared",
+   "detail": {},
+   "message": "main GLV fuse: continuous load current not declared, so nothing confirms this fuse can hold the circuit it protects.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-uncheckable",
+   "detail": {},
+   "message": "Inrush declared but the fuse has no curve to check it against.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_None_(50.0, None)": [
+  {
+   "check": "load-undeclared",
+   "detail": {},
+   "message": "main GLV fuse: continuous load current not declared, so nothing confirms this fuse can hold the circuit it protects.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_None_(None, 10.0)": [
+  {
+   "check": "load-undeclared",
+   "detail": {},
+   "message": "main GLV fuse: continuous load current not declared, so nothing confirms this fuse can hold the circuit it protects.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_one_None_(None, None)": [
+  {
+   "check": "load-undeclared",
+   "detail": {},
+   "message": "main GLV fuse: continuous load current not declared, so nothing confirms this fuse can hold the circuit it protects.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_0.0_(10000.0, 1.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "p: 0.0 A against a derated 7.5 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-opens-fuse",
+   "detail": {
+    "inrush_a": 10000.0
+   },
+   "message": "A 10000 A inrush lasting 1 ms opens this fuse, which clears that current in 0 ms. Either a slow-blow part or a soft-start.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_0.0_(40.0, 600.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "p: 0.0 A against a derated 7.5 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-opens-fuse",
+   "detail": {
+    "inrush_a": 40.0
+   },
+   "message": "A 40 A inrush lasting 600 ms opens this fuse, which clears that current in 250 ms. Either a slow-blow part or a soft-start.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_0.0_(50.0, 10.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "p: 0.0 A against a derated 7.5 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-survived",
+   "detail": {},
+   "message": "Inrush 50 A for 10 ms is inside the fuse's 160 ms clearing time at that current.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_0.0_(50.0, None)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "p: 0.0 A against a derated 7.5 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_0.0_(None, 10.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "p: 0.0 A against a derated 7.5 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_0.0_(None, None)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "p: 0.0 A against a derated 7.5 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_16.0_(10000.0, 1.0)": [
+  {
+   "check": "nuisance-trip-likely",
+   "detail": {
+    "load_a": 16.0
+   },
+   "message": "p carries 16.0 A continuously against a derated limit of 7.5 A (75% of 10 A). Blade fuses are rated in still air at 25 degC; inside a hot sealed fusebox this one will open on a normal lap.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-opens-fuse",
+   "detail": {
+    "inrush_a": 10000.0
+   },
+   "message": "A 10000 A inrush lasting 1 ms opens this fuse, which clears that current in 0 ms. Either a slow-blow part or a soft-start.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_16.0_(40.0, 600.0)": [
+  {
+   "check": "nuisance-trip-likely",
+   "detail": {
+    "load_a": 16.0
+   },
+   "message": "p carries 16.0 A continuously against a derated limit of 7.5 A (75% of 10 A). Blade fuses are rated in still air at 25 degC; inside a hot sealed fusebox this one will open on a normal lap.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-opens-fuse",
+   "detail": {
+    "inrush_a": 40.0
+   },
+   "message": "A 40 A inrush lasting 600 ms opens this fuse, which clears that current in 250 ms. Either a slow-blow part or a soft-start.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_16.0_(50.0, 10.0)": [
+  {
+   "check": "nuisance-trip-likely",
+   "detail": {
+    "load_a": 16.0
+   },
+   "message": "p carries 16.0 A continuously against a derated limit of 7.5 A (75% of 10 A). Blade fuses are rated in still air at 25 degC; inside a hot sealed fusebox this one will open on a normal lap.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-survived",
+   "detail": {},
+   "message": "Inrush 50 A for 10 ms is inside the fuse's 160 ms clearing time at that current.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_16.0_(50.0, None)": [
+  {
+   "check": "nuisance-trip-likely",
+   "detail": {
+    "load_a": 16.0
+   },
+   "message": "p carries 16.0 A continuously against a derated limit of 7.5 A (75% of 10 A). Blade fuses are rated in still air at 25 degC; inside a hot sealed fusebox this one will open on a normal lap.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_16.0_(None, 10.0)": [
+  {
+   "check": "nuisance-trip-likely",
+   "detail": {
+    "load_a": 16.0
+   },
+   "message": "p carries 16.0 A continuously against a derated limit of 7.5 A (75% of 10 A). Blade fuses are rated in still air at 25 degC; inside a hot sealed fusebox this one will open on a normal lap.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_16.0_(None, None)": [
+  {
+   "check": "nuisance-trip-likely",
+   "detail": {
+    "load_a": 16.0
+   },
+   "message": "p carries 16.0 A continuously against a derated limit of 7.5 A (75% of 10 A). Blade fuses are rated in still air at 25 degC; inside a hot sealed fusebox this one will open on a normal lap.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_6.0_(10000.0, 1.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "p: 6.0 A against a derated 7.5 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-opens-fuse",
+   "detail": {
+    "inrush_a": 10000.0
+   },
+   "message": "A 10000 A inrush lasting 1 ms opens this fuse, which clears that current in 0 ms. Either a slow-blow part or a soft-start.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_6.0_(40.0, 600.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "p: 6.0 A against a derated 7.5 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-opens-fuse",
+   "detail": {
+    "inrush_a": 40.0
+   },
+   "message": "A 40 A inrush lasting 600 ms opens this fuse, which clears that current in 250 ms. Either a slow-blow part or a soft-start.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_6.0_(50.0, 10.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "p: 6.0 A against a derated 7.5 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-survived",
+   "detail": {},
+   "message": "Inrush 50 A for 10 ms is inside the fuse's 160 ms clearing time at that current.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_6.0_(50.0, None)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "p: 6.0 A against a derated 7.5 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_6.0_(None, 10.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "p: 6.0 A against a derated 7.5 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_6.0_(None, None)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "p: 6.0 A against a derated 7.5 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_7.2_(10000.0, 1.0)": [
+  {
+   "check": "nuisance-trip-marginal",
+   "detail": {},
+   "message": "p runs at 96% of its derated limit. Fine on the bench, marginal at 40 degC with the bodywork on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-opens-fuse",
+   "detail": {
+    "inrush_a": 10000.0
+   },
+   "message": "A 10000 A inrush lasting 1 ms opens this fuse, which clears that current in 0 ms. Either a slow-blow part or a soft-start.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_7.2_(40.0, 600.0)": [
+  {
+   "check": "nuisance-trip-marginal",
+   "detail": {},
+   "message": "p runs at 96% of its derated limit. Fine on the bench, marginal at 40 degC with the bodywork on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-opens-fuse",
+   "detail": {
+    "inrush_a": 40.0
+   },
+   "message": "A 40 A inrush lasting 600 ms opens this fuse, which clears that current in 250 ms. Either a slow-blow part or a soft-start.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_7.2_(50.0, 10.0)": [
+  {
+   "check": "nuisance-trip-marginal",
+   "detail": {},
+   "message": "p runs at 96% of its derated limit. Fine on the bench, marginal at 40 degC with the bodywork on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-survived",
+   "detail": {},
+   "message": "Inrush 50 A for 10 ms is inside the fuse's 160 ms clearing time at that current.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_7.2_(50.0, None)": [
+  {
+   "check": "nuisance-trip-marginal",
+   "detail": {},
+   "message": "p runs at 96% of its derated limit. Fine on the bench, marginal at 40 degC with the bodywork on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_7.2_(None, 10.0)": [
+  {
+   "check": "nuisance-trip-marginal",
+   "detail": {},
+   "message": "p runs at 96% of its derated limit. Fine on the bench, marginal at 40 degC with the bodywork on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_7.2_(None, None)": [
+  {
+   "check": "nuisance-trip-marginal",
+   "detail": {},
+   "message": "p runs at 96% of its derated limit. Fine on the bench, marginal at 40 degC with the bodywork on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_7.5_(10000.0, 1.0)": [
+  {
+   "check": "nuisance-trip-marginal",
+   "detail": {},
+   "message": "p runs at 100% of its derated limit. Fine on the bench, marginal at 40 degC with the bodywork on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-opens-fuse",
+   "detail": {
+    "inrush_a": 10000.0
+   },
+   "message": "A 10000 A inrush lasting 1 ms opens this fuse, which clears that current in 0 ms. Either a slow-blow part or a soft-start.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_7.5_(40.0, 600.0)": [
+  {
+   "check": "nuisance-trip-marginal",
+   "detail": {},
+   "message": "p runs at 100% of its derated limit. Fine on the bench, marginal at 40 degC with the bodywork on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-opens-fuse",
+   "detail": {
+    "inrush_a": 40.0
+   },
+   "message": "A 40 A inrush lasting 600 ms opens this fuse, which clears that current in 250 ms. Either a slow-blow part or a soft-start.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_7.5_(50.0, 10.0)": [
+  {
+   "check": "nuisance-trip-marginal",
+   "detail": {},
+   "message": "p runs at 100% of its derated limit. Fine on the bench, marginal at 40 degC with the bodywork on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-survived",
+   "detail": {},
+   "message": "Inrush 50 A for 10 ms is inside the fuse's 160 ms clearing time at that current.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_7.5_(50.0, None)": [
+  {
+   "check": "nuisance-trip-marginal",
+   "detail": {},
+   "message": "p runs at 100% of its derated limit. Fine on the bench, marginal at 40 degC with the bodywork on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_7.5_(None, 10.0)": [
+  {
+   "check": "nuisance-trip-marginal",
+   "detail": {},
+   "message": "p runs at 100% of its derated limit. Fine on the bench, marginal at 40 degC with the bodywork on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_7.5_(None, None)": [
+  {
+   "check": "nuisance-trip-marginal",
+   "detail": {},
+   "message": "p runs at 100% of its derated limit. Fine on the bench, marginal at 40 degC with the bodywork on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_7.6_(10000.0, 1.0)": [
+  {
+   "check": "nuisance-trip-likely",
+   "detail": {
+    "load_a": 7.6
+   },
+   "message": "p carries 7.6 A continuously against a derated limit of 7.5 A (75% of 10 A). Blade fuses are rated in still air at 25 degC; inside a hot sealed fusebox this one will open on a normal lap.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-opens-fuse",
+   "detail": {
+    "inrush_a": 10000.0
+   },
+   "message": "A 10000 A inrush lasting 1 ms opens this fuse, which clears that current in 0 ms. Either a slow-blow part or a soft-start.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_7.6_(40.0, 600.0)": [
+  {
+   "check": "nuisance-trip-likely",
+   "detail": {
+    "load_a": 7.6
+   },
+   "message": "p carries 7.6 A continuously against a derated limit of 7.5 A (75% of 10 A). Blade fuses are rated in still air at 25 degC; inside a hot sealed fusebox this one will open on a normal lap.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-opens-fuse",
+   "detail": {
+    "inrush_a": 40.0
+   },
+   "message": "A 40 A inrush lasting 600 ms opens this fuse, which clears that current in 250 ms. Either a slow-blow part or a soft-start.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_7.6_(50.0, 10.0)": [
+  {
+   "check": "nuisance-trip-likely",
+   "detail": {
+    "load_a": 7.6
+   },
+   "message": "p carries 7.6 A continuously against a derated limit of 7.5 A (75% of 10 A). Blade fuses are rated in still air at 25 degC; inside a hot sealed fusebox this one will open on a normal lap.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-survived",
+   "detail": {},
+   "message": "Inrush 50 A for 10 ms is inside the fuse's 160 ms clearing time at that current.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_7.6_(50.0, None)": [
+  {
+   "check": "nuisance-trip-likely",
+   "detail": {
+    "load_a": 7.6
+   },
+   "message": "p carries 7.6 A continuously against a derated limit of 7.5 A (75% of 10 A). Blade fuses are rated in still air at 25 degC; inside a hot sealed fusebox this one will open on a normal lap.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_7.6_(None, 10.0)": [
+  {
+   "check": "nuisance-trip-likely",
+   "detail": {
+    "load_a": 7.6
+   },
+   "message": "p carries 7.6 A continuously against a derated limit of 7.5 A (75% of 10 A). Blade fuses are rated in still air at 25 degC; inside a hot sealed fusebox this one will open on a normal lap.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_7.6_(None, None)": [
+  {
+   "check": "nuisance-trip-likely",
+   "detail": {
+    "load_a": 7.6
+   },
+   "message": "p carries 7.6 A continuously against a derated limit of 7.5 A (75% of 10 A). Blade fuses are rated in still air at 25 degC; inside a hot sealed fusebox this one will open on a normal lap.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_None_(10000.0, 1.0)": [
+  {
+   "check": "load-undeclared",
+   "detail": {},
+   "message": "p: continuous load current not declared, so nothing confirms this fuse can hold the circuit it protects.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-opens-fuse",
+   "detail": {
+    "inrush_a": 10000.0
+   },
+   "message": "A 10000 A inrush lasting 1 ms opens this fuse, which clears that current in 0 ms. Either a slow-blow part or a soft-start.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_None_(40.0, 600.0)": [
+  {
+   "check": "load-undeclared",
+   "detail": {},
+   "message": "p: continuous load current not declared, so nothing confirms this fuse can hold the circuit it protects.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-opens-fuse",
+   "detail": {
+    "inrush_a": 40.0
+   },
+   "message": "A 40 A inrush lasting 600 ms opens this fuse, which clears that current in 250 ms. Either a slow-blow part or a soft-start.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_None_(50.0, 10.0)": [
+  {
+   "check": "load-undeclared",
+   "detail": {},
+   "message": "p: continuous load current not declared, so nothing confirms this fuse can hold the circuit it protects.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-survived",
+   "detail": {},
+   "message": "Inrush 50 A for 10 ms is inside the fuse's 160 ms clearing time at that current.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_None_(50.0, None)": [
+  {
+   "check": "load-undeclared",
+   "detail": {},
+   "message": "p: continuous load current not declared, so nothing confirms this fuse can hold the circuit it protects.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_None_(None, 10.0)": [
+  {
+   "check": "load-undeclared",
+   "detail": {},
+   "message": "p: continuous load current not declared, so nothing confirms this fuse can hold the circuit it protects.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_parallel_None_(None, None)": [
+  {
+   "check": "load-undeclared",
+   "detail": {},
+   "message": "p: continuous load current not declared, so nothing confirms this fuse can hold the circuit it protects.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_0.0_(10000.0, 1.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "sh: 0.0 A against a derated 16.0 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-opens-fuse",
+   "detail": {
+    "inrush_a": 10000.0
+   },
+   "message": "A 10000 A inrush lasting 1 ms opens this fuse, which clears that current in 0 ms. Either a slow-blow part or a soft-start.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_0.0_(40.0, 600.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "sh: 0.0 A against a derated 16.0 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-survived",
+   "detail": {},
+   "message": "Inrush 40 A for 600 ms is inside the fuse's 18933 ms clearing time at that current.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_0.0_(50.0, 10.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "sh: 0.0 A against a derated 16.0 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-survived",
+   "detail": {},
+   "message": "Inrush 50 A for 10 ms is inside the fuse's 13070 ms clearing time at that current.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_0.0_(50.0, None)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "sh: 0.0 A against a derated 16.0 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_0.0_(None, 10.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "sh: 0.0 A against a derated 16.0 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_0.0_(None, None)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "sh: 0.0 A against a derated 16.0 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_16.0_(10000.0, 1.0)": [
+  {
+   "check": "nuisance-trip-marginal",
+   "detail": {},
+   "message": "sh runs at 100% of its derated limit. Fine on the bench, marginal at 40 degC with the bodywork on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-opens-fuse",
+   "detail": {
+    "inrush_a": 10000.0
+   },
+   "message": "A 10000 A inrush lasting 1 ms opens this fuse, which clears that current in 0 ms. Either a slow-blow part or a soft-start.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_16.0_(40.0, 600.0)": [
+  {
+   "check": "nuisance-trip-marginal",
+   "detail": {},
+   "message": "sh runs at 100% of its derated limit. Fine on the bench, marginal at 40 degC with the bodywork on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-survived",
+   "detail": {},
+   "message": "Inrush 40 A for 600 ms is inside the fuse's 18933 ms clearing time at that current.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_16.0_(50.0, 10.0)": [
+  {
+   "check": "nuisance-trip-marginal",
+   "detail": {},
+   "message": "sh runs at 100% of its derated limit. Fine on the bench, marginal at 40 degC with the bodywork on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-survived",
+   "detail": {},
+   "message": "Inrush 50 A for 10 ms is inside the fuse's 13070 ms clearing time at that current.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_16.0_(50.0, None)": [
+  {
+   "check": "nuisance-trip-marginal",
+   "detail": {},
+   "message": "sh runs at 100% of its derated limit. Fine on the bench, marginal at 40 degC with the bodywork on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_16.0_(None, 10.0)": [
+  {
+   "check": "nuisance-trip-marginal",
+   "detail": {},
+   "message": "sh runs at 100% of its derated limit. Fine on the bench, marginal at 40 degC with the bodywork on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_16.0_(None, None)": [
+  {
+   "check": "nuisance-trip-marginal",
+   "detail": {},
+   "message": "sh runs at 100% of its derated limit. Fine on the bench, marginal at 40 degC with the bodywork on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_6.0_(10000.0, 1.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "sh: 6.0 A against a derated 16.0 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-opens-fuse",
+   "detail": {
+    "inrush_a": 10000.0
+   },
+   "message": "A 10000 A inrush lasting 1 ms opens this fuse, which clears that current in 0 ms. Either a slow-blow part or a soft-start.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_6.0_(40.0, 600.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "sh: 6.0 A against a derated 16.0 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-survived",
+   "detail": {},
+   "message": "Inrush 40 A for 600 ms is inside the fuse's 18933 ms clearing time at that current.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_6.0_(50.0, 10.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "sh: 6.0 A against a derated 16.0 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-survived",
+   "detail": {},
+   "message": "Inrush 50 A for 10 ms is inside the fuse's 13070 ms clearing time at that current.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_6.0_(50.0, None)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "sh: 6.0 A against a derated 16.0 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_6.0_(None, 10.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "sh: 6.0 A against a derated 16.0 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_6.0_(None, None)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "sh: 6.0 A against a derated 16.0 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_7.2_(10000.0, 1.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "sh: 7.2 A against a derated 16.0 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-opens-fuse",
+   "detail": {
+    "inrush_a": 10000.0
+   },
+   "message": "A 10000 A inrush lasting 1 ms opens this fuse, which clears that current in 0 ms. Either a slow-blow part or a soft-start.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_7.2_(40.0, 600.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "sh: 7.2 A against a derated 16.0 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-survived",
+   "detail": {},
+   "message": "Inrush 40 A for 600 ms is inside the fuse's 18933 ms clearing time at that current.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_7.2_(50.0, 10.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "sh: 7.2 A against a derated 16.0 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-survived",
+   "detail": {},
+   "message": "Inrush 50 A for 10 ms is inside the fuse's 13070 ms clearing time at that current.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_7.2_(50.0, None)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "sh: 7.2 A against a derated 16.0 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_7.2_(None, 10.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "sh: 7.2 A against a derated 16.0 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_7.2_(None, None)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "sh: 7.2 A against a derated 16.0 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_7.5_(10000.0, 1.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "sh: 7.5 A against a derated 16.0 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-opens-fuse",
+   "detail": {
+    "inrush_a": 10000.0
+   },
+   "message": "A 10000 A inrush lasting 1 ms opens this fuse, which clears that current in 0 ms. Either a slow-blow part or a soft-start.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_7.5_(40.0, 600.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "sh: 7.5 A against a derated 16.0 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-survived",
+   "detail": {},
+   "message": "Inrush 40 A for 600 ms is inside the fuse's 18933 ms clearing time at that current.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_7.5_(50.0, 10.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "sh: 7.5 A against a derated 16.0 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-survived",
+   "detail": {},
+   "message": "Inrush 50 A for 10 ms is inside the fuse's 13070 ms clearing time at that current.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_7.5_(50.0, None)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "sh: 7.5 A against a derated 16.0 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_7.5_(None, 10.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "sh: 7.5 A against a derated 16.0 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_7.5_(None, None)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "sh: 7.5 A against a derated 16.0 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_7.6_(10000.0, 1.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "sh: 7.6 A against a derated 16.0 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-opens-fuse",
+   "detail": {
+    "inrush_a": 10000.0
+   },
+   "message": "A 10000 A inrush lasting 1 ms opens this fuse, which clears that current in 0 ms. Either a slow-blow part or a soft-start.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_7.6_(40.0, 600.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "sh: 7.6 A against a derated 16.0 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-survived",
+   "detail": {},
+   "message": "Inrush 40 A for 600 ms is inside the fuse's 18933 ms clearing time at that current.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_7.6_(50.0, 10.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "sh: 7.6 A against a derated 16.0 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-survived",
+   "detail": {},
+   "message": "Inrush 50 A for 10 ms is inside the fuse's 13070 ms clearing time at that current.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_7.6_(50.0, None)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "sh: 7.6 A against a derated 16.0 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_7.6_(None, 10.0)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "sh: 7.6 A against a derated 16.0 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_7.6_(None, None)": [
+  {
+   "check": "continuous-ok",
+   "detail": {},
+   "message": "sh: 7.6 A against a derated 16.0 A limit.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_None_(10000.0, 1.0)": [
+  {
+   "check": "load-undeclared",
+   "detail": {},
+   "message": "sh: continuous load current not declared, so nothing confirms this fuse can hold the circuit it protects.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-opens-fuse",
+   "detail": {
+    "inrush_a": 10000.0
+   },
+   "message": "A 10000 A inrush lasting 1 ms opens this fuse, which clears that current in 0 ms. Either a slow-blow part or a soft-start.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_None_(40.0, 600.0)": [
+  {
+   "check": "load-undeclared",
+   "detail": {},
+   "message": "sh: continuous load current not declared, so nothing confirms this fuse can hold the circuit it protects.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-survived",
+   "detail": {},
+   "message": "Inrush 40 A for 600 ms is inside the fuse's 18933 ms clearing time at that current.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_None_(50.0, 10.0)": [
+  {
+   "check": "load-undeclared",
+   "detail": {},
+   "message": "sh: continuous load current not declared, so nothing confirms this fuse can hold the circuit it protects.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "inrush-survived",
+   "detail": {},
+   "message": "Inrush 50 A for 10 ms is inside the fuse's 13070 ms clearing time at that current.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_None_(50.0, None)": [
+  {
+   "check": "load-undeclared",
+   "detail": {},
+   "message": "sh: continuous load current not declared, so nothing confirms this fuse can hold the circuit it protects.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_None_(None, 10.0)": [
+  {
+   "check": "load-undeclared",
+   "detail": {},
+   "message": "sh: continuous load current not declared, so nothing confirms this fuse can hold the circuit it protects.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "n_shallow_None_(None, None)": [
+  {
+   "check": "load-undeclared",
+   "detail": {},
+   "message": "sh: continuous load current not declared, so nothing confirms this fuse can hold the circuit it protects.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics"
+   ]
+  }
+ ],
+ "noserial": [
+  {
+   "adc_sample_rate_hz": null,
+   "detection_latency_s": 0.25,
+   "label": "proof-of-concept (operator keypress, millis)",
+   "latency_jitter_s": 0.08,
+   "serial_baud": 9600,
+   "serial_chars_in_path": 30,
+   "serial_in_timing_path": false,
+   "timer_resolution_s": 0.001
+  },
+  0.0,
+  0.0,
+  0.25,
+  0.08000052083163793,
+  0.8000052083163792,
+  1.6000104166327584,
+  "inf",
+  2000.0,
+  "inf",
+  "inf",
+  49.99999999999999
+ ],
+ "noserial_f": [
+  {
+   "check": "instrument-budget",
+   "detail": {
+    "bias_s": 0.25,
+    "floor_s": 0.8000052083163792,
+    "uncertainty_s": 0.08000052083163793
+   },
+   "message": "proof-of-concept (operator keypress, millis): timer resolution 1000 us, detection latency 250.0 ms, combined uncertainty ±80.0 ms. Shortest event measurable to 10% is 800 ms.",
+   "severity": "info",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "manual-detection",
+   "detail": {},
+   "message": "Blow detection is manual, so the 250 ms in this measurement is the operator's reaction time and not a property of the fuse. Every reading is biased long by roughly that much, and the bias is larger than most of the blow times worth measuring. Detect the current collapse on a shunt instead.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": "inf",
+    "rel": "inf",
+    "time_s": 0.0
+   },
+   "message": "An expected blow time of 0.0 ms is noise, not a measurement: ±80.0 ms is inf% of it. Resolving this point to 5% needs detection at inf Hz or faster.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 166.66558160781847,
+    "rel": 0.6666666666666667,
+    "time_s": 0.12000078124745689
+   },
+   "message": "An expected blow time of 120.0 ms is noise, not a measurement: ±80.0 ms is 67% of it. Resolving this point to 5% needs detection at 167 Hz or faster.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 124.99918620586384,
+    "rel": 0.5,
+    "time_s": 0.16000104166327586
+   },
+   "message": "An expected blow time of 160.0 ms is dominated by the instrument: ±80.0 ms is 50% of it. Resolving this point to 5% needs detection at 125 Hz or faster.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 83.33279080390923,
+    "rel": 0.33333333333333337,
+    "time_s": 0.24000156249491378
+   },
+   "message": "An expected blow time of 240.0 ms is dominated by the instrument: ±80.0 ms is 33% of it. Resolving this point to 5% needs detection at 83 Hz or faster.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 62.49959310293192,
+    "rel": 0.25,
+    "time_s": 0.3200020833265517
+   },
+   "message": "An expected blow time of 320.0 ms is dominated by the instrument: ±80.0 ms is 25% of it. Resolving this point to 5% needs detection at 62 Hz or faster.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 49.99967448234554,
+    "rel": 0.2,
+    "time_s": 0.4000026041581896
+   },
+   "message": "An expected blow time of 400.0 ms is marginal: ±80.0 ms is 20% of it. Resolving this point to 5% needs detection at 50 Hz or faster.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 41.66639540195462,
+    "rel": 0.16666666666666669,
+    "time_s": 0.48000312498982756
+   },
+   "message": "An expected blow time of 480.0 ms is marginal: ±80.0 ms is 17% of it. Resolving this point to 5% needs detection at 42 Hz or faster.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 31.24979655146596,
+    "rel": 0.125,
+    "time_s": 0.6400041666531034
+   },
+   "message": "An expected blow time of 640.0 ms is marginal: ±80.0 ms is 12% of it. Resolving this point to 5% needs detection at 31 Hz or faster.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  }
+ ],
+ "poc": [
+  {
+   "adc_sample_rate_hz": null,
+   "detection_latency_s": 0.25,
+   "label": "proof-of-concept (operator keypress, millis)",
+   "latency_jitter_s": 0.08,
+   "serial_baud": 9600,
+   "serial_chars_in_path": 30,
+   "serial_in_timing_path": true,
+   "timer_resolution_s": 0.001
+  },
+  0.03125,
+  0.0,
+  0.28125,
+  0.08000052083163793,
+  0.8000052083163792,
+  1.6000104166327584,
+  "inf",
+  2000.0,
+  "inf",
+  "inf",
+  49.99999999999999
+ ],
+ "poc_f": [
+  {
+   "check": "instrument-budget",
+   "detail": {
+    "bias_s": 0.28125,
+    "floor_s": 0.8000052083163792,
+    "uncertainty_s": 0.08000052083163793
+   },
+   "message": "proof-of-concept (operator keypress, millis): timer resolution 1000 us, detection latency 281.2 ms, combined uncertainty ±80.0 ms. Shortest event measurable to 10% is 800 ms.",
+   "severity": "info",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "serial-in-timing-path",
+   "detail": {},
+   "message": "Blocking serial output sits between the start and stop marks: 30 characters at 9600 baud is 31 ms added to every reading, in one direction only. Buffer the results and print after the test, not during it.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "manual-detection",
+   "detail": {},
+   "message": "Blow detection is manual, so the 281 ms in this measurement is the operator's reaction time and not a property of the fuse. Every reading is biased long by roughly that much, and the bias is larger than most of the blow times worth measuring. Detect the current collapse on a shunt instead.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": "inf",
+    "rel": "inf",
+    "time_s": 0.0
+   },
+   "message": "An expected blow time of 0.0 ms is noise, not a measurement: ±80.0 ms is inf% of it. Resolving this point to 5% needs detection at inf Hz or faster.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 166.66558160781847,
+    "rel": 0.6666666666666667,
+    "time_s": 0.12000078124745689
+   },
+   "message": "An expected blow time of 120.0 ms is noise, not a measurement: ±80.0 ms is 67% of it. Resolving this point to 5% needs detection at 167 Hz or faster.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 124.99918620586384,
+    "rel": 0.5,
+    "time_s": 0.16000104166327586
+   },
+   "message": "An expected blow time of 160.0 ms is dominated by the instrument: ±80.0 ms is 50% of it. Resolving this point to 5% needs detection at 125 Hz or faster.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 83.33279080390923,
+    "rel": 0.33333333333333337,
+    "time_s": 0.24000156249491378
+   },
+   "message": "An expected blow time of 240.0 ms is dominated by the instrument: ±80.0 ms is 33% of it. Resolving this point to 5% needs detection at 83 Hz or faster.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 62.49959310293192,
+    "rel": 0.25,
+    "time_s": 0.3200020833265517
+   },
+   "message": "An expected blow time of 320.0 ms is dominated by the instrument: ±80.0 ms is 25% of it. Resolving this point to 5% needs detection at 62 Hz or faster.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 49.99967448234554,
+    "rel": 0.2,
+    "time_s": 0.4000026041581896
+   },
+   "message": "An expected blow time of 400.0 ms is marginal: ±80.0 ms is 20% of it. Resolving this point to 5% needs detection at 50 Hz or faster.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 41.66639540195462,
+    "rel": 0.16666666666666669,
+    "time_s": 0.48000312498982756
+   },
+   "message": "An expected blow time of 480.0 ms is marginal: ±80.0 ms is 17% of it. Resolving this point to 5% needs detection at 42 Hz or faster.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 31.24979655146596,
+    "rel": 0.125,
+    "time_s": 0.6400041666531034
+   },
+   "message": "An expected blow time of 640.0 ms is marginal: ±80.0 ms is 12% of it. Resolving this point to 5% needs detection at 31 Hz or faster.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  }
+ ],
+ "rig": [
+  {
+   "adc_sample_rate_hz": 9600.0,
+   "detection_latency_s": 0.00010416666666666667,
+   "label": "instrumented (shunt + ADC threshold, micros)",
+   "latency_jitter_s": 5.208333333333334e-05,
+   "serial_baud": 9600,
+   "serial_chars_in_path": 30,
+   "serial_in_timing_path": false,
+   "timer_resolution_s": 1e-06
+  },
+  0.0,
+  0.00010416666666666667,
+  0.00020833333333333335,
+  5.208413332718943e-05,
+  0.0005208413332718942,
+  0.0010416826665437884,
+  "inf",
+  2000.0,
+  "inf",
+  "inf",
+  49.99999999999999
+ ],
+ "rig2": [
+  {
+   "adc_sample_rate_hz": 1000.0,
+   "detection_latency_s": 0.001,
+   "label": "instrumented (shunt + ADC threshold, micros)",
+   "latency_jitter_s": 0.0005,
+   "serial_baud": 9600,
+   "serial_chars_in_path": 30,
+   "serial_in_timing_path": false,
+   "timer_resolution_s": 1e-06
+  },
+  0.0,
+  0.001,
+  0.002,
+  0.0005000000833333264,
+  0.005000000833333264,
+  0.010000001666666527,
+  "inf",
+  2000.0,
+  "inf",
+  "inf",
+  49.99999999999999
+ ],
+ "rig2_f": [
+  {
+   "check": "instrument-budget",
+   "detail": {
+    "bias_s": 0.002,
+    "floor_s": 0.005000000833333264,
+    "uncertainty_s": 0.0005000000833333264
+   },
+   "message": "instrumented (shunt + ADC threshold, micros): timer resolution 1 us, detection latency 2.0 ms, combined uncertainty ±0.5 ms. Shortest event measurable to 10% is 5 ms.",
+   "severity": "info",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": "inf",
+    "rel": "inf",
+    "time_s": 0.0
+   },
+   "message": "An expected blow time of 0.0 ms is noise, not a measurement: ±0.5 ms is inf% of it. Resolving this point to 5% needs detection at inf Hz or faster.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 26666.662222223335,
+    "rel": 0.6666666666666666,
+    "time_s": 0.0007500001249999895
+   },
+   "message": "An expected blow time of 0.8 ms is noise, not a measurement: ±0.5 ms is 67% of it. Resolving this point to 5% needs detection at 26,667 Hz or faster.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 19999.996666667503,
+    "rel": 0.5,
+    "time_s": 0.0010000001666666527
+   },
+   "message": "An expected blow time of 1.0 ms is dominated by the instrument: ±0.5 ms is 50% of it. Resolving this point to 5% needs detection at 20,000 Hz or faster.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 13333.331111111667,
+    "rel": 0.3333333333333333,
+    "time_s": 0.001500000249999979
+   },
+   "message": "An expected blow time of 1.5 ms is dominated by the instrument: ±0.5 ms is 33% of it. Resolving this point to 5% needs detection at 13,333 Hz or faster.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 9999.998333333751,
+    "rel": 0.25,
+    "time_s": 0.0020000003333333054
+   },
+   "message": "An expected blow time of 2.0 ms is dominated by the instrument: ±0.5 ms is 25% of it. Resolving this point to 5% needs detection at 10,000 Hz or faster.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 7999.998666667,
+    "rel": 0.2,
+    "time_s": 0.002500000416666632
+   },
+   "message": "An expected blow time of 2.5 ms is marginal: ±0.5 ms is 20% of it. Resolving this point to 5% needs detection at 8,000 Hz or faster.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 6666.665555555834,
+    "rel": 0.16666666666666666,
+    "time_s": 0.003000000499999958
+   },
+   "message": "An expected blow time of 3.0 ms is marginal: ±0.5 ms is 17% of it. Resolving this point to 5% needs detection at 6,667 Hz or faster.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 4999.999166666876,
+    "rel": 0.125,
+    "time_s": 0.004000000666666611
+   },
+   "message": "An expected blow time of 4.0 ms is marginal: ±0.5 ms is 12% of it. Resolving this point to 5% needs detection at 5,000 Hz or faster.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  }
+ ],
+ "rig_f": [
+  {
+   "check": "instrument-budget",
+   "detail": {
+    "bias_s": 0.00020833333333333335,
+    "floor_s": 0.0005208413332718942,
+    "uncertainty_s": 5.208413332718943e-05
+   },
+   "message": "instrumented (shunt + ADC threshold, micros): timer resolution 1 us, detection latency 0.2 ms, combined uncertainty ±0.1 ms. Shortest event measurable to 10% is 1 ms.",
+   "severity": "info",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": "inf",
+    "rel": "inf",
+    "time_s": 0.0
+   },
+   "message": "An expected blow time of 0.0 ms is noise, not a measurement: ±0.1 ms is inf% of it. Resolving this point to 5% needs detection at inf Hz or faster.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 255996.06793059464,
+    "rel": 0.6666666666666667,
+    "time_s": 7.812619999078414e-05
+   },
+   "message": "An expected blow time of 0.1 ms is noise, not a measurement: ±0.1 ms is 67% of it. Resolving this point to 5% needs detection at 255,996 Hz or faster.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 191997.05094794597,
+    "rel": 0.5,
+    "time_s": 0.00010416826665437886
+   },
+   "message": "An expected blow time of 0.1 ms is dominated by the instrument: ±0.1 ms is 50% of it. Resolving this point to 5% needs detection at 191,997 Hz or faster.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 127998.03396529732,
+    "rel": 0.33333333333333337,
+    "time_s": 0.00015625239998156827
+   },
+   "message": "An expected blow time of 0.2 ms is dominated by the instrument: ±0.1 ms is 33% of it. Resolving this point to 5% needs detection at 127,998 Hz or faster.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 95998.52547397299,
+    "rel": 0.25,
+    "time_s": 0.00020833653330875772
+   },
+   "message": "An expected blow time of 0.2 ms is dominated by the instrument: ±0.1 ms is 25% of it. Resolving this point to 5% needs detection at 95,999 Hz or faster.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 76798.8203791784,
+    "rel": 0.20000000000000004,
+    "time_s": 0.0002604206666359471
+   },
+   "message": "An expected blow time of 0.3 ms is dominated by the instrument: ±0.1 ms is 20% of it. Resolving this point to 5% needs detection at 76,799 Hz or faster.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 63999.01698264866,
+    "rel": 0.16666666666666669,
+    "time_s": 0.00031250479996313655
+   },
+   "message": "An expected blow time of 0.3 ms is marginal: ±0.1 ms is 17% of it. Resolving this point to 5% needs detection at 63,999 Hz or faster.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 47999.26273698649,
+    "rel": 0.125,
+    "time_s": 0.00041667306661751543
+   },
+   "message": "An expected blow time of 0.4 ms is marginal: ±0.1 ms is 12% of it. Resolving this point to 5% needs detection at 47,999 Hz or faster.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "test-point-unmeasurable",
+   "detail": {
+    "need_hz": 38399.4101895892,
+    "rel": 0.10000000000000002,
+    "time_s": 0.0005208413332718942
+   },
+   "message": "An expected blow time of 0.5 ms is marginal: ±0.1 ms is 10% of it. Resolving this point to 5% needs detection at 38,399 Hz or faster.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  }
+ ]
+}

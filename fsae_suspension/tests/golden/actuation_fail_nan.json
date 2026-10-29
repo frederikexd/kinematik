@@ -1,0 +1,22 @@
+{
+ "m": {
+  "arm_offset_mm": 0.0,
+  "clearance_mm": "inf",
+  "member_clearance_mm": [],
+  "mr": [],
+  "mr_static": "NaN",
+  "node_gap_mm": 0.0,
+  "ok": false,
+  "out_of_plane_deg": "NaN",
+  "reason": "linkage does not solve over travel",
+  "slope_per_mm": "NaN",
+  "spread": "NaN",
+  "spring_length_mm": [],
+  "stroke_used_mm": "NaN",
+  "transmission_deg": [
+   "NaN",
+   "NaN"
+  ],
+  "travel": []
+ }
+}

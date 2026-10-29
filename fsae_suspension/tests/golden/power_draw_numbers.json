@@ -1,0 +1,72 @@
+{
+ "0": {
+  "capacity_ah": 15.0,
+  "cell": 10.0,
+  "cell_count": 420,
+  "cfp": [
+   0.0,
+   0.0,
+   0.001984131649931545,
+   41.748214877118734,
+   421.87499999999994,
+   null
+  ],
+  "energy_kwh": 7.56,
+  "heat": 537.6,
+  "mass_kg": 29.819999999999997,
+  "max_deliverable_power_w": 106312.49999999999,
+  "nominal_voltage_v": 504.0,
+  "power_at_fuse_limit_w": 23706.666666666668,
+  "resistance_ohm": 0.5973333333333334
+ },
+ "1": {
+  "capacity_ah": 6.0,
+  "cell": 15.0,
+  "cell_count": 200,
+  "cfp": [
+   0.0,
+   0.0,
+   0.002500015625201968,
+   58.57864376269049,
+   200.0,
+   null
+  ],
+  "energy_kwh": 2.4,
+  "heat": 900.0,
+  "mass_kg": 10.0,
+  "max_deliverable_power_w": 40000.0,
+  "nominal_voltage_v": 400.0,
+  "power_at_fuse_limit_w": 25600.0,
+  "resistance_ohm": 1.0
+ },
+ "2": {
+  "capacity_ah": 5.0,
+  "cell": 30.0,
+  "cell_count": 10,
+  "cfp": [
+   0.0,
+   0.0,
+   0.027885780101649972,
+   null,
+   3.6,
+   null
+  ],
+  "energy_kwh": 0.18,
+  "heat": 4500.0,
+  "mass_kg": 0.71,
+  "max_deliverable_power_w": 64.8,
+  "nominal_voltage_v": 36.0,
+  "power_at_fuse_limit_w": -10700.0,
+  "resistance_ohm": 5.0
+ },
+ "3": {
+  "eta": 0.504,
+  "fr": 36.39702342662024,
+  "fr30": 57.735026918962575,
+  "ft": 2500.0,
+  "r": 0.2032,
+  "rpm": 2521.0142985756224,
+  "tq": 25.0,
+  "tq2": 31.25
+ }
+}

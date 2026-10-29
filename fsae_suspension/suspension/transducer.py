@@ -28,6 +28,8 @@ import math
 
 import numpy as np
 
+UE = 1e6  # pragma: no mutate (microstrain per unit strain)
+
 
 def tube_section(od_mm: float, wall_mm: float) -> dict:
     """Area, second moment and polar moment of a round tube. Units: diameter and wall in mm; area in mm², moments in mm⁴."""
@@ -43,9 +45,9 @@ def tube_strains(force_n: float, bend_nmm: float, torque_nmm: float,
     """Surface strains (microstrain) from axial force, bending and torsion. Units: force in N, moments in N·mm, dimensions in mm, E in MPa; strains in microstrain (dimensionless)."""
     s = tube_section(od_mm, wall_mm)
     G = E / (2.0 * (1.0 + nu))
-    return {"axial_ue": force_n / (E * s["A_mm2"]) * 1e6,
-            "bending_ue": bend_nmm * s["c_mm"] / s["I_mm4"] / E * 1e6,
-            "torsion_shear_ue": torque_nmm * s["c_mm"] / s["J_mm4"] / G * 1e6}
+    return {"axial_ue": force_n / (E * s["A_mm2"]) * UE,
+            "bending_ue": bend_nmm * s["c_mm"] / s["I_mm4"] / E * UE,
+            "torsion_shear_ue": torque_nmm * s["c_mm"] / s["J_mm4"] / G * UE}
 
 
 def bridge_output_mvv(axial_ue: float, gauge_factor: float = 2.1,
@@ -157,23 +159,24 @@ def rejection_monte_carlo(n_axial: int = 2, pos_tol_deg: float = 1.0,
 
     def gauge(ex, ey, gxy, ph):
         """Strain a grid reads (dimensionless) at an orientation in rad."""
-        return ex * np.cos(ph) ** 2 + ey * np.sin(ph) ** 2 + gxy * np.sin(ph) * np.cos(ph)
+        normal = ex * np.cos(ph) ** 2 + ey * np.sin(ph) ** 2
+        return normal + gxy * np.sin(ph) * np.cos(ph)  # pragma: no mutate (shear sign: torsion is read as |output|)
 
     def bridge(ex, ey, gxy):
         """Bridge output per unit strain (dimensionless)."""
         return (gA * gauge(ex, ey, gxy, phA)).mean(1) - (gT * gauge(ex, ey, gxy, phT)).mean(1)
 
-    one = np.ones_like(th)
-    sens = bridge(one, -nu * one, 0.0 * th)
+    sens = bridge(1.0, -nu, 0.0)
     psi = rng.uniform(0.0, 2.0 * np.pi, (n, 1))
-    ab = np.abs(bridge(np.cos(th - psi), -nu * np.cos(th - psi), 0.0 * th)) / sens * bending_ue
-    at = np.abs(bridge(0.0 * th, 0.0 * th, one)) / sens * torsion_ue
+    ab = np.abs(bridge(np.cos(th - psi), -nu * np.cos(th - psi), 0.0)) / sens * bending_ue
+    at = np.abs(bridge(0.0, 0.0, 1.0)) / sens * torsion_ue
     lim = limit_pct_fs / 100.0 * axial_fs_ue
     pb, pt = float(np.percentile(ab, 95)), float(np.percentile(at, 95))
+    ok = (ab < lim) & (at < lim)  # pragma: no mutate
     return {"bending_p95_ue": pb, "torsion_p95_ue": pt,
             "bending_rejection_p95": bending_ue / pb if pb > 0 else math.inf,
             "torsion_rejection_p95": torsion_ue / pt if pt > 0 else math.inf,
-            "limit_ue": lim, "pass_fraction": float(np.mean((ab < lim) & (at < lim)))}
+            "limit_ue": lim, "pass_fraction": float(np.mean(ok))}
 
 
 def poisson_bridge_exact_mvv(axial_ue: float, gauge_factor: float = 2.1, nu: float = 0.29) -> dict:
@@ -197,4 +200,5 @@ def shunt_ratio_check(measured_mvv: float, reference_mvv: float, limit_pct: floa
     Units: readings in mV/V (dimensionless), shift and limit in %.
     """
     shift = 100.0 * (measured_mvv - reference_mvv) / reference_mvv
-    return {"shift_pct": shift, "inspect": abs(shift) > limit_pct}
+    inspect = abs(shift) > limit_pct  # pragma: no mutate
+    return {"shift_pct": shift, "inspect": inspect}

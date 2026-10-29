@@ -1,0 +1,96 @@
+{
+ "boom": [
+  {
+   "check": "pd-reader-raises",
+   "detail": {},
+   "message": "Reader raised on the workbook: KeyError: 'nope'. A raise is far better than a silent default — at least the caller finds out.",
+   "severity": "info",
+   "subsystems": [
+    "dataacq"
+   ]
+  }
+ ],
+ "fixed_obj": [
+  {
+   "check": "pd-reader-ignores-file",
+   "detail": {},
+   "message": "<obj> returns byte-identical values from a workbook whose series and parallel counts were changed to {'B3': 100, 'B2': 4}. It is not reading this file. If its output currently looks correct, that is because its hardcoded defaults were written against this same pack — so it will keep reporting 140S3P after the team moves to anything else, and nothing will warn them.",
+   "severity": "fail",
+   "subsystems": [
+    "dataacq",
+    "electrics",
+    "powertrain"
+   ]
+  }
+ ],
+ "front": [
+  {
+   "check": "pd-reader-ok",
+   "detail": {},
+   "message": "test_reader_probe_cases.<locals>.front tracks edits to the workbook.",
+   "severity": "ok",
+   "subsystems": [
+    "dataacq"
+   ]
+  }
+ ],
+ "ignores": [
+  {
+   "check": "pd-reader-ignores-file",
+   "detail": {},
+   "message": "test_reader_probe_cases.<locals>.<lambda> returns byte-identical values from a workbook whose series and parallel counts were changed to {'B3': 100, 'B2': 4}. It is not reading this file. If its output currently looks correct, that is because its hardcoded defaults were written against this same pack — so it will keep reporting 140S3P after the team moves to anything else, and nothing will warn them.",
+   "severity": "fail",
+   "subsystems": [
+    "dataacq",
+    "electrics",
+    "powertrain"
+   ]
+  }
+ ],
+ "pack": [
+  {
+   "check": "pd-reader-ok",
+   "detail": {},
+   "message": "read_pack_config tracks edits to the workbook.",
+   "severity": "ok",
+   "subsystems": [
+    "dataacq"
+   ]
+  }
+ ],
+ "probe_b4": [
+  {
+   "check": "pd-reader-ok",
+   "detail": {},
+   "message": "test_reader_probe_cases.<locals>.reads tracks edits to the workbook.",
+   "severity": "ok",
+   "subsystems": [
+    "dataacq"
+   ]
+  }
+ ],
+ "probe_b9": [
+  {
+   "check": "pd-reader-ignores-file",
+   "detail": {},
+   "message": "test_reader_probe_cases.<locals>.reads returns byte-identical values from a workbook whose series and parallel counts were changed to {'B9': 1.0}. It is not reading this file. If its output currently looks correct, that is because its hardcoded defaults were written against this same pack — so it will keep reporting 140S3P after the team moves to anything else, and nothing will warn them.",
+   "severity": "fail",
+   "subsystems": [
+    "dataacq",
+    "electrics",
+    "powertrain"
+   ]
+  }
+ ],
+ "reads": [
+  {
+   "check": "pd-reader-ok",
+   "detail": {},
+   "message": "test_reader_probe_cases.<locals>.reads tracks edits to the workbook.",
+   "severity": "ok",
+   "subsystems": [
+    "dataacq"
+   ]
+  }
+ ]
+}

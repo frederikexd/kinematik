@@ -1,0 +1,416 @@
+{
+ "layup": [
+  "# KinematiK FlexGen orientation map — guidance, not a certified laminate schedule / build file\n# blade=bl L=80.0mm b=30.0mm material=Steel 4130 process=additive_ti\ns_mm,t_mm,build_normal_x,build_normal_y,build_normal_z,contours\n0.00,2.000,0,0,1,5\n8.00,1.920,0,0,1,5\n16.00,1.840,0,0,1,5\n24.00,1.760,0,0,1,4\n32.00,1.680,0,0,1,4\n40.00,1.600,0,0,1,4\n48.00,1.520,0,0,1,4\n56.00,1.440,0,0,1,4\n64.00,1.360,0,0,1,3\n72.00,1.280,0,0,1,3\n80.00,1.200,0,0,1,3\n",
+  "# KinematiK FlexGen orientation map — guidance, not a certified laminate schedule / build file\n# blade=blade L=80.0mm b=30.0mm material=Carbon (axial, representative) process=carbon_layup\ns_mm,t_mm,axis_x,axis_y,axis_z,zero_deg_frac,pm45_frac\n0.00,2.000,1,0,0,0.60,0.40\n40.00,2.000,1,0,0,0.72,0.28\n80.00,2.000,1,0,0,0.85,0.15\n",
+  "# KinematiK FlexGen orientation map — guidance, not a certified laminate schedule / build file\n# blade=bl L=80.0mm b=30.0mm material=Steel 4130 process=carbon_layup\ns_mm,t_mm,axis_x,axis_y,axis_z,zero_deg_frac,pm45_frac\n0.00,2.000,1,0,0,0.60,0.40\n26.67,1.733,1,0,0,0.68,0.32\n53.33,1.467,1,0,0,0.77,0.23\n80.00,1.200,1,0,0,0.85,0.15\n",
+  "# KinematiK FlexGen orientation map — guidance, not a certified laminate schedule / build file\n# blade=blade L=80.0mm b=30.0mm material=Carbon (axial, representative) process=additive_ti\ns_mm,t_mm,build_normal_x,build_normal_y,build_normal_z,contours\n0.00,2.000,0,0,1,5\n80.00,2.000,0,0,1,5\n"
+ ],
+ "md": [
+  "# FlexGen blade — blade\n\n* Material: **Steel 4130**, boundary **fixed-guided**\n* L = 80.0 mm, b = 30.0 mm, t = 2.00 → 2.00 mm, mass 37.7 g\n* Rate at ride: **102.68 N/mm** at the tip (axial preload 0 N); strain energy at full travel 462 N·mm\n* Computed axial buckling load: **6004 N** (discrete tangent-stiffness eigenvalue, not a chart)\n* Parasitic stiffness ratio (stiff/compliant plane): 225\n\n## Lint\n* ✅ `A` — a\n* ⚠️ `B` — b|c\n* ⛔ `C` — c\n\n_Pre-validation output. Validate the blade in ANSYS (non-linear, large deflection) and fatigue-test a coupon with the production edge finish before cutting metal._\n",
+  "# FlexGen blade — blade\n\n* Material: **Steel 4130**, boundary **fixed-guided**\n* L = 80.0 mm, b = 30.0 mm, t = 2.00 → 2.00 mm, mass 37.7 g\n* Rate at ride: **102.68 N/mm** at the tip (axial preload 0 N); strain energy at full travel 462 N·mm\n* Computed axial buckling load: **6004 N** (discrete tangent-stiffness eigenvalue, not a chart)\n* Parasitic stiffness ratio (stiff/compliant plane): 225\n\n## Lint\n\n## Coilover downsizing\n* Flexure supplies 33 % of the 30.0 N/mm wheel-rate target.\n* Residual physical spring: **20.0 N/mm** at the spring.\n\n_Pre-validation output. Validate the blade in ANSYS (non-linear, large deflection) and fatigue-test a coupon with the production edge finish before cutting metal._\n",
+  "# FlexGen blade — blade\n\n* Material: **Steel 4130**, boundary **fixed-guided**\n* L = 80.0 mm, b = 30.0 mm, t = 2.00 → 2.00 mm, mass 37.7 g\n* Rate at ride: **102.68 N/mm** at the tip (axial preload 0 N); strain energy at full travel 462 N·mm\n* Computed axial buckling load: **6004 N** (discrete tangent-stiffness eigenvalue, not a chart)\n* Parasitic stiffness ratio (stiff/compliant plane): 225\n\n## Lint\n* ✅ `A` — a\n\n## Coilover downsizing\n* Flexure supplies 200 % of the 5.0 N/mm wheel-rate target.\n* ⛔ The blades ALONE exceed the wheel-rate target — the corner is over-sprung with no coilover fitted. Soften the blade.\n\n_Pre-validation output. Validate the blade in ANSYS (non-linear, large deflection) and fatigue-test a coupon with the production edge finish before cutting metal._\n"
+ ],
+ "solid": [
+  [
+   [
+    0.0,
+    -1.0,
+    -15.0
+   ],
+   [
+    0.0,
+    1.0,
+    -15.0
+   ],
+   [
+    0.0,
+    1.0,
+    15.0
+   ],
+   [
+    0.0,
+    -1.0,
+    15.0
+   ],
+   [
+    80.0,
+    -0.6,
+    -15.0
+   ],
+   [
+    80.0,
+    0.6,
+    -15.0
+   ],
+   [
+    80.0,
+    0.6,
+    15.0
+   ],
+   [
+    80.0,
+    -0.6,
+    15.0
+   ]
+  ],
+  [
+   [
+    0,
+    3,
+    2,
+    1
+   ],
+   [
+    4,
+    5,
+    6,
+    7
+   ],
+   [
+    0,
+    1,
+    5,
+    4
+   ],
+   [
+    3,
+    7,
+    6,
+    2
+   ],
+   [
+    1,
+    2,
+    6,
+    5
+   ],
+   [
+    0,
+    4,
+    7,
+    3
+   ]
+  ]
+ ],
+ "step": "ISO-10303-21;\nHEADER;\nFILE_DESCRIPTION(('KinematiK FlexGen blade blank'),'2;1');\nFILE_NAME('bl.step','<DATE>',('KinematiK'),('KinematiK FlexGen'),'flexgen.py','','');\nFILE_SCHEMA(('AUTOMOTIVE_DESIGN { 1 0 10303 214 1 1 1 1 }'));\nENDSEC;\nDATA;\n#1=APPLICATION_CONTEXT('automotive design');\n#2=APPLICATION_PROTOCOL_DEFINITION('international standard','automotive_design',2010,#1);\n#3=PRODUCT_CONTEXT('',#1,'mechanical');\n#4=PRODUCT('bl','bl','',(#3));\n#5=PRODUCT_DEFINITION_FORMATION('','',#4);\n#6=PRODUCT_DEFINITION_CONTEXT('part definition',#1,'design');\n#7=PRODUCT_DEFINITION('design','',#5,#6);\n#8=PRODUCT_DEFINITION_SHAPE('','',#7);\n#9=(LENGTH_UNIT()NAMED_UNIT(*)SI_UNIT(.MILLI.,.METRE.));\n#10=(NAMED_UNIT(*)PLANE_ANGLE_UNIT()SI_UNIT($,.RADIAN.));\n#11=(NAMED_UNIT(*)SI_UNIT($,.STERADIAN.)SOLID_ANGLE_UNIT());\n#12=UNCERTAINTY_MEASURE_WITH_UNIT(LENGTH_MEASURE(1.E-3),#9,'distance_accuracy_value','');\n#13=(GEOMETRIC_REPRESENTATION_CONTEXT(3)GLOBAL_UNCERTAINTY_ASSIGNED_CONTEXT((#12))GLOBAL_UNIT_ASSIGNED_CONTEXT((#9,#10,#11))REPRESENTATION_CONTEXT('','3D'));\n#14=CARTESIAN_POINT('',(0.000000,-1.000000,-15.000000));\n#15=CARTESIAN_POINT('',(0.000000,1.000000,-15.000000));\n#16=CARTESIAN_POINT('',(0.000000,1.000000,15.000000));\n#17=CARTESIAN_POINT('',(0.000000,-1.000000,15.000000));\n#18=CARTESIAN_POINT('',(80.000000,-0.600000,-15.000000));\n#19=CARTESIAN_POINT('',(80.000000,0.600000,-15.000000));\n#20=CARTESIAN_POINT('',(80.000000,0.600000,15.000000));\n#21=CARTESIAN_POINT('',(80.000000,-0.600000,15.000000));\n#22=VERTEX_POINT('',#14);\n#23=VERTEX_POINT('',#15);\n#24=VERTEX_POINT('',#16);\n#25=VERTEX_POINT('',#17);\n#26=VERTEX_POINT('',#18);\n#27=VERTEX_POINT('',#19);\n#28=VERTEX_POINT('',#20);\n#29=VERTEX_POINT('',#21);\n#30=DIRECTION('',(0.000000000,0.000000000,1.000000000));\n#31=VECTOR('',#30,1.0);\n#32=LINE('',#14,#31);\n#33=EDGE_CURVE('',#22,#25,#32,.T.);\n#34=ORIENTED_EDGE('',*,*,#33,.T.);\n#35=DIRECTION('',(0.000000000,-1.000000000,0.000000000));\n#36=VECTOR('',#35,1.0);\n#37=LINE('',#16,#36);\n#38=EDGE_CURVE('',#24,#25,#37,.T.);\n#39=ORIENTED_EDGE('',*,*,#38,.F.);\n#40=DIRECTION('',(0.000000000,0.000000000,1.000000000));\n#41=VECTOR('',#40,1.0);\n#42=LINE('',#15,#41);\n#43=EDGE_CURVE('',#23,#24,#42,.T.);\n#44=ORIENTED_EDGE('',*,*,#43,.F.);\n#45=DIRECTION('',(0.000000000,1.000000000,0.000000000));\n#46=VECTOR('',#45,1.0);\n#47=LINE('',#14,#46);\n#48=EDGE_CURVE('',#22,#23,#47,.T.);\n#49=ORIENTED_EDGE('',*,*,#48,.F.);\n#50=EDGE_LOOP('',(#34,#39,#44,#49));\n#51=FACE_OUTER_BOUND('',#50,.T.);\n#52=DIRECTION('',(-1.000000000,0.000000000,0.000000000));\n#53=DIRECTION('',(0.000000000,0.000000000,1.000000000));\n#54=AXIS2_PLACEMENT_3D('',#14,#52,#53);\n#55=PLANE('',#54);\n#56=ADVANCED_FACE('',(#51),#55,.T.);\n#57=DIRECTION('',(0.000000000,1.000000000,0.000000000));\n#58=VECTOR('',#57,1.0);\n#59=LINE('',#18,#58);\n#60=EDGE_CURVE('',#26,#27,#59,.T.);\n#61=ORIENTED_EDGE('',*,*,#60,.T.);\n#62=DIRECTION('',(0.000000000,0.000000000,1.000000000));\n#63=VECTOR('',#62,1.0);\n#64=LINE('',#19,#63);\n#65=EDGE_CURVE('',#27,#28,#64,.T.);\n#66=ORIENTED_EDGE('',*,*,#65,.T.);\n#67=DIRECTION('',(0.000000000,-1.000000000,0.000000000));\n#68=VECTOR('',#67,1.0);\n#69=LINE('',#20,#68);\n#70=EDGE_CURVE('',#28,#29,#69,.T.);\n#71=ORIENTED_EDGE('',*,*,#70,.T.);\n#72=DIRECTION('',(0.000000000,0.000000000,1.000000000));\n#73=VECTOR('',#72,1.0);\n#74=LINE('',#18,#73);\n#75=EDGE_CURVE('',#26,#29,#74,.T.);\n#76=ORIENTED_EDGE('',*,*,#75,.F.);\n#77=EDGE_LOOP('',(#61,#66,#71,#76));\n#78=FACE_OUTER_BOUND('',#77,.T.);\n#79=DIRECTION('',(1.000000000,0.000000000,0.000000000));\n#80=DIRECTION('',(0.000000000,1.000000000,0.000000000));\n#81=AXIS2_PLACEMENT_3D('',#18,#79,#80);\n#82=PLANE('',#81);\n#83=ADVANCED_FACE('',(#78),#82,.T.);\n#84=ORIENTED_EDGE('',*,*,#48,.T.);\n#85=DIRECTION('',(0.999987500,-0.004999938,0.000000000));\n#86=VECTOR('',#85,1.0);\n#87=LINE('',#15,#86);\n#88=EDGE_CURVE('',#23,#27,#87,.T.);\n#89=ORIENTED_EDGE('',*,*,#88,.T.);\n#90=ORIENTED_EDGE('',*,*,#60,.F.);\n#91=DIRECTION('',(0.999987500,0.004999938,0.000000000));\n#92=VECTOR('',#91,1.0);\n#93=LINE('',#14,#92);\n#94=EDGE_CURVE('',#22,#26,#93,.T.);\n#95=ORIENTED_EDGE('',*,*,#94,.F.);\n#96=EDGE_LOOP('',(#84,#89,#90,#95));\n#97=FACE_OUTER_BOUND('',#96,.T.);\n#98=DIRECTION('',(0.000000000,0.000000000,-1.000000000));\n#99=DIRECTION('',(0.000000000,1.000000000,0.000000000));\n#100=AXIS2_PLACEMENT_3D('',#14,#98,#99);\n#101=PLANE('',#100);\n#102=ADVANCED_FACE('',(#97),#101,.T.);\n#103=DIRECTION('',(0.999987500,0.004999938,0.000000000));\n#104=VECTOR('',#103,1.0);\n#105=LINE('',#17,#104);\n#106=EDGE_CURVE('',#25,#29,#105,.T.);\n#107=ORIENTED_EDGE('',*,*,#106,.T.);\n#108=ORIENTED_EDGE('',*,*,#70,.F.);\n#109=DIRECTION('',(0.999987500,-0.004999938,0.000000000));\n#110=VECTOR('',#109,1.0);\n#111=LINE('',#16,#110);\n#112=EDGE_CURVE('',#24,#28,#111,.T.);\n#113=ORIENTED_EDGE('',*,*,#112,.F.);\n#114=ORIENTED_EDGE('',*,*,#38,.T.);\n#115=EDGE_LOOP('',(#107,#108,#113,#114));\n#116=FACE_OUTER_BOUND('',#115,.T.);\n#117=DIRECTION('',(0.000000000,0.000000000,1.000000000));\n#118=DIRECTION('',(0.999987500,0.004999938,0.000000000));\n#119=AXIS2_PLACEMENT_3D('',#17,#117,#118);\n#120=PLANE('',#119);\n#121=ADVANCED_FACE('',(#116),#120,.T.);\n#122=ORIENTED_EDGE('',*,*,#43,.T.);\n#123=ORIENTED_EDGE('',*,*,#112,.T.);\n#124=ORIENTED_EDGE('',*,*,#65,.F.);\n#125=ORIENTED_EDGE('',*,*,#88,.F.);\n#126=EDGE_LOOP('',(#122,#123,#124,#125));\n#127=FACE_OUTER_BOUND('',#126,.T.);\n#128=DIRECTION('',(0.004999938,0.999987500,-0.000000000));\n#129=DIRECTION('',(0.000000000,0.000000000,1.000000000));\n#130=AXIS2_PLACEMENT_3D('',#15,#128,#129);\n#131=PLANE('',#130);\n#132=ADVANCED_FACE('',(#127),#131,.T.);\n#133=ORIENTED_EDGE('',*,*,#94,.T.);\n#134=ORIENTED_EDGE('',*,*,#75,.T.);\n#135=ORIENTED_EDGE('',*,*,#106,.F.);\n#136=ORIENTED_EDGE('',*,*,#33,.F.);\n#137=EDGE_LOOP('',(#133,#134,#135,#136));\n#138=FACE_OUTER_BOUND('',#137,.T.);\n#139=DIRECTION('',(0.004999938,-0.999987500,0.000000000));\n#140=DIRECTION('',(0.999987500,0.004999938,0.000000000));\n#141=AXIS2_PLACEMENT_3D('',#14,#139,#140);\n#142=PLANE('',#141);\n#143=ADVANCED_FACE('',(#138),#142,.T.);\n#144=CLOSED_SHELL('',(#56,#83,#102,#121,#132,#143));\n#145=MANIFOLD_SOLID_BREP('bl',#144);\n#146=CARTESIAN_POINT('',(0.,0.,0.));\n#147=DIRECTION('',(0.,0.,1.));\n#148=DIRECTION('',(1.,0.,0.));\n#149=AXIS2_PLACEMENT_3D('',#146,#147,#148);\n#150=ADVANCED_BREP_SHAPE_REPRESENTATION('',(#149,#145),#13);\n#151=SHAPE_DEFINITION_REPRESENTATION(#8,#150);\nENDSEC;\nEND-ISO-10303-21;\n",
+ "stl": "solid bl\n  facet normal -1.000000e+00 0.000000e+00 0.000000e+00\n    outer loop\n      vertex 0.000000e+00 -1.000000e+00 -1.500000e+01\n      vertex 0.000000e+00 -1.000000e+00 1.500000e+01\n      vertex 0.000000e+00 1.000000e+00 1.500000e+01\n    endloop\n  endfacet\n  facet normal -1.000000e+00 0.000000e+00 0.000000e+00\n    outer loop\n      vertex 0.000000e+00 -1.000000e+00 -1.500000e+01\n      vertex 0.000000e+00 1.000000e+00 1.500000e+01\n      vertex 0.000000e+00 1.000000e+00 -1.500000e+01\n    endloop\n  endfacet\n  facet normal 1.000000e+00 0.000000e+00 0.000000e+00\n    outer loop\n      vertex 8.000000e+01 -6.000000e-01 -1.500000e+01\n      vertex 8.000000e+01 6.000000e-01 -1.500000e+01\n      vertex 8.000000e+01 6.000000e-01 1.500000e+01\n    endloop\n  endfacet\n  facet normal 1.000000e+00 0.000000e+00 0.000000e+00\n    outer loop\n      vertex 8.000000e+01 -6.000000e-01 -1.500000e+01\n      vertex 8.000000e+01 6.000000e-01 1.500000e+01\n      vertex 8.000000e+01 -6.000000e-01 1.500000e+01\n    endloop\n  endfacet\n  facet normal 0.000000e+00 0.000000e+00 -1.000000e+00\n    outer loop\n      vertex 0.000000e+00 -1.000000e+00 -1.500000e+01\n      vertex 0.000000e+00 1.000000e+00 -1.500000e+01\n      vertex 8.000000e+01 6.000000e-01 -1.500000e+01\n    endloop\n  endfacet\n  facet normal 0.000000e+00 0.000000e+00 -1.000000e+00\n    outer loop\n      vertex 0.000000e+00 -1.000000e+00 -1.500000e+01\n      vertex 8.000000e+01 6.000000e-01 -1.500000e+01\n      vertex 8.000000e+01 -6.000000e-01 -1.500000e+01\n    endloop\n  endfacet\n  facet normal 0.000000e+00 0.000000e+00 1.000000e+00\n    outer loop\n      vertex 0.000000e+00 -1.000000e+00 1.500000e+01\n      vertex 8.000000e+01 -6.000000e-01 1.500000e+01\n      vertex 8.000000e+01 6.000000e-01 1.500000e+01\n    endloop\n  endfacet\n  facet normal 0.000000e+00 0.000000e+00 1.000000e+00\n    outer loop\n      vertex 0.000000e+00 -1.000000e+00 1.500000e+01\n      vertex 8.000000e+01 6.000000e-01 1.500000e+01\n      vertex 0.000000e+00 1.000000e+00 1.500000e+01\n    endloop\n  endfacet\n  facet normal 4.999938e-03 9.999875e-01 -0.000000e+00\n    outer loop\n      vertex 0.000000e+00 1.000000e+00 -1.500000e+01\n      vertex 0.000000e+00 1.000000e+00 1.500000e+01\n      vertex 8.000000e+01 6.000000e-01 1.500000e+01\n    endloop\n  endfacet\n  facet normal 4.999938e-03 9.999875e-01 0.000000e+00\n    outer loop\n      vertex 0.000000e+00 1.000000e+00 -1.500000e+01\n      vertex 8.000000e+01 6.000000e-01 1.500000e+01\n      vertex 8.000000e+01 6.000000e-01 -1.500000e+01\n    endloop\n  endfacet\n  facet normal 4.999938e-03 -9.999875e-01 0.000000e+00\n    outer loop\n      vertex 0.000000e+00 -1.000000e+00 -1.500000e+01\n      vertex 8.000000e+01 -6.000000e-01 -1.500000e+01\n      vertex 8.000000e+01 -6.000000e-01 1.500000e+01\n    endloop\n  endfacet\n  facet normal 4.999938e-03 -9.999875e-01 0.000000e+00\n    outer loop\n      vertex 0.000000e+00 -1.000000e+00 -1.500000e+01\n      vertex 8.000000e+01 -6.000000e-01 1.500000e+01\n      vertex 0.000000e+00 -1.000000e+00 1.500000e+01\n    endloop\n  endfacet\nendsolid bl\n",
+ "syn": {
+  "blade": {
+   "boundary": "fixed-guided",
+   "length_mm": 120.0,
+   "material": {
+    "E": 205000.0,
+    "G": 80000.0,
+    "name": "Steel 4130",
+    "rho": 7850.0
+   },
+   "n_seg": 16,
+   "name": "blade",
+   "section": {
+    "t_root_mm": 0.8,
+    "t_tip_mm": 0.5599999999999999,
+    "width_mm": 25.0
+   }
+  },
+  "feasible": true,
+  "findings": [
+   {
+    "code": "SMOOTH_SPECIMEN",
+    "detail": "Fatigue screen uses smooth-specimen data with surface/size factors = 1 — a machined edge, a print layer line or a weld HAZ halves S_e. Coupon-test the real edge finish.",
+    "level": "ok"
+   },
+   {
+    "code": "PASS",
+    "detail": "All 2 case(s) pass yield/HCF/buckling at FoS 1.5/1.5/2.0.",
+    "level": "ok"
+   }
+  ],
+  "mass_g": 16.014,
+  "message": "blade: L=120.0 mm, t=0.80→0.56 mm, 16.0 g",
+  "searched": 2
+ },
+ "syn_fake": [
+  {
+   "blade": {
+    "boundary": "fixed-guided",
+    "length_mm": 40.0,
+    "material": {
+     "E": 205000.0,
+     "G": 80000.0,
+     "name": "Steel 4130",
+     "rho": 7850.0
+    },
+    "n_seg": 16,
+    "name": "blade",
+    "section": {
+     "t_root_mm": 2.2181818181818183,
+     "t_tip_mm": 1.5527272727272727,
+     "width_mm": 25.0
+    }
+   },
+   "feasible": true,
+   "findings": [
+    {
+     "code": "PASS",
+     "detail": "40.0",
+     "level": "ok"
+    }
+   ],
+   "mass_g": 14.80081818181818,
+   "message": "blade: L=40.0 mm, t=2.22→1.55 mm, 14.8 g",
+   "searched": 84
+  },
+  [
+   [
+    40.0,
+    {
+     "t_root_mm": 0.8,
+     "t_tip_mm": 0.5599999999999999,
+     "width_mm": 25.0
+    },
+    "fixed-guided",
+    [
+     5.0,
+     5.0
+    ],
+    1.5,
+    1.5,
+    2.0
+   ],
+   [
+    40.0,
+    {
+     "t_root_mm": 1.2727272727272727,
+     "t_tip_mm": 0.8909090909090909,
+     "width_mm": 25.0
+    },
+    "fixed-guided",
+    [
+     5.0,
+     5.0
+    ],
+    1.5,
+    1.5,
+    2.0
+   ],
+   [
+    40.0,
+    {
+     "t_root_mm": 1.7454545454545456,
+     "t_tip_mm": 1.221818181818182,
+     "width_mm": 25.0
+    },
+    "fixed-guided",
+    [
+     5.0,
+     5.0
+    ],
+    1.5,
+    1.5,
+    2.0
+   ],
+   [
+    40.0,
+    {
+     "t_root_mm": 2.2181818181818183,
+     "t_tip_mm": 1.5527272727272727,
+     "width_mm": 25.0
+    },
+    "fixed-guided",
+    [
+     5.0,
+     5.0
+    ],
+    1.5,
+    1.5,
+    2.0
+   ],
+   [
+    53.333333333333336,
+    {
+     "t_root_mm": 0.8,
+     "t_tip_mm": 0.5599999999999999,
+     "width_mm": 25.0
+    },
+    "fixed-guided",
+    [
+     5.0,
+     5.0
+    ],
+    1.5,
+    1.5,
+    2.0
+   ],
+   [
+    53.333333333333336,
+    {
+     "t_root_mm": 1.2727272727272727,
+     "t_tip_mm": 0.8909090909090909,
+     "width_mm": 25.0
+    },
+    "fixed-guided",
+    [
+     5.0,
+     5.0
+    ],
+    1.5,
+    1.5,
+    2.0
+   ],
+   [
+    66.66666666666667,
+    {
+     "t_root_mm": 0.8,
+     "t_tip_mm": 0.5599999999999999,
+     "width_mm": 25.0
+    },
+    "fixed-guided",
+    [
+     5.0,
+     5.0
+    ],
+    1.5,
+    1.5,
+    2.0
+   ],
+   [
+    66.66666666666667,
+    {
+     "t_root_mm": 1.2727272727272727,
+     "t_tip_mm": 0.8909090909090909,
+     "width_mm": 25.0
+    },
+    "fixed-guided",
+    [
+     5.0,
+     5.0
+    ],
+    1.5,
+    1.5,
+    2.0
+   ],
+   [
+    80.0,
+    {
+     "t_root_mm": 0.8,
+     "t_tip_mm": 0.5599999999999999,
+     "width_mm": 25.0
+    },
+    "fixed-guided",
+    [
+     5.0,
+     5.0
+    ],
+    1.5,
+    1.5,
+    2.0
+   ],
+   [
+    93.33333333333334,
+    {
+     "t_root_mm": 0.8,
+     "t_tip_mm": 0.5599999999999999,
+     "width_mm": 25.0
+    },
+    "fixed-guided",
+    [
+     5.0,
+     5.0
+    ],
+    1.5,
+    1.5,
+    2.0
+   ],
+   [
+    106.66666666666667,
+    {
+     "t_root_mm": 0.8,
+     "t_tip_mm": 0.5599999999999999,
+     "width_mm": 25.0
+    },
+    "fixed-guided",
+    [
+     5.0,
+     5.0
+    ],
+    1.5,
+    1.5,
+    2.0
+   ]
+  ]
+ ],
+ "syn_kw": [
+  {
+   "blade": {
+    "boundary": "fixed-free",
+    "length_mm": 30.0,
+    "material": {
+     "E": 113800.0,
+     "G": 44000.0,
+     "name": "Titanium Ti-6Al-4V",
+     "rho": 4430.0
+    },
+    "n_seg": 16,
+    "name": "blade",
+    "section": {
+     "t_root_mm": 2.0,
+     "t_tip_mm": 1.8,
+     "width_mm": 20.0
+    }
+   },
+   "feasible": true,
+   "findings": [
+    {
+     "code": "PASS",
+     "detail": "30.0",
+     "level": "ok"
+    }
+   ],
+   "mass_g": 5.050199999999999,
+   "message": "blade: L=30.0 mm, t=2.00→1.80 mm, 5.1 g",
+   "searched": 9
+  },
+  [
+   [
+    30.0,
+    {
+     "t_root_mm": 1.0,
+     "t_tip_mm": 0.9,
+     "width_mm": 20.0
+    },
+    "fixed-free",
+    [
+     4.0,
+     4.0
+    ],
+    1.2,
+    1.1,
+    1.5
+   ],
+   [
+    30.0,
+    {
+     "t_root_mm": 2.0,
+     "t_tip_mm": 1.8,
+     "width_mm": 20.0
+    },
+    "fixed-free",
+    [
+     4.0,
+     4.0
+    ],
+    1.2,
+    1.1,
+    1.5
+   ]
+  ]
+ ],
+ "syn_none": {
+  "blade": null,
+  "feasible": false,
+  "findings": [],
+  "mass_g": "NaN",
+  "message": "No (L, t) in the search box passes the lint for this material/width/travel/loads — widen the blade, change material, or shorten travel.",
+  "searched": 4
+ }
+}

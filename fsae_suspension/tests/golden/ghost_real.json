@@ -1,0 +1,26 @@
+{
+ "md": "# Ghost Topology audit — corner FR-demo\n\n**Verdict: `RIGID_FAITHFUL`**\n\n3 instants audited (2 compliance solves, 1 cache hits). Worst transient FoS **4.33** (LF, t = 400 ms). Peak compliance: Δcamber 0.07°, Δtoe 0.07°. Peak tyre-feedback loop gain 0.01 (1.0 is the instability boundary).\n\n## Findings\n\n- 🟢 **ghost topology** — deflections stayed below every erosion threshold through the event — the rigid model is an honest stand-in for this event at this corner.\n\n## Instants\n\n| t (ms) | Fy (N) | Fz (N) | Δcamber (°) | Δtoe (°) | ΔRC (mm) | min FoS | member | loop gain |\n|---|---|---|---|---|---|---|---|---|\n| 0 | -0 | 700 | -0.00 | +0.00 | +0.0 | 18.56 | PR | +0.00 |\n| 400 | -6549 | 2200 | +0.07 | -0.07 | +0.0 | 4.33 | LF | -0.01 |\n| 800 | -0 | 700 | -0.00 | +0.00 | +0.0 | 18.56 | PR | +0.00 |\n\n_Quasi-static compliance along a transient load history — not a structural-dynamics solve, not plasticity, one corner at a time. A red instant here is the load case and pass criterion to hand the FEA seat, not a substitute for it._",
+ "s": {
+  "corner": "FR-demo",
+  "findings": [
+   {
+    "check": "ghost topology",
+    "detail": {},
+    "message": "deflections stayed below every erosion threshold through the event — the rigid model is an honest stand-in for this event at this corner.",
+    "severity": "ok"
+   }
+  ],
+  "flags": [],
+  "max_d_camber_deg": 0.07065866770601792,
+  "max_d_toe_deg": 0.0664301473799172,
+  "max_loop_gain": 0.008020745781432177,
+  "n_cache_hits": 1,
+  "n_instants": 3,
+  "n_solves": 2,
+  "note": "",
+  "verdict": "RIGID_FAITHFUL",
+  "worst_fos": 4.333416951989979,
+  "worst_fos_member": "LF",
+  "worst_fos_t_s": 0.4
+ }
+}

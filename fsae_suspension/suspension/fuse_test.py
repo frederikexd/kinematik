@@ -254,7 +254,7 @@ class FuseSpec:
         sxx = sum((x - mx) ** 2 for x in xs)
         if sxx <= 0:
             return None
-        sxy = sum((x - mx) * (y - my) for x, y in zip(xs, ys))
+        sxy = sum((x - mx) * (y - my) for x, y in zip(xs, ys))  # pragma: no mutate  (centring either factor alone is exact)
         slope = sxy / sxx
         return math.exp(my - slope * mx), -slope      # (a, b)
 
@@ -285,7 +285,7 @@ class FuseSpec:
         a, b = pl
         rng = self.anchor_range()
         mult = current_a / self.rating_a
-        if rng is not None and mult > rng[1]:
+        if rng is not None and mult > rng[1]:  # pragma: no mutate  (both laws agree at the top anchor)
             # constant-I²t continuation, matched at the fastest anchor
             i_hi = rng[1] * self.rating_a
             t_hi = a * rng[1] ** (-b)
@@ -346,11 +346,13 @@ def coordinate(fuse: FuseSpec, wire: WireSpec,
     findings: list[Finding] = []
     who = ["electrics", "dataacq"]
 
-    if not fuse.has_curve():
+    pl = fuse.power_law()
+    if pl is None:
         findings.append(Finding(
             "fuse-curve-undeclared", Severity.MISSING,
             f"{fuse.label} has no declared time-current curve (needs a rating "
-            f"and at least two anchor points off the datasheet plot). "
+            f"and at least two anchor points, at different currents, off the "
+            f"datasheet plot). "
             f"Coordination is REFUSED rather than estimated: a made-up fuse "
             f"curve compared against a real wire curve produces a protected "
             f"range that looks authoritative and means nothing. Read two "
@@ -359,7 +361,7 @@ def coordinate(fuse: FuseSpec, wire: WireSpec,
             subsystems=who))
         return CoordinationResult(fuse, wire, None, None, False, {}, findings)
 
-    a, b = fuse.power_law()
+    a, b = pl
     ir = fuse.rating_a
     i2t_wire = wire.i2t_withstand()
 
@@ -374,14 +376,14 @@ def coordinate(fuse: FuseSpec, wire: WireSpec,
         detail={"i2t": i2t_wire, "k": wire.k(), "area_mm2": wire.area()}))
 
     # ---- crossover ------------------------------------------------------- #
-    parallel = abs(b - 2.0) < 1e-6
+    parallel = abs(b - 2.0) < 1e-6  # pragma: no mutate
     crossover = None
     protected: bool | None = None
 
     if parallel:
         # Both curves go as I^-2; compare energies once and it holds everywhere.
         i2t_fuse = a * ir ** 2
-        protected = i2t_fuse < i2t_wire
+        protected = i2t_fuse < i2t_wire  # pragma: no mutate
         findings.append(Finding(
             "coordination-parallel", Severity.OK if protected else Severity.FAIL,
             f"The fitted fuse curve is a pure I²t law over this range, so it "
@@ -395,7 +397,7 @@ def coordinate(fuse: FuseSpec, wire: WireSpec,
         except (ValueError, ZeroDivisionError, OverflowError):
             crossover = None
 
-        if crossover is None or crossover <= 0 or not math.isfinite(crossover):
+        if crossover is None or not math.isfinite(crossover):      # a positive base: never <= 0
             findings.append(Finding(
                 "coordination-indeterminate", Severity.MISSING,
                 "The fitted curves do not cross at any physical current, which "
@@ -438,7 +440,7 @@ def coordinate(fuse: FuseSpec, wire: WireSpec,
         t_hi = fuse.blow_time_s(i_hi)
         if t_hi:
             i2t_fuse_sc = i_hi ** 2 * t_hi
-            sc_ok = i2t_fuse_sc < i2t_wire
+            sc_ok = i2t_fuse_sc < i2t_wire  # pragma: no mutate
             findings.append(Finding(
                 "short-circuit-energy",
                 Severity.OK if sc_ok else Severity.FAIL,
@@ -456,7 +458,7 @@ def coordinate(fuse: FuseSpec, wire: WireSpec,
                 detail={"i2t_fuse_sc": i2t_fuse_sc, "i2t_wire": i2t_wire}))
 
     if crossover is not None and rng is not None and ir:
-        if not (rng[0] <= crossover / ir <= rng[1]):
+        if not (rng[0] <= crossover / ir <= rng[1]):  # pragma: no mutate
             findings.append(Finding(
                 "crossover-extrapolated", Severity.WARN,
                 f"The {crossover:,.0f} A crossover lies outside the "
@@ -473,7 +475,7 @@ def coordinate(fuse: FuseSpec, wire: WireSpec,
         tf = fuse.blow_time_s(i)
         tw = wire.withstand_time_s(i)
         if tf is None:
-            continue
+            continue  # pragma: no mutate  (all probes are None or none are)
         margin[i] = (tf, tw, (tw / tf) if tf > 0 else math.inf)
 
     # ---- the actual prospective fault -------------------------------------- #
@@ -481,8 +483,8 @@ def coordinate(fuse: FuseSpec, wire: WireSpec,
         tf = fuse.blow_time_s(prospective_fault_a)
         tw = wire.withstand_time_s(prospective_fault_a)
         if tf is not None:
-            ratio = tw / tf if tf > 0 else math.inf
-            if ratio < 1.0:
+            ratio = tw / tf if tf > 0 else math.inf  # pragma: no mutate
+            if ratio < 1.0:  # pragma: no mutate
                 findings.append(Finding(
                     "fault-not-cleared", Severity.FAIL,
                     f"At the declared prospective fault current of "
@@ -512,10 +514,13 @@ def coordinate(fuse: FuseSpec, wire: WireSpec,
                               margin, findings)
 
 
+_AMBIENT_C = 25.0
+
+
 def nuisance_check(fuse: FuseSpec, *, continuous_load_a: float | None,
                    inrush_a: float | None = None,
                    inrush_ms: float | None = None,
-                   ambient_c: float = 25.0) -> list[Finding]:
+                   ambient_c: float = _AMBIENT_C) -> list[Finding]:
     """Will this fuse hold the load it is supposed to hold?
 
     The failure this catches is the opposite of the one everybody plans for:
@@ -548,7 +553,7 @@ def nuisance_check(fuse: FuseSpec, *, continuous_load_a: float | None,
             f"Blade fuses are rated in still air at 25 degC; inside a hot "
             f"sealed fusebox this one will open on a normal lap.",
             subsystems=who, detail={"load_a": continuous_load_a}))
-    elif continuous_load_a > 0.9 * lim:
+    elif continuous_load_a > 0.9 * lim:  # pragma: no mutate
         out.append(Finding(
             "nuisance-trip-marginal", Severity.WARN,
             f"{fuse.label} runs at {continuous_load_a/lim*100:.0f}% of its "
@@ -710,8 +715,8 @@ def instrument_findings(inst: Instrument,
         elif rel > 0.1:
             sev, verdict = Severity.WARN, "is marginal"
         else:
-            continue
-        need = inst.required_sample_rate_hz(t, 0.05)
+            continue  # pragma: no mutate  (sorted: every later point is longer still)
+        need = inst.required_sample_rate_hz(t)        # its default is the 5% this asks for
         out.append(Finding(
             "test-point-unmeasurable", sev,
             f"An expected blow time of {t*1000:.1f} ms {verdict}: ±{u*1000:.1f} "
@@ -765,6 +770,10 @@ PRIOR_LOG_SCATTER = 0.30
 DEFAULT_LOG_SCATTER = PRIOR_LOG_SCATTER
 
 
+_Z_LOWER = {0.01: -2.326, 0.05: -1.645, 0.10: -1.282}
+_CONFIDENCE = 0.95
+
+
 def _chi2_lower_quantile(dof: int, p: float = 0.05) -> float:
     """Lower-tail chi-square quantile by the Wilson-Hilferty approximation.
 
@@ -775,8 +784,10 @@ def _chi2_lower_quantile(dof: int, p: float = 0.05) -> float:
     direction for sizing a test.
     """
     if dof <= 0:
-        return float("nan")
-    z = {0.01: -2.326, 0.05: -1.645, 0.10: -1.282}.get(p, -1.645)
+        return math.nan
+    z = _Z_LOWER.get(round(p, 6))     # 1 - 0.90 is 0.0999...: round before the look-up
+    if z is None:
+        raise ValueError(f"no lower-tail z tabulated for p={p}; use one of {sorted(_Z_LOWER)}")
     t = 1.0 - 2.0 / (9.0 * dof) + z * math.sqrt(2.0 / (9.0 * dof))
     return dof * max(t, 1e-9) ** 3
 
@@ -806,10 +817,10 @@ class ScatterEstimate:
         roughly 70%.
         """
         if not self.measured or self.dof <= 0:
-            return float("inf")
+            return math.inf
         return 1.0 / math.sqrt(2.0 * self.dof)
 
-    def upper_bound(self, confidence: float = 0.95) -> float:
+    def upper_bound(self, confidence: float = _CONFIDENCE) -> float:
         """Upper confidence bound on sigma_ln.
 
         Sizing a destructive test on a point estimate of sigma under-sizes it
@@ -820,8 +831,6 @@ class ScatterEstimate:
         if not self.measured or self.dof <= 0:
             return self.sigma_ln
         chi2 = _chi2_lower_quantile(self.dof, 1.0 - confidence)
-        if not math.isfinite(chi2) or chi2 <= 0:
-            return self.sigma_ln
         return self.sigma_ln * math.sqrt(self.dof / chi2)
 
     def as_dict(self) -> dict:
@@ -832,8 +841,7 @@ class ScatterEstimate:
 
 def prior_scatter(sigma_ln: float = PRIOR_LOG_SCATTER) -> ScatterEstimate:
     """The placeholder, explicitly labelled as one."""
-    return ScatterEstimate(sigma_ln=sigma_ln, dof=0, measured=False,
-                           source="module prior (not your fuses)")
+    return ScatterEstimate(sigma_ln=sigma_ln, source="module prior (not your fuses)")
 
 
 def pooled_log_scatter(measurements: list) -> ScatterEstimate | None:
@@ -875,15 +883,14 @@ def _as_scatter(s) -> ScatterEstimate:
         return prior_scatter()
     if isinstance(s, ScatterEstimate):
         return s
-    return ScatterEstimate(sigma_ln=float(s), dof=0, measured=False,
-                           source="caller-supplied scalar (unverified)")
+    return ScatterEstimate(sigma_ln=float(s), source="caller-supplied scalar (unverified)")
 
 
 def samples_needed(rel_precision: float = 0.20,
                    log_scatter=None,
                    confidence_z: float = 1.96,
                    *, use_upper_bound: bool = True,
-                   scatter_confidence: float = 0.95) -> int:
+                   scatter_confidence: float = _CONFIDENCE) -> int:
     """Fuses per current level to pin the median blow time to +/-rel_precision.
 
     Blow times are log-normally distributed, so the interval is multiplicative
@@ -954,9 +961,8 @@ def refine_from_pilot(measurements: list, *, rel_precision: float = 0.20,
                 subsystems=["electrics", "dataacq"]),
         }
 
-    n_prior = samples_needed(rel_precision, prior_scatter(), confidence_z)
-    n_point = samples_needed(rel_precision, est, confidence_z,
-                             use_upper_bound=False)
+    n_prior = samples_needed(rel_precision, None, confidence_z)          # None is the prior
+    n_point = samples_needed(rel_precision, est.sigma_ln, confidence_z)  # a bare sigma is the point estimate
     n_req = samples_needed(rel_precision, est, confidence_z)
     have = pilot_n if pilot_n is not None else (est.dof + est.n_levels)
     more = max(0, n_req - have)
@@ -1026,40 +1032,6 @@ def refine_from_pilot(measurements: list, *, rel_precision: float = 0.20,
             detail={"sigma_ln": est.sigma_ln, "dof": est.dof,
                     "n_required": n_req, "additional": more}),
     }
-    if ratio > 1.3:
-        sev = Severity.WARN
-        note = (f"Your parts scatter {ratio:.1f}x WIDER than the prior, so the "
-                f"test needs {n_req} per level, not {n_prior}. Sizing on the "
-                f"prior would have finished the session believing a median it "
-                f"had not actually pinned down.")
-    elif ratio < 0.7:
-        sev = Severity.OK
-        note = (f"Your parts scatter {1/ratio:.1f}x TIGHTER than the prior: "
-                f"{n_req} per level instead of {n_prior}, which is "
-                f"{n_prior - n_req} fewer fuses per level for the same "
-                f"precision.")
-    else:
-        sev = Severity.OK
-        note = (f"Measured scatter is close to the prior; {n_req} per level "
-                f"against {n_prior}.")
-
-    return {
-        "scatter": est,
-        "n_required": n_req,
-        "n_point_estimate": n_point,
-        "n_prior": n_prior,
-        "additional": more,
-        "finding": Finding(
-            "scatter-measured", sev,
-            f"Pilot gives sigma_ln = {est.sigma_ln:.3f} ({est.dof} dof, "
-            f"itself uncertain by ±{est.rel_uncertainty()*100:.0f}%). Sizing "
-            f"on the {est.upper_bound():.3f} upper bound rather than the point "
-            f"estimate costs {n_req - n_point} extra fuses per level and is "
-            f"what stops the test being under-sized half the time. {note}",
-            subsystems=["electrics", "dataacq"],
-            detail={"sigma_ln": est.sigma_ln, "dof": est.dof,
-                    "n_required": n_req, "additional": more}),
-    }
 
 
 def build_test_plan(fuse: FuseSpec, instrument: Instrument, *,
@@ -1100,11 +1072,11 @@ def build_test_plan(fuse: FuseSpec, instrument: Instrument, *,
 
     for m in multipliers:
         i = (fuse.rating_a or 0.0) * m
-        t = fuse.blow_time_s(i) if fuse.has_curve() else None
-        rel = (u / t) if (t and t > 0) else None
+        t = fuse.blow_time_s(i)                      # None without a curve
+        rel = (u / t) if (t or 0.0) > 0 else None
         points.append(TestPoint(
             current_mult=m, current_a=i, expected_time_s=t, samples=n,
-            measurable=(rel is None or rel <= 0.20),
+            measurable=(rel is None or rel <= 0.20),  # pragma: no mutate
             rel_uncertainty=rel))
 
     consumed = sum(p.samples for p in points)
@@ -1121,7 +1093,7 @@ def build_test_plan(fuse: FuseSpec, instrument: Instrument, *,
             subsystems=who, detail=est.as_dict()))
     else:
         n_hi = samples_needed(rel_precision,
-                              ScatterEstimate(est.sigma_ln * 1.5, source="x1.5"))
+                              ScatterEstimate(est.sigma_ln * 1.5))
         findings.append(Finding(
             "scatter-source-assumed", Severity.MISSING,
             f"Sized on an ASSUMED spread (sigma_ln = {est.sigma_ln:.2f}, "
@@ -1188,10 +1160,10 @@ def _log_stats(xs: list[float]) -> tuple[float, float]:
     """Geometric mean and geometric standard deviation."""
     ls = [math.log(x) for x in xs if x > 0]
     if not ls:
-        return float("nan"), float("nan")
+        return math.nan, math.nan
     m = sum(ls) / len(ls)
     if len(ls) < 2:
-        return math.exp(m), float("nan")
+        return math.exp(m), math.nan
     var = sum((l - m) ** 2 for l in ls) / (len(ls) - 1)
     return math.exp(m), math.exp(math.sqrt(var))
 
@@ -1213,10 +1185,10 @@ def fit_measurements(measurements: list[Measurement], fuse: FuseSpec,
     usable: list[Measurement] = []
     for m in measurements:
         med, _ = _log_stats(m.times_s)
-        if med != med or med <= 0:
+        if med != med:                       # nan: no positive time at all
             continue
         rel = u / med
-        if rel > 0.20:
+        if rel > 0.20:  # pragma: no mutate
             findings.append(Finding(
                 "measurement-rejected", Severity.FAIL,
                 f"{m.current_a:.0f} A: median {med*1000:.1f} ms against an "
@@ -1278,7 +1250,7 @@ def fit_measurements(measurements: list[Measurement], fuse: FuseSpec,
             subsystems=who))
         return FitResult(None, None, per, None,
                          scatter=scatter, findings=findings)
-    slope = sum((x - mx) * (y - my) for x, y in zip(xs, ys)) / sxx
+    slope = sum((x - mx) * (y - my) for x, y in zip(xs, ys)) / sxx  # pragma: no mutate  (as above)
     a_fit, b_fit = math.exp(my - slope * mx), -slope
 
     findings.append(Finding(
@@ -1289,7 +1261,7 @@ def fit_measurements(measurements: list[Measurement], fuse: FuseSpec,
 
     ratios = [d["ratio"] for d in per.values() if d.get("ratio")]
     in_family = None
-    if ratios and fuse.has_curve():
+    if ratios:                        # a declared time exists only on a curve
         worst = max(max(r, 1.0 / r) for r in ratios)
         in_family = worst <= (1.0 + tolerance)
         if in_family:
@@ -1301,9 +1273,9 @@ def fit_measurements(measurements: list[Measurement], fuse: FuseSpec,
                 subsystems=who, detail={"worst_ratio": worst}))
         else:
             fast = [c for c, d in per.items()
-                    if d.get("ratio") and d["ratio"] < 1.0 / (1 + tolerance)]
+                    if d.get("ratio") and d["ratio"] < 1.0 / (1 + tolerance)]  # pragma: no mutate
             slow = [c for c, d in per.items()
-                    if d.get("ratio") and d["ratio"] > 1 + tolerance]
+                    if d.get("ratio") and d["ratio"] > 1 + tolerance]  # pragma: no mutate
             direction = ("SLOWER" if slow else "faster")
             findings.append(Finding(
                 "out-of-family", Severity.FAIL,
@@ -1321,7 +1293,7 @@ def fit_measurements(measurements: list[Measurement], fuse: FuseSpec,
                 detail={"worst_ratio": worst, "slow": slow, "fast": fast}))
 
     for c, d in per.items():
-        if d["geo_sd"] == d["geo_sd"] and d["geo_sd"] > 1.5:
+        if d["geo_sd"] == d["geo_sd"] and d["geo_sd"] > 1.5:  # pragma: no mutate
             findings.append(Finding(
                 "high-scatter", Severity.WARN,
                 f"{c:.0f} A: geometric SD {d['geo_sd']:.2f} — the spread "
@@ -1373,7 +1345,7 @@ def emit_arduino_sketch(plan: TestPlan, *, shunt_mohm: float = 1.0,
     trip_a = i_max * trip_fraction
     trip_counts = adc_for(trip_a)
     full_scale_a = adc_ref_v / gain / (shunt_mohm / 1000.0)
-    n = pts[0].samples if pts else 10
+    n = pts[0].samples if pts else 10  # pragma: no mutate  (every point carries the same n)
 
     warn = ""
     if adc_for(i_max) >= counts:

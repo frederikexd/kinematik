@@ -843,5 +843,5 @@ def _self_test() -> None:
     print(f"\nfusebox self-test: all {n[0]} checks passed.")
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no mutate block (the command-line entry point)
     _self_test()

@@ -1,0 +1,633 @@
+{
+ "big": [
+  {
+   "check": "pd-speed-discontinuities",
+   "detail": {
+    "count": 1,
+    "fraction": 0.02,
+    "worst_g": 2.5
+   },
+   "message": "[SpeedVsTime!B2:B1894] 1 of 50 samples (2.0%) in the speed trace imply accelerations beyond tyre grip. The worst is +30 mph in one 2000 ms sample at index 0, which is +2.5 g — no car does that, so it is a logging or data-entry artefact, not vehicle behaviour. This matters because the m*a term turns every one of those steps into a current spike and then into a thermal load. The workbook never differentiates its speed trace, so it never notices; it also therefore has no acceleration term at all, which is why its currents are low. Fix the trace, or pass smooth_window to filter it and accept that the peaks are approximate.",
+   "severity": "warning",
+   "subsystems": [
+    "dataacq",
+    "powertrain",
+    "electrics"
+   ]
+  },
+  {
+   "check": "pd-fuse-exceeded",
+   "detail": {
+    "fuse_a": 50.0,
+    "peak_a": 123.4
+   },
+   "message": "[BatteryPackConfig!B1] Peak pack current 123.4 A against a 50 A fuse. Per cell that is 41.1 A across 3 parallel strings.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "pd-joule-heat",
+   "detail": {
+    "energy_wh": 27777.777777777777,
+    "mean_w": 1000000.0
+   },
+   "message": "Joule heating averages 1000000 W and totals 27778 Wh over 100 s. This is the number the cooling model needs, and it is a heat flow plus an energy — not the sum-of-instantaneous-watts the workbook reports.",
+   "severity": "info",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  }
+ ],
+ "clamped": [
+  {
+   "check": "pd-accel-clamped",
+   "detail": {
+    "clamped": 3
+   },
+   "message": "3 samples had their acceleration clamped to the 1.4 g grip limit. Clamping keeps one bad sample from dominating the peak current; it does not make the underlying trace correct.",
+   "severity": "info",
+   "subsystems": [
+    "powertrain",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "pd-fuse-ok",
+   "detail": {},
+   "message": "Peak 50.0 A inside the 50 A fuse (100%).",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "pd-joule-heat",
+   "detail": {
+    "energy_wh": 0.1388888888888889,
+    "mean_w": 10.0
+   },
+   "message": "Joule heating averages 10 W and totals 0 Wh over 50 s. This is the number the cooling model needs, and it is a heat flow plus an energy — not the sum-of-instantaneous-watts the workbook reports.",
+   "severity": "info",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  }
+ ],
+ "clamped_s2": [
+  {
+   "check": "pd-accel-clamped",
+   "detail": {
+    "clamped": 3
+   },
+   "message": "3 samples had their acceleration clamped to the 1.4 g grip limit after smoothing over 2 samples. Clamping keeps one bad sample from dominating the peak current; it does not make the underlying trace correct.",
+   "severity": "info",
+   "subsystems": [
+    "powertrain",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "pd-fuse-ok",
+   "detail": {},
+   "message": "Peak 50.0 A inside the 50 A fuse (100%).",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "pd-joule-heat",
+   "detail": {
+    "energy_wh": 0.1388888888888889,
+    "mean_w": 10.0
+   },
+   "message": "Joule heating averages 10 W and totals 0 Wh over 50 s. This is the number the cooling model needs, and it is a heat flow plus an energy — not the sum-of-instantaneous-watts the workbook reports.",
+   "severity": "info",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  }
+ ],
+ "clamped_s3": [
+  {
+   "check": "pd-accel-clamped",
+   "detail": {
+    "clamped": 4
+   },
+   "message": "4 samples had their acceleration clamped to the 1.4 g grip limit after smoothing over 3 samples. Clamping keeps one bad sample from dominating the peak current; it does not make the underlying trace correct.",
+   "severity": "info",
+   "subsystems": [
+    "powertrain",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "pd-fuse-ok",
+   "detail": {},
+   "message": "Peak 50.0 A inside the 50 A fuse (100%).",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "pd-joule-heat",
+   "detail": {
+    "energy_wh": 0.1388888888888889,
+    "mean_w": 10.0
+   },
+   "message": "Joule heating averages 10 W and totals 0 Wh over 50 s. This is the number the cooling model needs, and it is a heat flow plus an energy — not the sum-of-instantaneous-watts the workbook reports.",
+   "severity": "info",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  }
+ ],
+ "disc_2pct": [
+  {
+   "check": "pd-speed-discontinuities",
+   "detail": {
+    "count": 1,
+    "fraction": 0.02,
+    "worst_g": 2.5
+   },
+   "message": "[SpeedVsTime!B2:B1894] 1 of 50 samples (2.0%) in the speed trace imply accelerations beyond tyre grip. The worst is +30 mph in one 1000 ms sample at index 0, which is +2.5 g — no car does that, so it is a logging or data-entry artefact, not vehicle behaviour. This matters because the m*a term turns every one of those steps into a current spike and then into a thermal load. The workbook never differentiates its speed trace, so it never notices; it also therefore has no acceleration term at all, which is why its currents are low. Fix the trace, or pass smooth_window to filter it and accept that the peaks are approximate.",
+   "severity": "warning",
+   "subsystems": [
+    "dataacq",
+    "powertrain",
+    "electrics"
+   ]
+  },
+  {
+   "check": "pd-fuse-ok",
+   "detail": {},
+   "message": "Peak 50.0 A inside the 50 A fuse (100%).",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "pd-joule-heat",
+   "detail": {
+    "energy_wh": 0.1388888888888889,
+    "mean_w": 10.0
+   },
+   "message": "Joule heating averages 10 W and totals 0 Wh over 50 s. This is the number the cooling model needs, and it is a heat flow plus an energy — not the sum-of-instantaneous-watts the workbook reports.",
+   "severity": "info",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  }
+ ],
+ "disc_more": [
+  {
+   "check": "pd-speed-discontinuities",
+   "detail": {
+    "count": 2,
+    "fraction": 0.04,
+    "worst_g": 3.5
+   },
+   "message": "[SpeedVsTime!B2:B1894] 2 of 50 samples (4.0%) in the speed trace imply accelerations beyond tyre grip. The worst is +30 mph in one 1000 ms sample at index 1, which is +3.5 g — no car does that, so it is a logging or data-entry artefact, not vehicle behaviour. This matters because the m*a term turns every one of those steps into a current spike and then into a thermal load. The workbook never differentiates its speed trace, so it never notices; it also therefore has no acceleration term at all, which is why its currents are low. Fix the trace, or pass smooth_window to filter it and accept that the peaks are approximate.",
+   "severity": "fail",
+   "subsystems": [
+    "dataacq",
+    "powertrain",
+    "electrics"
+   ]
+  },
+  {
+   "check": "pd-fuse-ok",
+   "detail": {},
+   "message": "Peak 50.0 A inside the 50 A fuse (100%).",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "pd-joule-heat",
+   "detail": {
+    "energy_wh": 0.1388888888888889,
+    "mean_w": 10.0
+   },
+   "message": "Joule heating averages 10 W and totals 0 Wh over 50 s. This is the number the cooling model needs, and it is a heat flow plus an energy — not the sum-of-instantaneous-watts the workbook reports.",
+   "severity": "info",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  }
+ ],
+ "disc_one_of_10": [
+  {
+   "check": "pd-speed-discontinuities",
+   "detail": {
+    "count": 1,
+    "fraction": 0.1,
+    "worst_g": 2.5
+   },
+   "message": "[SpeedVsTime!B2:B1894] 1 of 10 samples (10.0%) in the speed trace imply accelerations beyond tyre grip. The worst is +30 mph in one 1000 ms sample at index 0, which is +2.5 g — no car does that, so it is a logging or data-entry artefact, not vehicle behaviour. This matters because the m*a term turns every one of those steps into a current spike and then into a thermal load. The workbook never differentiates its speed trace, so it never notices; it also therefore has no acceleration term at all, which is why its currents are low. Fix the trace, or pass smooth_window to filter it and accept that the peaks are approximate.",
+   "severity": "fail",
+   "subsystems": [
+    "dataacq",
+    "powertrain",
+    "electrics"
+   ]
+  },
+  {
+   "check": "pd-fuse-ok",
+   "detail": {},
+   "message": "Peak 50.0 A inside the 50 A fuse (100%).",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "pd-joule-heat",
+   "detail": {
+    "energy_wh": 0.02777777777777778,
+    "mean_w": 10.0
+   },
+   "message": "Joule heating averages 10 W and totals 0 Wh over 10 s. This is the number the cooling model needs, and it is a heat flow plus an energy — not the sum-of-instantaneous-watts the workbook reports.",
+   "severity": "info",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  }
+ ],
+ "energy_mid": [
+  {
+   "check": "pd-fuse-ok",
+   "detail": {},
+   "message": "Peak 50.0 A inside the 50 A fuse (100%).",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "pd-energy-short",
+   "detail": {},
+   "message": "[BatteryPackConfig!B17,B18] The trace needs 0.80 kWh; usable energy between the workbook's own 80% and 10% SOC limits is 0.70 kWh.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "pd-joule-heat",
+   "detail": {
+    "energy_wh": 0.002777777777777778,
+    "mean_w": 10.0
+   },
+   "message": "Joule heating averages 10 W and totals 0 Wh over 1 s. This is the number the cooling model needs, and it is a heat flow plus an energy — not the sum-of-instantaneous-watts the workbook reports.",
+   "severity": "info",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  }
+ ],
+ "energy_over": [
+  {
+   "check": "pd-fuse-ok",
+   "detail": {},
+   "message": "Peak 50.0 A inside the 50 A fuse (100%).",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "pd-energy-short",
+   "detail": {},
+   "message": "[BatteryPackConfig!B17,B18] The trace needs 0.70 kWh; usable energy between the workbook's own 80% and 10% SOC limits is 0.70 kWh.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "pd-joule-heat",
+   "detail": {
+    "energy_wh": 0.002777777777777778,
+    "mean_w": 10.0
+   },
+   "message": "Joule heating averages 10 W and totals 0 Wh over 1 s. This is the number the cooling model needs, and it is a heat flow plus an energy — not the sum-of-instantaneous-watts the workbook reports.",
+   "severity": "info",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  }
+ ],
+ "fuse_eq": [
+  {
+   "check": "pd-fuse-ok",
+   "detail": {},
+   "message": "Peak 50.0 A inside the 50 A fuse (100%).",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "pd-joule-heat",
+   "detail": {
+    "energy_wh": 0.1388888888888889,
+    "mean_w": 10.0
+   },
+   "message": "Joule heating averages 10 W and totals 0 Wh over 50 s. This is the number the cooling model needs, and it is a heat flow plus an energy — not the sum-of-instantaneous-watts the workbook reports.",
+   "severity": "info",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  }
+ ],
+ "fuse_over": [
+  {
+   "check": "pd-fuse-exceeded",
+   "detail": {
+    "fuse_a": 50.0,
+    "peak_a": 50.0000001
+   },
+   "message": "[BatteryPackConfig!B1] Peak pack current 50.0 A against a 50 A fuse. Per cell that is 16.7 A across 3 parallel strings.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "pd-joule-heat",
+   "detail": {
+    "energy_wh": 0.1388888888888889,
+    "mean_w": 10.0
+   },
+   "message": "Joule heating averages 10 W and totals 0 Wh over 50 s. This is the number the cooling model needs, and it is a heat flow plus an energy — not the sum-of-instantaneous-watts the workbook reports.",
+   "severity": "info",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  }
+ ],
+ "fuse_under": [
+  {
+   "check": "pd-fuse-ok",
+   "detail": {},
+   "message": "Peak 49.0 A inside the 50 A fuse (98%).",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "pd-joule-heat",
+   "detail": {
+    "energy_wh": 0.1388888888888889,
+    "mean_w": 10.0
+   },
+   "message": "Joule heating averages 10 W and totals 0 Wh over 50 s. This is the number the cooling model needs, and it is a heat flow plus an energy — not the sum-of-instantaneous-watts the workbook reports.",
+   "severity": "info",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  }
+ ],
+ "infeasible": [
+  {
+   "check": "pd-trace-infeasible",
+   "detail": {},
+   "message": "5 of 50 samples demand more power than the pack can deliver at any current. The speed trace is not achievable with this pack; the car will not follow it regardless of motor rating.",
+   "severity": "fail",
+   "subsystems": [
+    "electrics",
+    "powertrain"
+   ]
+  },
+  {
+   "check": "pd-fuse-ok",
+   "detail": {},
+   "message": "Peak 50.0 A inside the 50 A fuse (100%).",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "pd-joule-heat",
+   "detail": {
+    "energy_wh": 0.1388888888888889,
+    "mean_w": 10.0
+   },
+   "message": "Joule heating averages 10 W and totals 0 Wh over 50 s. This is the number the cooling model needs, and it is a heat flow plus an energy — not the sum-of-instantaneous-watts the workbook reports.",
+   "severity": "info",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  }
+ ],
+ "rpm_eq": [
+  {
+   "check": "pd-fuse-ok",
+   "detail": {},
+   "message": "Peak 50.0 A inside the 50 A fuse (100%).",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "pd-joule-heat",
+   "detail": {
+    "energy_wh": 0.1388888888888889,
+    "mean_w": 10.0
+   },
+   "message": "Joule heating averages 10 W and totals 0 Wh over 50 s. This is the number the cooling model needs, and it is a heat flow plus an energy — not the sum-of-instantaneous-watts the workbook reports.",
+   "severity": "info",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  }
+ ],
+ "rpm_over": [
+  {
+   "check": "pd-fuse-ok",
+   "detail": {},
+   "message": "Peak 50.0 A inside the 50 A fuse (100%).",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "pd-joule-heat",
+   "detail": {
+    "energy_wh": 0.1388888888888889,
+    "mean_w": 10.0
+   },
+   "message": "Joule heating averages 10 W and totals 0 Wh over 50 s. This is the number the cooling model needs, and it is a heat flow plus an energy — not the sum-of-instantaneous-watts the workbook reports.",
+   "severity": "info",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  },
+  {
+   "check": "pd-overspeed",
+   "detail": {},
+   "message": "[ElecPropulsion!B9] Peak motor speed 23501 rpm at a 7:1 reduction exceeds the 23500 rpm limit.",
+   "severity": "fail",
+   "subsystems": [
+    "powertrain"
+   ]
+  }
+ ],
+ "tq_cont": [
+  {
+   "check": "pd-fuse-ok",
+   "detail": {},
+   "message": "Peak 50.0 A inside the 50 A fuse (100%).",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "pd-joule-heat",
+   "detail": {
+    "energy_wh": 0.1388888888888889,
+    "mean_w": 10.0
+   },
+   "message": "Joule heating averages 10 W and totals 0 Wh over 50 s. This is the number the cooling model needs, and it is a heat flow plus an energy — not the sum-of-instantaneous-watts the workbook reports.",
+   "severity": "info",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  }
+ ],
+ "tq_mid": [
+  {
+   "check": "pd-fuse-ok",
+   "detail": {},
+   "message": "Peak 50.0 A inside the 50 A fuse (100%).",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "pd-joule-heat",
+   "detail": {
+    "energy_wh": 0.1388888888888889,
+    "mean_w": 10.0
+   },
+   "message": "Joule heating averages 10 W and totals 0 Wh over 50 s. This is the number the cooling model needs, and it is a heat flow plus an energy — not the sum-of-instantaneous-watts the workbook reports.",
+   "severity": "info",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  },
+  {
+   "check": "pd-torque-above-continuous",
+   "detail": {
+    "required_nm": 100.0
+   },
+   "message": "Peak required torque 100 Nm is within the 120 Nm peak rating but above the 77 Nm continuous rating. Acceptable in bursts; how long a burst depends on the motor's thermal mass, which is not in the workbook.",
+   "severity": "warning",
+   "subsystems": [
+    "powertrain",
+    "cooling"
+   ]
+  }
+ ],
+ "tq_over": [
+  {
+   "check": "pd-fuse-ok",
+   "detail": {},
+   "message": "Peak 50.0 A inside the 50 A fuse (100%).",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "pd-joule-heat",
+   "detail": {
+    "energy_wh": 0.1388888888888889,
+    "mean_w": 10.0
+   },
+   "message": "Joule heating averages 10 W and totals 0 Wh over 50 s. This is the number the cooling model needs, and it is a heat flow plus an energy — not the sum-of-instantaneous-watts the workbook reports.",
+   "severity": "info",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  },
+  {
+   "check": "pd-torque-exceeded",
+   "detail": {
+    "peak_nm": 120.0,
+    "required_nm": 121.0
+   },
+   "message": "[ElecPropulsion!B1] Peak required motor torque 121 Nm at a 7:1 reduction exceeds the motor's 120 Nm peak. Gearing up is the fix — torque scales inversely with the reduction, while pack current does not change at all, because power is force times speed regardless of what gear delivers it. That last point is why the workbook's fifteen-column current sweep could never have informed a gear choice.",
+   "severity": "fail",
+   "subsystems": [
+    "powertrain"
+   ]
+  }
+ ],
+ "tq_peak": [
+  {
+   "check": "pd-fuse-ok",
+   "detail": {},
+   "message": "Peak 50.0 A inside the 50 A fuse (100%).",
+   "severity": "ok",
+   "subsystems": [
+    "electrics"
+   ]
+  },
+  {
+   "check": "pd-joule-heat",
+   "detail": {
+    "energy_wh": 0.1388888888888889,
+    "mean_w": 10.0
+   },
+   "message": "Joule heating averages 10 W and totals 0 Wh over 50 s. This is the number the cooling model needs, and it is a heat flow plus an energy — not the sum-of-instantaneous-watts the workbook reports.",
+   "severity": "info",
+   "subsystems": [
+    "cooling",
+    "electrics"
+   ]
+  },
+  {
+   "check": "pd-torque-above-continuous",
+   "detail": {
+    "required_nm": 120.0
+   },
+   "message": "Peak required torque 120 Nm is within the 120 Nm peak rating but above the 77 Nm continuous rating. Acceptable in bursts; how long a burst depends on the motor's thermal mass, which is not in the workbook.",
+   "severity": "warning",
+   "subsystems": [
+    "powertrain",
+    "cooling"
+   ]
+  }
+ ]
+}

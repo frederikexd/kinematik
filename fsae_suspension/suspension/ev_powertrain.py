@@ -57,10 +57,12 @@ mirroring `lapsim.LapResult`.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from enum import Enum
 
 import numpy as np
+from ._num import vec as _vec
 
 from .lapsim import LapSimulator, LapSimParams, Track, LapResult
 from .dynamics import VehicleDynamics
@@ -168,13 +170,13 @@ class EVRunResult:
         return EVRunResult(
             architecture=arch, ok=False,
             lap_result=LapResult.failed("ev", warnings),
-            lap_time=float("nan"), event_time=float("nan"),
-            energy_per_lap_kwh=float("nan"), regen_recovered_kwh=float("nan"),
-            energy_full_event_kwh=float("nan"), laps_until_empty=float("nan"),
-            finishes_event=False, derate_lap_time_penalty_s=float("nan"),
+            lap_time=math.nan, event_time=math.nan,
+            energy_per_lap_kwh=math.nan, regen_recovered_kwh=math.nan,
+            energy_full_event_kwh=math.nan, laps_until_empty=math.nan,
+            finishes_event=False, derate_lap_time_penalty_s=math.nan,
             tv_yaw_benefit_s=0.0,
             tv_yaw_benefit_flagged="not evaluated (run failed)",
-            effective_mass_kg=float("nan"), warnings=list(warnings),
+            effective_mass_kg=math.nan, warnings=list(warnings),
         )
 
 
@@ -234,7 +236,7 @@ class EVLapSimulator:
     def _params_for(self, arch: Powertrain) -> LapSimParams:
         """Clone base LapSimParams and apply architecture-specific mass + grip."""
         import copy
-        p = copy.deepcopy(self.base)
+        p = copy.copy(self.base)                 # every field reassigned below is a float
         try:
             p.mass = float(self.base.mass) + float(self.ev.mass_delta_kg.get(arch, 0.0))
             p.drive_grip_frac = float(self.ev.drive_grip_frac.get(arch, p.drive_grip_frac))
@@ -256,16 +258,18 @@ class EVLapSimulator:
         """
         ev = self.ev
         try:
-            v = np.asarray(lap.speed, float)
-            d = np.asarray(lap.distance, float)
-            lg = np.asarray(lap.long_g, float)
+            v = _vec(lap.speed)
+            d = _vec(lap.distance)
+            lg = _vec(lap.long_g)
             if v.size < 2:
-                return float("nan"), float("nan")
+                return math.nan, math.nan
             traction_J = 0.0
             regen_J = 0.0
             for i in range(1, v.size):
                 ds = d[i] - d[i - 1]
-                if not (np.isfinite(ds) and ds > 0):
+                if not np.isfinite(ds):
+                    continue
+                if ds <= 0:  # pragma: no mutate (a zero step adds nothing)
                     continue
                 vi = max(v[i], p.V_MIN)
                 a = lg[i] * p.g                       # m/s^2 (signed)
@@ -276,7 +280,7 @@ class EVLapSimulator:
                 # rolling resistance alone exceed, the motor still pushes against them; gating the draw on a > 0
                 # booked those stretches as free.
                 F_trac = p.mass * a + F_drag + F_roll
-                if F_trac > 0:                        # motor drives: energy at the battery = wheel work / eff
+                if F_trac > 0:  # pragma: no mutate (zero force adds nothing either way; motor drives)
                     traction_J += (F_trac * ds) / max(ev.inverter_motor_eff, 1e-3)
                 elif ev.regen_enabled:                # motor resists: regen what it can
                     # Drag and rolling resistance are NOT recoverable: they slow the car for free, so the motor
@@ -285,11 +289,11 @@ class EVLapSimulator:
                     F_regen = min(-F_trac, ev.regen_max_g * p.mass * p.g)
                     regen_J += F_regen * ds * ev.regen_eff
             kwh = 1.0 / 3.6e6
-            net = max(traction_J - (regen_J if ev.regen_enabled else 0.0), 0.0)
+            net = max(traction_J - regen_J, 0.0)        # regen_J stays 0 with regen off
             return net * kwh, regen_J * kwh
         except Exception:
             self._warn("Energy integration failed; energy values flagged NaN.")
-            return float("nan"), float("nan")
+            return math.nan, math.nan
 
     # ---- one architecture ----------------------------------------------- #
     def run_architecture(self, arch: Powertrain, track: Track) -> EVRunResult:
@@ -317,20 +321,22 @@ class EVLapSimulator:
 
             e_lap, regen = self._energy_from_trace(lap, p)
             laps = max(getattr(track, "laps", 1), 1)
-            e_event = e_lap * laps if np.isfinite(e_lap) else float("nan")
+            e_event = e_lap * laps
             usable = self.ev.pack_energy_kwh * self.ev.pack_usable_frac
 
-            if np.isfinite(e_lap) and e_lap > 1e-9:
+            if not np.isfinite(e_lap):
+                laps_until_empty = math.nan                 # unknown energy: neither empty nor finishing
+            elif e_lap > 1e-9:
                 laps_until_empty = usable / e_lap
             else:
-                laps_until_empty = float("inf")
-            finishes = np.isfinite(laps_until_empty) and laps_until_empty >= laps
+                laps_until_empty = math.inf
+            finishes = laps_until_empty >= laps          # a lap that draws nothing (inf) finishes; NaN never does
 
             # If it can't finish, estimate the lap-time penalty of derating power
             # to the energy budget. Approx: if you must cut energy by factor f,
             # power scales ~f, and on a power-limited car lap time scales ~ f^-k.
             derate_pen = 0.0
-            if not finishes and np.isfinite(e_event) and e_event > usable:
+            if not finishes and np.isfinite(e_event):  # a finite shortfall: e_event > usable
                 f = usable / e_event                  # fraction of needed energy available
                 # crude but honest: ~30% of a lap is power-limited; shedding power
                 # by (1-f) costs roughly that fraction of that portion in time.

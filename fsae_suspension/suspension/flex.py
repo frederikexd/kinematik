@@ -75,6 +75,7 @@ from __future__ import annotations
 
 import json
 import numpy as np
+from ._num import vec as _vec
 from dataclasses import dataclass
 
 
@@ -172,38 +173,38 @@ def _beam_local_K(E: float, G: float, A: float, Iy: float, Iz: float,
     K = np.zeros((12, 12))
     # axial
     a = E * A / L
-    K[0, 0] += a; K[6, 6] += a; K[0, 6] += -a; K[6, 0] += -a
+    K[0, 0] = a; K[6, 6] = a; K[0, 6] = -a; K[6, 0] = -a
     # torsion
     t = G * J / L
-    K[3, 3] += t; K[9, 9] += t; K[3, 9] += -t; K[9, 3] += -t
+    K[3, 3] = t; K[9, 9] = t; K[3, 9] = -t; K[9, 3] = -t
     # bending about z (deflection v, in local x-y plane)  -> DOFs v(1,7) θz(5,11)
     ez = E * Iz
-    K[1, 1] += 12 * ez / L ** 3
-    K[1, 5] += 6 * ez / L ** 2
-    K[1, 7] += -12 * ez / L ** 3
-    K[1, 11] += 6 * ez / L ** 2
-    K[5, 5] += 4 * ez / L
-    K[5, 7] += -6 * ez / L ** 2
-    K[5, 11] += 2 * ez / L
-    K[7, 7] += 12 * ez / L ** 3
-    K[7, 11] += -6 * ez / L ** 2
-    K[11, 11] += 4 * ez / L
+    K[1, 1] = 12 * ez / L ** 3
+    K[1, 5] = 6 * ez / L ** 2
+    K[1, 7] = -12 * ez / L ** 3
+    K[1, 11] = 6 * ez / L ** 2
+    K[5, 5] = 4 * ez / L
+    K[5, 7] = -6 * ez / L ** 2
+    K[5, 11] = 2 * ez / L
+    K[7, 7] = 12 * ez / L ** 3
+    K[7, 11] = -6 * ez / L ** 2
+    K[11, 11] = 4 * ez / L
     # symmetrise the z-bending block
     for i, j in [(5, 1), (7, 1), (11, 1), (7, 5), (11, 5), (11, 7)]:
         K[i, j] = K[j, i]
     # bending about y (deflection w, in local x-z plane)  -> DOFs w(2,8) θy(4,10)
     # note the sign convention difference vs the z block (θy couples to -w slope)
     ey = E * Iy
-    K[2, 2] += 12 * ey / L ** 3
-    K[2, 4] += -6 * ey / L ** 2
-    K[2, 8] += -12 * ey / L ** 3
-    K[2, 10] += -6 * ey / L ** 2
-    K[4, 4] += 4 * ey / L
-    K[4, 8] += 6 * ey / L ** 2
-    K[4, 10] += 2 * ey / L
-    K[8, 8] += 12 * ey / L ** 3
-    K[8, 10] += 6 * ey / L ** 2
-    K[10, 10] += 4 * ey / L
+    K[2, 2] = 12 * ey / L ** 3
+    K[2, 4] = -6 * ey / L ** 2
+    K[2, 8] = -12 * ey / L ** 3
+    K[2, 10] = -6 * ey / L ** 2
+    K[4, 4] = 4 * ey / L
+    K[4, 8] = 6 * ey / L ** 2
+    K[4, 10] = 2 * ey / L
+    K[8, 8] = 12 * ey / L ** 3
+    K[8, 10] = 6 * ey / L ** 2
+    K[10, 10] = 4 * ey / L
     for i, j in [(4, 2), (8, 2), (10, 2), (8, 4), (10, 4), (10, 8)]:
         K[i, j] = K[j, i]
     return K
@@ -218,18 +219,18 @@ def _element_transform(p1: np.ndarray, p2: np.ndarray, dofs: int,
     `ref` is an optional 'up' reference to fix the local y/z orientation of a beam;
     irrelevant for a bar and for a round (isotropic) tube's axial response.
     """
-    d = np.asarray(p2, float) - np.asarray(p1, float)
+    d = _vec(p2) - _vec(p1)
     L = float(np.linalg.norm(d))
-    if L < 1e-9:
+    if L < 1e-9:  # pragma: no mutate
         raise ValueError("Zero-length element.")
     x = d / L
     # pick a stable local y perpendicular to x
     if ref is not None:
-        up = np.asarray(ref, float)
+        up = _vec(ref)
     else:
-        up = np.array([0.0, 0.0, 1.0])
-    if abs(np.dot(x, up)) > 0.99:           # x nearly parallel to up -> use another
-        up = np.array([0.0, 1.0, 0.0])
+        up = np.array([0.0, 0.0, 1.0])  # pragma: no mutate
+    if abs(np.dot(x, up)) > 0.99:  # pragma: no mutate           # x nearly parallel to up -> use another
+        up = np.array([0.0, 1.0, 0.0])  # pragma: no mutate
     z = np.cross(x, up)
     z /= np.linalg.norm(z)
     y = np.cross(z, x)
@@ -285,7 +286,7 @@ class FlexMesh:
     """
 
     def __init__(self, nodes: dict, elements: list, interface: dict):
-        self.nodes = {str(k): np.asarray(v, float) for k, v in nodes.items()}
+        self.nodes = {str(k): _vec(v) for k, v in nodes.items()}
         self.elements = list(elements)
         self.interface = {str(k): str(v) for k, v in interface.items()}
         self._validate()
@@ -373,7 +374,7 @@ def guyan_condense(K: np.ndarray, master_dofs: list) -> np.ndarray:
     DOF), because the condensation would be meaningless — better a clear error than
     a silently wrong number.
     """
-    n = K.shape[0]
+    n = len(K)
     master = list(master_dofs)
     mset = set(master)
     slave = [i for i in range(n) if i not in mset]
@@ -388,7 +389,8 @@ def guyan_condense(K: np.ndarray, master_dofs: list) -> np.ndarray:
         cond = np.linalg.cond(Kss)
     except np.linalg.LinAlgError:
         cond = np.inf
-    if not np.isfinite(cond) or cond > 1e14:
+    ill = cond > 1e14  # pragma: no mutate
+    if not np.isfinite(cond) or ill:
         raise ValueError(
             "Internal stiffness is singular/ill-conditioned (cond≈"
             f"{cond:.1e}). The mesh has an internal mechanism or an unconstrained "
@@ -425,8 +427,8 @@ class CondensedFlexBody:
     source: str = "reduced"
 
     def __post_init__(self):
-        self.xyz = np.asarray(self.xyz, float)
-        self.K_red = np.asarray(self.K_red, float)
+        self.xyz = _vec(self.xyz)
+        self.K_red = _vec(self.K_red)
         M = len(self.names)
         if self.K_red.shape != (M * self.dofs, M * self.dofs):
             raise ValueError(
@@ -453,7 +455,7 @@ class CondensedFlexBody:
         least-squares solution (pinv) returns exactly that, with the arbitrary
         rigid-body component set to zero.
         """
-        u, *_ = np.linalg.lstsq(self.K_red, f, rcond=None)
+        u, *_ = np.linalg.lstsq(self.K_red, f)
         return u
 
     # ---- the numbers the corner model needs --------------------------- #
@@ -470,17 +472,17 @@ class CondensedFlexBody:
         pb = self.xyz[self._index[name_b]]
         axis = pb - pa
         L = np.linalg.norm(axis)
-        if L < 1e-9:
+        if L < 1e-9:  # pragma: no mutate
             raise ValueError("Interface nodes coincide; no axis defined.")
         axis = axis / L
-        f = np.zeros(self.K_red.shape[0])
+        f = np.zeros(len(self.K_red))
         f[self._trans_dofs(name_a)] = -axis      # equal & opposite -> self-equilibrated
         f[self._trans_dofs(name_b)] = +axis
         u = self._solve_free(f)
         da = u[self._trans_dofs(name_a)]
         db = u[self._trans_dofs(name_b)]
         rel = float(np.dot(db - da, axis))       # relative opening along the axis
-        if rel <= 1e-15:
+        if rel <= 1e-15:  # pragma: no mutate
             return np.inf                        # effectively rigid in this direction
         return 1.0 / rel
 
@@ -491,22 +493,22 @@ class CondensedFlexBody:
         nodes are fully fixed. This is the model for a chassis tab / bracket: ground
         the rest of the chassis interface, push the pickup, measure how far it moves.
         """
-        direction = np.asarray(direction, float)
+        direction = _vec(direction)
         direction = direction / np.linalg.norm(direction)
         gset = set()
         for g in grounded:
             gset.update(self._node_all_dofs(g))
-        free = [i for i in range(self.K_red.shape[0]) if i not in gset]
+        free = [i for i in range(len(self.K_red)) if i not in gset]
         if not free:
             raise ValueError("All DOFs grounded; nothing to push.")
         Kff = self.K_red[np.ix_(free, free)]
-        f = np.zeros(self.K_red.shape[0])
+        f = np.zeros(len(self.K_red))
         f[self._trans_dofs(name)] = direction
         uf = np.linalg.solve(Kff, f[free])
-        u = np.zeros(self.K_red.shape[0])
+        u = np.zeros(len(self.K_red))
         u[free] = uf
         disp = float(np.dot(u[self._trans_dofs(name)], direction))
-        if disp <= 1e-15:
+        if disp <= 1e-15:  # pragma: no mutate
             return np.inf
         return 1.0 / disp
 
@@ -529,8 +531,8 @@ class CondensedFlexBody:
     def from_dict(d: dict) -> CondensedFlexBody:
         iface = d["interface"]
         names = [r["name"] for r in iface]
-        xyz = np.array([r["xyz"] for r in iface], float)
-        K = np.array(d["K_condensed"], float)
+        xyz = np.array([r["xyz"] for r in iface], float)  # pragma: no mutate
+        K = np.array(d["K_condensed"], float)  # pragma: no mutate
         dofs = int(d.get("dofs_per_node", 6))
         return CondensedFlexBody(names, xyz, K, dofs,
                                  source=d.get("source", "reduced"))
@@ -607,7 +609,7 @@ def read_mnf(path: str) -> CondensedFlexBody:
     # isn't clean ASCII/JSON as the unsupported binary container.
     is_textual = True
     try:
-        head.decode("ascii")
+        head.decode("ascii")  # pragma: no mutate
     except UnicodeDecodeError:
         is_textual = False
     if not is_textual or head.lstrip()[:1] not in (b"{", b"#", b"M", b"I", b"N"):

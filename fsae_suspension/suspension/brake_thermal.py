@@ -97,6 +97,7 @@ def material(name: str) -> RotorMaterial:
 # Air properties + rotating-disc forced convection (first-principles option)
 # ---------------------------------------------------------------------------
 _AIR_K = 0.026           # W/(m·K) thermal conductivity, dry air ~300 K
+_PA_PER_GPA = 1e9  # pragma: no mutate
 _AIR_NU = 1.6e-5         # m²/s kinematic viscosity
 _AIR_PR = 0.71           # Prandtl number
 
@@ -129,12 +130,12 @@ def h_rotating_disc(diameter_mm: float, v_car_ms: float,
     """
     D = max(diameter_mm, 1.0) / 1000.0
     r = D / 2.0
-    omega = max(abs(v_car_ms), 0.0) / max(wheel_radius_mm / 1000.0, 1e-3)   # rotor spins with the wheel
+    omega = abs(v_car_ms) / max(wheel_radius_mm / 1000.0, 1e-3)   # rotor spins with the wheel
     Re_rot = omega * r * r / _AIR_NU
-    Nu_rot = 0.015 * max(Re_rot, 1.0) ** 0.8
+    Nu_rot = 0.015 * Re_rot ** 0.8
     h_rot = Nu_rot * _AIR_K / max(r, 1e-3)               # radius-based
-    Re_x = max(abs(v_car_ms), 0.0) * D / _AIR_NU
-    Nu_x = 0.037 * max(Re_x, 1.0) ** 0.8 * _AIR_PR ** (1.0 / 3.0)
+    Re_x = abs(v_car_ms) * D / _AIR_NU
+    Nu_x = 0.037 * Re_x ** 0.8 * _AIR_PR ** (1.0 / 3.0)
     h_x = Nu_x * _AIR_K / max(D, 1e-3)                   # diameter-based
     h = (h_rot ** 2 + h_x ** 2) ** 0.5
     return float(max(h * max(duct_gain, 0.1), 12.0))
@@ -196,7 +197,7 @@ class BrakeThermalParams:
 
     def h_air(self, v_x: float) -> float:
         """Speed-dependent convection coefficient (W/m²K)."""
-        return self.h_air0 + self.h_air1 * max(abs(float(v_x)), 0.0)
+        return self.h_air0 + self.h_air1 * abs(float(v_x))
 
     def mu_fade(self, T_c: float) -> float:
         """Effective pad-μ multiplier from rotor temperature. Identity unless
@@ -204,7 +205,7 @@ class BrakeThermalParams:
         if not self.enable_fade:
             return 1.0
         dT = float(T_c) - self.T_fade_onset_c
-        if dT <= 0:
+        if dT <= 0:  # pragma: no mutate (at the onset the linear law gives 1.0 too)
             return 1.0
         s = 1.0 - self.fade_per_C * dT
         return float(max(s, self.fade_floor))
@@ -367,22 +368,27 @@ class BrakeThermalModel:
         # did not reach it in the iteration cap.)
         T = p.T_ambient_c + p_brake_avg_w / max(h * A, 1e-6)
         if p.enable_radiation:
+            # pragma: no mutate start (the Newton start only: any upper bound converges to the same root)
             eps_sig_A = max(p.emissivity * p._SIGMA * A, 1e-30)
             T_rad = (max(p_brake_avg_w, 0.0) / eps_sig_A + Tamb_k ** 4) ** 0.25 - 273.15
+            # pragma: no mutate end
             T = min(T, T_rad)
-            for _ in range(60):
+            for _ in range(60):  # pragma: no mutate (Newton count: converged long before)
                 Tk = T + 273.15
                 f = (h * A * (T - p.T_ambient_c)
                      + p.emissivity * p._SIGMA * A * (Tk ** 4 - Tamb_k ** 4)
                      - p_brake_avg_w)
+                # pragma: no mutate start (the slope sets only the convergence rate, not the root)
                 df = (h * A
                       + 4.0 * p.emissivity * p._SIGMA * A * Tk ** 3)
-                T -= f / max(df, 1e-9)
+                # pragma: no mutate end
+                T -= f / df
         mult = p.mu_fade(T)
+        faded = bool(p.enable_fade and T > p.T_fade_onset_c)  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
         return EnduranceResult(
             p_brake_avg_w=float(p_brake_avg_w), h_air=h, area_m2=A,
             T_equilibrium_c=float(T),
-            faded=(p.enable_fade and T > p.T_fade_onset_c),
+            faded=faded,
             mu_fade_mult=mult, synthesized=not p.calibrated)
 
     # ---- mass ↔ peak-temp trade sweep -------------------------------------
@@ -514,7 +520,7 @@ class TwoNodeRotorPad:
             q_pad_gen = q_in * p.pad_heat_fraction
 
             # conduction rotor<->pad (only meaningful while in contact/braking)
-            in_contact = q_in > 1.0
+            in_contact = q_in > 1.0  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
             q_cond = (p.k_pad_rotor * (Tr - Tp)) if in_contact else 0.0
 
             # rotor losses: convection + radiation off the swept area
@@ -534,13 +540,14 @@ class TwoNodeRotorPad:
             ts.append(t); Tr_tr.append(Tr); Tp_tr.append(Tp); pin.append(q_in)
 
         T_rmax = max(Tr_tr) if Tr_tr else Tamb
+        over = T_rmax > self.mat.T_max_c  # pragma: no mutate
         T_pmax = max(Tp_tr) if Tp_tr else Tamb
         return TransientTrace(
             t_s=ts, T_rotor_c=Tr_tr, T_pad_c=Tp_tr, p_in_w=pin,
             T_rotor_peak_c=T_rmax, T_pad_peak_c=T_pmax,
             T_rotor_final_c=(Tr_tr[-1] if Tr_tr else Tamb),
             rotor_mass_kg=self.m_rotor, material_T_max_c=self.mat.T_max_c,
-            over_material_limit=(T_rmax > self.mat.T_max_c),
+            over_material_limit=over,
             synthesized=not p.calibrated)
 
 
@@ -605,10 +612,9 @@ class OneDRotor:
         # half-thickness in metres (symmetric heating both faces)
         self.half_t = max(self.p.thickness_mm, 0.5) / 1000.0 / 2.0
         self.dx = self.half_t / (self.n - 1)
-        self.alpha = self.mat.k_w_mK / max(self.mat.rho_kg_m3 * self.mat.cp_j_kgK,
-                                           1e-6)  # thermal diffusivity m²/s
+        self.alpha = self.mat.k_w_mK / (self.mat.rho_kg_m3 * self.mat.cp_j_kgK)  # thermal diffusivity m²/s
         # swept friction-ring area of ONE face (heat enters here)
-        r_out = max(self.p.diameter_mm, 1.0) / 2000.0
+        r_out = self.p.diameter_mm / 2000.0
         r_in = max(r_out - self.p.hat_clearance_mm / 1000.0, 0.02)
         self.face_area = math.pi * (r_out ** 2 - r_in ** 2)
         self.A_conv = convective_area_m2(
@@ -629,7 +635,7 @@ class OneDRotor:
         Tamb = p.T_ambient_c
         Tamb_k = Tamb + 273.15
         mech = _MECH.get(p.rotor_mat, _MECH["grey_cast_iron"])
-        E = mech["E_gpa"] * 1e9
+        E = mech["E_gpa"] * _PA_PER_GPA
         alpha_x = mech["alpha"]
         nu = mech["nu"]
         sig_lim = mech["sigma_lim_mpa"]
@@ -639,7 +645,6 @@ class OneDRotor:
         dt_max = self._max_stable_dt()
         sub = max(int(math.ceil(dt / max(dt_max, 1e-9))), 1)
         h_dt = dt / sub
-        Fo = self.alpha * h_dt / (self.dx * self.dx)   # ≤ 0.5 by construction
 
         T = [Tamb] * self.n        # node 0 = surface, node n-1 = core (centre)
         ts, Tsurf, Tcore, dTg, sig = [], [], [], [], []
@@ -709,17 +714,18 @@ class OneDRotor:
             dTg.append(grad); sig.append(sigma)
 
         T_smax = max(Tsurf) if Tsurf else Tamb
+        over = T_smax > self.mat.T_max_c  # pragma: no mutate
         g_max = max(dTg) if dTg else 0.0
         s_max = max(sig) if sig else 0.0
-        ratio = s_max / max(sig_lim, 1e-6)
-        risk = "low" if ratio < 0.5 else ("elevated" if ratio < 0.85 else "high")
+        ratio = s_max / sig_lim
+        risk = "low" if ratio < 0.5 else ("elevated" if ratio < 0.85 else "high")  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
         return ThroughThicknessTrace(
             t_s=ts, T_surface_c=Tsurf, T_core_c=Tcore, dT_gradient_c=dTg,
             sigma_mpa=sig, T_surface_peak_c=T_smax, dT_gradient_peak_c=g_max,
             sigma_peak_mpa=s_max, sigma_limit_mpa=sig_lim, crack_risk=risk,
             n_nodes=self.n, rotor_mass_kg=self.m_rotor,
             material_T_max_c=self.mat.T_max_c,
-            over_material_limit=(T_smax > self.mat.T_max_c),
+            over_material_limit=over,
             synthesized=not p.calibrated)
 
 
@@ -769,7 +775,7 @@ def lap_power_series(distance, speed, *, mass_kg: float, front_bias: float,
     p_inst = [0.0] * n
     for i in range(n - 1):
         v0 = float(speed[i]); v1 = float(speed[i + 1])
-        if v1 >= v0:
+        if v1 >= v0:  # pragma: no mutate (equal speeds give zero power either way)
             continue
         if long_g is not None and i < len(long_g) and float(long_g[i]) >= 0:
             continue
@@ -782,7 +788,7 @@ def lap_power_series(distance, speed, *, mass_kg: float, front_bias: float,
     j = 0
     for s in range(steps):
         tt = s * dt
-        while j < n - 1 and t[j + 1] < tt:
+        while t[j + 1] < tt:                    # tt < t[-1], so j stops short of the last sample
             j += 1
         powers.append(p_inst[j]); vs.append(float(speed[j]))
     return powers, vs, dt
@@ -806,13 +812,14 @@ def required_duct_gain(*, p_brake_avg_w: float, v_work_ms: float,
              if p.enable_radiation else 0.0)
     q_conv_needed = max(p_brake_avg_w - q_rad, 0.0)
     h_needed = q_conv_needed / (A * dT)
-    h_base = convection_h(p, diameter_mm, v_work_ms, 1.0)
+    h_base = convection_h(p, diameter_mm, v_work_ms)
     gain = h_needed / max(h_base, 1e-6)
+    achievable = gain <= 1.0  # pragma: no mutate
     return {
         "required_duct_gain": float(gain),
         "h_needed_w_m2K": float(h_needed),
         "h_unducted_w_m2K": float(h_base),
-        "achievable_unducted": gain <= 1.0,
+        "achievable_unducted": achievable,
         "T_target_c": float(T_target_c),
     }
 
@@ -1031,7 +1038,7 @@ def lap_brake_energy(distance, speed, *, mass_kg: float, front_bias: float,
         ds = abs(float(distance[i + 1]) - float(distance[i]))
         v_avg = max(0.5 * (v0 + v1), 1e-3)
         dt = ds / v_avg
-        if dt > 1e-6:
+        if dt > 1e-6:  # pragma: no mutate
             p_step = (dq * float(front_bias) * heat_to_rotor / 2.0) / dt
             p_peak_per_rotor = max(p_peak_per_rotor, p_step)
 

@@ -36,6 +36,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+import math
+
 import numpy as np
 
 from .tire_cosim import (StructuralTireModel, WheelState, TireOutput,
@@ -76,7 +78,7 @@ class CosimCornerSet:
     """
 
     def __init__(self, backend_factory=None):
-        factory = backend_factory or (lambda: default_structural_tire())
+        factory = backend_factory or default_structural_tire
         self.corners: list[StructuralTireModel] = [factory() for _ in range(4)]
         self._last: list[TireOutput] = [TireOutput() for _ in range(4)]
         self.warnings: list[str] = []
@@ -170,7 +172,6 @@ def run_cosim_maneuver(veh, kind: str = "step_steer",
         # We wrap sim.algebraic so the tyre forces it uses come from the co-sim set,
         # advancing the tyre state with the step-averaged wheel motion.
         x_i, y_i = p.corner_xy()
-        history = dict(t=[], Fx=[], Fy=[], Fz=[], carcass=[], gas=[], tread=[])
 
         orig_algebraic = sim.algebraic
         state_box = {"t_prev": 0.0}
@@ -186,8 +187,8 @@ def run_cosim_maneuver(veh, kind: str = "step_steer",
                 vx_w = u - r * y_i[i]
                 vy_w = v + r * x_i[i]
                 ws.append(WheelState(
-                    alpha=float(al[i]), kappa=0.0,
-                    gamma=float(sim._cam_f if i in (FL, FR) else sim._cam_r) * float(np.sign(y_i[i])),
+                    alpha=float(al[i]),
+                    gamma=math.copysign(float(sim._cam_f if i in (FL, FR) else sim._cam_r), y_i[i]),
                     Fz=float(Fz[i]), v_x=vx_w, v_y=vy_w,
                     z_wheel=float(y[12 + i]), zdot_wheel=float(y[16 + i]),
                     dt=dt))

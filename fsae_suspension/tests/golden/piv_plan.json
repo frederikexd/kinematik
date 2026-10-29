@@ -1,0 +1,49 @@
+{
+ "acq": "OfflinePIVRig cannot acquire: no laser/camera/seeder in this environment. The acquisition plan was written for a real rig to execute (LaVision DaVis or an equivalent double-pulse setup); capture the frame pairs there, then load them with PIVProcessor.process().",
+ "file": [
+  "piv_acquisition_plan.txt",
+  "# KinematiK PIV acquisition plan\nPIV acquisition: xz-plane @ y=0.000 m (sheet 1.0 mm) @ roll=+0.0 pitch=+0.0 yaw=+0.0 h=30mm V=20; 50 pulse-pairs, dt=10 us, 0.100 mm/px, 2.0 um mist, 24px windows.\n\nplane.orientation : xz\nplane.offset_m    : 0.0\nplane.thickness_mm: 1.0\nattitude          : roll=+0.0 pitch=+0.0 yaw=+0.0 h=30mm V=20\ndt_us             : 10.0\nmagnification     : 0.0001 m/px\nn_pairs           : 50\nparticle_um       : 2.0\nwindow_px         : 24\nfreestream_ms     : 30.0\n",
+  "offline-piv-rig"
+ ],
+ "proto": true,
+ "prov": [
+  {
+   "camera_fps": null,
+   "dt_us": 25.0,
+   "facility": "T1",
+   "freestream_ms": 20.0,
+   "ground_state": "moving-belt",
+   "laser": "Nd:YAG double-pulse",
+   "magnification_m_per_px": 8e-05,
+   "notes": "",
+   "particle_diameter_um": 1.0,
+   "plane": {
+    "offset_m": 0.02,
+    "orientation": "xy",
+    "thickness_mm": 1.0
+   },
+   "window_px": 32
+  },
+  {
+   "camera_fps": null,
+   "dt_us": 10.0,
+   "facility": "T2",
+   "freestream_ms": 30.0,
+   "ground_state": "fixed-floor",
+   "laser": "Nd:YAG double-pulse",
+   "magnification_m_per_px": 0.0001,
+   "notes": "note",
+   "particle_diameter_um": 2.0,
+   "plane": {
+    "offset_m": 0.0,
+    "orientation": "xz",
+    "thickness_mm": 1.0
+   },
+   "window_px": 24
+  }
+ ],
+ "text": [
+  "PIV acquisition: xy-plane @ z=0.020 m (sheet 1.0 mm) @ roll=+0.0 pitch=+1.0 yaw=+0.0 h=30mm V=20; 100 pulse-pairs, dt=25 us, 0.080 mm/px, 1.0 um mist, 32px windows.",
+  "PIV acquisition: xz-plane @ y=0.000 m (sheet 1.0 mm) @ roll=+0.0 pitch=+0.0 yaw=+0.0 h=30mm V=20; 50 pulse-pairs, dt=10 us, 0.100 mm/px, 2.0 um mist, 24px windows."
+ ]
+}

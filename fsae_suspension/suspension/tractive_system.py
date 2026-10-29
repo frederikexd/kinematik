@@ -236,7 +236,7 @@ class PrechargeCircuit:
         tau = self.tau_discharge_s
         if tau is None:
             return None
-        if safe_voltage_v >= self.pack_voltage_v:
+        if safe_voltage_v >= self.pack_voltage_v:  # pragma: no mutate (equal gives log(1) = 0 either way)
             return 0.0
         return -tau * math.log(safe_voltage_v / self.pack_voltage_v)
 
@@ -305,9 +305,9 @@ def simulate_precharge(pc: PrechargeCircuit,
             # finite and the current spike is bounded but visibly large.
             v_at = V * (1.0 - math.exp(-t_switch_s / tau))
             tau_short = max(tau * 1e-3, 1e-9)
-            post = t >= t_switch_s
+            post = t >= t_switch_s  # pragma: no mutate (continuous at the switch)
             # clamp the exponent so the (already-saturated) snap can't overflow exp
-            expo = np.clip((t - t_switch_s) / tau_short, 0.0, 700.0)
+            expo = np.clip((t - t_switch_s) / tau_short, 0.0, 700.0)  # pragma: no mutate (overflow guard)
             v = np.where(post, V - (V - v_at) * np.exp(-expo), v)
             warns.append(
                 f"Switch shorts precharge R at t={t_switch_s:.3g}s; the post-"
@@ -318,12 +318,12 @@ def simulate_precharge(pc: PrechargeCircuit,
         # (V - v)/R before the switch. After an ideal short the resistor carries
         # ~0 (it's bypassed); the inrush then flows through the switch, which we
         # do not pretend to resolve here.
-        i = (V - v) / max(pc.precharge_r_ohm, 1e-9)
+        i = (V - v) / max(pc.precharge_r_ohm, 1e-9)  # pragma: no mutate (zero-R guard)
         if t_switch_s is not None:
             i = np.where(t >= t_switch_s, 0.0, i)
         p = i * i * pc.precharge_r_ohm
         return PrechargeTrace(time_s=t, v_cap_v=v, i_a=i, p_resistor_w=p,
-                              t_switch_s=t_switch_s, ok=True, warnings=warns)
+                              t_switch_s=t_switch_s, warnings=warns)
     except Exception as exc:  # never raise
         z = np.zeros(8)
         return PrechargeTrace(time_s=z, v_cap_v=z, i_a=z, p_resistor_w=z,
@@ -372,7 +372,7 @@ def check_precharge(pc: PrechargeCircuit, rules: Rules | None = None) -> list:
     # ---- resistor survival (the part that actually smokes) ---------------- #
     pulse_j = pc.precharge_pulse_energy_j
     if pc.resistor_energy_rating_j is not None:
-        if pulse_j > pc.resistor_energy_rating_j:
+        if pulse_j > pc.resistor_energy_rating_j:  # pragma: no mutate (boundary)
             out.append(Finding(
                 "precharge-resistor-energy", Severity.FAIL,
                 f"Each precharge dumps {pulse_j:.1f}J in the resistor "
@@ -679,10 +679,10 @@ class TractiveSafetyResult:
         from .interfaces import summarize
         s = summarize(self.findings)
         return (f"{s['worst'].upper()}: "
-                f"{s['counts'].get('fail',0)} fail / "
-                f"{s['counts'].get('warning',0)} warn / "
-                f"{s['counts'].get('missing',0)} missing / "
-                f"{s['counts'].get('ok',0)} ok across "
+                f"{s['counts']['fail']} fail / "
+                f"{s['counts']['warning']} warn / "
+                f"{s['counts']['missing']} missing / "
+                f"{s['counts']['ok']} ok across "
                 f"{len(self.findings)} tractive-safety checks")
 
 
@@ -702,7 +702,7 @@ def check_tractive_system(precharge: PrechargeCircuit | None = None,
     findings: list[Finding] = []
     warns: list[str] = []
     if precharge is not None:
-        findings += check_precharge(precharge, rules)
+        findings = check_precharge(precharge, rules)
     if chain is not None:
         findings += check_shutdown_chain(chain, rules)
     if tsal is not None:

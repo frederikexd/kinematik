@@ -86,6 +86,7 @@ Self-test: ``python3 -m suspension.kinematik_stochastic``
 from __future__ import annotations
 
 import numpy as np
+from ._num import vec as _vec
 from dataclasses import dataclass, field as _dcfield
 
 from .kinematics import Hardpoints, SuspensionKinematics
@@ -160,12 +161,12 @@ def metrics_of(hp: Hardpoints, travel_mm: float = 25.0,
 def _perturbed(hp: Hardpoints, offsets: dict[str, np.ndarray]) -> Hardpoints:
     """A copy of hp with each named point shifted by its 3-vector offset."""
     new = hp.copy() if hasattr(hp, "copy") else Hardpoints(**{
-        k: (np.asarray(v, float).copy() if isinstance(v, np.ndarray) else v)
+        k: (_vec(v).copy() if isinstance(v, np.ndarray) else v)
         for k, v in hp.__dict__.items()})
     for name, off in offsets.items():
         cur = getattr(new, name, None)
         if cur is not None:
-            setattr(new, name, np.asarray(cur, float) + np.asarray(off, float))
+            setattr(new, name, _vec(cur) + _vec(off))
     return new
 
 
@@ -186,8 +187,8 @@ class ToleranceSpec:
     dist: str = "uniform"
 
     def __post_init__(self):
-        self.lo = np.asarray(self.lo, float).reshape(3)
-        self.hi = np.asarray(self.hi, float).reshape(3)
+        self.lo = _vec(self.lo).reshape(3)
+        self.hi = _vec(self.hi).reshape(3)
         if np.any(self.hi < self.lo):
             raise ValueError("ToleranceSpec: hi < lo on some axis.")
         if self.dist not in ("uniform", "normal"):
@@ -293,11 +294,11 @@ class ToleranceField:
         """
         specs = {}
         for p, sp in self.specs.items():
-            d = np.asarray(offsets.get(p, np.zeros(3)), float).reshape(3)
+            d = _vec(offsets.get(p, np.zeros(3))).reshape(3)
             specs[p] = ToleranceSpec(sp.lo + d, sp.hi + d, sp.dist)
         for p in offsets:
             if p not in specs:
-                d = np.asarray(offsets[p], float).reshape(3)
+                d = _vec(offsets[p]).reshape(3)
                 specs[p] = ToleranceSpec(d.copy(), d.copy())
         return ToleranceField(specs, provenance=provenance or (
             self.provenance + " + systematic offsets"),
@@ -403,7 +404,7 @@ class ToleranceField:
         order = sorted(self.specs)
         add = np.zeros(3 * len(order))
         for c in self.clusters:
-            v = np.asarray(getattr(c.spec, attr), float)
+            v = _vec(getattr(c.spec, attr))
             for p in c.points:
                 j = 3 * order.index(p)
                 add[j:j + 3] += v
@@ -562,7 +563,7 @@ def stochastic_sweep(hp: Hardpoints, fld: ToleranceField,
         raise ValueError(f"mode must be 'linear' or 'full', got '{mode}'.")
 
     sens = sens or sensitivity(hp, fld)
-    tgt = sens.nominal if target is None else np.asarray(target, float)
+    tgt = sens.nominal if target is None else _vec(target)
     shift0 = sens.nominal - tgt                     # nominal's own offset from
     samples = fld.sample(n, seed=seed)              # the judged target (n, nc)
     bias = sens.J @ fld.mean_vec() + shift0
@@ -792,7 +793,7 @@ class Adjuster:
             d = np.zeros(3)
             d[{"x": 0, "y": 1, "z": 2}[self.axis]] = 1.0
             return d
-        d = np.asarray(self.axis, float).reshape(3)
+        d = _vec(self.axis).reshape(3)
         n = np.linalg.norm(d)
         if n < 1e-12:
             raise ValueError("Adjuster axis has zero length.")
@@ -856,7 +857,7 @@ def alignment_prescription(hp_nominal: Hardpoints,
     m_nom, ok0 = metrics_of(hp_nominal)
     if not ok0:
         raise ValueError("Nominal geometry does not solve.")
-    shifts = {k: np.asarray(v, float) - np.asarray(getattr(hp_nominal, k), float)
+    shifts = {k: _vec(v) - _vec(getattr(hp_nominal, k))
               for k, v in as_built.items()}
     # ---- plausibility gate (the Saboteur lesson): a measured point tens of
     # millimetres from nominal is not a weld error, it is a units slip
@@ -1044,7 +1045,7 @@ if __name__ == "__main__":   # pragma: no cover
 
     print("=== metrology feedback: FL upper tab pulled 1.4 mm aft ===")
     as_built = {"upper_front_inner":
-                np.asarray(hp.upper_front_inner, float) + np.array([1.4, 0, 0])}
+                _vec(hp.upper_front_inner) + np.array([1.4, 0, 0])}
     rx = alignment_prescription(
         hp, as_built,
         adjusters=[Adjuster("tie_rod_inner", "z", -3, 3, 0.25,

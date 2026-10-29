@@ -5,6 +5,7 @@
 Most claims here are about energy and thermal physics that hold regardless of
 the specific rotor, with honest pointers to the brake_thermal model for sizing."""
 from __future__ import annotations
+import math
 from typing import Any
 from ..mythbuster import CheckOutcome, ParsedClaim, Rule, Verdict, register
 
@@ -136,7 +137,7 @@ def _r_throttle_identical_backup(claim: ParsedClaim, context: Any) -> CheckOutco
     if rr is not None:
         v = str(getattr(rr, "verdict", "")).upper()
         worst = getattr(rr, "worst_case", "")
-        margin = getattr(rr, "worst_margin", float("nan"))
+        margin = getattr(rr, "worst_margin", math.nan)
         if v == "FAIL":
             return CheckOutcome(
                 Verdict.MYTH,

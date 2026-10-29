@@ -37,6 +37,7 @@ from dataclasses import dataclass, field
 from collections.abc import Sequence
 
 import numpy as np
+from ._num import vec as _vec
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -600,7 +601,7 @@ def resample_profile(values: Sequence[float], n: int) -> np.ndarray:
     display detail, it is the domain of every downstream formula, and leaving
     part of it blank zeroes the sheets that read it.
     """
-    src = np.asarray(values, dtype=float)
+    src = _vec(values)
     if n <= 0:
         return np.array([], dtype=float)
     if src.size == 0:
@@ -1162,7 +1163,7 @@ def lap_to_excel_roundtrip_from_db(
     `gear` overrides the stored selector; `vehicle` takes vehicle_mass_kg,
     drag_cda, crr, rho_air and drivetrain_eff for the road load.
     """
-    v_ms  = np.asarray(speed_ms, dtype=float)
+    v_ms  = _vec(speed_ms)
     t_arr = np.asarray(time_s,   dtype=float)
     if len(v_ms) < 2:
         return ExcelRoundTripResult(ok=False, error="Need ≥2 speed points.")
@@ -1630,7 +1631,7 @@ def lap_to_excel_roundtrip(
     except ImportError:
         return ExcelRoundTripResult(ok=False, error="openpyxl not installed.")
 
-    v_ms  = np.asarray(speed_ms, dtype=float)
+    v_ms  = _vec(speed_ms)
     t_arr = np.asarray(time_s,   dtype=float)
     if len(v_ms) < 2:
         return ExcelRoundTripResult(ok=False, error="Need ≥2 speed points.")

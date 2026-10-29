@@ -71,6 +71,7 @@ import math
 from dataclasses import dataclass, field, asdict
 
 import numpy as np
+from ._num import vec as _vec
 
 
 # --------------------------------------------------------------------------- #
@@ -249,8 +250,8 @@ def equivalency_check(candidate: TubeSpec, member_class: str,
                                      "harness_attachment"))
              else MIN_WALL_OTHER_MM)
 
-    ei_ratio = candidate.EI_Nmm2 / base.EI_Nmm2 if base.EI_Nmm2 else float("inf")
-    s_ratio = candidate.S_mm3 / base.S_mm3 if base.S_mm3 else float("inf")
+    ei_ratio = candidate.EI_Nmm2 / base.EI_Nmm2 if base.EI_Nmm2 else math.inf
+    s_ratio = candidate.S_mm3 / base.S_mm3 if base.S_mm3 else math.inf
     wall_ok = candidate.wall_mm >= floor - 1e-9
     passes = ei_ratio >= 1.0 - 1e-9 and s_ratio >= 1.0 - 1e-9 and wall_ok
 
@@ -332,7 +333,7 @@ class FrameGraph:
 
     # ---- geometry --------------------------------------------------------- #
     def p(self, nid: str) -> np.ndarray:
-        return np.asarray(self.nodes[nid].xyz_mm, float)
+        return _vec(self.nodes[nid].xyz_mm)
 
     def length_mm(self, tube: FrameTube) -> float:
         return float(np.linalg.norm(self.p(tube.b) - self.p(tube.a)))
@@ -591,7 +592,7 @@ class FrameGraph:
                 break
             for v in adj[u]:
                 nd = d + float(np.linalg.norm(self.p(v) - self.p(u)))
-                if nd < dist.get(v, float("inf")):
+                if nd < dist.get(v, math.inf):
                     dist[v] = nd
                     prev[v] = u
                     heapq.heappush(pq, (nd, v))
@@ -747,7 +748,7 @@ class FrameGraph:
         spec = self.spec_of(tube)
         L = self.length_mm(tube)
         if L <= 0:
-            return float("inf")
+            return math.inf
         return math.pi ** 2 * spec.EI_Nmm2 / (L ** 2) / 1000.0
 
     def tube_table(self) -> list[dict]:
@@ -978,18 +979,18 @@ def plan_panel_attachment(kind: str, width_mm: float, height_mm: float,
         max_pitch = (384.0 * mat.E_MPa * I_per_mm * limit
                      / (5.0 * q_per_mm)) ** 0.25
     else:
-        max_pitch = float("inf")
+        max_pitch = math.inf
 
     # fastener screening — tension governs bodywork under suction/pressure;
     # use the smaller of shear/tension capacity for a direction-agnostic screen
     options = []
     for opt in FASTENER_OPTIONS:
         cap = min(opt["shear_N"], opt["tension_N"])
-        fos = cap / per_fastener if per_fastener > 0 else float("inf")
+        fos = cap / per_fastener if per_fastener > 0 else math.inf
         options.append({
             **opt,
             "capacity_N": cap,
-            "fos": round(fos, 2) if math.isfinite(fos) else float("inf"),
+            "fos": round(fos, 2) if math.isfinite(fos) else math.inf,
             "ok": fos >= fos_target,
             "capacity_is_judgement": True,
         })
@@ -1096,7 +1097,7 @@ def seat_mount_check(seat_mass_kg: float, driver_mass_kg: float,
     rows = []
     for o in FASTENER_OPTIONS:
         cap = min(o["shear_N"], o["tension_N"])
-        fos = cap / per_mount if per_mount > 0 else float("inf")
+        fos = cap / per_mount if per_mount > 0 else math.inf
         rows.append({**o, "capacity_N": cap, "fos": round(fos, 2),
                      "ok": fos >= fos_target})
     chosen = next((r for r in rows if r["name"] == fastener), None)

@@ -1,0 +1,113 @@
+{
+ "base": [
+  0.0011049723756906076,
+  0.005555555555555556,
+  0.0011049723756906076,
+  3.9999999999999996,
+  false,
+  true,
+  true,
+  "tunnel [xz-plane @ y=0.000 m (sheet 1.0 mm)], Nd:YAG double-pulse, dt=20 us, 0.100 mm/px, 1.0 um mist (good tracer, St=0.00), moving-belt floor — WARNING: freestream shift 4.0 px outside the 4-16 px window-quarter band at dt=20 us; retune Δt before trusting vectors"
+ ],
+ "edge_hi": [
+  0.0011049723756906076,
+  0.005555555555555556,
+  0.0011049723756906076,
+  15.999999999999998,
+  true,
+  true,
+  true,
+  "tunnel [xz-plane @ y=0.000 m (sheet 1.0 mm)], Nd:YAG double-pulse, dt=80 us, 0.100 mm/px, 1.0 um mist (good tracer, St=0.00), moving-belt floor"
+ ],
+ "edge_lo": [
+  0.0011049723756906076,
+  0.005555555555555556,
+  0.0011049723756906076,
+  0.39999999999999997,
+  false,
+  true,
+  true,
+  "tunnel [xz-plane @ y=0.000 m (sheet 1.0 mm)], Nd:YAG double-pulse, dt=20 us, 1.000 mm/px, 1.0 um mist (good tracer, St=0.00), moving-belt floor — WARNING: freestream shift 0.4 px outside the 4-16 px window-quarter band at dt=20 us; retune Δt before trusting vectors"
+ ],
+ "fast": [
+  0.0011049723756906076,
+  0.005555555555555556,
+  0.0011049723756906076,
+  40.0,
+  false,
+  true,
+  true,
+  "tunnel [xz-plane @ y=0.000 m (sheet 1.0 mm)], Nd:YAG double-pulse, dt=200 us, 0.100 mm/px, 1.0 um mist (good tracer, St=0.00), moving-belt floor — WARNING: freestream shift 40.0 px outside the 4-16 px window-quarter band at dt=200 us; retune Δt before trusting vectors"
+ ],
+ "fixed": [
+  0.0011049723756906076,
+  0.005555555555555556,
+  0.0011049723756906076,
+  3.9999999999999996,
+  true,
+  true,
+  true,
+  "tunnel [xz-plane @ y=0.000 m (sheet 1.0 mm)], LED, dt=20 us, 0.100 mm/px, 1.0 um mist (good tracer, St=0.00), fixed-floor floor — WARNING: fixed/suction floor grows a wrong wall boundary layer; the measured underbody field is not ground-effect-true"
+ ],
+ "heavy": [
+  0.15911602209944753,
+  0.8,
+  0.15911602209944753,
+  3.9999999999999996,
+  false,
+  false,
+  false,
+  "tunnel [xz-plane @ y=0.000 m (sheet 1.0 mm)], Nd:YAG double-pulse, dt=20 us, 0.100 mm/px, 12.0 um mist (HEAVY tracer, St=0.16), moving-belt floor — WARNING: St=0.16 >= 0.1; 12.0 um mist lags the flow and will round off separation/shear layers — WARNING: freestream shift 4.0 px outside the 4-16 px window-quarter band at dt=20 us; retune Δt before trusting vectors"
+ ],
+ "planes": [
+  [
+   [
+    "x",
+    "z"
+   ],
+   "y",
+   "xz-plane @ y=0.000 m (sheet 1.0 mm)"
+  ],
+  [
+   [
+    "x",
+    "y"
+   ],
+   "z",
+   "xy-plane @ z=0.050 m (sheet 2.0 mm)"
+  ],
+  [
+   [
+    "y",
+    "z"
+   ],
+   "x",
+   "yz-plane @ x=-0.300 m (sheet 1.0 mm)"
+  ]
+ ],
+ "slow": [
+  0.0011049723756906076,
+  0.005555555555555556,
+  0.0011049723756906076,
+  0.19999999999999998,
+  false,
+  true,
+  true,
+  "tunnel [xz-plane @ y=0.000 m (sheet 1.0 mm)], Nd:YAG double-pulse, dt=1 us, 0.100 mm/px, 1.0 um mist (good tracer, St=0.00), moving-belt floor — WARNING: freestream shift 0.2 px outside the 4-16 px window-quarter band at dt=1 us; retune Δt before trusting vectors"
+ ],
+ "st_edge": [
+  0.00994475138121547,
+  true,
+  false
+ ],
+ "zero": [
+  5.524861878453037e-11,
+  2.7777777777777777e-10,
+  5.524861878453037e-11,
+  0.0,
+  false,
+  true,
+  true,
+  "tunnel [xz-plane @ y=0.000 m (sheet 1.0 mm)], Nd:YAG double-pulse, dt=0 us, 0.000 mm/px, 1.0 um mist (good tracer, St=0.00), moving-belt floor — WARNING: freestream shift 0.0 px outside the 4-16 px window-quarter band at dt=0 us; retune Δt before trusting vectors"
+ ]
+}

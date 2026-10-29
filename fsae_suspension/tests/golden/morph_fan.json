@@ -1,0 +1,908 @@
+{
+ "case": {
+  "F_N": 1234.6,
+  "angle_deg": -70.0,
+  "n_instants": 7,
+  "t_hi_ms": 456.7,
+  "t_lo_ms": 12.3,
+  "weight": 0.333
+ },
+ "empty": {
+  "cases": [],
+  "e1": [
+   1.0,
+   0.0,
+   0.0
+  ],
+  "e2": [
+   0.0,
+   1.0,
+   0.0
+  ],
+  "inplane_share": 0.0,
+  "member": "LF",
+  "n_instants": 0,
+  "normal": [
+   0.0,
+   0.0,
+   1.0
+  ],
+  "peak_F_N": 0.0,
+  "reversal_share": 0.0,
+  "span_deg": 0.0,
+  "warnings": [
+   "the audit carries no usable force history for this member — nothing to grow a topology from."
+  ]
+ },
+ "fan_ok": [
+  false,
+  true,
+  false
+ ],
+ "hp_outer": {
+  "cases": [
+   {
+    "F_N": 900.0,
+    "angle_deg": 0.0,
+    "n_instants": 2,
+    "t_hi_ms": 100.0,
+    "t_lo_ms": 0.0,
+    "weight": 1.0
+   }
+  ],
+  "inplane_share": 1.0,
+  "member": "LF",
+  "n_instants": 2,
+  "peak_F_N": 900.0,
+  "reversal_share": 0.0,
+  "span_deg": 0.0,
+  "warnings": []
+ },
+ "lf": {
+  "cases": [
+   {
+    "F_N": 2800.0,
+    "angle_deg": -9.7,
+    "n_instants": 2,
+    "t_hi_ms": 60.0,
+    "t_lo_ms": 50.0,
+    "weight": 0.398
+   },
+   {
+    "F_N": 1900.0,
+    "angle_deg": 21.8,
+    "n_instants": 2,
+    "t_hi_ms": 30.0,
+    "t_lo_ms": 20.0,
+    "weight": 0.263
+   },
+   {
+    "F_N": 1300.0,
+    "angle_deg": 42.2,
+    "n_instants": 2,
+    "t_hi_ms": 10.0,
+    "t_lo_ms": 0.0,
+    "weight": 0.173
+   },
+   {
+    "F_N": 2200.0,
+    "angle_deg": 5.9,
+    "n_instants": 1,
+    "t_hi_ms": 40.0,
+    "t_lo_ms": 40.0,
+    "weight": 0.165
+   }
+  ],
+  "inplane_share": 1.0,
+  "member": "LF",
+  "n_instants": 7,
+  "peak_F_N": 2800.0,
+  "reversal_share": 0.0,
+  "span_deg": 51.9,
+  "warnings": []
+ },
+ "lf_1": {
+  "cases": [
+   {
+    "F_N": 2800.0,
+    "angle_deg": 4.8,
+    "n_instants": 7,
+    "t_hi_ms": 60.0,
+    "t_lo_ms": 0.0,
+    "weight": 1.0
+   }
+  ],
+  "inplane_share": 1.0,
+  "member": "LF",
+  "n_instants": 7,
+  "peak_F_N": 2800.0,
+  "reversal_share": 0.0,
+  "span_deg": 0.0,
+  "warnings": []
+ },
+ "lf_20": {
+  "cases": [
+   {
+    "F_N": 2800.0,
+    "angle_deg": -13.7,
+    "n_instants": 1,
+    "t_hi_ms": 60.0,
+    "t_lo_ms": 60.0,
+    "weight": 0.211
+   },
+   {
+    "F_N": 2500.0,
+    "angle_deg": -4.6,
+    "n_instants": 1,
+    "t_hi_ms": 50.0,
+    "t_lo_ms": 50.0,
+    "weight": 0.188
+   },
+   {
+    "F_N": 2200.0,
+    "angle_deg": 5.9,
+    "n_instants": 1,
+    "t_hi_ms": 40.0,
+    "t_lo_ms": 40.0,
+    "weight": 0.165
+   },
+   {
+    "F_N": 1900.0,
+    "angle_deg": 17.1,
+    "n_instants": 1,
+    "t_hi_ms": 30.0,
+    "t_lo_ms": 30.0,
+    "weight": 0.143
+   },
+   {
+    "F_N": 1600.0,
+    "angle_deg": 28.4,
+    "n_instants": 1,
+    "t_hi_ms": 20.0,
+    "t_lo_ms": 20.0,
+    "weight": 0.12
+   },
+   {
+    "F_N": 1300.0,
+    "angle_deg": 38.8,
+    "n_instants": 1,
+    "t_hi_ms": 10.0,
+    "t_lo_ms": 10.0,
+    "weight": 0.098
+   },
+   {
+    "F_N": 1000.0,
+    "angle_deg": 48.0,
+    "n_instants": 1,
+    "t_hi_ms": 0.0,
+    "t_lo_ms": 0.0,
+    "weight": 0.075
+   }
+  ],
+  "inplane_share": 1.0,
+  "member": "LF",
+  "n_instants": 7,
+  "peak_F_N": 2800.0,
+  "reversal_share": 0.0,
+  "span_deg": 61.7,
+  "warnings": []
+ },
+ "lf_8": {
+  "cases": [
+   {
+    "F_N": 2800.0,
+    "angle_deg": -13.7,
+    "n_instants": 1,
+    "t_hi_ms": 60.0,
+    "t_lo_ms": 60.0,
+    "weight": 0.211
+   },
+   {
+    "F_N": 2500.0,
+    "angle_deg": -4.6,
+    "n_instants": 1,
+    "t_hi_ms": 50.0,
+    "t_lo_ms": 50.0,
+    "weight": 0.188
+   },
+   {
+    "F_N": 2200.0,
+    "angle_deg": 5.9,
+    "n_instants": 1,
+    "t_hi_ms": 40.0,
+    "t_lo_ms": 40.0,
+    "weight": 0.165
+   },
+   {
+    "F_N": 1900.0,
+    "angle_deg": 17.1,
+    "n_instants": 1,
+    "t_hi_ms": 30.0,
+    "t_lo_ms": 30.0,
+    "weight": 0.143
+   },
+   {
+    "F_N": 1600.0,
+    "angle_deg": 28.4,
+    "n_instants": 1,
+    "t_hi_ms": 20.0,
+    "t_lo_ms": 20.0,
+    "weight": 0.12
+   },
+   {
+    "F_N": 1300.0,
+    "angle_deg": 38.8,
+    "n_instants": 1,
+    "t_hi_ms": 10.0,
+    "t_lo_ms": 10.0,
+    "weight": 0.098
+   },
+   {
+    "F_N": 1000.0,
+    "angle_deg": 48.0,
+    "n_instants": 1,
+    "t_hi_ms": 0.0,
+    "t_lo_ms": 0.0,
+    "weight": 0.075
+   }
+  ],
+  "inplane_share": 1.0,
+  "member": "LF",
+  "n_instants": 7,
+  "peak_F_N": 2800.0,
+  "reversal_share": 0.0,
+  "span_deg": 61.7,
+  "warnings": []
+ },
+ "lf_full": {
+  "cases": [
+   {
+    "F_N": 2799.9999999999995,
+    "angle_deg": -5.697218710566892,
+    "dir2": [
+     0.9950603900335053,
+     -0.09927144698435797
+    ],
+    "n_instants": 3,
+    "t_hi_s": 0.06,
+    "t_lo_s": 0.04,
+    "weight": 0.5639097744360902
+   },
+   {
+    "F_N": 1899.9999999999995,
+    "angle_deg": 27.968114161588083,
+    "dir2": [
+     0.8832087230825737,
+     0.4689801184174546
+    ],
+    "n_instants": 4,
+    "t_hi_s": 0.03,
+    "t_lo_s": 0.0,
+    "weight": 0.4360902255639098
+   }
+  ],
+  "e1": [
+   0.09509102469368029,
+   0.9509102469368018,
+   0.2944951600507147
+  ],
+  "e2": [
+   0.029303363658730548,
+   0.29303363658730414,
+   -0.9556529708564213
+  ],
+  "inplane_share": 0.9999999999999999,
+  "member": "LF",
+  "n_instants": 7,
+  "normal": [
+   -0.9950371902099889,
+   0.09950371902099904,
+   -9.71445146547012e-17
+  ],
+  "peak_F_N": 2799.9999999999995,
+  "reversal_share": 0.0,
+  "span_deg": 33.66533287215498,
+  "warnings": []
+ },
+ "m_LR": {
+  "cases": [
+   {
+    "F_N": 800.0,
+    "angle_deg": -180.0,
+    "n_instants": 3,
+    "t_hi_ms": 20.0,
+    "t_lo_ms": 0.0,
+    "weight": 1.0
+   }
+  ],
+  "inplane_share": 1.0,
+  "member": "LR",
+  "n_instants": 3,
+  "peak_F_N": 800.0,
+  "reversal_share": 0.0,
+  "span_deg": 0.0,
+  "warnings": []
+ },
+ "m_TR": {
+  "cases": [
+   {
+    "F_N": 800.0,
+    "angle_deg": 180.0,
+    "n_instants": 3,
+    "t_hi_ms": 20.0,
+    "t_lo_ms": 0.0,
+    "weight": 1.0
+   }
+  ],
+  "inplane_share": 1.0,
+  "member": "TR",
+  "n_instants": 3,
+  "peak_F_N": 800.0,
+  "reversal_share": 0.0,
+  "span_deg": 0.0,
+  "warnings": []
+ },
+ "m_UF": {
+  "cases": [
+   {
+    "F_N": 800.0,
+    "angle_deg": 0.0,
+    "n_instants": 3,
+    "t_hi_ms": 20.0,
+    "t_lo_ms": 0.0,
+    "weight": 1.0
+   }
+  ],
+  "inplane_share": 1.0,
+  "member": "UF",
+  "n_instants": 3,
+  "peak_F_N": 800.0,
+  "reversal_share": 0.0,
+  "span_deg": 0.0,
+  "warnings": []
+ },
+ "m_UR": {
+  "cases": [
+   {
+    "F_N": 800.0,
+    "angle_deg": -180.0,
+    "n_instants": 3,
+    "t_hi_ms": 20.0,
+    "t_lo_ms": 0.0,
+    "weight": 1.0
+   }
+  ],
+  "inplane_share": 1.0,
+  "member": "UR",
+  "n_instants": 3,
+  "peak_F_N": 800.0,
+  "reversal_share": 0.0,
+  "span_deg": 0.0,
+  "warnings": []
+ },
+ "negligible": {
+  "cases": [],
+  "e1": [
+   0.0,
+   1.0,
+   0.0
+  ],
+  "e2": [
+   0.0,
+   0.0,
+   1.0
+  ],
+  "inplane_share": 0.0,
+  "member": "LF",
+  "n_instants": 1,
+  "normal": [
+   1.0,
+   0.0,
+   0.0
+  ],
+  "peak_F_N": 1000.0,
+  "reversal_share": 0.0,
+  "span_deg": 0.0,
+  "warnings": [
+   "only 0% of the load exposure lies in the bracket plane — this member's fan is genuinely 3D; the plate answer under-represents it (consider a different plane or a gusseted design).",
+   "every instant's in-plane force is negligible."
+  ]
+ },
+ "no_outer": {
+  "cases": [],
+  "e1": [
+   1.0,
+   0.0,
+   0.0
+  ],
+  "e2": [
+   0.0,
+   1.0,
+   0.0
+  ],
+  "inplane_share": 0.0,
+  "member": "LF",
+  "n_instants": 0,
+  "normal": [
+   0.0,
+   0.0,
+   1.0
+  ],
+  "peak_F_N": 0.0,
+  "reversal_share": 0.0,
+  "span_deg": 0.0,
+  "warnings": [
+   "the audit carries no usable force history for this member — nothing to grow a topology from."
+  ]
+ },
+ "noattr": {
+  "cases": [],
+  "e1": [
+   1.0,
+   0.0,
+   0.0
+  ],
+  "e2": [
+   0.0,
+   1.0,
+   0.0
+  ],
+  "inplane_share": 0.0,
+  "member": "UF",
+  "n_instants": 0,
+  "normal": [
+   0.0,
+   0.0,
+   1.0
+  ],
+  "peak_F_N": 0.0,
+  "reversal_share": 0.0,
+  "span_deg": 0.0,
+  "warnings": [
+   "the audit carries no usable force history for this member — nothing to grow a topology from."
+  ]
+ },
+ "plane": {
+  "cases": [
+   {
+    "F_N": 2189.4987467237247,
+    "angle_deg": 6.4817985765812365,
+    "dir2": [
+     0.9936077673462903,
+     0.11288757535318109
+    ],
+    "n_instants": 2,
+    "t_hi_s": 0.04,
+    "t_lo_s": 0.03,
+    "weight": 0.30810965723731765
+   },
+   {
+    "F_N": 1592.3627248899816,
+    "angle_deg": -18.426441803485698,
+    "dir2": [
+     0.9487302396687527,
+     -0.31608690630595765
+    ],
+    "n_instants": 3,
+    "t_hi_s": 0.02,
+    "t_lo_s": 0.0,
+    "weight": 0.29323829682022057
+   },
+   {
+    "F_N": 2789.762305757918,
+    "angle_deg": 30.96375653207352,
+    "dir2": [
+     0.8574929257125442,
+     0.5144957554275266
+    ],
+    "n_instants": 1,
+    "t_hi_s": 0.06,
+    "t_lo_s": 0.06,
+    "weight": 0.21067109939096676
+   },
+   {
+    "F_N": 2489.29331268559,
+    "angle_deg": 21.80140948635181,
+    "dir2": [
+     0.9284766908852593,
+     0.3713906763541037
+    ],
+    "n_instants": 1,
+    "t_hi_s": 0.05,
+    "t_lo_s": 0.05,
+    "weight": 0.18798094655149508
+   }
+  ],
+  "e1": [
+   0.0,
+   1.0,
+   0.0
+  ],
+  "e2": [
+   0.0,
+   0.0,
+   1.0
+  ],
+  "inplane_share": 0.9956589439609419,
+  "member": "LF",
+  "n_instants": 7,
+  "normal": [
+   1.0,
+   0.0,
+   0.0
+  ],
+  "peak_F_N": 2789.762305757918,
+  "reversal_share": 0.0,
+  "span_deg": 49.39019833555922,
+  "warnings": []
+ },
+ "plane_oop": {
+  "cases": [
+   {
+    "F_N": 952.9531248281093,
+    "angle_deg": 71.72253732844854,
+    "dir2": [
+     0.3136189746178214,
+     0.9495489133055054
+    ],
+    "n_instants": 3,
+    "t_hi_s": 0.05,
+    "t_lo_s": 0.03,
+    "weight": 0.36520563846582516
+   },
+   {
+    "F_N": 1455.1193293932022,
+    "angle_deg": 80.53767779197439,
+    "dir2": [
+     0.1643989873053573,
+     0.9863939238321437
+    ],
+    "n_instants": 1,
+    "t_hi_s": 0.06,
+    "t_lo_s": 0.06,
+    "weight": 0.32761309873614
+   },
+   {
+    "F_N": 519.6854747832866,
+    "angle_deg": -75.52007521655204,
+    "dir2": [
+     0.25004077045155204,
+     -0.9682353087509225
+    ],
+    "n_instants": 3,
+    "t_hi_s": 0.02,
+    "t_lo_s": 0.0,
+    "weight": 0.30718126279803487
+   }
+  ],
+  "e1": [
+   1.0,
+   0.0,
+   0.0
+  ],
+  "e2": [
+   0.0,
+   0.0,
+   1.0
+  ],
+  "inplane_share": 0.3339532784174349,
+  "member": "LF",
+  "n_instants": 7,
+  "normal": [
+   0.0,
+   -1.0,
+   0.0
+  ],
+  "peak_F_N": 1455.1193293932022,
+  "reversal_share": 0.30718126279803487,
+  "span_deg": 156.05775300852645,
+  "warnings": [
+   "only 33% of the load exposure lies in the bracket plane — this member's fan is genuinely 3D; the plate answer under-represents it (consider a different plane or a gusseted design).",
+   "the member force REVERSES sign for 31% of the event's load exposure — the tab is loaded both ways; the fan carries both arrows."
+  ]
+ },
+ "pr": {
+  "cases": [
+   {
+    "F_N": 850.0,
+    "angle_deg": 172.0,
+    "n_instants": 2,
+    "t_hi_ms": 10.0,
+    "t_lo_ms": 0.0,
+    "weight": 0.471
+   },
+   {
+    "F_N": 950.0,
+    "angle_deg": -171.0,
+    "n_instants": 1,
+    "t_hi_ms": 30.0,
+    "t_lo_ms": 30.0,
+    "weight": 0.271
+   },
+   {
+    "F_N": 900.0,
+    "angle_deg": -178.5,
+    "n_instants": 1,
+    "t_hi_ms": 20.0,
+    "t_lo_ms": 20.0,
+    "weight": 0.257
+   }
+  ],
+  "inplane_share": 1.0,
+  "member": "PR",
+  "n_instants": 4,
+  "peak_F_N": 950.0,
+  "reversal_share": 0.0,
+  "span_deg": 17.0,
+  "warnings": []
+ },
+ "pr_proxy": {
+  "cases": [
+   {
+    "F_N": 950.0,
+    "angle_deg": 176.2,
+    "n_instants": 1,
+    "t_hi_ms": 30.0,
+    "t_lo_ms": 30.0,
+    "weight": 0.271
+   },
+   {
+    "F_N": 900.0,
+    "angle_deg": 179.3,
+    "n_instants": 2,
+    "t_hi_ms": 20.0,
+    "t_lo_ms": 10.0,
+    "weight": 0.5
+   },
+   {
+    "F_N": 800.0,
+    "angle_deg": -175.3,
+    "n_instants": 1,
+    "t_hi_ms": 0.0,
+    "t_lo_ms": 0.0,
+    "weight": 0.229
+   }
+  ],
+  "inplane_share": 1.0,
+  "member": "PR",
+  "n_instants": 4,
+  "peak_F_N": 950.0,
+  "reversal_share": 0.0,
+  "span_deg": 8.5,
+  "warnings": [
+   "no rocker defined — pushrod inner proxied 200 mm above the upper-front pickup; treat the PR fan as indicative only."
+  ]
+ },
+ "rev": {
+  "cases": [
+   {
+    "F_N": 2800.0,
+    "angle_deg": -15.7,
+    "n_instants": 2,
+    "t_hi_ms": 60.0,
+    "t_lo_ms": 50.0,
+    "weight": 0.301
+   },
+   {
+    "F_N": 2500.0,
+    "angle_deg": -161.5,
+    "n_instants": 2,
+    "t_hi_ms": 210.0,
+    "t_lo_ms": 200.0,
+    "weight": 0.244
+   },
+   {
+    "F_N": 2200.0,
+    "angle_deg": 4.6,
+    "n_instants": 2,
+    "t_hi_ms": 40.0,
+    "t_lo_ms": 30.0,
+    "weight": 0.233
+   },
+   {
+    "F_N": 1600.0,
+    "angle_deg": 29.4,
+    "n_instants": 3,
+    "t_hi_ms": 20.0,
+    "t_lo_ms": 0.0,
+    "weight": 0.222
+   }
+  ],
+  "inplane_share": 1.0,
+  "member": "LF",
+  "n_instants": 9,
+  "peak_F_N": 2800.0,
+  "reversal_share": 0.244,
+  "span_deg": 169.0,
+  "warnings": [
+   "the member force REVERSES sign for 24% of the event's load exposure — the tab is loaded both ways; the fan carries both arrows."
+  ]
+ },
+ "shift": {
+  "cases": [
+   {
+    "F_N": 899.9999999999998,
+    "angle_deg": -170.09131870715268,
+    "dir2": [
+     -0.9850832646409154,
+     -0.172078359256462
+    ],
+    "n_instants": 1,
+    "t_hi_s": 0.0,
+    "t_lo_s": 0.0,
+    "weight": 0.5625
+   },
+   {
+    "F_N": 699.9999999999999,
+    "angle_deg": 156.9501501959592,
+    "dir2": [
+     -0.9201645521296293,
+     0.39153185950070346
+    ],
+    "n_instants": 1,
+    "t_hi_s": 0.1,
+    "t_lo_s": 0.1,
+    "weight": 0.43750000000000006
+   }
+  ],
+  "e1": [
+   -0.09947624042902851,
+   -0.9947624042902846,
+   0.02349971490716749
+  ],
+  "e2": [
+   0.0023383090291963643,
+   0.023383090291963612,
+   0.9997238435684533
+  ],
+  "inplane_share": 0.9999999999999997,
+  "member": "LF",
+  "n_instants": 2,
+  "normal": [
+   -0.9950371902099887,
+   0.09950371902099893,
+   2.168404344971009e-18
+  ],
+  "peak_F_N": 899.9999999999998,
+  "reversal_share": 0.0,
+  "span_deg": 32.95853109688811,
+  "warnings": []
+ },
+ "sym": {
+  "cases": [
+   {
+    "F_N": 1000.0,
+    "angle_deg": 0.0,
+    "n_instants": 1,
+    "t_hi_ms": 0.0,
+    "t_lo_ms": 0.0,
+    "weight": 0.5
+   },
+   {
+    "F_N": 1000.0,
+    "angle_deg": 180.0,
+    "n_instants": 1,
+    "t_hi_ms": 100.0,
+    "t_lo_ms": 100.0,
+    "weight": 0.5
+   }
+  ],
+  "inplane_share": 1.0,
+  "member": "LF",
+  "n_instants": 2,
+  "peak_F_N": 1000.0,
+  "reversal_share": 0.5,
+  "span_deg": 180.0,
+  "warnings": [
+   "the member force REVERSES sign for 50% of the event's load exposure — the tab is loaded both ways; the fan carries both arrows."
+  ]
+ },
+ "tiny": {
+  "cases": [],
+  "e1": [
+   1.0,
+   0.0,
+   0.0
+  ],
+  "e2": [
+   0.0,
+   1.0,
+   0.0
+  ],
+  "inplane_share": 0.0,
+  "member": "LF",
+  "n_instants": 1,
+  "normal": [
+   0.0,
+   0.0,
+   1.0
+  ],
+  "peak_F_N": 0.5,
+  "reversal_share": 0.0,
+  "span_deg": 0.0,
+  "warnings": [
+   "the audit carries no usable force history for this member — nothing to grow a topology from."
+  ]
+ },
+ "tiny_sum": {
+  "cases": [],
+  "e1": [
+   1.0,
+   0.0,
+   0.0
+  ],
+  "e2": [
+   0.0,
+   1.0,
+   0.0
+  ],
+  "inplane_share": 0.0,
+  "member": "LF",
+  "n_instants": 4,
+  "normal": [
+   0.0,
+   0.0,
+   1.0
+  ],
+  "peak_F_N": 0.4,
+  "reversal_share": 0.0,
+  "span_deg": 0.0,
+  "warnings": [
+   "the audit carries no usable force history for this member — nothing to grow a topology from."
+  ]
+ },
+ "unknown": {
+  "cases": [],
+  "e1": [
+   1.0,
+   0.0,
+   0.0
+  ],
+  "e2": [
+   0.0,
+   1.0,
+   0.0
+  ],
+  "inplane_share": 0.0,
+  "member": "XX",
+  "n_instants": 0,
+  "normal": [
+   0.0,
+   0.0,
+   1.0
+  ],
+  "peak_F_N": 0.0,
+  "reversal_share": 0.0,
+  "span_deg": 0.0,
+  "warnings": [
+   "unknown member 'XX' — allowed: LF, LR, PR, TR, UF, UR"
+  ]
+ },
+ "zero_len": {
+  "cases": [],
+  "e1": [
+   1.0,
+   0.0,
+   0.0
+  ],
+  "e2": [
+   0.0,
+   1.0,
+   0.0
+  ],
+  "inplane_share": 0.0,
+  "member": "LF",
+  "n_instants": 0,
+  "normal": [
+   0.0,
+   0.0,
+   1.0
+  ],
+  "peak_F_N": 0.0,
+  "reversal_share": 0.0,
+  "span_deg": 0.0,
+  "warnings": [
+   "the audit carries no usable force history for this member — nothing to grow a topology from."
+  ]
+ }
+}

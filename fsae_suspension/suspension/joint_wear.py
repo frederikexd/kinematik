@@ -38,6 +38,7 @@ import math
 from dataclasses import dataclass, field
 
 import numpy as np
+from ._num import vec as _vec
 
 from . import elastokinematics as _ek
 from .kinematics import Hardpoints
@@ -76,12 +77,12 @@ class JointWearSpec:
         return g * self.n_joints
 
     def clearance_at_km(self, km) -> np.ndarray:
-        return self.clearance_new_mm + self.growth_per_km_mm() * np.asarray(km, float)
+        return self.clearance_new_mm + self.growth_per_km_mm() * _vec(km)
 
 
 def deadband_over_life(hp: Hardpoints, specs: list[JointWearSpec], km) -> dict:
     """Channel deadband (deg) at each distance, from worn clearances."""
-    km = np.atleast_1d(np.asarray(km, float))
+    km = np.atleast_1d(_vec(km))
     out = {ch: np.zeros(len(km)) for ch in _ek.CHANNELS}
     for i, d in enumerate(km):
         lash = {s.member: float(s.clearance_at_km(d)) for s in specs}
@@ -101,14 +102,14 @@ def km_to_budget(hp: Hardpoints, specs: list[JointWearSpec], channel: str,
     the budget and inf if wear never reaches it within ``km_max``.
     """
     d0 = deadband_over_life(hp, specs, [0.0])[channel][0]
-    if d0 >= budget_deg:
+    if d0 >= budget_deg:  # pragma: no mutate (float threshold: the two sides differ only on exact equality)
         return 0.0
     d1 = deadband_over_life(hp, specs, [1000.0])[channel][0]
     rate = (d1 - d0) / 1000.0
-    if rate <= 0.0:
-        return float("inf")
+    if rate <= 0.0:  # pragma: no mutate (float threshold: the two sides differ only on exact equality)
+        return math.inf
     km = (budget_deg - d0) / rate
-    return float(km) if km <= km_max else float("inf")
+    return float(km) if km <= km_max else math.inf  # pragma: no mutate (float threshold: the two sides differ only on exact equality)
 
 
 def fit_wear_rate(spec: JointWearSpec, km, measured_clearance_mm) -> float:
@@ -117,7 +118,7 @@ def fit_wear_rate(spec: JointWearSpec, km, measured_clearance_mm) -> float:
     Least squares on clearance = c0 + g(K) km, with g linear in K; c0 is taken
     as the spec's new clearance. Needs the duty declared.
     """
-    km = np.asarray(km, float); c = np.asarray(measured_clearance_mm, float)
+    km = _vec(km); c = _vec(measured_clearance_mm)
     unit = JointWearSpec(**{**spec.__dict__, "wear_rate_mm3_per_Nm": 1.0})
     g1 = unit.growth_per_km_mm()
     if g1 <= 0.0 or np.all(km == 0):

@@ -1,0 +1,437 @@
+{
+ "bad": [
+  false,
+  [
+   "Unknown manoeuvre 'teleport'. Options: ['brake_to_throttle', 'curb_strike', 'snap_oversteer', 'step_steer']."
+  ],
+  {
+   "authority_scale": 1.0,
+   "i_other_add_A": 0.0,
+   "key": "corroded_connector",
+   "label": "Corroded connector",
+   "r_harness_add_ohm": 0.12,
+   "r_int_scale": 1.0,
+   "story": "One branch connector gone green: +120 mΩ in series. Invisible at idle, a voltage cliff under actuator load.",
+   "v_brownout_add": 0.0,
+   "v_oc_drop": 0.0
+  },
+  {
+   "I_other_A": 6.0,
+   "R_harness_ohm": 0.13999999999999999,
+   "R_int_ohm": 0.045,
+   "V_brownout": 17.5,
+   "V_oc": 25.2,
+   "kwh_per_lap": 0.28,
+   "pack_kwh": 6.5,
+   "reboot_s": 0.35,
+   "reserve_kwh": 0.4,
+   "usable_frac": 0.85
+  },
+  {
+   "Ke": 0.055,
+   "Kt": 0.055,
+   "L_H": 0.0009,
+   "M_max_Nm": 900.0,
+   "R_ohm": 0.55,
+   "conn_rating_A": 20.0,
+   "duty_max": 0.95,
+   "eff": 0.72,
+   "fuse_rating_A": 25.0,
+   "gear": 120.0,
+   "i_quiescent_A": 0.35,
+   "kd": 900.0,
+   "kp": 12000.0
+  },
+  {
+   "authority": 0.0,
+   "energy_Wh": 0.0,
+   "i_peak": "NaN",
+   "n_brownouts": 0,
+   "offline_ms": 0.0,
+   "response_lag_ms": 0.0,
+   "sag_peak_V": "NaN",
+   "v_min": "NaN"
+  }
+ ],
+ "boom": [
+  false,
+  [
+   "SimulForge 'step_steer' failed (TypeError: step_steer_maneuver() got an unexpected keyword argument 'no_such_kw')."
+  ],
+  "dead_actuator",
+  {
+   "I_other_A": 6.0,
+   "R_harness_ohm": 0.02,
+   "R_int_ohm": 0.045,
+   "V_brownout": 17.5,
+   "V_oc": 25.2,
+   "kwh_per_lap": 0.28,
+   "pack_kwh": 6.5,
+   "reboot_s": 0.35,
+   "reserve_kwh": 0.4,
+   "usable_frac": 0.85
+  },
+  {
+   "Ke": 0.055,
+   "Kt": 0.055,
+   "L_H": 0.0009,
+   "M_max_Nm": 0.0,
+   "R_ohm": 0.55,
+   "conn_rating_A": 20.0,
+   "duty_max": 0.0,
+   "eff": 0.72,
+   "fuse_rating_A": 25.0,
+   "gear": 120.0,
+   "i_quiescent_A": 0.35,
+   "kd": 900.0,
+   "kp": 12000.0
+  },
+  []
+ ],
+ "brake_to_throttle": [
+  true,
+  {
+   "coupling": "staggered Gauss-Seidel, ZOH moments, exact RL winding update",
+   "dt": 0.001,
+   "izz": 167.56957,
+   "m_sprung": 236.0,
+   "maneuver": "Brake → throttle pitch/dive",
+   "n_steps": 31,
+   "substeps": 1,
+   "winding_tau_ms": 1.636363636363636
+  },
+  {
+   "coupling": "staggered Gauss-Seidel, ZOH moments, exact RL winding update",
+   "dt": 0.001,
+   "izz": 167.56957,
+   "m_sprung": 236.0,
+   "maneuver": "Brake → throttle pitch/dive",
+   "n_steps": 31,
+   "substeps": 1,
+   "winding_tau_ms": 1.636363636363636
+  },
+  {
+   "authority": 1.0,
+   "energy_Wh": 0.001382684583333333,
+   "i_peak": 6.7,
+   "n_brownouts": 0,
+   "offline_ms": 0.0,
+   "response_lag_ms": 0.0,
+   "sag_peak_V": 0.0,
+   "v_min": 24.764499999999998
+  },
+  "nominal"
+ ],
+ "curb_strike": [
+  true,
+  {
+   "coupling": "staggered Gauss-Seidel, ZOH moments, exact RL winding update",
+   "dt": 0.001,
+   "izz": 167.56957,
+   "m_sprung": 236.0,
+   "maneuver": "Kerb strike (FL+RL)",
+   "n_steps": 31,
+   "substeps": 1,
+   "winding_tau_ms": 1.636363636363636
+  },
+  {
+   "coupling": "staggered Gauss-Seidel, ZOH moments, exact RL winding update",
+   "dt": 0.001,
+   "izz": 167.56957,
+   "m_sprung": 236.0,
+   "maneuver": "Kerb strike (FL+RL)",
+   "n_steps": 31,
+   "substeps": 1,
+   "winding_tau_ms": 1.636363636363636
+  },
+  {
+   "authority": 0.5793453295936701,
+   "energy_Wh": 0.006661015625243954,
+   "i_peak": 89.45662733839781,
+   "n_brownouts": 0,
+   "offline_ms": 0.0,
+   "response_lag_ms": 0.0,
+   "sag_peak_V": 5.379180776995856,
+   "v_min": 19.385319223004142
+  },
+  "nominal"
+ ],
+ "deg_none": [
+  {
+   "authority_scale": 1.0,
+   "i_other_add_A": 0.0,
+   "key": "nominal",
+   "label": "Pristine electrics",
+   "r_harness_add_ohm": 0.0,
+   "r_int_scale": 1.0,
+   "story": "The schematic's car: rested pack, clean connectors.",
+   "v_brownout_add": 0.0,
+   "v_oc_drop": 0.0
+  },
+  {
+   "I_other_A": 6.0,
+   "R_harness_ohm": 0.02,
+   "R_int_ohm": 0.045,
+   "V_brownout": 17.5,
+   "V_oc": 24.0,
+   "kwh_per_lap": 0.28,
+   "pack_kwh": 6.5,
+   "reboot_s": 0.35,
+   "reserve_kwh": 0.4,
+   "usable_frac": 0.85
+  },
+  {
+   "Ke": 0.055,
+   "Kt": 0.055,
+   "L_H": 0.0009,
+   "M_max_Nm": 900.0,
+   "R_ohm": 0.55,
+   "conn_rating_A": 20.0,
+   "duty_max": 0.95,
+   "eff": 0.72,
+   "fuse_rating_A": 25.0,
+   "gear": 120.0,
+   "i_quiescent_A": 0.35,
+   "kd": 900.0,
+   "kp": 9000.0
+  },
+  {
+   "authority": 0.9737782787352048,
+   "energy_Wh": 0.003604184044924231,
+   "i_peak": 26.96716121789762,
+   "n_brownouts": 0,
+   "offline_ms": 0.0,
+   "response_lag_ms": 0.0,
+   "sag_peak_V": 1.317365479163346,
+   "v_min": 22.247134520836653
+  }
+ ],
+ "deg_obj": [
+  {
+   "authority_scale": 1.0,
+   "i_other_add_A": 0.0,
+   "key": "z",
+   "label": "Pristine electrics",
+   "r_harness_add_ohm": 0.0,
+   "r_int_scale": 2.0,
+   "story": "The schematic's car: rested pack, clean connectors.",
+   "v_brownout_add": 0.0,
+   "v_oc_drop": 0.0
+  },
+  {
+   "I_other_A": 6.0,
+   "R_harness_ohm": 0.02,
+   "R_int_ohm": 0.09,
+   "V_brownout": 17.5,
+   "V_oc": 24.0,
+   "kwh_per_lap": 0.28,
+   "pack_kwh": 6.5,
+   "reboot_s": 0.35,
+   "reserve_kwh": 0.4,
+   "usable_frac": 0.85
+  },
+  {
+   "Ke": 0.055,
+   "Kt": 0.055,
+   "L_H": 0.0009,
+   "M_max_Nm": 900.0,
+   "R_ohm": 0.55,
+   "conn_rating_A": 20.0,
+   "duty_max": 0.95,
+   "eff": 0.72,
+   "fuse_rating_A": 25.0,
+   "gear": 120.0,
+   "i_quiescent_A": 0.35,
+   "kd": 900.0,
+   "kp": 9000.0
+  },
+  {
+   "authority": 0.9737782787352048,
+   "energy_Wh": 0.0034779460239726633,
+   "i_peak": 26.96716121789762,
+   "n_brownouts": 0,
+   "offline_ms": 0.0,
+   "response_lag_ms": 0.0,
+   "sag_peak_V": 2.229387733968739,
+   "v_min": 21.033612266031263
+  }
+ ],
+ "deg_str": [
+  {
+   "authority_scale": 1.0,
+   "i_other_add_A": 0.0,
+   "key": "sagging_pack",
+   "label": "Sagging pack",
+   "r_harness_add_ohm": 0.0,
+   "r_int_scale": 3.0,
+   "story": "An aged / cold pack: internal resistance up 3×, starting 1.5 V down. Every transient amp now costs real volts.",
+   "v_brownout_add": 0.0,
+   "v_oc_drop": 1.5
+  },
+  {
+   "I_other_A": 6.0,
+   "R_harness_ohm": 0.02,
+   "R_int_ohm": 0.135,
+   "V_brownout": 17.5,
+   "V_oc": 22.5,
+   "kwh_per_lap": 0.28,
+   "pack_kwh": 6.5,
+   "reboot_s": 0.35,
+   "reserve_kwh": 0.4,
+   "usable_frac": 0.85
+  },
+  {
+   "Ke": 0.055,
+   "Kt": 0.055,
+   "L_H": 0.0009,
+   "M_max_Nm": 900.0,
+   "R_ohm": 0.55,
+   "conn_rating_A": 20.0,
+   "duty_max": 0.95,
+   "eff": 0.72,
+   "fuse_rating_A": 25.0,
+   "gear": 120.0,
+   "i_quiescent_A": 0.35,
+   "kd": 900.0,
+   "kp": 9000.0
+  },
+  {
+   "authority": 0.9737782787352048,
+   "energy_Wh": 0.0031150500122107596,
+   "i_peak": 26.96716121789762,
+   "n_brownouts": 0,
+   "offline_ms": 0.0,
+   "response_lag_ms": 0.0,
+   "sag_peak_V": 3.1414099887741322,
+   "v_min": 18.32009001122587
+  }
+ ],
+ "deg_unknown_str": [
+  {
+   "authority_scale": 1.0,
+   "i_other_add_A": 0.0,
+   "key": "nominal",
+   "label": "Pristine electrics",
+   "r_harness_add_ohm": 0.0,
+   "r_int_scale": 1.0,
+   "story": "The schematic's car: rested pack, clean connectors.",
+   "v_brownout_add": 0.0,
+   "v_oc_drop": 0.0
+  },
+  {
+   "I_other_A": 6.0,
+   "R_harness_ohm": 0.02,
+   "R_int_ohm": 0.045,
+   "V_brownout": 17.5,
+   "V_oc": 24.0,
+   "kwh_per_lap": 0.28,
+   "pack_kwh": 6.5,
+   "reboot_s": 0.35,
+   "reserve_kwh": 0.4,
+   "usable_frac": 0.85
+  },
+  {
+   "Ke": 0.055,
+   "Kt": 0.055,
+   "L_H": 0.0009,
+   "M_max_Nm": 900.0,
+   "R_ohm": 0.55,
+   "conn_rating_A": 20.0,
+   "duty_max": 0.95,
+   "eff": 0.72,
+   "fuse_rating_A": 25.0,
+   "gear": 120.0,
+   "i_quiescent_A": 0.35,
+   "kd": 900.0,
+   "kp": 9000.0
+  },
+  {
+   "authority": 0.9737782787352048,
+   "energy_Wh": 0.003604184044924231,
+   "i_peak": 26.96716121789762,
+   "n_brownouts": 0,
+   "offline_ms": 0.0,
+   "response_lag_ms": 0.0,
+   "sag_peak_V": 1.317365479163346,
+   "v_min": 22.247134520836653
+  }
+ ],
+ "params": {
+  "authority": 0.9718607621889608,
+  "energy_Wh": 0.003845850837635643,
+  "i_peak": 27.81990884987885,
+  "n_brownouts": 0,
+  "offline_ms": 0.0,
+  "response_lag_ms": 0.0,
+  "sag_peak_V": 1.3727940752421226,
+  "v_min": 23.391705924757876
+ },
+ "snap_oversteer": [
+  true,
+  {
+   "coupling": "staggered Gauss-Seidel, ZOH moments, exact RL winding update",
+   "dt": 0.001,
+   "izz": 167.56957,
+   "m_sprung": 236.0,
+   "maneuver": "Snap-oversteer + recovery",
+   "n_steps": 31,
+   "substeps": 1,
+   "winding_tau_ms": 1.636363636363636
+  },
+  {
+   "coupling": "staggered Gauss-Seidel, ZOH moments, exact RL winding update",
+   "dt": 0.001,
+   "izz": 167.56957,
+   "m_sprung": 236.0,
+   "maneuver": "Snap-oversteer + recovery",
+   "n_steps": 31,
+   "substeps": 1,
+   "winding_tau_ms": 1.636363636363636
+  },
+  {
+   "authority": 1.0,
+   "energy_Wh": 0.001382684583333333,
+   "i_peak": 6.7,
+   "n_brownouts": 0,
+   "offline_ms": 0.0,
+   "response_lag_ms": 0.0,
+   "sag_peak_V": 0.0,
+   "v_min": 24.764499999999998
+  },
+  "nominal"
+ ],
+ "step_steer": [
+  true,
+  {
+   "coupling": "staggered Gauss-Seidel, ZOH moments, exact RL winding update",
+   "dt": 0.001,
+   "izz": 167.56957,
+   "m_sprung": 236.0,
+   "maneuver": "Step steer 4.0°",
+   "n_steps": 41,
+   "substeps": 1,
+   "winding_tau_ms": 1.636363636363636
+  },
+  {
+   "coupling": "staggered Gauss-Seidel, ZOH moments, exact RL winding update",
+   "dt": 0.001,
+   "izz": 167.56957,
+   "m_sprung": 236.0,
+   "maneuver": "Step steer 4.0°",
+   "n_steps": 41,
+   "substeps": 1,
+   "winding_tau_ms": 1.636363636363636
+  },
+  {
+   "authority": 0.9718607621889608,
+   "energy_Wh": 0.003845850837635643,
+   "i_peak": 27.81990884987885,
+   "n_brownouts": 0,
+   "offline_ms": 0.0,
+   "response_lag_ms": 0.0,
+   "sag_peak_V": 1.3727940752421226,
+   "v_min": 23.391705924757876
+  },
+  "nominal"
+ ]
+}

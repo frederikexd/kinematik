@@ -491,7 +491,7 @@ def _actuator_for(scale: float) -> sf.ActuatorParams:
 
 def _composure_deg_s(res: sf.SimulForgeResult) -> float:
     if not res.ok or res.mech.roll.size < 2:
-        return float("nan")
+        return math.nan
     t = res.mech.t
     return float(np.trapezoid(np.abs(res.mech.roll), t) * 180.0 / math.pi)
 
@@ -645,7 +645,7 @@ def run_omnicore(hp: Hardpoints | None, mission: MissionSpec,
                               else "engine unavailable")
                     cp.feasible = False
                     cp.vetoes.append(f"InverseGenesis: {reason}")
-                    y = float("nan")
+                    y = math.nan
                 else:
                     y = float(g.winner.yield_frac)
                     if g.winner.verdict == "KNIFE_EDGE":
@@ -658,7 +658,7 @@ def run_omnicore(hp: Hardpoints | None, mission: MissionSpec,
                     cp.vetoes.append(
                         "SimulForge: the co-solve failed"
                         + (" — " + "; ".join(r.warnings[:1]) if r else "."))
-                    comp = laps = float("nan")
+                    comp = laps = math.nan
                 else:
                     s = r.elec.summary()
                     if s["n_brownouts"] > 0:
@@ -698,7 +698,7 @@ def run_omnicore(hp: Hardpoints | None, mission: MissionSpec,
                     cp.vetoes.append(f"MorphMesh: {v} — no buildable shape "
                                      "inside this volume budget at this "
                                      "shop's limits.")
-                    tab_g = float("nan")
+                    tab_g = math.nan
                 else:
                     tab_g = float(m.mass_g)
                     if m.verdict == "COARSENED" and m.coarsen_premium:
@@ -717,10 +717,10 @@ def run_omnicore(hp: Hardpoints | None, mission: MissionSpec,
                 mass = (_structure_mass_kg(tab_g,
                                            knobs.actuator_scales[aname],
                                            knobs)
-                        if np.isfinite(tab_g) else float("nan"))
+                        if np.isfinite(tab_g) else math.nan)
                 cost = (_decision_cost(shop, knobs.actuator_scales[aname],
                                        tab_g, knobs)
-                        if np.isfinite(tab_g) else float("nan"))
+                        if np.isfinite(tab_g) else math.nan)
                 cp.objectives = {"composure": comp, "laps": laps,
                                  "mass": mass, "cost": cost, "yield": y}
                 # -- the mission's own budget referee ---------------------- #
@@ -1039,7 +1039,7 @@ def render_omni_md(res: OmniResult) -> str:
     L.append(hdr)
     L.append("|" + "---|" * (len(AXES) + 2))
     for c in res.configs:
-        cells = [fmt_axis(k, c.objectives.get(k, float("nan")))
+        cells = [fmt_axis(k, c.objectives.get(k, math.nan))
                  for k in AXES]
         tag = ("⭐ knee" if c.cid == res.knee_id else
                "front" if c.cid in res.pareto_ids else

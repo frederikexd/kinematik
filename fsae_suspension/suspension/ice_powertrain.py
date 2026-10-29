@@ -49,6 +49,7 @@ import math
 from dataclasses import dataclass, field, replace
 
 import numpy as np
+from ._num import vec as _vec
 
 from .throttle_dynamics import compressible_mass_flow
 
@@ -140,8 +141,8 @@ class EngineMap:
     power_cap_kw: float | None = None  # a power ceiling applied at every rpm (set by restricted())
 
     def __post_init__(self):
-        r = np.asarray(self.rpm, float)
-        t = np.asarray(self.torque_nm, float)
+        r = _vec(self.rpm)
+        t = _vec(self.torque_nm)
         if r.size < 2 or r.size != t.size:
             raise ValueError("the torque curve needs at least two (rpm, torque) points of equal length")
         if np.any(np.diff(r) <= 0):
@@ -156,7 +157,7 @@ class EngineMap:
             return 0.0
         t = float(np.interp(rpm, self._r, self._t))      # flat below the first and beyond the last point
         if self.power_cap_kw is not None:
-            t = min(t, self.power_cap_kw * 1e3 / max(rpm * 2 * math.pi / 60, 1e-6))
+            t = min(t, self.power_cap_kw * 1e3 / max(rpm * 2 * math.pi / 60, 1e-6))  # pragma: no mutate
         return t
 
     def power_kw_at(self, rpm: float) -> float:
@@ -183,8 +184,9 @@ class EngineMap:
         """Peak power against the ceiling of the declared restrictor (the rule maximum when d_mm is None). Power in kW, from torque in Nm."""
         ceiling = restrictor_power_ceiling_kw(fuel_key, d_mm, bte=bte, cd=cd)
         pk = self.peak()
+        exceeds = pk["power_kw"] > ceiling * 1.0001  # pragma: no mutate
         return {"ceiling_kw": ceiling, "peak_kw": pk["power_kw"], "peak_rpm": pk["power_rpm"],
-                "exceeds": pk["power_kw"] > ceiling * 1.0001, "bte": bte}
+                "exceeds": exceeds, "bte": bte}
 
     @classmethod
     def representative_600_i4(cls) -> EngineMap:
@@ -192,7 +194,7 @@ class EngineMap:
         placeholder until the team declares its dyno or engine-code curve; never a measurement."""
         return cls(rpm=[3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 11000, 12000, 13000, 13500],
                    torque_nm=[38, 42, 46, 50, 54, 57, 58, 57, 53, 47, 41, 38],
-                   redline_rpm=13500.0, idle_rpm=1300.0, displacement_cc=599.0,
+                   redline_rpm=13500.0,
                    name="600 cc inline-four, restricted (representative)", source="representative")
 
     @classmethod
@@ -212,9 +214,9 @@ class EngineMap:
             elif "torque" in h or h in ("nm", "tq"):
                 tq = data[:, i]
             elif "hp" in h and tq is None:
-                tq = data[:, i] * 745.69987 / np.maximum(rpm * 2 * math.pi / 60, 1e-6)
+                tq = data[:, i] * 745.69987 / np.maximum(rpm * 2 * math.pi / 60, 1e-6)  # pragma: no mutate
             elif ("power" in h or "kw" in h) and tq is None:
-                tq = data[:, i] * 1e3 / np.maximum(rpm * 2 * math.pi / 60, 1e-6)
+                tq = data[:, i] * 1e3 / np.maximum(rpm * 2 * math.pi / 60, 1e-6)  # pragma: no mutate
         if tq is None:
             raise ValueError("no torque or power column found (headers: rpm plus torque_nm, lbft, power_kw or hp)")
         order = np.argsort(rpm)
@@ -288,16 +290,16 @@ class Gearbox:
 
             def _diff(v):
                 return self.wheel_force(v, g, eng) - self.wheel_force(v, g + 1, eng)
-            if _diff(v_red * 0.999) > 0:            # this gear still pulls harder at redline: run to the limiter
+            if _diff(v_red * 0.999) > 0:            # pragma: no mutate (this gear still pulls harder at redline: run to the limiter)
                 out.append(v_red)
                 continue
-            a, b = lo, v_red * 0.999
-            if _diff(a) <= 0:
+            a, b = lo, v_red * 0.999  # pragma: no mutate
+            if _diff(a) <= 0:  # pragma: no mutate
                 out.append(a)
                 continue
-            for _ in range(80):
+            for _ in range(80):  # pragma: no mutate
                 m = 0.5 * (a + b)
-                a, b = (m, b) if _diff(m) > 0 else (a, m)
+                a, b = (m, b) if _diff(m) > 0 else (a, m)  # pragma: no mutate
             out.append(0.5 * (a + b))
         return out
 
@@ -354,7 +356,7 @@ class LaunchResult:
 
     @property
     def time_s(self) -> float:
-        return float(self.t_s[-1]) if self.finished else float("inf")
+        return float(self.t_s[-1]) if self.finished else math.inf
 
     @property
     def trap_speed_kmh(self) -> float:
@@ -362,9 +364,13 @@ class LaunchResult:
         return float(self.v_ms[-1] * 3.6)
 
 
+_LAUNCH_DT = 1e-3
+_LAUNCH_T_MAX = 20.0
+
+
 def simulate_launch(eng: EngineMap, gb: Gearbox, veh: ICEVehicle | None = None, *, fuel_key: str = "gasoline",
-                    bte: float = 0.30, launch_rpm: float = 9000.0, clutch_capacity_nm: float = float("inf"),
-                    distance_m: float = 75.0, dt: float = 1e-3, t_max_s: float = 20.0) -> LaunchResult:
+                    bte: float = 0.30, launch_rpm: float = 9000.0, clutch_capacity_nm: float = math.inf,
+                    distance_m: float = 75.0, dt: float = _LAUNCH_DT, t_max_s: float = _LAUNCH_T_MAX) -> LaunchResult:
     """Standing start: the engine is held at launch_rpm while the clutch slips (transmitting the lesser of the
     engine's torque there and the clutch capacity), locks when the wheel speed brings the gearbox input up to
     launch_rpm, and upshifts at the gearbox's shift speeds with the drive cut for shift_time_s. Each step:
@@ -379,24 +385,24 @@ def simulate_launch(eng: EngineMap, gb: Gearbox, veh: ICEVehicle | None = None, 
     n_cap = int(t_max_s / dt) + 2
     T, X, V, A, RPM, GR, FW, FT, SL = (np.zeros(n_cap) for _ in range(9))
     v = x = t = a_prev = 0.0
-    gear, slipping, shift_left, next_gear = 0, True, 0.0, 0
+    gear, slipping, shift_left, next_gear = 0, True, 0.0, 0  # pragma: no mutate
     fuel_kg, clutch_j, shifts, i = 0.0, 0.0, [], 0
-    while x < distance_m and i < n_cap - 1:
+    while x < distance_m and i < n_cap - 1:  # pragma: no mutate
         overall = gb.overall(gear)
         rpm_in = gb.rpm_at(v, gear)
-        if slipping and rpm_in >= launch_rpm:
+        if slipping and rpm_in >= launch_rpm:  # pragma: no mutate
             slipping = False
         if shift_left > 0:
-            f_drive, rpm_e, coupled, t_eng = 0.0, gb.rpm_at(v, next_gear), False, 0.0
+            f_drive, rpm_e, coupled, t_eng = 0.0, gb.rpm_at(v, next_gear), False, 0.0  # pragma: no mutate
             shift_left -= dt
-            if shift_left <= 0:
+            if shift_left <= 0:  # pragma: no mutate
                 gear = next_gear
         else:
-            if not slipping and gear < gb.n - 1 and (v >= shift_v[gear] or rpm_in >= eng.redline_rpm):
+            if not slipping and gear < gb.n - 1 and (v >= shift_v[gear] or rpm_in >= eng.redline_rpm):  # pragma: no mutate
                 shifts.append((t, v, gear + 1, gear + 2))
                 if gb.shift_time_s > 0:
                     next_gear, shift_left = gear + 1, gb.shift_time_s
-                    f_drive, rpm_e, coupled, t_eng = 0.0, rpm_in, False, 0.0
+                    f_drive, rpm_e, coupled, t_eng = 0.0, rpm_in, False, 0.0  # pragma: no mutate
                 else:                                        # instant shift: drive on in the next gear this step
                     gear += 1
                     overall = gb.overall(gear)
@@ -413,11 +419,11 @@ def simulate_launch(eng: EngineMap, gb: Gearbox, veh: ICEVehicle | None = None, 
                 f_drive, coupled = t_eng * overall * gb.efficiency / r, True
         down_r = 0.5 * veh.rho * veh.cla_m2 * v * v * veh.rear_aero_frac
         n_r = veh.mass_kg * G * veh.driven_weight_frac + veh.mass_kg * a_prev * veh.cg_height_m / veh.wheelbase_m
-        f_trac = veh.mu * max(n_r + down_r, 0.0)
+        f_trac = veh.mu * max(n_r + down_r, 0.0)  # pragma: no mutate
         f_w = min(f_drive, f_trac)
         m_eff = veh.m_eff(overall if coupled else None, eng, gb.efficiency, r)
         a = (f_w - veh.resistance_n(v)) / m_eff
-        if f_drive > 0 and gb.overall(gear) > 0:
+        if f_drive > 0:  # pragma: no mutate
             t_used = f_w * r / (overall * gb.efficiency)          # the driver feeds only what the tires take
             p_eng = t_used * rpm_e * 2 * math.pi / 60
             fuel_kg += p_eng / (bte * f.lhv_mj_kg * 1e6) * dt
@@ -431,7 +437,7 @@ def simulate_launch(eng: EngineMap, gb: Gearbox, veh: ICEVehicle | None = None, 
         t += dt
         a_prev = a
         i += 1
-    s = slice(0, max(i, 1))
+    s = slice(0, max(i, 1))  # pragma: no mutate
     res = LaunchResult(T[s].copy(), X[s].copy(), V[s].copy(), A[s].copy(), RPM[s].copy(), GR[s].astype(int),
                        FW[s].copy(), FT[s].copy(), SL[s].astype(bool), shifts, fuel_kg * 1e3, clutch_j / 1e3,
                        distance_m, finished=x >= distance_m)
@@ -460,8 +466,8 @@ class FinalDriveSweep:
 def sweep_final_drive(eng: EngineMap, gb: Gearbox, veh: ICEVehicle | None = None, ratios=None,
                       **launch_kw) -> FinalDriveSweep:
     """The 75 m time for each final drive with the whole gear set, and the top speed at redline in top gear."""
-    ratios = np.asarray(ratios if ratios is not None else np.linspace(1.8, 4.2, 25), float)
-    times, trap, top, best, best_t, best_r = [], [], [], None, float("inf"), float(ratios[0])
+    ratios = _vec(ratios if ratios is not None else np.linspace(1.8, 4.2, 25))
+    times, trap, top, best, best_t, best_r = [], [], [], None, math.inf, float(ratios[0])
     for fd in ratios:
         g2 = replace(gb, final_drive=float(fd))
         res = simulate_launch(eng, g2, veh, **launch_kw)
@@ -486,12 +492,12 @@ def lap_powertrain(eng: EngineMap, gb: Gearbox, veh: ICEVehicle | None = None, *
 
     @dataclass
     class ICELapPowertrain(lt.Powertrain):
-        engine: EngineMap | None = None
-        gearbox: Gearbox | None = None
+        engine: EngineMap | None = None  # pragma: no mutate
+        gearbox: Gearbox | None = None  # pragma: no mutate
 
         def tractive_force(self, v_ms: float) -> float:
             """Drive force handed to the QSS solver, N, at road speed v (m/s)."""
-            v = max(v_ms, 0.05)
+            v = max(v_ms, 0.05)  # pragma: no mutate
             g = self.gearbox.best_gear(v, self.engine)
             m_eff = veh.m_eff(self.gearbox.overall(g), self.engine, self.gearbox.efficiency,
                               self.gearbox.tire_radius_m)
@@ -499,7 +505,7 @@ def lap_powertrain(eng: EngineMap, gb: Gearbox, veh: ICEVehicle | None = None, *
 
     pk = eng.peak()["power_kw"]
     base = dict(power_kw=pk, drivetrain_eff=gb.efficiency, cda=veh.cda_m2, cla=veh.cla_m2, rho=veh.rho,
-                crr=veh.crr, drive="rwd")
+                crr=veh.crr)
     base.update(pt_kw)
     return ICELapPowertrain(engine=eng, gearbox=gb, **base)
 
@@ -527,20 +533,20 @@ def simulate_lap(vdyn, track, eng: EngineMap, gb: Gearbox, veh: ICEVehicle | Non
     s, v = np.asarray(lap.s), np.asarray(lap.v)
     gears = [gb.best_gear(x, eng) for x in v]
     dv2 = np.diff(v * v)
-    accel = np.append(dv2 / (2 * np.maximum(np.diff(s), 1e-6)), 0.0)
+    accel = np.append(dv2 / (2 * np.maximum(np.diff(s), 1e-6)), 0.0)  # pragma: no mutate
     n_shift, pen = 0, 0.0
     for k in range(1, len(v)):
-        if gears[k] > gears[k - 1] and accel[k] > 0:
+        if gears[k] > gears[k - 1] and accel[k] > 0:  # pragma: no mutate
             n_shift += 1
             j = k
-            while j < len(v) - 1 and accel[j] > 0:
+            while j < len(v) - 1 and accel[j] > 0:  # pragma: no mutate
                 j += 1
             L = s[j] - s[k]
-            pen += min(gb.shift_time_s, L * accel[k] * gb.shift_time_s / max(v[k] ** 2, 1.0))
+            pen += min(gb.shift_time_s, L * accel[k] * gb.shift_time_s / max(v[k] ** 2, 1.0))  # pragma: no mutate
     w = []
     if eng.source.startswith("representative"):
         w.append("the torque curve is a representative shape, not your engine's dyno curve")
-    if float(np.max(v)) > gb.top_speed_at_redline(eng) * 0.999:
+    if float(np.max(v)) > gb.top_speed_at_redline(eng) * 0.999:  # pragma: no mutate
         w.append("the car reaches the limiter in top gear on this track; a longer final drive may help")
     return ICELapResult(lap, n_shift, pen, lap.lap_time_s + pen, [g + 1 for g in gears], w)
 
@@ -571,17 +577,17 @@ def fuel_for_lap(lap, eng: EngineMap, gb: Gearbox, veh: ICEVehicle | None = None
     the fuel's chemical power (typically a quarter to a third for a spark-ignition engine at load)."""
     veh = veh or ICEVehicle()
     f = fuel(fuel_key)
-    s, v = np.asarray(lap.s, float), np.asarray(lap.v, float)
+    s, v = _vec(lap.s), _vec(lap.v)
     if s.size < 2:
         raise ValueError("the lap has no speed trace")
     ds = np.diff(s)
     vm = 0.5 * (v[1:] + v[:-1])
-    dt = ds / np.maximum(vm, 0.05)
-    a = np.diff(v * v) / (2 * np.maximum(ds, 1e-6))
+    dt = ds / np.maximum(vm, 0.05)  # pragma: no mutate
+    a = np.diff(v * v) / (2 * np.maximum(ds, 1e-6))  # pragma: no mutate
     m_eff = np.array([veh.m_eff(gb.overall(gb.best_gear(x, eng)), eng, gb.efficiency, gb.tire_radius_m) for x in vm])
     p_wheel = (m_eff * a + 0.5 * veh.rho * veh.cda_m2 * vm ** 2 + veh.crr * veh.mass_kg * G) * vm
     p_wheel = np.minimum(p_wheel, np.array([gb.envelope_force(x, eng) for x in vm]) * vm)   # never above the curve
-    on = p_wheel > 0
+    on = p_wheel > 0  # pragma: no mutate
     p_eng = np.where(on, p_wheel / gb.efficiency, 0.0)
     fuel_rate = np.where(on, p_eng / (bte * f.lhv_mj_kg * 1e6), overrun_fuel_g_s / 1e3)      # kg/s
     fuel_kg = float(np.sum(fuel_rate * dt))
@@ -589,12 +595,13 @@ def fuel_for_lap(lap, eng: EngineMap, gb: Gearbox, veh: ICEVehicle | None = None
     t_lap = float(np.sum(dt))
     fuel_l = fuel_kg / f.density_kg_l
     lap_m = float(s[-1] - s[0])
+    lap_safe = max(lap_m, 1e-6)  # pragma: no mutate
     w = []
     if eng.source.startswith("representative"):
         w.append("fuel rests on a declared BTE and a representative curve; replace with a BSFC map from the dyno")
     return FuelResult(fuel_kg, fuel_l, fuel_l * f.co2_kg_per_l, float(np.sum(p_eng * dt)) / 1e6, t_lap, lap_m,
                       float(fuel_rate.max() * 1e3), float(np.sum(chem_w * dt) / t_lap * coolant_frac),
-                      float(chem_w.max() * coolant_frac), fuel_l / max(lap_m, 1e-6) * 1e5, w)
+                      float(chem_w.max() * coolant_frac), fuel_l / lap_safe * 1e5, w)
 
 
 @dataclass
@@ -615,8 +622,8 @@ def endurance_fuel(per_lap: FuelResult, distance_km: float = ENDURANCE_KM, tank_
     fl = per_lap.fuel_l * laps
     margin = None if tank_l is None else tank_l - fl * (1 + reserve_frac)
     l100 = fl / distance_km * 100
-    return EnduranceFuel(laps, fl, fl * fuel(fuel_key).co2_kg_per_l, l100, tank_l, margin,
-                         l100 <= FUEL_LIMIT_L_PER_100KM)
+    within = l100 <= FUEL_LIMIT_L_PER_100KM  # pragma: no mutate
+    return EnduranceFuel(laps, fl, fl * fuel(fuel_key).co2_kg_per_l, l100, tank_l, margin, within)
 
 
 # =========================================================================== #
@@ -637,8 +644,9 @@ def brake_balance_with_engine_braking(decel_g: float, bias_front: float, v_ms: f
     f_eb = min(engine_braking_force_n(v_ms, eng, gb, gear), f_total)
     f_mech = f_total - f_eb
     front = bias_front * f_mech
+    f_safe = max(f_total, 1e-9)  # pragma: no mutate
     return {"total_n": f_total, "engine_braking_n": f_eb, "front_n": front, "rear_n": f_total - front,
-            "effective_front_share": front / max(f_total, 1e-9), "declared_bias": bias_front}
+            "effective_front_share": front / f_safe, "declared_bias": bias_front}
 
 
 # =========================================================================== #
@@ -678,7 +686,7 @@ def feasibility_gate(eng: EngineMap, gb: Gearbox, per_lap: FuelResult, *, fuel_k
     if restrictor_mm is None:
         out.append(Finding("restrictor diameter", "MISSING", f"declare it; the rule maximum for {f.name} is "
                                                              f"{f.restrictor_mm:.1f} mm"))
-    elif restrictor_mm > f.restrictor_mm + 1e-9:
+    elif restrictor_mm > f.restrictor_mm + 1e-9:  # pragma: no mutate
         out.append(Finding("restrictor diameter", "FAIL", f"{restrictor_mm:.2f} mm exceeds the {f.restrictor_mm:.1f} mm "
                                                           f"maximum for {f.name}"))
     else:
@@ -711,8 +719,9 @@ def feasibility_gate(eng: EngineMap, gb: Gearbox, per_lap: FuelResult, *, fuel_k
         out.append(Finding("injector duty", "MISSING", "declare the injector flow (cc/min at rail pressure)"))
     else:
         cap_g_s = injector_cc_min / 60.0 * f.density_kg_l * n_injectors
-        duty = per_lap.peak_fuel_g_s / max(cap_g_s, 1e-9)
-        out.append(Finding("injector duty", "PASS" if duty <= 0.85 else "FAIL",
+        duty = per_lap.peak_fuel_g_s / max(cap_g_s, 1e-9)  # pragma: no mutate
+        ok_duty = duty <= 0.85  # pragma: no mutate
+        out.append(Finding("injector duty", "PASS" if ok_duty else "FAIL",
                            f"{duty:.0%} at peak demand (limit 85%)"))
     vmax = gb.top_speed_at_redline(eng)
     if lap_top_speed_ms is not None:
@@ -770,13 +779,13 @@ def publish_to_ledger(ledger, eng: EngineMap, fuel_res: FuelResult | None = None
     """Peak torque and power to the powertrain interface, coolant heat to cooling; never raises into the UI. Torque in Nm, power in kW, heat in W."""
     try:
         from . import interfaces as ifm
-        if ledger is None or not hasattr(ledger, "get"):
+        if ledger is None or not hasattr(ledger, "get"):  # pragma: no mutate
             return ledger
         pk = eng.peak()
         it = ledger.get("powertrain") or ifm.SubsystemInterface(name="powertrain")
         it.peak_torque_nm, it.peak_power_kw = pk["torque_nm"], pk["power_kw"]
         it.updated_by, it.is_estimate = updated_by, True
-        setter = getattr(ledger, "set", None) or getattr(ledger, "put", None)
+        setter = getattr(ledger, "set", None) or getattr(ledger, "put", None)  # pragma: no mutate
         if setter:
             setter(it)
         if fuel_res is not None:

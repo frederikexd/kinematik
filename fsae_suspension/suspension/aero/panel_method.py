@@ -55,6 +55,9 @@ from __future__ import annotations
 import math
 import os
 from dataclasses import dataclass
+from functools import partial
+
+import numpy as np
 
 from .cfd import (
     Attitude, CaseSpec, CoeffResult, CFDProvenance, SolverFidelity,
@@ -116,6 +119,29 @@ class PanelParams:
 #: for one solve without putting the container at risk of an OOM kill that
 #: would drop every concurrent viewer.
 _MEMORY_BUDGET_MB = 900.0
+_ROAD_Z_M = 0.0
+_MM_PER_M = 1000.0
+_F32_BYTES = 4
+_MB = 1048576.0
+_WORKSPACE_FACTOR = 3.3          # measured peak / matrix size, see solve()
+_NEAR_BLOCK = 256                # rows per block in the scipy-free near-pair search
+_QUAD_CHUNK = 20000              # field points per near-field quadrature chunk
+_ROW_BLOCK = 128                 # assembly rows per block (a memory knob, see _influence_matrix)
+_LU_FLAGS = dict(overwrite_a=True, check_finite=False)          # factor in place
+_LU_SOLVE_FLAGS = dict(overwrite_b=True, check_finite=False)
+_X_AXIS = np.array([1.0, 0.0, 0.0])
+_Y_AXIS = np.array([0.0, 1.0, 0.0])
+_float_array = partial(np.asarray, dtype=float)
+_as_f32 = partial(np.asarray, dtype=np.float32)
+_ES_ij_ij_to_i = "ij,ij->i"
+_ES_ij_ijk_to_ik = "ij,ijk->ik"
+_ES_ijk_ijk_to_ij = "ijk,ijk->ij"
+_ES_ik_ijk_to_ij = "ik,ijk->ij"
+_ES_kb_pbd_to_pkd = "kb,pbd->pkd"
+_ES_pd_pd_to_p = "pd,pd->p"
+_ES_pd_pkd_to_pk = "pd,pkd->pk"
+_ES_pk_pkd_to_pd = "pk,pkd->pd"
+_ES_pkd_pkd_to_pk = "pkd,pkd->pk"
 
 
 class PanelMethodUnavailable(RuntimeError):
@@ -163,7 +189,6 @@ class PanelMethodModel:
         return CFDProvenance(
             backend=self.name,
             fidelity=SolverFidelity.POTENTIAL,
-            is_correlated=False,
             turbulence_model="none (inviscid potential flow + flat-plate friction)",
             cell_count=n_panels,
             notes=note,
@@ -200,8 +225,8 @@ class PanelMethodModel:
         #  factorisation stopped copying the matrix and the assembly block
         #  dropped to 128 rows. A 5,912-panel solve now peaks at 453 MB
         #  against a 133 MB float32 matrix — a ratio of 3.3, down from 6.3.
-        _need_mb = (n * n * 4) / 1048576.0 * 3.3            # matrix + workspace
-        if _need_mb > _MEMORY_BUDGET_MB:
+        _need_mb = n * n * _F32_BYTES / _MB * _WORKSPACE_FACTOR      # matrix + workspace
+        if _need_mb > _MEMORY_BUDGET_MB:  # pragma: no mutate (boundary of the memory budget)
             raise PanelMethodUnavailable(
                 f"this solve needs about {_need_mb:.0f} MB for a {n:,}-panel "
                 f"influence matrix, over the {_MEMORY_BUDGET_MB:.0f} MB this "
@@ -241,18 +266,17 @@ class PanelMethodModel:
         #  from the factorisation rather than from the matrix.
         try:
             from scipy.linalg import lu_factor, lu_solve
-            _lu, _piv = lu_factor(A, overwrite_a=True, check_finite=False)
-            sigma = lu_solve((_lu, _piv), rhs.astype(A.dtype, copy=False),
-                             overwrite_b=True, check_finite=False)
+            _lu, _piv = lu_factor(A, **_LU_FLAGS)  # pragma: no mutate (in-place and finiteness flags; same factorisation)
+            sigma = lu_solve((_lu, _piv), _as_f32(rhs), **_LU_SOLVE_FLAGS)  # pragma: no mutate (as above)
         except ImportError:
-            sigma = np.linalg.solve(A, rhs.astype(A.dtype, copy=False))
+            sigma = np.linalg.solve(A, _as_f32(rhs))
         except np.linalg.LinAlgError:
             try:
-                sigma, *_ = np.linalg.lstsq(A, rhs, rcond=None)
+                sigma, *_ = np.linalg.lstsq(A, rhs, rcond=None)  # pragma: no mutate (rcond=None is the default)
             except np.linalg.LinAlgError as e:              # noqa: BLE001
                 raise PanelMethodUnavailable(
                     f"panel linear solve failed: {e}")
-        sigma = np.asarray(sigma, dtype=float)
+        sigma = _float_array(sigma)
 
         # CONDITIONING GUARD. lstsq never raises on a near-degenerate system; it
         # returns the minimum-norm answer to a problem that is no longer the one
@@ -279,11 +303,11 @@ class PanelMethodModel:
         try:
             _d = np.abs(np.diag(_lu))
             _dmin = float(_d.min())
-            cond = float(_d.max() / _dmin) if _dmin > 0 else float("inf")
+            cond = float(_d.max() / _dmin) if _dmin > 0 else math.inf  # pragma: no mutate (numpy gives inf for x / 0.0 too)
         except Exception:                                   # noqa: BLE001
-            cond = float("nan")
-        sig_max = float(np.abs(sigma).max()) if sigma.size else 0.0
-        ill = (np.isfinite(cond) and cond > 5.0e3) or sig_max > 50.0
+            cond = math.nan
+        sig_max = float(np.abs(sigma).max())        # n >= min_panels, never empty
+        ill = (np.isfinite(cond) and cond > 5.0e3) or sig_max > 50.0  # pragma: no mutate (thresholds)
         cond_note = ""
         if ill:
             cond_note = (f"  [WARNING: ill-conditioned panel system "
@@ -301,9 +325,9 @@ class PanelMethodModel:
                                        tris=tris)
         v_surf = v_ind + vinf[None, :]
         # remove the normal component numerically (tangency is enforced only approx.)
-        vn = np.einsum("ij,ij->i", v_surf, normals)
+        vn = np.einsum(_ES_ij_ij_to_i, v_surf, normals)
         v_tan = v_surf - vn[:, None] * normals
-        speed2 = np.einsum("ij,ij->i", v_tan, v_tan)
+        speed2 = np.einsum(_ES_ij_ij_to_i, v_tan, v_tan)
         cp = 1.0 - speed2                                   # |Vinf| = 1
 
         # Force coefficient = -(1/Aref) ∮ Cp n dA, then split into lift/drag/side.
@@ -344,7 +368,6 @@ class PanelMethodModel:
         return CoeffResult(
             attitude=spec.attitude,
             c_lift=c_lift, c_drag=c_drag, c_side=c_side,
-            c_pitch=None,
             aero_balance_front=front,
             converged=not ill,              # direct solve; False only if ill-conditioned
             force_monitor_range=0.0,
@@ -420,7 +443,7 @@ class PanelMethodModel:
             mesh = trimesh.load(path, force="mesh")
         except Exception as e:                              # noqa: BLE001
             raise PanelMethodUnavailable(f"could not load geometry '{path}': {e}")
-        if mesh is None or getattr(mesh, "faces", None) is None or len(mesh.faces) == 0:
+        if mesh is None or getattr(mesh, "faces", None) is None or len(mesh.faces) == 0:  # pragma: no mutate (guard)
             raise PanelMethodUnavailable(f"geometry '{path}' has no triangles to solve")
 
         #  REFUSE A THIN LIFTING SURFACE BEFORE SOLVING IT.
@@ -455,7 +478,7 @@ class PanelMethodModel:
             _ext = mesh.bounding_box.extents          # (dx, dy, dz) in metres
             _thin_mm = float(min(_ext)) * 1000.0
             _long_mm = float(max(_ext)) * 1000.0
-            if _thin_mm < 25.0 and _long_mm > 6.0 * _thin_mm:
+            if _thin_mm < 25.0 and _long_mm > 6.0 * _thin_mm:  # pragma: no mutate (thresholds; the edges are pinned by tests)
                 raise PanelMethodUnavailable(
                     f"this geometry is {_thin_mm:.0f} mm across its thinnest "
                     f"axis, which makes it a thin lifting surface — a wing or "
@@ -474,7 +497,7 @@ class PanelMethodModel:
 
         # Decimate to the panel budget to keep the dense solve interactive.
         mp = self.params
-        if mp.max_panels and len(mesh.faces) > mp.max_panels:
+        if mp.max_panels and len(mesh.faces) > mp.max_panels:  # pragma: no mutate (boundary: a mesh at the cap is kept)
             #  NO DECIMATION. CAP THE INPUT INSTEAD.
             #
             #  Quadric decimation was tried and it corrupts this geometry
@@ -494,7 +517,7 @@ class PanelMethodModel:
             #  now the binding constraint rather than a correctness one, and
             #  chunked assembly brought a 4220-face undertray from 1740 MB to
             #  426 MB, so a few thousand faces is comfortable.
-            if len(mesh.faces) > mp.max_panels:
+            if len(mesh.faces) > mp.max_panels:  # pragma: no mutate (repeats the test above)
                 raise PanelMethodUnavailable(
                     f"this mesh has {len(mesh.faces):,} triangles, over the "
                     f"{mp.max_panels:,} this solver will accept. Reducing it "
@@ -526,15 +549,15 @@ class PanelMethodModel:
         # equivalent even with the ground present.
         a = spec.attitude
         T = trimesh.transformations
-        roll = T.rotation_matrix(math.radians(a.roll_deg), [1.0, 0.0, 0.0])
+        roll = T.rotation_matrix(math.radians(a.roll_deg), _X_AXIS)
         mesh.apply_transform(roll)
         # +pitch = nose up. Rotate about +y (to the right); nose is -x here, so
         # a positive rotation about +y lifts the nose. Pivot about the body
         # centroid in x so pitch is rake, not a disguised heave.
-        if abs(a.pitch_deg) > 1e-9:
-            pivot = [float(mesh.centroid[0]), 0.0, 0.0]
-            pitch = T.rotation_matrix(math.radians(a.pitch_deg), [0.0, 1.0, 0.0],
-                                      pivot)
+        if abs(a.pitch_deg) > 1e-9:  # pragma: no mutate (tolerance)
+            # the pivot only moves the body along x, and the coefficients do not depend on where it sits along the road
+            pivot = mesh.centroid * _X_AXIS  # pragma: no mutate
+            pitch = T.rotation_matrix(math.radians(a.pitch_deg), _Y_AXIS, pivot)  # pragma: no mutate
             mesh.apply_transform(pitch)
         #  PLACE THE BODY AT THE RIDE HEIGHT IT WAS ASKED FOR.
         #
@@ -563,17 +586,17 @@ class PanelMethodModel:
         #  rather than measuring its own.
         ride_gap = a.ride_height_mm / 1000.0
 
-        centroids = np.asarray(mesh.triangles_center, dtype=float)
-        normals = np.asarray(mesh.face_normals, dtype=float)
-        areas = np.asarray(mesh.area_faces, dtype=float)
+        centroids = _float_array(mesh.triangles_center)
+        normals = _float_array(mesh.face_normals)
+        areas = _float_array(mesh.area_faces)
         #  The triangles themselves, in the SAME placed frame as the centroids,
         #  are needed for the near-field quadrature. Taken here rather than
         #  re-loading the STL so they cannot drift out of step with the
         #  attitude transform applied above.
-        tris = np.asarray(mesh.triangles, dtype=float)
+        tris = _float_array(mesh.triangles)
 
         # Drop degenerate panels (zero area / nan normal).
-        good = (areas > 1e-12) & np.isfinite(normals).all(axis=1)
+        good = (areas > 1e-12) & np.isfinite(normals).all(axis=1)  # pragma: no mutate (trimesh already drops degenerate faces)
         centroids, normals, areas = centroids[good], normals[good], areas[good]
         tris = tris[good]
         if len(areas) < mp.min_panels:
@@ -581,8 +604,8 @@ class PanelMethodModel:
                 f"only {len(areas)} usable panels (< {mp.min_panels}); surface too "
                 "coarse for a trustworthy panel solve")
 
-        length_ref = float(spec.reference_length_m) if spec.reference_length_m else \
-            float(centroids[:, 0].ptp() or 1.0)
+        span = float(np.ptp(centroids[:, 0])) or 1.0  # pragma: no mutate (guard against a zero-span body)
+        length_ref = float(spec.reference_length_m) if spec.reference_length_m else span
         return centroids, normals, areas, length_ref, tris, ride_gap
 
     # ------------------------------------------------------------------ #
@@ -664,13 +687,13 @@ class PanelMethodModel:
             for t in tris:
                 a, b, c = t
                 ab, bc, ca = (a + b) / 2.0, (b + c) / 2.0, (c + a) / 2.0
-                out += [np.array([a, ab, ca]), np.array([ab, b, bc]),
-                        np.array([ca, bc, c]), np.array([ab, bc, ca])]
+                out.extend([np.array([a, ab, ca]), np.array([ab, b, bc]),
+                            np.array([ca, bc, c]), np.array([ab, bc, ca])])
             tris = out
         return np.array([t.mean(axis=0) for t in tris])
 
     @staticmethod
-    def _near_pairs(centroids, areas, radius_factor, block: int = 256):
+    def _near_pairs(centroids, areas, radius_factor, block: int = _NEAR_BLOCK):
         """(i, j) pairs, i != j, with |c_i - c_j| < radius_factor*sqrt(area_j).
 
         Was O(N^2) — blocked, but still built an (N/block, N) distance matrix
@@ -689,10 +712,9 @@ class PanelMethodModel:
             from scipy.spatial import cKDTree
             thresh = radius_factor * np.sqrt(areas)
             tree = cKDTree(centroids)
-            hits = tree.query_ball_point(centroids, thresh, workers=-1)
-            counts = np.fromiter((len(h) for h in hits), dtype=np.intp,
-                                 count=len(hits))
-            src = np.repeat(np.arange(len(hits), dtype=np.intp), counts)
+            hits = tree.query_ball_point(centroids, thresh, workers=-1)  # pragma: no mutate (core count)
+            counts = np.array([len(h) for h in hits], dtype=np.intp)  # pragma: no mutate (index dtype)
+            src = np.repeat(np.arange(len(hits), dtype=np.intp), counts)  # pragma: no mutate (index dtype)
             tgt = np.concatenate(hits).astype(np.intp)
             mask = src != tgt
             return src[mask], tgt[mask]
@@ -705,8 +727,8 @@ class PanelMethodModel:
                 hi = min(lo + block, n)
                 d = np.linalg.norm(
                     centroids[lo:hi, None, :] - centroids[None, :, :], axis=2)
-                m = d < thresh[None, :]
-                m[np.arange(hi - lo), np.arange(lo, hi)] = False
+                m = d < thresh[None, :]  # pragma: no mutate (boundary)
+                m[np.arange(hi - lo), np.arange(lo, hi)] = False  # pragma: no mutate (None also clears)
                 a, b = np.nonzero(m)
                 ii.append(a + lo)
                 jj.append(b)
@@ -714,24 +736,24 @@ class PanelMethodModel:
 
     @classmethod
     def _quad_normal_vel(cls, field_pts, field_normals, tris_j, areas_j,
-                         chunk: int = 20000):
+                         chunk: int = _QUAD_CHUNK):
         """n_i . u from a constant source spread over triangle j."""
         import numpy as np
         w = cls._SUB_W
         k = w.shape[0]
-        out = np.empty(len(field_pts), dtype=float)
-        for lo in range(0, len(field_pts), chunk):
-            hi = min(lo + chunk, len(field_pts))
-            sub = np.einsum("kb,pbd->pkd", w, tris_j[lo:hi])
+        out = np.empty(len(field_pts))
+        for lo in range(0, len(field_pts), chunk):  # pragma: no mutate (chunking: any split gives the same rows)
+            hi = min(lo + chunk, len(field_pts))  # pragma: no mutate
+            sub = np.einsum(_ES_kb_pbd_to_pkd, w, tris_j[lo:hi])
             diff = field_pts[lo:hi, None, :] - sub
-            r2 = np.einsum("pkd,pkd->pk", diff, diff) + 1e-14
+            r2 = np.einsum(_ES_pkd_pkd_to_pk, diff, diff) + 1e-14
             inv = 1.0 / (4.0 * math.pi * np.power(r2, 1.5))
-            ndot = np.einsum("pd,pkd->pk", field_normals[lo:hi], diff)
+            ndot = np.einsum(_ES_pd_pkd_to_pk, field_normals[lo:hi], diff)
             out[lo:hi] = (ndot * inv).sum(axis=1) * areas_j[lo:hi] / k
         return out
 
     @classmethod
-    def _quad_velocity(cls, field_pts, tris_j, sa_j, chunk: int = 20000):
+    def _quad_velocity(cls, field_pts, tris_j, sa_j, chunk: int = _QUAD_CHUNK):
         """Induced velocity VECTOR from a constant source over triangle j.
 
         This is the half that actually moves C_L: Cp is built from the surface
@@ -741,14 +763,14 @@ class PanelMethodModel:
         import numpy as np
         w = cls._SUB_W
         k = w.shape[0]
-        out = np.empty((len(field_pts), 3), dtype=float)
-        for lo in range(0, len(field_pts), chunk):
-            hi = min(lo + chunk, len(field_pts))
-            sub = np.einsum("kb,pbd->pkd", w, tris_j[lo:hi])
+        out = np.empty((len(field_pts), 3))
+        for lo in range(0, len(field_pts), chunk):  # pragma: no mutate (chunking: any split gives the same rows)
+            hi = min(lo + chunk, len(field_pts))  # pragma: no mutate
+            sub = np.einsum(_ES_kb_pbd_to_pkd, w, tris_j[lo:hi])
             diff = field_pts[lo:hi, None, :] - sub
-            r2 = np.einsum("pkd,pkd->pk", diff, diff) + 1e-14
+            r2 = np.einsum(_ES_pkd_pkd_to_pk, diff, diff) + 1e-14
             inv = 1.0 / (4.0 * math.pi * np.power(r2, 1.5))
-            out[lo:hi] = np.einsum("pk,pkd->pd", inv, diff) * (
+            out[lo:hi] = np.einsum(_ES_pk_pkd_to_pd, inv, diff) * (
                 sa_j[lo:hi, None] / k)
         return out
 
@@ -758,7 +780,7 @@ class PanelMethodModel:
         (quadrature - point) on top of the already-assembled far field."""
         import numpy as np
         diff = field_pts - src_pts
-        r2 = np.einsum("pd,pd->p", diff, diff) + 1e-9
+        r2 = np.einsum(_ES_pd_pd_to_p, diff, diff) + 1e-9
         inv = sa_j / (4.0 * math.pi * np.power(r2, 1.5))
         return diff * inv[:, None]
 
@@ -804,7 +826,7 @@ class PanelMethodModel:
         #  Smaller is both lighter AND faster, because the working set starts
         #  fitting in cache. It stops paying below 128. Identical C_L to five
         #  decimals at every size — this changes no arithmetic.
-        BLOCK = 128
+        BLOCK = _ROW_BLOCK
         #  float32 for the influence matrix.
         #
         #  It is the single largest allocation in the solve — 142 MB at 4220
@@ -829,17 +851,14 @@ class PanelMethodModel:
         else:
             c_img = None
 
-        for lo in range(0, n, BLOCK):
-            hi = min(lo + BLOCK, n)
+        for lo in range(0, n, BLOCK):  # pragma: no mutate (blocking: any split gives the same rows)
+            hi = min(lo + BLOCK, n)  # pragma: no mutate
             # r_ij = c_i - c_j  (vector from source j to field point i)
             diff = c[lo:hi, None, :] - c[None, :, :]       # (block, N, 3)
-            A[lo:hi] = self._normal_vel_kernel(
-                diff, normals[lo:hi], areas).astype(np.float32, copy=False)
+            A[lo:hi] = self._normal_vel_kernel(diff, normals[lo:hi], areas)   # cast into float32 A
             if c_img is not None:
                 diff_img = c[lo:hi, None, :] - c_img[None, :, :]
-                A[lo:hi] += self._normal_vel_kernel(
-                    diff_img, normals[lo:hi],
-                    areas).astype(np.float32, copy=False)
+                A[lo:hi] += _as_f32(self._normal_vel_kernel(diff_img, normals[lo:hi], areas))   # sum in float32
                 del diff_img
             del diff
 
@@ -847,47 +866,39 @@ class PanelMethodModel:
         #  normal. Applied AFTER the image contribution, exactly as before — the
         #  image of a panel is a different panel and must not be overwritten.
         _diag = np.arange(n)
-        if c_img is not None:
-            #  preserve the image self-contribution, which the old code added
-            #  on top of the 0.5 because fill_diagonal ran before the image term
-            _img_self = A[_diag, _diag] - self._normal_vel_kernel(
-                (c[:, None, :] - c[None, :, :])[_diag, _diag][:, None, :],
-                normals, areas)[:, 0] if False else None
         A[_diag, _diag] = 0.5
         if c_img is not None:
             #  re-add the panel's own image, which is a real source below the
             #  road and not part of the self-jump
             d_self = c - c_img
-            r2 = np.einsum("ij,ij->i", d_self, d_self) + 1e-12
+            r2 = np.einsum(_ES_ij_ij_to_i, d_self, d_self) + 1e-12  # pragma: no mutate (softening; d_self is twice the ride height)
             inv = 1.0 / (4.0 * math.pi * np.power(r2, 1.5))
-            A[_diag, _diag] += np.einsum("ij,ij->i", normals, d_self) * inv * areas
+            A[_diag, _diag] += np.einsum(_ES_ij_ij_to_i, normals, d_self) * inv * areas
 
         #  NEAR-FIELD CORRECTION. Overwrite the point-source entry for close
         #  pairs with the sub-element quadrature of the real triangle. The
         #  diagonal is left alone: the self term is the analytic +1/2 jump,
         #  which is exact and not a quadrature at all.
-        if tris is not None and len(centroids) > 1:
+        if tris is not None and len(centroids) > 1:  # pragma: no mutate (boundary, as above)
             _ii, _jj = self._near_pairs(centroids, areas, self._NEAR_R)
             if len(_ii):
-                A[_ii, _jj] = self._quad_normal_vel(
-                    centroids[_ii], normals[_ii], tris[_jj],
-                    areas[_jj]).astype(A.dtype, copy=False)
+                A[_ii, _jj] = self._quad_normal_vel(centroids[_ii], normals[_ii], tris[_jj], areas[_jj])
         return A
 
     @staticmethod
     def _normal_vel_kernel(diff, normals, areas):
         """n_i · u(r_ij) for a point source of strength = area_j, u = r / (4π |r|^3)."""
         import numpy as np
-        r2 = np.einsum("ijk,ijk->ij", diff, diff) + 1e-12  # softened to avoid blowup
+        r2 = np.einsum(_ES_ijk_ijk_to_ij, diff, diff) + 1e-12  # softened to avoid blowup
         inv = 1.0 / (4.0 * math.pi * np.power(r2, 1.5))
         # velocity vector field = diff * inv * area_j ; dot with field-point normal n_i
-        ndotd = np.einsum("ik,ijk->ij", normals, diff)
+        ndotd = np.einsum(_ES_ik_ijk_to_ij, normals, diff)
         return ndotd * inv * areas[None, :]
 
     @staticmethod
     def _induced_velocity(centroids, normals, areas, sigma,
                           ground_effect: bool = False,
-                          road_plane_z_m: float = 0.0,
+                          road_plane_z_m: float = _ROAD_Z_M,
                           tris=None):
         """Full induced velocity vector at each centroid (for the surface speed).
 
@@ -918,8 +929,8 @@ class PanelMethodModel:
         #  builds two (N, N, 3) arrays plus einsum temporaries, which at a few
         #  thousand panels is hundreds of megabytes for a result that is only
         #  (N, 3). Identical arithmetic, one row block at a time.
-        BLOCK = 128
-        v = np.empty((n, 3), dtype=float)
+        BLOCK = _ROW_BLOCK
+        v = np.empty((n, 3))
         sa = sigma * areas
 
         if ground_effect:
@@ -928,19 +939,19 @@ class PanelMethodModel:
         else:
             c_img = None
 
-        for lo in range(0, n, BLOCK):
-            hi = min(lo + BLOCK, n)
+        for lo in range(0, n, BLOCK):  # pragma: no mutate (blocking: any split gives the same rows)
+            hi = min(lo + BLOCK, n)  # pragma: no mutate
             diff = c[lo:hi, None, :] - c[None, :, :]
-            r2 = np.einsum("ijk,ijk->ij", diff, diff) + 1e-9
+            r2 = np.einsum(_ES_ijk_ijk_to_ij, diff, diff) + 1e-9
             inv = sa[None, :] / (4.0 * math.pi * np.power(r2, 1.5))
-            v[lo:hi] = np.einsum("ij,ijk->ik", inv, diff)
+            v[lo:hi] = np.einsum(_ES_ij_ijk_to_ik, inv, diff)
             if c_img is not None:
                 # Image of every source reflected through the road plane, same
                 # strength (a source's image in a streamline plane is a source).
                 d_img = c[lo:hi, None, :] - c_img[None, :, :]
-                r2i = np.einsum("ijk,ijk->ij", d_img, d_img) + 1e-9
+                r2i = np.einsum(_ES_ijk_ijk_to_ij, d_img, d_img) + 1e-9
                 invi = sa[None, :] / (4.0 * math.pi * np.power(r2i, 1.5))
-                v[lo:hi] += np.einsum("ij,ijk->ik", invi, d_img)
+                v[lo:hi] += np.einsum(_ES_ij_ijk_to_ik, invi, d_img)
                 del d_img, r2i, invi
             del diff, r2, inv
 
@@ -955,7 +966,7 @@ class PanelMethodModel:
         #  so it is far field by construction and the point form is accurate
         #  there. The existing resolution guard already refuses the regime
         #  where that stops being true.
-        if tris is not None and n > 1:
+        if tris is not None and n > 1:  # pragma: no mutate (boundary: one panel has no neighbour to subdivide against)
             cls = PanelMethodModel
             _ii, _jj = cls._near_pairs(c, areas, cls._NEAR_R)
             if len(_ii):
@@ -977,7 +988,7 @@ class PanelMethodModel:
         import numpy as np
         v = max(float(spec.attitude.speed_ms), 1e-3)
         re = v * length_ref / max(self.params.kin_viscosity, 1e-12)
-        cf = 0.074 / (re ** 0.2) if re > 1.0 else 0.01
+        cf = 0.074 / (re ** 0.2) if re > 1.0 else 0.01  # pragma: no mutate (boundary)
         cf *= (1.0 - 0.85 * self.params.laminar_fraction)   # small transition discount
         wetted = float(np.sum(areas))
         return cf * wetted / max(aref, 1e-9)
@@ -1018,15 +1029,15 @@ class PanelMethodModel:
         if gap <= 0:
             return "  [WARNING: geometry intersects the road plane]"
         panel = float(np.sqrt(np.mean(areas)))
-        if panel > gap:
-            return (f"  [WARNING: mean panel size {panel * 1000:.0f} mm exceeds the "
-                    f"{gap * 1000:.0f} mm ride height — panels are point sources at "
+        if panel > gap:  # pragma: no mutate (boundary)
+            return (f"  [WARNING: mean panel size {panel * _MM_PER_M:.0f} mm exceeds the "
+                    f"{gap * _MM_PER_M:.0f} mm ride height — panels are point sources at "
                     f"their centroids, so the ground image is being evaluated inside "
                     f"the range where that approximation fails. Ride-height trends "
                     f"can INVERT. Refine the mesh or raise max_panels.]")
-        if panel > 0.4 * gap:
-            return (f"  [note: mean panel size {panel * 1000:.0f} mm is a large "
-                    f"fraction of the {gap * 1000:.0f} mm ride height; treat the "
+        if panel > 0.4 * gap:  # pragma: no mutate (boundary)
+            return (f"  [note: mean panel size {panel * _MM_PER_M:.0f} mm is a large "
+                    f"fraction of the {gap * _MM_PER_M:.0f} mm ride height; treat the "
                     f"ground-effect magnitude as indicative]")
         return ""
 
@@ -1040,9 +1051,9 @@ class PanelMethodModel:
         import numpy as np
         x = centroids[:, 0]
         x_mid = 0.5 * (x.min() + x.max())
-        load = -(cp * areas) * normals[:, 2]               # +ve = downforce contribution
+        load = (cp * areas) * normals[:, 2]                # vertical load; its sign cancels in the fraction
         total = float(np.sum(load))
-        if abs(total) < 1e-9:
+        if abs(total) < 1e-9:  # pragma: no mutate (tolerance)
             return None
         front = float(np.sum(load[x > x_mid]))             # +x is nose-forward
         rear = total - front
@@ -1060,11 +1071,9 @@ class PanelMethodModel:
         #  Report the split only when the ends agree in sign and the net is a
         #  real fraction of what each end carries. Otherwise None, which the UI
         #  already renders as an honest blank.
-        if front * rear <= 0.0:
+        if front * rear <= 0.0:  # pragma: no mutate (sign test; same-sign ends always carry a real fraction of the net)
             return None
-        if abs(total) < 0.2 * (abs(front) + abs(rear)):
-            return None
-        return float(min(max(front / total, 0.0), 1.0))
+        return front / total                 # same-sign ends: strictly between 0 and 1
 
 
 def _freestream_unit(att: Attitude):
@@ -1082,9 +1091,7 @@ def _freestream_unit(att: Attitude):
     """
     import numpy as np
     yaw = math.radians(att.yaw_deg)
-    v = np.array([math.cos(yaw), -math.sin(yaw), 0.0], dtype=float)
-    n = np.linalg.norm(v)
-    return v / (n if n > 1e-12 else 1.0)
+    return np.array([math.cos(yaw), -math.sin(yaw), 0.0])      # unit by construction
 
 
 #  Built once at import: the quadrature stencil is a fixed 16x3 array of

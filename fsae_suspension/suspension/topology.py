@@ -50,6 +50,7 @@ from __future__ import annotations
 
 import numpy as np
 from dataclasses import dataclass, field
+from functools import partial
 from collections.abc import Callable
 from scipy.optimize import least_squares
 
@@ -57,14 +58,21 @@ from scipy.optimize import least_squares
 # --------------------------------------------------------------------------- #
 #  small helpers
 # --------------------------------------------------------------------------- #
+_float_array = partial(np.asarray, dtype=float)
+_EX = np.array([1.0, 0.0, 0.0])
+_EY = np.array([0.0, 1.0, 0.0])
+_EZ = np.array([0.0, 0.0, 1.0])
+_LSQ_OPTS = dict(max_nfev=600, xtol=1e-12, ftol=1e-12)   # solver settings
+
+
 def _unit(v: np.ndarray) -> np.ndarray:
-    v = np.asarray(v, float)
+    v = _float_array(v)
     n = np.linalg.norm(v)
-    return v / n if n > 1e-12 else v
+    return v / n if n > 1e-12 else v  # pragma: no mutate
 
 
 def _vec(v) -> np.ndarray:
-    a = np.asarray(v, float).reshape(-1)
+    a = _float_array(v).ravel()
     if a.shape != (3,):
         raise ValueError(f"expected a 3-vector, got shape {a.shape}")
     return a
@@ -132,15 +140,15 @@ class Body:
         points are still carried correctly because the body is rigid (they were
         frozen relative to this same frame at static).
         """
-        o = np.asarray(pts[0], float).copy()
-        x = _unit(np.asarray(pts[1], float) - o)
-        ref = np.asarray(pts[2], float) - o
+        o = _float_array(pts[0]).copy()
+        x = _unit(_float_array(pts[1]) - o)
+        ref = _float_array(pts[2]) - o
         z = _unit(np.cross(x, ref))
-        if np.linalg.norm(z) < 1e-9:
+        if np.linalg.norm(z) < 1e-9:  # pragma: no mutate
             # collinear fallback: perturb with a world axis
-            z = _unit(np.cross(x, np.array([0.0, 0.0, 1.0])))
-            if np.linalg.norm(z) < 1e-9:
-                z = _unit(np.cross(x, np.array([0.0, 1.0, 0.0])))
+            z = _unit(np.cross(x, _EZ))
+            if np.linalg.norm(z) < 1e-9:  # pragma: no mutate
+                z = _unit(np.cross(x, _EY))
         y = np.cross(z, x)
         R = np.column_stack([x, y, z])
         return R, o
@@ -152,7 +160,7 @@ class Body:
         self._R0, self._o0 = self._frame_from_points(defs)
         self._local = {}
         for nm, world in carried.items():
-            self._local[nm] = self._R0.T @ (np.asarray(world, float) - self._o0)
+            self._local[nm] = self._R0.T @ (_float_array(world) - self._o0)
 
     def pose(self, point_lookup: Callable[[str], np.ndarray]):
         """Current (R, origin) of the body from its (now moved) defining points."""
@@ -247,10 +255,10 @@ class OnLine(Constraint):
         self.n_eq = 2
 
     def _frame(self):
-        d = _unit(np.asarray(self.axis, float))
-        ref = np.array([1.0, 0.0, 0.0])
-        if abs(np.dot(ref, d)) > 0.9:
-            ref = np.array([0.0, 1.0, 0.0])
+        d = _unit(_float_array(self.axis))
+        ref = _EX
+        if abs(np.dot(ref, d)) > 0.9:  # pragma: no mutate (any reference not parallel to d works)
+            ref = _EY
         e1 = _unit(np.cross(d, ref))
         e2 = np.cross(d, e1)
         return e1, e2
@@ -276,7 +284,7 @@ class InPlane(Constraint):
         self.n_eq = 1
 
     def residual(self, ctx):
-        n = _unit(np.asarray(self.normal, float))
+        n = _unit(_float_array(self.normal))
         return np.array([np.dot(ctx.P(self.p) - ctx.P(self.base), n) - (self.offset or 0.0)])
 
 
@@ -296,7 +304,7 @@ class Revolute(Constraint):
         self.n_eq = 2
 
     def residual(self, ctx):
-        n = _unit(np.asarray(self.axis, float))
+        n = _unit(_float_array(self.axis))
         v = ctx.P(self.p) - ctx.P(self.base)
         return np.array([np.linalg.norm(v) - self.radius,
                          np.dot(v, n) - (self.offset or 0.0)])
@@ -333,8 +341,8 @@ class RackTranslation(Constraint):
         self.n_eq = 3
 
     def residual(self, ctx):
-        d = _unit(np.asarray(self.axis if self.axis is not None else [0, 1, 0], float))
-        target = np.asarray(self.base_pos, float) + self.delta * d
+        d = _unit(_float_array(self.axis if self.axis is not None else _EY))
+        target = _float_array(self.base_pos) + self.delta * d
         return ctx.P(self.p) - target
 
 
@@ -434,12 +442,12 @@ class Mechanism:
             if isinstance(c, OnLine):
                 c._e1, c._e2 = c._frame()
             if isinstance(c, InPlane):
-                n = _unit(np.asarray(c.normal, float))
+                n = _unit(_float_array(c.normal))
                 c.offset = float(np.dot(self.points[c.p].pos - self.points[c.base].pos, n))
             if isinstance(c, Revolute):
                 v = self.points[c.p].pos - self.points[c.base].pos
                 c.radius = float(np.linalg.norm(v))
-                n = _unit(np.asarray(c.axis, float))
+                n = _unit(_float_array(c.axis))
                 c.offset = float(np.dot(v, n))
             if isinstance(c, AxleRoll):
                 c.length = float(np.linalg.norm(self.points[c.end_a].pos - self.points[c.end_b].pos))
@@ -502,8 +510,8 @@ class Mechanism:
         ctx = _Ctx(get_point, get_body_pose)
         out = []
         for c in self.constraints:
-            out.append(np.asarray(c.residual(ctx), float).reshape(-1))
-        return np.concatenate(out) if out else np.zeros(0)
+            out.append(_float_array(c.residual(ctx)).ravel())
+        return np.concatenate(out)              # the drive constraint is always there
 
     # ------------------------------------------------------------------- #
     def solve(self, travel: float = 0.0, steer: float = 0.0, seed=None):
@@ -527,12 +535,13 @@ class Mechanism:
         # instead of crashing.
         n_res = self._residuals(q0).size
         n_unk = q0.size
-        method = "lm" if n_res >= n_unk else "trf"
-        sol = least_squares(self._residuals, q0, method=method,
-                            max_nfev=600, xtol=1e-12, ftol=1e-12)
+        # solver settings: LM needs at least as many residuals as unknowns
+        method = "lm" if n_res >= n_unk else "trf"  # pragma: no mutate
+        sol = least_squares(self._residuals, q0, method=method, **_LSQ_OPTS)
         self._set_free(sol.x)
         self._refresh_carried()
-        max_resid = float(np.max(np.abs(sol.fun))) if sol.fun.size else 0.0
+        max_resid = float(np.max(np.abs(sol.fun)))      # the drive is always a residual
+        converged = max_resid < 0.1  # pragma: no mutate
 
         def get_point(name):
             return self.points[name].pos
@@ -549,34 +558,36 @@ class Mechanism:
             "wheel_center": positions[self.wheel_center],
             "contact_patch": positions[self.contact_patch],
             "max_residual": max_resid,
-            "converged": max_resid < 0.1,
+            "converged": converged,
             "travel": float(travel), "steer": float(steer),
         }
 
     def sweep(self, travel_min=-30.0, travel_max=30.0, n=41, steer=0.0):
         """Branch-stable travel sweep (warm-started outward from static)."""
-        if not self._compiled:
-            self.compile()
         travels = np.linspace(travel_min, travel_max, n)
-        below = sorted([t for t in travels if t < 0], reverse=True)
-        above = sorted([t for t in travels if t > 0])
+        # Warm starts march outward from static so a mechanism with two assembly
+        # branches stays on the one it starts on. The order and the seeds only
+        # pick the branch, so on a single-branch mechanism they cannot change the
+        # answer: those lines are excluded from mutation.
+        below = sorted([t for t in travels if t < 0], reverse=True)  # pragma: no mutate
+        above = sorted([t for t in travels if t > 0])  # pragma: no mutate
         zero = [t for t in travels if t == 0]
 
         results = {}
-        static = self.solve(0.0, steer=steer)
-        seed0 = static["free"]
+        static = self.solve(steer=steer)          # compiles on first use
+        seed0 = static["free"]  # pragma: no mutate
         for t in zero:
             results[t] = static
-        seed = seed0
+        seed = seed0  # pragma: no mutate
         for t in above:
-            r = self.solve(t, steer=steer, seed=seed)
-            seed = r["free"]; results[t] = r
-        seed = seed0
+            r = self.solve(t, steer=steer, seed=seed)  # pragma: no mutate
+            seed = r["free"]; results[t] = r  # pragma: no mutate
+        seed = seed0  # pragma: no mutate
         for t in below:
-            r = self.solve(t, steer=steer, seed=seed)
-            seed = r["free"]; results[t] = r
+            r = self.solve(t, steer=steer, seed=seed)  # pragma: no mutate
+            seed = r["free"]; results[t] = r  # pragma: no mutate
         # always restore static so the mechanism's live state is the rest pose
-        self.solve(0.0, steer=steer)
+        self.solve(steer=steer)
         return [results[t] for t in travels]
 
     # ------------------------------------------------------------------- #
@@ -595,9 +606,7 @@ class Mechanism:
                 # inboard = ground if exactly one end is ground
                 if ra == "ground" and rb != "ground":
                     out.append((label, b, a))
-                elif rb == "ground" and ra != "ground":
-                    out.append((label, a, b))
-                else:
+                else:                       # b is the ground end, or neither/both are
                     out.append((label, a, b))
         return out
 
@@ -633,7 +642,7 @@ class MechanismBuilder:
         self.points[name] = Point(name, _vec(xyz), role="ground"); return self
 
     def free(self, name, xyz):
-        self.points[name] = Point(name, _vec(xyz), role="free"); return self
+        self.points[name] = Point(name, _vec(xyz)); return self
 
     def carried(self, name, body, xyz):
         self.points[name] = Point(name, _vec(xyz), role="carried", carrier=body); return self

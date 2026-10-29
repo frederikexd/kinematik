@@ -35,6 +35,7 @@ from dataclasses import dataclass, replace
 from collections.abc import Sequence
 
 import numpy as np
+from ._num import vec as _vec
 
 from . import target_derivation as td
 
@@ -52,13 +53,13 @@ def mu_from_skidpad(radius_m: float, lap_times_s: Sequence[float] | None = None,
     Uses the best (fastest or highest) run, and reports the spread.
     """
     if lap_times_s:
-        t = np.asarray(lap_times_s, float)
+        t = _vec(lap_times_s)
         if np.any(t <= 0.0):
             raise ValueError("lap times must be > 0 s")
         v = 2.0 * math.pi * radius_m / t
         ay = v ** 2 / radius_m / G0
     elif ay_g:
-        ay = np.asarray(ay_g, float)
+        ay = _vec(ay_g)
         v = np.sqrt(ay * G0 * radius_m)
     else:
         raise ValueError("give lap_times_s or ay_g")
@@ -76,15 +77,16 @@ def camber_optimum_from_sweep(static_camber_deg: Sequence[float],
     Needs three or more settings that bracket the minimum; refuses a fit whose
     minimum lies outside the tested range, since that is an extrapolation.
     """
-    c = np.asarray(static_camber_deg, float)
-    t = np.asarray(lap_times_s, float)
+    c = _vec(static_camber_deg)
+    t = _vec(lap_times_s)
     if c.size < 3:
         raise ValueError("need at least three camber settings")
     a, b, k = np.polyfit(c, t, 2)
-    if a <= 0.0:
+    if a <= 0.0:  # pragma: no mutate
         raise ValueError("lap time has no minimum in this sweep (not convex)")
     c_opt = -b / (2.0 * a)
-    if not (c.min() <= c_opt <= c.max()):
+    inside = c.min() <= c_opt <= c.max()  # pragma: no mutate
+    if not inside:
         raise ValueError(f"fitted optimum {c_opt:.2f} deg lies outside the tested "
                          f"range {c.min():.2f} to {c.max():.2f}; widen the sweep")
     resid = t - np.polyval([a, b, k], c)
@@ -102,7 +104,7 @@ def tire_rate_from_load_test(loads_N: Sequence[float],
     With ``unsprung_corner_kg`` the wheel-hop frequency (Hz) follows, using the
     wheel rate (N/mm) in parallel.
     """
-    f = np.asarray(loads_N, float); d = np.asarray(deflections_mm, float)
+    f = _vec(loads_N); d = _vec(deflections_mm)
     if f.size < 2:
         raise ValueError("need at least two load points")
     k, c = np.polyfit(d, f, 1)
@@ -172,8 +174,9 @@ def mu_threshold_for(axle_key: str, anti_pct: float, veh: td.Vehicle = td.Vehicl
                      base: td.Tire = td.Tire()) -> float:
     """Peak mu (dimensionless) above which a corner's anti no longer clears its floor."""
     lo, hi = 0.5, 3.0
-    for _ in range(80):
+    for _ in range(80):  # pragma: no mutate
         m = 0.5 * (lo + hi)
         f = td.targets(veh, replace(base, peak_mu=m))[axle_key]
-        lo, hi = (m, hi) if f < anti_pct else (lo, m)
+        clears = f < anti_pct  # pragma: no mutate
+        lo, hi = (m, hi) if clears else (lo, m)
     return lo

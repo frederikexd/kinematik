@@ -1,0 +1,25 @@
+{
+ "mirror": [
+  {
+   "check": "pd-reader-ok",
+   "detail": {},
+   "message": "ElecParams.from_excel tracks edits to the workbook.",
+   "severity": "ok",
+   "subsystems": [
+    "dataacq"
+   ]
+  },
+  {
+   "check": "pd-roundtrip-mirrors-errors",
+   "detail": {},
+   "message": "[suspension/ev_excel_roundtrip.py] ev_excel_roundtrip reports the same pack current for a launch and a cruise at the same speed, which is the workbook's speed-only V*PF*RPM/1000. It should come from the road load, P = F v / eta.",
+   "severity": "fail",
+   "subsystems": [
+    "dataacq",
+    "electrics",
+    "powertrain"
+   ]
+  }
+ ],
+ "no_elec": []
+}

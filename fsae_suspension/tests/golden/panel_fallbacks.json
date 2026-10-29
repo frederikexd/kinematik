@@ -1,0 +1,89 @@
+{
+ "ill_sigma": {
+  "aero_balance_front": 0.4851757010892489,
+  "attitude": {
+   "pitch_deg": 0.0,
+   "ride_height_mm": 30.0,
+   "roll_deg": 0.0,
+   "speed_ms": 20.0,
+   "yaw_deg": 0.0
+  },
+  "c_drag": 2.777934881406181,
+  "c_lift": -120.10876881968804,
+  "c_pitch": null,
+  "c_side": 1.454392162258955e-14,
+  "converged": false,
+  "force_monitor_range": 0.0,
+  "notes": "panel solve: 80 panels, Cd(pressure)=+2.774 + Cd(friction)=0.004  [WARNING: mean panel size 115 mm exceeds the 30 mm ride height — panels are point sources at their centroids, so the ground image is being evaluated inside the range where that approximation fails. Ride-height trends can INVERT. Refine the mesh or raise max_panels.]  [WARNING: ill-conditioned panel system (cond=1.1e+00, max|sigma|=80.0) — the least-squares answer is not trustworthy at this attitude. Re-mesh or nudge the attitude; do NOT put this point in an aero map.]",
+  "provenance": {
+   "backend": "panel-method",
+   "cell_count": 80,
+   "correlated_against": "",
+   "fidelity": "potential",
+   "is_correlated": false,
+   "notes": "In-house 3D source-panel (boundary-element) potential-flow solve on the actual STL, with a ground-image plane. Resolves the attached-flow pressure field and ground effect FROM GEOMETRY (not a curve fit), so geometry deltas are meaningful. Inviscid by construction: it does NOT resolve viscous separation, stall, or the real turbulent wake — that is what the written ANSYS Fluent deck / a RANS solve is for. Skin friction is a flat-plate estimate. Correlate against the tunnel/Fluent before trusting absolute levels; trust deltas more than levels. [80 panels]",
+   "turbulence_model": "none (inviscid potential flow + flat-plate friction)",
+   "yplus_mean": null
+  },
+  "wall_clock_s": null
+ },
+ "lstsq": {
+  "aero_balance_front": 0.4404319433331214,
+  "attitude": {
+   "pitch_deg": 0.0,
+   "ride_height_mm": 30.0,
+   "roll_deg": 0.0,
+   "speed_ms": 20.0,
+   "yaw_deg": 0.0
+  },
+  "c_drag": 0.004059554119732123,
+  "c_lift": -0.04915517050782048,
+  "c_pitch": null,
+  "c_side": 1.0842021724855044e-16,
+  "converged": true,
+  "force_monitor_range": 0.0,
+  "notes": "panel solve: 80 panels, Cd(pressure)=-0.000 + Cd(friction)=0.004  [WARNING: mean panel size 115 mm exceeds the 30 mm ride height — panels are point sources at their centroids, so the ground image is being evaluated inside the range where that approximation fails. Ride-height trends can INVERT. Refine the mesh or raise max_panels.]",
+  "provenance": {
+   "backend": "panel-method",
+   "cell_count": 80,
+   "correlated_against": "",
+   "fidelity": "potential",
+   "is_correlated": false,
+   "notes": "In-house 3D source-panel (boundary-element) potential-flow solve on the actual STL, with a ground-image plane. Resolves the attached-flow pressure field and ground effect FROM GEOMETRY (not a curve fit), so geometry deltas are meaningful. Inviscid by construction: it does NOT resolve viscous separation, stall, or the real turbulent wake — that is what the written ANSYS Fluent deck / a RANS solve is for. Skin friction is a flat-plate estimate. Correlate against the tunnel/Fluent before trusting absolute levels; trust deltas more than levels. [80 panels]",
+   "turbulence_model": "none (inviscid potential flow + flat-plate friction)",
+   "yplus_mean": null
+  },
+  "wall_clock_s": null
+ },
+ "lstsq_fail": "panel linear solve failed: singular",
+ "memory": "this solve needs about 0 MB for a 80-panel influence matrix, over the 0 MB this app can safely use. Pick a smaller mesh size limit, or export a coarser STL — the cost is quadratic in panel count, so dropping to 56 panels roughly halves it.",
+ "no_scipy": {
+  "aero_balance_front": 0.44043194439637057,
+  "attitude": {
+   "pitch_deg": 0.0,
+   "ride_height_mm": 30.0,
+   "roll_deg": 0.0,
+   "speed_ms": 20.0,
+   "yaw_deg": 0.0
+  },
+  "c_drag": 0.00405955411973215,
+  "c_lift": -0.04915517049555837,
+  "c_pitch": null,
+  "c_side": -1.691355389077387e-17,
+  "converged": true,
+  "force_monitor_range": 0.0,
+  "notes": "panel solve: 80 panels, Cd(pressure)=-0.000 + Cd(friction)=0.004  [WARNING: mean panel size 115 mm exceeds the 30 mm ride height — panels are point sources at their centroids, so the ground image is being evaluated inside the range where that approximation fails. Ride-height trends can INVERT. Refine the mesh or raise max_panels.]",
+  "provenance": {
+   "backend": "panel-method",
+   "cell_count": 80,
+   "correlated_against": "",
+   "fidelity": "potential",
+   "is_correlated": false,
+   "notes": "In-house 3D source-panel (boundary-element) potential-flow solve on the actual STL, with a ground-image plane. Resolves the attached-flow pressure field and ground effect FROM GEOMETRY (not a curve fit), so geometry deltas are meaningful. Inviscid by construction: it does NOT resolve viscous separation, stall, or the real turbulent wake — that is what the written ANSYS Fluent deck / a RANS solve is for. Skin friction is a flat-plate estimate. Correlate against the tunnel/Fluent before trusting absolute levels; trust deltas more than levels. [80 panels]",
+   "turbulence_model": "none (inviscid potential flow + flat-plate friction)",
+   "yplus_mean": null
+  },
+  "wall_clock_s": null
+ },
+ "ok_again": true
+}

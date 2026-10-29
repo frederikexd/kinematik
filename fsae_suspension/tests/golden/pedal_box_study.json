@@ -1,0 +1,3068 @@
+{
+ "defaults": {
+  "cs": {
+   "caliper_piston_dia_mm": 2.0,
+   "effective_radius_frac": 0.86,
+   "mc_bore_mm": 1.0,
+   "n_corners": 2,
+   "opposed": true,
+   "pad_inner_radius_mm": null,
+   "pad_mu": 0.45,
+   "pistons_per_side": 2,
+   "rotor_dia_mm": 220.0
+  },
+  "opt": {
+   "cost": "c",
+   "cost_rank": 1,
+   "feasible": true,
+   "gain_mm": 1.0,
+   "name": "o",
+   "requires_recheck": [],
+   "side_effects": {}
+  },
+  "seg": {
+   "adjustable_mm": 0.0,
+   "length_mm": 1.0,
+   "measured": false,
+   "name": "x",
+   "note": ""
+  },
+  "tp": {
+   "air_cc": 0.0,
+   "calibrated": false,
+   "caliper_cc_per_bar": 0.002,
+   "compliance_scale": 1.0,
+   "fitted_to": "",
+   "fluid": "DOT 4",
+   "free_play_mm": 1.5,
+   "hardline_type": "hardline (steel tube)",
+   "hose_type": "PTFE braided (steel)",
+   "knockback_mm": 0.15,
+   "pad_compression_mm": 0.1
+  },
+  "vi": {
+   "name": "v",
+   "note": "",
+   "pressure_dependent": true,
+   "volume_cc": 1.0
+  }
+ },
+ "fits": {
+  "d": {
+   "authority": {
+    "bias_at_centre": 0.782888552862806,
+    "bias_max": 0.893773369858631,
+    "bias_min": 0.6071341791943543,
+    "bias_per_turn": 0.011990030884774017,
+    "findings": [
+     {
+      "check": "target_bias_reachable",
+      "detail": {},
+      "message": "65% front needs the bar at -9.60 mm -- that is 80% of the way to the stop, so there is little trim left. Re-centre it by changing a bore.",
+      "severity": "warning",
+      "subsystems": [
+       "brakes"
+      ]
+     }
+    ],
+    "offset_for_target_mm": -9.603313677039548,
+    "sweep": [
+     {
+      "bias_front": 0.6071341791943543,
+      "offset_mm": -12.0,
+      "pressure_front_bar": 37.891684634687714,
+      "pressure_rear_bar": 61.3985630654662
+     },
+     {
+      "bias_front": 0.6183286582661226,
+      "offset_mm": -11.4,
+      "pressure_front_bar": 39.1547407891773,
+      "pressure_rear_bar": 60.521440735959544
+     },
+     {
+      "bias_front": 0.6292049949807956,
+      "offset_mm": -10.8,
+      "pressure_front_bar": 40.41779694366689,
+      "pressure_rear_bar": 59.64431840645288
+     },
+     {
+      "bias_front": 0.6397765615290728,
+      "offset_mm": -10.2,
+      "pressure_front_bar": 41.68085309815648,
+      "pressure_rear_bar": 58.76719607694622
+     },
+     {
+      "bias_front": 0.6500559910414333,
+      "offset_mm": -9.6,
+      "pressure_front_bar": 42.94390925264607,
+      "pressure_rear_bar": 57.89007374743956
+     },
+     {
+      "bias_front": 0.660055227950659,
+      "offset_mm": -9.0,
+      "pressure_front_bar": 44.20696540713566,
+      "pressure_rear_bar": 57.012951417932904
+     },
+     {
+      "bias_front": 0.6697855742914471,
+      "offset_mm": -8.4,
+      "pressure_front_bar": 45.47002156162525,
+      "pressure_rear_bar": 56.13582908842624
+     },
+     {
+      "bias_front": 0.6792577323144331,
+      "offset_mm": -7.8,
+      "pressure_front_bar": 46.73307771611485,
+      "pressure_rear_bar": 55.25870675891958
+     },
+     {
+      "bias_front": 0.6884818437524236,
+      "offset_mm": -7.2,
+      "pressure_front_bar": 47.99613387060444,
+      "pressure_rear_bar": 54.381584429412925
+     },
+     {
+      "bias_front": 0.6974675260417154,
+      "offset_mm": -6.6,
+      "pressure_front_bar": 49.25919002509403,
+      "pressure_rear_bar": 53.50446209990626
+     },
+     {
+      "bias_front": 0.7062239057704537,
+      "offset_mm": -6.0,
+      "pressure_front_bar": 50.522246179583625,
+      "pressure_rear_bar": 52.6273397703996
+     },
+     {
+      "bias_front": 0.7147596495985818,
+      "offset_mm": -5.4,
+      "pressure_front_bar": 51.785302334073215,
+      "pressure_rear_bar": 51.75021744089294
+     },
+     {
+      "bias_front": 0.7230829928695837,
+      "offset_mm": -4.8,
+      "pressure_front_bar": 53.0483584885628,
+      "pressure_rear_bar": 50.873095111386284
+     },
+     {
+      "bias_front": 0.7312017661125817,
+      "offset_mm": -4.2,
+      "pressure_front_bar": 54.31141464305239,
+      "pressure_rear_bar": 49.99597278187962
+     },
+     {
+      "bias_front": 0.7391234196140604,
+      "offset_mm": -3.5999999999999996,
+      "pressure_front_bar": 55.57447079754198,
+      "pressure_rear_bar": 49.11885045237296
+     },
+     {
+      "bias_front": 0.7468550462212903,
+      "offset_mm": -3.0,
+      "pressure_front_bar": 56.837526952031574,
+      "pressure_rear_bar": 48.241728122866306
+     },
+     {
+      "bias_front": 0.7544034025241552,
+      "offset_mm": -2.4000000000000004,
+      "pressure_front_bar": 58.100583106521164,
+      "pressure_rear_bar": 47.364605793359644
+     },
+     {
+      "bias_front": 0.7617749285483426,
+      "offset_mm": -1.8000000000000007,
+      "pressure_front_bar": 59.36363926101075,
+      "pressure_rear_bar": 46.48748346385298
+     },
+     {
+      "bias_front": 0.7689757660805411,
+      "offset_mm": -1.1999999999999993,
+      "pressure_front_bar": 60.62669541550034,
+      "pressure_rear_bar": 45.61036113434632
+     },
+     {
+      "bias_front": 0.7760117757352394,
+      "offset_mm": -0.5999999999999996,
+      "pressure_front_bar": 61.889751569989926,
+      "pressure_rear_bar": 44.733238804839665
+     },
+     {
+      "bias_front": 0.782888552862806,
+      "offset_mm": 0.0,
+      "pressure_front_bar": 63.15280772447952,
+      "pressure_rear_bar": 43.856116475333
+     },
+     {
+      "bias_front": 0.7896114423896017,
+      "offset_mm": 0.5999999999999996,
+      "pressure_front_bar": 64.4158638789691,
+      "pressure_rear_bar": 42.97899414582634
+     },
+     {
+      "bias_front": 0.7961855526728465,
+      "offset_mm": 1.1999999999999993,
+      "pressure_front_bar": 65.67892003345871,
+      "pressure_rear_bar": 42.10187181631969
+     },
+     {
+      "bias_front": 0.8026157684457169,
+      "offset_mm": 1.8000000000000007,
+      "pressure_front_bar": 66.9419761879483,
+      "pressure_rear_bar": 41.22474948681302
+     },
+     {
+      "bias_front": 0.8089067629216171,
+      "offset_mm": 2.4000000000000004,
+      "pressure_front_bar": 68.20503234243789,
+      "pressure_rear_bar": 40.347627157306356
+     },
+     {
+      "bias_front": 0.8150630091206572,
+      "offset_mm": 3.0,
+      "pressure_front_bar": 69.46808849692748,
+      "pressure_rear_bar": 39.4705048277997
+     },
+     {
+      "bias_front": 0.8210887904760301,
+      "offset_mm": 3.5999999999999996,
+      "pressure_front_bar": 70.73114465141707,
+      "pressure_rear_bar": 38.59338249829304
+     },
+     {
+      "bias_front": 0.8269882107731388,
+      "offset_mm": 4.199999999999999,
+      "pressure_front_bar": 71.99420080590666,
+      "pressure_rear_bar": 37.71626016878638
+     },
+     {
+      "bias_front": 0.8327652034699392,
+      "offset_mm": 4.800000000000001,
+      "pressure_front_bar": 73.25725696039625,
+      "pressure_rear_bar": 36.83913783927972
+     },
+     {
+      "bias_front": 0.8384235404429818,
+      "offset_mm": 5.399999999999999,
+      "pressure_front_bar": 74.52031311488584,
+      "pressure_rear_bar": 35.96201550977306
+     },
+     {
+      "bias_front": 0.8439668402000161,
+      "offset_mm": 6.0,
+      "pressure_front_bar": 75.78336926937543,
+      "pressure_rear_bar": 35.0848931802664
+     },
+     {
+      "bias_front": 0.8493985755967359,
+      "offset_mm": 6.600000000000001,
+      "pressure_front_bar": 77.04642542386502,
+      "pressure_rear_bar": 34.20777085075974
+     },
+     {
+      "bias_front": 0.8547220810922452,
+      "offset_mm": 7.199999999999999,
+      "pressure_front_bar": 78.3094815783546,
+      "pressure_rear_bar": 33.33064852125308
+     },
+     {
+      "bias_front": 0.8599405595750957,
+      "offset_mm": 7.800000000000001,
+      "pressure_front_bar": 79.57253773284421,
+      "pressure_rear_bar": 32.45352619174642
+     },
+     {
+      "bias_front": 0.8650570887892604,
+      "offset_mm": 8.399999999999999,
+      "pressure_front_bar": 80.83559388733379,
+      "pressure_rear_bar": 31.57640386223976
+     },
+     {
+      "bias_front": 0.8700746273871331,
+      "offset_mm": 9.0,
+      "pressure_front_bar": 82.09865004182338,
+      "pressure_rear_bar": 30.6992815327331
+     },
+     {
+      "bias_front": 0.8749960206345668,
+      "offset_mm": 9.600000000000001,
+      "pressure_front_bar": 83.36170619631297,
+      "pressure_rear_bar": 29.82215920322644
+     },
+     {
+      "bias_front": 0.879824005791069,
+      "offset_mm": 10.2,
+      "pressure_front_bar": 84.62476235080257,
+      "pressure_rear_bar": 28.94503687371978
+     },
+     {
+      "bias_front": 0.8845612171865259,
+      "offset_mm": 10.8,
+      "pressure_front_bar": 85.88781850529215,
+      "pressure_rear_bar": 28.06791454421312
+     },
+     {
+      "bias_front": 0.8892101910142444,
+      "offset_mm": 11.399999999999999,
+      "pressure_front_bar": 87.15087465978173,
+      "pressure_rear_bar": 27.190792214706462
+     },
+     {
+      "bias_front": 0.893773369858631,
+      "offset_mm": 12.0,
+      "pressure_front_bar": 88.41393081427132,
+      "pressure_rear_bar": 26.3136698851998
+     }
+    ],
+    "target_bias": 0.65,
+    "target_reachable": true,
+    "thread_pitch_mm": 1.058
+   },
+   "bias": {
+    "bar_offset_mm": 0.0,
+    "bias_front": 0.782888552862806,
+    "findings": [
+     {
+      "check": "bar_authority",
+      "detail": {},
+      "message": "The bar sits 0% off centre, so there is trim authority in both directions.",
+      "severity": "ok",
+      "subsystems": [
+       "brakes"
+      ]
+     }
+    ],
+    "force_front_N": 1250.0,
+    "force_rear_N": 1250.0,
+    "pressure_front_bar": 63.15280772447952,
+    "pressure_rear_bar": 43.856116475333,
+    "torque_front_Nm": 1089.7919999999997,
+    "torque_rear_Nm": 302.22222222222223
+   },
+   "findings": [
+    {
+     "check": "circuit_stroke_mismatch",
+     "detail": {},
+     "message": "The two circuits want different strokes (7.3 mm front vs 1.9 mm rear). They share one pedal, so the front circuit sets the pedal travel and the balance bar tilts to take up the difference. A large mismatch eats the bar's articulation and shifts bias as the pedal is pressed -- which is felt as a bias that changes with pedal effort.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "plan": null,
+   "stack": {
+    "available_mm": 480.0,
+    "deficit_mm": -105.11875900004179,
+    "findings": [
+     {
+      "check": "mc_body_length_source",
+      "detail": {},
+      "message": "Master-cylinder body length came from the 'standard racing' catalogue placeholder (112.0 mm), not from your part. Put a caliper on the cylinder and pass mc_body_mm -- body lengths differ by 20.0 mm to 40.0 mm across families and that is most of the deficit you are chasing.",
+      "severity": "missing",
+      "subsystems": [
+       "brakes"
+      ]
+     },
+     {
+      "check": "mc_outlet_stack",
+      "detail": {},
+      "message": "The line exit behind the cylinders is carrying 42.0 mm of the stack ('straight fitting + hardline bend'), which includes the bend radius the hardline needs to turn away from the cylinder. This is the segment most often missing from a CAD envelope check, because the fitting is modelled but the bend is not.",
+      "severity": "warning",
+      "subsystems": [
+       "brakes"
+      ]
+     },
+     {
+      "check": "pedal_box_envelope",
+      "detail": {},
+      "message": "Fits with 105.1 mm to spare.",
+      "severity": "ok",
+      "subsystems": [
+       "brakes",
+       "chassis"
+      ]
+     }
+    ],
+    "installed_mm": 374.8812409999582,
+    "is_estimate": true,
+    "notes": [
+     "Some segments came from catalogue placeholders. The RANKING of segments is trustworthy; the absolute total is provisional until the real parts are measured."
+    ],
+    "segments": [
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 81.56770083329849,
+      "measured": false,
+      "name": "Pedal pad to pivot (X projection of the lever)",
+      "note": "90.0 mm arm at 25 deg from X. A more upright pedal projects less."
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 10.0,
+      "measured": false,
+      "name": "Pedal arc clearance (pad sweep under braking)",
+      "note": "Room the pad needs to travel without touching anything."
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 16.3135401666597,
+      "measured": false,
+      "name": "Pivot to balance-bar clevis",
+      "note": "Lever/ratio = 18.0 mm arm. Raising the pedal ratio pulls this in."
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 38.0,
+      "measured": false,
+      "name": "Balance bar + clevises + spherical bearing",
+      "note": "Bar hardware between the pedal and the two pushrods."
+     },
+     {
+      "adjustable_mm": 8.0,
+      "length_mm": 55.0,
+      "measured": false,
+      "name": "Pushrod",
+      "note": "8.0 mm can be wound out before thread engagement hits the 12.0 mm floor."
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 112.0,
+      "measured": false,
+      "name": "Master cylinder body",
+      "note": "The part. Only a different part changes this."
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 42.0,
+      "measured": false,
+      "name": "MC outlet fitting + hardline bend radius",
+      "note": "'straight fitting + hardline bend'. A 90 deg banjo or a bulkhead elbow is the cheapest length in the whole stack."
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 8.0,
+      "measured": false,
+      "name": "Mount plate / bulkhead flange",
+      "note": ""
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 12.0,
+      "measured": false,
+      "name": "Clearance to the front bulkhead",
+      "note": "Assembly and tolerance gap. Do not spend this one."
+     }
+    ],
+    "verdict": "FITS"
+   },
+   "travel_front": {
+    "available_travel_mm": 60.0,
+    "findings": [
+     {
+      "check": "pedal_travel",
+      "detail": {},
+      "message": "44.0 mm at the pad, cylinder at 29% of stroke. Reserve for wear and heat.",
+      "severity": "ok",
+      "subsystems": [
+       "brakes"
+      ]
+     },
+     {
+      "check": "travel_provenance",
+      "detail": {},
+      "message": "Knockback, pad compression, hose and caliper compliance are representative values, not measured on this car. The RANKING of consumers and the sensitivity to bore and ratio are trustworthy; the absolute travel is provisional. One bench measurement -- pump to a firm pedal, measure the travel -- fixes that via TravelParams.from_measured_stroke().",
+      "severity": "missing",
+      "subsystems": [
+       "brakes"
+      ]
+     }
+    ],
+    "is_estimate": true,
+    "items": [
+     {
+      "name": "Piston knockback / running clearance",
+      "note": "4053.7 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+      "pressure_dependent": false,
+      "volume_cc": 0.6080489749169972
+     },
+     {
+      "name": "Pad compression",
+      "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+      "pressure_dependent": false,
+      "volume_cc": 0.40536598327799817
+     },
+     {
+      "name": "Caliper housing deflection",
+      "note": "2.000 cc/kbar per caliper at 63 bar.",
+      "pressure_dependent": true,
+      "volume_cc": 0.2526112308979181
+     },
+     {
+      "name": "Hose expansion (PTFE braided (steel))",
+      "note": "0.60 m per corner x 2 corner(s) at 63 bar. Switching rubber for PTFE braided is the cheapest firm-pedal fix there is.",
+      "pressure_dependent": true,
+      "volume_cc": 0.060626695415500344
+     },
+     {
+      "name": "Hardline expansion (hardline (steel tube))",
+      "note": "1.80 m of routed hardline at 63 bar.",
+      "pressure_dependent": true,
+      "volume_cc": 0.011367505390406315
+     },
+     {
+      "name": "Fluid compressibility",
+      "note": "25.141 cc of DOT 4 at 63 bar, K=1.50 GPa. Hot or water-contaminated fluid is softer than this.",
+      "pressure_dependent": true,
+      "volume_cc": 0.10584766982867301
+     }
+    ],
+    "mc_stroke_limit_mm": 25.4,
+    "mc_stroke_mm": 7.294745756439015,
+    "notes": [
+     "Uncalibrated: use for trades, not as an absolute pedal travel."
+    ],
+    "pedal_travel_mm": 43.973728782195074,
+    "stroke_utilisation": 0.2871947148204337,
+    "total_cc": 1.443868059727493,
+    "verdict": "PASS"
+   },
+   "travel_rear": {
+    "available_travel_mm": 60.0,
+    "findings": [
+     {
+      "check": "pedal_travel",
+      "detail": {},
+      "message": "17.1 mm at the pad, cylinder at 8% of stroke. Reserve for wear and heat.",
+      "severity": "ok",
+      "subsystems": [
+       "brakes"
+      ]
+     },
+     {
+      "check": "travel_provenance",
+      "detail": {},
+      "message": "Knockback, pad compression, hose and caliper compliance are representative values, not measured on this car. The RANKING of consumers and the sensitivity to bore and ratio are trustworthy; the absolute travel is provisional. One bench measurement -- pump to a firm pedal, measure the travel -- fixes that via TravelParams.from_measured_stroke().",
+      "severity": "missing",
+      "subsystems": [
+       "brakes"
+      ]
+     }
+    ],
+    "is_estimate": true,
+    "items": [
+     {
+      "name": "Piston knockback / running clearance",
+      "note": "1013.4 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+      "pressure_dependent": false,
+      "volume_cc": 0.1520122437292493
+     },
+     {
+      "name": "Pad compression",
+      "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+      "pressure_dependent": false,
+      "volume_cc": 0.10134149581949954
+     },
+     {
+      "name": "Caliper housing deflection",
+      "note": "2.000 cc/kbar per caliper at 44 bar.",
+      "pressure_dependent": true,
+      "volume_cc": 0.175424465901332
+     },
+     {
+      "name": "Hose expansion (PTFE braided (steel))",
+      "note": "0.60 m per corner x 2 corner(s) at 44 bar. Switching rubber for PTFE braided is the cheapest firm-pedal fix there is.",
+      "pressure_dependent": true,
+      "volume_cc": 0.042101871816319685
+     },
+     {
+      "name": "Hardline expansion (hardline (steel tube))",
+      "note": "1.80 m of routed hardline at 44 bar.",
+      "pressure_dependent": true,
+      "volume_cc": 0.00789410096555994
+     },
+     {
+      "name": "Fluid compressibility",
+      "note": "24.381 cc of DOT 4 at 44 bar, K=1.50 GPa. Hot or water-contaminated fluid is softer than this.",
+      "pressure_dependent": true,
+      "volume_cc": 0.07128310404768959
+     }
+    ],
+    "mc_stroke_limit_mm": 25.4,
+    "mc_stroke_mm": 1.9298700991809166,
+    "notes": [
+     "Uncalibrated: use for trades, not as an absolute pedal travel."
+    ],
+    "pedal_travel_mm": 17.14935049590458,
+    "stroke_utilisation": 0.07597913776302821,
+    "total_cc": 0.55005728227965,
+    "verdict": "PASS"
+   },
+   "verdict": "PASS"
+  },
+  "f": [
+   {
+    "check": "circuit_stroke_mismatch",
+    "detail": {},
+    "message": "The two circuits want different strokes (7.3 mm front vs 1.9 mm rear). They share one pedal, so the front circuit sets the pedal travel and the balance bar tilts to take up the difference. A large mismatch eats the bar's articulation and shifts bias as the pedal is pressed -- which is felt as a bias that changes with pedal effort.",
+    "severity": "warning",
+    "subsystems": [
+     "brakes"
+    ]
+   }
+  ],
+  "s": "PEDAL BOX STUDY -> PASS\n\nPedal box stack-up: 374.9 mm installed vs 480.0 mm available -> FITS\n      112.0 mm  Master cylinder body  [catalogue/estimate]\n       81.6 mm  Pedal pad to pivot (X projection of the lever)  [catalogue/estimate]\n       55.0 mm  Pushrod  [catalogue/estimate, 8.0 mm of it adjustable]\n       42.0 mm  MC outlet fitting + hardline bend radius  [catalogue/estimate]\n       38.0 mm  Balance bar + clevises + spherical bearing  [catalogue/estimate]\n       16.3 mm  Pivot to balance-bar clevis  [catalogue/estimate]\n       12.0 mm  Clearance to the front bulkhead  [catalogue/estimate]\n       10.0 mm  Pedal arc clearance (pad sweep under braking)  [catalogue/estimate]\n        8.0 mm  Mount plate / bulkhead flange  [catalogue/estimate]\n\nReachable front bias: 60.7% to 89.4% (centred bar = 78.3%)\nAdjuster: 1.20% bias per turn (1.06 mm pitch)\nTarget 65% front is reachable at -9.60 mm bar offset.\n\nFront circuit: Pedal travel: 44.0 mm at the pad of 60.0 mm available -> PASS\n  1.444 cc demanded, 7.3 mm of cylinder stroke (29% of the 25.4 mm limit)\n     0.608 cc  Piston knockback / running clearance\n     0.405 cc  Pad compression\n     0.253 cc  Caliper housing deflection\n     0.106 cc  Fluid compressibility\nRear circuit:  Pedal travel: 17.1 mm at the pad of 60.0 mm available -> PASS\n  0.550 cc demanded, 1.9 mm of cylinder stroke (8% of the 25.4 mm limit)\n     0.175 cc  Caliper housing deflection\n     0.152 cc  Piston knockback / running clearance\n     0.101 cc  Pad compression\n     0.071 cc  Fluid compressibility",
+  "verdict": "PASS"
+ },
+ "mismatch": {
+  "d": {
+   "authority": {
+    "bias_at_centre": 0.9717582202406952,
+    "bias_max": 0.9876978459748446,
+    "bias_min": 0.9364938816391111,
+    "bias_per_turn": 0.0019362655717448662,
+    "findings": [
+     {
+      "check": "target_bias_reachable",
+      "detail": {},
+      "message": "65% front is outside everything these bores can make (93.6%-98.8%). No bar position gets there. Fit a larger front bore or smaller rear bore. Bias is set by the hardware; the bar only trims it.",
+      "severity": "fail",
+      "subsystems": [
+       "brakes"
+      ]
+     }
+    ],
+    "offset_for_target_mm": null,
+    "sweep": [
+     {
+      "bias_front": 0.9364938816391111,
+      "offset_mm": -12.0,
+      "pressure_front_bar": 66.31455962162306,
+      "pressure_rear_bar": 34.53669172432474
+     },
+     {
+      "bias_front": 0.9392426214126143,
+      "offset_mm": -11.4,
+      "pressure_front_bar": 68.52504494234383,
+      "pressure_rear_bar": 34.043310413977245
+     },
+     {
+      "bias_front": 0.9418342600314231,
+      "offset_mm": -10.8,
+      "pressure_front_bar": 70.7355302630646,
+      "pressure_rear_bar": 33.54992910362975
+     },
+     {
+      "bias_front": 0.9442818917146009,
+      "offset_mm": -10.2,
+      "pressure_front_bar": 72.94601558378537,
+      "pressure_rear_bar": 33.05654779328225
+     },
+     {
+      "bias_front": 0.9465971948315578,
+      "offset_mm": -9.6,
+      "pressure_front_bar": 75.15650090450613,
+      "pressure_rear_bar": 32.563166482934754
+     },
+     {
+      "bias_front": 0.9487906182311702,
+      "offset_mm": -9.0,
+      "pressure_front_bar": 77.36698622522691,
+      "pressure_rear_bar": 32.06978517258726
+     },
+     {
+      "bias_front": 0.9508715388999155,
+      "offset_mm": -8.4,
+      "pressure_front_bar": 79.57747154594767,
+      "pressure_rear_bar": 31.576403862239765
+     },
+     {
+      "bias_front": 0.9528483959672955,
+      "offset_mm": -7.8,
+      "pressure_front_bar": 81.78795686666844,
+      "pressure_rear_bar": 31.083022551892263
+     },
+     {
+      "bias_front": 0.9547288050974782,
+      "offset_mm": -7.2,
+      "pressure_front_bar": 83.99844218738922,
+      "pressure_rear_bar": 30.58964124154477
+     },
+     {
+      "bias_front": 0.9565196565366496,
+      "offset_mm": -6.6,
+      "pressure_front_bar": 86.20892750810998,
+      "pressure_rear_bar": 30.096259931197274
+     },
+     {
+      "bias_front": 0.9582271994771902,
+      "offset_mm": -6.0,
+      "pressure_front_bar": 88.41941282883074,
+      "pressure_rear_bar": 29.60287862084978
+     },
+     {
+      "bias_front": 0.9598571149158804,
+      "offset_mm": -5.4,
+      "pressure_front_bar": 90.62989814955151,
+      "pressure_rear_bar": 29.10949731050228
+     },
+     {
+      "bias_front": 0.9614145787962199,
+      "offset_mm": -4.8,
+      "pressure_front_bar": 92.84038347027229,
+      "pressure_rear_bar": 28.616116000154786
+     },
+     {
+      "bias_front": 0.9629043169135836,
+      "offset_mm": -4.2,
+      "pressure_front_bar": 95.05086879099306,
+      "pressure_rear_bar": 28.12273468980729
+     },
+     {
+      "bias_front": 0.9643306528102011,
+      "offset_mm": -3.5999999999999996,
+      "pressure_front_bar": 97.26135411171383,
+      "pressure_rear_bar": 27.62935337945979
+     },
+     {
+      "bias_front": 0.9656975496824216,
+      "offset_mm": -3.0,
+      "pressure_front_bar": 99.47183943243459,
+      "pressure_rear_bar": 27.135972069112295
+     },
+     {
+      "bias_front": 0.9670086471557706,
+      "offset_mm": -2.4000000000000004,
+      "pressure_front_bar": 101.68232475315536,
+      "pressure_rear_bar": 26.6425907587648
+     },
+     {
+      "bias_front": 0.9682672936464016,
+      "offset_mm": -1.8000000000000007,
+      "pressure_front_bar": 103.89281007387612,
+      "pressure_rear_bar": 26.149209448417302
+     },
+     {
+      "bias_front": 0.9694765749148161,
+      "offset_mm": -1.1999999999999993,
+      "pressure_front_bar": 106.1032953945969,
+      "pressure_rear_bar": 25.655828138069808
+     },
+     {
+      "bias_front": 0.9706393393244944,
+      "offset_mm": -0.5999999999999996,
+      "pressure_front_bar": 108.31378071531768,
+      "pressure_rear_bar": 25.162446827722313
+     },
+     {
+      "bias_front": 0.9717582202406952,
+      "offset_mm": 0.0,
+      "pressure_front_bar": 110.52426603603844,
+      "pressure_rear_bar": 24.66906551737481
+     },
+     {
+      "bias_front": 0.9728356559401878,
+      "offset_mm": 0.5999999999999996,
+      "pressure_front_bar": 112.7347513567592,
+      "pressure_rear_bar": 24.175684207027317
+     },
+     {
+      "bias_front": 0.9738739073487473,
+      "offset_mm": 1.1999999999999993,
+      "pressure_front_bar": 114.94523667747997,
+      "pressure_rear_bar": 23.682302896679822
+     },
+     {
+      "bias_front": 0.9748750738779742,
+      "offset_mm": 1.8000000000000007,
+      "pressure_front_bar": 117.15572199820073,
+      "pressure_rear_bar": 23.188921586332327
+     },
+     {
+      "bias_front": 0.9758411075948835,
+      "offset_mm": 2.4000000000000004,
+      "pressure_front_bar": 119.36620731892151,
+      "pressure_rear_bar": 22.69554027598483
+     },
+     {
+      "bias_front": 0.9767738259255028,
+      "offset_mm": 3.0,
+      "pressure_front_bar": 121.57669263964229,
+      "pressure_rear_bar": 22.202158965637334
+     },
+     {
+      "bias_front": 0.9776749230664319,
+      "offset_mm": 3.5999999999999996,
+      "pressure_front_bar": 123.78717796036305,
+      "pressure_rear_bar": 21.70877765528984
+     },
+     {
+      "bias_front": 0.9785459802551173,
+      "offset_mm": 4.199999999999999,
+      "pressure_front_bar": 125.99766328108382,
+      "pressure_rear_bar": 21.215396344942338
+     },
+     {
+      "bias_front": 0.9793884750298245,
+      "offset_mm": 4.800000000000001,
+      "pressure_front_bar": 128.20814860180457,
+      "pressure_rear_bar": 20.722015034594847
+     },
+     {
+      "bias_front": 0.9802037895933865,
+      "offset_mm": 5.399999999999999,
+      "pressure_front_bar": 130.41863392252534,
+      "pressure_rear_bar": 20.22863372424735
+     },
+     {
+      "bias_front": 0.9809932183803182,
+      "offset_mm": 6.0,
+      "pressure_front_bar": 132.62911924324612,
+      "pressure_rear_bar": 19.73525241389985
+     },
+     {
+      "bias_front": 0.9817579749144403,
+      "offset_mm": 6.600000000000001,
+      "pressure_front_bar": 134.8396045639669,
+      "pressure_rear_bar": 19.241871103552356
+     },
+     {
+      "bias_front": 0.9824991980334257,
+      "offset_mm": 7.199999999999999,
+      "pressure_front_bar": 137.05008988468765,
+      "pressure_rear_bar": 18.748489793204858
+     },
+     {
+      "bias_front": 0.9832179575474198,
+      "offset_mm": 7.800000000000001,
+      "pressure_front_bar": 139.26057520540843,
+      "pressure_rear_bar": 18.255108482857363
+     },
+     {
+      "bias_front": 0.9839152593908673,
+      "offset_mm": 8.399999999999999,
+      "pressure_front_bar": 141.4710605261292,
+      "pressure_rear_bar": 17.761727172509868
+     },
+     {
+      "bias_front": 0.9845920503197223,
+      "offset_mm": 9.0,
+      "pressure_front_bar": 143.68154584684996,
+      "pressure_rear_bar": 17.26834586216237
+     },
+     {
+      "bias_front": 0.9852492222001636,
+      "offset_mm": 9.600000000000001,
+      "pressure_front_bar": 145.89203116757074,
+      "pressure_rear_bar": 16.774964551814875
+     },
+     {
+      "bias_front": 0.9858876159296713,
+      "offset_mm": 10.2,
+      "pressure_front_bar": 148.1025164882915,
+      "pressure_rear_bar": 16.281583241467377
+     },
+     {
+      "bias_front": 0.9865080250267141,
+      "offset_mm": 10.8,
+      "pressure_front_bar": 150.31300180901226,
+      "pressure_rear_bar": 15.788201931119882
+     },
+     {
+      "bias_front": 0.9871111989212655,
+      "offset_mm": 11.399999999999999,
+      "pressure_front_bar": 152.52348712973304,
+      "pressure_rear_bar": 15.294820620772384
+     },
+     {
+      "bias_front": 0.9876978459748446,
+      "offset_mm": 12.0,
+      "pressure_front_bar": 154.73397245045382,
+      "pressure_rear_bar": 14.80143931042489
+     }
+    ],
+    "target_bias": 0.65,
+    "target_reachable": false,
+    "thread_pitch_mm": 1.058
+   },
+   "bias": {
+    "bar_offset_mm": 0.0,
+    "bias_front": 0.9717582202406952,
+    "findings": [
+     {
+      "check": "bar_authority",
+      "detail": {},
+      "message": "The bar sits 0% off centre, so there is trim authority in both directions.",
+      "severity": "ok",
+      "subsystems": [
+       "brakes"
+      ]
+     }
+    ],
+    "force_front_N": 1250.0,
+    "force_rear_N": 1250.0,
+    "pressure_front_bar": 110.52426603603844,
+    "pressure_rear_bar": 24.66906551737481,
+    "torque_front_Nm": 4540.799999999999,
+    "torque_rear_Nm": 131.96726393452786
+   },
+   "findings": [
+    {
+     "check": "circuit_stroke_mismatch",
+     "detail": {},
+     "message": "The two circuits want different strokes (28.1 mm front vs 0.6 mm rear). They share one pedal, so the front circuit sets the pedal travel and the balance bar tilts to take up the difference. A large mismatch eats the bar's articulation and shifts bias as the pedal is pressed -- which is felt as a bias that changes with pedal effort.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "plan": null,
+   "stack": {
+    "available_mm": 400.0,
+    "deficit_mm": -25.11875900004179,
+    "findings": [
+     {
+      "check": "mc_body_length_source",
+      "detail": {},
+      "message": "Master-cylinder body length came from the 'standard racing' catalogue placeholder (112.0 mm), not from your part. Put a caliper on the cylinder and pass mc_body_mm -- body lengths differ by 20.0 mm to 40.0 mm across families and that is most of the deficit you are chasing.",
+      "severity": "missing",
+      "subsystems": [
+       "brakes"
+      ]
+     },
+     {
+      "check": "mc_outlet_stack",
+      "detail": {},
+      "message": "The line exit behind the cylinders is carrying 42.0 mm of the stack ('straight fitting + hardline bend'), which includes the bend radius the hardline needs to turn away from the cylinder. This is the segment most often missing from a CAD envelope check, because the fitting is modelled but the bend is not.",
+      "severity": "warning",
+      "subsystems": [
+       "brakes"
+      ]
+     },
+     {
+      "check": "pedal_box_envelope",
+      "detail": {},
+      "message": "Fits with 25.1 mm to spare.",
+      "severity": "ok",
+      "subsystems": [
+       "brakes",
+       "chassis"
+      ]
+     }
+    ],
+    "installed_mm": 374.8812409999582,
+    "is_estimate": true,
+    "notes": [
+     "Some segments came from catalogue placeholders. The RANKING of segments is trustworthy; the absolute total is provisional until the real parts are measured."
+    ],
+    "segments": [
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 81.56770083329849,
+      "measured": false,
+      "name": "Pedal pad to pivot (X projection of the lever)",
+      "note": "90.0 mm arm at 25 deg from X. A more upright pedal projects less."
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 10.0,
+      "measured": false,
+      "name": "Pedal arc clearance (pad sweep under braking)",
+      "note": "Room the pad needs to travel without touching anything."
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 16.3135401666597,
+      "measured": false,
+      "name": "Pivot to balance-bar clevis",
+      "note": "Lever/ratio = 18.0 mm arm. Raising the pedal ratio pulls this in."
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 38.0,
+      "measured": false,
+      "name": "Balance bar + clevises + spherical bearing",
+      "note": "Bar hardware between the pedal and the two pushrods."
+     },
+     {
+      "adjustable_mm": 8.0,
+      "length_mm": 55.0,
+      "measured": false,
+      "name": "Pushrod",
+      "note": "8.0 mm can be wound out before thread engagement hits the 12.0 mm floor."
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 112.0,
+      "measured": false,
+      "name": "Master cylinder body",
+      "note": "The part. Only a different part changes this."
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 42.0,
+      "measured": false,
+      "name": "MC outlet fitting + hardline bend radius",
+      "note": "'straight fitting + hardline bend'. A 90 deg banjo or a bulkhead elbow is the cheapest length in the whole stack."
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 8.0,
+      "measured": false,
+      "name": "Mount plate / bulkhead flange",
+      "note": ""
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 12.0,
+      "measured": false,
+      "name": "Clearance to the front bulkhead",
+      "note": "Assembly and tolerance gap. Do not spend this one."
+     }
+    ],
+    "verdict": "FITS"
+   },
+   "travel_front": {
+    "available_travel_mm": 60.0,
+    "findings": [
+     {
+      "check": "mc_stroke",
+      "detail": {},
+      "message": "The circuit demands 28.1 mm of cylinder stroke against a 25.4 mm limit. The piston bottoms before the brakes are fully applied -- this is a pedal that goes to the floor, not a soft one.",
+      "severity": "fail",
+      "subsystems": [
+       "brakes"
+      ]
+     },
+     {
+      "check": "pedal_travel",
+      "detail": {},
+      "message": "147.9 mm of travel at the pad against 60.0 mm available. Go after the largest consumers first: Piston knockback / running clearance, Pad compression.",
+      "severity": "fail",
+      "subsystems": [
+       "brakes"
+      ]
+     },
+     {
+      "check": "travel_provenance",
+      "detail": {},
+      "message": "Knockback, pad compression, hose and caliper compliance are representative values, not measured on this car. The RANKING of consumers and the sensitivity to bore and ratio are trustworthy; the absolute travel is provisional. One bench measurement -- pump to a firm pedal, measure the travel -- fixes that via TravelParams.from_measured_stroke().",
+      "severity": "missing",
+      "subsystems": [
+       "brakes"
+      ]
+     }
+    ],
+    "is_estimate": true,
+    "items": [
+     {
+      "name": "Piston knockback / running clearance",
+      "note": "9651.0 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+      "pressure_dependent": false,
+      "volume_cc": 1.4476458947741766
+     },
+     {
+      "name": "Pad compression",
+      "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+      "pressure_dependent": false,
+      "volume_cc": 0.9650972631827844
+     },
+     {
+      "name": "Caliper housing deflection",
+      "note": "2.000 cc/kbar per caliper at 111 bar.",
+      "pressure_dependent": true,
+      "volume_cc": 0.4420970641441538
+     },
+     {
+      "name": "Hose expansion (PTFE braided (steel))",
+      "note": "0.60 m per corner x 2 corner(s) at 111 bar. Switching rubber for PTFE braided is the cheapest firm-pedal fix there is.",
+      "pressure_dependent": true,
+      "volume_cc": 0.10610329539459691
+     },
+     {
+      "name": "Hardline expansion (hardline (steel tube))",
+      "note": "1.80 m of routed hardline at 111 bar.",
+      "pressure_dependent": true,
+      "volume_cc": 0.01989436788648692
+     },
+     {
+      "name": "Fluid compressibility",
+      "note": "26.540 cc of DOT 4 at 111 bar, K=1.50 GPa. Hot or water-contaminated fluid is softer than this.",
+      "pressure_dependent": true,
+      "volume_cc": 0.1955555555555556
+     }
+    ],
+    "mc_stroke_limit_mm": 25.4,
+    "mc_stroke_mm": 28.08548429610655,
+    "notes": [
+     "Uncalibrated: use for trades, not as an absolute pedal travel."
+    ],
+    "pedal_travel_mm": 147.92742148053276,
+    "stroke_utilisation": 1.1057277281931712,
+    "total_cc": 3.1763934409377543,
+    "verdict": "FAIL"
+   },
+   "travel_rear": {
+    "available_travel_mm": 60.0,
+    "findings": [
+     {
+      "check": "pedal_travel",
+      "detail": {},
+      "message": "10.7 mm at the pad, cylinder at 3% of stroke. Reserve for wear and heat.",
+      "severity": "ok",
+      "subsystems": [
+       "brakes"
+      ]
+     },
+     {
+      "check": "travel_provenance",
+      "detail": {},
+      "message": "Knockback, pad compression, hose and caliper compliance are representative values, not measured on this car. The RANKING of consumers and the sensitivity to bore and ratio are trustworthy; the absolute travel is provisional. One bench measurement -- pump to a firm pedal, measure the travel -- fixes that via TravelParams.from_measured_stroke().",
+      "severity": "missing",
+      "subsystems": [
+       "brakes"
+      ]
+     }
+    ],
+    "is_estimate": true,
+    "items": [
+     {
+      "name": "Piston knockback / running clearance",
+      "note": "628.3 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+      "pressure_dependent": false,
+      "volume_cc": 0.0942477796076938
+     },
+     {
+      "name": "Pad compression",
+      "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+      "pressure_dependent": false,
+      "volume_cc": 0.06283185307179587
+     },
+     {
+      "name": "Caliper housing deflection",
+      "note": "2.000 cc/kbar per caliper at 25 bar.",
+      "pressure_dependent": true,
+      "volume_cc": 0.09867626206949924
+     },
+     {
+      "name": "Hose expansion (PTFE braided (steel))",
+      "note": "0.60 m per corner x 2 corner(s) at 25 bar. Switching rubber for PTFE braided is the cheapest firm-pedal fix there is.",
+      "pressure_dependent": true,
+      "volume_cc": 0.02368230289667982
+     },
+     {
+      "name": "Hardline expansion (hardline (steel tube))",
+      "note": "1.80 m of routed hardline at 25 bar.",
+      "pressure_dependent": true,
+      "volume_cc": 0.004440431793127466
+     },
+     {
+      "name": "Fluid compressibility",
+      "note": "24.285 cc of DOT 4 at 25 bar, K=1.50 GPa. Hot or water-contaminated fluid is softer than this.",
+      "pressure_dependent": true,
+      "volume_cc": 0.03993841321015976
+     }
+    ],
+    "mc_stroke_limit_mm": 25.4,
+    "mc_stroke_mm": 0.6390611072599719,
+    "notes": [
+     "Uncalibrated: use for trades, not as an absolute pedal travel."
+    ],
+    "pedal_travel_mm": 10.695305536299859,
+    "stroke_utilisation": 0.02515988611259732,
+    "total_cc": 0.32381704264895594,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  },
+  "f": [
+   {
+    "check": "circuit_stroke_mismatch",
+    "detail": {},
+    "message": "The two circuits want different strokes (28.1 mm front vs 0.6 mm rear). They share one pedal, so the front circuit sets the pedal travel and the balance bar tilts to take up the difference. A large mismatch eats the bar's articulation and shifts bias as the pedal is pressed -- which is felt as a bias that changes with pedal effort.",
+    "severity": "warning",
+    "subsystems": [
+     "brakes"
+    ]
+   }
+  ],
+  "s": "PEDAL BOX STUDY -> FAIL\n\nPedal box stack-up: 374.9 mm installed vs 400.0 mm available -> FITS\n      112.0 mm  Master cylinder body  [catalogue/estimate]\n       81.6 mm  Pedal pad to pivot (X projection of the lever)  [catalogue/estimate]\n       55.0 mm  Pushrod  [catalogue/estimate, 8.0 mm of it adjustable]\n       42.0 mm  MC outlet fitting + hardline bend radius  [catalogue/estimate]\n       38.0 mm  Balance bar + clevises + spherical bearing  [catalogue/estimate]\n       16.3 mm  Pivot to balance-bar clevis  [catalogue/estimate]\n       12.0 mm  Clearance to the front bulkhead  [catalogue/estimate]\n       10.0 mm  Pedal arc clearance (pad sweep under braking)  [catalogue/estimate]\n        8.0 mm  Mount plate / bulkhead flange  [catalogue/estimate]\n\nReachable front bias: 93.6% to 98.8% (centred bar = 97.2%)\nAdjuster: 0.19% bias per turn (1.06 mm pitch)\nTarget 65% front is NOT reachable with these bores -- change a bore.\n\nFront circuit: Pedal travel: 147.9 mm at the pad of 60.0 mm available -> FAIL\n  3.176 cc demanded, 28.1 mm of cylinder stroke (111% of the 25.4 mm limit)\n     1.448 cc  Piston knockback / running clearance\n     0.965 cc  Pad compression\n     0.442 cc  Caliper housing deflection\n     0.196 cc  Fluid compressibility\nRear circuit:  Pedal travel: 10.7 mm at the pad of 60.0 mm available -> PASS\n  0.324 cc demanded, 0.6 mm of cylinder stroke (3% of the 25.4 mm limit)\n     0.099 cc  Caliper housing deflection\n     0.094 cc  Piston knockback / running clearance\n     0.063 cc  Pad compression\n     0.040 cc  Fluid compressibility",
+  "verdict": "FAIL"
+ },
+ "no_target": {
+  "d": {
+   "authority": {
+    "bias_at_centre": 0.782888552862806,
+    "bias_max": 0.893773369858631,
+    "bias_min": 0.6071341791943543,
+    "bias_per_turn": 0.011990030884774017,
+    "findings": [],
+    "offset_for_target_mm": null,
+    "sweep": [
+     {
+      "bias_front": 0.6071341791943543,
+      "offset_mm": -12.0,
+      "pressure_front_bar": 37.891684634687714,
+      "pressure_rear_bar": 61.3985630654662
+     },
+     {
+      "bias_front": 0.6183286582661226,
+      "offset_mm": -11.4,
+      "pressure_front_bar": 39.1547407891773,
+      "pressure_rear_bar": 60.521440735959544
+     },
+     {
+      "bias_front": 0.6292049949807956,
+      "offset_mm": -10.8,
+      "pressure_front_bar": 40.41779694366689,
+      "pressure_rear_bar": 59.64431840645288
+     },
+     {
+      "bias_front": 0.6397765615290728,
+      "offset_mm": -10.2,
+      "pressure_front_bar": 41.68085309815648,
+      "pressure_rear_bar": 58.76719607694622
+     },
+     {
+      "bias_front": 0.6500559910414333,
+      "offset_mm": -9.6,
+      "pressure_front_bar": 42.94390925264607,
+      "pressure_rear_bar": 57.89007374743956
+     },
+     {
+      "bias_front": 0.660055227950659,
+      "offset_mm": -9.0,
+      "pressure_front_bar": 44.20696540713566,
+      "pressure_rear_bar": 57.012951417932904
+     },
+     {
+      "bias_front": 0.6697855742914471,
+      "offset_mm": -8.4,
+      "pressure_front_bar": 45.47002156162525,
+      "pressure_rear_bar": 56.13582908842624
+     },
+     {
+      "bias_front": 0.6792577323144331,
+      "offset_mm": -7.8,
+      "pressure_front_bar": 46.73307771611485,
+      "pressure_rear_bar": 55.25870675891958
+     },
+     {
+      "bias_front": 0.6884818437524236,
+      "offset_mm": -7.2,
+      "pressure_front_bar": 47.99613387060444,
+      "pressure_rear_bar": 54.381584429412925
+     },
+     {
+      "bias_front": 0.6974675260417154,
+      "offset_mm": -6.6,
+      "pressure_front_bar": 49.25919002509403,
+      "pressure_rear_bar": 53.50446209990626
+     },
+     {
+      "bias_front": 0.7062239057704537,
+      "offset_mm": -6.0,
+      "pressure_front_bar": 50.522246179583625,
+      "pressure_rear_bar": 52.6273397703996
+     },
+     {
+      "bias_front": 0.7147596495985818,
+      "offset_mm": -5.4,
+      "pressure_front_bar": 51.785302334073215,
+      "pressure_rear_bar": 51.75021744089294
+     },
+     {
+      "bias_front": 0.7230829928695837,
+      "offset_mm": -4.8,
+      "pressure_front_bar": 53.0483584885628,
+      "pressure_rear_bar": 50.873095111386284
+     },
+     {
+      "bias_front": 0.7312017661125817,
+      "offset_mm": -4.2,
+      "pressure_front_bar": 54.31141464305239,
+      "pressure_rear_bar": 49.99597278187962
+     },
+     {
+      "bias_front": 0.7391234196140604,
+      "offset_mm": -3.5999999999999996,
+      "pressure_front_bar": 55.57447079754198,
+      "pressure_rear_bar": 49.11885045237296
+     },
+     {
+      "bias_front": 0.7468550462212903,
+      "offset_mm": -3.0,
+      "pressure_front_bar": 56.837526952031574,
+      "pressure_rear_bar": 48.241728122866306
+     },
+     {
+      "bias_front": 0.7544034025241552,
+      "offset_mm": -2.4000000000000004,
+      "pressure_front_bar": 58.100583106521164,
+      "pressure_rear_bar": 47.364605793359644
+     },
+     {
+      "bias_front": 0.7617749285483426,
+      "offset_mm": -1.8000000000000007,
+      "pressure_front_bar": 59.36363926101075,
+      "pressure_rear_bar": 46.48748346385298
+     },
+     {
+      "bias_front": 0.7689757660805411,
+      "offset_mm": -1.1999999999999993,
+      "pressure_front_bar": 60.62669541550034,
+      "pressure_rear_bar": 45.61036113434632
+     },
+     {
+      "bias_front": 0.7760117757352394,
+      "offset_mm": -0.5999999999999996,
+      "pressure_front_bar": 61.889751569989926,
+      "pressure_rear_bar": 44.733238804839665
+     },
+     {
+      "bias_front": 0.782888552862806,
+      "offset_mm": 0.0,
+      "pressure_front_bar": 63.15280772447952,
+      "pressure_rear_bar": 43.856116475333
+     },
+     {
+      "bias_front": 0.7896114423896017,
+      "offset_mm": 0.5999999999999996,
+      "pressure_front_bar": 64.4158638789691,
+      "pressure_rear_bar": 42.97899414582634
+     },
+     {
+      "bias_front": 0.7961855526728465,
+      "offset_mm": 1.1999999999999993,
+      "pressure_front_bar": 65.67892003345871,
+      "pressure_rear_bar": 42.10187181631969
+     },
+     {
+      "bias_front": 0.8026157684457169,
+      "offset_mm": 1.8000000000000007,
+      "pressure_front_bar": 66.9419761879483,
+      "pressure_rear_bar": 41.22474948681302
+     },
+     {
+      "bias_front": 0.8089067629216171,
+      "offset_mm": 2.4000000000000004,
+      "pressure_front_bar": 68.20503234243789,
+      "pressure_rear_bar": 40.347627157306356
+     },
+     {
+      "bias_front": 0.8150630091206572,
+      "offset_mm": 3.0,
+      "pressure_front_bar": 69.46808849692748,
+      "pressure_rear_bar": 39.4705048277997
+     },
+     {
+      "bias_front": 0.8210887904760301,
+      "offset_mm": 3.5999999999999996,
+      "pressure_front_bar": 70.73114465141707,
+      "pressure_rear_bar": 38.59338249829304
+     },
+     {
+      "bias_front": 0.8269882107731388,
+      "offset_mm": 4.199999999999999,
+      "pressure_front_bar": 71.99420080590666,
+      "pressure_rear_bar": 37.71626016878638
+     },
+     {
+      "bias_front": 0.8327652034699392,
+      "offset_mm": 4.800000000000001,
+      "pressure_front_bar": 73.25725696039625,
+      "pressure_rear_bar": 36.83913783927972
+     },
+     {
+      "bias_front": 0.8384235404429818,
+      "offset_mm": 5.399999999999999,
+      "pressure_front_bar": 74.52031311488584,
+      "pressure_rear_bar": 35.96201550977306
+     },
+     {
+      "bias_front": 0.8439668402000161,
+      "offset_mm": 6.0,
+      "pressure_front_bar": 75.78336926937543,
+      "pressure_rear_bar": 35.0848931802664
+     },
+     {
+      "bias_front": 0.8493985755967359,
+      "offset_mm": 6.600000000000001,
+      "pressure_front_bar": 77.04642542386502,
+      "pressure_rear_bar": 34.20777085075974
+     },
+     {
+      "bias_front": 0.8547220810922452,
+      "offset_mm": 7.199999999999999,
+      "pressure_front_bar": 78.3094815783546,
+      "pressure_rear_bar": 33.33064852125308
+     },
+     {
+      "bias_front": 0.8599405595750957,
+      "offset_mm": 7.800000000000001,
+      "pressure_front_bar": 79.57253773284421,
+      "pressure_rear_bar": 32.45352619174642
+     },
+     {
+      "bias_front": 0.8650570887892604,
+      "offset_mm": 8.399999999999999,
+      "pressure_front_bar": 80.83559388733379,
+      "pressure_rear_bar": 31.57640386223976
+     },
+     {
+      "bias_front": 0.8700746273871331,
+      "offset_mm": 9.0,
+      "pressure_front_bar": 82.09865004182338,
+      "pressure_rear_bar": 30.6992815327331
+     },
+     {
+      "bias_front": 0.8749960206345668,
+      "offset_mm": 9.600000000000001,
+      "pressure_front_bar": 83.36170619631297,
+      "pressure_rear_bar": 29.82215920322644
+     },
+     {
+      "bias_front": 0.879824005791069,
+      "offset_mm": 10.2,
+      "pressure_front_bar": 84.62476235080257,
+      "pressure_rear_bar": 28.94503687371978
+     },
+     {
+      "bias_front": 0.8845612171865259,
+      "offset_mm": 10.8,
+      "pressure_front_bar": 85.88781850529215,
+      "pressure_rear_bar": 28.06791454421312
+     },
+     {
+      "bias_front": 0.8892101910142444,
+      "offset_mm": 11.399999999999999,
+      "pressure_front_bar": 87.15087465978173,
+      "pressure_rear_bar": 27.190792214706462
+     },
+     {
+      "bias_front": 0.893773369858631,
+      "offset_mm": 12.0,
+      "pressure_front_bar": 88.41393081427132,
+      "pressure_rear_bar": 26.3136698851998
+     }
+    ],
+    "target_bias": null,
+    "target_reachable": false,
+    "thread_pitch_mm": 1.058
+   },
+   "bias": {
+    "bar_offset_mm": 5.0,
+    "bias_front": 0.8346643179922567,
+    "findings": [
+     {
+      "check": "bar_authority",
+      "detail": {},
+      "message": "The bar sits 17% off centre, so there is trim authority in both directions.",
+      "severity": "ok",
+      "subsystems": [
+       "brakes"
+      ]
+     }
+    ],
+    "force_front_N": 1458.3333333333333,
+    "force_rear_N": 1041.6666666666667,
+    "pressure_front_bar": 73.67827567855944,
+    "pressure_rear_bar": 36.54676372944417,
+    "torque_front_Nm": 1271.4239999999998,
+    "torque_rear_Nm": 251.8518518518519
+   },
+   "findings": [
+    {
+     "check": "circuit_stroke_mismatch",
+     "detail": {},
+     "message": "The two circuits want different strokes (7.7 mm front vs 1.8 mm rear). They share one pedal, so the front circuit sets the pedal travel and the balance bar tilts to take up the difference. A large mismatch eats the bar's articulation and shifts bias as the pedal is pressed -- which is felt as a bias that changes with pedal effort.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "plan": null,
+   "stack": {
+    "available_mm": 480.0,
+    "deficit_mm": -105.11875900004179,
+    "findings": [
+     {
+      "check": "mc_body_length_source",
+      "detail": {},
+      "message": "Master-cylinder body length came from the 'standard racing' catalogue placeholder (112.0 mm), not from your part. Put a caliper on the cylinder and pass mc_body_mm -- body lengths differ by 20.0 mm to 40.0 mm across families and that is most of the deficit you are chasing.",
+      "severity": "missing",
+      "subsystems": [
+       "brakes"
+      ]
+     },
+     {
+      "check": "mc_outlet_stack",
+      "detail": {},
+      "message": "The line exit behind the cylinders is carrying 42.0 mm of the stack ('straight fitting + hardline bend'), which includes the bend radius the hardline needs to turn away from the cylinder. This is the segment most often missing from a CAD envelope check, because the fitting is modelled but the bend is not.",
+      "severity": "warning",
+      "subsystems": [
+       "brakes"
+      ]
+     },
+     {
+      "check": "pedal_box_envelope",
+      "detail": {},
+      "message": "Fits with 105.1 mm to spare.",
+      "severity": "ok",
+      "subsystems": [
+       "brakes",
+       "chassis"
+      ]
+     }
+    ],
+    "installed_mm": 374.8812409999582,
+    "is_estimate": true,
+    "notes": [
+     "Some segments came from catalogue placeholders. The RANKING of segments is trustworthy; the absolute total is provisional until the real parts are measured."
+    ],
+    "segments": [
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 81.56770083329849,
+      "measured": false,
+      "name": "Pedal pad to pivot (X projection of the lever)",
+      "note": "90.0 mm arm at 25 deg from X. A more upright pedal projects less."
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 10.0,
+      "measured": false,
+      "name": "Pedal arc clearance (pad sweep under braking)",
+      "note": "Room the pad needs to travel without touching anything."
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 16.3135401666597,
+      "measured": false,
+      "name": "Pivot to balance-bar clevis",
+      "note": "Lever/ratio = 18.0 mm arm. Raising the pedal ratio pulls this in."
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 38.0,
+      "measured": false,
+      "name": "Balance bar + clevises + spherical bearing",
+      "note": "Bar hardware between the pedal and the two pushrods."
+     },
+     {
+      "adjustable_mm": 8.0,
+      "length_mm": 55.0,
+      "measured": false,
+      "name": "Pushrod",
+      "note": "8.0 mm can be wound out before thread engagement hits the 12.0 mm floor."
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 112.0,
+      "measured": false,
+      "name": "Master cylinder body",
+      "note": "The part. Only a different part changes this."
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 42.0,
+      "measured": false,
+      "name": "MC outlet fitting + hardline bend radius",
+      "note": "'straight fitting + hardline bend'. A 90 deg banjo or a bulkhead elbow is the cheapest length in the whole stack."
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 8.0,
+      "measured": false,
+      "name": "Mount plate / bulkhead flange",
+      "note": ""
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 12.0,
+      "measured": false,
+      "name": "Clearance to the front bulkhead",
+      "note": "Assembly and tolerance gap. Do not spend this one."
+     }
+    ],
+    "verdict": "FITS"
+   },
+   "travel_front": {
+    "available_travel_mm": 60.0,
+    "findings": [
+     {
+      "check": "mc_stroke",
+      "detail": {},
+      "message": "The circuit demands 7.7 mm of cylinder stroke against a 3.0 mm limit. The piston bottoms before the brakes are fully applied -- this is a pedal that goes to the floor, not a soft one.",
+      "severity": "fail",
+      "subsystems": [
+       "brakes"
+      ]
+     }
+    ],
+    "is_estimate": false,
+    "items": [
+     {
+      "name": "Piston knockback / running clearance",
+      "note": "4053.7 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+      "pressure_dependent": false,
+      "volume_cc": 0.6080489749169972
+     },
+     {
+      "name": "Pad compression",
+      "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+      "pressure_dependent": false,
+      "volume_cc": 0.40536598327799817
+     },
+     {
+      "name": "Caliper housing deflection",
+      "note": "2.000 cc/kbar per caliper at 74 bar.",
+      "pressure_dependent": true,
+      "volume_cc": 0.2947131027142378
+     },
+     {
+      "name": "Hose expansion (PTFE braided (steel))",
+      "note": "0.60 m per corner x 2 corner(s) at 74 bar. Switching rubber for PTFE braided is the cheapest firm-pedal fix there is.",
+      "pressure_dependent": true,
+      "volume_cc": 0.07073114465141707
+     },
+     {
+      "name": "Hardline expansion (hardline (steel tube))",
+      "note": "1.80 m of routed hardline at 74 bar.",
+      "pressure_dependent": true,
+      "volume_cc": 0.013262089622140701
+     },
+     {
+      "name": "Fluid compressibility",
+      "note": "25.141 cc of DOT 4 at 74 bar, K=1.50 GPa. Hot or water-contaminated fluid is softer than this.",
+      "pressure_dependent": true,
+      "volume_cc": 0.12348894813345186
+     }
+    ],
+    "mc_stroke_limit_mm": 3.0,
+    "mc_stroke_mm": 7.6572033825121855,
+    "notes": [],
+    "pedal_travel_mm": 45.78601691256093,
+    "stroke_utilisation": 2.5524011275040617,
+    "total_cc": 1.5156102433162428,
+    "verdict": "FAIL"
+   },
+   "travel_rear": {
+    "available_travel_mm": 60.0,
+    "findings": [
+     {
+      "check": "pedal_travel",
+      "detail": {},
+      "message": "16.3 mm at the pad, cylinder at 59% of stroke. Reserve for wear and heat.",
+      "severity": "ok",
+      "subsystems": [
+       "brakes"
+      ]
+     }
+    ],
+    "is_estimate": false,
+    "items": [
+     {
+      "name": "Piston knockback / running clearance",
+      "note": "1013.4 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+      "pressure_dependent": false,
+      "volume_cc": 0.1520122437292493
+     },
+     {
+      "name": "Pad compression",
+      "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+      "pressure_dependent": false,
+      "volume_cc": 0.10134149581949954
+     },
+     {
+      "name": "Caliper housing deflection",
+      "note": "2.000 cc/kbar per caliper at 37 bar.",
+      "pressure_dependent": true,
+      "volume_cc": 0.1461870549177767
+     },
+     {
+      "name": "Hose expansion (PTFE braided (steel))",
+      "note": "0.60 m per corner x 2 corner(s) at 37 bar. Switching rubber for PTFE braided is the cheapest firm-pedal fix there is.",
+      "pressure_dependent": true,
+      "volume_cc": 0.035084893180266405
+     },
+     {
+      "name": "Hardline expansion (hardline (steel tube))",
+      "note": "1.80 m of routed hardline at 37 bar.",
+      "pressure_dependent": true,
+      "volume_cc": 0.006578417471299952
+     },
+     {
+      "name": "Fluid compressibility",
+      "note": "24.381 cc of DOT 4 at 37 bar, K=1.50 GPa. Hot or water-contaminated fluid is softer than this.",
+      "pressure_dependent": true,
+      "volume_cc": 0.059402586706408
+     }
+    ],
+    "mc_stroke_limit_mm": 3.0,
+    "mc_stroke_mm": 1.7563732307989122,
+    "notes": [],
+    "pedal_travel_mm": 16.281866153994564,
+    "stroke_utilisation": 0.5854577435996374,
+    "total_cc": 0.5006066918244999,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  },
+  "f": [
+   {
+    "check": "circuit_stroke_mismatch",
+    "detail": {},
+    "message": "The two circuits want different strokes (7.7 mm front vs 1.8 mm rear). They share one pedal, so the front circuit sets the pedal travel and the balance bar tilts to take up the difference. A large mismatch eats the bar's articulation and shifts bias as the pedal is pressed -- which is felt as a bias that changes with pedal effort.",
+    "severity": "warning",
+    "subsystems": [
+     "brakes"
+    ]
+   }
+  ],
+  "s": "PEDAL BOX STUDY -> FAIL\n\nPedal box stack-up: 374.9 mm installed vs 480.0 mm available -> FITS\n      112.0 mm  Master cylinder body  [catalogue/estimate]\n       81.6 mm  Pedal pad to pivot (X projection of the lever)  [catalogue/estimate]\n       55.0 mm  Pushrod  [catalogue/estimate, 8.0 mm of it adjustable]\n       42.0 mm  MC outlet fitting + hardline bend radius  [catalogue/estimate]\n       38.0 mm  Balance bar + clevises + spherical bearing  [catalogue/estimate]\n       16.3 mm  Pivot to balance-bar clevis  [catalogue/estimate]\n       12.0 mm  Clearance to the front bulkhead  [catalogue/estimate]\n       10.0 mm  Pedal arc clearance (pad sweep under braking)  [catalogue/estimate]\n        8.0 mm  Mount plate / bulkhead flange  [catalogue/estimate]\n\nReachable front bias: 60.7% to 89.4% (centred bar = 78.3%)\nAdjuster: 1.20% bias per turn (1.06 mm pitch)\n\nFront circuit: Pedal travel: 45.8 mm at the pad of 60.0 mm available -> FAIL\n  1.516 cc demanded, 7.7 mm of cylinder stroke (255% of the 3.0 mm limit)\n     0.608 cc  Piston knockback / running clearance\n     0.405 cc  Pad compression\n     0.295 cc  Caliper housing deflection\n     0.123 cc  Fluid compressibility\nRear circuit:  Pedal travel: 16.3 mm at the pad of 60.0 mm available -> PASS\n  0.501 cc demanded, 1.8 mm of cylinder stroke (59% of the 3.0 mm limit)\n     0.152 cc  Piston knockback / running clearance\n     0.146 cc  Caliper housing deflection\n     0.101 cc  Pad compression\n     0.059 cc  Fluid compressibility",
+  "verdict": "FAIL"
+ },
+ "over": {
+  "d": {
+   "authority": {
+    "bias_at_centre": 0.7828885528628059,
+    "bias_max": 0.8937733698586311,
+    "bias_min": 0.6071341791943543,
+    "bias_per_turn": 0.011990030884773906,
+    "findings": [
+     {
+      "check": "target_bias_reachable",
+      "detail": {},
+      "message": "60% front is outside everything these bores can make (60.7%-89.4%). No bar position gets there. Fit a larger front bore or smaller rear bore. Bias is set by the hardware; the bar only trims it.",
+      "severity": "fail",
+      "subsystems": [
+       "brakes"
+      ]
+     }
+    ],
+    "offset_for_target_mm": null,
+    "sweep": [
+     {
+      "bias_front": 0.6071341791943543,
+      "offset_mm": -12.0,
+      "pressure_front_bar": 41.68085309815648,
+      "pressure_rear_bar": 67.53841937201283
+     },
+     {
+      "bias_front": 0.6183286582661227,
+      "offset_mm": -11.4,
+      "pressure_front_bar": 43.07021486809504,
+      "pressure_rear_bar": 66.5735848095555
+     },
+     {
+      "bias_front": 0.6292049949807957,
+      "offset_mm": -10.8,
+      "pressure_front_bar": 44.45957663803359,
+      "pressure_rear_bar": 65.60875024709816
+     },
+     {
+      "bias_front": 0.6397765615290729,
+      "offset_mm": -10.2,
+      "pressure_front_bar": 45.84893840797214,
+      "pressure_rear_bar": 64.64391568464085
+     },
+     {
+      "bias_front": 0.6500559910414334,
+      "offset_mm": -9.6,
+      "pressure_front_bar": 47.23830017791068,
+      "pressure_rear_bar": 63.67908112218352
+     },
+     {
+      "bias_front": 0.660055227950659,
+      "offset_mm": -9.0,
+      "pressure_front_bar": 48.627661947849234,
+      "pressure_rear_bar": 62.714246559726185
+     },
+     {
+      "bias_front": 0.6697855742914472,
+      "offset_mm": -8.4,
+      "pressure_front_bar": 50.01702371778779,
+      "pressure_rear_bar": 61.74941199726886
+     },
+     {
+      "bias_front": 0.6792577323144331,
+      "offset_mm": -7.8,
+      "pressure_front_bar": 51.40638548772633,
+      "pressure_rear_bar": 60.784577434811524
+     },
+     {
+      "bias_front": 0.6884818437524234,
+      "offset_mm": -7.2,
+      "pressure_front_bar": 52.795747257664885,
+      "pressure_rear_bar": 59.81974287235422
+     },
+     {
+      "bias_front": 0.6974675260417151,
+      "offset_mm": -6.6,
+      "pressure_front_bar": 54.18510902760342,
+      "pressure_rear_bar": 58.854908309896885
+     },
+     {
+      "bias_front": 0.7062239057704537,
+      "offset_mm": -6.0,
+      "pressure_front_bar": 55.57447079754198,
+      "pressure_rear_bar": 57.89007374743956
+     },
+     {
+      "bias_front": 0.7147596495985817,
+      "offset_mm": -5.4,
+      "pressure_front_bar": 56.96383256748053,
+      "pressure_rear_bar": 56.92523918498224
+     },
+     {
+      "bias_front": 0.7230829928695837,
+      "offset_mm": -4.8,
+      "pressure_front_bar": 58.353194337419076,
+      "pressure_rear_bar": 55.960404622524905
+     },
+     {
+      "bias_front": 0.7312017661125817,
+      "offset_mm": -4.2,
+      "pressure_front_bar": 59.74255610735763,
+      "pressure_rear_bar": 54.995570060067585
+     },
+     {
+      "bias_front": 0.7391234196140605,
+      "offset_mm": -3.5999999999999996,
+      "pressure_front_bar": 61.13191787729618,
+      "pressure_rear_bar": 54.03073549761025
+     },
+     {
+      "bias_front": 0.7468550462212904,
+      "offset_mm": -3.0,
+      "pressure_front_bar": 62.52127964723473,
+      "pressure_rear_bar": 53.065900935152925
+     },
+     {
+      "bias_front": 0.7544034025241552,
+      "offset_mm": -2.4000000000000004,
+      "pressure_front_bar": 63.91064141717328,
+      "pressure_rear_bar": 52.101066372695605
+     },
+     {
+      "bias_front": 0.7617749285483426,
+      "offset_mm": -1.8000000000000007,
+      "pressure_front_bar": 65.30000318711183,
+      "pressure_rear_bar": 51.13623181023828
+     },
+     {
+      "bias_front": 0.7689757660805411,
+      "offset_mm": -1.1999999999999993,
+      "pressure_front_bar": 66.68936495705037,
+      "pressure_rear_bar": 50.17139724778095
+     },
+     {
+      "bias_front": 0.7760117757352395,
+      "offset_mm": -0.5999999999999996,
+      "pressure_front_bar": 68.07872672698893,
+      "pressure_rear_bar": 49.206562685323625
+     },
+     {
+      "bias_front": 0.7828885528628059,
+      "offset_mm": 0.0,
+      "pressure_front_bar": 69.46808849692748,
+      "pressure_rear_bar": 48.241728122866306
+     },
+     {
+      "bias_front": 0.7896114423896017,
+      "offset_mm": 0.5999999999999996,
+      "pressure_front_bar": 70.85745026686602,
+      "pressure_rear_bar": 47.27689356040898
+     },
+     {
+      "bias_front": 0.7961855526728466,
+      "offset_mm": 1.1999999999999993,
+      "pressure_front_bar": 72.24681203680457,
+      "pressure_rear_bar": 46.312058997951645
+     },
+     {
+      "bias_front": 0.802615768445717,
+      "offset_mm": 1.8000000000000007,
+      "pressure_front_bar": 73.63617380674313,
+      "pressure_rear_bar": 45.34722443549432
+     },
+     {
+      "bias_front": 0.8089067629216171,
+      "offset_mm": 2.4000000000000004,
+      "pressure_front_bar": 75.02553557668168,
+      "pressure_rear_bar": 44.38238987303699
+     },
+     {
+      "bias_front": 0.8150630091206572,
+      "offset_mm": 3.0,
+      "pressure_front_bar": 76.41489734662022,
+      "pressure_rear_bar": 43.417555310579665
+     },
+     {
+      "bias_front": 0.8210887904760301,
+      "offset_mm": 3.5999999999999996,
+      "pressure_front_bar": 77.80425911655878,
+      "pressure_rear_bar": 42.452720748122346
+     },
+     {
+      "bias_front": 0.8269882107731388,
+      "offset_mm": 4.199999999999999,
+      "pressure_front_bar": 79.19362088649733,
+      "pressure_rear_bar": 41.48788618566502
+     },
+     {
+      "bias_front": 0.8327652034699393,
+      "offset_mm": 4.800000000000001,
+      "pressure_front_bar": 80.58298265643586,
+      "pressure_rear_bar": 40.52305162320769
+     },
+     {
+      "bias_front": 0.8384235404429818,
+      "offset_mm": 5.399999999999999,
+      "pressure_front_bar": 81.97234442637442,
+      "pressure_rear_bar": 39.558217060750366
+     },
+     {
+      "bias_front": 0.8439668402000161,
+      "offset_mm": 6.0,
+      "pressure_front_bar": 83.36170619631297,
+      "pressure_rear_bar": 38.59338249829304
+     },
+     {
+      "bias_front": 0.849398575596736,
+      "offset_mm": 6.600000000000001,
+      "pressure_front_bar": 84.75106796625153,
+      "pressure_rear_bar": 37.628547935835705
+     },
+     {
+      "bias_front": 0.8547220810922452,
+      "offset_mm": 7.199999999999999,
+      "pressure_front_bar": 86.14042973619009,
+      "pressure_rear_bar": 36.66371337337839
+     },
+     {
+      "bias_front": 0.8599405595750957,
+      "offset_mm": 7.800000000000001,
+      "pressure_front_bar": 87.5297915061286,
+      "pressure_rear_bar": 35.69887881092106
+     },
+     {
+      "bias_front": 0.8650570887892605,
+      "offset_mm": 8.399999999999999,
+      "pressure_front_bar": 88.91915327606718,
+      "pressure_rear_bar": 34.73404424846374
+     },
+     {
+      "bias_front": 0.870074627387133,
+      "offset_mm": 9.0,
+      "pressure_front_bar": 90.30851504600571,
+      "pressure_rear_bar": 33.76920968600641
+     },
+     {
+      "bias_front": 0.8749960206345669,
+      "offset_mm": 9.600000000000001,
+      "pressure_front_bar": 91.69787681594428,
+      "pressure_rear_bar": 32.80437512354908
+     },
+     {
+      "bias_front": 0.879824005791069,
+      "offset_mm": 10.2,
+      "pressure_front_bar": 93.08723858588284,
+      "pressure_rear_bar": 31.83954056109176
+     },
+     {
+      "bias_front": 0.8845612171865259,
+      "offset_mm": 10.8,
+      "pressure_front_bar": 94.47660035582136,
+      "pressure_rear_bar": 30.87470599863443
+     },
+     {
+      "bias_front": 0.8892101910142443,
+      "offset_mm": 11.399999999999999,
+      "pressure_front_bar": 95.86596212575992,
+      "pressure_rear_bar": 29.90987143617711
+     },
+     {
+      "bias_front": 0.8937733698586311,
+      "offset_mm": 12.0,
+      "pressure_front_bar": 97.25532389569847,
+      "pressure_rear_bar": 28.94503687371978
+     }
+    ],
+    "target_bias": 0.6,
+    "target_reachable": false,
+    "thread_pitch_mm": 1.058
+   },
+   "bias": {
+    "bar_offset_mm": 0.0,
+    "bias_front": 0.7828885528628059,
+    "findings": [
+     {
+      "check": "bar_authority",
+      "detail": {},
+      "message": "The bar sits 0% off centre, so there is trim authority in both directions.",
+      "severity": "ok",
+      "subsystems": [
+       "brakes"
+      ]
+     }
+    ],
+    "force_front_N": 1375.0,
+    "force_rear_N": 1375.0,
+    "pressure_front_bar": 69.46808849692748,
+    "pressure_rear_bar": 48.241728122866306,
+    "torque_front_Nm": 1198.7712,
+    "torque_rear_Nm": 332.4444444444445
+   },
+   "findings": [
+    {
+     "check": "circuit_stroke_mismatch",
+     "detail": {},
+     "message": "The two circuits want different strokes (8.1 mm front vs 2.3 mm rear). They share one pedal, so the front circuit sets the pedal travel and the balance bar tilts to take up the difference. A large mismatch eats the bar's articulation and shifts bias as the pedal is pressed -- which is felt as a bias that changes with pedal effort.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    },
+    {
+     "check": "packaging_vs_travel_conflict",
+     "detail": {},
+     "message": "The shortening plan leans on changes that cost pedal travel (Raise the pedal ratio from 5.5 to 6.5 (clevis moves toward the pivot)), and travel is already FAIL. Those two cannot both be paid for. Take the length out of the fittings and the cylinder body instead, or find it in the chassis.",
+     "severity": "fail",
+     "subsystems": [
+      "brakes",
+      "chassis"
+     ]
+    }
+   ],
+   "plan": {
+    "chosen": [
+     {
+      "cost": "free, but it is then spent",
+      "cost_rank": 0,
+      "feasible": true,
+      "gain_mm": 8.0,
+      "name": "Wind the pushrod in to minimum safe thread engagement",
+      "requires_recheck": [
+       "pedal free play / rest-port return"
+      ],
+      "side_effects": {
+       "further adjustment": "none left in this direction",
+       "pedal free play": "goes to zero -- re-set the pedal stop so the cylinder still returns fully to its rest port, or the brakes will drag as they heat"
+      }
+     },
+     {
+      "cost": "one fitting per cylinder, no performance penalty",
+      "cost_rank": 1,
+      "feasible": true,
+      "gain_mm": 28.0,
+      "name": "Change the MC outlet from 'straight fitting + hardline bend' to '90 deg banjo'",
+      "requires_recheck": [
+       "leak check",
+       "line routing clearance"
+      ],
+      "side_effects": {
+       "assembly": "one more sealing joint per circuit to bleed and leak-check before the brake test",
+       "pedal feel": "unchanged -- this removes packaging length, not fluid"
+      }
+     },
+     {
+      "cost": "buy different cylinders",
+      "cost_rank": 1,
+      "feasible": true,
+      "gain_mm": 24.0,
+      "name": "Move to a 'compact racing (short body)' cylinder body",
+      "requires_recheck": [
+       "pedal_travel() stroke demand vs the new stroke limit"
+      ],
+      "side_effects": {
+       "lead time": "a parts order sits on the critical path",
+       "usable stroke": "drops 6.4 mm to 19.0 mm -- only safe if pedal_travel() says the circuit needs less than that with a reserve"
+      }
+     },
+     {
+      "cost": "pedal effort rises as the square of the bore ratio",
+      "cost_rank": 2,
+      "feasible": true,
+      "gain_mm": 4.408264462809919,
+      "name": "Go up in bore, 15.9 -> 17.5 mm, and take the shorter-stroke cylinder it allows",
+      "requires_recheck": [
+       "Hydraulic sizing: torque made vs needed at the new bore",
+       "pedal effort against driver capability"
+      ],
+      "side_effects": {
+       "line pressure at a given pedal force": "x0.83 (lower)",
+       "pedal force to reach lock-up": "x1.21 -- check this against what a driver can actually push before you commit",
+       "pedal travel to lock": "x0.83 (shorter, the one genuinely free win here)"
+      }
+     },
+     {
+      "cost": "geometry change; needs spherical rod ends",
+      "cost_rank": 2,
+      "feasible": true,
+      "gain_mm": 2.5371052469612607,
+      "name": "Tilt the cylinders to 10 deg off the X axis",
+      "requires_recheck": [
+       "rod-end articulation through full pedal travel",
+       "hydraulic sizing at the higher pedal effort"
+      ],
+      "side_effects": {
+       "pushrod force reaching the piston": "-1.5% (cosine loss), so pedal effort rises by about the same fraction",
+       "sanity": "within the usual limit",
+       "side load into the bore": "17% of the rod load pushes sideways on the piston seal -- spherical rod ends at BOTH ends are mandatory past 3 deg"
+      }
+     },
+     {
+      "cost": "pays for length and effort in travel",
+      "cost_rank": 2,
+      "feasible": true,
+      "gain_mm": 2.281614009323034,
+      "name": "Raise the pedal ratio from 5.5 to 6.5 (clevis moves toward the pivot)",
+      "requires_recheck": [
+       "pedal_travel() against the available travel",
+       "brake pedal 2000 N check at the new clevis position"
+      ],
+      "side_effects": {
+       "clevis load": "x1.18 into the bar and pushrod",
+       "pedal effort to lock": "x0.85 (lower -- this is the good half of the trade)",
+       "pedal travel to lock": "x1.18 (higher -- this is what it costs, and it is the half that gets forgotten)"
+      }
+     }
+    ],
+    "deficit_mm": 123.39819189389823,
+    "findings": [
+     {
+      "check": "shorten_plan",
+      "detail": {},
+      "message": "The affordable menu returns 69.2 mm of the 123.4 mm needed, leaving 54.2 mm. This is no longer an adjustment problem. The honest options are a cylinder family with a shorter body, a floor-mounted pedal, or moving the bulkhead -- all of which are chassis conversations, so start them now rather than at the next design review.",
+      "severity": "fail",
+      "subsystems": [
+       "brakes",
+       "chassis"
+      ]
+     },
+     {
+      "check": "shorten_plan_provenance",
+      "detail": {},
+      "message": "This plan is priced against catalogue segment lengths. Measure the real cylinders and fittings before ordering anything -- the deficit itself could move by tens of mm.",
+      "severity": "warning",
+      "subsystems": [
+       "brakes"
+      ]
+     }
+    ],
+    "remaining_mm": 54.17120817480401,
+    "solved": false,
+    "total_gain_mm": 69.22698371909422
+   },
+   "stack": {
+    "available_mm": 250.0,
+    "deficit_mm": 123.39819189389823,
+    "findings": [
+     {
+      "check": "mc_body_length_source",
+      "detail": {},
+      "message": "Master-cylinder body length came from the 'standard racing' catalogue placeholder (112.0 mm), not from your part. Put a caliper on the cylinder and pass mc_body_mm -- body lengths differ by 20.0 mm to 40.0 mm across families and that is most of the deficit you are chasing.",
+      "severity": "missing",
+      "subsystems": [
+       "brakes"
+      ]
+     },
+     {
+      "check": "mc_outlet_stack",
+      "detail": {},
+      "message": "The line exit behind the cylinders is carrying 42.0 mm of the stack ('straight fitting + hardline bend'), which includes the bend radius the hardline needs to turn away from the cylinder. This is the segment most often missing from a CAD envelope check, because the fitting is modelled but the bend is not.",
+      "severity": "warning",
+      "subsystems": [
+       "brakes"
+      ]
+     },
+     {
+      "check": "pedal_box_envelope",
+      "detail": {},
+      "message": "The assembly is 123.4 mm longer than the 250.0 mm available. Run shorten_options() against this deficit -- the pushrod alone can only return 8.0 mm of it.",
+      "severity": "fail",
+      "subsystems": [
+       "brakes",
+       "chassis"
+      ]
+     }
+    ],
+    "installed_mm": 373.39819189389823,
+    "is_estimate": true,
+    "notes": [
+     "Some segments came from catalogue placeholders. The RANKING of segments is trustworthy; the absolute total is provisional until the real parts are measured."
+    ],
+    "segments": [
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 81.56770083329849,
+      "measured": false,
+      "name": "Pedal pad to pivot (X projection of the lever)",
+      "note": "90.0 mm arm at 25 deg from X. A more upright pedal projects less."
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 10.0,
+      "measured": false,
+      "name": "Pedal arc clearance (pad sweep under braking)",
+      "note": "Room the pad needs to travel without touching anything."
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 14.830491060599726,
+      "measured": false,
+      "name": "Pivot to balance-bar clevis",
+      "note": "Lever/ratio = 16.4 mm arm. Raising the pedal ratio pulls this in."
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 38.0,
+      "measured": false,
+      "name": "Balance bar + clevises + spherical bearing",
+      "note": "Bar hardware between the pedal and the two pushrods."
+     },
+     {
+      "adjustable_mm": 8.0,
+      "length_mm": 55.0,
+      "measured": false,
+      "name": "Pushrod",
+      "note": "8.0 mm can be wound out before thread engagement hits the 12.0 mm floor."
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 112.0,
+      "measured": false,
+      "name": "Master cylinder body",
+      "note": "The part. Only a different part changes this."
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 42.0,
+      "measured": false,
+      "name": "MC outlet fitting + hardline bend radius",
+      "note": "'straight fitting + hardline bend'. A 90 deg banjo or a bulkhead elbow is the cheapest length in the whole stack."
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 8.0,
+      "measured": false,
+      "name": "Mount plate / bulkhead flange",
+      "note": ""
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 12.0,
+      "measured": false,
+      "name": "Clearance to the front bulkhead",
+      "note": "Assembly and tolerance gap. Do not spend this one."
+     }
+    ],
+    "verdict": "DOES NOT FIT"
+   },
+   "travel_front": {
+    "available_travel_mm": 30.0,
+    "findings": [
+     {
+      "check": "pedal_travel",
+      "detail": {},
+      "message": "52.7 mm of travel at the pad against 30.0 mm available. Go after the largest consumers first: Piston knockback / running clearance, Pad compression.",
+      "severity": "fail",
+      "subsystems": [
+       "brakes"
+      ]
+     },
+     {
+      "check": "travel_provenance",
+      "detail": {},
+      "message": "Knockback, pad compression, hose and caliper compliance are representative values, not measured on this car. The RANKING of consumers and the sensitivity to bore and ratio are trustworthy; the absolute travel is provisional. One bench measurement -- pump to a firm pedal, measure the travel -- fixes that via TravelParams.from_measured_stroke().",
+      "severity": "missing",
+      "subsystems": [
+       "brakes"
+      ]
+     }
+    ],
+    "is_estimate": true,
+    "items": [
+     {
+      "name": "Piston knockback / running clearance",
+      "note": "4053.7 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+      "pressure_dependent": false,
+      "volume_cc": 0.6080489749169972
+     },
+     {
+      "name": "Pad compression",
+      "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+      "pressure_dependent": false,
+      "volume_cc": 0.40536598327799817
+     },
+     {
+      "name": "Caliper housing deflection",
+      "note": "2.000 cc/kbar per caliper at 69 bar.",
+      "pressure_dependent": true,
+      "volume_cc": 0.27787235398770993
+     },
+     {
+      "name": "Hose expansion (PTFE braided (steel))",
+      "note": "1.20 m per corner x 2 corner(s) at 69 bar. Switching rubber for PTFE braided is the cheapest firm-pedal fix there is.",
+      "pressure_dependent": true,
+      "volume_cc": 0.13337872991410077
+     },
+     {
+      "name": "Hardline expansion (hardline (steel tube))",
+      "note": "1.80 m of routed hardline at 69 bar.",
+      "pressure_dependent": true,
+      "volume_cc": 0.012504255929446947
+     },
+     {
+      "name": "Fluid compressibility",
+      "note": "34.792 cc of DOT 4 at 69 bar, K=1.50 GPa. Hot or water-contaminated fluid is softer than this.",
+      "pressure_dependent": true,
+      "volume_cc": 0.16112807820282307
+     }
+    ],
+    "mc_stroke_limit_mm": 25.4,
+    "mc_stroke_mm": 8.074962403227415,
+    "notes": [
+     "Uncalibrated: use for trades, not as an absolute pedal travel."
+    ],
+    "pedal_travel_mm": 52.662293217750786,
+    "stroke_utilisation": 0.3179119056388746,
+    "total_cc": 1.5982983762290761,
+    "verdict": "FAIL"
+   },
+   "travel_rear": {
+    "available_travel_mm": 30.0,
+    "findings": [
+     {
+      "check": "pedal_travel",
+      "detail": {},
+      "message": "20.9 mm at the pad, cylinder at 9% of stroke. Reserve for wear and heat.",
+      "severity": "ok",
+      "subsystems": [
+       "brakes"
+      ]
+     },
+     {
+      "check": "travel_provenance",
+      "detail": {},
+      "message": "Knockback, pad compression, hose and caliper compliance are representative values, not measured on this car. The RANKING of consumers and the sensitivity to bore and ratio are trustworthy; the absolute travel is provisional. One bench measurement -- pump to a firm pedal, measure the travel -- fixes that via TravelParams.from_measured_stroke().",
+      "severity": "missing",
+      "subsystems": [
+       "brakes"
+      ]
+     }
+    ],
+    "is_estimate": true,
+    "items": [
+     {
+      "name": "Piston knockback / running clearance",
+      "note": "1013.4 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+      "pressure_dependent": false,
+      "volume_cc": 0.1520122437292493
+     },
+     {
+      "name": "Pad compression",
+      "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+      "pressure_dependent": false,
+      "volume_cc": 0.10134149581949954
+     },
+     {
+      "name": "Caliper housing deflection",
+      "note": "2.000 cc/kbar per caliper at 48 bar.",
+      "pressure_dependent": true,
+      "volume_cc": 0.19296691249146522
+     },
+     {
+      "name": "Hose expansion (PTFE braided (steel))",
+      "note": "1.20 m per corner x 2 corner(s) at 48 bar. Switching rubber for PTFE braided is the cheapest firm-pedal fix there is.",
+      "pressure_dependent": true,
+      "volume_cc": 0.09262411799590331
+     },
+     {
+      "name": "Hardline expansion (hardline (steel tube))",
+      "note": "1.80 m of routed hardline at 48 bar.",
+      "pressure_dependent": true,
+      "volume_cc": 0.008683511062115935
+     },
+     {
+      "name": "Fluid compressibility",
+      "note": "34.032 cc of DOT 4 at 48 bar, K=1.50 GPa. Hot or water-contaminated fluid is softer than this.",
+      "pressure_dependent": true,
+      "volume_cc": 0.10945005430751603
+     }
+    ],
+    "mc_stroke_limit_mm": 25.4,
+    "mc_stroke_mm": 2.3053523208777973,
+    "notes": [
+     "Uncalibrated: use for trades, not as an absolute pedal travel."
+    ],
+    "pedal_travel_mm": 20.929437764827885,
+    "stroke_utilisation": 0.09076190239676368,
+    "total_cc": 0.6570783354057493,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  },
+  "f": [
+   {
+    "check": "circuit_stroke_mismatch",
+    "detail": {},
+    "message": "The two circuits want different strokes (8.1 mm front vs 2.3 mm rear). They share one pedal, so the front circuit sets the pedal travel and the balance bar tilts to take up the difference. A large mismatch eats the bar's articulation and shifts bias as the pedal is pressed -- which is felt as a bias that changes with pedal effort.",
+    "severity": "warning",
+    "subsystems": [
+     "brakes"
+    ]
+   },
+   {
+    "check": "packaging_vs_travel_conflict",
+    "detail": {},
+    "message": "The shortening plan leans on changes that cost pedal travel (Raise the pedal ratio from 5.5 to 6.5 (clevis moves toward the pivot)), and travel is already FAIL. Those two cannot both be paid for. Take the length out of the fittings and the cylinder body instead, or find it in the chassis.",
+    "severity": "fail",
+    "subsystems": [
+     "brakes",
+     "chassis"
+    ]
+   }
+  ],
+  "s": "PEDAL BOX STUDY -> FAIL\n\nPedal box stack-up: 373.4 mm installed vs 250.0 mm available -> DOES NOT FIT (need to find 123.4 mm)\n      112.0 mm  Master cylinder body  [catalogue/estimate]\n       81.6 mm  Pedal pad to pivot (X projection of the lever)  [catalogue/estimate]\n       55.0 mm  Pushrod  [catalogue/estimate, 8.0 mm of it adjustable]\n       42.0 mm  MC outlet fitting + hardline bend radius  [catalogue/estimate]\n       38.0 mm  Balance bar + clevises + spherical bearing  [catalogue/estimate]\n       14.8 mm  Pivot to balance-bar clevis  [catalogue/estimate]\n       12.0 mm  Clearance to the front bulkhead  [catalogue/estimate]\n       10.0 mm  Pedal arc clearance (pad sweep under braking)  [catalogue/estimate]\n        8.0 mm  Mount plate / bulkhead flange  [catalogue/estimate]\n\nNeed 123.4 mm. SHORT BY 54.2 mm with 6 change(s):\n    +8.0 mm  Wind the pushrod in to minimum safe thread engagement  (free, but it is then spent)\n         -> pedal free play: goes to zero -- re-set the pedal stop so the cylinder still returns fully to its rest port, or the brakes will drag as they heat\n         -> further adjustment: none left in this direction\n    +28.0 mm  Change the MC outlet from 'straight fitting + hardline bend' to '90 deg banjo'  (one fitting per cylinder, no performance penalty)\n         -> pedal feel: unchanged -- this removes packaging length, not fluid\n         -> assembly: one more sealing joint per circuit to bleed and leak-check before the brake test\n    +24.0 mm  Move to a 'compact racing (short body)' cylinder body  (buy different cylinders)\n         -> usable stroke: drops 6.4 mm to 19.0 mm -- only safe if pedal_travel() says the circuit needs less than that with a reserve\n         -> lead time: a parts order sits on the critical path\n    +4.4 mm  Go up in bore, 15.9 -> 17.5 mm, and take the shorter-stroke cylinder it allows  (pedal effort rises as the square of the bore ratio)\n         -> line pressure at a given pedal force: x0.83 (lower)\n         -> pedal force to reach lock-up: x1.21 -- check this against what a driver can actually push before you commit\n         -> pedal travel to lock: x0.83 (shorter, the one genuinely free win here)\n    +2.5 mm  Tilt the cylinders to 10 deg off the X axis  (geometry change; needs spherical rod ends)\n         -> pushrod force reaching the piston: -1.5% (cosine loss), so pedal effort rises by about the same fraction\n         -> side load into the bore: 17% of the rod load pushes sideways on the piston seal -- spherical rod ends at BOTH ends are mandatory past 3 deg\n         -> sanity: within the usual limit\n    +2.3 mm  Raise the pedal ratio from 5.5 to 6.5 (clevis moves toward the pivot)  (pays for length and effort in travel)\n         -> pedal effort to lock: x0.85 (lower -- this is the good half of the trade)\n         -> pedal travel to lock: x1.18 (higher -- this is what it costs, and it is the half that gets forgotten)\n         -> clevis load: x1.18 into the bar and pushrod\n    -> Every listed lever is spent and it is still too long. This is a layout problem, not an adjustment problem: move the bulkhead, go to a floor-mounted pedal, or accept a different cylinder family.\n\nReachable front bias: 60.7% to 89.4% (centred bar = 78.3%)\nAdjuster: 1.20% bias per turn (1.06 mm pitch)\nTarget 60% front is NOT reachable with these bores -- change a bore.\n\nFront circuit: Pedal travel: 52.7 mm at the pad of 30.0 mm available -> FAIL\n  1.598 cc demanded, 8.1 mm of cylinder stroke (32% of the 25.4 mm limit)\n     0.608 cc  Piston knockback / running clearance\n     0.405 cc  Pad compression\n     0.278 cc  Caliper housing deflection\n     0.161 cc  Fluid compressibility\nRear circuit:  Pedal travel: 20.9 mm at the pad of 30.0 mm available -> PASS\n  0.657 cc demanded, 2.3 mm of cylinder stroke (9% of the 25.4 mm limit)\n     0.193 cc  Caliper housing deflection\n     0.152 cc  Piston knockback / running clearance\n     0.109 cc  Fluid compressibility\n     0.101 cc  Pad compression",
+  "verdict": "FAIL"
+ },
+ "provenance": {
+  "model": "pedal-box longitudinal stack-up, balance-bar lever statics, and a fluid-volume pedal-travel budget",
+  "note": "Use for TRADES -- which lever buys length, which bore reaches the bias, what a ratio change costs in travel. Calibrate against one bench measurement before quoting an absolute pedal travel, and measure the real cylinders before ordering parts off a stack-up.",
+  "provisional": "the parameters: knockback, pad compression, caliper and hose compliance, and catalogue cylinder body lengths",
+  "safe": "the equations: lever moment balance, area ratios, dV = V*dP/K compressibility, volume bookkeeping"
+ },
+ "tables": {
+  "bulk": {
+   "DOT 3": 1450000000.0,
+   "DOT 4": 1500000000.0,
+   "DOT 5 (silicone)": 1100000000.0,
+   "DOT 5.1": 1500000000.0
+  },
+  "fam": {
+   "compact racing (short body)": {
+    "body_mm": 88.0,
+    "bores_mm": [
+     15.9,
+     17.5,
+     19.0,
+     20.6
+    ],
+    "stroke_mm": 19.0
+   },
+   "long stroke / large reservoir": {
+    "body_mm": 134.0,
+    "bores_mm": [
+     17.5,
+     19.0,
+     20.6,
+     22.2,
+     25.4
+    ],
+    "stroke_mm": 31.8
+   },
+   "standard racing": {
+    "body_mm": 112.0,
+    "bores_mm": [
+     15.9,
+     17.5,
+     19.0,
+     20.6,
+     22.2
+    ],
+    "stroke_mm": 25.4
+   }
+  },
+  "fit": {
+   "45 deg fitting": 28.0,
+   "90 deg banjo": 14.0,
+   "90 deg fitting": 18.0,
+   "bulkhead elbow at the MC face": 11.0,
+   "straight fitting + hardline bend": 42.0
+  },
+  "hose": {
+   "PTFE braided (steel)": 0.0008,
+   "hardline (Cu-Ni tube)": 0.00016,
+   "hardline (steel tube)": 0.0001,
+   "rubber hose": 0.003
+  },
+  "k": [
+   1.5,
+   3.0,
+   12.0
+  ]
+ },
+ "unreachable": {
+  "d": {
+   "authority": {
+    "bias_at_centre": 0.782888552862806,
+    "bias_max": 0.893773369858631,
+    "bias_min": 0.6071341791943543,
+    "bias_per_turn": 0.011990030884774017,
+    "findings": [
+     {
+      "check": "target_bias_reachable",
+      "detail": {},
+      "message": "99% front is outside everything these bores can make (60.7%-89.4%). No bar position gets there. Fit a smaller front bore or larger rear bore. Bias is set by the hardware; the bar only trims it.",
+      "severity": "fail",
+      "subsystems": [
+       "brakes"
+      ]
+     }
+    ],
+    "offset_for_target_mm": null,
+    "sweep": [
+     {
+      "bias_front": 0.6071341791943543,
+      "offset_mm": -12.0,
+      "pressure_front_bar": 37.891684634687714,
+      "pressure_rear_bar": 61.3985630654662
+     },
+     {
+      "bias_front": 0.6183286582661226,
+      "offset_mm": -11.4,
+      "pressure_front_bar": 39.1547407891773,
+      "pressure_rear_bar": 60.521440735959544
+     },
+     {
+      "bias_front": 0.6292049949807956,
+      "offset_mm": -10.8,
+      "pressure_front_bar": 40.41779694366689,
+      "pressure_rear_bar": 59.64431840645288
+     },
+     {
+      "bias_front": 0.6397765615290728,
+      "offset_mm": -10.2,
+      "pressure_front_bar": 41.68085309815648,
+      "pressure_rear_bar": 58.76719607694622
+     },
+     {
+      "bias_front": 0.6500559910414333,
+      "offset_mm": -9.6,
+      "pressure_front_bar": 42.94390925264607,
+      "pressure_rear_bar": 57.89007374743956
+     },
+     {
+      "bias_front": 0.660055227950659,
+      "offset_mm": -9.0,
+      "pressure_front_bar": 44.20696540713566,
+      "pressure_rear_bar": 57.012951417932904
+     },
+     {
+      "bias_front": 0.6697855742914471,
+      "offset_mm": -8.4,
+      "pressure_front_bar": 45.47002156162525,
+      "pressure_rear_bar": 56.13582908842624
+     },
+     {
+      "bias_front": 0.6792577323144331,
+      "offset_mm": -7.8,
+      "pressure_front_bar": 46.73307771611485,
+      "pressure_rear_bar": 55.25870675891958
+     },
+     {
+      "bias_front": 0.6884818437524236,
+      "offset_mm": -7.2,
+      "pressure_front_bar": 47.99613387060444,
+      "pressure_rear_bar": 54.381584429412925
+     },
+     {
+      "bias_front": 0.6974675260417154,
+      "offset_mm": -6.6,
+      "pressure_front_bar": 49.25919002509403,
+      "pressure_rear_bar": 53.50446209990626
+     },
+     {
+      "bias_front": 0.7062239057704537,
+      "offset_mm": -6.0,
+      "pressure_front_bar": 50.522246179583625,
+      "pressure_rear_bar": 52.6273397703996
+     },
+     {
+      "bias_front": 0.7147596495985818,
+      "offset_mm": -5.4,
+      "pressure_front_bar": 51.785302334073215,
+      "pressure_rear_bar": 51.75021744089294
+     },
+     {
+      "bias_front": 0.7230829928695837,
+      "offset_mm": -4.8,
+      "pressure_front_bar": 53.0483584885628,
+      "pressure_rear_bar": 50.873095111386284
+     },
+     {
+      "bias_front": 0.7312017661125817,
+      "offset_mm": -4.2,
+      "pressure_front_bar": 54.31141464305239,
+      "pressure_rear_bar": 49.99597278187962
+     },
+     {
+      "bias_front": 0.7391234196140604,
+      "offset_mm": -3.5999999999999996,
+      "pressure_front_bar": 55.57447079754198,
+      "pressure_rear_bar": 49.11885045237296
+     },
+     {
+      "bias_front": 0.7468550462212903,
+      "offset_mm": -3.0,
+      "pressure_front_bar": 56.837526952031574,
+      "pressure_rear_bar": 48.241728122866306
+     },
+     {
+      "bias_front": 0.7544034025241552,
+      "offset_mm": -2.4000000000000004,
+      "pressure_front_bar": 58.100583106521164,
+      "pressure_rear_bar": 47.364605793359644
+     },
+     {
+      "bias_front": 0.7617749285483426,
+      "offset_mm": -1.8000000000000007,
+      "pressure_front_bar": 59.36363926101075,
+      "pressure_rear_bar": 46.48748346385298
+     },
+     {
+      "bias_front": 0.7689757660805411,
+      "offset_mm": -1.1999999999999993,
+      "pressure_front_bar": 60.62669541550034,
+      "pressure_rear_bar": 45.61036113434632
+     },
+     {
+      "bias_front": 0.7760117757352394,
+      "offset_mm": -0.5999999999999996,
+      "pressure_front_bar": 61.889751569989926,
+      "pressure_rear_bar": 44.733238804839665
+     },
+     {
+      "bias_front": 0.782888552862806,
+      "offset_mm": 0.0,
+      "pressure_front_bar": 63.15280772447952,
+      "pressure_rear_bar": 43.856116475333
+     },
+     {
+      "bias_front": 0.7896114423896017,
+      "offset_mm": 0.5999999999999996,
+      "pressure_front_bar": 64.4158638789691,
+      "pressure_rear_bar": 42.97899414582634
+     },
+     {
+      "bias_front": 0.7961855526728465,
+      "offset_mm": 1.1999999999999993,
+      "pressure_front_bar": 65.67892003345871,
+      "pressure_rear_bar": 42.10187181631969
+     },
+     {
+      "bias_front": 0.8026157684457169,
+      "offset_mm": 1.8000000000000007,
+      "pressure_front_bar": 66.9419761879483,
+      "pressure_rear_bar": 41.22474948681302
+     },
+     {
+      "bias_front": 0.8089067629216171,
+      "offset_mm": 2.4000000000000004,
+      "pressure_front_bar": 68.20503234243789,
+      "pressure_rear_bar": 40.347627157306356
+     },
+     {
+      "bias_front": 0.8150630091206572,
+      "offset_mm": 3.0,
+      "pressure_front_bar": 69.46808849692748,
+      "pressure_rear_bar": 39.4705048277997
+     },
+     {
+      "bias_front": 0.8210887904760301,
+      "offset_mm": 3.5999999999999996,
+      "pressure_front_bar": 70.73114465141707,
+      "pressure_rear_bar": 38.59338249829304
+     },
+     {
+      "bias_front": 0.8269882107731388,
+      "offset_mm": 4.199999999999999,
+      "pressure_front_bar": 71.99420080590666,
+      "pressure_rear_bar": 37.71626016878638
+     },
+     {
+      "bias_front": 0.8327652034699392,
+      "offset_mm": 4.800000000000001,
+      "pressure_front_bar": 73.25725696039625,
+      "pressure_rear_bar": 36.83913783927972
+     },
+     {
+      "bias_front": 0.8384235404429818,
+      "offset_mm": 5.399999999999999,
+      "pressure_front_bar": 74.52031311488584,
+      "pressure_rear_bar": 35.96201550977306
+     },
+     {
+      "bias_front": 0.8439668402000161,
+      "offset_mm": 6.0,
+      "pressure_front_bar": 75.78336926937543,
+      "pressure_rear_bar": 35.0848931802664
+     },
+     {
+      "bias_front": 0.8493985755967359,
+      "offset_mm": 6.600000000000001,
+      "pressure_front_bar": 77.04642542386502,
+      "pressure_rear_bar": 34.20777085075974
+     },
+     {
+      "bias_front": 0.8547220810922452,
+      "offset_mm": 7.199999999999999,
+      "pressure_front_bar": 78.3094815783546,
+      "pressure_rear_bar": 33.33064852125308
+     },
+     {
+      "bias_front": 0.8599405595750957,
+      "offset_mm": 7.800000000000001,
+      "pressure_front_bar": 79.57253773284421,
+      "pressure_rear_bar": 32.45352619174642
+     },
+     {
+      "bias_front": 0.8650570887892604,
+      "offset_mm": 8.399999999999999,
+      "pressure_front_bar": 80.83559388733379,
+      "pressure_rear_bar": 31.57640386223976
+     },
+     {
+      "bias_front": 0.8700746273871331,
+      "offset_mm": 9.0,
+      "pressure_front_bar": 82.09865004182338,
+      "pressure_rear_bar": 30.6992815327331
+     },
+     {
+      "bias_front": 0.8749960206345668,
+      "offset_mm": 9.600000000000001,
+      "pressure_front_bar": 83.36170619631297,
+      "pressure_rear_bar": 29.82215920322644
+     },
+     {
+      "bias_front": 0.879824005791069,
+      "offset_mm": 10.2,
+      "pressure_front_bar": 84.62476235080257,
+      "pressure_rear_bar": 28.94503687371978
+     },
+     {
+      "bias_front": 0.8845612171865259,
+      "offset_mm": 10.8,
+      "pressure_front_bar": 85.88781850529215,
+      "pressure_rear_bar": 28.06791454421312
+     },
+     {
+      "bias_front": 0.8892101910142444,
+      "offset_mm": 11.399999999999999,
+      "pressure_front_bar": 87.15087465978173,
+      "pressure_rear_bar": 27.190792214706462
+     },
+     {
+      "bias_front": 0.893773369858631,
+      "offset_mm": 12.0,
+      "pressure_front_bar": 88.41393081427132,
+      "pressure_rear_bar": 26.3136698851998
+     }
+    ],
+    "target_bias": 0.99,
+    "target_reachable": false,
+    "thread_pitch_mm": 1.058
+   },
+   "bias": {
+    "bar_offset_mm": 0.0,
+    "bias_front": 0.782888552862806,
+    "findings": [
+     {
+      "check": "bar_authority",
+      "detail": {},
+      "message": "The bar sits 0% off centre, so there is trim authority in both directions.",
+      "severity": "ok",
+      "subsystems": [
+       "brakes"
+      ]
+     }
+    ],
+    "force_front_N": 1250.0,
+    "force_rear_N": 1250.0,
+    "pressure_front_bar": 63.15280772447952,
+    "pressure_rear_bar": 43.856116475333,
+    "torque_front_Nm": 1089.7919999999997,
+    "torque_rear_Nm": 302.22222222222223
+   },
+   "findings": [
+    {
+     "check": "circuit_stroke_mismatch",
+     "detail": {},
+     "message": "The two circuits want different strokes (7.3 mm front vs 1.9 mm rear). They share one pedal, so the front circuit sets the pedal travel and the balance bar tilts to take up the difference. A large mismatch eats the bar's articulation and shifts bias as the pedal is pressed -- which is felt as a bias that changes with pedal effort.",
+     "severity": "warning",
+     "subsystems": [
+      "brakes"
+     ]
+    }
+   ],
+   "plan": null,
+   "stack": {
+    "available_mm": 480.0,
+    "deficit_mm": -105.52556260665119,
+    "findings": [
+     {
+      "check": "mc_body_length_source",
+      "detail": {},
+      "message": "Master-cylinder body length came from the 'standard racing' catalogue placeholder (112.0 mm), not from your part. Put a caliper on the cylinder and pass mc_body_mm -- body lengths differ by 20.0 mm to 40.0 mm across families and that is most of the deficit you are chasing.",
+      "severity": "missing",
+      "subsystems": [
+       "brakes"
+      ]
+     },
+     {
+      "check": "mc_outlet_stack",
+      "detail": {},
+      "message": "The line exit behind the cylinders is carrying 42.0 mm of the stack ('straight fitting + hardline bend'), which includes the bend radius the hardline needs to turn away from the cylinder. This is the segment most often missing from a CAD envelope check, because the fitting is modelled but the bend is not.",
+      "severity": "warning",
+      "subsystems": [
+       "brakes"
+      ]
+     },
+     {
+      "check": "pedal_box_envelope",
+      "detail": {},
+      "message": "Fits with 105.5 mm to spare.",
+      "severity": "ok",
+      "subsystems": [
+       "brakes",
+       "chassis"
+      ]
+     }
+    ],
+    "installed_mm": 374.4744373933488,
+    "is_estimate": true,
+    "notes": [
+     "Cylinders tilted 4 deg: the pushrod and body only cost cos(4 deg) = 0.998 of their true length along X.",
+     "Some segments came from catalogue placeholders. The RANKING of segments is trustworthy; the absolute total is provisional until the real parts are measured."
+    ],
+    "segments": [
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 81.56770083329849,
+      "measured": false,
+      "name": "Pedal pad to pivot (X projection of the lever)",
+      "note": "90.0 mm arm at 25 deg from X. A more upright pedal projects less."
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 10.0,
+      "measured": false,
+      "name": "Pedal arc clearance (pad sweep under braking)",
+      "note": "Room the pad needs to travel without touching anything."
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 16.3135401666597,
+      "measured": false,
+      "name": "Pivot to balance-bar clevis",
+      "note": "Lever/ratio = 18.0 mm arm. Raising the pedal ratio pulls this in."
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 38.0,
+      "measured": false,
+      "name": "Balance bar + clevises + spherical bearing",
+      "note": "Bar hardware between the pedal and the two pushrods."
+     },
+     {
+      "adjustable_mm": 7.980512402078594,
+      "length_mm": 54.86602276429033,
+      "measured": false,
+      "name": "Pushrod",
+      "note": "8.0 mm can be wound out before thread engagement hits the 12.0 mm floor."
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 111.7271736291003,
+      "measured": false,
+      "name": "Master cylinder body",
+      "note": "The part. Only a different part changes this."
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 42.0,
+      "measured": false,
+      "name": "MC outlet fitting + hardline bend radius",
+      "note": "'straight fitting + hardline bend'. A 90 deg banjo or a bulkhead elbow is the cheapest length in the whole stack."
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 8.0,
+      "measured": false,
+      "name": "Mount plate / bulkhead flange",
+      "note": ""
+     },
+     {
+      "adjustable_mm": 0.0,
+      "length_mm": 12.0,
+      "measured": false,
+      "name": "Clearance to the front bulkhead",
+      "note": "Assembly and tolerance gap. Do not spend this one."
+     }
+    ],
+    "verdict": "FITS"
+   },
+   "travel_front": {
+    "available_travel_mm": 60.0,
+    "findings": [
+     {
+      "check": "pedal_travel",
+      "detail": {},
+      "message": "44.0 mm at the pad, cylinder at 29% of stroke. Reserve for wear and heat.",
+      "severity": "ok",
+      "subsystems": [
+       "brakes"
+      ]
+     },
+     {
+      "check": "travel_provenance",
+      "detail": {},
+      "message": "Knockback, pad compression, hose and caliper compliance are representative values, not measured on this car. The RANKING of consumers and the sensitivity to bore and ratio are trustworthy; the absolute travel is provisional. One bench measurement -- pump to a firm pedal, measure the travel -- fixes that via TravelParams.from_measured_stroke().",
+      "severity": "missing",
+      "subsystems": [
+       "brakes"
+      ]
+     }
+    ],
+    "is_estimate": true,
+    "items": [
+     {
+      "name": "Piston knockback / running clearance",
+      "note": "4053.7 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+      "pressure_dependent": false,
+      "volume_cc": 0.6080489749169972
+     },
+     {
+      "name": "Pad compression",
+      "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+      "pressure_dependent": false,
+      "volume_cc": 0.40536598327799817
+     },
+     {
+      "name": "Caliper housing deflection",
+      "note": "2.000 cc/kbar per caliper at 63 bar.",
+      "pressure_dependent": true,
+      "volume_cc": 0.2526112308979181
+     },
+     {
+      "name": "Hose expansion (PTFE braided (steel))",
+      "note": "0.60 m per corner x 2 corner(s) at 63 bar. Switching rubber for PTFE braided is the cheapest firm-pedal fix there is.",
+      "pressure_dependent": true,
+      "volume_cc": 0.060626695415500344
+     },
+     {
+      "name": "Hardline expansion (hardline (steel tube))",
+      "note": "1.80 m of routed hardline at 63 bar.",
+      "pressure_dependent": true,
+      "volume_cc": 0.011367505390406315
+     },
+     {
+      "name": "Fluid compressibility",
+      "note": "25.141 cc of DOT 4 at 63 bar, K=1.50 GPa. Hot or water-contaminated fluid is softer than this.",
+      "pressure_dependent": true,
+      "volume_cc": 0.10584766982867301
+     }
+    ],
+    "mc_stroke_limit_mm": 25.4,
+    "mc_stroke_mm": 7.294745756439015,
+    "notes": [
+     "Uncalibrated: use for trades, not as an absolute pedal travel."
+    ],
+    "pedal_travel_mm": 43.973728782195074,
+    "stroke_utilisation": 0.2871947148204337,
+    "total_cc": 1.443868059727493,
+    "verdict": "PASS"
+   },
+   "travel_rear": {
+    "available_travel_mm": 60.0,
+    "findings": [
+     {
+      "check": "pedal_travel",
+      "detail": {},
+      "message": "17.1 mm at the pad, cylinder at 8% of stroke. Reserve for wear and heat.",
+      "severity": "ok",
+      "subsystems": [
+       "brakes"
+      ]
+     },
+     {
+      "check": "travel_provenance",
+      "detail": {},
+      "message": "Knockback, pad compression, hose and caliper compliance are representative values, not measured on this car. The RANKING of consumers and the sensitivity to bore and ratio are trustworthy; the absolute travel is provisional. One bench measurement -- pump to a firm pedal, measure the travel -- fixes that via TravelParams.from_measured_stroke().",
+      "severity": "missing",
+      "subsystems": [
+       "brakes"
+      ]
+     }
+    ],
+    "is_estimate": true,
+    "items": [
+     {
+      "name": "Piston knockback / running clearance",
+      "note": "1013.4 mm2 of moving piston across 2 caliper(s) x 0.15 mm. Wheel-bearing and hub compliance make this worse on track than on the bench.",
+      "pressure_dependent": false,
+      "volume_cc": 0.1520122437292493
+     },
+     {
+      "name": "Pad compression",
+      "note": "0.10 mm of material squash. New pads and bedded pads differ; a soft compound is worse.",
+      "pressure_dependent": false,
+      "volume_cc": 0.10134149581949954
+     },
+     {
+      "name": "Caliper housing deflection",
+      "note": "2.000 cc/kbar per caliper at 44 bar.",
+      "pressure_dependent": true,
+      "volume_cc": 0.175424465901332
+     },
+     {
+      "name": "Hose expansion (PTFE braided (steel))",
+      "note": "0.60 m per corner x 2 corner(s) at 44 bar. Switching rubber for PTFE braided is the cheapest firm-pedal fix there is.",
+      "pressure_dependent": true,
+      "volume_cc": 0.042101871816319685
+     },
+     {
+      "name": "Hardline expansion (hardline (steel tube))",
+      "note": "1.80 m of routed hardline at 44 bar.",
+      "pressure_dependent": true,
+      "volume_cc": 0.00789410096555994
+     },
+     {
+      "name": "Fluid compressibility",
+      "note": "24.381 cc of DOT 4 at 44 bar, K=1.50 GPa. Hot or water-contaminated fluid is softer than this.",
+      "pressure_dependent": true,
+      "volume_cc": 0.07128310404768959
+     }
+    ],
+    "mc_stroke_limit_mm": 25.4,
+    "mc_stroke_mm": 1.9298700991809166,
+    "notes": [
+     "Uncalibrated: use for trades, not as an absolute pedal travel."
+    ],
+    "pedal_travel_mm": 17.14935049590458,
+    "stroke_utilisation": 0.07597913776302821,
+    "total_cc": 0.55005728227965,
+    "verdict": "PASS"
+   },
+   "verdict": "FAIL"
+  },
+  "f": [
+   {
+    "check": "circuit_stroke_mismatch",
+    "detail": {},
+    "message": "The two circuits want different strokes (7.3 mm front vs 1.9 mm rear). They share one pedal, so the front circuit sets the pedal travel and the balance bar tilts to take up the difference. A large mismatch eats the bar's articulation and shifts bias as the pedal is pressed -- which is felt as a bias that changes with pedal effort.",
+    "severity": "warning",
+    "subsystems": [
+     "brakes"
+    ]
+   }
+  ],
+  "s": "PEDAL BOX STUDY -> FAIL\n\nPedal box stack-up: 374.5 mm installed vs 480.0 mm available -> FITS\n      111.7 mm  Master cylinder body  [catalogue/estimate]\n       81.6 mm  Pedal pad to pivot (X projection of the lever)  [catalogue/estimate]\n       54.9 mm  Pushrod  [catalogue/estimate, 8.0 mm of it adjustable]\n       42.0 mm  MC outlet fitting + hardline bend radius  [catalogue/estimate]\n       38.0 mm  Balance bar + clevises + spherical bearing  [catalogue/estimate]\n       16.3 mm  Pivot to balance-bar clevis  [catalogue/estimate]\n       12.0 mm  Clearance to the front bulkhead  [catalogue/estimate]\n       10.0 mm  Pedal arc clearance (pad sweep under braking)  [catalogue/estimate]\n        8.0 mm  Mount plate / bulkhead flange  [catalogue/estimate]\n\nReachable front bias: 60.7% to 89.4% (centred bar = 78.3%)\nAdjuster: 1.20% bias per turn (1.06 mm pitch)\nTarget 99% front is NOT reachable with these bores -- change a bore.\n\nFront circuit: Pedal travel: 44.0 mm at the pad of 60.0 mm available -> PASS\n  1.444 cc demanded, 7.3 mm of cylinder stroke (29% of the 25.4 mm limit)\n     0.608 cc  Piston knockback / running clearance\n     0.405 cc  Pad compression\n     0.253 cc  Caliper housing deflection\n     0.106 cc  Fluid compressibility\nRear circuit:  Pedal travel: 17.1 mm at the pad of 60.0 mm available -> PASS\n  0.550 cc demanded, 1.9 mm of cylinder stroke (8% of the 25.4 mm limit)\n     0.175 cc  Caliper housing deflection\n     0.152 cc  Piston knockback / running clearance\n     0.101 cc  Pad compression\n     0.071 cc  Fluid compressibility",
+  "verdict": "FAIL"
+ }
+}

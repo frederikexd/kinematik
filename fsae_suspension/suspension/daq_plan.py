@@ -549,7 +549,7 @@ def bus_load(messages: list[CanMessage], bus: BusSpec) -> BusLoadResult:
         if ok and w <= period:
             latencies[m.name] = w
         else:
-            latencies[m.name] = float("inf")
+            latencies[m.name] = math.inf
             unschedulable.append(m.name)
 
     # --- verdict on the load ----------------------------------------------- #
@@ -812,7 +812,7 @@ def delta_t_budget(inlet: SensorSpec, outlet: SensorSpec,
             "is not declared for both ends. Until it is, any heat-rejection "
             "number from this pair has unknown error.",
             subsystems=["cooling", "dataacq"]))
-        return DeltaTResult(expected_delta_t_k, float("nan"), float("nan"),
+        return DeltaTResult(expected_delta_t_k, math.nan, math.nan,
                             None, None, None, findings)
 
     if matched_pair:
@@ -821,7 +821,7 @@ def delta_t_budget(inlet: SensorSpec, outlet: SensorSpec,
         sa, sb = sa * 0.25, sb * 0.25
 
     sigma = math.sqrt(sa ** 2 + sb ** 2)
-    rel = sigma / expected_delta_t_k if expected_delta_t_k else float("inf")
+    rel = sigma / expected_delta_t_k if expected_delta_t_k else math.inf
 
     heat = sigma_heat = heat_rel = None
     if flow_lpm is not None:
@@ -935,7 +935,7 @@ def power_budget(sensors: list[SensorSpec], rails: dict[str, Rail]) -> PowerResu
 
     for k, d in per.items():
         cap = d["capacity_ma"] or 0.0
-        d["frac"] = (d["draw_ma"] / cap) if cap else float("inf")
+        d["frac"] = (d["draw_ma"] / cap) if cap else math.inf
         if cap and d["draw_ma"] > cap:
             findings.append(Finding(
                 "rail-over-capacity", Severity.FAIL,
@@ -1001,7 +1001,7 @@ def storage_budget(sensors: list[SensorSpec], logger: LoggerSpec) -> StorageResu
         bps += (payload + logger.record_overhead_bytes) * s.sample_rate_hz
 
     session_mb = bps * logger.session_minutes * 60.0 / 1e6
-    frac = session_mb / logger.storage_mb if logger.storage_mb else float("inf")
+    frac = session_mb / logger.storage_mb if logger.storage_mb else math.inf
 
     if frac > 1.0:
         findings.append(Finding(

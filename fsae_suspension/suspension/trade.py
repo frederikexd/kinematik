@@ -63,6 +63,7 @@ from dataclasses import dataclass, field, replace
 from collections.abc import Sequence
 
 import numpy as np
+from ._num import vec as _vec
 
 from . import lapsim
 from .dynamics import VehicleParams, VehicleDynamics
@@ -293,7 +294,7 @@ def compare(options: Sequence[Option], baseline: Option,
             totals[lab].append(_score_against(r["times"], ref)["total"])
 
     def _band(arr):
-        a = np.asarray(arr, dtype=float)
+        a = _vec(arr)
         a = a[np.isfinite(a)]
         if a.size == 0:
             return None, None, None, False
@@ -301,12 +302,12 @@ def compare(options: Sequence[Option], baseline: Option,
         p05, p95 = float(np.percentile(a, 5)), float(np.percentile(a, 95))
         return med, p05, p95, bool(p05 > 0.0 or p95 < 0.0)
 
-    base_arr = np.asarray(totals[baseline.label], dtype=float)
+    base_arr = _vec(totals[baseline.label])
 
     results: list[OptionResult] = []
     res_floor = 0.0
     for o in options:
-        arr = np.asarray(totals[o.label], dtype=float) - base_arr
+        arr = _vec(totals[o.label]) - base_arr
         med, p05, p95, stable = _band(arr)
         if med is None:
             results.append(OptionResult(o.label, None, None, None, False,
@@ -335,7 +336,7 @@ def compare(options: Sequence[Option], baseline: Option,
     labels = [o.label for o in options]
     for i, a in enumerate(labels):
         for b in labels[i + 1:]:
-            diff = np.asarray(totals[a], dtype=float) - np.asarray(totals[b], dtype=float)
+            diff = _vec(totals[a]) - _vec(totals[b])
             med, p05, p95, stable = _band(diff)
             pairwise[(a, b)] = dict(
                 median=med, p05=p05, p95=p95, sign_stable=stable,

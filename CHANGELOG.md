@@ -3,6 +3,26 @@
 
 ## Unreleased
 
+**Every physics module held at a 99% mutation floor.** `mutation_targets.toml` now lists 80 groups covering 83 files
+in `suspension/` and `powertrain/`, and the shared floor is 99.0% per file (it was 90%); 60,223 of 60,443 mutants are
+caught (99.6%). 81 `tests/test_mutation_*.py` suites pin them, most as golden-master characterizations:
+`tests/_golden.py` records a function's full output to `tests/golden/*.json` and compares at a relative 1e-9, with
+booleans compared by type (`KINEMATIK_GOLDEN_RECORD=1` re-records). Equivalent mutants were removed by rewriting where
+the code could say the same thing without them (default-equal arguments dropped, `partial(np.asarray, dtype=float)`
+helpers instead of dtype arguments, module-level constants for defaults and einsum subscripts, guards that could never
+fire deleted, single-line statements where a pragma had to apply) and otherwise marked
+`# pragma: no mutate (reason)` on the line: float boundaries no input meets exactly, solver caps and tolerances, block
+sizes and warm-start seeds. Results are unchanged; the existing suites pass as before. Smaller changes made on the way:
+- `chassis.py`: the STEP and mesh loading shared by `load_chassis` and `load_part_mesh` is one helper, `_load_scene`;
+  the static envelope check no longer tests `min_clear < 0` on an unsigned distance;
+- `morphmesh.py`: `load_fan_from_audit` drops the empty-history checks that the peak test already covers and merges
+  cases through one `big` pick; `_PlateFE` reads a material's density with a steel default for unknown materials;
+- `simulforge.py`: an empty run's telemetry is built by one `_empty_telemetry()`; the response lag is the first
+  maximum of the cross-correlation (as before) computed with `argmax`; the actuator force is applied without a
+  zero-moment branch (a zero moment adds exactly zero);
+- the chassis tests cap the address space, since mutmut counts a mutant that is killed by the out-of-memory killer as
+  a survivor.
+
 **Five physics modules at 100% coverage, and the bugs that turned up.** `powertrain/engine.py`,
 `suspension/aero/underfloor.py`, `suspension/fit_forecast.py`, `suspension/brake_thermal.py` and
 `suspension/ev_electrical_check.py` are now at 100% of statements and branches, held by a second step in the
@@ -26,6 +46,23 @@ radiative balance) rather than only running the lines. Fixed along the way:
 - The underfloor header claimed the force saturates at low ride height; it does not (784 N at 40 mm, 1.9 kN at 20 mm,
   17 kN at 5 mm), and the model has no ground-effect stall, so read results below about 20 mm as an upper bound.
 Removed two conditions that could never be false (`underfloor` aft recovery, `fit_forecast` deductions).
+
+**Per-file mutation gate; elastokinematics and compliance join at 99.0% and 97.0%.** `mutation_targets.toml` lists the
+files held to a mutation floor and the tests that pin each one; `scripts/mutation_gate.py` scores every file on its own
+against 90% (the core group holds itself at 99%), and `.github/workflows/mutation.yml` runs only the groups a push
+touches, every group monthly as parallel jobs, and (on a manual run with `baseline: true`) every module in
+`suspension/` and `powertrain/` as its own report-only job. `suspension/elastokinematics.py` went from 78.2% to 99.0%
+and `suspension/compliance.py` from 68.5% to 97.0%, with `tests/test_mutation_compliance.py` (24 tests) and these code
+changes:
+- the float conversions go through `kinematics._vec`;
+- `solve_elastokinematic` reads loadpath's pickup forces directly: the fallback that rebuilt them from the axial force
+  could not run, since loadpath reports a force on every pickup; an unused axis and the unused `_PICK_MEMBER` map were
+  removed;
+- `CompliantCorner.solve` no longer keeps a `length_deltas` copy nothing read; `_member_length` takes the outboard point
+  from the state by its own field name instead of through an identity map;
+- `damping_summary` no longer runs a compliance solve whose result it did not use (a joint's loss per cycle depends on
+  amplitude and frequency only); its arguments are unchanged.
+The mutmut working copy now includes `data/`, which the chassis-model test reads.
 
 **Mutation testing at 100%.** All 1,679 deliberate errors in the kinematics and statics are caught; the floor is raised
 from 92% to 99%. Of the 117 survivors left at 93.7%, 19 were stale results (mutmut 3 keeps a result while the function is

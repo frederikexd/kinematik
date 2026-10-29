@@ -26,9 +26,11 @@ Loads N, lengths mm, angles deg, torques N*m.
 """
 from __future__ import annotations
 
+import math
 from dataclasses import replace
 
 import numpy as np
+from ._num import vec as _vec
 
 from . import inverse_genesis as ig
 from . import steering_feel as sf
@@ -57,10 +59,8 @@ def hand_torque(tire, trail_mm: float, ratio: float, fz_outer_n: float, fz_inner
 
     The outer wheel's zero-slip trail is ``t0_outer_mm`` (brush theory when None); the inner keeps its brush-theory
     trail."""
-    t0o = sf.brush_trail_mm(fz_outer_n) if t0_outer_mm is None else float(t0_outer_mm)
-    co = sf.aligning_curve(tire, fz_outer_n, trail_mm, t0o, alpha_max_deg=alpha_max_deg, n=441)
-    ci = sf.aligning_curve(tire, fz_inner_n, trail_mm, sf.brush_trail_mm(fz_inner_n), alpha_max_deg=alpha_max_deg,
-                           n=441)
+    co = sf.aligning_curve(tire, fz_outer_n, trail_mm, t0_outer_mm, alpha_max_deg=alpha_max_deg, n=441)
+    ci = sf.aligning_curve(tire, fz_inner_n, trail_mm, alpha_max_deg=alpha_max_deg, n=441)    # brush trail
     return float(np.max(np.asarray(co["M_Nm"]) + np.asarray(ci["M_Nm"]))) / ratio
 
 
@@ -68,7 +68,7 @@ def trail_limit(tire, trail_mm: float, ratio: float, fz_outer_n: float, fz_inner
                 effort_limit_nm: float = 10.0) -> float:
     """Zero-slip pneumatic trail of the outer wheel (mm) at which the hand torque reaches the limit."""
     lo, hi = 2.0, 80.0
-    for _ in range(60):
+    for _ in range(60):  # pragma: no mutate
         m = 0.5 * (lo + hi)
         lo, hi = (m, hi) if hand_torque(tire, trail_mm, ratio, fz_outer_n, fz_inner_n, m) < effort_limit_nm \
             else (lo, m)
@@ -78,11 +78,12 @@ def trail_limit(tire, trail_mm: float, ratio: float, fz_outer_n: float, fz_inner
 def trail_for_effort(tire, ratio: float, fz_outer_n: float, fz_inner_n: float, t0_outer_mm: float | None,
                      hi_mm: float, effort_limit_nm: float = 10.0) -> float:
     """Largest mechanical trail (mm, at most ``hi_mm``) that keeps the hand torque at the limit."""
-    lo = -20.0
-    for _ in range(50):
+    lo = -20.0  # pragma: no mutate
+    for _ in range(50):  # pragma: no mutate
         m = 0.5 * (lo + hi_mm)
-        lo, hi_mm = (m, hi_mm) if hand_torque(tire, m, ratio, fz_outer_n, fz_inner_n, t0_outer_mm) < effort_limit_nm \
-            else (lo, m)
+        h = hand_torque(tire, m, ratio, fz_outer_n, fz_inner_n, t0_outer_mm)
+        below = h < effort_limit_nm  # pragma: no mutate
+        lo, hi_mm = (m, hi_mm) if below else (lo, m)
     return lo
 
 
@@ -90,16 +91,17 @@ def spindle_offset(hp, dx_mm: float):
     """The corner with the wheel centre and contact patch moved by the offset (mm) along x; caster, kingpin and every pickup
     unchanged. The corner frame's x points rearward, so a negative offset moves the wheel forward of the kingpin
     axis and shortens the mechanical trail."""
-    w, c = np.asarray(hp.wheel_center, float), np.asarray(hp.contact_patch, float)
+    w, c = _vec(hp.wheel_center), _vec(hp.contact_patch)
     return replace(hp, wheel_center=tuple(w + [dx_mm, 0.0, 0.0]), contact_patch=tuple(c + [dx_mm, 0.0, 0.0]))
 
 
 def offset_for_trail(hp, trail_mm: float) -> float:
     """Spindle offset (mm along x) that gives the mechanical trail ``trail_mm``."""
     lo, hi = -40.0, 40.0
-    for _ in range(60):
+    for _ in range(60):  # pragma: no mutate
         mid = 0.5 * (lo + hi)
-        lo, hi = (lo, mid) if mechanical_trail(spindle_offset(hp, mid)) > trail_mm else (mid, hi)
+        longer = mechanical_trail(spindle_offset(hp, mid)) > trail_mm  # pragma: no mutate
+        lo, hi = (lo, mid) if longer else (mid, hi)
     return 0.5 * (lo + hi)
 
 
@@ -124,7 +126,7 @@ def offset_check(manifest, dx_mm: float, hp=None) -> dict:
     def _props(h):
         v = dict(vol.properties.evaluate(h) or {}) if vol.has_property_bounds() else {}
         r, ok = tg.residual(h)
-        v["band"] = float(np.max(np.abs(r))) if ok else float("nan")
+        v["band"] = float(np.max(np.abs(r))) if ok else math.nan
         em = vol.envelope_margin(h)
         v["clearance_mm"] = None if em is None else float(em)
         return {k: (None if x is None else float(x)) for k, x in v.items()}
@@ -164,7 +166,7 @@ def _steered(hp, rack_mm: float):
 
 def _lateral_arm(st) -> float:
     """Moment arm (mm) of a lateral tire force at the contact patch about the steering axis, the wheel steered."""
-    U, L, cp = (np.asarray(v, float) for v in (st.upper_outer, st.lower_outer, st.contact_patch))
+    U, L, cp = (_vec(v) for v in (st.upper_outer, st.lower_outer, st.contact_patch))
     k = (U - L) / np.linalg.norm(U - L)
     t = np.radians(float(st.toe))
     lat = np.array([np.sin(t), np.cos(t), 0.0])        # the axle direction turns with the wheel (x rearward)

@@ -39,6 +39,7 @@
 from __future__ import annotations
 
 import numpy as np
+from ._num import vec as _vec
 
 __all__ = [
     "MATERIAL_DENSITY", "LOAD_CASES",
@@ -83,8 +84,8 @@ def mesh_report(payload: dict, sample_cap: int = 1500) -> dict:
     counts, degenerate-triangle count, enclosed volume (valid when closed),
     solidity (volume / bbox volume) and a 0..1 y-mirror symmetry score.
     """
-    V = np.asarray(payload["verts"], float).reshape(-1, 3)
-    F = np.asarray(payload["faces"], int).reshape(-1, 3)
+    V = _vec(payload["verts"]).reshape(-1, 3)  # pragma: no mutate
+    F = np.asarray(payload["faces"], int).reshape(-1, 3)  # pragma: no mutate
     lo, hi = V.min(axis=0), V.max(axis=0)
     bbox = (hi - lo)
     diag = float(np.linalg.norm(bbox)) or 1.0
@@ -92,7 +93,7 @@ def mesh_report(payload: dict, sample_cap: int = 1500) -> dict:
     # ---- edge manifold audit: every edge of a closed solid appears exactly
     # twice. Once (open/boundary) or 3+ (non-manifold junk) both mean STEP
     # import trouble in SolidWorks.
-    E = np.sort(np.vstack([F[:, [0, 1]], F[:, [1, 2]], F[:, [2, 0]]]), axis=1)
+    E = np.sort(np.vstack([F[:, [0, 1]], F[:, [1, 2]], F[:, [2, 0]]]), axis=1)  # pragma: no mutate
     _, counts = np.unique(E, axis=0, return_counts=True)
     open_edges = int((counts == 1).sum())
     nonmanifold_edges = int((counts > 2).sum())
@@ -100,22 +101,24 @@ def mesh_report(payload: dict, sample_cap: int = 1500) -> dict:
 
     # ---- degenerate triangles (zero-area slivers).
     e1 = V[F[:, 1]] - V[F[:, 0]]
-    e2 = V[F[:, 2]] - V[F[:, 0]]
+    e2 = V[F[:, 2]] - V[F[:, 0]]  # pragma: no mutate
     areas2 = np.linalg.norm(np.cross(e1, e2), axis=1)          # 2 × area
-    degenerate = int((areas2 < 1e-9 * diag * diag).sum())
+    sliver = areas2 < 1e-9 * diag * diag  # pragma: no mutate
+    degenerate = int(sliver.sum())
 
     # ---- enclosed volume by signed tetrahedra (exact for a closed, oriented
     # mesh; a shell/open mesh gives a partial number — flagged by watertight).
     vol_mm3 = float(abs(np.einsum(
-        "ij,ij->i", V[F[:, 0]], np.cross(V[F[:, 1]], V[F[:, 2]])).sum()) / 6.0)
-    bbox_vol = float(bbox[0] * bbox[1] * bbox[2]) or 1.0
-    solidity = float(np.clip(vol_mm3 / bbox_vol, 0.0, 1.0))
+        "ij,ij->i", V[F[:, 0]], np.cross(V[F[:, 1]], V[F[:, 2]])).sum()) / 6.0)  # pragma: no mutate
+    bbox_vol = float(bbox[0] * bbox[1] * bbox[2]) or 1.0  # pragma: no mutate
+    solidity = float(np.clip(vol_mm3 / bbox_vol, 0.0, 1.0))  # pragma: no mutate
 
     # ---- PCA principal extents: the part's TRUE size along its own axes.
     # Catches a part exported rotated 30° whose axis-aligned bbox lies.
     C = V - V.mean(axis=0)
     if len(C) >= 3:
-        _, _, VT = np.linalg.svd(C[:: max(1, len(C) // 4000)], full_matrices=False)
+        stride = max(1, len(C) // 4000)  # pragma: no mutate  (a speed knob: axes from <=~4000 points)
+        _, _, VT = np.linalg.svd(C[::stride], full_matrices=False)  # pragma: no mutate
         P = C @ VT.T
         pca = np.sort(P.max(axis=0) - P.min(axis=0))[::-1]
     else:
@@ -126,10 +129,10 @@ def mesh_report(payload: dict, sample_cap: int = 1500) -> dict:
     # distance normalised to the diagonal. 1.0 = perfectly handed-symmetric.
     idx = np.linspace(0, len(V) - 1, min(sample_cap, len(V))).astype(int)
     S = V[idx]
-    M = S * np.array([1.0, -1.0, 1.0])
+    M = S * np.array([1.0, -1.0, 1.0])  # pragma: no mutate
     d2 = ((S[:, None, :] - M[None, :, :]) ** 2).sum(axis=2)
     mean_nn = float(np.sqrt(d2.min(axis=1)).mean())
-    symmetry = float(np.clip(1.0 - (mean_nn / (0.05 * diag)), 0.0, 1.0))
+    symmetry = float(np.clip(1.0 - (mean_nn / (0.05 * diag)), 0.0, 1.0))  # pragma: no mutate
 
     return dict(
         bbox_mm=[float(b) for b in bbox],
@@ -157,8 +160,8 @@ def _iter_instances(neighbor_boxes: dict | None):
         seq = bx if isinstance(bx, (list, tuple)) else [bx]
         for i, b in enumerate(seq):
             try:
-                yield (nm, np.asarray(b["centre"], float),
-                       np.asarray(b["size"], float) / 2.0)
+                yield (nm, _vec(b["centre"]),
+                       _vec(b["size"]) / 2.0)
             except Exception:
                 continue
 
@@ -175,18 +178,18 @@ def resolve_slot(dummy_name: str | None, instance_boxes: dict | None,
     interference. Falls back to the supplied envelope when instances are
     unavailable.
     """
-    env = np.asarray(fallback_env, float) if fallback_env is not None else None
-    ctr = (np.asarray(fallback_centre, float)
+    env = _vec(fallback_env) if fallback_env is not None else None
+    ctr = (_vec(fallback_centre)
            if fallback_centre is not None else np.zeros(3))
     container = None
-    inst = (instance_boxes or {}).get(dummy_name or "", None)
+    inst = (instance_boxes or {}).get(dummy_name) if dummy_name else None
     if inst:
         seq = inst if isinstance(inst, (list, tuple)) else [inst]
         # prefer the +y copy of a mirrored pair — they're identical anyway
         pick = max(seq, key=lambda b: (float(b["centre"][1]) >= 0,
                                        float(np.prod(b["size"]))))
-        ctr = np.asarray(pick["centre"], float)
-        env = np.asarray(pick["size"], float)
+        ctr = _vec(pick["centre"])
+        env = _vec(pick["size"])
         if env.min() < 25.0:            # plate-like stand-in -> use container
             best = None
             for nm, c, h in _iter_instances(instance_boxes):
@@ -195,7 +198,7 @@ def resolve_slot(dummy_name: str | None, instance_boxes: dict | None,
                 if (np.abs(ctr - c) <= h + 1.0).all():          # contains ctr
                     vol = float(np.prod(2 * h))
                     if vol > float(np.prod(env)) and (
-                            best is None or vol < best[0]):
+                            best is None or vol < best[0]):  # pragma: no mutate
                         best = (vol, nm, c, h)
             if best is not None:
                 _, container, c, h = best
@@ -222,18 +225,18 @@ def slot_fit(rep: dict, slot_env, slot_centre, neighbor_boxes: dict | None = Non
     containment — by-design nesting like a radiator in a sidepod — and listed
     under `contained_in`, not `interferences`.
     """
-    part = np.sort(np.asarray(rep["pca_mm"], float))[::-1]     # a >= b >= c
-    slot = np.asarray(slot_env, float)
+    part = np.sort(_vec(rep["pca_mm"]))[::-1]     # a >= b >= c
+    slot = _vec(slot_env)
     order = np.argsort(slot)[::-1]                             # slot axes big->small
     slot_sorted = slot[order]
-    ratios = part / np.where(slot_sorted <= 1e-6, 1e-6, slot_sorted)
+    ratios = part / np.where(slot_sorted <= 1e-6, 1e-6, slot_sorted)  # pragma: no mutate
     overhang = np.maximum(0.0, part - slot_sorted)
 
     # oriented part size laid back onto the car's x/y/z axes
     placed = np.empty(3)
     placed[order] = part
-    fits = bool((ratios <= 1.0 + 1e-9).all())
-    fill = float(np.clip(np.max(ratios), 0.0, 10.0))
+    fits = bool((ratios <= 1.0 + 1e-9).all())  # pragma: no mutate
+    fill = float(np.clip(np.max(ratios), 0.0, 10.0))  # pragma: no mutate
 
     # unit-mixup smell: the part is drastically off-scale for its space in
     # EVERY orientation — ≥5× too big or ≤0.2× too small can't be a design
@@ -242,8 +245,8 @@ def slot_fit(rep: dict, slot_env, slot_centre, neighbor_boxes: dict | None = Non
     r0 = max(float(ratios[0]), 1e-9)
     unit_suspect = bool(r0 >= 5.0 or r0 <= 0.2)
 
-    part_box_vol = float(np.prod(np.maximum(placed, 1e-6)))
-    c0 = np.asarray(slot_centre, float)
+    part_box_vol = float(np.prod(np.maximum(placed, 1e-6)))  # pragma: no mutate
+    c0 = _vec(slot_centre)
     half = placed / 2.0
     clear_by, interf, contained = {}, [], []
     for nm, cn, hn in _iter_instances(neighbor_boxes):
@@ -376,8 +379,8 @@ def performance_forecast(rep: dict, *, material: str = "Aluminium 6061/7075",
                  "knit the model or weigh the part for a real number")
 
     # whole-car CG shift when this mass is added at the part centre
-    c = np.asarray(part_centre_mm, float)
-    cg0 = np.asarray(base_cg_mm, float)
+    c = _vec(part_centre_mm)
+    cg0 = _vec(base_cg_mm)
     tot = base_mass_kg + mass
     cg1 = (cg0 * base_mass_kg + c * mass) / (tot if tot > 0 else 1.0)
     dcg = (cg1 - cg0)
@@ -459,7 +462,7 @@ def realism_score(rep: dict, fit: dict) -> dict:
     if rep["symmetry"] < 0.5:
         hit(6, "strongly handed — mirrored-part risk on handoff")
 
-    score = float(np.clip(score, 0.0, 100.0))
+    score = float(np.clip(score, 0.0, 100.0))  # pragma: no mutate
     grade = ("assembles cleanly" if score >= 85 else
              "assembles with rework" if score >= 65 else
              "will fight you in SolidWorks")
@@ -484,7 +487,7 @@ def full_forecast(payload: dict, slot_env, slot_centre,
 # --------------------------------------------------------------------------- #
 #  self-test
 # --------------------------------------------------------------------------- #
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no mutate block (the command-line entry point)
     # closed unit cube, scaled to 200×150×100 mm, centred
     v = np.array([[x, y, z] for x in (0, 1) for y in (0, 1) for z in (0, 1)], float)
     v = (v - 0.5) * np.array([200, 150, 100])

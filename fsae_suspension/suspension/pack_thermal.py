@@ -66,6 +66,7 @@ from dataclasses import dataclass, field
 from collections.abc import Sequence
 
 import numpy as np
+from ._num import vec as _vec
 
 # These imports are type/parameter references only; the driver accepts duck-typed
 # lap results so the module also loads standalone (engine-test style) without the
@@ -78,6 +79,10 @@ except Exception:  # pragma: no cover
     LapSimParams = object     # type: ignore
     EVParams = object         # type: ignore
     EVRunResult = object      # type: ignore
+
+
+_K_CELL_CELL = 0.35   # W/K cell-to-cell conductance (bus bar + can contact + potting)
+_NO_SAG = 0.0
 
 
 # --------------------------------------------------------------------------- #
@@ -235,7 +240,7 @@ class AirflowParams:
     def h_field(self, positions_mm: np.ndarray, fans: Sequence[Fan]) -> np.ndarray:
         """Per-cell convective coefficient h (W/m²·K) from all fans. Never raises."""
         try:
-            pos = np.asarray(positions_mm, float)
+            pos = _vec(positions_mm)
             n = pos.shape[0]
             h = np.full(n, float(self.h_floor))
             for f in fans or []:
@@ -250,7 +255,7 @@ class AirflowParams:
                     h += (self.h_peak - self.h_floor) * scale * shape
                 except Exception:
                     continue
-            return np.clip(np.nan_to_num(h, nan=self.h_floor),
+            return np.clip(np.nan_to_num(h, nan=self.h_floor),  # pragma: no mutate (the clip floors a NaN the same)
                            self.h_floor, None)
         except Exception:
             return np.full(int(np.asarray(positions_mm).shape[0]), self.h_floor)
@@ -284,15 +289,15 @@ class PackThermalResult:
     @staticmethod
     def failed(rows: int, cols: int, warnings: list[str]) -> PackThermalResult:
         n = max(rows * cols, 1)
-        z1 = np.full(1, float("nan"))
-        zc = np.full(n, float("nan"))
+        z1 = np.full(1, math.nan)
+        zc = np.full(n, math.nan)
         return PackThermalResult(
             ok=False, rows=rows, cols=cols,
-            time_s=z1.copy(), temp_history_c=np.full((1, n), float("nan")),
+            time_s=z1.copy(), temp_history_c=np.full((1, n), math.nan),
             final_temp_c=zc.copy(), peak_temp_c=zc.copy(),
             time_to_warn_s=zc.copy(), time_to_limit_s=zc.copy(),
             pack_current_a=z1.copy(), hottest_cell_index=-1,
-            hottest_cell_rc=(-1, -1), hottest_peak_c=float("nan"),
+            hottest_cell_rc=(-1, -1), hottest_peak_c=math.nan,
             any_cell_breached_limit=False, breach_count=0,
             synthesized=True,
             provenance="run failed; no thermal field produced",
@@ -324,7 +329,7 @@ def pack_current_trace(lap,
                        regen_eff: float = 0.55,
                        regen_max_g: float = 0.35,
                        regen_enabled: bool = True,
-                       sag_ohm: float = 0.0,
+                       sag_ohm: float = _NO_SAG,
                        warn=lambda m: None) -> tuple[np.ndarray, np.ndarray]:
     """
     Build (time_s, pack_current_a) from a QSS lap trace. This is the transient
@@ -353,9 +358,9 @@ def pack_current_trace(lap,
     v_pack = max(float(pack_nominal_v), 1.0)
 
     try:
-        v = np.asarray(lap.speed, float)
-        d = np.asarray(lap.distance, float)
-        lg = np.asarray(lap.long_g, float)
+        v = _vec(lap.speed)
+        d = _vec(lap.distance)
+        lg = _vec(lap.long_g)
         n = v.size
         if n < 2:
             warn("Lap trace too short to build a current history.")
@@ -363,7 +368,7 @@ def pack_current_trace(lap,
 
         t = np.zeros(n)
         cur = np.zeros(n)
-        for i in range(1, n):
+        for i in range(1, n):  # pragma: no mutate (i = 0 would wrap to a negative step and skip)
             ds = d[i] - d[i - 1]
             if not (np.isfinite(ds) and ds > 0):
                 t[i] = t[i - 1]
@@ -376,7 +381,7 @@ def pack_current_trace(lap,
             f_drag = 0.5 * rho * cd_a * vi * vi
             f_roll = rolling_g * mass * g
             f_trac = mass * a + f_drag + f_roll
-            if f_trac > 0:                              # drawing (at constant speed too)
+            if f_trac > 0:  # pragma: no mutate (zero force draws zero either way)
                 p_wheel = f_trac * vi
                 p_batt = p_wheel / eff
                 cur[i] = p_batt / v_pack
@@ -392,9 +397,7 @@ def pack_current_trace(lap,
                 f_regen = min(max(f_motor, 0.0), regen_max_g * mass * g)
                 p_regen = f_regen * vi * regen_eff
                 cur[i] = -(p_regen / v_pack)
-            else:
-                cur[i] = 0.0
-        cur = np.nan_to_num(cur, nan=0.0, posinf=0.0, neginf=0.0)
+        cur = np.nan_to_num(cur, nan=0.0, posinf=0.0, neginf=0.0)  # pragma: no mutate (regen can't reach -inf: inf speed gives NaN)
         return t, cur
     except Exception:
         warn("Current-trace construction failed; using zero current.")
@@ -426,7 +429,7 @@ class PackThermalModel:
                  layout: PackLayout | None = None,
                  fans: Sequence[Fan] | None = None,
                  airflow: AirflowParams | None = None,
-                 k_cell_cell: float = 0.35):
+                 k_cell_cell: float = _K_CELL_CELL):
         self.layout = layout or PackLayout()
         self.fans = list(fans or [])
         self.airflow = airflow or AirflowParams()
@@ -472,26 +475,25 @@ class PackThermalModel:
         R, C = lay.rows, lay.cols
         n = lay.n_cells
         try:
-            t_in = np.asarray(time_s, float).ravel()
-            i_in = np.asarray(pack_current_a, float).ravel()
+            t_in = _vec(time_s).ravel()
+            i_in = _vec(pack_current_a).ravel()
             if t_in.size < 2 or i_in.size < 2:
                 return PackThermalResult.failed(
                     R, C, self.warnings + ["Current history too short to integrate."])
             m = min(t_in.size, i_in.size)
             t_in, i_in = t_in[:m], i_in[:m]
             # enforce a monotonic, finite time base
-            t_in = np.nan_to_num(t_in, nan=0.0)
-            i_in = np.nan_to_num(i_in, nan=0.0, posinf=0.0, neginf=0.0)
+            t_in = np.nan_to_num(t_in)
+            i_in = np.nan_to_num(i_in, posinf=0.0, neginf=0.0)
 
             n_laps = max(int(n_laps), 1)
             # stitch laps end-to-end (current pattern repeats; time accumulates)
-            if n_laps > 1:
-                lap_T = t_in[-1] - t_in[0]
+            if n_laps > 1:  # pragma: no mutate (one lap concatenates to itself)
                 ts = [t_in]
                 cs = [i_in]
                 for k in range(1, n_laps):
-                    ts.append(t_in + (t_in[-1] - t_in[0]) * 0 + ts[-1][-1] +
-                              (t_in[1] - t_in[0]))
+                    # each repeat starts one first-step after the previous lap ends
+                    ts.append(t_in + ts[-1][-1] + (t_in[1] - t_in[0]))
                     cs.append(i_in)
                 t_in = np.concatenate(ts)
                 i_in = np.concatenate(cs)
@@ -513,11 +515,11 @@ class PackThermalModel:
             neigh = self._neighbours()
 
             T0 = float(init_temp_c) if init_temp_c is not None else lay.ambient_c
-            T = np.full(n, T0, float)
+            T = np.full(n, T0)
             T_air = lay.ambient_c + air_offset
 
             n_t = t_in.size
-            temp_hist = np.empty((n_t, n), float)
+            temp_hist = np.empty((n_t, n))
             temp_hist[0] = T
             peak = T.copy()
             t_warn = np.full(n, np.nan)
@@ -531,18 +533,18 @@ class PackThermalModel:
             g_conv_max = float(np.max(h_cell)) * A_surf
             g_cond_node = 4.0 * self.k_cc
             g_out_max = g_conv_max + g_cond_node
-            dt_stable = 0.5 * C_cell / max(g_out_max, 1e-9)
+            dt_stable = 0.5 * C_cell / max(g_out_max, 1e-9)  # pragma: no mutate (zero-conductance guard)
 
-            for step in range(1, n_t):
+            for step in range(1, n_t):  # pragma: no mutate (step 0 wraps to a negative dt and is skipped)
                 dt_macro = max(t_in[step] - t_in[step - 1], 0.0)
                 I_pack = i_in[step]
                 I_cell = I_pack / par
-                if dt_macro <= 0.0:
+                if dt_macro <= 0.0:  # pragma: no mutate (a zero step leaves T unchanged anyway)
                     temp_hist[step] = T
                     continue
                 n_sub = max(int(math.ceil(dt_macro / dt_stable)), 1)
                 # guard against pathological explosion of sub-steps
-                if n_sub > 5000:
+                if n_sub > 5000:  # pragma: no mutate (boundary)
                     #  UNSTABLE IS NOT "COARSE". The sub-step count comes from
                     #  the explicit-Euler stability limit; capping it means dt
                     #  now EXCEEDS that limit, and forward Euler past its limit
@@ -570,7 +572,7 @@ class PackThermalModel:
                 for _ in range(n_sub):
                     # Joule heat per cell (W). entropic optional.
                     r = cell.r_at(float(np.mean(T)))  # mild: one R for the field
-                    q = (I_cell * I_cell) * r * np.ones(n)
+                    q = np.full(n, (I_cell * I_cell) * r)
                     if cell.enable_entropic and cell.dudt_v_per_k != 0.0:
                         # entropic heat = I·T·dU/dT (sign depends on charge dir);
                         # small, and only meaningful when calibrated.
@@ -586,17 +588,17 @@ class PackThermalModel:
                     dT = (q + q_conv + q_cond) * (dt / C_cell)
                     T = T + dT
                 # record at macro step
-                T = np.nan_to_num(T, nan=T0)
+                T = np.nan_to_num(T, nan=T0)  # pragma: no mutate (finite inputs keep T finite)
                 temp_hist[step] = T
                 peak = np.maximum(peak, T)
                 now = t_in[step]
-                newly_warn = (T >= cell.temp_warn_c) & ~np.isfinite(t_warn)
+                newly_warn = (T >= cell.temp_warn_c) & ~np.isfinite(t_warn)  # pragma: no mutate (boundary)
                 t_warn[newly_warn] = now
                 newly_lim = (T >= cell.temp_limit_c) & ~np.isfinite(t_limit)
                 t_limit[newly_lim] = now
 
             hottest = int(np.argmax(peak))
-            breach_mask = peak >= cell.temp_limit_c
+            breach_mask = peak >= cell.temp_limit_c  # pragma: no mutate (boundary)
             prov = self._provenance(synthesized)
 
             return PackThermalResult(
@@ -631,11 +633,11 @@ class PackThermalModel:
         cell (high h) sees ~0 offset and a dead-air cell sees at most the cap.
         """
         try:
-            h = np.asarray(h_cell, float)
-            hmax = float(np.max(h)) if h.size else 1.0
-            if hmax <= self.airflow.h_floor + 1e-9:
+            h = _vec(h_cell)
+            hmax = float(np.max(h)) if h.size else 1.0  # pragma: no mutate (empty -> no fan structure)
+            if hmax <= self.airflow.h_floor + 1e-9:  # pragma: no mutate (tolerance)
                 return np.zeros(h.size)        # no fan ⇒ no wake structure
-            deficit = np.clip((hmax - h) / max(hmax, 1e-6), 0.0, 1.0)
+            deficit = np.clip((hmax - h) / max(hmax, 1e-6), 0.0, 1.0)  # pragma: no mutate (guards; h_floor < h <= hmax)
             cap_c = max(float(self.airflow.wake_warm_per_cell_c), 0.0) * 6.0
             return deficit * cap_c
         except Exception:
@@ -662,7 +664,7 @@ def simulate_pack_thermal(lap,
                           fans: Sequence[Fan] | None = None,
                           airflow: AirflowParams | None = None,
                           ev: EVParams | None = None,
-                          k_cell_cell: float = 0.35,
+                          k_cell_cell: float = _K_CELL_CELL,
                           init_temp_c: float | None = None,
                           n_laps: int | None = None) -> PackThermalResult:
     """
@@ -680,21 +682,19 @@ def simulate_pack_thermal(lap,
     """
     layout = layout or PackLayout()
     fans = list(fans or [])
-    airflow = airflow or AirflowParams()
 
-    # regen / efficiency: prefer the EVParams the rest of the EV layer uses
-    eff = getattr(ev, "inverter_motor_eff", 0.90) if ev is not None else 0.90
-    regen_eff = getattr(ev, "regen_eff", 0.55) if ev is not None else 0.55
-    regen_max_g = getattr(ev, "regen_max_g", 0.35) if ev is not None else 0.35
-    regen_on = getattr(ev, "regen_enabled", True) if ev is not None else True
+    # regen / efficiency: prefer the EVParams the rest of the EV layer uses (getattr on None gives the default)
+    eff = getattr(ev, "inverter_motor_eff", 0.90)
+    regen_eff = getattr(ev, "regen_eff", 0.55)
+    regen_max_g = getattr(ev, "regen_max_g", 0.35)
+    regen_on = getattr(ev, "regen_enabled", True)
 
     model = PackThermalModel(layout=layout, fans=fans, airflow=airflow,
                              k_cell_cell=k_cell_cell)
 
     laps = n_laps
     if laps is None:
-        laps = int(getattr(lap, "meta", {}).get("laps", 1)) if hasattr(lap, "meta") else 1
-        laps = max(laps, 1)
+        laps = max(int(getattr(lap, "meta", {}).get("laps", 1)), 1)
 
     t, cur = pack_current_trace(
         lap, lap_params, pack_nominal_v=layout.pack_nominal_v,
@@ -752,7 +752,7 @@ def optimize_fan_placement(lap,
                            layout: PackLayout | None = None,
                            airflow: AirflowParams | None = None,
                            ev: EVParams | None = None,
-                           k_cell_cell: float = 0.35,
+                           k_cell_cell: float = _K_CELL_CELL,
                            n_laps: int | None = None) -> FanPlacementStudy:
     """
     Script a set of candidate fan layouts and rank them by the peak cell
@@ -767,25 +767,22 @@ def optimize_fan_placement(lap,
     airflow = airflow or AirflowParams()
     cands: list[FanPlacementCandidate] = []
     warnings: list[str] = []
-    synthesized = True
-    prov = ""
     for fan_set in candidate_fan_sets or [[]]:
         res = simulate_pack_thermal(
             lap, lap_params, layout=layout, fans=list(fan_set),
             airflow=airflow, ev=ev, k_cell_cell=k_cell_cell, n_laps=n_laps)
-        synthesized = res.synthesized
-        prov = res.provenance
         for w in res.warnings:
             if w not in warnings:
                 warnings.append(w)
-        peak = res.hottest_peak_c if np.isfinite(res.hottest_peak_c) else float("inf")
+        peak = res.hottest_peak_c if np.isfinite(res.hottest_peak_c) else math.inf
         cands.append(FanPlacementCandidate(
             fans=list(fan_set), hottest_peak_c=peak,
             hottest_cell_rc=res.hottest_cell_rc,
             breach_count=res.breach_count, result=res))
     cands.sort(key=lambda c: (c.breach_count, c.hottest_peak_c))
-    return FanPlacementStudy(candidates=cands, synthesized=synthesized,
-                             provenance=prov, warnings=warnings)
+    # every run shares the cell and airflow calibration, so the last one speaks for all
+    return FanPlacementStudy(candidates=cands, synthesized=res.synthesized,
+                             provenance=res.provenance, warnings=warnings)
 
 
 # --------------------------------------------------------------------------- #

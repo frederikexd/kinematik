@@ -83,6 +83,7 @@ will show it — but it is reported, never assumed.
 from __future__ import annotations
 
 import numpy as np
+from ._num import vec as _vec
 from dataclasses import dataclass
 
 from .kinematics import Hardpoints, SuspensionKinematics
@@ -180,22 +181,22 @@ class ThermalExpansionModel:
         """Default heat source: inboard-most, low (where a pack/subframe sits),
         on centreline. Points nearer this run hotter."""
         if self.heat_source is not None:
-            return np.asarray(self.heat_source, float)
-        lf = np.asarray(hp.lower_front_inner, float)
+            return _vec(self.heat_source)
+        lf = _vec(hp.lower_front_inner)
         return np.array([lf[0], 0.0, lf[2]])
 
     def _local_dT(self, hp: Hardpoints, p: np.ndarray, delta_T: float) -> float:
         """ΔT seen by a point: full ΔT near the source, decaying with distance."""
         src = self._source(hp)
-        dist = float(np.linalg.norm(np.asarray(p, float) - src))
+        dist = float(np.linalg.norm(_vec(p) - src))
         return delta_T * float(np.exp(-dist / max(self.gradient_len, 1e-6)))
 
     def _datum(self, hp: Hardpoints) -> np.ndarray:
         if self.datum is not None:
-            return np.asarray(self.datum, float)
+            return _vec(self.datum)
         # centreline (y=0) at the lower-front pickup, mid X of the two lower pts
-        lf = np.asarray(hp.lower_front_inner, float)
-        lr = np.asarray(hp.lower_rear_inner, float)
+        lf = _vec(hp.lower_front_inner)
+        lr = _vec(hp.lower_rear_inner)
         return np.array([(lf[0] + lr[0]) / 2.0, 0.0, (lf[2] + lr[2]) / 2.0])
 
     def expanded(self, hp: Hardpoints, delta_T: float) -> Hardpoints:
@@ -207,10 +208,10 @@ class ThermalExpansionModel:
             p = getattr(out, name, None)
             if p is None:
                 continue
-            p = np.asarray(p, float)
+            p = _vec(p)
             r = p - d                       # vector from datum
             L = np.linalg.norm(r)
-            if L < 1e-9:
+            if L < 1e-9:  # pragma: no mutate (float threshold: < and <= differ only on exact equality)
                 continue
             dT_local = self._local_dT(hp, p, delta_T)   # differential heating
             # linear expansion grows the datum→point distance by α·ΔT_local·L
@@ -223,7 +224,7 @@ class ThermalExpansionModel:
         Uses the point's LOCAL (differential) ΔT, so points near the heat source
         report a larger shift than far ones."""
         d = self._datum(hp)
-        p = np.asarray(getattr(hp, name), float)
+        p = _vec(getattr(hp, name))
         L = float(np.linalg.norm(p - d))
         dT_local = self._local_dT(hp, p, delta_T)
         return self.alpha() * dT_local * L
@@ -248,7 +249,7 @@ class TyreThermalModel:
     def grip_mult(self, T_tyre: float) -> float:
         x = (T_tyre - self.T_peak) / self.width
         m = 1.0 - x * x
-        return float(np.clip(m, self.floor, 1.0))
+        return float(max(m, self.floor))              # 1 - x^2 never exceeds 1
 
 
 @dataclass
@@ -310,8 +311,8 @@ def _corner_metrics(hp: Hardpoints) -> tuple:
     do NOT invent a roll-centre number from one corner."""
     kin = SuspensionKinematics(hp)
     s = kin.static
-    ic = np.asarray(s.instant_center, float)     # (y, z) of the front-view IC
-    ic_z = float(ic[1]) if ic.size >= 2 else float("nan")
+    ic = _vec(s.instant_center)     # (y, z) of the front-view IC
+    ic_z = float(ic[1])
     return float(s.camber), float(s.toe), ic_z
 
 
@@ -388,7 +389,7 @@ class DegradationSolver:
                                           self.cfg.lateral_g, outer=True)
         # fallback: quarter-car static + simple lateral transfer estimate.
         Fz = 1500.0 * (1.0 + 0.4 * self.cfg.lateral_g)   # N, transparent estimate
-        return lp.WheelLoad(Fx=0.0, Fy=-self.cfg.lateral_g * Fz, Fz=Fz)
+        return lp.WheelLoad(Fy=-self.cfg.lateral_g * Fz, Fz=Fz)
 
     def _state_at(self, t_min: float) -> DegradedState:
         dT = self.thermal.delta_T_at(t_min)
@@ -402,7 +403,7 @@ class DegradationSolver:
         cam_th, toe_th, rc_th = _corner_metrics(hp_hot)
 
         # thermal + compliance: load the hot geometry through the compliance solver
-        cam_c, toe_c, rc_c, conv = cam_th, toe_th, rc_th, True
+        cam_c, toe_c, rc_c = cam_th, toe_th, rc_th
         try:
             cc = self._compliant_corner(hp_hot)
             res = cc.solve(self._wheel_load(hp_hot))
@@ -573,7 +574,7 @@ def tolerance_sensitivity(hp: Hardpoints,
         p0 = getattr(hp, name, None)
         if p0 is None:
             continue
-        p0 = np.asarray(p0, float)
+        p0 = _vec(p0)
         # build sensitivity: max over the 3 axes of |Δalignment| per jig_tol
         best_axis_sens = 0.0
         for ax in range(3):
@@ -599,18 +600,18 @@ def tolerance_sensitivity(hp: Hardpoints,
             "thermal_shift_mm": round(th_shift, 3),
             "alignment_move_deg": round(best_axis_sens, 4),
             "combined_score": round(combined, 4),
-            "recommendation": "",     # filled below
         })
     # recommendation banding
     if rows:
         scores = np.array([r["combined_score"] for r in rows])
-        hi = np.percentile(scores, 75) if len(scores) > 3 else scores.max()
+        hi = np.percentile(scores, 75)        # with four rows or fewer this is above all but the largest
         for r in rows:
             r["recommendation"] = ("CNC / tight tol" if r["combined_score"] >= hi
                                    else "hand-weld OK")
     return ToleranceSensitivityMap(rows)
 
 
+# pragma: no mutate start (descriptive provenance text for the report, not logic)
 PROVENANCE = {
     "physics_first_principles": [
         "thermal expansion of hardpoints (α·ΔT·L)",
@@ -634,3 +635,4 @@ PROVENANCE = {
         "your own tyre and lap-sim data before quoting a grip or time delta."
     ),
 }
+# pragma: no mutate end

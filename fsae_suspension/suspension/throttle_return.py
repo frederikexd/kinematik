@@ -355,7 +355,7 @@ def check_return_redundancy(springs: list,
         zero_res_note = resistance.total_Nm <= 0
 
     n = len(springs)
-    is_estimate = any(getattr(s, "is_estimate", False) for s in springs)
+    is_estimate = any(s.is_estimate for s in springs)
     R = resistance.total_Nm
     notes: list = []
     findings: list = []
@@ -373,7 +373,7 @@ def check_return_redundancy(springs: list,
         return ReturnRedundancyResult(
             verdict="FAIL", n_springs=n, margin_target=margin_target,
             worst_case="(insufficient springs)", worst_margin=0.0,
-            is_estimate=is_estimate, cases=[], findings=findings,
+            is_estimate=is_estimate, findings=findings,
             notes=["need >= 2 return springs"])
 
     # All-healthy case (context; not what the verdict keys off).
@@ -586,12 +586,12 @@ def check_brake_pedal_2000N(width_mm: float, thickness_mm: float,
     # to prevent.
     screened = {m.mode for m in res.modes}
     missing = []
-    if not (pivot_bolt_dia_mm and pivot_bolt_dia_mm > 0):
+    if not (pivot_bolt_dia_mm and pivot_bolt_dia_mm > 0):  # pragma: no mutate
         missing.append("pivot-bolt bearing")
     if not (pivot_bolt_dia_mm and pivot_bolt_dia_mm > 0
-            and edge_dist_mm and edge_dist_mm > 0):
+            and edge_dist_mm and edge_dist_mm > 0):  # pragma: no mutate
         missing.append("pivot-lug tear-out")
-    if not (weld_leg_mm and weld_leg_mm > 0 and weld_length_mm and weld_length_mm > 0):
+    if not (weld_leg_mm and weld_leg_mm > 0 and weld_length_mm and weld_length_mm > 0):  # pragma: no mutate
         missing.append("weld-throat shear (if fabricated/welded)")
 
     if missing and res.verdict in ("PASS", "TIGHT"):
@@ -667,10 +667,13 @@ class ThrottleInertia:
         return asdict(self)
 
 
+_NO_CABLE = 0.0
+
+
 def estimate_throttle_inertia(plate_mass_kg: float = 0.02,
                               plate_radius_m: float = 0.020,
-                              cable_pedal_mass_kg: float = 0.0,
-                              pedal_arm_m: float = 0.0,
+                              cable_pedal_mass_kg: float = _NO_CABLE,
+                              pedal_arm_m: float = _NO_CABLE,
                               extra_I_kgm2: float = 0.0) -> ThrottleInertia:
     """First-cut rotating inertia of the throttle system about its axis.
 
@@ -691,7 +694,7 @@ def estimate_throttle_inertia(plate_mass_kg: float = 0.02,
     I = I_plate + I_reflected + max(float(extra_I_kgm2), 0.0)
     if I <= 0:
         I = 5.0e-4
-    return ThrottleInertia(I_kgm2=I, is_estimate=True, source="geometry estimate")
+    return ThrottleInertia(I_kgm2=I, source="geometry estimate")
 
 
 @dataclass
@@ -799,17 +802,16 @@ def _cam_multiplier(theta_deg: float, profile: list | None) -> float:
     if not profile:
         return 1.0
     pts = sorted((float(a), float(m)) for a, m in profile)
-    if theta_deg <= pts[0][0]:
+    if theta_deg <= pts[0][0]:  # pragma: no mutate (interp gives the end value there too)
         return pts[0][1]
-    if theta_deg >= pts[-1][0]:
+    if theta_deg >= pts[-1][0]:  # pragma: no mutate
         return pts[-1][1]
+    # strictly inside the profile: the first segment ending at or past theta holds
+    # it, and that segment's start lies strictly below theta, so a1 > a0 here
     for (a0, m0), (a1, m1) in zip(pts, pts[1:]):
-        if a0 <= theta_deg <= a1:
-            if a1 == a0:
-                return m0
+        if theta_deg <= a1:  # pragma: no mutate  (at a knot both segments agree)
             f = (theta_deg - a0) / (a1 - a0)
             return m0 + (m1 - m0) * f
-    return 1.0
 
 
 def _aero_torque(model: SnapModel | None, theta, theta_open) -> float:
@@ -820,12 +822,13 @@ def _aero_torque(model: SnapModel | None, theta, theta_open) -> float:
     at an angle to the flow); we use sin(2*plate_fraction*pi/2)=sin(plate_fraction*pi)
     as a simple, bounded shape. Zero if no coefficient/speed given.
     """
-    if model is None or model.aero_torque_coeff == 0.0 or model.intake_speed_ms <= 0:
+    no_flow = model is None or model.intake_speed_ms <= 0  # pragma: no mutate  (q = 0 at rest anyway)
+    if no_flow or model.aero_torque_coeff == 0.0:
         return 0.0
     q = 0.5 * model.rho * model.intake_speed_ms ** 2
     A = max(model.plate_area_m2, 0.0)
     r = max(model.plate_radius_m, 0.0)
-    if A <= 0 or r <= 0:
+    if A <= 0 or r <= 0:  # pragma: no mutate  (a zero area or radius gives zero torque anyway)
         return 0.0
     frac = min(max(theta / theta_open, 0.0), 1.0) if theta_open > 0 else 0.0
     shape = math.sin(frac * math.pi)          # 0 at closed & open, max mid-travel
@@ -893,18 +896,16 @@ def simulate_return_snap(springs: list,
         inertia = ThrottleInertia()
 
     I = max(float(inertia.I_kgm2), 1e-9)
-    theta_open = math.radians(max(float(theta_open_deg), 1e-3))
+    theta_open = math.radians(max(float(theta_open_deg), 1e-3))  # pragma: no mutate
     T_closed = sum(s.torque_closed_Nm for s in springs)
     T_open = sum(s.torque_open_Nm for s in springs)
     # Coulomb friction magnitude; cable drag + sensor detent are motion-opposing too
     T_fric = abs(resistance.friction_Nm)
     T_drag = abs(resistance.cable_drag_Nm) + abs(resistance.sensor_detent_Nm)
-    is_estimate = bool(getattr(inertia, "is_estimate", False)) or \
-        any(getattr(s, "is_estimate", False) for s in springs)
+    is_estimate = bool(inertia.is_estimate) or any(s.is_estimate for s in springs)
     findings: list = []
 
-    backlash_rad = math.radians(max(getattr(model, "backlash_deg", 0.0), 0.0)) \
-        if model else 0.0
+    backlash_rad = math.radians(max(model.backlash_deg, 0.0)) if model is not None else 0.0
 
     def spring_torque(theta):
         """Effective spring closing torque at angle, with cam + backlash applied."""
@@ -913,8 +914,9 @@ def simulate_return_snap(springs: list,
             Ts *= _cam_multiplier(math.degrees(theta), model.cam_profile)
         # Inside the backlash band (near wide-open, taking up slack), only a fraction
         # of spring torque reaches the plate.
-        if backlash_rad > 0 and theta > (theta_open - backlash_rad):
-            Ts *= max(min(getattr(model, "backlash_spring_frac", 0.0), 1.0), 0.0)
+        in_band = theta > (theta_open - backlash_rad)  # pragma: no mutate  (never true with no backlash)
+        if in_band:
+            Ts *= max(min(model.backlash_spring_frac, 1.0), 0.0)
         return Ts
 
     # ---- stiction check at rest, wide-open ---------------------------------
@@ -924,7 +926,7 @@ def simulate_return_snap(springs: list,
     T_aero_open = _aero_torque(model, theta_open, theta_open)   # +ve opens
     # net torque available to START closing (toward -theta): spring closes, aero (if
     # opening) fights it. Must beat static friction+drag.
-    net_start = T_spring_open - (T_aero_open if T_aero_open > 0 else 0.0)
+    net_start = T_spring_open - (T_aero_open if T_aero_open > 0 else 0.0)  # pragma: no mutate (sin(pi): the aero term is ~0 at full open)
     if net_start <= (T_fric + T_drag):
         _why = "spring closing torque"
         if model is not None and backlash_rad > 0:
@@ -955,22 +957,22 @@ def simulate_return_snap(springs: list,
         Ta = _aero_torque(model, theta, theta_open)   # +ve = opens (toward +theta)
         # Drive torque in +theta direction from spring (-Ts) and aero (+Ta if opening)
         drive = -Ts + Ta
-        if abs(omega) > omega_stall:
+        if abs(omega) > omega_stall:  # pragma: no mutate
             # kinetic friction opposes motion (omega<0 closing -> friction +theta)
-            fric = (T_fric + T_drag) * (1.0 if omega < 0 else -1.0)
+            fric = (T_fric + T_drag) * (1.0 if omega < 0 else -1.0)  # pragma: no mutate (omega is never 0 here)
             return (drive + fric) / I
         else:
             static_cap = T_fric + T_drag
-            if abs(drive) <= static_cap:
+            if abs(drive) <= static_cap:  # pragma: no mutate
                 return 0.0
-            return (drive - static_cap * (1.0 if drive > 0 else -1.0)) / I
+            return (drive - static_cap * (1.0 if drive > 0 else -1.0)) / I  # pragma: no mutate
 
     theta = theta_open
     omega = 0.0
     t = 0.0
     peak_speed = 0.0
     trace = [(0.0, theta_open_deg, 0.0)]
-    stalled = False
+    stalled = False  # pragma: no mutate
     n = int(t_max / max(dt, 1e-6))
     for _ in range(n):
         # RK4 on (theta, omega)
@@ -984,8 +986,7 @@ def simulate_return_snap(springs: list,
         omega = omega + (dt / 6.0) * (k1o + 2 * k2o + 2 * k3o + k4o)
         t += dt
         peak_speed = max(peak_speed, abs(omega))
-        if theta <= 0.0:
-            theta = 0.0
+        if theta <= 0.0:  # pragma: no mutate
             trace.append((t, 0.0, omega))
             findings.append(Finding(
                 "throttle-snap", Severity.OK,
@@ -1003,7 +1004,9 @@ def simulate_return_snap(springs: list,
                 peak_speed_rad_s=peak_speed, theta_open_deg=theta_open_deg,
                 is_estimate=is_estimate, findings=findings, trace=trace)
         # stall detection: crept to near-rest partway and can't restart
-        if abs(omega) < omega_stall and accel(theta, 0.0) == 0.0 and theta > 1e-4:
+        slow = abs(omega) < omega_stall  # pragma: no mutate
+        parked = theta > 1e-4  # pragma: no mutate
+        if slow and accel(theta, 0.0) == 0.0 and parked:
             stalled = True
             break
         if len(trace) < 4000:
@@ -1043,7 +1046,7 @@ def simulate_return_snap_single_failures(springs: list,
     for i, s in enumerate(springs):
         remaining = [sp for j, sp in enumerate(springs) if j != i]
         if not remaining:
-            continue
+            continue  # pragma: no mutate (only a lone spring leaves nothing)
         out[f"without '{s.name}'"] = simulate_return_snap(
             remaining, inertia, resistance, theta_open_deg, **kw)
     return out

@@ -1,0 +1,1974 @@
+{
+ "ab": [
+  "COUPLED_FAITHFUL",
+  [],
+  [
+   {
+    "code": "GHOST_ABSENT",
+    "data": {},
+    "severity": "info",
+    "text": "No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint."
+   },
+   {
+    "code": "SESSION_HELD",
+    "data": {},
+    "severity": "info",
+    "text": "Session budget holds: 9 → 4 laps per config, A/B verdict UNDERPOWERED."
+   }
+  ],
+  "",
+  {
+   "alpha": 0.05,
+   "effect_predicted": 0.3,
+   "kwh_per_lap": 0.28,
+   "laps_available_per_config": 9,
+   "laps_needed_per_config": 112,
+   "laps_per_config": 9,
+   "mde_at_available": 1.0565439497598252,
+   "miss_probability": 0.8778829711963635,
+   "noise_sigma": 0.8,
+   "power": 0.8,
+   "verdict": "UNDERPOWERED"
+  },
+  {
+   "alpha": 0.05,
+   "effect_predicted": 0.3,
+   "event_Wh_degraded": 40.0,
+   "event_Wh_nominal": 1.0,
+   "event_s": 0.039,
+   "kwh_per_lap": 0.5920000000000001,
+   "laps_available_per_config": 4,
+   "laps_needed_per_config": 112,
+   "laps_per_config": 4,
+   "mde_at_available": 1.5848159246397382,
+   "miss_probability": 0.9235889395001019,
+   "noise_sigma": 0.8,
+   "power": 0.8,
+   "verdict": "UNDERPOWERED"
+  },
+  {
+   "degradation": "Pristine electrics",
+   "elec_degraded": {
+    "authority": 1.0,
+    "energy_Wh": 40.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.9997837641893561,
+    "v_min": 23.000216235810644
+   },
+   "elec_nominal": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.5226872289306606,
+    "v_min": 23.47731277106934
+   },
+   "findings": [
+    {
+     "code": "GHOST_ABSENT",
+     "data": {},
+     "severity": "info",
+     "text": "No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint."
+    },
+    {
+     "code": "SESSION_HELD",
+     "data": {},
+     "severity": "info",
+     "text": "Session budget holds: 9 → 4 laps per config, A/B verdict UNDERPOWERED."
+    }
+   ],
+   "flags": [],
+   "note": "",
+   "verdict": "COUPLED_FAITHFUL"
+  },
+  "# SimulForge lint — unified mechatronic co-solve\n\n**Verdict: `COUPLED_FAITHFUL`**\n\nDefect under test: **Pristine electrics** — The schematic's car: rested pack, clean connectors.\n\n## The electrical facts\n\n| | pristine | degraded |\n|---|---|---|\n| bus minimum (V) | 23.5 | 23.0 |\n| peak draw (A) | 19.0 | 19.0 |\n| roll authority | 100% | 100% |\n| response lag (ms) | 0.0 | 0.0 |\n| brownouts | 0 | 0 |\n| event energy (Wh) | 1.0 | 40.0 |\n\n## Findings\n\n* ℹ️ **GHOST_ABSENT** — No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint.\n* ℹ️ **SESSION_HELD** — Session budget holds: 9 → 4 laps per config, A/B verdict UNDERPOWERED.\n\nSession ledger: 9 → 4 laps per config after the defect's energy bill.\n\n_Coupling: staggered co-step at the mechanical dt, zero-order-held moments, exact RL winding update. Defaults are FSAE-representative stand-ins — set every knob from your datasheets._",
+  null,
+  null
+ ],
+ "ab_half": [
+  "COUPLED_FAITHFUL",
+  [],
+  [
+   {
+    "code": "GHOST_ABSENT",
+    "data": {},
+    "severity": "info",
+    "text": "No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint."
+   },
+   {
+    "code": "SESSION_HELD",
+    "data": {},
+    "severity": "info",
+    "text": "Session budget holds: 9 → 4 laps per config, A/B verdict RESOLVABLE."
+   }
+  ],
+  "",
+  {
+   "alpha": 0.05,
+   "effect_predicted": 1.0,
+   "kwh_per_lap": 0.28,
+   "laps_available_per_config": 9,
+   "laps_needed_per_config": 4,
+   "laps_per_config": 9,
+   "mde_at_available": 0.6603399685998907,
+   "miss_probability": 0.011224709549890521,
+   "noise_sigma": 0.5,
+   "power": 0.8,
+   "verdict": "RESOLVABLE"
+  },
+  {
+   "alpha": 0.05,
+   "effect_predicted": 1.0,
+   "event_Wh_degraded": 75.0,
+   "event_Wh_nominal": 1.0,
+   "event_s": 0.039,
+   "kwh_per_lap": 0.5760000000000001,
+   "laps_available_per_config": 4,
+   "laps_needed_per_config": 4,
+   "laps_per_config": 4,
+   "mde_at_available": 0.9905099528998362,
+   "miss_probability": 0.19257042118617884,
+   "noise_sigma": 0.5,
+   "power": 0.8,
+   "verdict": "RESOLVABLE"
+  },
+  {
+   "degradation": "Pristine electrics",
+   "elec_degraded": {
+    "authority": 1.0,
+    "energy_Wh": 75.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.9997837641893561,
+    "v_min": 23.000216235810644
+   },
+   "elec_nominal": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.5226872289306606,
+    "v_min": 23.47731277106934
+   },
+   "findings": [
+    {
+     "code": "GHOST_ABSENT",
+     "data": {},
+     "severity": "info",
+     "text": "No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint."
+    },
+    {
+     "code": "SESSION_HELD",
+     "data": {},
+     "severity": "info",
+     "text": "Session budget holds: 9 → 4 laps per config, A/B verdict RESOLVABLE."
+    }
+   ],
+   "flags": [],
+   "note": "",
+   "verdict": "COUPLED_FAITHFUL"
+  },
+  "# SimulForge lint — unified mechatronic co-solve\n\n**Verdict: `COUPLED_FAITHFUL`**\n\nDefect under test: **Pristine electrics** — The schematic's car: rested pack, clean connectors.\n\n## The electrical facts\n\n| | pristine | degraded |\n|---|---|---|\n| bus minimum (V) | 23.5 | 23.0 |\n| peak draw (A) | 19.0 | 19.0 |\n| roll authority | 100% | 100% |\n| response lag (ms) | 0.0 | 0.0 |\n| brownouts | 0 | 0 |\n| event energy (Wh) | 1.0 | 75.0 |\n\n## Findings\n\n* ℹ️ **GHOST_ABSENT** — No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint.\n* ℹ️ **SESSION_HELD** — Session budget holds: 9 → 4 laps per config, A/B verdict RESOLVABLE.\n\nSession ledger: 9 → 4 laps per config after the defect's energy bill.\n\n_Coupling: staggered co-step at the mechanical dt, zero-order-held moments, exact RL winding update. Defaults are FSAE-representative stand-ins — set every knob from your datasheets._",
+  null,
+  null
+ ],
+ "ab_starved": [
+  "SESSION_STARVED",
+  [
+   "SESSION_STARVED"
+  ],
+  [
+   {
+    "code": "GHOST_ABSENT",
+    "data": {},
+    "severity": "info",
+    "text": "No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint."
+   },
+   {
+    "code": "SESSION_STARVED",
+    "data": {
+     "laps_after": 2,
+     "laps_before": 9
+    },
+    "severity": "amber",
+    "text": "The defect's energy bill (+74.0 Wh per event, ≈592 Wh/lap extra) shrinks the pack budget 9 → 2 laps per config — the A/B session goes RESOLVABLE → UNDERPOWERED (miss probability now 48%)."
+   }
+  ],
+  "",
+  {
+   "alpha": 0.05,
+   "effect_predicted": 1.0,
+   "kwh_per_lap": 0.28,
+   "laps_available_per_config": 9,
+   "laps_needed_per_config": 4,
+   "laps_per_config": 9,
+   "mde_at_available": 0.6603399685998907,
+   "miss_probability": 0.011224709549890521,
+   "noise_sigma": 0.5,
+   "power": 0.8,
+   "verdict": "RESOLVABLE"
+  },
+  {
+   "alpha": 0.05,
+   "effect_predicted": 1.0,
+   "event_Wh_degraded": 75.0,
+   "event_Wh_nominal": 1.0,
+   "event_s": 0.039,
+   "kwh_per_lap": 0.872,
+   "laps_available_per_config": 2,
+   "laps_needed_per_config": 4,
+   "laps_per_config": 2,
+   "mde_at_available": 1.400792609056484,
+   "miss_probability": 0.484032206557668,
+   "noise_sigma": 0.5,
+   "power": 0.8,
+   "verdict": "UNDERPOWERED"
+  },
+  {
+   "degradation": "Pristine electrics",
+   "elec_degraded": {
+    "authority": 1.0,
+    "energy_Wh": 75.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.9997837641893561,
+    "v_min": 23.000216235810644
+   },
+   "elec_nominal": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.5226872289306606,
+    "v_min": 23.47731277106934
+   },
+   "findings": [
+    {
+     "code": "GHOST_ABSENT",
+     "data": {},
+     "severity": "info",
+     "text": "No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint."
+    },
+    {
+     "code": "SESSION_STARVED",
+     "data": {
+      "laps_after": 2,
+      "laps_before": 9
+     },
+     "severity": "amber",
+     "text": "The defect's energy bill (+74.0 Wh per event, ≈592 Wh/lap extra) shrinks the pack budget 9 → 2 laps per config — the A/B session goes RESOLVABLE → UNDERPOWERED (miss probability now 48%)."
+    }
+   ],
+   "flags": [
+    "SESSION_STARVED"
+   ],
+   "note": "",
+   "verdict": "SESSION_STARVED"
+  },
+  "# SimulForge lint — unified mechatronic co-solve\n\n**Verdict: `SESSION_STARVED`**  (flags: SESSION_STARVED)\n\nDefect under test: **Pristine electrics** — The schematic's car: rested pack, clean connectors.\n\n## The electrical facts\n\n| | pristine | degraded |\n|---|---|---|\n| bus minimum (V) | 23.5 | 23.0 |\n| peak draw (A) | 19.0 | 19.0 |\n| roll authority | 100% | 100% |\n| response lag (ms) | 0.0 | 0.0 |\n| brownouts | 0 | 0 |\n| event energy (Wh) | 1.0 | 75.0 |\n\n## Findings\n\n* ℹ️ **GHOST_ABSENT** — No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint.\n* 🟠 **SESSION_STARVED** — The defect's energy bill (+74.0 Wh per event, ≈592 Wh/lap extra) shrinks the pack budget 9 → 2 laps per config — the A/B session goes RESOLVABLE → UNDERPOWERED (miss probability now 48%).\n\nSession ledger: 9 → 2 laps per config after the defect's energy bill.\n\n_Coupling: staggered co-step at the mechanical dt, zero-order-held moments, exact RL winding update. Defaults are FSAE-representative stand-ins — set every knob from your datasheets._",
+  null,
+  null
+ ],
+ "ab_tight": [
+  "COUPLED_FAITHFUL",
+  [],
+  [
+   {
+    "code": "GHOST_ABSENT",
+    "data": {},
+    "severity": "info",
+    "text": "No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint."
+   },
+   {
+    "code": "SESSION_HELD",
+    "data": {},
+    "severity": "info",
+    "text": "Session budget holds: 9 → 0 laps per config, A/B verdict UNDERPOWERED."
+   }
+  ],
+  "",
+  {
+   "alpha": 0.1,
+   "effect_predicted": 0.12,
+   "kwh_per_lap": 0.28,
+   "laps_available_per_config": 9,
+   "laps_needed_per_config": 59,
+   "laps_per_config": 9,
+   "mde_at_available": 0.3067788624540462,
+   "miss_probability": 0.7870785630694375,
+   "noise_sigma": 0.3,
+   "power": 0.7,
+   "verdict": "UNDERPOWERED"
+  },
+  {
+   "alpha": 0.1,
+   "effect_predicted": 0.12,
+   "event_Wh_degraded": 4000.0,
+   "event_Wh_nominal": 1.0,
+   "event_s": 0.039,
+   "kwh_per_lap": 16.276,
+   "laps_available_per_config": 0,
+   "laps_needed_per_config": 59,
+   "laps_per_config": 0,
+   "mde_at_available": "inf",
+   "miss_probability": 1.0,
+   "noise_sigma": 0.3,
+   "power": 0.7,
+   "verdict": "UNDERPOWERED"
+  },
+  {
+   "degradation": "Pristine electrics",
+   "elec_degraded": {
+    "authority": 1.0,
+    "energy_Wh": 4000.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.9997837641893561,
+    "v_min": 23.000216235810644
+   },
+   "elec_nominal": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.5226872289306606,
+    "v_min": 23.47731277106934
+   },
+   "findings": [
+    {
+     "code": "GHOST_ABSENT",
+     "data": {},
+     "severity": "info",
+     "text": "No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint."
+    },
+    {
+     "code": "SESSION_HELD",
+     "data": {},
+     "severity": "info",
+     "text": "Session budget holds: 9 → 0 laps per config, A/B verdict UNDERPOWERED."
+    }
+   ],
+   "flags": [],
+   "note": "",
+   "verdict": "COUPLED_FAITHFUL"
+  },
+  "# SimulForge lint — unified mechatronic co-solve\n\n**Verdict: `COUPLED_FAITHFUL`**\n\nDefect under test: **Pristine electrics** — The schematic's car: rested pack, clean connectors.\n\n## The electrical facts\n\n| | pristine | degraded |\n|---|---|---|\n| bus minimum (V) | 23.5 | 23.0 |\n| peak draw (A) | 19.0 | 19.0 |\n| roll authority | 100% | 100% |\n| response lag (ms) | 0.0 | 0.0 |\n| brownouts | 0 | 0 |\n| event energy (Wh) | 1.0 | 4000.0 |\n\n## Findings\n\n* ℹ️ **GHOST_ABSENT** — No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint.\n* ℹ️ **SESSION_HELD** — Session budget holds: 9 → 0 laps per config, A/B verdict UNDERPOWERED.\n\nSession ledger: 9 → 0 laps per config after the defect's energy bill.\n\n_Coupling: staggered co-step at the mechanical dt, zero-order-held moments, exact RL winding update. Defaults are FSAE-representative stand-ins — set every knob from your datasheets._",
+  null,
+  null
+ ],
+ "abort": [
+  "COUPLED_FAITHFUL",
+  [],
+  [
+   {
+    "code": "GHOST_ABSENT",
+    "data": {},
+    "severity": "info",
+    "text": "No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint."
+   }
+  ],
+  "Lint aborted partway (AttributeError: 'NoneType' object has no attribute 'pack_kwh'); findings above are complete up to the abort.",
+  null,
+  null,
+  {
+   "degradation": "Pristine electrics",
+   "elec_degraded": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.5226872289306606,
+    "v_min": 23.47731277106934
+   },
+   "elec_nominal": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.5226872289306606,
+    "v_min": 23.47731277106934
+   },
+   "findings": [
+    {
+     "code": "GHOST_ABSENT",
+     "data": {},
+     "severity": "info",
+     "text": "No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint."
+    }
+   ],
+   "flags": [],
+   "note": "Lint aborted partway (AttributeError: 'NoneType' object has no attribute 'pack_kwh'); findings above are complete up to the abort.",
+   "verdict": "COUPLED_FAITHFUL"
+  },
+  "# SimulForge lint — unified mechatronic co-solve\n\n**Verdict: `COUPLED_FAITHFUL`**\n\nDefect under test: **Pristine electrics** — The schematic's car: rested pack, clean connectors.\n\n_Lint aborted partway (AttributeError: 'NoneType' object has no attribute 'pack_kwh'); findings above are complete up to the abort._\n\n## The electrical facts\n\n| | pristine | degraded |\n|---|---|---|\n| bus minimum (V) | 23.5 | 23.5 |\n| peak draw (A) | 19.0 | 19.0 |\n| roll authority | 100% | 100% |\n| response lag (ms) | 0.0 | 0.0 |\n| brownouts | 0 | 0 |\n| event energy (Wh) | 1.0 | 1.0 |\n\n## Findings\n\n* ℹ️ **GHOST_ABSENT** — No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint.\n\n_Coupling: staggered co-step at the mechanical dt, zero-order-held moments, exact RL winding update. Defaults are FSAE-representative stand-ins — set every knob from your datasheets._",
+  null,
+  null
+ ],
+ "authority": [
+  "AUTHORITY_LOST",
+  [
+   "AUTHORITY_LOST"
+  ],
+  [
+   {
+    "code": "AUTHORITY_LOST",
+    "data": {
+     "authority": 0.5,
+     "sag_V": 0.9997837641893561
+    },
+    "severity": "red",
+    "text": "Delivered roll authority fell to 50% of command (pristine: 100%) — the sagging drive voltage cannot push the commanded current against back-EMF. Sag peak 1.0 V at 19.0 A."
+   },
+   {
+    "code": "GHOST_ABSENT",
+    "data": {},
+    "severity": "info",
+    "text": "No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint."
+   }
+  ],
+  "",
+  {
+   "kwh_per_lap": 0.28,
+   "laps_per_config": 9
+  },
+  {
+   "event_Wh_degraded": 1.0,
+   "event_Wh_nominal": 1.0,
+   "event_s": 0.039,
+   "kwh_per_lap": 0.28,
+   "laps_per_config": 9
+  },
+  {
+   "degradation": "Pristine electrics",
+   "elec_degraded": {
+    "authority": 0.5,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.9997837641893561,
+    "v_min": 23.000216235810644
+   },
+   "elec_nominal": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.5226872289306606,
+    "v_min": 23.47731277106934
+   },
+   "findings": [
+    {
+     "code": "AUTHORITY_LOST",
+     "data": {
+      "authority": 0.5,
+      "sag_V": 0.9997837641893561
+     },
+     "severity": "red",
+     "text": "Delivered roll authority fell to 50% of command (pristine: 100%) — the sagging drive voltage cannot push the commanded current against back-EMF. Sag peak 1.0 V at 19.0 A."
+    },
+    {
+     "code": "GHOST_ABSENT",
+     "data": {},
+     "severity": "info",
+     "text": "No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint."
+    }
+   ],
+   "flags": [
+    "AUTHORITY_LOST"
+   ],
+   "note": "",
+   "verdict": "AUTHORITY_LOST"
+  },
+  "# SimulForge lint — unified mechatronic co-solve\n\n**Verdict: `AUTHORITY_LOST`**  (flags: AUTHORITY_LOST)\n\nDefect under test: **Pristine electrics** — The schematic's car: rested pack, clean connectors.\n\n## The electrical facts\n\n| | pristine | degraded |\n|---|---|---|\n| bus minimum (V) | 23.5 | 23.0 |\n| peak draw (A) | 19.0 | 19.0 |\n| roll authority | 100% | 50% |\n| response lag (ms) | 0.0 | 0.0 |\n| brownouts | 0 | 0 |\n| event energy (Wh) | 1.0 | 1.0 |\n\n## Findings\n\n* 🔴 **AUTHORITY_LOST** — Delivered roll authority fell to 50% of command (pristine: 100%) — the sagging drive voltage cannot push the commanded current against back-EMF. Sag peak 1.0 V at 19.0 A.\n* ℹ️ **GHOST_ABSENT** — No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint.\n\nSession ledger: 9 → 9 laps per config after the defect's energy bill.\n\n_Coupling: staggered co-step at the mechanical dt, zero-order-held moments, exact RL winding update. Defaults are FSAE-representative stand-ins — set every knob from your datasheets._",
+  null,
+  null
+ ],
+ "authority_edge": [
+  "COUPLED_FAITHFUL",
+  [],
+  [
+   {
+    "code": "GHOST_ABSENT",
+    "data": {},
+    "severity": "info",
+    "text": "No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint."
+   }
+  ],
+  "",
+  {
+   "kwh_per_lap": 0.28,
+   "laps_per_config": 9
+  },
+  {
+   "event_Wh_degraded": 1.0,
+   "event_Wh_nominal": 1.0,
+   "event_s": 0.039,
+   "kwh_per_lap": 0.28,
+   "laps_per_config": 9
+  },
+  {
+   "degradation": "Pristine electrics",
+   "elec_degraded": {
+    "authority": 0.8600000000000001,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.9997837641893561,
+    "v_min": 23.000216235810644
+   },
+   "elec_nominal": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.5226872289306606,
+    "v_min": 23.47731277106934
+   },
+   "findings": [
+    {
+     "code": "GHOST_ABSENT",
+     "data": {},
+     "severity": "info",
+     "text": "No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint."
+    }
+   ],
+   "flags": [],
+   "note": "",
+   "verdict": "COUPLED_FAITHFUL"
+  },
+  "# SimulForge lint — unified mechatronic co-solve\n\n**Verdict: `COUPLED_FAITHFUL`**\n\nDefect under test: **Pristine electrics** — The schematic's car: rested pack, clean connectors.\n\n## The electrical facts\n\n| | pristine | degraded |\n|---|---|---|\n| bus minimum (V) | 23.5 | 23.0 |\n| peak draw (A) | 19.0 | 19.0 |\n| roll authority | 100% | 86% |\n| response lag (ms) | 0.0 | 0.0 |\n| brownouts | 0 | 0 |\n| event energy (Wh) | 1.0 | 1.0 |\n\n## Findings\n\n* ℹ️ **GHOST_ABSENT** — No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint.\n\nSession ledger: 9 → 9 laps per config after the defect's energy bill.\n\n_Coupling: staggered co-step at the mechanical dt, zero-order-held moments, exact RL winding update. Defaults are FSAE-representative stand-ins — set every knob from your datasheets._",
+  null,
+  null
+ ],
+ "base_path": [
+  "COUPLED_FAITHFUL",
+  [],
+  [
+   {
+    "code": "GHOST_HELD",
+    "data": {},
+    "severity": "info",
+    "text": "Ghost re-audit under the degraded loads holds: worst FoS 2.50 → 2.50, verdict unchanged (RIGID_FAITHFUL)."
+   },
+   {
+    "code": "ORDER_HELD",
+    "data": {},
+    "severity": "info",
+    "text": "Pecking order held under the defect: 'TR' remains most-likely-first, verdict INVERTED."
+   }
+  ],
+  "",
+  {
+   "kwh_per_lap": 0.28,
+   "laps_per_config": 9
+  },
+  {
+   "event_Wh_degraded": 1.0,
+   "event_Wh_nominal": 1.0,
+   "event_s": 0.011,
+   "kwh_per_lap": 0.28,
+   "laps_per_config": 9
+  },
+  {
+   "degradation": "Pristine electrics",
+   "elec_degraded": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.5226872289306606,
+    "v_min": 23.47731277106934
+   },
+   "elec_nominal": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.5226872289306606,
+    "v_min": 23.47731277106934
+   },
+   "findings": [
+    {
+     "code": "GHOST_HELD",
+     "data": {},
+     "severity": "info",
+     "text": "Ghost re-audit under the degraded loads holds: worst FoS 2.50 → 2.50, verdict unchanged (RIGID_FAITHFUL)."
+    },
+    {
+     "code": "ORDER_HELD",
+     "data": {},
+     "severity": "info",
+     "text": "Pecking order held under the defect: 'TR' remains most-likely-first, verdict INVERTED."
+    }
+   ],
+   "flags": [],
+   "note": "",
+   "verdict": "COUPLED_FAITHFUL"
+  },
+  "# SimulForge lint — unified mechatronic co-solve\n\n**Verdict: `COUPLED_FAITHFUL`**\n\nDefect under test: **Pristine electrics** — The schematic's car: rested pack, clean connectors.\n\n## The electrical facts\n\n| | pristine | degraded |\n|---|---|---|\n| bus minimum (V) | 23.5 | 23.5 |\n| peak draw (A) | 19.0 | 19.0 |\n| roll authority | 100% | 100% |\n| response lag (ms) | 0.0 | 0.0 |\n| brownouts | 0 | 0 |\n| event energy (Wh) | 1.0 | 1.0 |\n\n## Findings\n\n* ℹ️ **GHOST_HELD** — Ghost re-audit under the degraded loads holds: worst FoS 2.50 → 2.50, verdict unchanged (RIGID_FAITHFUL).\n* ℹ️ **ORDER_HELD** — Pecking order held under the defect: 'TR' remains most-likely-first, verdict INVERTED.\n\nStructural judge: ghost audit under degraded loads gives worst transient FoS **2.50** (TR), verdict `RIGID_FAITHFUL`.\n\nSession ledger: 9 → 9 laps per config after the defect's energy bill.\n\n_Coupling: staggered co-step at the mechanical dt, zero-order-held moments, exact RL winding update. Defaults are FSAE-representative stand-ins — set every knob from your datasheets._",
+  {
+   "corner": "FR",
+   "findings": [
+    {
+     "check": "quasi-static validity",
+     "detail": {
+      "n_instants": 8
+     },
+     "message": "8 audited instant(s) sit on load edges faster than the 5 ms separation window — those instants flag a structural-dynamics question, they do not answer it.",
+     "severity": "warning"
+    },
+    {
+     "check": "ghost topology",
+     "detail": {},
+     "message": "deflections stayed below every erosion threshold through the event — the rigid model is an honest stand-in for this event at this corner.",
+     "severity": "ok"
+    }
+   ],
+   "flags": [],
+   "max_d_camber_deg": 0.0,
+   "max_d_toe_deg": 0.0,
+   "max_loop_gain": 0.0,
+   "n_cache_hits": 6,
+   "n_instants": 12,
+   "n_solves": 6,
+   "note": "",
+   "verdict": "RIGID_FAITHFUL",
+   "worst_fos": 2.5,
+   "worst_fos_member": "TR",
+   "worst_fos_t_s": 0.0
+  },
+  [
+   "TR",
+   "INVERTED"
+  ]
+ ],
+ "bill": [
+  "COUPLED_FAITHFUL",
+  [],
+  [
+   {
+    "code": "GHOST_ABSENT",
+    "data": {},
+    "severity": "info",
+    "text": "No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint."
+   },
+   {
+    "code": "SESSION_BILL",
+    "data": {},
+    "severity": "info",
+    "text": "The defect's energy bill costs 9 lap(s) per config off the pack budget (9 → 0). Supply an ABDesign to judge whether that starves a planned test."
+   }
+  ],
+  "",
+  {
+   "kwh_per_lap": 0.28,
+   "laps_per_config": 9
+  },
+  {
+   "event_Wh_degraded": 600.0,
+   "event_Wh_nominal": 1.0,
+   "event_s": 0.039,
+   "kwh_per_lap": 5.072,
+   "laps_per_config": 0
+  },
+  {
+   "degradation": "Pristine electrics",
+   "elec_degraded": {
+    "authority": 1.0,
+    "energy_Wh": 600.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.9997837641893561,
+    "v_min": 23.000216235810644
+   },
+   "elec_nominal": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.5226872289306606,
+    "v_min": 23.47731277106934
+   },
+   "findings": [
+    {
+     "code": "GHOST_ABSENT",
+     "data": {},
+     "severity": "info",
+     "text": "No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint."
+    },
+    {
+     "code": "SESSION_BILL",
+     "data": {},
+     "severity": "info",
+     "text": "The defect's energy bill costs 9 lap(s) per config off the pack budget (9 → 0). Supply an ABDesign to judge whether that starves a planned test."
+    }
+   ],
+   "flags": [],
+   "note": "",
+   "verdict": "COUPLED_FAITHFUL"
+  },
+  "# SimulForge lint — unified mechatronic co-solve\n\n**Verdict: `COUPLED_FAITHFUL`**\n\nDefect under test: **Pristine electrics** — The schematic's car: rested pack, clean connectors.\n\n## The electrical facts\n\n| | pristine | degraded |\n|---|---|---|\n| bus minimum (V) | 23.5 | 23.0 |\n| peak draw (A) | 19.0 | 19.0 |\n| roll authority | 100% | 100% |\n| response lag (ms) | 0.0 | 0.0 |\n| brownouts | 0 | 0 |\n| event energy (Wh) | 1.0 | 600.0 |\n\n## Findings\n\n* ℹ️ **GHOST_ABSENT** — No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint.\n* ℹ️ **SESSION_BILL** — The defect's energy bill costs 9 lap(s) per config off the pack budget (9 → 0). Supply an ABDesign to judge whether that starves a planned test.\n\nSession ledger: 9 → 0 laps per config after the defect's energy bill.\n\n_Coupling: staggered co-step at the mechanical dt, zero-order-held moments, exact RL winding update. Defaults are FSAE-representative stand-ins — set every knob from your datasheets._",
+  null,
+  null
+ ],
+ "brownout": [
+  "BROWNOUT",
+  [
+   "BROWNOUT"
+  ],
+  [
+   {
+    "code": "BROWNOUT",
+    "data": {
+     "offline_ms": 6.0,
+     "v_min": 23.000216235810644
+    },
+    "severity": "red",
+    "text": "The controller browned out 2× (bus min 23.0 V vs threshold 17.5 V), spending 6 ms of the event passive mid-manoeuvre — the worst possible moment to lose the bar."
+   },
+   {
+    "code": "GHOST_ABSENT",
+    "data": {},
+    "severity": "info",
+    "text": "No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint."
+   }
+  ],
+  "",
+  {
+   "kwh_per_lap": 0.28,
+   "laps_per_config": 9
+  },
+  {
+   "event_Wh_degraded": 1.0,
+   "event_Wh_nominal": 1.0,
+   "event_s": 0.039,
+   "kwh_per_lap": 0.28,
+   "laps_per_config": 9
+  },
+  {
+   "degradation": "Pristine electrics",
+   "elec_degraded": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 2,
+    "offline_ms": 6.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.9997837641893561,
+    "v_min": 23.000216235810644
+   },
+   "elec_nominal": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.5226872289306606,
+    "v_min": 23.47731277106934
+   },
+   "findings": [
+    {
+     "code": "BROWNOUT",
+     "data": {
+      "offline_ms": 6.0,
+      "v_min": 23.000216235810644
+     },
+     "severity": "red",
+     "text": "The controller browned out 2× (bus min 23.0 V vs threshold 17.5 V), spending 6 ms of the event passive mid-manoeuvre — the worst possible moment to lose the bar."
+    },
+    {
+     "code": "GHOST_ABSENT",
+     "data": {},
+     "severity": "info",
+     "text": "No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint."
+    }
+   ],
+   "flags": [
+    "BROWNOUT"
+   ],
+   "note": "",
+   "verdict": "BROWNOUT"
+  },
+  "# SimulForge lint — unified mechatronic co-solve\n\n**Verdict: `BROWNOUT`**  (flags: BROWNOUT)\n\nDefect under test: **Pristine electrics** — The schematic's car: rested pack, clean connectors.\n\n## The electrical facts\n\n| | pristine | degraded |\n|---|---|---|\n| bus minimum (V) | 23.5 | 23.0 |\n| peak draw (A) | 19.0 | 19.0 |\n| roll authority | 100% | 100% |\n| response lag (ms) | 0.0 | 0.0 |\n| brownouts | 0 | 2 |\n| event energy (Wh) | 1.0 | 1.0 |\n\n## Findings\n\n* 🔴 **BROWNOUT** — The controller browned out 2× (bus min 23.0 V vs threshold 17.5 V), spending 6 ms of the event passive mid-manoeuvre — the worst possible moment to lose the bar.\n* ℹ️ **GHOST_ABSENT** — No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint.\n\nSession ledger: 9 → 9 laps per config after the defect's energy bill.\n\n_Coupling: staggered co-step at the mechanical dt, zero-order-held moments, exact RL winding update. Defaults are FSAE-representative stand-ins — set every knob from your datasheets._",
+  null,
+  null
+ ],
+ "cycle": [
+  "COUPLED_FAITHFUL",
+  [],
+  [
+   {
+    "code": "LOAD_CYCLE_AMPLIFIED",
+    "data": {
+     "amp_per_corner": [
+      1.1999999999999997,
+      1.1999999999999997,
+      1.2000000000000002,
+      1.1999999999999997
+     ],
+     "roll_ratio": 1.0
+    },
+    "severity": "amber",
+    "text": "The electrical defect amplified the RL contact-load cycle 1.20× (1336 → 1604 N ptp) and the roll peak 1.00× — a wiring defect expressed as a structural duty increase."
+   },
+   {
+    "code": "GHOST_ABSENT",
+    "data": {},
+    "severity": "info",
+    "text": "No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint."
+   }
+  ],
+  "",
+  {
+   "kwh_per_lap": 0.28,
+   "laps_per_config": 9
+  },
+  {
+   "event_Wh_degraded": 1.0,
+   "event_Wh_nominal": 1.0,
+   "event_s": 0.011,
+   "kwh_per_lap": 0.28,
+   "laps_per_config": 9
+  },
+  {
+   "degradation": "Pristine electrics",
+   "elec_degraded": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.5226872289306606,
+    "v_min": 23.47731277106934
+   },
+   "elec_nominal": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.5226872289306606,
+    "v_min": 23.47731277106934
+   },
+   "findings": [
+    {
+     "code": "LOAD_CYCLE_AMPLIFIED",
+     "data": {
+      "amp_per_corner": [
+       1.1999999999999997,
+       1.1999999999999997,
+       1.2000000000000002,
+       1.1999999999999997
+      ],
+      "roll_ratio": 1.0
+     },
+     "severity": "amber",
+     "text": "The electrical defect amplified the RL contact-load cycle 1.20× (1336 → 1604 N ptp) and the roll peak 1.00× — a wiring defect expressed as a structural duty increase."
+    },
+    {
+     "code": "GHOST_ABSENT",
+     "data": {},
+     "severity": "info",
+     "text": "No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint."
+    }
+   ],
+   "flags": [],
+   "note": "",
+   "verdict": "COUPLED_FAITHFUL"
+  },
+  "# SimulForge lint — unified mechatronic co-solve\n\n**Verdict: `COUPLED_FAITHFUL`**\n\nDefect under test: **Pristine electrics** — The schematic's car: rested pack, clean connectors.\n\n## The electrical facts\n\n| | pristine | degraded |\n|---|---|---|\n| bus minimum (V) | 23.5 | 23.5 |\n| peak draw (A) | 19.0 | 19.0 |\n| roll authority | 100% | 100% |\n| response lag (ms) | 0.0 | 0.0 |\n| brownouts | 0 | 0 |\n| event energy (Wh) | 1.0 | 1.0 |\n\n## Findings\n\n* 🟠 **LOAD_CYCLE_AMPLIFIED** — The electrical defect amplified the RL contact-load cycle 1.20× (1336 → 1604 N ptp) and the roll peak 1.00× — a wiring defect expressed as a structural duty increase.\n* ℹ️ **GHOST_ABSENT** — No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint.\n\nSession ledger: 9 → 9 laps per config after the defect's energy bill.\n\n_Coupling: staggered co-step at the mechanical dt, zero-order-held moments, exact RL winding update. Defaults are FSAE-representative stand-ins — set every knob from your datasheets._",
+  null,
+  null
+ ],
+ "failed": [
+  "COUPLED_FAITHFUL",
+  [],
+  [
+   {
+    "code": "GHOST_ABSENT",
+    "data": {},
+    "severity": "info",
+    "text": "No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint."
+   }
+  ],
+  "one or both co-solved runs are flagged failed — the lint judged only what survived: run failed",
+  {
+   "kwh_per_lap": 0.28,
+   "laps_per_config": 9
+  },
+  {
+   "event_Wh_degraded": 1.0,
+   "event_Wh_nominal": 1.0,
+   "event_s": 0.011,
+   "kwh_per_lap": 0.28,
+   "laps_per_config": 9
+  },
+  {
+   "degradation": "Pristine electrics",
+   "elec_degraded": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.5226872289306606,
+    "v_min": 23.47731277106934
+   },
+   "elec_nominal": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.5226872289306606,
+    "v_min": 23.47731277106934
+   },
+   "findings": [
+    {
+     "code": "GHOST_ABSENT",
+     "data": {},
+     "severity": "info",
+     "text": "No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint."
+    }
+   ],
+   "flags": [],
+   "note": "one or both co-solved runs are flagged failed — the lint judged only what survived: run failed",
+   "verdict": "COUPLED_FAITHFUL"
+  },
+  "# SimulForge lint — unified mechatronic co-solve\n\n**Verdict: `COUPLED_FAITHFUL`**\n\nDefect under test: **Pristine electrics** — The schematic's car: rested pack, clean connectors.\n\n_one or both co-solved runs are flagged failed — the lint judged only what survived: run failed_\n\n## The electrical facts\n\n| | pristine | degraded |\n|---|---|---|\n| bus minimum (V) | 23.5 | 23.5 |\n| peak draw (A) | 19.0 | 19.0 |\n| roll authority | 100% | 100% |\n| response lag (ms) | 0.0 | 0.0 |\n| brownouts | 0 | 0 |\n| event energy (Wh) | 1.0 | 1.0 |\n\n## Findings\n\n* ℹ️ **GHOST_ABSENT** — No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint.\n\nSession ledger: 9 → 9 laps per config after the defect's energy bill.\n\n_Coupling: staggered co-step at the mechanical dt, zero-order-held moments, exact RL winding update. Defaults are FSAE-representative stand-ins — set every knob from your datasheets._",
+  null,
+  null
+ ],
+ "flat_nom": [
+  "COUPLED_FAITHFUL",
+  [],
+  [
+   {
+    "code": "LOAD_CYCLE_AMPLIFIED",
+    "data": {
+     "amp_per_corner": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "roll_ratio": 1134251821.826623
+    },
+    "severity": "amber",
+    "text": "The electrical defect amplified the FL contact-load cycle 1.00× (0 → 0 N ptp) and the roll peak 1134251821.83× — a wiring defect expressed as a structural duty increase."
+   },
+   {
+    "code": "GHOST_ABSENT",
+    "data": {},
+    "severity": "info",
+    "text": "No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint."
+   }
+  ],
+  "",
+  {
+   "kwh_per_lap": 0.28,
+   "laps_per_config": 9
+  },
+  {
+   "event_Wh_degraded": 1.0,
+   "event_Wh_nominal": 1.0,
+   "event_s": 0.011,
+   "kwh_per_lap": 0.28,
+   "laps_per_config": 9
+  },
+  {
+   "degradation": "Pristine electrics",
+   "elec_degraded": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.5226872289306606,
+    "v_min": 23.47731277106934
+   },
+   "elec_nominal": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.5226872289306606,
+    "v_min": 23.47731277106934
+   },
+   "findings": [
+    {
+     "code": "LOAD_CYCLE_AMPLIFIED",
+     "data": {
+      "amp_per_corner": [
+       1.0,
+       1.0,
+       1.0,
+       1.0
+      ],
+      "roll_ratio": 1134251821.826623
+     },
+     "severity": "amber",
+     "text": "The electrical defect amplified the FL contact-load cycle 1.00× (0 → 0 N ptp) and the roll peak 1134251821.83× — a wiring defect expressed as a structural duty increase."
+    },
+    {
+     "code": "GHOST_ABSENT",
+     "data": {},
+     "severity": "info",
+     "text": "No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint."
+    }
+   ],
+   "flags": [],
+   "note": "",
+   "verdict": "COUPLED_FAITHFUL"
+  },
+  "# SimulForge lint — unified mechatronic co-solve\n\n**Verdict: `COUPLED_FAITHFUL`**\n\nDefect under test: **Pristine electrics** — The schematic's car: rested pack, clean connectors.\n\n## The electrical facts\n\n| | pristine | degraded |\n|---|---|---|\n| bus minimum (V) | 23.5 | 23.5 |\n| peak draw (A) | 19.0 | 19.0 |\n| roll authority | 100% | 100% |\n| response lag (ms) | 0.0 | 0.0 |\n| brownouts | 0 | 0 |\n| event energy (Wh) | 1.0 | 1.0 |\n\n## Findings\n\n* 🟠 **LOAD_CYCLE_AMPLIFIED** — The electrical defect amplified the FL contact-load cycle 1.00× (0 → 0 N ptp) and the roll peak 1134251821.83× — a wiring defect expressed as a structural duty increase.\n* ℹ️ **GHOST_ABSENT** — No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint.\n\nSession ledger: 9 → 9 laps per config after the defect's energy bill.\n\n_Coupling: staggered co-step at the mechanical dt, zero-order-held moments, exact RL winding update. Defaults are FSAE-representative stand-ins — set every knob from your datasheets._",
+  null,
+  null
+ ],
+ "ghost_cross": [
+  "STRUCTURAL_REGRESSION",
+  [
+   "STRUCTURAL_REGRESSION"
+  ],
+  [
+   {
+    "code": "STRUCTURAL_REGRESSION",
+    "data": {
+     "fos_degraded": 1.548326783966339,
+     "fos_nominal": 2.2450738367511915,
+     "member": "UF"
+    },
+    "severity": "red",
+    "text": "Ghost re-audit under the degraded loads: worst transient FoS 2.25 → 1.55 (UF), verdict RIGID_FAITHFUL → RIGID_FAITHFUL."
+   },
+   {
+    "code": "ORDER_HELD",
+    "data": {},
+    "severity": "info",
+    "text": "Pecking order held under the defect: 'UF' remains most-likely-first, verdict INVERTED."
+   }
+  ],
+  "",
+  {
+   "kwh_per_lap": 0.28,
+   "laps_per_config": 9
+  },
+  {
+   "event_Wh_degraded": 1.0,
+   "event_Wh_nominal": 1.0,
+   "event_s": 0.011,
+   "kwh_per_lap": 0.28,
+   "laps_per_config": 9
+  },
+  {
+   "degradation": "Pristine electrics",
+   "elec_degraded": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.5226872289306606,
+    "v_min": 23.47731277106934
+   },
+   "elec_nominal": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.5226872289306606,
+    "v_min": 23.47731277106934
+   },
+   "findings": [
+    {
+     "code": "STRUCTURAL_REGRESSION",
+     "data": {
+      "fos_degraded": 1.548326783966339,
+      "fos_nominal": 2.2450738367511915,
+      "member": "UF"
+     },
+     "severity": "red",
+     "text": "Ghost re-audit under the degraded loads: worst transient FoS 2.25 → 1.55 (UF), verdict RIGID_FAITHFUL → RIGID_FAITHFUL."
+    },
+    {
+     "code": "ORDER_HELD",
+     "data": {},
+     "severity": "info",
+     "text": "Pecking order held under the defect: 'UF' remains most-likely-first, verdict INVERTED."
+    }
+   ],
+   "flags": [
+    "STRUCTURAL_REGRESSION"
+   ],
+   "note": "",
+   "verdict": "STRUCTURAL_REGRESSION"
+  },
+  "# SimulForge lint — unified mechatronic co-solve\n\n**Verdict: `STRUCTURAL_REGRESSION`**  (flags: STRUCTURAL_REGRESSION)\n\nDefect under test: **Pristine electrics** — The schematic's car: rested pack, clean connectors.\n\n## The electrical facts\n\n| | pristine | degraded |\n|---|---|---|\n| bus minimum (V) | 23.5 | 23.5 |\n| peak draw (A) | 19.0 | 19.0 |\n| roll authority | 100% | 100% |\n| response lag (ms) | 0.0 | 0.0 |\n| brownouts | 0 | 0 |\n| event energy (Wh) | 1.0 | 1.0 |\n\n## Findings\n\n* 🔴 **STRUCTURAL_REGRESSION** — Ghost re-audit under the degraded loads: worst transient FoS 2.25 → 1.55 (UF), verdict RIGID_FAITHFUL → RIGID_FAITHFUL.\n* ℹ️ **ORDER_HELD** — Pecking order held under the defect: 'UF' remains most-likely-first, verdict INVERTED.\n\nStructural judge: ghost audit under degraded loads gives worst transient FoS **1.55** (UF), verdict `RIGID_FAITHFUL`.\n\nSession ledger: 9 → 9 laps per config after the defect's energy bill.\n\n_Coupling: staggered co-step at the mechanical dt, zero-order-held moments, exact RL winding update. Defaults are FSAE-representative stand-ins — set every knob from your datasheets._",
+  {
+   "corner": "RL",
+   "findings": [
+    {
+     "check": "quasi-static validity",
+     "detail": {
+      "n_instants": 8
+     },
+     "message": "8 audited instant(s) sit on load edges faster than the 5 ms separation window — those instants flag a structural-dynamics question, they do not answer it.",
+     "severity": "warning"
+    },
+    {
+     "check": "ghost topology",
+     "detail": {},
+     "message": "deflections stayed below every erosion threshold through the event — the rigid model is an honest stand-in for this event at this corner.",
+     "severity": "ok"
+    }
+   ],
+   "flags": [],
+   "max_d_camber_deg": 0.0,
+   "max_d_toe_deg": 0.0,
+   "max_loop_gain": 0.0,
+   "n_cache_hits": 6,
+   "n_instants": 12,
+   "n_solves": 6,
+   "note": "",
+   "verdict": "RIGID_FAITHFUL",
+   "worst_fos": 1.548326783966339,
+   "worst_fos_member": "UF",
+   "worst_fos_t_s": 0.005
+  },
+  [
+   "UF",
+   "INVERTED"
+  ]
+ ],
+ "ghost_drop": [
+  "STRUCTURAL_REGRESSION",
+  [
+   "STRUCTURAL_REGRESSION",
+   "ORDER_INVERTED"
+  ],
+  [
+   {
+    "code": "STRUCTURAL_REGRESSION",
+    "data": {
+     "fos_degraded": 1.8368785937055203,
+     "fos_nominal": 2.5,
+     "member": "UF"
+    },
+    "severity": "red",
+    "text": "Ghost re-audit under the degraded loads: worst transient FoS 2.50 → 1.84 (UF), verdict RIGID_FAITHFUL → RIGID_FAITHFUL."
+   },
+   {
+    "code": "ORDER_INVERTED",
+    "data": {
+     "first_degraded": "UF",
+     "first_nominal": "TR"
+    },
+    "severity": "red",
+    "text": "The first-failure pecking order MOVED under the defect: most-likely-first 'TR' → 'UF', path verdict INVERTED → INVERTED. An electrical defect re-chose the car's victim."
+   }
+  ],
+  "",
+  {
+   "kwh_per_lap": 0.28,
+   "laps_per_config": 9
+  },
+  {
+   "event_Wh_degraded": 1.0,
+   "event_Wh_nominal": 1.0,
+   "event_s": 0.011,
+   "kwh_per_lap": 0.28,
+   "laps_per_config": 9
+  },
+  {
+   "degradation": "Pristine electrics",
+   "elec_degraded": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.5226872289306606,
+    "v_min": 23.47731277106934
+   },
+   "elec_nominal": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.5226872289306606,
+    "v_min": 23.47731277106934
+   },
+   "findings": [
+    {
+     "code": "STRUCTURAL_REGRESSION",
+     "data": {
+      "fos_degraded": 1.8368785937055203,
+      "fos_nominal": 2.5,
+      "member": "UF"
+     },
+     "severity": "red",
+     "text": "Ghost re-audit under the degraded loads: worst transient FoS 2.50 → 1.84 (UF), verdict RIGID_FAITHFUL → RIGID_FAITHFUL."
+    },
+    {
+     "code": "ORDER_INVERTED",
+     "data": {
+      "first_degraded": "UF",
+      "first_nominal": "TR"
+     },
+     "severity": "red",
+     "text": "The first-failure pecking order MOVED under the defect: most-likely-first 'TR' → 'UF', path verdict INVERTED → INVERTED. An electrical defect re-chose the car's victim."
+    }
+   ],
+   "flags": [
+    "STRUCTURAL_REGRESSION",
+    "ORDER_INVERTED"
+   ],
+   "note": "",
+   "verdict": "STRUCTURAL_REGRESSION"
+  },
+  "# SimulForge lint — unified mechatronic co-solve\n\n**Verdict: `STRUCTURAL_REGRESSION`**  (flags: STRUCTURAL_REGRESSION, ORDER_INVERTED)\n\nDefect under test: **Pristine electrics** — The schematic's car: rested pack, clean connectors.\n\n## The electrical facts\n\n| | pristine | degraded |\n|---|---|---|\n| bus minimum (V) | 23.5 | 23.5 |\n| peak draw (A) | 19.0 | 19.0 |\n| roll authority | 100% | 100% |\n| response lag (ms) | 0.0 | 0.0 |\n| brownouts | 0 | 0 |\n| event energy (Wh) | 1.0 | 1.0 |\n\n## Findings\n\n* 🔴 **STRUCTURAL_REGRESSION** — Ghost re-audit under the degraded loads: worst transient FoS 2.50 → 1.84 (UF), verdict RIGID_FAITHFUL → RIGID_FAITHFUL.\n* 🔴 **ORDER_INVERTED** — The first-failure pecking order MOVED under the defect: most-likely-first 'TR' → 'UF', path verdict INVERTED → INVERTED. An electrical defect re-chose the car's victim.\n\nStructural judge: ghost audit under degraded loads gives worst transient FoS **1.84** (UF), verdict `RIGID_FAITHFUL`.\n\nSession ledger: 9 → 9 laps per config after the defect's energy bill.\n\n_Coupling: staggered co-step at the mechanical dt, zero-order-held moments, exact RL winding update. Defaults are FSAE-representative stand-ins — set every knob from your datasheets._",
+  {
+   "corner": "FR",
+   "findings": [
+    {
+     "check": "quasi-static validity",
+     "detail": {
+      "n_instants": 8
+     },
+     "message": "8 audited instant(s) sit on load edges faster than the 5 ms separation window — those instants flag a structural-dynamics question, they do not answer it.",
+     "severity": "warning"
+    },
+    {
+     "check": "ghost topology",
+     "detail": {},
+     "message": "deflections stayed below every erosion threshold through the event — the rigid model is an honest stand-in for this event at this corner.",
+     "severity": "ok"
+    }
+   ],
+   "flags": [],
+   "max_d_camber_deg": 0.0,
+   "max_d_toe_deg": 0.0,
+   "max_loop_gain": 0.0,
+   "n_cache_hits": 6,
+   "n_instants": 12,
+   "n_solves": 6,
+   "note": "",
+   "verdict": "RIGID_FAITHFUL",
+   "worst_fos": 1.8368785937055203,
+   "worst_fos_member": "UF",
+   "worst_fos_t_s": 0.005
+  },
+  [
+   "UF",
+   "INVERTED"
+  ]
+ ],
+ "ghost_failed": [
+  "COUPLED_FAITHFUL",
+  [],
+  [],
+  "one or both co-solved runs are flagged failed — the lint judged only what survived: run failed",
+  {
+   "kwh_per_lap": 0.28,
+   "laps_per_config": 9
+  },
+  {
+   "event_Wh_degraded": 1.0,
+   "event_Wh_nominal": 1.0,
+   "event_s": 0.011,
+   "kwh_per_lap": 0.28,
+   "laps_per_config": 9
+  },
+  {
+   "degradation": "Pristine electrics",
+   "elec_degraded": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.5226872289306606,
+    "v_min": 23.47731277106934
+   },
+   "elec_nominal": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.5226872289306606,
+    "v_min": 23.47731277106934
+   },
+   "findings": [],
+   "flags": [],
+   "note": "one or both co-solved runs are flagged failed — the lint judged only what survived: run failed",
+   "verdict": "COUPLED_FAITHFUL"
+  },
+  "# SimulForge lint — unified mechatronic co-solve\n\n**Verdict: `COUPLED_FAITHFUL`**\n\nDefect under test: **Pristine electrics** — The schematic's car: rested pack, clean connectors.\n\n_one or both co-solved runs are flagged failed — the lint judged only what survived: run failed_\n\n## The electrical facts\n\n| | pristine | degraded |\n|---|---|---|\n| bus minimum (V) | 23.5 | 23.5 |\n| peak draw (A) | 19.0 | 19.0 |\n| roll authority | 100% | 100% |\n| response lag (ms) | 0.0 | 0.0 |\n| brownouts | 0 | 0 |\n| event energy (Wh) | 1.0 | 1.0 |\n\n## Findings\n\n\nSession ledger: 9 → 9 laps per config after the defect's energy bill.\n\n_Coupling: staggered co-step at the mechanical dt, zero-order-held moments, exact RL winding update. Defaults are FSAE-representative stand-ins — set every knob from your datasheets._",
+  null,
+  null
+ ],
+ "ghost_held": [
+  "COUPLED_FAITHFUL",
+  [],
+  [
+   {
+    "code": "GHOST_HELD",
+    "data": {},
+    "severity": "info",
+    "text": "Ghost re-audit under the degraded loads holds: worst FoS 2.50 → 2.50, verdict unchanged (RIGID_FAITHFUL)."
+   },
+   {
+    "code": "ORDER_HELD",
+    "data": {},
+    "severity": "info",
+    "text": "Pecking order held under the defect: 'TR' remains most-likely-first, verdict INVERTED."
+   }
+  ],
+  "",
+  {
+   "kwh_per_lap": 0.28,
+   "laps_per_config": 9
+  },
+  {
+   "event_Wh_degraded": 1.0,
+   "event_Wh_nominal": 1.0,
+   "event_s": 0.011,
+   "kwh_per_lap": 0.28,
+   "laps_per_config": 9
+  },
+  {
+   "degradation": "Pristine electrics",
+   "elec_degraded": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.5226872289306606,
+    "v_min": 23.47731277106934
+   },
+   "elec_nominal": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.5226872289306606,
+    "v_min": 23.47731277106934
+   },
+   "findings": [
+    {
+     "code": "GHOST_HELD",
+     "data": {},
+     "severity": "info",
+     "text": "Ghost re-audit under the degraded loads holds: worst FoS 2.50 → 2.50, verdict unchanged (RIGID_FAITHFUL)."
+    },
+    {
+     "code": "ORDER_HELD",
+     "data": {},
+     "severity": "info",
+     "text": "Pecking order held under the defect: 'TR' remains most-likely-first, verdict INVERTED."
+    }
+   ],
+   "flags": [],
+   "note": "",
+   "verdict": "COUPLED_FAITHFUL"
+  },
+  "# SimulForge lint — unified mechatronic co-solve\n\n**Verdict: `COUPLED_FAITHFUL`**\n\nDefect under test: **Pristine electrics** — The schematic's car: rested pack, clean connectors.\n\n## The electrical facts\n\n| | pristine | degraded |\n|---|---|---|\n| bus minimum (V) | 23.5 | 23.5 |\n| peak draw (A) | 19.0 | 19.0 |\n| roll authority | 100% | 100% |\n| response lag (ms) | 0.0 | 0.0 |\n| brownouts | 0 | 0 |\n| event energy (Wh) | 1.0 | 1.0 |\n\n## Findings\n\n* ℹ️ **GHOST_HELD** — Ghost re-audit under the degraded loads holds: worst FoS 2.50 → 2.50, verdict unchanged (RIGID_FAITHFUL).\n* ℹ️ **ORDER_HELD** — Pecking order held under the defect: 'TR' remains most-likely-first, verdict INVERTED.\n\nStructural judge: ghost audit under degraded loads gives worst transient FoS **2.50** (TR), verdict `RIGID_FAITHFUL`.\n\nSession ledger: 9 → 9 laps per config after the defect's energy bill.\n\n_Coupling: staggered co-step at the mechanical dt, zero-order-held moments, exact RL winding update. Defaults are FSAE-representative stand-ins — set every knob from your datasheets._",
+  {
+   "corner": "FR",
+   "findings": [
+    {
+     "check": "quasi-static validity",
+     "detail": {
+      "n_instants": 8
+     },
+     "message": "8 audited instant(s) sit on load edges faster than the 5 ms separation window — those instants flag a structural-dynamics question, they do not answer it.",
+     "severity": "warning"
+    },
+    {
+     "check": "ghost topology",
+     "detail": {},
+     "message": "deflections stayed below every erosion threshold through the event — the rigid model is an honest stand-in for this event at this corner.",
+     "severity": "ok"
+    }
+   ],
+   "flags": [],
+   "max_d_camber_deg": 0.0,
+   "max_d_toe_deg": 0.0,
+   "max_loop_gain": 0.0,
+   "n_cache_hits": 6,
+   "n_instants": 12,
+   "n_solves": 6,
+   "note": "",
+   "verdict": "RIGID_FAITHFUL",
+   "worst_fos": 2.5,
+   "worst_fos_member": "TR",
+   "worst_fos_t_s": 0.0
+  },
+  [
+   "TR",
+   "INVERTED"
+  ]
+ ],
+ "lag": [
+  "RESPONSE_LAGGED",
+  [
+   "RESPONSE_LAGGED"
+  ],
+  [
+   {
+    "code": "RESPONSE_LAGGED",
+    "data": {
+     "lag_degraded_ms": 20.0,
+     "lag_nominal_ms": 0.0
+    },
+    "severity": "amber",
+    "text": "Actuator response lag grew from 0.0 ms to 20.0 ms — the bar now arrives after the load transient it was meant to blunt."
+   },
+   {
+    "code": "GHOST_ABSENT",
+    "data": {},
+    "severity": "info",
+    "text": "No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint."
+   }
+  ],
+  "",
+  {
+   "kwh_per_lap": 0.28,
+   "laps_per_config": 9
+  },
+  {
+   "event_Wh_degraded": 1.0,
+   "event_Wh_nominal": 1.0,
+   "event_s": 0.11900000000000001,
+   "kwh_per_lap": 0.28,
+   "laps_per_config": 9
+  },
+  {
+   "degradation": "Pristine electrics",
+   "elec_degraded": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.99896450071335,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 20.0,
+    "sag_peak_V": 0.9999232575641024,
+    "v_min": 23.000076742435898
+   },
+   "elec_nominal": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.5226872289306606,
+    "v_min": 23.47731277106934
+   },
+   "findings": [
+    {
+     "code": "RESPONSE_LAGGED",
+     "data": {
+      "lag_degraded_ms": 20.0,
+      "lag_nominal_ms": 0.0
+     },
+     "severity": "amber",
+     "text": "Actuator response lag grew from 0.0 ms to 20.0 ms — the bar now arrives after the load transient it was meant to blunt."
+    },
+    {
+     "code": "GHOST_ABSENT",
+     "data": {},
+     "severity": "info",
+     "text": "No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint."
+    }
+   ],
+   "flags": [
+    "RESPONSE_LAGGED"
+   ],
+   "note": "",
+   "verdict": "RESPONSE_LAGGED"
+  },
+  "# SimulForge lint — unified mechatronic co-solve\n\n**Verdict: `RESPONSE_LAGGED`**  (flags: RESPONSE_LAGGED)\n\nDefect under test: **Pristine electrics** — The schematic's car: rested pack, clean connectors.\n\n## The electrical facts\n\n| | pristine | degraded |\n|---|---|---|\n| bus minimum (V) | 23.5 | 23.0 |\n| peak draw (A) | 19.0 | 19.0 |\n| roll authority | 100% | 100% |\n| response lag (ms) | 0.0 | 20.0 |\n| brownouts | 0 | 0 |\n| event energy (Wh) | 1.0 | 1.0 |\n\n## Findings\n\n* 🟠 **RESPONSE_LAGGED** — Actuator response lag grew from 0.0 ms to 20.0 ms — the bar now arrives after the load transient it was meant to blunt.\n* ℹ️ **GHOST_ABSENT** — No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint.\n\nSession ledger: 9 → 9 laps per config after the defect's energy bill.\n\n_Coupling: staggered co-step at the mechanical dt, zero-order-held moments, exact RL winding update. Defaults are FSAE-representative stand-ins — set every knob from your datasheets._",
+  null,
+  null
+ ],
+ "order": [
+  "ORDER_INVERTED",
+  [
+   "ORDER_INVERTED"
+  ],
+  [
+   {
+    "code": "GHOST_HELD",
+    "data": {},
+    "severity": "info",
+    "text": "Ghost re-audit under the degraded loads holds: worst FoS 1.25 → 1.25, verdict unchanged (MARGIN_BREACHED)."
+   },
+   {
+    "code": "ORDER_INVERTED",
+    "data": {
+     "first_degraded": "branch_conn",
+     "first_nominal": "TR"
+    },
+    "severity": "red",
+    "text": "The first-failure pecking order MOVED under the defect: most-likely-first 'TR' → 'branch_conn', path verdict INVERTED → INVERTED. An electrical defect re-chose the car's victim."
+   }
+  ],
+  "",
+  {
+   "kwh_per_lap": 0.28,
+   "laps_per_config": 9
+  },
+  {
+   "event_Wh_degraded": 1.0,
+   "event_Wh_nominal": 1.0,
+   "event_s": 0.039,
+   "kwh_per_lap": 0.28,
+   "laps_per_config": 9
+  },
+  {
+   "degradation": "Pristine electrics",
+   "elec_degraded": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 53.0,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.9997837641893561,
+    "v_min": 23.000216235810644
+   },
+   "elec_nominal": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.5226872289306606,
+    "v_min": 23.47731277106934
+   },
+   "findings": [
+    {
+     "code": "GHOST_HELD",
+     "data": {},
+     "severity": "info",
+     "text": "Ghost re-audit under the degraded loads holds: worst FoS 1.25 → 1.25, verdict unchanged (MARGIN_BREACHED)."
+    },
+    {
+     "code": "ORDER_INVERTED",
+     "data": {
+      "first_degraded": "branch_conn",
+      "first_nominal": "TR"
+     },
+     "severity": "red",
+     "text": "The first-failure pecking order MOVED under the defect: most-likely-first 'TR' → 'branch_conn', path verdict INVERTED → INVERTED. An electrical defect re-chose the car's victim."
+    }
+   ],
+   "flags": [
+    "ORDER_INVERTED"
+   ],
+   "note": "",
+   "verdict": "ORDER_INVERTED"
+  },
+  "# SimulForge lint — unified mechatronic co-solve\n\n**Verdict: `ORDER_INVERTED`**  (flags: ORDER_INVERTED)\n\nDefect under test: **Pristine electrics** — The schematic's car: rested pack, clean connectors.\n\n## The electrical facts\n\n| | pristine | degraded |\n|---|---|---|\n| bus minimum (V) | 23.5 | 23.0 |\n| peak draw (A) | 19.0 | 53.0 |\n| roll authority | 100% | 100% |\n| response lag (ms) | 0.0 | 0.0 |\n| brownouts | 0 | 0 |\n| event energy (Wh) | 1.0 | 1.0 |\n\n## Findings\n\n* ℹ️ **GHOST_HELD** — Ghost re-audit under the degraded loads holds: worst FoS 1.25 → 1.25, verdict unchanged (MARGIN_BREACHED).\n* 🔴 **ORDER_INVERTED** — The first-failure pecking order MOVED under the defect: most-likely-first 'TR' → 'branch_conn', path verdict INVERTED → INVERTED. An electrical defect re-chose the car's victim.\n\nStructural judge: ghost audit under degraded loads gives worst transient FoS **1.25** (TR), verdict `MARGIN_BREACHED`.\n\nSession ledger: 9 → 9 laps per config after the defect's energy bill.\n\n_Coupling: staggered co-step at the mechanical dt, zero-order-held moments, exact RL winding update. Defaults are FSAE-representative stand-ins — set every knob from your datasheets._",
+  {
+   "corner": "FR",
+   "findings": [
+    {
+     "check": "transient structural margin",
+     "detail": {
+      "fos": 1.25,
+      "member": "TR",
+      "mode": "buckling",
+      "t_s": 0.0
+     },
+     "message": "TR FoS fell to 1.25 (buckling) at t = 0 ms — under the 1.50 rule mid-event.",
+     "severity": "warning"
+    },
+    {
+     "check": "quasi-static validity",
+     "detail": {
+      "n_instants": 8
+     },
+     "message": "8 audited instant(s) sit on load edges faster than the 5 ms separation window — those instants flag a structural-dynamics question, they do not answer it.",
+     "severity": "warning"
+    }
+   ],
+   "flags": [
+    "MARGIN_BREACHED"
+   ],
+   "max_d_camber_deg": 0.0,
+   "max_d_toe_deg": 0.0,
+   "max_loop_gain": 0.0,
+   "n_cache_hits": 6,
+   "n_instants": 12,
+   "n_solves": 6,
+   "note": "",
+   "verdict": "MARGIN_BREACHED",
+   "worst_fos": 1.25,
+   "worst_fos_member": "TR",
+   "worst_fos_t_s": 0.0
+  },
+  [
+   "branch_conn",
+   "INVERTED"
+  ]
+ ],
+ "roll": [
+  "COUPLED_FAITHFUL",
+  [],
+  [
+   {
+    "code": "LOAD_CYCLE_AMPLIFIED",
+    "data": {
+     "amp_per_corner": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "roll_ratio": 1.4999999999999998
+    },
+    "severity": "amber",
+    "text": "The electrical defect amplified the FL contact-load cycle 1.00× (1485 → 1485 N ptp) and the roll peak 1.50× — a wiring defect expressed as a structural duty increase."
+   },
+   {
+    "code": "GHOST_ABSENT",
+    "data": {},
+    "severity": "info",
+    "text": "No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint."
+   }
+  ],
+  "",
+  {
+   "kwh_per_lap": 0.28,
+   "laps_per_config": 9
+  },
+  {
+   "event_Wh_degraded": 1.0,
+   "event_Wh_nominal": 1.0,
+   "event_s": 0.011,
+   "kwh_per_lap": 0.28,
+   "laps_per_config": 9
+  },
+  {
+   "degradation": "Pristine electrics",
+   "elec_degraded": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.5226872289306606,
+    "v_min": 23.47731277106934
+   },
+   "elec_nominal": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.5226872289306606,
+    "v_min": 23.47731277106934
+   },
+   "findings": [
+    {
+     "code": "LOAD_CYCLE_AMPLIFIED",
+     "data": {
+      "amp_per_corner": [
+       1.0,
+       1.0,
+       1.0,
+       1.0
+      ],
+      "roll_ratio": 1.4999999999999998
+     },
+     "severity": "amber",
+     "text": "The electrical defect amplified the FL contact-load cycle 1.00× (1485 → 1485 N ptp) and the roll peak 1.50× — a wiring defect expressed as a structural duty increase."
+    },
+    {
+     "code": "GHOST_ABSENT",
+     "data": {},
+     "severity": "info",
+     "text": "No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint."
+    }
+   ],
+   "flags": [],
+   "note": "",
+   "verdict": "COUPLED_FAITHFUL"
+  },
+  "# SimulForge lint — unified mechatronic co-solve\n\n**Verdict: `COUPLED_FAITHFUL`**\n\nDefect under test: **Pristine electrics** — The schematic's car: rested pack, clean connectors.\n\n## The electrical facts\n\n| | pristine | degraded |\n|---|---|---|\n| bus minimum (V) | 23.5 | 23.5 |\n| peak draw (A) | 19.0 | 19.0 |\n| roll authority | 100% | 100% |\n| response lag (ms) | 0.0 | 0.0 |\n| brownouts | 0 | 0 |\n| event energy (Wh) | 1.0 | 1.0 |\n\n## Findings\n\n* 🟠 **LOAD_CYCLE_AMPLIFIED** — The electrical defect amplified the FL contact-load cycle 1.00× (1485 → 1485 N ptp) and the roll peak 1.50× — a wiring defect expressed as a structural duty increase.\n* ℹ️ **GHOST_ABSENT** — No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint.\n\nSession ledger: 9 → 9 laps per config after the defect's energy bill.\n\n_Coupling: staggered co-step at the mechanical dt, zero-order-held moments, exact RL winding update. Defaults are FSAE-representative stand-ins — set every knob from your datasheets._",
+  null,
+  null
+ ],
+ "same": [
+  "COUPLED_FAITHFUL",
+  [],
+  [
+   {
+    "code": "GHOST_ABSENT",
+    "data": {},
+    "severity": "info",
+    "text": "No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint."
+   }
+  ],
+  "",
+  {
+   "kwh_per_lap": 0.28,
+   "laps_per_config": 9
+  },
+  {
+   "event_Wh_degraded": 1.0,
+   "event_Wh_nominal": 1.0,
+   "event_s": 0.011,
+   "kwh_per_lap": 0.28,
+   "laps_per_config": 9
+  },
+  {
+   "degradation": "Pristine electrics",
+   "elec_degraded": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.5226872289306606,
+    "v_min": 23.47731277106934
+   },
+   "elec_nominal": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.5226872289306606,
+    "v_min": 23.47731277106934
+   },
+   "findings": [
+    {
+     "code": "GHOST_ABSENT",
+     "data": {},
+     "severity": "info",
+     "text": "No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint."
+    }
+   ],
+   "flags": [],
+   "note": "",
+   "verdict": "COUPLED_FAITHFUL"
+  },
+  "# SimulForge lint — unified mechatronic co-solve\n\n**Verdict: `COUPLED_FAITHFUL`**\n\nDefect under test: **Pristine electrics** — The schematic's car: rested pack, clean connectors.\n\n## The electrical facts\n\n| | pristine | degraded |\n|---|---|---|\n| bus minimum (V) | 23.5 | 23.5 |\n| peak draw (A) | 19.0 | 19.0 |\n| roll authority | 100% | 100% |\n| response lag (ms) | 0.0 | 0.0 |\n| brownouts | 0 | 0 |\n| event energy (Wh) | 1.0 | 1.0 |\n\n## Findings\n\n* ℹ️ **GHOST_ABSENT** — No GhostCorner supplied — the structural re-audit was NOT run. Load-cycle amplification above is the only structural signal in this lint.\n\nSession ledger: 9 → 9 laps per config after the defect's energy bill.\n\n_Coupling: staggered co-step at the mechanical dt, zero-order-held moments, exact RL winding update. Defaults are FSAE-representative stand-ins — set every knob from your datasheets._",
+  null,
+  null
+ ],
+ "thresh": [
+  "AUTHORITY_LOST",
+  [
+   "AUTHORITY_LOST",
+   "RESPONSE_LAGGED"
+  ],
+  [
+   {
+    "code": "AUTHORITY_LOST",
+    "data": {
+     "authority": 0.8999999999999999,
+     "sag_V": 0.9997837641893561
+    },
+    "severity": "red",
+    "text": "Delivered roll authority fell to 90% of command (pristine: 100%) — the sagging drive voltage cannot push the commanded current against back-EMF. Sag peak 1.0 V at 19.0 A."
+   },
+   {
+    "code": "RESPONSE_LAGGED",
+    "data": {
+     "lag_degraded_ms": 1.0,
+     "lag_nominal_ms": 0.0
+    },
+    "severity": "amber",
+    "text": "Actuator response lag grew from 0.0 ms to 1.0 ms — the bar now arrives after the load transient it was meant to blunt."
+   },
+   {
+    "code": "GHOST_HELD",
+    "data": {},
+    "severity": "info",
+    "text": "Ghost re-audit under the degraded loads holds: worst FoS 2.50 → 2.50, verdict unchanged (RIGID_FAITHFUL)."
+   },
+   {
+    "code": "ORDER_HELD",
+    "data": {},
+    "severity": "info",
+    "text": "Pecking order held under the defect: 'TR' remains most-likely-first, verdict INVERTED."
+   }
+  ],
+  "",
+  {
+   "kwh_per_lap": 0.28,
+   "laps_per_config": 9
+  },
+  {
+   "event_Wh_degraded": 1.0,
+   "event_Wh_nominal": 1.0,
+   "event_s": 0.039,
+   "kwh_per_lap": 0.28,
+   "laps_per_config": 9
+  },
+  {
+   "degradation": "Pristine electrics",
+   "elec_degraded": {
+    "authority": 0.8999999999999999,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 1.0,
+    "sag_peak_V": 0.9997837641893561,
+    "v_min": 23.000216235810644
+   },
+   "elec_nominal": {
+    "authority": 1.0,
+    "energy_Wh": 1.0,
+    "i_peak": 18.997868015207526,
+    "n_brownouts": 0,
+    "offline_ms": 0.0,
+    "response_lag_ms": 0.0,
+    "sag_peak_V": 0.5226872289306606,
+    "v_min": 23.47731277106934
+   },
+   "findings": [
+    {
+     "code": "AUTHORITY_LOST",
+     "data": {
+      "authority": 0.8999999999999999,
+      "sag_V": 0.9997837641893561
+     },
+     "severity": "red",
+     "text": "Delivered roll authority fell to 90% of command (pristine: 100%) — the sagging drive voltage cannot push the commanded current against back-EMF. Sag peak 1.0 V at 19.0 A."
+    },
+    {
+     "code": "RESPONSE_LAGGED",
+     "data": {
+      "lag_degraded_ms": 1.0,
+      "lag_nominal_ms": 0.0
+     },
+     "severity": "amber",
+     "text": "Actuator response lag grew from 0.0 ms to 1.0 ms — the bar now arrives after the load transient it was meant to blunt."
+    },
+    {
+     "code": "GHOST_HELD",
+     "data": {},
+     "severity": "info",
+     "text": "Ghost re-audit under the degraded loads holds: worst FoS 2.50 → 2.50, verdict unchanged (RIGID_FAITHFUL)."
+    },
+    {
+     "code": "ORDER_HELD",
+     "data": {},
+     "severity": "info",
+     "text": "Pecking order held under the defect: 'TR' remains most-likely-first, verdict INVERTED."
+    }
+   ],
+   "flags": [
+    "AUTHORITY_LOST",
+    "RESPONSE_LAGGED"
+   ],
+   "note": "",
+   "verdict": "AUTHORITY_LOST"
+  },
+  "# SimulForge lint — unified mechatronic co-solve\n\n**Verdict: `AUTHORITY_LOST`**  (flags: AUTHORITY_LOST, RESPONSE_LAGGED)\n\nDefect under test: **Pristine electrics** — The schematic's car: rested pack, clean connectors.\n\n## The electrical facts\n\n| | pristine | degraded |\n|---|---|---|\n| bus minimum (V) | 23.5 | 23.0 |\n| peak draw (A) | 19.0 | 19.0 |\n| roll authority | 100% | 90% |\n| response lag (ms) | 0.0 | 1.0 |\n| brownouts | 0 | 0 |\n| event energy (Wh) | 1.0 | 1.0 |\n\n## Findings\n\n* 🔴 **AUTHORITY_LOST** — Delivered roll authority fell to 90% of command (pristine: 100%) — the sagging drive voltage cannot push the commanded current against back-EMF. Sag peak 1.0 V at 19.0 A.\n* 🟠 **RESPONSE_LAGGED** — Actuator response lag grew from 0.0 ms to 1.0 ms — the bar now arrives after the load transient it was meant to blunt.\n* ℹ️ **GHOST_HELD** — Ghost re-audit under the degraded loads holds: worst FoS 2.50 → 2.50, verdict unchanged (RIGID_FAITHFUL).\n* ℹ️ **ORDER_HELD** — Pecking order held under the defect: 'TR' remains most-likely-first, verdict INVERTED.\n\nStructural judge: ghost audit under degraded loads gives worst transient FoS **2.50** (TR), verdict `RIGID_FAITHFUL`.\n\nSession ledger: 9 → 9 laps per config after the defect's energy bill.\n\n_Coupling: staggered co-step at the mechanical dt, zero-order-held moments, exact RL winding update. Defaults are FSAE-representative stand-ins — set every knob from your datasheets._",
+  {
+   "corner": "FR",
+   "findings": [
+    {
+     "check": "quasi-static validity",
+     "detail": {
+      "n_instants": 8
+     },
+     "message": "8 audited instant(s) sit on load edges faster than the 5 ms separation window — those instants flag a structural-dynamics question, they do not answer it.",
+     "severity": "warning"
+    },
+    {
+     "check": "ghost topology",
+     "detail": {},
+     "message": "deflections stayed below every erosion threshold through the event — the rigid model is an honest stand-in for this event at this corner.",
+     "severity": "ok"
+    }
+   ],
+   "flags": [],
+   "max_d_camber_deg": 0.0,
+   "max_d_toe_deg": 0.0,
+   "max_loop_gain": 0.0,
+   "n_cache_hits": 6,
+   "n_instants": 12,
+   "n_solves": 6,
+   "note": "",
+   "verdict": "RIGID_FAITHFUL",
+   "worst_fos": 2.5,
+   "worst_fos_member": "TR",
+   "worst_fos_t_s": 0.0
+  },
+  [
+   "TR",
+   "INVERTED"
+  ]
+ ]
+}

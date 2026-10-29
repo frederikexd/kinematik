@@ -1,0 +1,41 @@
+{
+ "alias": [
+  [
+   0.0,
+   1.0
+  ],
+  [
+   1.0,
+   2.0
+  ]
+ ],
+ "bad": "Could not open Excel workbook: [Errno 2] No such file or directory: '<T>/zz.xlsx'",
+ "few": "SpeedVsTime sheet has only 1 numeric data row(s) — need at least 2. Make sure column A = time (s) and column B = speed (mph), with a header row on row 1.",
+ "none": "No speed-vs-time sheet found in the workbook. Available sheets: A, B. Please add a sheet named 'SpeedVsTime' with columns: time_s, speed_mph.",
+ "none_b": "No speed-vs-time sheet found in the workbook. Available sheets: A, B. Please add a sheet named 'SpeedVsTime' with columns: time_s, speed_mph.",
+ "ok": [
+  [
+   0.0,
+   1.0,
+   3.5
+  ],
+  [
+   10.0,
+   12.5,
+   20.0
+  ]
+ ],
+ "ok_b": [
+  [
+   0.0,
+   1.0,
+   3.5
+  ],
+  [
+   10.0,
+   12.5,
+   20.0
+  ]
+ ],
+ "one": "SpeedVsTime sheet has only 0 numeric data row(s) — need at least 2. Make sure column A = time (s) and column B = speed (mph), with a header row on row 1."
+}

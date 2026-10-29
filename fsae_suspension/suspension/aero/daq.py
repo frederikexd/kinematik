@@ -80,6 +80,7 @@ from typing import Protocol, runtime_checkable
 from collections.abc import Sequence
 
 import numpy as np
+from .._num import vec as _vec
 
 from .cfd import Attitude
 from .windtunnel import GroundState
@@ -159,14 +160,14 @@ class BalanceCalibration:
 
     def __post_init__(self):
         if self.matrix is not None:
-            self.matrix = np.asarray(self.matrix, dtype=float)
+            self.matrix = _vec(self.matrix)
             if self.matrix.shape != (6, 6):
                 raise ValueError("balance interaction matrix must be 6x6 "
                                  "(Fx,Fy,Fz,Mx,My,Mz)")
         if self.zero_volts is None:
             self.zero_volts = np.zeros(6, dtype=float)
         else:
-            self.zero_volts = np.asarray(self.zero_volts, dtype=float).reshape(-1)
+            self.zero_volts = _vec(self.zero_volts).reshape(-1)
             if self.zero_volts.shape != (6,):
                 raise ValueError("zero_volts must have 6 entries (one per bridge)")
 
@@ -180,7 +181,7 @@ class BalanceCalibration:
         what it is (`notes` records that cross-talk was assumed zero). Real balances
         are never truly diagonal.
         """
-        s = np.asarray(sensitivities_per_v, dtype=float).reshape(-1)
+        s = _vec(sensitivities_per_v).reshape(-1)
         if s.shape != (6,):
             raise ValueError("need 6 sensitivities (Fx,Fy,Fz,Mx,My,Mz)")
         m = np.diag(s)
@@ -211,7 +212,7 @@ class BalanceCalibration:
         not just its own axis — the matrix mixes them). An unusable calibration
         returns all-NaN: an honest hole, never a raw channel passed through.
         """
-        v = np.asarray(bridge_volts, dtype=float)
+        v = _vec(bridge_volts)
         if v.ndim == 1:
             v = v[None, :]
         if v.shape[1] != 6:
@@ -406,7 +407,7 @@ class VibrationFilter:
         — the filter does not invent values where the transducer gave none. If every
         sample is NaN, the input is returned unchanged with a hole report.
         """
-        x = np.asarray(signal, dtype=float).reshape(-1)
+        x = _vec(signal).reshape(-1)
         n = x.size
         finite = np.isfinite(x)
         if not finite.any() or n < 4:
@@ -661,7 +662,7 @@ class StreamingVibrationFilter:
         cascade is re-settled across each gap and the holes are restored as NaN —
         never invented through.
         """
-        x = np.asarray(signal, dtype=float).reshape(-1)
+        x = _vec(signal).reshape(-1)
         n = x.size
         finite = np.isfinite(x)
         if not finite.any() or n < 4:
@@ -800,7 +801,7 @@ class BalanceReading:
     notes: str = ""
 
     def value(self, axis: BalanceAxis) -> float:
-        return self.forces_N.get(axis.value, float("nan"))
+        return self.forces_N.get(axis.value, math.nan)
 
     @property
     def Fx(self) -> float: return self.value(BalanceAxis.FX)
@@ -812,14 +813,14 @@ class BalanceReading:
     def downforce_N(self) -> float:
         """Positive downforce = -Fz (lift is +z up)."""
         fz = self.Fz
-        return float("nan") if not math.isfinite(fz) else -fz
+        return math.nan if not math.isfinite(fz) else -fz
 
     def is_usable(self) -> bool:
         return all(math.isfinite(self.value(a)) for a in BalanceAxis.forces())
 
     def status(self) -> str:
         def f(a):
-            v = self.value(a); s = self.stderr_N.get(a.value, float("nan"))
+            v = self.value(a); s = self.stderr_N.get(a.value, math.nan)
             return ("hole" if not math.isfinite(v)
                     else f"{v:+.1f}±{s:.1f} N")
         prov = self.provenance.status() if self.provenance else "provenance unknown"
@@ -1000,7 +1001,7 @@ class VirtualInstrument:
         """
         if self.balance is None:
             raise DAQUnavailable("no force balance bound to this VI")
-        raw = np.asarray(self.backend.read_balance(spec, self.chassis), dtype=float)
+        raw = _vec(self.backend.read_balance(spec, self.chassis))
         if raw.ndim != 2 or raw.shape[1] != 6:
             raise ValueError("balance backend must return (n_samples, 6) bridge volts")
 
@@ -1020,8 +1021,8 @@ class VirtualInstrument:
             col = loads[:, k]
             good = col[np.isfinite(col)]
             if good.size == 0:
-                forces[axis.value] = float("nan")
-                stderr[axis.value] = float("nan")
+                forces[axis.value] = math.nan
+                stderr[axis.value] = math.nan
             else:
                 forces[axis.value] = float(np.mean(good))
                 stderr[axis.value] = float(np.std(good, ddof=1) / math.sqrt(good.size)

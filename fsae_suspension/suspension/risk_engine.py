@@ -444,7 +444,7 @@ class SlottedJointResult:
         """Feed the risk matrix: friction capacity vs in-plane slip demand."""
         F = self.F_clamp_at_torque_N or self.F_target_N or 0.0
         cap = mu_joint * F * max(1, n_interfaces)
-        fos = cap / slip_demand_N if slip_demand_N > 0 else float("inf")
+        fos = cap / slip_demand_N if slip_demand_N > 0 else math.inf
         return Reading("brakes", "pedal_tab_joint_fos", fos, "", "slotted-joint-calc")
 
 

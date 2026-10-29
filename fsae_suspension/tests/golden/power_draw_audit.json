@@ -1,0 +1,1120 @@
+{
+ "bad": {
+  "a": {
+   "findings": [
+    {
+     "check": "pd-no-vehicle-model",
+     "detail": {},
+     "message": "[ElecPropulsion!H1895:V3787] Pack current is computed as V_pack * PowerFactor * RPM / 1000. That is volts times rpm — not amperes — and it makes current proportional to bus voltage, which is backwards: at a given power a higher voltage draws LESS current. More importantly there is no mass, drag, rolling resistance or acceleration anywhere in the workbook, so nothing computes tractive force. A power-draw model that never computes force cannot predict power draw, and every figure downstream inherits this — joule heating, thermal load, both EMF columns, the bearing temperatures. Use power_draw_trace(), which starts from a force balance.",
+     "severity": "fail",
+     "subsystems": [
+      "electrics",
+      "powertrain",
+      "chassis",
+      "aero"
+     ]
+    },
+    {
+     "check": "pd-gear-inverted",
+     "detail": {},
+     "message": "[ElecPropulsion!H1:V1, H2] Gear ratios are stored as 1/N and then MULTIPLIED into wheel rpm, so a reduction makes the motor turn slower than the wheel. At the 7th column the motor reads about 93 rpm where a 7:1 reduction gives 4575. Power goes as the square of speed here, so the error is 49x at gear 7 and 225x at gear 15 — and it is invisible because every column is wrong the same way, so the columns still rank in a sensible order.",
+     "severity": "fail",
+     "subsystems": [
+      "powertrain",
+      "electrics"
+     ]
+    },
+    {
+     "check": "pd-efficiency-and-phase",
+     "detail": {},
+     "message": "[ElecPropulsion!H3789:V5681] Motor power multiplies by efficiency (B6) where it should divide: losses are paid by the pack, so they RAISE electrical demand. As written, a more efficient motor draws more current. The same formula applies sqrt(3) and power factor — three-phase AC line quantities — to the DC bus voltage, double-counting the phase conversion.",
+     "severity": "fail",
+     "subsystems": [
+      "electrics",
+      "powertrain"
+     ]
+    },
+    {
+     "check": "pd-gear-date-format",
+     "detail": {},
+     "message": "[H1,V1] 2 gear-ratio cells carry a date number format, so their cached values are times rather than numbers: H1 (gear 1) = 2026-01-08 00:00:00, V1 (gear 15) = 2026-01-10 00:00:00. The formulas are correct and Excel's own arithmetic is fine; the damage is at the Python boundary, where float() raises and a try/except default silently substitutes. KinematiK's _safe_float turns these into 1.0, quietly converting gears 1 and 15 into direct drive. Set the format to General.",
+     "severity": "warning",
+     "subsystems": [
+      "dataacq",
+      "electrics"
+     ]
+    },
+    {
+     "check": "pd-rpm-stat-range",
+     "detail": {},
+     "message": "[ElecPropulsion!H5683:V5684] Min/Max RPM read H2:H1895, but the RPM block ends at row 1894 — row 1895 is the first row of the Current Draw block. The RPM statistics are contaminated by an ampere value. This is the direct consequence of stacking three blocks in one sheet at fixed offsets.",
+     "severity": "fail",
+     "subsystems": [
+      "electrics",
+      "powertrain"
+     ]
+    },
+    {
+     "check": "pd-power-stat-units",
+     "detail": {},
+     "message": "[ElecPropulsion!G5687,G5688] 'Min (W)' and 'Max (kW)' label the min and max of the same block with different units. The formula divides by 1000, so both are kW.",
+     "severity": "warning",
+     "subsystems": [
+      "electrics",
+      "powertrain"
+     ]
+    },
+    {
+     "check": "pd-minmax-inconsistent",
+     "detail": {},
+     "message": "[ThermalLoad!B4,B5] Max Joule Heat multiplies by BatteryPackConfig!B1 (the fuse rating) and Min Joule Heat does not. Two adjacent cells that should be the min and max of one quantity differ by a factor of 50, and the extra factor is dimensionally wrong anyway: I^2 * A * ohm. This is the classic lone-edited-cell error, and it is only visible by reading the two formulas side by side.",
+     "severity": "fail",
+     "subsystems": [
+      "electrics",
+      "cooling"
+     ]
+    },
+    {
+     "check": "pd-sum-of-power",
+     "detail": {},
+     "message": "[ThermalLoad!B6] 'Sum of Joule Heat (kW)' sums instantaneous power across samples. Adding watts gives watts, not energy — the result has no physical meaning and scales with however many rows the trace happens to have. Energy needs sum(P * dt); at the trace's 1/15 s step the true figure is a fraction of a kWh, not the thousands the cell reports. PowerDrawTrace.joule_energy_kwh() does this correctly.",
+     "severity": "fail",
+     "subsystems": [
+      "electrics",
+      "cooling"
+     ]
+    },
+    {
+     "check": "pd-thermal-units",
+     "detail": {},
+     "message": "[ThermalLoad!E1,F1:F1893] The 'Joule Heat (kW)' column computes I^2*R, which is watts. Its values are around 3,600 — watts, not kilowatts. Combined with the 3x resistance error the true figure is roughly 1.2 kW, not the 3,600 the column implies.",
+     "severity": "warning",
+     "subsystems": [
+      "electrics",
+      "cooling"
+     ]
+    },
+    {
+     "check": "pd-emf-dimensions",
+     "detail": {},
+     "message": "[EMFs!B1:B1894, E1:E1894] The EMF columns compute V_pack * Power * R_pack — volts times kilowatts times ohms. That is not a voltage, and the cached values (~32,000) are not plausible for a 504 V pack. Back-EMF is either k_e * omega for the motor or V_oc - I*R for the pack terminal; both are available from the corrected trace. Whatever this column is measuring, it is not EMF.",
+     "severity": "fail",
+     "subsystems": [
+      "electrics",
+      "powertrain"
+     ]
+    },
+    {
+     "check": "pd-emf-range",
+     "detail": {},
+     "message": "[EMFs!B1,E1] The EMF columns read ElecPropulsion rows 3789:5682, but the Motor Power block ends at 5681. Row 5682 is blank, which is why the last EMF value is 0. Same root cause as the RPM statistic: hand-copied row offsets into stacked blocks.",
+     "severity": "fail",
+     "subsystems": [
+      "electrics",
+      "powertrain"
+     ]
+    },
+    {
+     "check": "pd-tan-degrees",
+     "detail": {},
+     "message": "[BearingBlowOut!G1:G1893] TAN() is applied to a pressure angle in degrees. Excel's TAN takes radians: TAN(20) is 2.2372, the tangent of 20 radians, where tan(20 deg) is 0.3640 — a factor of 6.15. Wrap the angle in RADIANS().",
+     "severity": "fail",
+     "subsystems": [
+      "powertrain",
+      "suspension"
+     ]
+    },
+    {
+     "check": "pd-pitch-diameter",
+     "detail": {},
+     "message": "[BearingBlowOut!G1:G1893,B16] Gear tangential force divides torque by the pitch DIAMETER (B16), but the moment arm is the pitch radius, so the force is half what it should be. Note this partially cancels the radians error above — two independent mistakes leaving a plausible-looking answer, which is why neither was caught.",
+     "severity": "fail",
+     "subsystems": [
+      "powertrain",
+      "suspension"
+     ]
+    },
+    {
+     "check": "pd-bearing-max-range",
+     "detail": {},
+     "message": "[BearingBlowOut!B19] Max bearing temperature reads MAX(G1:G1894), but column G is populated only to row 1893.",
+     "severity": "warning",
+     "subsystems": [
+      "powertrain"
+     ]
+    },
+    {
+     "check": "pd-hardcoded-resistances",
+     "detail": {},
+     "message": "[A19,A21,A23,A25,A27,A29,A31] The conduction resistances at A19, A21, A23, A25, A27, A29, A31 are typed numbers sitting directly under a label that reads 'Rcond = L/(kA)'. The geometry (A2, A4, A8, A10, A12) and the conductivities on MatCharacteristics are both right there and neither is referenced, so changing the insulation thickness moves nothing. A sheet named 'Sheet1' holding the thermal stack-up is also worth renaming before anyone else has to find it.",
+     "severity": "warning",
+     "subsystems": [
+      "cooling",
+      "electrics"
+     ]
+    },
+    {
+     "check": "pd-empty-dashboard",
+     "detail": {},
+     "message": "[Data Dashboard!A1] 'Data Dashboard' is empty. It is the first tab, so it is what a reviewer opens first. The corrected summary figures from PowerDrawTrace are what belong here.",
+     "severity": "info",
+     "subsystems": [
+      "dataacq"
+     ]
+    },
+    {
+     "check": "pd-pack-resistance",
+     "detail": {
+      "correct": 0.44999999999999996,
+      "sheet": 1.792
+     },
+     "message": "[BatteryPackConfig!B11] Pack internal resistance reads 1.7920 ohm; for 120S4P it is 0.4500 ohm. The formula multiplies the TOTAL cell count by R_cell/P, which cancels to S*R_cell and discards the parallel benefit entirely — so it is high by exactly the parallel count, 4x. This value feeds every joule-heating figure and both EMF columns, so those are all high by the same factor.",
+     "severity": "fail",
+     "subsystems": [
+      "electrics",
+      "powertrain"
+     ]
+    },
+    {
+     "check": "pd-joule-units",
+     "detail": {},
+     "message": "[BatteryPackConfig!B19] 'joule heating max (kwh)' computes I^2*R/1000, which is kW — a power, not an energy. Sheet1 then multiplies it by 1000 and labels the result watts, so the downstream use is consistent with kW and only the label is wrong. Energy would need this integrated over time.",
+     "severity": "fail",
+     "subsystems": [
+      "electrics",
+      "cooling"
+     ]
+    },
+    {
+     "check": "pd-power-ceiling",
+     "detail": {
+      "fuse_limited_kw": 25.02,
+      "pack_ceiling_kw": 109.52000000000001
+     },
+     "message": "[BatteryPackConfig!B1,B11] The pack's own resistance caps electrical output at 110 kW (at I = V_oc/2R, where half the energy is burnt inside the pack). The 60 A fuse caps usable output at 25.0 kW once sag is included. Neither number appears anywhere in the workbook, and both are worth having next to the motor rating before anyone sizes a controller.",
+     "severity": "warning",
+     "subsystems": [
+      "electrics",
+      "powertrain"
+     ]
+    },
+    {
+     "check": "pd-bms-channels",
+     "detail": {
+      "boards": 8,
+      "channels": 120
+     },
+     "message": "120S4P needs 120 monitored series groups, not 480 — parallel cells share a node and cannot be measured separately. At 16 channels per board that is 8 x BQ79616-Q1 boards (8 channels spare), comfortably inside the 35-board daisy-chain limit.",
+     "severity": "info",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    },
+    {
+     "check": "pd-motor-exceeds-pack",
+     "detail": {
+      "ceiling_kw": 109.52000000000001,
+      "rated_kw": 150.0
+     },
+     "message": "[ElecPropulsion!B2, BatteryPackConfig!B11] The motor is rated 150 kW peak. This pack cannot deliver more than 110 kW into any load, because at 0.450 ohm the maximum-power point is V_oc/2R and beyond it output falls. The motor rating is unreachable by 40 kW regardless of controller settings.",
+     "severity": "fail",
+     "subsystems": [
+      "electrics",
+      "powertrain"
+     ]
+    },
+    {
+     "check": "pd-motor-exceeds-fuse",
+     "detail": {
+      "fuse_kw": 25.02,
+      "rated_kw": 150.0
+     },
+     "message": "[BatteryPackConfig!B1, ElecPropulsion!B2] The 60 A fuse limits usable output to 25.0 kW with sag included, against a 150 kW motor — a factor of 6.0. Either the fuse is sized for a much smaller envelope than the motor, or the motor is specified far above what the car will ever use. Both are defensible; having neither written down next to the other is not.",
+     "severity": "warning",
+     "subsystems": [
+      "electrics",
+      "powertrain"
+     ]
+    },
+    {
+     "check": "pd-reader-ok",
+     "detail": {},
+     "message": "ElecParams.from_excel tracks edits to the workbook.",
+     "severity": "ok",
+     "subsystems": [
+      "dataacq"
+     ]
+    }
+   ],
+   "pack": {
+    "cell_capacity_ah": 4.5,
+    "cell_resistance_ohm": 0.015,
+    "cell_voltage_v": 3.7,
+    "cell_weight_kg": 0.07,
+    "fuse_max_a": 60.0,
+    "max_cells": 600,
+    "n_parallel": 4,
+    "n_series": 120,
+    "source": "<T>/bad.xlsx!BatteryPackConfig"
+   },
+   "path": "<T>/bad.xlsx"
+  },
+  "b": [
+   {
+    "check": "pd-no-vehicle-model",
+    "detail": {},
+    "message": "[ElecPropulsion!H1895:V3787] Pack current is computed as V_pack * PowerFactor * RPM / 1000. That is volts times rpm — not amperes — and it makes current proportional to bus voltage, which is backwards: at a given power a higher voltage draws LESS current. More importantly there is no mass, drag, rolling resistance or acceleration anywhere in the workbook, so nothing computes tractive force. A power-draw model that never computes force cannot predict power draw, and every figure downstream inherits this — joule heating, thermal load, both EMF columns, the bearing temperatures. Use power_draw_trace(), which starts from a force balance.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics",
+     "powertrain",
+     "chassis",
+     "aero"
+    ]
+   },
+   {
+    "check": "pd-gear-inverted",
+    "detail": {},
+    "message": "[ElecPropulsion!H1:V1, H2] Gear ratios are stored as 1/N and then MULTIPLIED into wheel rpm, so a reduction makes the motor turn slower than the wheel. At the 7th column the motor reads about 93 rpm where a 7:1 reduction gives 4575. Power goes as the square of speed here, so the error is 49x at gear 7 and 225x at gear 15 — and it is invisible because every column is wrong the same way, so the columns still rank in a sensible order.",
+    "severity": "fail",
+    "subsystems": [
+     "powertrain",
+     "electrics"
+    ]
+   },
+   {
+    "check": "pd-efficiency-and-phase",
+    "detail": {},
+    "message": "[ElecPropulsion!H3789:V5681] Motor power multiplies by efficiency (B6) where it should divide: losses are paid by the pack, so they RAISE electrical demand. As written, a more efficient motor draws more current. The same formula applies sqrt(3) and power factor — three-phase AC line quantities — to the DC bus voltage, double-counting the phase conversion.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics",
+     "powertrain"
+    ]
+   },
+   {
+    "check": "pd-rpm-stat-range",
+    "detail": {},
+    "message": "[ElecPropulsion!H5683:V5684] Min/Max RPM read H2:H1895, but the RPM block ends at row 1894 — row 1895 is the first row of the Current Draw block. The RPM statistics are contaminated by an ampere value. This is the direct consequence of stacking three blocks in one sheet at fixed offsets.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics",
+     "powertrain"
+    ]
+   },
+   {
+    "check": "pd-minmax-inconsistent",
+    "detail": {},
+    "message": "[ThermalLoad!B4,B5] Max Joule Heat multiplies by BatteryPackConfig!B1 (the fuse rating) and Min Joule Heat does not. Two adjacent cells that should be the min and max of one quantity differ by a factor of 50, and the extra factor is dimensionally wrong anyway: I^2 * A * ohm. This is the classic lone-edited-cell error, and it is only visible by reading the two formulas side by side.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics",
+     "cooling"
+    ]
+   },
+   {
+    "check": "pd-sum-of-power",
+    "detail": {},
+    "message": "[ThermalLoad!B6] 'Sum of Joule Heat (kW)' sums instantaneous power across samples. Adding watts gives watts, not energy — the result has no physical meaning and scales with however many rows the trace happens to have. Energy needs sum(P * dt); at the trace's 1/15 s step the true figure is a fraction of a kWh, not the thousands the cell reports. PowerDrawTrace.joule_energy_kwh() does this correctly.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics",
+     "cooling"
+    ]
+   },
+   {
+    "check": "pd-emf-dimensions",
+    "detail": {},
+    "message": "[EMFs!B1:B1894, E1:E1894] The EMF columns compute V_pack * Power * R_pack — volts times kilowatts times ohms. That is not a voltage, and the cached values (~32,000) are not plausible for a 504 V pack. Back-EMF is either k_e * omega for the motor or V_oc - I*R for the pack terminal; both are available from the corrected trace. Whatever this column is measuring, it is not EMF.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics",
+     "powertrain"
+    ]
+   },
+   {
+    "check": "pd-emf-range",
+    "detail": {},
+    "message": "[EMFs!B1,E1] The EMF columns read ElecPropulsion rows 3789:5682, but the Motor Power block ends at 5681. Row 5682 is blank, which is why the last EMF value is 0. Same root cause as the RPM statistic: hand-copied row offsets into stacked blocks.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics",
+     "powertrain"
+    ]
+   },
+   {
+    "check": "pd-tan-degrees",
+    "detail": {},
+    "message": "[BearingBlowOut!G1:G1893] TAN() is applied to a pressure angle in degrees. Excel's TAN takes radians: TAN(20) is 2.2372, the tangent of 20 radians, where tan(20 deg) is 0.3640 — a factor of 6.15. Wrap the angle in RADIANS().",
+    "severity": "fail",
+    "subsystems": [
+     "powertrain",
+     "suspension"
+    ]
+   },
+   {
+    "check": "pd-pitch-diameter",
+    "detail": {},
+    "message": "[BearingBlowOut!G1:G1893,B16] Gear tangential force divides torque by the pitch DIAMETER (B16), but the moment arm is the pitch radius, so the force is half what it should be. Note this partially cancels the radians error above — two independent mistakes leaving a plausible-looking answer, which is why neither was caught.",
+    "severity": "fail",
+    "subsystems": [
+     "powertrain",
+     "suspension"
+    ]
+   },
+   {
+    "check": "pd-pack-resistance",
+    "detail": {
+     "correct": 0.44999999999999996,
+     "sheet": 1.792
+    },
+    "message": "[BatteryPackConfig!B11] Pack internal resistance reads 1.7920 ohm; for 120S4P it is 0.4500 ohm. The formula multiplies the TOTAL cell count by R_cell/P, which cancels to S*R_cell and discards the parallel benefit entirely — so it is high by exactly the parallel count, 4x. This value feeds every joule-heating figure and both EMF columns, so those are all high by the same factor.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics",
+     "powertrain"
+    ]
+   },
+   {
+    "check": "pd-joule-units",
+    "detail": {},
+    "message": "[BatteryPackConfig!B19] 'joule heating max (kwh)' computes I^2*R/1000, which is kW — a power, not an energy. Sheet1 then multiplies it by 1000 and labels the result watts, so the downstream use is consistent with kW and only the label is wrong. Energy would need this integrated over time.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics",
+     "cooling"
+    ]
+   },
+   {
+    "check": "pd-motor-exceeds-pack",
+    "detail": {
+     "ceiling_kw": 109.52000000000001,
+     "rated_kw": 150.0
+    },
+    "message": "[ElecPropulsion!B2, BatteryPackConfig!B11] The motor is rated 150 kW peak. This pack cannot deliver more than 110 kW into any load, because at 0.450 ohm the maximum-power point is V_oc/2R and beyond it output falls. The motor rating is unreachable by 40 kW regardless of controller settings.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics",
+     "powertrain"
+    ]
+   }
+  ],
+  "md": "# FSAE_EV_Power_Draw.xlsx — audit\n\nPack read from the workbook: **120S4P**, 480 cells, 444 V nominal, 18.0 Ah, 7.99 kWh, 33.6 kg of cells.\n\n| Quantity | Workbook | Corrected |\n|---|---|---|\n| Pack resistance | 1.792 ohm | **0.4500 ohm** |\n| Joule heat at fuse current | 4.48 'kWh' | **1620 W** |\n| Power at fuse limit | 25.2 kW (no sag) | **25.0 kW** |\n| Pack power ceiling | not computed | **110 kW** |\n\n**13 blocking, 7 warnings, 23 findings total.**\n\n| Severity | Check | Finding |\n|---|---|---|\n| FAIL | pd-no-vehicle-model | [ElecPropulsion!H1895:V3787] Pack current is computed as V_pack * PowerFactor * RPM / 1000. That is volts times rpm — not amperes — and it makes current proportional to bus voltage, which is backwards: at a given power a higher voltage draws LESS current. More importantly there is no mass, drag, rolling resistance or acceleration anywhere in the workbook, so nothing computes tractive force. A power-draw model that never computes force cannot predict power draw, and every figure downstream inherits this — joule heating, thermal load, both EMF columns, the bearing temperatures. Use power_draw_trace(), which starts from a force balance. |\n| FAIL | pd-gear-inverted | [ElecPropulsion!H1:V1, H2] Gear ratios are stored as 1/N and then MULTIPLIED into wheel rpm, so a reduction makes the motor turn slower than the wheel. At the 7th column the motor reads about 93 rpm where a 7:1 reduction gives 4575. Power goes as the square of speed here, so the error is 49x at gear 7 and 225x at gear 15 — and it is invisible because every column is wrong the same way, so the columns still rank in a sensible order. |\n| FAIL | pd-efficiency-and-phase | [ElecPropulsion!H3789:V5681] Motor power multiplies by efficiency (B6) where it should divide: losses are paid by the pack, so they RAISE electrical demand. As written, a more efficient motor draws more current. The same formula applies sqrt(3) and power factor — three-phase AC line quantities — to the DC bus voltage, double-counting the phase conversion. |\n| FAIL | pd-rpm-stat-range | [ElecPropulsion!H5683:V5684] Min/Max RPM read H2:H1895, but the RPM block ends at row 1894 — row 1895 is the first row of the Current Draw block. The RPM statistics are contaminated by an ampere value. This is the direct consequence of stacking three blocks in one sheet at fixed offsets. |\n| FAIL | pd-minmax-inconsistent | [ThermalLoad!B4,B5] Max Joule Heat multiplies by BatteryPackConfig!B1 (the fuse rating) and Min Joule Heat does not. Two adjacent cells that should be the min and max of one quantity differ by a factor of 50, and the extra factor is dimensionally wrong anyway: I^2 * A * ohm. This is the classic lone-edited-cell error, and it is only visible by reading the two formulas side by side. |\n| FAIL | pd-sum-of-power | [ThermalLoad!B6] 'Sum of Joule Heat (kW)' sums instantaneous power across samples. Adding watts gives watts, not energy — the result has no physical meaning and scales with however many rows the trace happens to have. Energy needs sum(P * dt); at the trace's 1/15 s step the true figure is a fraction of a kWh, not the thousands the cell reports. PowerDrawTrace.joule_energy_kwh() does this correctly. |\n| FAIL | pd-emf-dimensions | [EMFs!B1:B1894, E1:E1894] The EMF columns compute V_pack * Power * R_pack — volts times kilowatts times ohms. That is not a voltage, and the cached values (~32,000) are not plausible for a 504 V pack. Back-EMF is either k_e * omega for the motor or V_oc - I*R for the pack terminal; both are available from the corrected trace. Whatever this column is measuring, it is not EMF. |\n| FAIL | pd-emf-range | [EMFs!B1,E1] The EMF columns read ElecPropulsion rows 3789:5682, but the Motor Power block ends at 5681. Row 5682 is blank, which is why the last EMF value is 0. Same root cause as the RPM statistic: hand-copied row offsets into stacked blocks. |\n| FAIL | pd-tan-degrees | [BearingBlowOut!G1:G1893] TAN() is applied to a pressure angle in degrees. Excel's TAN takes radians: TAN(20) is 2.2372, the tangent of 20 radians, where tan(20 deg) is 0.3640 — a factor of 6.15. Wrap the angle in RADIANS(). |\n| FAIL | pd-pitch-diameter | [BearingBlowOut!G1:G1893,B16] Gear tangential force divides torque by the pitch DIAMETER (B16), but the moment arm is the pitch radius, so the force is half what it should be. Note this partially cancels the radians error above — two independent mistakes leaving a plausible-looking answer, which is why neither was caught. |\n| FAIL | pd-pack-resistance | [BatteryPackConfig!B11] Pack internal resistance reads 1.7920 ohm; for 120S4P it is 0.4500 ohm. The formula multiplies the TOTAL cell count by R_cell/P, which cancels to S*R_cell and discards the parallel benefit entirely — so it is high by exactly the parallel count, 4x. This value feeds every joule-heating figure and both EMF columns, so those are all high by the same factor. |\n| FAIL | pd-joule-units | [BatteryPackConfig!B19] 'joule heating max (kwh)' computes I^2*R/1000, which is kW — a power, not an energy. Sheet1 then multiplies it by 1000 and labels the result watts, so the downstream use is consistent with kW and only the label is wrong. Energy would need this integrated over time. |\n| FAIL | pd-motor-exceeds-pack | [ElecPropulsion!B2, BatteryPackConfig!B11] The motor is rated 150 kW peak. This pack cannot deliver more than 110 kW into any load, because at 0.450 ohm the maximum-power point is V_oc/2R and beyond it output falls. The motor rating is unreachable by 40 kW regardless of controller settings. |\n| WARNING | pd-gear-date-format | [H1,V1] 2 gear-ratio cells carry a date number format, so their cached values are times rather than numbers: H1 (gear 1) = 2026-01-08 00:00:00, V1 (gear 15) = 2026-01-10 00:00:00. The formulas are correct and Excel's own arithmetic is fine; the damage is at the Python boundary, where float() raises and a try/except default silently substitutes. KinematiK's _safe_float turns these into 1.0, quietly converting gears 1 and 15 into direct drive. Set the format to General. |\n| WARNING | pd-power-stat-units | [ElecPropulsion!G5687,G5688] 'Min (W)' and 'Max (kW)' label the min and max of the same block with different units. The formula divides by 1000, so both are kW. |\n| WARNING | pd-thermal-units | [ThermalLoad!E1,F1:F1893] The 'Joule Heat (kW)' column computes I^2*R, which is watts. Its values are around 3,600 — watts, not kilowatts. Combined with the 3x resistance error the true figure is roughly 1.2 kW, not the 3,600 the column implies. |\n| WARNING | pd-bearing-max-range | [BearingBlowOut!B19] Max bearing temperature reads MAX(G1:G1894), but column G is populated only to row 1893. |\n| WARNING | pd-hardcoded-resistances | [A19,A21,A23,A25,A27,A29,A31] The conduction resistances at A19, A21, A23, A25, A27, A29, A31 are typed numbers sitting directly under a label that reads 'Rcond = L/(kA)'. The geometry (A2, A4, A8, A10, A12) and the conductivities on MatCharacteristics are both right there and neither is referenced, so changing the insulation thickness moves nothing. A sheet named 'Sheet1' holding the thermal stack-up is also worth renaming before anyone else has to find it. |\n| WARNING | pd-power-ceiling | [BatteryPackConfig!B1,B11] The pack's own resistance caps electrical output at 110 kW (at I = V_oc/2R, where half the energy is burnt inside the pack). The 60 A fuse caps usable output at 25.0 kW once sag is included. Neither number appears anywhere in the workbook, and both are worth having next to the motor rating before anyone sizes a controller. |\n| WARNING | pd-motor-exceeds-fuse | [BatteryPackConfig!B1, ElecPropulsion!B2] The 60 A fuse limits usable output to 25.0 kW with sag included, against a 150 kW motor — a factor of 6.0. Either the fuse is sized for a much smaller envelope than the motor, or the motor is specified far above what the car will ever use. Both are defensible; having neither written down next to the other is not. |\n| INFO | pd-empty-dashboard | [Data Dashboard!A1] 'Data Dashboard' is empty. It is the first tab, so it is what a reviewer opens first. The corrected summary figures from PowerDrawTrace are what belong here. |\n| INFO | pd-bms-channels | 120S4P needs 120 monitored series groups, not 480 — parallel cells share a node and cannot be measured separately. At 16 channels per board that is 8 x BQ79616-Q1 boards (8 channels spare), comfortably inside the 35-board daisy-chain limit. |\n| OK | pd-reader-ok | ElecParams.from_excel tracks edits to the workbook. |",
+  "w": [
+   {
+    "check": "pd-gear-date-format",
+    "detail": {},
+    "message": "[H1,V1] 2 gear-ratio cells carry a date number format, so their cached values are times rather than numbers: H1 (gear 1) = 2026-01-08 00:00:00, V1 (gear 15) = 2026-01-10 00:00:00. The formulas are correct and Excel's own arithmetic is fine; the damage is at the Python boundary, where float() raises and a try/except default silently substitutes. KinematiK's _safe_float turns these into 1.0, quietly converting gears 1 and 15 into direct drive. Set the format to General.",
+    "severity": "warning",
+    "subsystems": [
+     "dataacq",
+     "electrics"
+    ]
+   },
+   {
+    "check": "pd-power-stat-units",
+    "detail": {},
+    "message": "[ElecPropulsion!G5687,G5688] 'Min (W)' and 'Max (kW)' label the min and max of the same block with different units. The formula divides by 1000, so both are kW.",
+    "severity": "warning",
+    "subsystems": [
+     "electrics",
+     "powertrain"
+    ]
+   },
+   {
+    "check": "pd-thermal-units",
+    "detail": {},
+    "message": "[ThermalLoad!E1,F1:F1893] The 'Joule Heat (kW)' column computes I^2*R, which is watts. Its values are around 3,600 — watts, not kilowatts. Combined with the 3x resistance error the true figure is roughly 1.2 kW, not the 3,600 the column implies.",
+    "severity": "warning",
+    "subsystems": [
+     "electrics",
+     "cooling"
+    ]
+   },
+   {
+    "check": "pd-bearing-max-range",
+    "detail": {},
+    "message": "[BearingBlowOut!B19] Max bearing temperature reads MAX(G1:G1894), but column G is populated only to row 1893.",
+    "severity": "warning",
+    "subsystems": [
+     "powertrain"
+    ]
+   },
+   {
+    "check": "pd-hardcoded-resistances",
+    "detail": {},
+    "message": "[A19,A21,A23,A25,A27,A29,A31] The conduction resistances at A19, A21, A23, A25, A27, A29, A31 are typed numbers sitting directly under a label that reads 'Rcond = L/(kA)'. The geometry (A2, A4, A8, A10, A12) and the conductivities on MatCharacteristics are both right there and neither is referenced, so changing the insulation thickness moves nothing. A sheet named 'Sheet1' holding the thermal stack-up is also worth renaming before anyone else has to find it.",
+    "severity": "warning",
+    "subsystems": [
+     "cooling",
+     "electrics"
+    ]
+   },
+   {
+    "check": "pd-power-ceiling",
+    "detail": {
+     "fuse_limited_kw": 25.02,
+     "pack_ceiling_kw": 109.52000000000001
+    },
+    "message": "[BatteryPackConfig!B1,B11] The pack's own resistance caps electrical output at 110 kW (at I = V_oc/2R, where half the energy is burnt inside the pack). The 60 A fuse caps usable output at 25.0 kW once sag is included. Neither number appears anywhere in the workbook, and both are worth having next to the motor rating before anyone sizes a controller.",
+    "severity": "warning",
+    "subsystems": [
+     "electrics",
+     "powertrain"
+    ]
+   },
+   {
+    "check": "pd-motor-exceeds-fuse",
+    "detail": {
+     "fuse_kw": 25.02,
+     "rated_kw": 150.0
+    },
+    "message": "[BatteryPackConfig!B1, ElecPropulsion!B2] The 60 A fuse limits usable output to 25.0 kW with sag included, against a 150 kW motor — a factor of 6.0. Either the fuse is sized for a much smaller envelope than the motor, or the motor is specified far above what the car will ever use. Both are defensible; having neither written down next to the other is not.",
+    "severity": "warning",
+    "subsystems": [
+     "electrics",
+     "powertrain"
+    ]
+   }
+  ]
+ },
+ "bad_nr": {
+  "a": {
+   "findings": [
+    {
+     "check": "pd-no-vehicle-model",
+     "detail": {},
+     "message": "[ElecPropulsion!H1895:V3787] Pack current is computed as V_pack * PowerFactor * RPM / 1000. That is volts times rpm — not amperes — and it makes current proportional to bus voltage, which is backwards: at a given power a higher voltage draws LESS current. More importantly there is no mass, drag, rolling resistance or acceleration anywhere in the workbook, so nothing computes tractive force. A power-draw model that never computes force cannot predict power draw, and every figure downstream inherits this — joule heating, thermal load, both EMF columns, the bearing temperatures. Use power_draw_trace(), which starts from a force balance.",
+     "severity": "fail",
+     "subsystems": [
+      "electrics",
+      "powertrain",
+      "chassis",
+      "aero"
+     ]
+    },
+    {
+     "check": "pd-gear-inverted",
+     "detail": {},
+     "message": "[ElecPropulsion!H1:V1, H2] Gear ratios are stored as 1/N and then MULTIPLIED into wheel rpm, so a reduction makes the motor turn slower than the wheel. At the 7th column the motor reads about 93 rpm where a 7:1 reduction gives 4575. Power goes as the square of speed here, so the error is 49x at gear 7 and 225x at gear 15 — and it is invisible because every column is wrong the same way, so the columns still rank in a sensible order.",
+     "severity": "fail",
+     "subsystems": [
+      "powertrain",
+      "electrics"
+     ]
+    },
+    {
+     "check": "pd-efficiency-and-phase",
+     "detail": {},
+     "message": "[ElecPropulsion!H3789:V5681] Motor power multiplies by efficiency (B6) where it should divide: losses are paid by the pack, so they RAISE electrical demand. As written, a more efficient motor draws more current. The same formula applies sqrt(3) and power factor — three-phase AC line quantities — to the DC bus voltage, double-counting the phase conversion.",
+     "severity": "fail",
+     "subsystems": [
+      "electrics",
+      "powertrain"
+     ]
+    },
+    {
+     "check": "pd-gear-date-format",
+     "detail": {},
+     "message": "[H1,V1] 2 gear-ratio cells carry a date number format, so their cached values are times rather than numbers: H1 (gear 1) = 2026-01-08 00:00:00, V1 (gear 15) = 2026-01-10 00:00:00. The formulas are correct and Excel's own arithmetic is fine; the damage is at the Python boundary, where float() raises and a try/except default silently substitutes. KinematiK's _safe_float turns these into 1.0, quietly converting gears 1 and 15 into direct drive. Set the format to General.",
+     "severity": "warning",
+     "subsystems": [
+      "dataacq",
+      "electrics"
+     ]
+    },
+    {
+     "check": "pd-rpm-stat-range",
+     "detail": {},
+     "message": "[ElecPropulsion!H5683:V5684] Min/Max RPM read H2:H1895, but the RPM block ends at row 1894 — row 1895 is the first row of the Current Draw block. The RPM statistics are contaminated by an ampere value. This is the direct consequence of stacking three blocks in one sheet at fixed offsets.",
+     "severity": "fail",
+     "subsystems": [
+      "electrics",
+      "powertrain"
+     ]
+    },
+    {
+     "check": "pd-power-stat-units",
+     "detail": {},
+     "message": "[ElecPropulsion!G5687,G5688] 'Min (W)' and 'Max (kW)' label the min and max of the same block with different units. The formula divides by 1000, so both are kW.",
+     "severity": "warning",
+     "subsystems": [
+      "electrics",
+      "powertrain"
+     ]
+    },
+    {
+     "check": "pd-minmax-inconsistent",
+     "detail": {},
+     "message": "[ThermalLoad!B4,B5] Max Joule Heat multiplies by BatteryPackConfig!B1 (the fuse rating) and Min Joule Heat does not. Two adjacent cells that should be the min and max of one quantity differ by a factor of 50, and the extra factor is dimensionally wrong anyway: I^2 * A * ohm. This is the classic lone-edited-cell error, and it is only visible by reading the two formulas side by side.",
+     "severity": "fail",
+     "subsystems": [
+      "electrics",
+      "cooling"
+     ]
+    },
+    {
+     "check": "pd-sum-of-power",
+     "detail": {},
+     "message": "[ThermalLoad!B6] 'Sum of Joule Heat (kW)' sums instantaneous power across samples. Adding watts gives watts, not energy — the result has no physical meaning and scales with however many rows the trace happens to have. Energy needs sum(P * dt); at the trace's 1/15 s step the true figure is a fraction of a kWh, not the thousands the cell reports. PowerDrawTrace.joule_energy_kwh() does this correctly.",
+     "severity": "fail",
+     "subsystems": [
+      "electrics",
+      "cooling"
+     ]
+    },
+    {
+     "check": "pd-thermal-units",
+     "detail": {},
+     "message": "[ThermalLoad!E1,F1:F1893] The 'Joule Heat (kW)' column computes I^2*R, which is watts. Its values are around 3,600 — watts, not kilowatts. Combined with the 3x resistance error the true figure is roughly 1.2 kW, not the 3,600 the column implies.",
+     "severity": "warning",
+     "subsystems": [
+      "electrics",
+      "cooling"
+     ]
+    },
+    {
+     "check": "pd-emf-dimensions",
+     "detail": {},
+     "message": "[EMFs!B1:B1894, E1:E1894] The EMF columns compute V_pack * Power * R_pack — volts times kilowatts times ohms. That is not a voltage, and the cached values (~32,000) are not plausible for a 504 V pack. Back-EMF is either k_e * omega for the motor or V_oc - I*R for the pack terminal; both are available from the corrected trace. Whatever this column is measuring, it is not EMF.",
+     "severity": "fail",
+     "subsystems": [
+      "electrics",
+      "powertrain"
+     ]
+    },
+    {
+     "check": "pd-emf-range",
+     "detail": {},
+     "message": "[EMFs!B1,E1] The EMF columns read ElecPropulsion rows 3789:5682, but the Motor Power block ends at 5681. Row 5682 is blank, which is why the last EMF value is 0. Same root cause as the RPM statistic: hand-copied row offsets into stacked blocks.",
+     "severity": "fail",
+     "subsystems": [
+      "electrics",
+      "powertrain"
+     ]
+    },
+    {
+     "check": "pd-tan-degrees",
+     "detail": {},
+     "message": "[BearingBlowOut!G1:G1893] TAN() is applied to a pressure angle in degrees. Excel's TAN takes radians: TAN(20) is 2.2372, the tangent of 20 radians, where tan(20 deg) is 0.3640 — a factor of 6.15. Wrap the angle in RADIANS().",
+     "severity": "fail",
+     "subsystems": [
+      "powertrain",
+      "suspension"
+     ]
+    },
+    {
+     "check": "pd-pitch-diameter",
+     "detail": {},
+     "message": "[BearingBlowOut!G1:G1893,B16] Gear tangential force divides torque by the pitch DIAMETER (B16), but the moment arm is the pitch radius, so the force is half what it should be. Note this partially cancels the radians error above — two independent mistakes leaving a plausible-looking answer, which is why neither was caught.",
+     "severity": "fail",
+     "subsystems": [
+      "powertrain",
+      "suspension"
+     ]
+    },
+    {
+     "check": "pd-bearing-max-range",
+     "detail": {},
+     "message": "[BearingBlowOut!B19] Max bearing temperature reads MAX(G1:G1894), but column G is populated only to row 1893.",
+     "severity": "warning",
+     "subsystems": [
+      "powertrain"
+     ]
+    },
+    {
+     "check": "pd-hardcoded-resistances",
+     "detail": {},
+     "message": "[A19,A21,A23,A25,A27,A29,A31] The conduction resistances at A19, A21, A23, A25, A27, A29, A31 are typed numbers sitting directly under a label that reads 'Rcond = L/(kA)'. The geometry (A2, A4, A8, A10, A12) and the conductivities on MatCharacteristics are both right there and neither is referenced, so changing the insulation thickness moves nothing. A sheet named 'Sheet1' holding the thermal stack-up is also worth renaming before anyone else has to find it.",
+     "severity": "warning",
+     "subsystems": [
+      "cooling",
+      "electrics"
+     ]
+    },
+    {
+     "check": "pd-empty-dashboard",
+     "detail": {},
+     "message": "[Data Dashboard!A1] 'Data Dashboard' is empty. It is the first tab, so it is what a reviewer opens first. The corrected summary figures from PowerDrawTrace are what belong here.",
+     "severity": "info",
+     "subsystems": [
+      "dataacq"
+     ]
+    },
+    {
+     "check": "pd-pack-resistance",
+     "detail": {
+      "correct": 0.44999999999999996,
+      "sheet": 1.792
+     },
+     "message": "[BatteryPackConfig!B11] Pack internal resistance reads 1.7920 ohm; for 120S4P it is 0.4500 ohm. The formula multiplies the TOTAL cell count by R_cell/P, which cancels to S*R_cell and discards the parallel benefit entirely — so it is high by exactly the parallel count, 4x. This value feeds every joule-heating figure and both EMF columns, so those are all high by the same factor.",
+     "severity": "fail",
+     "subsystems": [
+      "electrics",
+      "powertrain"
+     ]
+    },
+    {
+     "check": "pd-joule-units",
+     "detail": {},
+     "message": "[BatteryPackConfig!B19] 'joule heating max (kwh)' computes I^2*R/1000, which is kW — a power, not an energy. Sheet1 then multiplies it by 1000 and labels the result watts, so the downstream use is consistent with kW and only the label is wrong. Energy would need this integrated over time.",
+     "severity": "fail",
+     "subsystems": [
+      "electrics",
+      "cooling"
+     ]
+    },
+    {
+     "check": "pd-power-ceiling",
+     "detail": {
+      "fuse_limited_kw": 25.02,
+      "pack_ceiling_kw": 109.52000000000001
+     },
+     "message": "[BatteryPackConfig!B1,B11] The pack's own resistance caps electrical output at 110 kW (at I = V_oc/2R, where half the energy is burnt inside the pack). The 60 A fuse caps usable output at 25.0 kW once sag is included. Neither number appears anywhere in the workbook, and both are worth having next to the motor rating before anyone sizes a controller.",
+     "severity": "warning",
+     "subsystems": [
+      "electrics",
+      "powertrain"
+     ]
+    },
+    {
+     "check": "pd-bms-channels",
+     "detail": {
+      "boards": 8,
+      "channels": 120
+     },
+     "message": "120S4P needs 120 monitored series groups, not 480 — parallel cells share a node and cannot be measured separately. At 16 channels per board that is 8 x BQ79616-Q1 boards (8 channels spare), comfortably inside the 35-board daisy-chain limit.",
+     "severity": "info",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    },
+    {
+     "check": "pd-motor-exceeds-pack",
+     "detail": {
+      "ceiling_kw": 109.52000000000001,
+      "rated_kw": 150.0
+     },
+     "message": "[ElecPropulsion!B2, BatteryPackConfig!B11] The motor is rated 150 kW peak. This pack cannot deliver more than 110 kW into any load, because at 0.450 ohm the maximum-power point is V_oc/2R and beyond it output falls. The motor rating is unreachable by 40 kW regardless of controller settings.",
+     "severity": "fail",
+     "subsystems": [
+      "electrics",
+      "powertrain"
+     ]
+    },
+    {
+     "check": "pd-motor-exceeds-fuse",
+     "detail": {
+      "fuse_kw": 25.02,
+      "rated_kw": 150.0
+     },
+     "message": "[BatteryPackConfig!B1, ElecPropulsion!B2] The 60 A fuse limits usable output to 25.0 kW with sag included, against a 150 kW motor — a factor of 6.0. Either the fuse is sized for a much smaller envelope than the motor, or the motor is specified far above what the car will ever use. Both are defensible; having neither written down next to the other is not.",
+     "severity": "warning",
+     "subsystems": [
+      "electrics",
+      "powertrain"
+     ]
+    }
+   ],
+   "pack": {
+    "cell_capacity_ah": 4.5,
+    "cell_resistance_ohm": 0.015,
+    "cell_voltage_v": 3.7,
+    "cell_weight_kg": 0.07,
+    "fuse_max_a": 60.0,
+    "max_cells": 600,
+    "n_parallel": 4,
+    "n_series": 120,
+    "source": "<T>/bad.xlsx!BatteryPackConfig"
+   },
+   "path": "<T>/bad.xlsx"
+  },
+  "b": [
+   {
+    "check": "pd-no-vehicle-model",
+    "detail": {},
+    "message": "[ElecPropulsion!H1895:V3787] Pack current is computed as V_pack * PowerFactor * RPM / 1000. That is volts times rpm — not amperes — and it makes current proportional to bus voltage, which is backwards: at a given power a higher voltage draws LESS current. More importantly there is no mass, drag, rolling resistance or acceleration anywhere in the workbook, so nothing computes tractive force. A power-draw model that never computes force cannot predict power draw, and every figure downstream inherits this — joule heating, thermal load, both EMF columns, the bearing temperatures. Use power_draw_trace(), which starts from a force balance.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics",
+     "powertrain",
+     "chassis",
+     "aero"
+    ]
+   },
+   {
+    "check": "pd-gear-inverted",
+    "detail": {},
+    "message": "[ElecPropulsion!H1:V1, H2] Gear ratios are stored as 1/N and then MULTIPLIED into wheel rpm, so a reduction makes the motor turn slower than the wheel. At the 7th column the motor reads about 93 rpm where a 7:1 reduction gives 4575. Power goes as the square of speed here, so the error is 49x at gear 7 and 225x at gear 15 — and it is invisible because every column is wrong the same way, so the columns still rank in a sensible order.",
+    "severity": "fail",
+    "subsystems": [
+     "powertrain",
+     "electrics"
+    ]
+   },
+   {
+    "check": "pd-efficiency-and-phase",
+    "detail": {},
+    "message": "[ElecPropulsion!H3789:V5681] Motor power multiplies by efficiency (B6) where it should divide: losses are paid by the pack, so they RAISE electrical demand. As written, a more efficient motor draws more current. The same formula applies sqrt(3) and power factor — three-phase AC line quantities — to the DC bus voltage, double-counting the phase conversion.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics",
+     "powertrain"
+    ]
+   },
+   {
+    "check": "pd-rpm-stat-range",
+    "detail": {},
+    "message": "[ElecPropulsion!H5683:V5684] Min/Max RPM read H2:H1895, but the RPM block ends at row 1894 — row 1895 is the first row of the Current Draw block. The RPM statistics are contaminated by an ampere value. This is the direct consequence of stacking three blocks in one sheet at fixed offsets.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics",
+     "powertrain"
+    ]
+   },
+   {
+    "check": "pd-minmax-inconsistent",
+    "detail": {},
+    "message": "[ThermalLoad!B4,B5] Max Joule Heat multiplies by BatteryPackConfig!B1 (the fuse rating) and Min Joule Heat does not. Two adjacent cells that should be the min and max of one quantity differ by a factor of 50, and the extra factor is dimensionally wrong anyway: I^2 * A * ohm. This is the classic lone-edited-cell error, and it is only visible by reading the two formulas side by side.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics",
+     "cooling"
+    ]
+   },
+   {
+    "check": "pd-sum-of-power",
+    "detail": {},
+    "message": "[ThermalLoad!B6] 'Sum of Joule Heat (kW)' sums instantaneous power across samples. Adding watts gives watts, not energy — the result has no physical meaning and scales with however many rows the trace happens to have. Energy needs sum(P * dt); at the trace's 1/15 s step the true figure is a fraction of a kWh, not the thousands the cell reports. PowerDrawTrace.joule_energy_kwh() does this correctly.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics",
+     "cooling"
+    ]
+   },
+   {
+    "check": "pd-emf-dimensions",
+    "detail": {},
+    "message": "[EMFs!B1:B1894, E1:E1894] The EMF columns compute V_pack * Power * R_pack — volts times kilowatts times ohms. That is not a voltage, and the cached values (~32,000) are not plausible for a 504 V pack. Back-EMF is either k_e * omega for the motor or V_oc - I*R for the pack terminal; both are available from the corrected trace. Whatever this column is measuring, it is not EMF.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics",
+     "powertrain"
+    ]
+   },
+   {
+    "check": "pd-emf-range",
+    "detail": {},
+    "message": "[EMFs!B1,E1] The EMF columns read ElecPropulsion rows 3789:5682, but the Motor Power block ends at 5681. Row 5682 is blank, which is why the last EMF value is 0. Same root cause as the RPM statistic: hand-copied row offsets into stacked blocks.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics",
+     "powertrain"
+    ]
+   },
+   {
+    "check": "pd-tan-degrees",
+    "detail": {},
+    "message": "[BearingBlowOut!G1:G1893] TAN() is applied to a pressure angle in degrees. Excel's TAN takes radians: TAN(20) is 2.2372, the tangent of 20 radians, where tan(20 deg) is 0.3640 — a factor of 6.15. Wrap the angle in RADIANS().",
+    "severity": "fail",
+    "subsystems": [
+     "powertrain",
+     "suspension"
+    ]
+   },
+   {
+    "check": "pd-pitch-diameter",
+    "detail": {},
+    "message": "[BearingBlowOut!G1:G1893,B16] Gear tangential force divides torque by the pitch DIAMETER (B16), but the moment arm is the pitch radius, so the force is half what it should be. Note this partially cancels the radians error above — two independent mistakes leaving a plausible-looking answer, which is why neither was caught.",
+    "severity": "fail",
+    "subsystems": [
+     "powertrain",
+     "suspension"
+    ]
+   },
+   {
+    "check": "pd-pack-resistance",
+    "detail": {
+     "correct": 0.44999999999999996,
+     "sheet": 1.792
+    },
+    "message": "[BatteryPackConfig!B11] Pack internal resistance reads 1.7920 ohm; for 120S4P it is 0.4500 ohm. The formula multiplies the TOTAL cell count by R_cell/P, which cancels to S*R_cell and discards the parallel benefit entirely — so it is high by exactly the parallel count, 4x. This value feeds every joule-heating figure and both EMF columns, so those are all high by the same factor.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics",
+     "powertrain"
+    ]
+   },
+   {
+    "check": "pd-joule-units",
+    "detail": {},
+    "message": "[BatteryPackConfig!B19] 'joule heating max (kwh)' computes I^2*R/1000, which is kW — a power, not an energy. Sheet1 then multiplies it by 1000 and labels the result watts, so the downstream use is consistent with kW and only the label is wrong. Energy would need this integrated over time.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics",
+     "cooling"
+    ]
+   },
+   {
+    "check": "pd-motor-exceeds-pack",
+    "detail": {
+     "ceiling_kw": 109.52000000000001,
+     "rated_kw": 150.0
+    },
+    "message": "[ElecPropulsion!B2, BatteryPackConfig!B11] The motor is rated 150 kW peak. This pack cannot deliver more than 110 kW into any load, because at 0.450 ohm the maximum-power point is V_oc/2R and beyond it output falls. The motor rating is unreachable by 40 kW regardless of controller settings.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics",
+     "powertrain"
+    ]
+   }
+  ],
+  "md": "# FSAE_EV_Power_Draw.xlsx — audit\n\nPack read from the workbook: **120S4P**, 480 cells, 444 V nominal, 18.0 Ah, 7.99 kWh, 33.6 kg of cells.\n\n| Quantity | Workbook | Corrected |\n|---|---|---|\n| Pack resistance | 1.792 ohm | **0.4500 ohm** |\n| Joule heat at fuse current | 4.48 'kWh' | **1620 W** |\n| Power at fuse limit | 25.2 kW (no sag) | **25.0 kW** |\n| Pack power ceiling | not computed | **110 kW** |\n\n**13 blocking, 7 warnings, 22 findings total.**\n\n| Severity | Check | Finding |\n|---|---|---|\n| FAIL | pd-no-vehicle-model | [ElecPropulsion!H1895:V3787] Pack current is computed as V_pack * PowerFactor * RPM / 1000. That is volts times rpm — not amperes — and it makes current proportional to bus voltage, which is backwards: at a given power a higher voltage draws LESS current. More importantly there is no mass, drag, rolling resistance or acceleration anywhere in the workbook, so nothing computes tractive force. A power-draw model that never computes force cannot predict power draw, and every figure downstream inherits this — joule heating, thermal load, both EMF columns, the bearing temperatures. Use power_draw_trace(), which starts from a force balance. |\n| FAIL | pd-gear-inverted | [ElecPropulsion!H1:V1, H2] Gear ratios are stored as 1/N and then MULTIPLIED into wheel rpm, so a reduction makes the motor turn slower than the wheel. At the 7th column the motor reads about 93 rpm where a 7:1 reduction gives 4575. Power goes as the square of speed here, so the error is 49x at gear 7 and 225x at gear 15 — and it is invisible because every column is wrong the same way, so the columns still rank in a sensible order. |\n| FAIL | pd-efficiency-and-phase | [ElecPropulsion!H3789:V5681] Motor power multiplies by efficiency (B6) where it should divide: losses are paid by the pack, so they RAISE electrical demand. As written, a more efficient motor draws more current. The same formula applies sqrt(3) and power factor — three-phase AC line quantities — to the DC bus voltage, double-counting the phase conversion. |\n| FAIL | pd-rpm-stat-range | [ElecPropulsion!H5683:V5684] Min/Max RPM read H2:H1895, but the RPM block ends at row 1894 — row 1895 is the first row of the Current Draw block. The RPM statistics are contaminated by an ampere value. This is the direct consequence of stacking three blocks in one sheet at fixed offsets. |\n| FAIL | pd-minmax-inconsistent | [ThermalLoad!B4,B5] Max Joule Heat multiplies by BatteryPackConfig!B1 (the fuse rating) and Min Joule Heat does not. Two adjacent cells that should be the min and max of one quantity differ by a factor of 50, and the extra factor is dimensionally wrong anyway: I^2 * A * ohm. This is the classic lone-edited-cell error, and it is only visible by reading the two formulas side by side. |\n| FAIL | pd-sum-of-power | [ThermalLoad!B6] 'Sum of Joule Heat (kW)' sums instantaneous power across samples. Adding watts gives watts, not energy — the result has no physical meaning and scales with however many rows the trace happens to have. Energy needs sum(P * dt); at the trace's 1/15 s step the true figure is a fraction of a kWh, not the thousands the cell reports. PowerDrawTrace.joule_energy_kwh() does this correctly. |\n| FAIL | pd-emf-dimensions | [EMFs!B1:B1894, E1:E1894] The EMF columns compute V_pack * Power * R_pack — volts times kilowatts times ohms. That is not a voltage, and the cached values (~32,000) are not plausible for a 504 V pack. Back-EMF is either k_e * omega for the motor or V_oc - I*R for the pack terminal; both are available from the corrected trace. Whatever this column is measuring, it is not EMF. |\n| FAIL | pd-emf-range | [EMFs!B1,E1] The EMF columns read ElecPropulsion rows 3789:5682, but the Motor Power block ends at 5681. Row 5682 is blank, which is why the last EMF value is 0. Same root cause as the RPM statistic: hand-copied row offsets into stacked blocks. |\n| FAIL | pd-tan-degrees | [BearingBlowOut!G1:G1893] TAN() is applied to a pressure angle in degrees. Excel's TAN takes radians: TAN(20) is 2.2372, the tangent of 20 radians, where tan(20 deg) is 0.3640 — a factor of 6.15. Wrap the angle in RADIANS(). |\n| FAIL | pd-pitch-diameter | [BearingBlowOut!G1:G1893,B16] Gear tangential force divides torque by the pitch DIAMETER (B16), but the moment arm is the pitch radius, so the force is half what it should be. Note this partially cancels the radians error above — two independent mistakes leaving a plausible-looking answer, which is why neither was caught. |\n| FAIL | pd-pack-resistance | [BatteryPackConfig!B11] Pack internal resistance reads 1.7920 ohm; for 120S4P it is 0.4500 ohm. The formula multiplies the TOTAL cell count by R_cell/P, which cancels to S*R_cell and discards the parallel benefit entirely — so it is high by exactly the parallel count, 4x. This value feeds every joule-heating figure and both EMF columns, so those are all high by the same factor. |\n| FAIL | pd-joule-units | [BatteryPackConfig!B19] 'joule heating max (kwh)' computes I^2*R/1000, which is kW — a power, not an energy. Sheet1 then multiplies it by 1000 and labels the result watts, so the downstream use is consistent with kW and only the label is wrong. Energy would need this integrated over time. |\n| FAIL | pd-motor-exceeds-pack | [ElecPropulsion!B2, BatteryPackConfig!B11] The motor is rated 150 kW peak. This pack cannot deliver more than 110 kW into any load, because at 0.450 ohm the maximum-power point is V_oc/2R and beyond it output falls. The motor rating is unreachable by 40 kW regardless of controller settings. |\n| WARNING | pd-gear-date-format | [H1,V1] 2 gear-ratio cells carry a date number format, so their cached values are times rather than numbers: H1 (gear 1) = 2026-01-08 00:00:00, V1 (gear 15) = 2026-01-10 00:00:00. The formulas are correct and Excel's own arithmetic is fine; the damage is at the Python boundary, where float() raises and a try/except default silently substitutes. KinematiK's _safe_float turns these into 1.0, quietly converting gears 1 and 15 into direct drive. Set the format to General. |\n| WARNING | pd-power-stat-units | [ElecPropulsion!G5687,G5688] 'Min (W)' and 'Max (kW)' label the min and max of the same block with different units. The formula divides by 1000, so both are kW. |\n| WARNING | pd-thermal-units | [ThermalLoad!E1,F1:F1893] The 'Joule Heat (kW)' column computes I^2*R, which is watts. Its values are around 3,600 — watts, not kilowatts. Combined with the 3x resistance error the true figure is roughly 1.2 kW, not the 3,600 the column implies. |\n| WARNING | pd-bearing-max-range | [BearingBlowOut!B19] Max bearing temperature reads MAX(G1:G1894), but column G is populated only to row 1893. |\n| WARNING | pd-hardcoded-resistances | [A19,A21,A23,A25,A27,A29,A31] The conduction resistances at A19, A21, A23, A25, A27, A29, A31 are typed numbers sitting directly under a label that reads 'Rcond = L/(kA)'. The geometry (A2, A4, A8, A10, A12) and the conductivities on MatCharacteristics are both right there and neither is referenced, so changing the insulation thickness moves nothing. A sheet named 'Sheet1' holding the thermal stack-up is also worth renaming before anyone else has to find it. |\n| WARNING | pd-power-ceiling | [BatteryPackConfig!B1,B11] The pack's own resistance caps electrical output at 110 kW (at I = V_oc/2R, where half the energy is burnt inside the pack). The 60 A fuse caps usable output at 25.0 kW once sag is included. Neither number appears anywhere in the workbook, and both are worth having next to the motor rating before anyone sizes a controller. |\n| WARNING | pd-motor-exceeds-fuse | [BatteryPackConfig!B1, ElecPropulsion!B2] The 60 A fuse limits usable output to 25.0 kW with sag included, against a 150 kW motor — a factor of 6.0. Either the fuse is sized for a much smaller envelope than the motor, or the motor is specified far above what the car will ever use. Both are defensible; having neither written down next to the other is not. |\n| INFO | pd-empty-dashboard | [Data Dashboard!A1] 'Data Dashboard' is empty. It is the first tab, so it is what a reviewer opens first. The corrected summary figures from PowerDrawTrace are what belong here. |\n| INFO | pd-bms-channels | 120S4P needs 120 monitored series groups, not 480 — parallel cells share a node and cannot be measured separately. At 16 channels per board that is 8 x BQ79616-Q1 boards (8 channels spare), comfortably inside the 35-board daisy-chain limit. |",
+  "w": [
+   {
+    "check": "pd-gear-date-format",
+    "detail": {},
+    "message": "[H1,V1] 2 gear-ratio cells carry a date number format, so their cached values are times rather than numbers: H1 (gear 1) = 2026-01-08 00:00:00, V1 (gear 15) = 2026-01-10 00:00:00. The formulas are correct and Excel's own arithmetic is fine; the damage is at the Python boundary, where float() raises and a try/except default silently substitutes. KinematiK's _safe_float turns these into 1.0, quietly converting gears 1 and 15 into direct drive. Set the format to General.",
+    "severity": "warning",
+    "subsystems": [
+     "dataacq",
+     "electrics"
+    ]
+   },
+   {
+    "check": "pd-power-stat-units",
+    "detail": {},
+    "message": "[ElecPropulsion!G5687,G5688] 'Min (W)' and 'Max (kW)' label the min and max of the same block with different units. The formula divides by 1000, so both are kW.",
+    "severity": "warning",
+    "subsystems": [
+     "electrics",
+     "powertrain"
+    ]
+   },
+   {
+    "check": "pd-thermal-units",
+    "detail": {},
+    "message": "[ThermalLoad!E1,F1:F1893] The 'Joule Heat (kW)' column computes I^2*R, which is watts. Its values are around 3,600 — watts, not kilowatts. Combined with the 3x resistance error the true figure is roughly 1.2 kW, not the 3,600 the column implies.",
+    "severity": "warning",
+    "subsystems": [
+     "electrics",
+     "cooling"
+    ]
+   },
+   {
+    "check": "pd-bearing-max-range",
+    "detail": {},
+    "message": "[BearingBlowOut!B19] Max bearing temperature reads MAX(G1:G1894), but column G is populated only to row 1893.",
+    "severity": "warning",
+    "subsystems": [
+     "powertrain"
+    ]
+   },
+   {
+    "check": "pd-hardcoded-resistances",
+    "detail": {},
+    "message": "[A19,A21,A23,A25,A27,A29,A31] The conduction resistances at A19, A21, A23, A25, A27, A29, A31 are typed numbers sitting directly under a label that reads 'Rcond = L/(kA)'. The geometry (A2, A4, A8, A10, A12) and the conductivities on MatCharacteristics are both right there and neither is referenced, so changing the insulation thickness moves nothing. A sheet named 'Sheet1' holding the thermal stack-up is also worth renaming before anyone else has to find it.",
+    "severity": "warning",
+    "subsystems": [
+     "cooling",
+     "electrics"
+    ]
+   },
+   {
+    "check": "pd-power-ceiling",
+    "detail": {
+     "fuse_limited_kw": 25.02,
+     "pack_ceiling_kw": 109.52000000000001
+    },
+    "message": "[BatteryPackConfig!B1,B11] The pack's own resistance caps electrical output at 110 kW (at I = V_oc/2R, where half the energy is burnt inside the pack). The 60 A fuse caps usable output at 25.0 kW once sag is included. Neither number appears anywhere in the workbook, and both are worth having next to the motor rating before anyone sizes a controller.",
+    "severity": "warning",
+    "subsystems": [
+     "electrics",
+     "powertrain"
+    ]
+   },
+   {
+    "check": "pd-motor-exceeds-fuse",
+    "detail": {
+     "fuse_kw": 25.02,
+     "rated_kw": 150.0
+    },
+    "message": "[BatteryPackConfig!B1, ElecPropulsion!B2] The 60 A fuse limits usable output to 25.0 kW with sag included, against a 150 kW motor — a factor of 6.0. Either the fuse is sized for a much smaller envelope than the motor, or the motor is specified far above what the car will ever use. Both are defensible; having neither written down next to the other is not.",
+    "severity": "warning",
+    "subsystems": [
+     "electrics",
+     "powertrain"
+    ]
+   }
+  ]
+ },
+ "clean": {
+  "a": {
+   "findings": [
+    {
+     "check": "pd-power-ceiling",
+     "detail": {
+      "fuse_limited_kw": 25.02,
+      "pack_ceiling_kw": 109.52000000000001
+     },
+     "message": "[BatteryPackConfig!B1,B11] The pack's own resistance caps electrical output at 110 kW (at I = V_oc/2R, where half the energy is burnt inside the pack). The 60 A fuse caps usable output at 25.0 kW once sag is included. Neither number appears anywhere in the workbook, and both are worth having next to the motor rating before anyone sizes a controller.",
+     "severity": "warning",
+     "subsystems": [
+      "electrics",
+      "powertrain"
+     ]
+    },
+    {
+     "check": "pd-bms-channels",
+     "detail": {
+      "boards": 8,
+      "channels": 120
+     },
+     "message": "120S4P needs 120 monitored series groups, not 480 — parallel cells share a node and cannot be measured separately. At 16 channels per board that is 8 x BQ79616-Q1 boards (8 channels spare), comfortably inside the 35-board daisy-chain limit.",
+     "severity": "info",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    },
+    {
+     "check": "pd-reader-ok",
+     "detail": {},
+     "message": "ElecParams.from_excel tracks edits to the workbook.",
+     "severity": "ok",
+     "subsystems": [
+      "dataacq"
+     ]
+    }
+   ],
+   "pack": {
+    "cell_capacity_ah": 4.5,
+    "cell_resistance_ohm": 0.015,
+    "cell_voltage_v": 3.7,
+    "cell_weight_kg": 0.07,
+    "fuse_max_a": 60.0,
+    "max_cells": 600,
+    "n_parallel": 4,
+    "n_series": 120,
+    "source": "<T>/clean.xlsx!BatteryPackConfig"
+   },
+   "path": "<T>/clean.xlsx"
+  },
+  "b": [],
+  "md": "# FSAE_EV_Power_Draw.xlsx — audit\n\nPack read from the workbook: **120S4P**, 480 cells, 444 V nominal, 18.0 Ah, 7.99 kWh, 33.6 kg of cells.\n\n| Quantity | Workbook | Corrected |\n|---|---|---|\n| Pack resistance | 1.792 ohm | **0.4500 ohm** |\n| Joule heat at fuse current | 4.48 'kWh' | **1620 W** |\n| Power at fuse limit | 25.2 kW (no sag) | **25.0 kW** |\n| Pack power ceiling | not computed | **110 kW** |\n\n**0 blocking, 1 warnings, 3 findings total.**\n\n| Severity | Check | Finding |\n|---|---|---|\n| WARNING | pd-power-ceiling | [BatteryPackConfig!B1,B11] The pack's own resistance caps electrical output at 110 kW (at I = V_oc/2R, where half the energy is burnt inside the pack). The 60 A fuse caps usable output at 25.0 kW once sag is included. Neither number appears anywhere in the workbook, and both are worth having next to the motor rating before anyone sizes a controller. |\n| INFO | pd-bms-channels | 120S4P needs 120 monitored series groups, not 480 — parallel cells share a node and cannot be measured separately. At 16 channels per board that is 8 x BQ79616-Q1 boards (8 channels spare), comfortably inside the 35-board daisy-chain limit. |\n| OK | pd-reader-ok | ElecParams.from_excel tracks edits to the workbook. |",
+  "w": [
+   {
+    "check": "pd-power-ceiling",
+    "detail": {
+     "fuse_limited_kw": 25.02,
+     "pack_ceiling_kw": 109.52000000000001
+    },
+    "message": "[BatteryPackConfig!B1,B11] The pack's own resistance caps electrical output at 110 kW (at I = V_oc/2R, where half the energy is burnt inside the pack). The 60 A fuse caps usable output at 25.0 kW once sag is included. Neither number appears anywhere in the workbook, and both are worth having next to the motor rating before anyone sizes a controller.",
+    "severity": "warning",
+    "subsystems": [
+     "electrics",
+     "powertrain"
+    ]
+   }
+  ]
+ },
+ "kin_nopack": [
+  {
+   "check": "pd-reader-sheet-name",
+   "detail": {},
+   "message": "[Notes|More] ev_excel_roundtrip.extract_params_from_excel found no pack sheet in this workbook (looked by alias and by the 'Series Battery Count' / 'Fuse Max' row labels), so every pack figure it reports is a default.",
+   "severity": "fail",
+   "subsystems": [
+    "dataacq",
+    "electrics"
+   ]
+  },
+  {
+   "check": "pd-reader-ignores-file",
+   "detail": {},
+   "message": "ElecParams.from_excel returns byte-identical values from a workbook whose series and parallel counts were changed to {'B3': 100, 'B2': 4}. It is not reading this file. If its output currently looks correct, that is because its hardcoded defaults were written against this same pack — so it will keep reporting 140S3P after the team moves to anything else, and nothing will warn them.",
+   "severity": "fail",
+   "subsystems": [
+    "dataacq",
+    "electrics",
+    "powertrain"
+   ]
+  }
+ ],
+ "nopack": {
+  "a": {
+   "findings": [
+    {
+     "check": "pd-pack-unreadable",
+     "detail": {},
+     "message": "no sheet contains the pack topology labels. Note that the shipped readers look for a sheet *named* 'Battery Pack Calcs' and this file's is 'BatteryPackConfig', which is exactly why they fail silently — searching by label avoids that whole class of bug.",
+     "severity": "fail",
+     "subsystems": [
+      "dataacq",
+      "electrics"
+     ]
+    },
+    {
+     "check": "pd-reader-sheet-name",
+     "detail": {},
+     "message": "[Notes|More] ev_excel_roundtrip.extract_params_from_excel found no pack sheet in this workbook (looked by alias and by the 'Series Battery Count' / 'Fuse Max' row labels), so every pack figure it reports is a default.",
+     "severity": "fail",
+     "subsystems": [
+      "dataacq",
+      "electrics"
+     ]
+    },
+    {
+     "check": "pd-reader-ignores-file",
+     "detail": {},
+     "message": "ElecParams.from_excel returns byte-identical values from a workbook whose series and parallel counts were changed to {'B3': 100, 'B2': 4}. It is not reading this file. If its output currently looks correct, that is because its hardcoded defaults were written against this same pack — so it will keep reporting 140S3P after the team moves to anything else, and nothing will warn them.",
+     "severity": "fail",
+     "subsystems": [
+      "dataacq",
+      "electrics",
+      "powertrain"
+     ]
+    }
+   ],
+   "pack": null,
+   "path": "<T>/nopack.xlsx"
+  },
+  "b": [
+   {
+    "check": "pd-pack-unreadable",
+    "detail": {},
+    "message": "no sheet contains the pack topology labels. Note that the shipped readers look for a sheet *named* 'Battery Pack Calcs' and this file's is 'BatteryPackConfig', which is exactly why they fail silently — searching by label avoids that whole class of bug.",
+    "severity": "fail",
+    "subsystems": [
+     "dataacq",
+     "electrics"
+    ]
+   },
+   {
+    "check": "pd-reader-sheet-name",
+    "detail": {},
+    "message": "[Notes|More] ev_excel_roundtrip.extract_params_from_excel found no pack sheet in this workbook (looked by alias and by the 'Series Battery Count' / 'Fuse Max' row labels), so every pack figure it reports is a default.",
+    "severity": "fail",
+    "subsystems": [
+     "dataacq",
+     "electrics"
+    ]
+   },
+   {
+    "check": "pd-reader-ignores-file",
+    "detail": {},
+    "message": "ElecParams.from_excel returns byte-identical values from a workbook whose series and parallel counts were changed to {'B3': 100, 'B2': 4}. It is not reading this file. If its output currently looks correct, that is because its hardcoded defaults were written against this same pack — so it will keep reporting 140S3P after the team moves to anything else, and nothing will warn them.",
+    "severity": "fail",
+    "subsystems": [
+     "dataacq",
+     "electrics",
+     "powertrain"
+    ]
+   }
+  ],
+  "md": "# FSAE_EV_Power_Draw.xlsx — audit\n\n**3 blocking, 0 warnings, 3 findings total.**\n\n| Severity | Check | Finding |\n|---|---|---|\n| FAIL | pd-pack-unreadable | no sheet contains the pack topology labels. Note that the shipped readers look for a sheet *named* 'Battery Pack Calcs' and this file's is 'BatteryPackConfig', which is exactly why they fail silently — searching by label avoids that whole class of bug. |\n| FAIL | pd-reader-sheet-name | [Notes/More] ev_excel_roundtrip.extract_params_from_excel found no pack sheet in this workbook (looked by alias and by the 'Series Battery Count' / 'Fuse Max' row labels), so every pack figure it reports is a default. |\n| FAIL | pd-reader-ignores-file | ElecParams.from_excel returns byte-identical values from a workbook whose series and parallel counts were changed to {'B3': 100, 'B2': 4}. It is not reading this file. If its output currently looks correct, that is because its hardcoded defaults were written against this same pack — so it will keep reporting 140S3P after the team moves to anything else, and nothing will warn them. |",
+  "w": []
+ }
+}

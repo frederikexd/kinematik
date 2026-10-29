@@ -1,0 +1,1173 @@
+{
+ "b25": {
+  "crossover_a": 0.004705099652263459,
+  "findings": [
+   {
+    "check": "wire-withstand",
+    "detail": {
+     "area_mm2": 1.31,
+     "i2t": 26078.97848962518,
+     "k": 123.2747108147187
+    },
+    "message": "GLV feed: 1.31 mm² copper, TXL / GXL 125, k = 123 → withstand 26,079 A²s. That is 161 A for one second, or 1615 A for ten milliseconds.",
+    "severity": "info",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "coordination-crossover-low",
+    "detail": {
+     "crossover_a": 0.004705099652263459
+    },
+    "message": "The fuse clears first above 0 A, and the WIRE reaches its limit first below it. Below the crossover both times are long, so this is a thermal-overload question rather than a short-circuit one — but it means a sustained fault just under 0 A damages insulation while the fuse holds. Check that nothing in this circuit can stall at that current.",
+    "severity": "warning",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "short-circuit-energy",
+    "detail": {
+     "i2t_fuse_sc": 282.84271247461896,
+     "i2t_wire": 26078.97848962518
+    },
+    "message": "Above 40 A (4x rating) the fuse is energy-limited, so both curves fall as I^-2 and never cross again: it is one comparison of let-through 283 A²s against the wire's 26,079 A²s. The wire survives any fault current, however large.",
+    "severity": "ok",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "crossover-extrapolated",
+    "detail": {
+     "crossover_a": 0.004705099652263459
+    },
+    "message": "The 0 A crossover lies outside the 2x–4x range your anchor points cover, so it is extrapolation rather than datasheet. Read one more point near 0.0x rating to place it on real data.",
+    "severity": "warning",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "fault-cleared",
+    "detail": {
+     "ratio": 92.20311268216037
+    },
+    "message": "At 200 A the fuse clears in 7.1 ms, 92x inside the wire's 652.0 ms limit.",
+    "severity": "ok",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   }
+  ],
+  "fuse": {
+   "anchors": [
+    {
+     "current_mult": 2.0,
+     "note": "",
+     "time_s": 1.0
+    },
+    {
+     "current_mult": 4.0,
+     "note": "",
+     "time_s": 0.1767766952966369
+    }
+   ],
+   "continuous_derate": 0.75,
+   "declared_i2t": null,
+   "fuse_class": "unknown",
+   "is_estimate": false,
+   "label": "b25",
+   "part_number": "",
+   "rating_a": 10.0,
+   "source": ""
+  },
+  "margin_at": {
+   "100.0": [
+    0.028284271247461898,
+    2.607897848962518,
+    92.20311268216037
+   ],
+   "15.0": [
+    2.0528009571186687,
+    115.9065710650008,
+    56.46264469190836
+   ],
+   "20.0": [
+    0.9999999999999998,
+    65.19744622406296,
+    65.19744622406297
+   ],
+   "200.0": [
+    0.0070710678118654745,
+    0.6519744622406295,
+    92.20311268216037
+   ],
+   "30.0": [
+    0.36288736930121146,
+    28.9766427662502,
+    79.85023789075005
+   ],
+   "50.0": [
+    0.11313708498984759,
+    10.431591395850072,
+    92.20311268216037
+   ]
+  },
+  "parallel_curves": false,
+  "protected": true,
+  "wire": {
+   "area_mm2": null,
+   "awg": 16,
+   "continuous_rating_a": null,
+   "insulation": "TXL / GXL 125",
+   "label": "GLV feed",
+   "material": "copper",
+   "t_final_c": null,
+   "t_initial_c": null
+  }
+ },
+ "cooks": {
+  "crossover_a": null,
+  "findings": [
+   {
+    "check": "wire-withstand",
+    "detail": {
+     "area_mm2": 1.31,
+     "i2t": 26078.97848962518,
+     "k": 123.2747108147187
+    },
+    "message": "GLV feed: 1.31 mm² copper, TXL / GXL 125, k = 123 → withstand 26,079 A²s. That is 161 A for one second, or 1615 A for ten milliseconds.",
+    "severity": "info",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "coordination-parallel",
+    "detail": {
+     "i2t_fuse": 159999.99999999985
+    },
+    "message": "The fitted fuse curve is a pure I²t law over this range, so it never crosses the wire curve. Fuse lets through 160,000 A²s against the wire's 26,079 A²s — the wire cooks first at EVERY current, not just high ones.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   }
+  ],
+  "fuse": {
+   "anchors": [
+    {
+     "current_mult": 2.0,
+     "note": "",
+     "time_s": 400.0
+    },
+    {
+     "current_mult": 4.0,
+     "note": "",
+     "time_s": 100.0
+    }
+   ],
+   "continuous_derate": 0.75,
+   "declared_i2t": null,
+   "fuse_class": "unknown",
+   "is_estimate": false,
+   "label": "slowpar",
+   "part_number": "",
+   "rating_a": 10.0,
+   "source": ""
+  },
+  "margin_at": {
+   "100.0": [
+    16.000000000000007,
+    2.607897848962518,
+    0.1629936155601573
+   ],
+   "15.0": [
+    711.1111111111106,
+    115.9065710650008,
+    0.16299361556015748
+   ],
+   "20.0": [
+    399.9999999999999,
+    65.19744622406296,
+    0.16299361556015743
+   ],
+   "200.0": [
+    4.000000000000002,
+    0.6519744622406295,
+    0.1629936155601573
+   ],
+   "30.0": [
+    177.77777777777777,
+    28.9766427662502,
+    0.16299361556015737
+   ],
+   "50.0": [
+    64.00000000000003,
+    10.431591395850072,
+    0.1629936155601573
+   ]
+  },
+  "parallel_curves": true,
+  "protected": false,
+  "wire": {
+   "area_mm2": null,
+   "awg": 16,
+   "continuous_rating_a": null,
+   "insulation": "TXL / GXL 125",
+   "label": "GLV feed",
+   "material": "copper",
+   "t_final_c": null,
+   "t_initial_c": null
+  }
+ },
+ "fault_2_3": {
+  "crossover_a": 16.022413598050584,
+  "findings": [
+   {
+    "check": "wire-withstand",
+    "detail": {
+     "area_mm2": 1.31,
+     "i2t": 26078.97848962518,
+     "k": 123.2747108147187
+    },
+    "message": "GLV feed: 1.31 mm² copper, TXL / GXL 125, k = 123 → withstand 26,079 A²s. That is 161 A for one second, or 1615 A for ten milliseconds.",
+    "severity": "info",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "coordination-crossover-low",
+    "detail": {
+     "crossover_a": 16.022413598050584
+    },
+    "message": "The fuse clears first above 16 A, and the WIRE reaches its limit first below it. Below the crossover both times are long, so this is a thermal-overload question rather than a short-circuit one — but it means a sustained fault just under 16 A damages insulation while the fuse holds. Check that nothing in this circuit can stall at that current.",
+    "severity": "warning",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "short-circuit-energy",
+    "detail": {
+     "i2t_fuse_sc": 42.512875907655655,
+     "i2t_wire": 26078.97848962518
+    },
+    "message": "Above 150 A (10x rating) the fuse is energy-limited, so both curves fall as I^-2 and never cross again: it is one comparison of let-through 43 A²s against the wire's 26,079 A²s. The wire survives any fault current, however large.",
+    "severity": "ok",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "crossover-extrapolated",
+    "detail": {
+     "crossover_a": 16.022413598050584
+    },
+    "message": "The 16 A crossover lies outside the 2x–10x range your anchor points cover, so it is extrapolation rather than datasheet. Read one more point near 1.1x rating to place it on real data.",
+    "severity": "warning",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "fault-cleared",
+    "detail": {
+     "ratio": 2.0001602528922677
+    },
+    "message": "At 20 A the fuse clears in 31330.4 ms, 2x inside the wire's 62665.7 ms limit.",
+    "severity": "ok",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   }
+  ],
+  "fuse": {
+   "anchors": [
+    {
+     "current_mult": 2.0,
+     "note": "a",
+     "time_s": 5.0
+    },
+    {
+     "current_mult": 5.0,
+     "note": "",
+     "time_s": 0.05
+    },
+    {
+     "current_mult": 10.0,
+     "note": "",
+     "time_s": 0.002
+    }
+   ],
+   "continuous_derate": 0.75,
+   "declared_i2t": null,
+   "fuse_class": "unknown",
+   "is_estimate": true,
+   "label": "s",
+   "part_number": "ATO-15",
+   "rating_a": 15.0,
+   "source": "datasheet"
+  },
+  "margin_at": {
+   "150.0": [
+    0.0018894611514513624,
+    1.159065710650008,
+    613.4371748049375
+   ],
+   "22.5": [
+    19.441840174294853,
+    51.5140315844448,
+    2.649647930577806
+   ],
+   "30.0": [
+    4.789511338190816,
+    28.9766427662502,
+    6.0500207057022655
+   ],
+   "300.0": [
+    0.0004723652878628406,
+    0.289766427662502,
+    613.4371748049375
+   ],
+   "45.0": [
+    0.664866580807236,
+    12.8785078961112,
+    19.370063510298543
+   ],
+   "75.0": [
+    0.055251087635440836,
+    4.636262842600032,
+    83.91260771536557
+   ]
+  },
+  "parallel_curves": false,
+  "protected": true,
+  "wire": {
+   "area_mm2": null,
+   "awg": 16,
+   "continuous_rating_a": null,
+   "insulation": "TXL / GXL 125",
+   "label": "GLV feed",
+   "material": "copper",
+   "t_final_c": null,
+   "t_initial_c": null
+  }
+ },
+ "fit": {
+  "half": {
+   "a": 39.70462108111767,
+   "b": 4.145671901571866,
+   "findings": [
+    {
+     "check": "scatter-observed",
+     "detail": {
+      "dof": 12,
+      "measured": true,
+      "n_levels": 3,
+      "sigma_ln": 0.01897366596101029,
+      "source": "measured, 3 level(s), 12 dof"
+     },
+     "message": "Observed spread sigma_ln = 0.019 (12 dof across 3 level(s)), itself uncertain by ±20%. Pass this into build_test_plan(log_scatter=...) and the next test is sized on these parts instead of on an assumption.",
+     "severity": "info",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    },
+    {
+     "check": "fit-result",
+     "detail": {
+      "a": 39.70462108111767,
+      "b": 4.145671901571866
+     },
+     "message": "Measured curve: t = 39.7 x (I/I_rated)^-4.15 over 3 current levels.",
+     "severity": "info",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    },
+    {
+     "check": "out-of-family",
+     "detail": {
+      "fast": [
+       40.0
+      ],
+      "slow": [],
+      "worst_ratio": 2.0
+     },
+     "message": "Measured blow times differ from the declared curve by up to 100%, faster than the datasheet. Faster than published is safer for the wire and worse for nuisance trips; re-check inrush. Counterfeit or mislabelled blade fuses are common enough that this is the expected explanation, not an exotic one.",
+     "severity": "fail",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    }
+   ],
+   "in_family": false,
+   "per_point": {
+    "100.0": {
+     "declared": 0.013611145257082955,
+     "geo_sd": 1.0191548098015244,
+     "median": 0.013611145257082966,
+     "n": 5,
+     "ratio": 1.0000000000000007
+    },
+    "40.0": {
+     "declared": 1.179899569845651,
+     "geo_sd": 1.0191548098015244,
+     "median": 0.5899497849228255,
+     "n": 5,
+     "ratio": 0.5
+    },
+    "60.0": {
+     "declared": 0.16379036133476055,
+     "geo_sd": 1.0191548098015244,
+     "median": 0.16379036133476058,
+     "n": 5,
+     "ratio": 1.0000000000000002
+    }
+   },
+   "scatter": {
+    "dof": 12,
+    "measured": true,
+    "n_levels": 3,
+    "sigma_ln": 0.01897366596101029,
+    "source": "measured, 3 level(s), 12 dof"
+   }
+  },
+  "k2": {
+   "a": 280.1070670059029,
+   "b": 4.86995610343151,
+   "findings": [
+    {
+     "check": "scatter-observed",
+     "detail": {
+      "dof": 12,
+      "measured": true,
+      "n_levels": 3,
+      "sigma_ln": 0.018973665961010296,
+      "source": "measured, 3 level(s), 12 dof"
+     },
+     "message": "Observed spread sigma_ln = 0.019 (12 dof across 3 level(s)), itself uncertain by ±20%. Pass this into build_test_plan(log_scatter=...) and the next test is sized on these parts instead of on an assumption.",
+     "severity": "info",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    },
+    {
+     "check": "fit-result",
+     "detail": {
+      "a": 280.1070670059029,
+      "b": 4.86995610343151
+     },
+     "message": "Measured curve: t = 280 x (I/I_rated)^-4.87 over 3 current levels.",
+     "severity": "info",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    },
+    {
+     "check": "out-of-family",
+     "detail": {
+      "fast": [],
+      "slow": [
+       40.0,
+       60.0,
+       100.0
+      ],
+      "worst_ratio": 2.0
+     },
+     "message": "Measured blow times differ from the declared curve by up to 100%, SLOWER than the datasheet. A fuse slower than its published curve invalidates every coordination result computed from that curve — the wire protection you signed off does not exist. Counterfeit or mislabelled blade fuses are common enough that this is the expected explanation, not an exotic one.",
+     "severity": "fail",
+     "subsystems": [
+      "electrics",
+      "dataacq"
+     ]
+    }
+   ],
+   "in_family": false,
+   "per_point": {
+    "100.0": {
+     "declared": 0.013611145257082955,
+     "geo_sd": 1.0191548098015244,
+     "median": 0.02722229051416591,
+     "n": 5,
+     "ratio": 2.0
+    },
+    "40.0": {
+     "declared": 1.179899569845651,
+     "geo_sd": 1.0191548098015244,
+     "median": 2.359799139691302,
+     "n": 5,
+     "ratio": 2.0
+    },
+    "60.0": {
+     "declared": 0.16379036133476055,
+     "geo_sd": 1.0191548098015244,
+     "median": 0.3275807226695211,
+     "n": 5,
+     "ratio": 2.0
+    }
+   },
+   "scatter": {
+    "dof": 12,
+    "measured": true,
+    "n_levels": 3,
+    "sigma_ln": 0.018973665961010296,
+    "source": "measured, 3 level(s), 12 dof"
+   }
+  }
+ },
+ "inrush": [
+  [
+   {
+    "check": "continuous-ok",
+    "detail": {},
+    "message": "sh: 5.0 A against a derated 16.0 A limit.",
+    "severity": "ok",
+    "subsystems": [
+     "electrics"
+    ]
+   },
+   {
+    "check": "inrush-opens-fuse",
+    "detail": {
+     "inrush_a": 60.0
+    },
+    "message": "A 60 A inrush lasting 24137 ms opens this fuse, which clears that current in 9655 ms. Either a slow-blow part or a soft-start.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics"
+    ]
+   }
+  ],
+  [
+   {
+    "check": "continuous-ok",
+    "detail": {},
+    "message": "sh: 5.0 A against a derated 16.0 A limit.",
+    "severity": "ok",
+    "subsystems": [
+     "electrics"
+    ]
+   },
+   {
+    "check": "inrush-opens-fuse",
+    "detail": {
+     "inrush_a": 60.0
+    },
+    "message": "A 60 A inrush lasting 9660 ms opens this fuse, which clears that current in 9655 ms. Either a slow-blow part or a soft-start.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics"
+    ]
+   }
+  ],
+  [
+   {
+    "check": "continuous-ok",
+    "detail": {},
+    "message": "sh: 5.0 A against a derated 16.0 A limit.",
+    "severity": "ok",
+    "subsystems": [
+     "electrics"
+    ]
+   },
+   {
+    "check": "inrush-survived",
+    "detail": {},
+    "message": "Inrush 60 A for 9650 ms is inside the fuse's 9655 ms clearing time at that current.",
+    "severity": "ok",
+    "subsystems": [
+     "electrics"
+    ]
+   }
+  ]
+ ],
+ "inst": {
+  "coarse": [
+   {
+    "check": "instrument-budget",
+    "detail": {
+     "bias_s": 0.28125,
+     "floor_s": 1.650252505931542,
+     "uncertainty_s": 0.1650252505931542
+    },
+    "message": "proof-of-concept (operator keypress, millis): timer resolution 500000 us, detection latency 281.2 ms, combined uncertainty ±165.0 ms. Shortest event measurable to 10% is 1650 ms.",
+    "severity": "info",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "serial-in-timing-path",
+    "detail": {},
+    "message": "Blocking serial output sits between the start and stop marks: 30 characters at 9600 baud is 31 ms added to every reading, in one direction only. Buffer the results and print after the test, not during it.",
+    "severity": "warning",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "manual-detection",
+    "detail": {},
+    "message": "Blow detection is manual, so the 281 ms in this measurement is the operator's reaction time and not a property of the fuse. Every reading is biased long by roughly that much, and the bias is larger than most of the blow times worth measuring. Detect the current collapse on a shunt instead.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "test-point-unmeasurable",
+    "detail": {
+     "need_hz": 40.0,
+     "rel": 0.3300505011863084,
+     "time_s": 0.5
+    },
+    "message": "An expected blow time of 500.0 ms is dominated by the instrument: ±165.0 ms is 33% of it. Resolving this point to 5% needs detection at 40 Hz or faster.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   }
+  ],
+  "slow_serial": [
+   {
+    "check": "instrument-budget",
+    "detail": {
+     "bias_s": 2.75,
+     "floor_s": 0.8000052083163792,
+     "uncertainty_s": 0.08000052083163793
+    },
+    "message": "proof-of-concept (operator keypress, millis): timer resolution 1000 us, detection latency 2750.0 ms, combined uncertainty ±80.0 ms. Shortest event measurable to 10% is 800 ms.",
+    "severity": "info",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "serial-in-timing-path",
+    "detail": {},
+    "message": "Blocking serial output sits between the start and stop marks: 300 characters at 1200 baud is 2500 ms added to every reading, in one direction only. Buffer the results and print after the test, not during it.",
+    "severity": "warning",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "manual-detection",
+    "detail": {},
+    "message": "Blow detection is manual, so the 2750 ms in this measurement is the operator's reaction time and not a property of the fuse. Every reading is biased long by roughly that much, and the bias is larger than most of the blow times worth measuring. Detect the current collapse on a shunt instead.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   },
+   {
+    "check": "test-point-unmeasurable",
+    "detail": {
+     "need_hz": 40.0,
+     "rel": 0.16000104166327586,
+     "time_s": 0.5
+    },
+    "message": "An expected blow time of 500.0 ms is marginal: ±80.0 ms is 16% of it. Resolving this point to 5% needs detection at 40 Hz or faster.",
+    "severity": "warning",
+    "subsystems": [
+     "electrics",
+     "dataacq"
+    ]
+   }
+  ]
+ },
+ "plan_pct": [
+  {
+   "check": "scatter-source-assumed",
+   "detail": {
+    "dof": 0,
+    "measured": false,
+    "n_levels": 0,
+    "sigma_ln": 0.3,
+    "source": "module prior (not your fuses)"
+   },
+   "message": "Sized on an ASSUMED spread (sigma_ln = 0.30, module prior (not your fuses)), which nothing here has verified for the parts in your drawer. The count is quadratic in that assumption: if your fuses scatter half again as widely, this becomes 48 per level rather than 21. Run five at one current, pass them to refine_from_pilot(), and this stops being a guess.",
+   "severity": "missing",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "plan-size",
+   "detail": {
+    "cost": 126.0,
+    "fuses": 84,
+    "n": 21
+   },
+   "message": "4 current levels x 21 samples = 84 fuses (about 126 at 1.50 each) to pin the median blow time to ±14% at each level. 21 per level comes from the log-normal scatter of blow times, not from a round number — one fuse per level is an anecdote.",
+   "severity": "info",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  {
+   "check": "instrument-budget",
+   "detail": {
+    "bias_s": 0.00020833333333333335,
+    "floor_s": 0.0005208413332718942,
+    "uncertainty_s": 5.208413332718943e-05
+   },
+   "message": "instrumented (shunt + ADC threshold, micros): timer resolution 1 us, detection latency 0.2 ms, combined uncertainty ±0.1 ms. Shortest event measurable to 10% is 1 ms.",
+   "severity": "info",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  }
+ ],
+ "pool_dof1": {
+  "dof": 1,
+  "measured": true,
+  "n_levels": 1,
+  "sigma_ln": 0.12892080916549345,
+  "source": "measured, 1 level(s), 1 dof"
+ },
+ "pool_dof10": {
+  "dof": 10,
+  "measured": true,
+  "n_levels": 2,
+  "sigma_ln": 0.2693993318477238,
+  "source": "measured, 2 level(s), 10 dof"
+ },
+ "pool_dof12": {
+  "dof": 12,
+  "measured": true,
+  "n_levels": 2,
+  "sigma_ln": 0.2592296279363145,
+  "source": "measured, 2 level(s), 12 dof"
+ },
+ "pool_dof4": {
+  "dof": 4,
+  "measured": true,
+  "n_levels": 2,
+  "sigma_ln": 0.36000000000000004,
+  "source": "measured, 2 level(s), 4 dof"
+ },
+ "pool_sigma_half": {
+  "dof": 10,
+  "measured": true,
+  "n_levels": 2,
+  "sigma_ln": 0.44899888641287294,
+  "source": "measured, 2 level(s), 10 dof"
+ },
+ "pool_thin_then_ok": {
+  "dof": 2,
+  "measured": true,
+  "n_levels": 1,
+  "sigma_ln": 0.09119225128972978,
+  "source": "measured, 1 level(s), 2 dof"
+ },
+ "ref50_dof1": {
+  "additional": 0,
+  "finding": {
+   "check": "pilot-underpowered",
+   "detail": {
+    "dof": 1,
+    "n_point": 3,
+    "n_upper": 154352003,
+    "recommended_pilot": 9,
+    "sigma_ln": 0.12892080916549345
+   },
+   "message": "The pilot gives sigma_ln = 0.129 but only 1 degrees of freedom, so sigma is itself uncertain by ±71%. Sizing rigorously on the upper bound would demand 154352003 per level, which is not a real recommendation — it is the cost of not knowing sigma, not the cost of the scatter. Use the point estimate (3 per level) with that caveat, or spend 0 more fuses to reach a 9-sample pilot and get a bound worth acting on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  "n_point_estimate": 3,
+  "n_prior": 11,
+  "n_required": 3,
+  "n_upper_bound": 154352003,
+  "pilot_adequate": false,
+  "scatter": {
+   "dof": 1,
+   "measured": true,
+   "n_levels": 1,
+   "sigma_ln": 0.12892080916549345,
+   "source": "measured, 1 level(s), 1 dof"
+  }
+ },
+ "ref50_dof10": {
+  "additional": 0,
+  "finding": {
+   "check": "scatter-measured",
+   "detail": {
+    "additional": 0,
+    "dof": 10,
+    "n_required": 22,
+    "sigma_ln": 0.2693993318477238
+   },
+   "message": "Pilot gives sigma_ln = 0.269 (10 dof, itself uncertain by ±22%). Sizing on the 0.430 upper bound rather than the point estimate costs 13 extra fuses per level and is what stops the test being under-sized half the time. Measured scatter is close to the prior; 22 per level against 11.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  "n_point_estimate": 9,
+  "n_prior": 11,
+  "n_required": 22,
+  "n_upper_bound": 22,
+  "pilot_adequate": true,
+  "scatter": {
+   "dof": 10,
+   "measured": true,
+   "n_levels": 2,
+   "sigma_ln": 0.2693993318477238,
+   "source": "measured, 2 level(s), 10 dof"
+  }
+ },
+ "ref50_dof12": {
+  "additional": 0,
+  "finding": {
+   "check": "scatter-measured",
+   "detail": {
+    "additional": 0,
+    "dof": 12,
+    "n_required": 18,
+    "sigma_ln": 0.2592296279363145
+   },
+   "message": "Pilot gives sigma_ln = 0.259 (12 dof, itself uncertain by ±20%). Sizing on the 0.393 upper bound rather than the point estimate costs 10 extra fuses per level and is what stops the test being under-sized half the time. Measured scatter is close to the prior; 18 per level against 11.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  "n_point_estimate": 8,
+  "n_prior": 11,
+  "n_required": 18,
+  "n_upper_bound": 18,
+  "pilot_adequate": true,
+  "scatter": {
+   "dof": 12,
+   "measured": true,
+   "n_levels": 2,
+   "sigma_ln": 0.2592296279363145,
+   "source": "measured, 2 level(s), 12 dof"
+  }
+ },
+ "ref50_dof4": {
+  "additional": 0,
+  "finding": {
+   "check": "pilot-underpowered",
+   "detail": {
+    "dof": 4,
+    "n_point": 15,
+    "n_upper": 87,
+    "recommended_pilot": 9,
+    "sigma_ln": 0.36000000000000004
+   },
+   "message": "The pilot gives sigma_ln = 0.360 but only 4 degrees of freedom, so sigma is itself uncertain by ±35%. Sizing rigorously on the upper bound would demand 87 per level, which is not a real recommendation — it is the cost of not knowing sigma, not the cost of the scatter. Use the point estimate (15 per level) with that caveat, or spend 0 more fuses to reach a 9-sample pilot and get a bound worth acting on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  "n_point_estimate": 15,
+  "n_prior": 11,
+  "n_required": 15,
+  "n_upper_bound": 87,
+  "pilot_adequate": false,
+  "scatter": {
+   "dof": 4,
+   "measured": true,
+   "n_levels": 2,
+   "sigma_ln": 0.36000000000000004,
+   "source": "measured, 2 level(s), 4 dof"
+  }
+ },
+ "ref50_sigma_half": {
+  "additional": 10,
+  "finding": {
+   "check": "scatter-measured",
+   "detail": {
+    "additional": 10,
+    "dof": 10,
+    "n_required": 60,
+    "sigma_ln": 0.44899888641287294
+   },
+   "message": "Pilot gives sigma_ln = 0.449 (10 dof, itself uncertain by ±22%). Sizing on the 0.716 upper bound rather than the point estimate costs 36 extra fuses per level and is what stops the test being under-sized half the time. Your parts scatter 1.5x WIDER than the prior, so the test needs 60 per level, not 11. Sizing on the prior would have finished the session believing a median it had not actually pinned down.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  "n_point_estimate": 24,
+  "n_prior": 11,
+  "n_required": 60,
+  "n_upper_bound": 60,
+  "pilot_adequate": true,
+  "scatter": {
+   "dof": 10,
+   "measured": true,
+   "n_levels": 2,
+   "sigma_ln": 0.44899888641287294,
+   "source": "measured, 2 level(s), 10 dof"
+  }
+ },
+ "ref50_thin_then_ok": {
+  "additional": 0,
+  "finding": {
+   "check": "pilot-underpowered",
+   "detail": {
+    "dof": 2,
+    "n_point": 3,
+    "n_upper": 25,
+    "recommended_pilot": 9,
+    "sigma_ln": 0.09119225128972978
+   },
+   "message": "The pilot gives sigma_ln = 0.091 but only 2 degrees of freedom, so sigma is itself uncertain by ±50%. Sizing rigorously on the upper bound would demand 25 per level, which is not a real recommendation — it is the cost of not knowing sigma, not the cost of the scatter. Use the point estimate (3 per level) with that caveat, or spend 0 more fuses to reach a 9-sample pilot and get a bound worth acting on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  "n_point_estimate": 3,
+  "n_prior": 11,
+  "n_required": 3,
+  "n_upper_bound": 25,
+  "pilot_adequate": false,
+  "scatter": {
+   "dof": 2,
+   "measured": true,
+   "n_levels": 1,
+   "sigma_ln": 0.09119225128972978,
+   "source": "measured, 1 level(s), 2 dof"
+  }
+ },
+ "ref_dof1": {
+  "additional": 1,
+  "finding": {
+   "check": "pilot-underpowered",
+   "detail": {
+    "dof": 1,
+    "n_point": 3,
+    "n_upper": 154352003,
+    "recommended_pilot": 9,
+    "sigma_ln": 0.12892080916549345
+   },
+   "message": "The pilot gives sigma_ln = 0.129 but only 1 degrees of freedom, so sigma is itself uncertain by ±71%. Sizing rigorously on the upper bound would demand 154352003 per level, which is not a real recommendation — it is the cost of not knowing sigma, not the cost of the scatter. Use the point estimate (3 per level) with that caveat, or spend 7 more fuses to reach a 9-sample pilot and get a bound worth acting on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  "n_point_estimate": 3,
+  "n_prior": 11,
+  "n_required": 3,
+  "n_upper_bound": 154352003,
+  "pilot_adequate": false,
+  "scatter": {
+   "dof": 1,
+   "measured": true,
+   "n_levels": 1,
+   "sigma_ln": 0.12892080916549345,
+   "source": "measured, 1 level(s), 1 dof"
+  }
+ },
+ "ref_dof10": {
+  "additional": 10,
+  "finding": {
+   "check": "scatter-measured",
+   "detail": {
+    "additional": 10,
+    "dof": 10,
+    "n_required": 22,
+    "sigma_ln": 0.2693993318477238
+   },
+   "message": "Pilot gives sigma_ln = 0.269 (10 dof, itself uncertain by ±22%). Sizing on the 0.430 upper bound rather than the point estimate costs 13 extra fuses per level and is what stops the test being under-sized half the time. Measured scatter is close to the prior; 22 per level against 11.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  "n_point_estimate": 9,
+  "n_prior": 11,
+  "n_required": 22,
+  "n_upper_bound": 22,
+  "pilot_adequate": true,
+  "scatter": {
+   "dof": 10,
+   "measured": true,
+   "n_levels": 2,
+   "sigma_ln": 0.2693993318477238,
+   "source": "measured, 2 level(s), 10 dof"
+  }
+ },
+ "ref_dof12": {
+  "additional": 4,
+  "finding": {
+   "check": "scatter-measured",
+   "detail": {
+    "additional": 4,
+    "dof": 12,
+    "n_required": 18,
+    "sigma_ln": 0.2592296279363145
+   },
+   "message": "Pilot gives sigma_ln = 0.259 (12 dof, itself uncertain by ±20%). Sizing on the 0.393 upper bound rather than the point estimate costs 10 extra fuses per level and is what stops the test being under-sized half the time. Measured scatter is close to the prior; 18 per level against 11.",
+   "severity": "ok",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  "n_point_estimate": 8,
+  "n_prior": 11,
+  "n_required": 18,
+  "n_upper_bound": 18,
+  "pilot_adequate": true,
+  "scatter": {
+   "dof": 12,
+   "measured": true,
+   "n_levels": 2,
+   "sigma_ln": 0.2592296279363145,
+   "source": "measured, 2 level(s), 12 dof"
+  }
+ },
+ "ref_dof4": {
+  "additional": 9,
+  "finding": {
+   "check": "pilot-underpowered",
+   "detail": {
+    "dof": 4,
+    "n_point": 15,
+    "n_upper": 87,
+    "recommended_pilot": 9,
+    "sigma_ln": 0.36000000000000004
+   },
+   "message": "The pilot gives sigma_ln = 0.360 but only 4 degrees of freedom, so sigma is itself uncertain by ±35%. Sizing rigorously on the upper bound would demand 87 per level, which is not a real recommendation — it is the cost of not knowing sigma, not the cost of the scatter. Use the point estimate (15 per level) with that caveat, or spend 3 more fuses to reach a 9-sample pilot and get a bound worth acting on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  "n_point_estimate": 15,
+  "n_prior": 11,
+  "n_required": 15,
+  "n_upper_bound": 87,
+  "pilot_adequate": false,
+  "scatter": {
+   "dof": 4,
+   "measured": true,
+   "n_levels": 2,
+   "sigma_ln": 0.36000000000000004,
+   "source": "measured, 2 level(s), 4 dof"
+  }
+ },
+ "ref_sigma_half": {
+  "additional": 48,
+  "finding": {
+   "check": "scatter-measured",
+   "detail": {
+    "additional": 48,
+    "dof": 10,
+    "n_required": 60,
+    "sigma_ln": 0.44899888641287294
+   },
+   "message": "Pilot gives sigma_ln = 0.449 (10 dof, itself uncertain by ±22%). Sizing on the 0.716 upper bound rather than the point estimate costs 36 extra fuses per level and is what stops the test being under-sized half the time. Your parts scatter 1.5x WIDER than the prior, so the test needs 60 per level, not 11. Sizing on the prior would have finished the session believing a median it had not actually pinned down.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  "n_point_estimate": 24,
+  "n_prior": 11,
+  "n_required": 60,
+  "n_upper_bound": 60,
+  "pilot_adequate": true,
+  "scatter": {
+   "dof": 10,
+   "measured": true,
+   "n_levels": 2,
+   "sigma_ln": 0.44899888641287294,
+   "source": "measured, 2 level(s), 10 dof"
+  }
+ },
+ "ref_thin_then_ok": {
+  "additional": 0,
+  "finding": {
+   "check": "pilot-underpowered",
+   "detail": {
+    "dof": 2,
+    "n_point": 3,
+    "n_upper": 25,
+    "recommended_pilot": 9,
+    "sigma_ln": 0.09119225128972978
+   },
+   "message": "The pilot gives sigma_ln = 0.091 but only 2 degrees of freedom, so sigma is itself uncertain by ±50%. Sizing rigorously on the upper bound would demand 25 per level, which is not a real recommendation — it is the cost of not knowing sigma, not the cost of the scatter. Use the point estimate (3 per level) with that caveat, or spend 6 more fuses to reach a 9-sample pilot and get a bound worth acting on.",
+   "severity": "warning",
+   "subsystems": [
+    "electrics",
+    "dataacq"
+   ]
+  },
+  "n_point_estimate": 3,
+  "n_prior": 11,
+  "n_required": 3,
+  "n_upper_bound": 25,
+  "pilot_adequate": false,
+  "scatter": {
+   "dof": 2,
+   "measured": true,
+   "n_levels": 1,
+   "sigma_ln": 0.09119225128972978,
+   "source": "measured, 1 level(s), 2 dof"
+  }
+ },
+ "sketch_empty": "// ===========================================================================\n//  Fuse time-to-blow rig  —  generated by KinematiK suspension/fuse_test.py\n//\n//  Fuse under test : main GLV fuse (0 A)\n//  Front end       : 1 mOhm shunt, gain 50, 10-bit ADC\n//                    full scale 100 A, 0.10 A per count\n//  Trip threshold  : 0 counts ~ 0 A (current collapse)\n//  Samples/level   : 10\n//\n//  Planned levels:\n//    (no levels planned)\n//\n//  TIMING NOTES — the reason this is not the proof-of-concept sketch:\n//    * The stop mark is the current collapsing past a threshold, NOT a\n//      keypress. Operator reaction time (~250 ms) is larger than most blow\n//      times worth measuring and biases every reading in one direction.\n//    * micros(), not millis(). A 1 ms tick is 20% of a 5 ms event.\n//    * Nothing prints between the marks. Serial.println() blocks; 30 chars\n//      at 9600 baud is 31 ms silently added to the measurement.\n//    * analogRead() on an AVR takes ~104 us, so detection latency is about\n//      0.1 ms. Events faster than ~2 ms need a comparator, not this loop.\n// ===========================================================================\n\nconst uint8_t  PIN_SENSE   = A0;\nconst uint16_t TRIP_COUNTS = 0;   // current-collapse threshold\nconst uint16_t ARM_COUNTS  = 1;   // must exceed this to arm\nconst uint8_t  N_SAMPLES   = 10;\nconst uint32_t TIMEOUT_US  = 30000000UL;      // 30 s: fuse did not blow\n\nuint32_t results[N_SAMPLES];\nuint8_t  count = 0;\n\nvoid setup() {\n  Serial.begin(115200);                 // faster than 9600: prints hurt less\n  while (!Serial) { ; }\n  analogReference(DEFAULT);\n  Serial.println(F(\"Fuse rig ready. Apply current; detection is automatic.\"));\n  Serial.print(F(\"Trip threshold: \")); Serial.print(TRIP_COUNTS);\n  Serial.println(F(\" counts\"));\n}\n\n// Blocking measurement of one blow event. No I/O inside the timed region.\nbool measure_one(uint32_t *out) {\n  // --- arm: wait for current to establish -------------------------------- //\n  while (analogRead(PIN_SENSE) < ARM_COUNTS) { ; }\n  uint32_t t0 = micros();\n\n  // --- wait for the current to collapse ---------------------------------- //\n  while (analogRead(PIN_SENSE) >= TRIP_COUNTS) {\n    if (micros() - t0 > TIMEOUT_US) return false;\n  }\n  *out = micros() - t0;                 // wraps correctly on unsigned math\n  return true;\n}\n\nvoid report() {\n  // Sort a copy for the median. n is small; insertion sort is fine.\n  uint32_t s[N_SAMPLES];\n  for (uint8_t i = 0; i < count; i++) s[i] = results[i];\n  for (uint8_t i = 1; i < count; i++) {\n    uint32_t v = s[i]; int8_t j = i - 1;\n    while (j >= 0 && s[j] > v) { s[j+1] = s[j]; j--; }\n    s[j+1] = v;\n  }\n  uint32_t med = (count & 1) ? s[count/2] : (s[count/2 - 1] + s[count/2]) / 2;\n\n  Serial.println(F(\"--------------------------------\"));\n  Serial.print(F(\"n = \")); Serial.println(count);\n  for (uint8_t i = 0; i < count; i++) {\n    Serial.print(F(\"  \")); Serial.print(results[i] / 1000.0, 3);\n    Serial.println(F(\" ms\"));\n  }\n  Serial.print(F(\"min    \")); Serial.print(s[0] / 1000.0, 3);\n  Serial.println(F(\" ms\"));\n  Serial.print(F(\"median \")); Serial.print(med / 1000.0, 3);\n  Serial.println(F(\" ms\"));\n  Serial.print(F(\"max    \")); Serial.print(s[count-1] / 1000.0, 3);\n  Serial.println(F(\" ms\"));\n  Serial.print(F(\"spread \")); Serial.print((float)s[count-1] / (float)s[0], 2);\n  Serial.println(F(\"x  <-- report this, not a single reading\"));\n  Serial.println(F(\"--------------------------------\"));\n}\n\nvoid loop() {\n  if (count >= N_SAMPLES) { report(); count = 0; delay(5000); return; }\n\n  uint32_t us;\n  if (measure_one(&us)) {\n    results[count++] = us;              // print AFTER the timed region\n    Serial.print(F(\"blow \")); Serial.print(us / 1000.0, 3);\n    Serial.print(F(\" ms   (\")); Serial.print(count);\n    Serial.print(F(\"/\")); Serial.print(N_SAMPLES); Serial.println(F(\")\"));\n  } else {\n    Serial.println(F(\"TIMEOUT - fuse did not open. Raise the current.\"));\n  }\n  Serial.println(F(\"Fit the next fuse; measurement re-arms automatically.\"));\n  delay(2000);\n}\n",
+ "sketch_scale": "// ===========================================================================\n//  Fuse time-to-blow rig  —  generated by KinematiK suspension/fuse_test.py\n//\n//  Fuse under test : s (15 A, ATO-15)\n//  Front end       : 0.3 mOhm shunt, gain 7, 10-bit ADC\n//                    full scale 2381 A, 2.33 A per count\n//  Trip threshold  : 32 counts ~ 75 A (current collapse)\n//  Samples/level   : 11\n//\n//  Planned levels:\n//    2x =     30.0 A   expected 4789.5 ms\n//    3x =     45.0 A   expected 664.9 ms\n//    5x =     75.0 A   expected 55.3 ms\n//    10x =    150.0 A   expected 1.9 ms\n//\n//  TIMING NOTES — the reason this is not the proof-of-concept sketch:\n//    * The stop mark is the current collapsing past a threshold, NOT a\n//      keypress. Operator reaction time (~250 ms) is larger than most blow\n//      times worth measuring and biases every reading in one direction.\n//    * micros(), not millis(). A 1 ms tick is 20% of a 5 ms event.\n//    * Nothing prints between the marks. Serial.println() blocks; 30 chars\n//      at 9600 baud is 31 ms silently added to the measurement.\n//    * analogRead() on an AVR takes ~104 us, so detection latency is about\n//      0.1 ms. Events faster than ~2 ms need a comparator, not this loop.\n// ===========================================================================\n\nconst uint8_t  PIN_SENSE   = A0;\nconst uint16_t TRIP_COUNTS = 32;   // current-collapse threshold\nconst uint16_t ARM_COUNTS  = 16;   // must exceed this to arm\nconst uint8_t  N_SAMPLES   = 11;\nconst uint32_t TIMEOUT_US  = 30000000UL;      // 30 s: fuse did not blow\n\nuint32_t results[N_SAMPLES];\nuint8_t  count = 0;\n\nvoid setup() {\n  Serial.begin(115200);                 // faster than 9600: prints hurt less\n  while (!Serial) { ; }\n  analogReference(DEFAULT);\n  Serial.println(F(\"Fuse rig ready. Apply current; detection is automatic.\"));\n  Serial.print(F(\"Trip threshold: \")); Serial.print(TRIP_COUNTS);\n  Serial.println(F(\" counts\"));\n}\n\n// Blocking measurement of one blow event. No I/O inside the timed region.\nbool measure_one(uint32_t *out) {\n  // --- arm: wait for current to establish -------------------------------- //\n  while (analogRead(PIN_SENSE) < ARM_COUNTS) { ; }\n  uint32_t t0 = micros();\n\n  // --- wait for the current to collapse ---------------------------------- //\n  while (analogRead(PIN_SENSE) >= TRIP_COUNTS) {\n    if (micros() - t0 > TIMEOUT_US) return false;\n  }\n  *out = micros() - t0;                 // wraps correctly on unsigned math\n  return true;\n}\n\nvoid report() {\n  // Sort a copy for the median. n is small; insertion sort is fine.\n  uint32_t s[N_SAMPLES];\n  for (uint8_t i = 0; i < count; i++) s[i] = results[i];\n  for (uint8_t i = 1; i < count; i++) {\n    uint32_t v = s[i]; int8_t j = i - 1;\n    while (j >= 0 && s[j] > v) { s[j+1] = s[j]; j--; }\n    s[j+1] = v;\n  }\n  uint32_t med = (count & 1) ? s[count/2] : (s[count/2 - 1] + s[count/2]) / 2;\n\n  Serial.println(F(\"--------------------------------\"));\n  Serial.print(F(\"n = \")); Serial.println(count);\n  for (uint8_t i = 0; i < count; i++) {\n    Serial.print(F(\"  \")); Serial.print(results[i] / 1000.0, 3);\n    Serial.println(F(\" ms\"));\n  }\n  Serial.print(F(\"min    \")); Serial.print(s[0] / 1000.0, 3);\n  Serial.println(F(\" ms\"));\n  Serial.print(F(\"median \")); Serial.print(med / 1000.0, 3);\n  Serial.println(F(\" ms\"));\n  Serial.print(F(\"max    \")); Serial.print(s[count-1] / 1000.0, 3);\n  Serial.println(F(\" ms\"));\n  Serial.print(F(\"spread \")); Serial.print((float)s[count-1] / (float)s[0], 2);\n  Serial.println(F(\"x  <-- report this, not a single reading\"));\n  Serial.println(F(\"--------------------------------\"));\n}\n\nvoid loop() {\n  if (count >= N_SAMPLES) { report(); count = 0; delay(5000); return; }\n\n  uint32_t us;\n  if (measure_one(&us)) {\n    results[count++] = us;              // print AFTER the timed region\n    Serial.print(F(\"blow \")); Serial.print(us / 1000.0, 3);\n    Serial.print(F(\" ms   (\")); Serial.print(count);\n    Serial.print(F(\"/\")); Serial.print(N_SAMPLES); Serial.println(F(\")\"));\n  } else {\n    Serial.println(F(\"TIMEOUT - fuse did not open. Raise the current.\"));\n  }\n  Serial.println(F(\"Fit the next fuse; measurement re-arms automatically.\"));\n  delay(2000);\n}\n",
+ "small_i": [
+  104315.91395850072,
+  2186803399.382316,
+  300.0
+ ],
+ "wire_odd_ins": [
+  70.0,
+  160.0
+ ]
+}

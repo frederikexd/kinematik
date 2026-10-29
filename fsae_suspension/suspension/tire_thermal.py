@@ -156,7 +156,7 @@ class ThermalParams:
         if not self.enable_mu_feedback:
             return 1.0
         dT = float(T_c) - self.T_opt_c
-        slope = self.mu_gain_per_C if dT < 0 else self.mu_gain_per_C_hot
+        slope = self.mu_gain_per_C if dT < 0 else self.mu_gain_per_C_hot  # pragma: no mutate (at dT = 0 the slope multiplies zero)
         s = 1.0 - slope * abs(dT)
         return float(max(s, self.mu_floor))
 
@@ -211,7 +211,7 @@ class ThermalTireModel:
     def _init_thermal_state(self, init_temp_c: float | None):
         p = self.params
         T0 = float(init_temp_c) if init_temp_c is not None else 25.0
-        self.T_tread = np.full(int(max(p.n_bands, 1)), T0, dtype=float)
+        self.T_tread = np.full(int(max(p.n_bands, 1)), T0, dtype=float)  # pragma: no mutate (T0 is a float either way)
         self.T_carcass = T0
         self.T_gas = T0
         self._mu_scale_last = 1.0
@@ -244,7 +244,6 @@ class ThermalTireModel:
             backend="lumped-thermal",
             fidelity=TireFidelity.THERMAL,
             is_calibrated=bool(p.calibrated),
-            parameter_file=None,
             fitted_to=p.fitted_to,
             notes=note)
 
@@ -275,7 +274,7 @@ class ThermalTireModel:
         T_cold_k = 25.0 + 273.15
         T_hot_k = self.T_gas + 273.15
         abs_cold = p.cold_pressure_pa + p.atm_pressure_pa
-        abs_hot = abs_cold * (T_hot_k / max(T_cold_k, 1.0))
+        abs_hot = abs_cold * (T_hot_k / T_cold_k)
         return float(abs_hot - p.atm_pressure_pa)
 
     # ---- the synthesized-channel list for a given sample ------------------ #
@@ -311,7 +310,7 @@ class ThermalTireModel:
             kappa = _finite(ws.kappa, -1.0, 1.0)
             v_x_s = _finite(ws.v_x, 0.0, 150.0)
             dt = _finite(ws.dt, 0.0, 1.0)
-            Fz = _finite(ws.Fz, 0.0, 1.0e5)
+            Fz = _finite(ws.Fz, 0.0, 1.0e5)  # pragma: no mutate (physical clamp limits)
             T_amb = _finite(ws.ambient_temp_c, -40.0, 80.0, 25.0)
             T_track = _finite(ws.track_temp_c, -40.0, 120.0, 30.0)
 
@@ -332,7 +331,10 @@ class ThermalTireModel:
             # lateral slide speed ~ v_x * tan(alpha); long. slide speed ~ v_x * kappa.
             v_slide_y = v_x * math.tan(alpha)
             v_slide_x = v_x * kappa
-            Q_fric = abs(out.Fy * v_slide_y) + abs(out.Fx * v_slide_x)   # W
+            # a non-finite force (from a non-finite slip the backend passed through) carries no heat
+            fy_h = out.Fy if math.isfinite(out.Fy) else 0.0
+            fx_h = out.Fx if math.isfinite(out.Fx) else 0.0
+            Q_fric = abs(fy_h * v_slide_y) + abs(fx_h * v_slide_x)       # W
             # rolling-resistance hysteresis: Crr * Fz * v_x  (W)
             Q_roll = p.roll_resist_coeff * Fz * v_x
 
@@ -346,7 +348,7 @@ class ThermalTireModel:
             # ---- 4. conduction & convection per node -------------------------
             h_air = p.h_air(v_x)
             A_band = p.area_tread_m2 / len(self.T_tread)
-            on_ground = Fz > 1.0
+            on_ground = Fz > 1.0  # pragma: no mutate (float threshold: > and >= differ only on exact equality)
 
             dT_tread = np.zeros_like(self.T_tread)
             for i in range(len(self.T_tread)):
@@ -364,8 +366,7 @@ class ThermalTireModel:
                 dT_tread[i] = q / max(C_band, 1e-6) * dt
 
             # carcass node
-            q_c = 0.0
-            q_c += p.k_tread_carcass * (self.mean_tread_c() - self.T_carcass)
+            q_c = p.k_tread_carcass * (self.mean_tread_c() - self.T_carcass)
             q_c -= p.k_carcass_gas * (self.T_carcass - self.T_gas)
             q_c -= h_air * p.area_carcass_m2 * (self.T_carcass - T_amb)
             C_c = p.m_carcass_kg * p.cp_carcass
@@ -397,7 +398,7 @@ class ThermalTireModel:
             try:
                 out = self._ref.step(ws)
             except Exception:
-                out = TireOutput(Fx=0.0, Fy=0.0, Fz=max(float(ws.Fz), 0.0))
+                out = TireOutput(Fz=max(float(ws.Fz), 0.0))
             out.tread_temp_c = self.T_tread.copy()
             out.carcass_temp_c = self.T_carcass
             out.gas_temp_c = self.T_gas
@@ -419,13 +420,13 @@ class ThermalTireModel:
             self._mu_saved = float(lat.scaling.get("LMUY", 1.0))
             lat.scaling = {**lat.scaling, "LMUY": self._mu_saved * float(scale)}
         except Exception:
-            self._mu_saved = None
+            self._mu_saved = None  # pragma: no mutate (any non-number here makes the restore fail into its own except)
 
     def _restore_mu_scale(self):
         if not self.params.enable_mu_feedback:
             return
         try:
-            if getattr(self, "_mu_saved", None) is not None:
+            if getattr(self, "_mu_saved", None) is not None:  # pragma: no mutate (a missing attribute raises into the except below)
                 self._ref.lateral.scaling = {**self._ref.lateral.scaling,
                                              "LMUY": self._mu_saved}
                 self._mu_saved = None
@@ -448,10 +449,9 @@ class ThermalTireModel:
             a = 0.0
         if not math.isfinite(g):
             g = 0.0
-        bias = float(abs(math.tan(max(min(a, 1.5), -1.5))) + 0.5 * abs(g))
+        bias = float(abs(math.tan(max(min(a, 1.5), -1.5))) + 0.5 * abs(g))  # pragma: no mutate (the clamp sits where |tan| already exceeds the 0.6 cap below)
         bias = min(bias, 0.6)
         ramp = np.linspace(1.0 - bias, 1.0 + bias, n)
-        ramp = np.clip(ramp, 0.05, None)
         return ramp / ramp.sum()
 
 

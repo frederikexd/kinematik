@@ -1,0 +1,266 @@
+{
+ "asdict_list": [
+  230.0,
+  181.0
+ ],
+ "dict": [
+  10.0,
+  80.0
+ ],
+ "iface": [
+  null,
+  3,
+  4,
+  2,
+  5,
+  6,
+  null
+ ],
+ "items": [
+  2.0,
+  72.0
+ ],
+ "ledger": [
+  52.5,
+  122.5
+ ],
+ "list": [
+  230.0,
+  181.0
+ ],
+ "neg": [
+  230.0,
+  181.0
+ ],
+ "nested": [
+  5.0,
+  75.0
+ ],
+ "none": [
+  null,
+  5
+ ],
+ "noset": true,
+ "objs": [
+  230.0,
+  181.0
+ ],
+ "pub": [
+  true,
+  {
+   "brake_torque_nm": null,
+   "cg_x_mm": null,
+   "cg_y_mm": null,
+   "cg_z_mm": null,
+   "cooling_airflow_cms": null,
+   "downforce_n_at_v": null,
+   "drag_n_at_v": null,
+   "env_origin_mm": null,
+   "env_x_mm": null,
+   "env_y_mm": null,
+   "env_z_mm": null,
+   "heat_reject_w": null,
+   "is_estimate": true,
+   "mass_kg": 30.0,
+   "max_temp_c": null,
+   "mount_load_n": null,
+   "mount_points": null,
+   "mounts_on": null,
+   "name": "powertrain",
+   "notes": "",
+   "owner": "",
+   "peak_current_a": null,
+   "peak_power_kw": 44.55217887476791,
+   "peak_torque_nm": 142.85087131698668,
+   "power_draw_w": null,
+   "rationale": "",
+   "updated_by": "t",
+   "updated_on": "",
+   "voltage_v": null
+  },
+  {
+   "brake_torque_nm": null,
+   "cg_x_mm": null,
+   "cg_y_mm": null,
+   "cg_z_mm": null,
+   "cooling_airflow_cms": null,
+   "downforce_n_at_v": null,
+   "drag_n_at_v": null,
+   "env_origin_mm": null,
+   "env_x_mm": null,
+   "env_y_mm": null,
+   "env_z_mm": null,
+   "heat_reject_w": 1600.275400128952,
+   "is_estimate": true,
+   "mass_kg": null,
+   "max_temp_c": null,
+   "mount_load_n": null,
+   "mount_points": null,
+   "mounts_on": null,
+   "name": "cooling",
+   "notes": "",
+   "owner": "",
+   "peak_current_a": null,
+   "peak_power_kw": null,
+   "peak_torque_nm": null,
+   "power_draw_w": null,
+   "rationale": "",
+   "updated_by": "t",
+   "updated_on": "",
+   "voltage_v": null
+  }
+ ],
+ "pub_drive": [
+  [
+   "powertrain"
+  ],
+  {
+   "brake_torque_nm": null,
+   "cg_x_mm": null,
+   "cg_y_mm": null,
+   "cg_z_mm": null,
+   "cooling_airflow_cms": null,
+   "downforce_n_at_v": null,
+   "drag_n_at_v": null,
+   "env_origin_mm": null,
+   "env_x_mm": null,
+   "env_y_mm": null,
+   "env_z_mm": null,
+   "heat_reject_w": null,
+   "is_estimate": true,
+   "mass_kg": null,
+   "max_temp_c": null,
+   "mount_load_n": null,
+   "mount_points": null,
+   "mounts_on": null,
+   "name": "powertrain",
+   "notes": "",
+   "owner": "",
+   "peak_current_a": null,
+   "peak_power_kw": 44.55217887476791,
+   "peak_torque_nm": 142.85087131698668,
+   "power_draw_w": null,
+   "rationale": "",
+   "updated_by": "powertrain.engine",
+   "updated_on": "",
+   "voltage_v": null
+  }
+ ],
+ "pub_th": [
+  [
+   "cooling"
+  ],
+  {
+   "brake_torque_nm": null,
+   "cg_x_mm": null,
+   "cg_y_mm": null,
+   "cg_z_mm": null,
+   "cooling_airflow_cms": null,
+   "downforce_n_at_v": null,
+   "drag_n_at_v": null,
+   "env_origin_mm": null,
+   "env_x_mm": null,
+   "env_y_mm": null,
+   "env_z_mm": null,
+   "heat_reject_w": 1600.275400128952,
+   "is_estimate": true,
+   "mass_kg": null,
+   "max_temp_c": null,
+   "mount_load_n": null,
+   "mount_points": null,
+   "mounts_on": null,
+   "name": "cooling",
+   "notes": "",
+   "owner": "",
+   "peak_current_a": null,
+   "peak_power_kw": null,
+   "peak_torque_nm": null,
+   "power_draw_w": null,
+   "rationale": "",
+   "updated_by": "powertrain.engine",
+   "updated_on": "",
+   "voltage_v": null
+  }
+ ],
+ "put": [
+  {
+   "brake_torque_nm": null,
+   "cg_x_mm": null,
+   "cg_y_mm": null,
+   "cg_z_mm": null,
+   "cooling_airflow_cms": null,
+   "downforce_n_at_v": null,
+   "drag_n_at_v": null,
+   "env_origin_mm": null,
+   "env_x_mm": null,
+   "env_y_mm": null,
+   "env_z_mm": null,
+   "heat_reject_w": null,
+   "is_estimate": true,
+   "mass_kg": null,
+   "max_temp_c": null,
+   "mount_load_n": null,
+   "mount_points": null,
+   "mounts_on": null,
+   "name": "powertrain",
+   "notes": "",
+   "owner": "",
+   "peak_current_a": null,
+   "peak_power_kw": 44.55217887476791,
+   "peak_torque_nm": 142.85087131698668,
+   "power_draw_w": null,
+   "rationale": "",
+   "updated_by": "powertrain.engine",
+   "updated_on": "",
+   "voltage_v": null
+  },
+  {
+   "brake_torque_nm": null,
+   "cg_x_mm": null,
+   "cg_y_mm": null,
+   "cg_z_mm": null,
+   "cooling_airflow_cms": null,
+   "downforce_n_at_v": null,
+   "drag_n_at_v": null,
+   "env_origin_mm": null,
+   "env_x_mm": null,
+   "env_y_mm": null,
+   "env_z_mm": null,
+   "heat_reject_w": 1600.275400128952,
+   "is_estimate": true,
+   "mass_kg": null,
+   "max_temp_c": null,
+   "mount_load_n": null,
+   "mount_points": null,
+   "mounts_on": null,
+   "name": "cooling",
+   "notes": "",
+   "owner": "",
+   "peak_current_a": null,
+   "peak_power_kw": null,
+   "peak_torque_nm": null,
+   "power_draw_w": null,
+   "rationale": "",
+   "updated_by": "powertrain.engine",
+   "updated_on": "",
+   "voltage_v": null
+  }
+ ],
+ "subs": [
+  7.0,
+  77.0
+ ],
+ "tiny": [
+  230.0,
+  181.0
+ ],
+ "with": [
+  120.5,
+  150.0,
+  160.0
+ ],
+ "zero": [
+  230.0,
+  181.0
+ ]
+}

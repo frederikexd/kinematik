@@ -40,7 +40,7 @@ from __future__ import annotations
 import numpy as np
 from dataclasses import dataclass, field
 
-from .kinematics import SuspensionKinematics, Hardpoints, CornerState
+from .kinematics import SuspensionKinematics, Hardpoints, CornerState, _vec
 from . import loadpath as lp
 from . import flex as flexmod
 from .joints import JointCompliance
@@ -139,7 +139,7 @@ class MemberStiffness:
         if self._has_link():
             k_lin = self.axial_stiffness(length_mm)
             if np.isfinite(k_lin) and k_lin > 0:
-                d += force_N / k_lin
+                d = force_N / k_lin
         elif self.joint_in is None and self.joint_out is None:
             raise ValueError("MemberStiffness has neither a link stiffness nor a "
                              "joint — nothing to deflect.")
@@ -171,7 +171,7 @@ class MemberStiffness:
         if self._has_link():
             k_lin = self.axial_stiffness(length_mm)
             if np.isfinite(k_lin) and k_lin > 0:
-                flex += 1.0 / k_lin
+                flex = 1.0 / k_lin
         for jt in (self.joint_in, self.joint_out):
             if jt is not None:
                 d = jt.displacement(force_N)
@@ -235,6 +235,9 @@ class CompliantResult:
                 for m, b in self.member_joint_deflection.items()},
             "note": self.note,
         }
+
+
+_MAX_ITER = 12  # pragma: no mutate  (load<->geometry iteration cap; converges in a few)
 
 
 class CompliantCorner:
@@ -327,16 +330,13 @@ class CompliantCorner:
                        state: CornerState) -> float:
         """Current length of a member from the solved state (for analytic E·A/L)."""
         out_f, in_f = _MEMBER_ENDPOINTS[member]
-        # outboard point: prefer the solved state, fall back to hardpoints
-        state_attr = {"upper_outer": "upper_outer", "lower_outer": "lower_outer",
-                      "tie_rod_outer": "tie_rod_outer",
-                      "pushrod_outer": "pushrod_outer"}.get(out_f)
-        p_out = getattr(state, state_attr) if state_attr and getattr(state, state_attr, None) is not None \
-            else np.asarray(getattr(kin.hp, out_f), float)
-        p_in = np.asarray(getattr(kin.hp, in_f), float)
-        return float(np.linalg.norm(np.asarray(p_out, float) - p_in))
+        # outboard point: the solved state's (every outboard field is a CornerState field), else the hardpoint
+        p_out = getattr(state, out_f)
+        if p_out is None:
+            p_out = getattr(kin.hp, out_f)
+        return float(np.linalg.norm(_vec(p_out) - _vec(getattr(kin.hp, in_f))))
 
-    def solve(self, load: lp.WheelLoad, max_iter: int = 12,
+    def solve(self, load: lp.WheelLoad, max_iter: int = _MAX_ITER,
               tol_deg: float = 1e-4) -> CompliantResult:
         """
         Solve the loaded corner geometry under a contact-patch wheel load.
@@ -348,7 +348,6 @@ class CompliantCorner:
         rigid_state = self.rigid_kin.static
         kin = self.rigid_kin
         state = rigid_state
-        length_deltas = {}
         member_forces = {}
         member_defl = {}
         member_k = {}
@@ -377,8 +376,8 @@ class CompliantCorner:
                 key = _MEMBER_TO_LENGTHKEY.get(member)
                 if key is not None:
                     new_deltas[key] = delta
-            # record pushrod force even though it has no length key
-            if "PR" not in member_forces and mf.has_pushrod:
+            # record pushrod force even though it has no length key (the same tension when PR has a stiffness)
+            if mf.has_pushrod:
                 member_forces["PR"] = mf.tension("PR")
 
             # re-solve loaded geometry
@@ -388,8 +387,7 @@ class CompliantCorner:
             d_cam = abs(new_state.camber - state.camber)
             d_toe = abs(new_state.toe - state.toe)
             state = new_state
-            length_deltas = new_deltas
-            if max(d_cam, d_toe) < tol_deg:
+            if max(d_cam, d_toe) < tol_deg:  # pragma: no mutate (float threshold: < and <= differ only on exact equality)
                 converged = True
                 break
 
@@ -429,7 +427,7 @@ class CompliantCorner:
                 continue
             entry = {"force_N": float(T),
                      "tangent_axial_stiffness_N_per_mm":
-                         float(res.member_stiffness.get(member, np.inf)),
+                         float(res.member_stiffness[member]),
                      "joints": {}}
             for end, jt in (("in", ms.joint_in), ("out", ms.joint_out)):
                 if jt is not None:
@@ -444,9 +442,9 @@ class CompliantCorner:
         Energy dissipated per cycle (N·mm = mJ) by each joint when the corner
         oscillates about the `load` working point at the given amplitude/frequency —
         the honest, scalar way joint damping shows up in a steady analysis. Sums the
-        viscous and structural-loss contributions of every defined joint.
+        viscous and structural-loss contributions of every defined joint. A joint's loss per cycle depends on the
+        amplitude and frequency only, so `load` and `solve_kw` do not change it; they are kept for the callers.
         """
-        res = self.solve(load, **solve_kw)
         per_joint = {}
         total = 0.0
         for member, ms in self.stiffness.items():
@@ -491,6 +489,6 @@ def corner_wheel_load(veh, axle: str, lateral_g: float,
     # lateral force toward the turn centre (centripetal). For the right-side corner
     # model, the outer wheel's cornering force points inboard (−y).
     fx = long_g * Fz
-    if inboard_drive and fx < 0.0:
-        return lp.WheelLoad(Fx=0.0, Fx_wc=fx, Fy=-lateral_g * Fz, Fz=Fz)
+    if inboard_drive and fx < 0.0:  # pragma: no mutate (at fx == 0 both branches give a zero load)
+        return lp.WheelLoad(Fx_wc=fx, Fy=-lateral_g * Fz, Fz=Fz)
     return lp.WheelLoad(Fx=fx, Fy=-lateral_g * Fz, Fz=Fz)

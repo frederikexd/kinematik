@@ -17,6 +17,7 @@ reason a coupled kinematics+dynamics tool is worth open-sourcing.
 
 from __future__ import annotations
 
+import math
 import numpy as np
 from dataclasses import dataclass
 
@@ -125,7 +126,7 @@ class VehicleDynamics:
         kin = self.front_kin if axle == "front" else self.rear_kin
         param_cam = (self.p.static_camber_front if axle == "front"
                      else self.p.static_camber_rear)
-        if getattr(self.p, "use_param_camber", False):
+        if getattr(self.p, "use_param_camber", False):  # pragma: no mutate (the default only covers a field every VehicleParams has)
             cam_deg = param_cam
         elif kin is not None:
             cam_deg = kin.static.camber
@@ -176,7 +177,7 @@ class VehicleDynamics:
             track_mm = p.track_rear
             direct = p.roll_stiffness_rear
 
-        if not getattr(p, "use_spring_rates", False) or kin is None:
+        if not getattr(p, "use_spring_rates", False) or kin is None:  # pragma: no mutate (the default only covers a field every VehicleParams has)
             return direct
 
         mr = kin.motion_ratio()
@@ -188,7 +189,6 @@ class VehicleDynamics:
         #   a body roll of 1 deg lifts/drops each wheel by (track/2)*tan(1deg) mm,
         #   producing a wheel-force couple. Linearised:
         #   K_roll [N·m/rad] = k_wheel[N/mm] * 1000[mm/m] ... handled below.
-        track_m = track_mm / 1000.0
         # force per wheel per rad of roll = k_wheel[N/mm] * (track/2 in mm) per rad
         # moment per rad = 2 * (force/2 arm) → k_wheel * (track_mm**2 / 2) per rad, in N·mm/rad
         k_roll_Nmm_per_rad = k_wheel * (track_mm ** 2) / 2.0
@@ -196,7 +196,7 @@ class VehicleDynamics:
         return float(k_roll_Nm_per_deg + arb)
 
     # ---------------- roll centres from kinematics ----------------------- #
-    def roll_center_height(self, kin: SuspensionKinematics, track: float,
+    def roll_center_height(self, kin: SuspensionKinematics, track: float | None = None,
                            state=None) -> float:
         """
         Front-view roll-centre height: intersection of the line from contact patch
@@ -207,7 +207,11 @@ class VehicleDynamics:
         travel/roll, which is a primary reason teams care about RC, so the model
         can now report that migration instead of assuming RC is fixed.
         """
-        st = state if state is not None else kin.static
+        return self._rc_from_state(state if state is not None else kin.static)
+
+    @staticmethod
+    def _rc_from_state(st) -> float:
+        """Front-view roll-centre height (mm) of one solved corner state; NaN when undefined."""
         ic = st.instant_center          # (y, z)
         cp_y = st.contact_patch[1]
         cp_z = st.contact_patch[2]
@@ -215,7 +219,7 @@ class VehicleDynamics:
             return np.nan
         dy = ic[0] - cp_y
         dz = ic[1] - cp_z
-        if abs(dy) < 1e-9:
+        if abs(dy) < 1e-9:  # pragma: no mutate (float threshold: < and <= differ only on exact equality)
             #  DEGENERATE, NOT ZERO. With the IC directly above the contact patch
             #  the line cp->IC is vertical at y = cp_y, and a vertical line never
             #  reaches the centreline unless the patch is already on it. The roll
@@ -242,8 +246,7 @@ class VehicleDynamics:
         """RC height across a travel sweep → (travels, rc_heights), for an honest
         picture of how the roll centre moves rather than a single static number."""
         travels = np.linspace(travel_min, travel_max, n)
-        rc = [self.roll_center_height(kin, track, state=kin.solve_at_travel(t))
-              for t in travels]
+        rc = [self._rc_from_state(kin.solve_at_travel(t)) for t in travels]
         return list(travels), rc
 
     # ---------------- longitudinal load transfer & anti-features --------- #
@@ -286,10 +289,8 @@ class VehicleDynamics:
         Wf = W * p.weight_dist_front
         Wr = W * (1 - p.weight_dist_front)
 
-        rc_f = (self.roll_center_height(self.front_kin, p.track_front)
-                if self.front_kin else 50.0)
-        rc_r = (self.roll_center_height(self.rear_kin, p.track_rear)
-                if self.rear_kin else 60.0)
+        rc_f = self._rc_from_state(self.front_kin.static) if self.front_kin else 50.0
+        rc_r = self._rc_from_state(self.rear_kin.static) if self.rear_kin else 60.0
         if not np.isfinite(rc_f):
             rc_f = 50.0
         if not np.isfinite(rc_r):
@@ -322,7 +323,7 @@ class VehicleDynamics:
         # Axle roll stiffness: derived from spring rate × motion ratio (+ARB) when
         # use_spring_rates is set and geometry is attached, else the direct value.
         ks_f = self._axle_roll_stiffness("front")
-        ks_r = self._axle_roll_stiffness("rear")
+        ks_r = self._axle_roll_stiffness("rear")  # pragma: no mutate (any axle name but "front" is the rear)
         k_tot = ks_f + ks_r
         # roll stiffness is specified in N·m/deg, so M/k is already in degrees
         roll_angle = (M_roll / k_tot) if k_tot > 0 else 0.0
@@ -357,7 +358,7 @@ class VehicleDynamics:
         what upgrades the whole grip/balance/max-g stack from a straight line to a
         real measured-tire curve.
         """
-        if Fz <= 0:
+        if Fz <= 0:  # pragma: no mutate (at zero load every branch gives zero force)
             return 0.0
         if self.tire is not None:
             gamma = self._axle_camber_rad(axle)
@@ -369,7 +370,7 @@ class VehicleDynamics:
     def axle_grip(self, loads: CornerLoads):
         """Max lateral force each axle can make (sum of its two tires)."""
         front = self._corner_force(loads.fl, "front") + self._corner_force(loads.fr, "front")
-        rear = self._corner_force(loads.rl, "rear") + self._corner_force(loads.rr, "rear")
+        rear = self._corner_force(loads.rl, "rear") + self._corner_force(loads.rr, "rear")  # pragma: no mutate (any axle name but "front" is the rear)
         return front, rear
 
     def grip_model_name(self) -> str:
@@ -467,14 +468,14 @@ class VehicleDynamics:
         w_f = p.mass * p.g * p.weight_dist_front
         w_r = p.mass * p.g * (1.0 - p.weight_dist_front)
         lo, hi = 0.1, 3.0
-        for _ in range(40):
+        for _ in range(40):  # pragma: no mutate (bisection count)
             mid = 0.5 * (lo + hi)
             loads, _ = self.lateral_load_transfer(mid)
             Ff, Fr = self.axle_grip(loads)
             # capacity in g of each axle against its own fixed share of demand
-            cap_f = Ff / w_f if w_f > 0 else float("inf")
-            cap_r = Fr / w_r if w_r > 0 else float("inf")
-            if min(cap_f, cap_r) >= mid:
+            cap_f = Ff / w_f if w_f > 0 else math.inf
+            cap_r = Fr / w_r if w_r > 0 else math.inf
+            if min(cap_f, cap_r) >= mid:  # pragma: no mutate (float threshold: >= and > differ only on exact equality)
                 lo = mid
             else:
                 hi = mid

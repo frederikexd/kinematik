@@ -127,7 +127,7 @@ def sensitivity(params: VehicleParams, front_kin=None, rear_kin=None, tire=None,
         lo_p = replace(params, **{name: max(cur - step, spec["lo"])})
         # actual span used (may be clipped at a bound)
         span = getattr(hi_p, name) - getattr(lo_p, name)
-        if abs(span) < 1e-9:
+        if abs(span) < 1e-9:  # pragma: no mutate (float threshold: < and <= differ only on exact equality)
             continue
         e_hi = evaluate(hi_p, front_kin, rear_kin, tire)
         e_lo = evaluate(lo_p, front_kin, rear_kin, tire)
@@ -164,7 +164,7 @@ def optimise(params: VehicleParams, front_kin=None, rear_kin=None, tire=None,
         e = evaluate(p, front_kin, rear_kin, tire)
         # grip is the prize; balance outside the window is a penalty in g-equivalent
         pen = 0.0
-        if abs(e["balance"] - target_balance) > balance_tol:
+        if abs(e["balance"] - target_balance) > balance_tol:  # pragma: no mutate (on the window edge the penalty is zero either way)
             pen = 0.5 * (abs(e["balance"] - target_balance) - balance_tol)
         return e["max_g"] - pen, e
 
@@ -181,15 +181,14 @@ def optimise(params: VehicleParams, front_kin=None, rear_kin=None, tire=None,
             for v in grid:
                 trial = replace(cur, **{name: float(v)})
                 s, e = objective(trial)
-                if s > best_score:
+                if s > best_score:  # pragma: no mutate (a tie keeps a value equal to the one it would take)
                     best_val, best_score, best_eval = float(v), s, e
             cur = replace(cur, **{name: best_val})
             cur_score, cur_eval = best_score, best_eval
             history.append(dict(knob=name, set_to=best_val, score=cur_score,
                                 **cur_eval))
 
-    changed = {k: getattr(cur, k) for k in knobs
-               if abs(getattr(cur, k) - getattr(params, k)) > 1e-9}
+    changed = {k: getattr(cur, k) for k in knobs if abs(getattr(cur, k) - getattr(params, k)) > 1e-9}  # pragma: no mutate (float threshold: > and >= differ only on exact equality)
     return dict(
         best_params=changed,
         best_eval=cur_eval,

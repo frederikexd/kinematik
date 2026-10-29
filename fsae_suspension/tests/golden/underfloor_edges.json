@@ -1,0 +1,58 @@
+{
+ "base20": [
+  {
+   "C_L": -6.3845,
+   "attached": true,
+   "diffuser_deg": 5.6,
+   "downforce_N": 1939.6,
+   "inlet/throat": 3.74,
+   "ride_height_mm": 20.0,
+   "vs_baseline_pct": 0.0
+  },
+  {
+   "C_L": -3.694,
+   "attached": true,
+   "diffuser_deg": 5.1,
+   "downforce_N": 1122.2,
+   "inlet/throat": 2.83,
+   "ride_height_mm": 30.0,
+   "vs_baseline_pct": -42.1
+  },
+  {
+   "C_L": -2.5796,
+   "attached": true,
+   "diffuser_deg": 4.8,
+   "downforce_N": 783.7,
+   "inlet/throat": 2.37,
+   "ride_height_mm": 40.0,
+   "vs_baseline_pct": -59.6
+  },
+  {
+   "C_L": -1.986,
+   "attached": true,
+   "diffuser_deg": 4.5,
+   "downforce_N": 603.3,
+   "inlet/throat": 2.1,
+   "ride_height_mm": 50.0,
+   "vs_baseline_pct": -68.9
+  }
+ ],
+ "offset": {
+  "area_ratio": 2.5,
+  "attached": true,
+  "c_lift": -2.878721590909091,
+  "diffuser_angle_deg": 1.9041077842774214,
+  "downforce_N": 759.9825000000001,
+  "notes": "quasi-1D underfloor: throat at 25% of floor length, inlet/throat area ratio 2.50, discharge coefficient 0.75. Incompressible continuity plus Bernoulli — one-dimensional, so no spanwise variation, no edge vortices and no yaw sensitivity. Diffuser half-angle 1.9°, inside the 7° attachment limit.",
+  "throat_x_frac": 0.25
+ },
+ "two": {
+  "area_ratio": 1.0,
+  "attached": true,
+  "c_lift": -0.2902499999999998,
+  "diffuser_angle_deg": 0.7630607195491347,
+  "downforce_N": 69.65999999999995,
+  "notes": "quasi-1D underfloor: throat at 0% of floor length, inlet/throat area ratio 1.00, discharge coefficient 0.75. Incompressible continuity plus Bernoulli — one-dimensional, so no spanwise variation, no edge vortices and no yaw sensitivity. Diffuser half-angle 0.8°, inside the 7° attachment limit.",
+  "throat_x_frac": 0.0
+ }
+}

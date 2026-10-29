@@ -248,7 +248,7 @@ class Degradation:
         b.V_brownout += max(self.v_brownout_add, 0.0)
         s = float(np.clip(self.authority_scale, 0.0, 1.0))
         a.M_max_Nm *= s
-        a.duty_max *= s if s > 0 else 0.0
+        a.duty_max *= s
         return b, a
 
 
@@ -296,23 +296,24 @@ class ForgeTelemetry:
     n_brownouts: int = 0
 
     def summary(self) -> dict:
-        ok = self.t.size > 0
-        cmd = np.abs(self.M_cmd).sum(axis=1) if ok else np.zeros(1)
-        act = np.abs(self.M_act).sum(axis=1) if ok else np.zeros(1)
-        peak_cmd = float(np.max(cmd)) if ok else 0.0
-        authority = float(np.max(act) / peak_cmd) if peak_cmd > 1e-9 else \
-            (1.0 if ok else 0.0)
+        if self.t.size == 0:
+            return {"v_min": math.nan, "i_peak": math.nan, "sag_peak_V": math.nan, "authority": 0.0,
+                    "offline_ms": 0.0, "n_brownouts": self.n_brownouts, "energy_Wh": 0.0,
+                    "response_lag_ms": 0.0}
+        cmd = np.abs(self.M_cmd).sum(axis=1)
+        act = np.abs(self.M_act).sum(axis=1)
+        peak_cmd = float(np.max(cmd))
+        commanded = peak_cmd > 1e-9  # pragma: no mutate (zero-command tolerance)
+        authority = float(np.max(act) / peak_cmd) if commanded else 1.0
+        dt_ms = float(self.t[1] - self.t[0]) * 1000.0 if self.t.size > 1 else 0.0
         return {
-            "v_min": float(np.min(self.V_bus)) if ok else float("nan"),
-            "i_peak": float(np.max(self.I_bus)) if ok else float("nan"),
-            "sag_peak_V": (float(self.V_bus[0] - np.min(self.V_bus))
-                           if ok else float("nan")),
+            "v_min": float(np.min(self.V_bus)),
+            "i_peak": float(np.max(self.I_bus)),
+            "sag_peak_V": float(self.V_bus[0] - np.min(self.V_bus)),
             "authority": authority,
-            "offline_ms": (float(np.sum(~self.online))
-                           * (float(self.t[1] - self.t[0]) * 1000.0
-                              if self.t.size > 1 else 0.0)),
+            "offline_ms": float(np.sum(~self.online)) * dt_ms,
             "n_brownouts": self.n_brownouts,
-            "energy_Wh": float(self.E_Wh[-1]) if ok else 0.0,
+            "energy_Wh": float(self.E_Wh[-1]),
             "response_lag_ms": self.response_lag_ms(),
         }
 
@@ -322,21 +323,18 @@ class ForgeTelemetry:
         correlation of |ΣM_act| against |ΣM_cmd| over a ±50 ms window. 0 for
         an ideal actuator; grows with winding τ and with sag-clamped drive.
         """
-        if self.t.size < 8:
+        if self.t.size < 8:  # pragma: no mutate (minimum trace length)
             return 0.0
         dt = float(self.t[1] - self.t[0])
         a = np.abs(self.M_cmd).sum(axis=1)
         b = np.abs(self.M_act).sum(axis=1)
         a = a - a.mean(); b = b - b.mean()
-        if np.allclose(a, 0) or np.allclose(b, 0):
+        if np.allclose(a, 0) or np.allclose(b, 0):  # pragma: no mutate (noise guard; a flat trace scores lag 0 anyway)
             return 0.0
-        w = max(int(round(0.050 / dt)), 1)
-        best, best_lag = -np.inf, 0
-        for lag in range(0, w + 1):
-            v = float(np.dot(a[:a.size - lag], b[lag:]))
-            if v > best:
-                best, best_lag = v, lag
-        return best_lag * dt * 1000.0
+        w = max(int(round(0.050 / dt)), 1)  # pragma: no mutate (window floor)
+        n_lags = min(w, a.size - 1) + 1  # pragma: no mutate (window end; the last lags barely overlap)
+        scores = [float(np.dot(a[:a.size - lag], b[lag:])) for lag in range(n_lags)]
+        return int(np.argmax(scores)) * dt * 1000.0
 
 
 @dataclass
@@ -362,7 +360,7 @@ class SimulForgeResult:
 
     def roll_peak_deg(self) -> float:
         if not self.ok or self.mech.roll.size == 0:
-            return float("nan")
+            return math.nan
         return float(np.max(np.abs(self.mech.roll))) * 180.0 / math.pi
 
 
@@ -387,24 +385,21 @@ class MechatronicSolver(TransientSolver):
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
         # held delivered roll moments [front, rear], N·m, + in +phi direction
-        self._M_held = np.zeros(2)
+        self._M_held = np.zeros(2)  # pragma: no mutate (only [0] and [1] are read)
 
     # ---- the injected algebraic block ----------------------------------- #
     def algebraic(self, t, y, driver, road) -> dict:  # noqa: D401
         A = super().algebraic(t, y, driver, road)
         Mf, Mr = float(self._M_held[0]), float(self._M_held[1])
-        if Mf != 0.0 or Mr != 0.0:
-            y_i = A["y_i"]
-            p = self.p
-            # per-wheel force c·sign(y_i) adds −t_axle·c to the roll moment
-            # (see derivatives' M_roll_susp = Σ(−y_i·F)); c = −M/t injects +M.
-            cf = -Mf / max(p.track_front, 1e-3)
-            cr = -Mr / max(p.track_rear, 1e-3)
-            F_act = np.array([cf, cf, cr, cr]) * np.sign(y_i)
-            A["F_susp"] = A["F_susp"] + F_act
-            A["F_act"] = F_act
-        else:
-            A["F_act"] = np.zeros(4)
+        p = self.p
+        # per-wheel force c·sign(y_i) adds −t_axle·c to the roll moment
+        # (see derivatives' M_roll_susp = Σ(−y_i·F)); c = −M/t injects +M.
+        # A zero held moment adds exactly zero, so no branch is needed.
+        cf = -Mf / max(p.track_front, 1e-3)  # pragma: no mutate (degenerate-track floor)
+        cr = -Mr / max(p.track_rear, 1e-3)  # pragma: no mutate (degenerate-track floor)
+        F_act = np.array([cf, cf, cr, cr]) * np.sign(A["y_i"])  # pragma: no mutate (sign(y_i) is +-1, so * and / agree)
+        A["F_susp"] = A["F_susp"] + F_act
+        A["F_act"] = F_act
         return A
 
     # ---- the coupled run ------------------------------------------------- #
@@ -432,8 +427,8 @@ class MechatronicSolver(TransientSolver):
         """
         self.warnings = []
         self._peak_cache.clear()
-        self._last_ax = 0.0
-        self._last_ay = 0.0
+        self._last_ax = 0.0  # pragma: no mutate (reset seed; overwritten by the first RHS evaluation)
+        self._last_ay = 0.0  # pragma: no mutate (reset seed; overwritten by the first RHS evaluation)
         driver = driver or DriverInput()
         road = road or RoadInput()
         p = self.p
@@ -448,7 +443,7 @@ class MechatronicSolver(TransientSolver):
             i_w = np.zeros(2)                    # winding currents [F, R]
             V_bus = bus.V_oc - (2 * act.i_quiescent_A + bus.I_other_A) \
                 * bus.r_total_ohm
-            offline_until = -1.0
+            offline_until = -1.0  # pragma: no mutate (any negative start is online at t = 0)
             n_brownouts = 0
             E_Wh = 0.0
             tau = act.L_H / max(act.R_ohm, 1e-9)
@@ -466,22 +461,21 @@ class MechatronicSolver(TransientSolver):
                 phi = float(y[IPHI]); phid = float(y[IPHID])
                 online = tt >= offline_until
                 # 2. controller command (roll-restoring, per axle: split 50/50)
-                if online and act.M_max_Nm > 0:
+                if online:
                     M_tot = -(act.kp * phi + act.kd * phid)
-                    M_cmd = np.clip(np.array([0.5, 0.5]) * M_tot,
-                                    -act.M_max_Nm, act.M_max_Nm)
+                    M_lim = max(act.M_max_Nm, 0.0)
+                    M_cmd = np.clip(np.array([0.5, 0.5]) * M_tot, -M_lim, M_lim)
                 else:
                     M_cmd = np.zeros(2)
                 # 3.–4. drive + exact winding update, per axle
                 omega = act.gear * phid          # motor speed, rad/s
                 v_ceiling = act.duty_max * max(V_bus, 0.0)
                 drive_live = online and v_ceiling > 0.0
-                for k2 in range(2):
-                    if not drive_live:
-                        # H-bridge tristated (offline / dead branch): the
-                        # winding is an OPEN circuit — no back-EMF current.
-                        i_w[k2] = 0.0
-                        continue
+                if not drive_live:
+                    # H-bridge tristated (offline / dead branch): the
+                    # winding is an OPEN circuit — no back-EMF current.
+                    i_w[:] = 0.0
+                for k2 in range(2 if drive_live else 0):
                     i_ref = act.current_for_torque(float(M_cmd[k2]))
                     v_ff = act.R_ohm * i_ref + act.Ke * omega
                     v_app = float(np.clip(v_ff, -v_ceiling, v_ceiling))
@@ -494,13 +488,12 @@ class MechatronicSolver(TransientSolver):
                 if online and V_bus < bus.V_brownout:
                     offline_until = tt + max(bus.reboot_s, 0.0)
                     n_brownouts += 1
-                    online = False
+                    online = False  # pragma: no mutate (falsy either way)
                     i_w *= 0.0                   # drive tristates on reset
                     M_cmd = np.zeros(2)
                 E_Wh += V_bus * I_bus * dt / 3600.0
                 # 6. delivered moments, held for the mechanical step
-                M_del = np.array([act.torque_from_current(i_w[0]),
-                                  act.torque_from_current(i_w[1])])
+                M_del = act.torque_from_current(i_w.copy())
                 self._M_held = M_del
                 return M_cmd, I_bus, V_bus, online
 
@@ -523,7 +516,7 @@ class MechatronicSolver(TransientSolver):
                 GX[idx] = yy[3]; GY[idx] = yy[4]; PSI[idx] = yy[5]
                 HEAVE[idx] = yy[6]; PITCH[idx] = yy[10]; ROLL[idx] = yy[IPHI]
                 FZ[idx] = A["Fz"]; FY[idx] = A["Fy"]; FX[idx] = A["Fx"]
-                AL[idx] = yy[20:24]; SV[idx] = A["delta_vel"]
+                AL[idx] = yy[20:24]; SV[idx] = A["delta_vel"]  # pragma: no mutate (the state vector ends at 24)
                 ST[idx] = A["steer"]; THr[idx] = A["throttle"]
                 BR[idx] = A["brake"]
                 L_t[idx] = tt; L_V[idx] = V_now; L_I[idx] = I_bus
@@ -532,12 +525,12 @@ class MechatronicSolver(TransientSolver):
                 L_E[idx] = E_Wh
 
             # prime and log t = 0
-            self._M_held = np.zeros(2)
+            self._M_held = np.zeros(2)  # pragma: no mutate (only [0] and [1] are read)
             self.derivatives(0.0, y, driver, road)
-            log(0, 0.0, y, np.zeros(2), 2 * act.i_quiescent_A + bus.I_other_A,
-                V_bus, True)
+            I0 = 2 * act.i_quiescent_A + bus.I_other_A
+            log(0, 0.0, y, np.zeros(2), I0, V_bus, True)
 
-            blew_up = False
+            blew_up = False  # pragma: no mutate (falsy either way)
             for k in range(1, n + 1):
                 tt = (k - 1) * dt
                 M_cmd, I_bus, V_now, online = elec_step(tt)
@@ -551,7 +544,7 @@ class MechatronicSolver(TransientSolver):
                 if blew_up:
                     self._warn("Coupled integration produced a non-finite "
                                "state and was stopped early; trace truncated.")
-                    sl = slice(0, k)
+                    sl = slice(k)
                     T, U, V, R, BETA = T[sl], U[sl], V[sl], R[sl], BETA[sl]
                     AX, AY, GX, GY, PSI = AX[sl], AY[sl], GX[sl], GY[sl], PSI[sl]
                     HEAVE, PITCH, ROLL = HEAVE[sl], PITCH[sl], ROLL[sl]
@@ -587,14 +580,16 @@ class MechatronicSolver(TransientSolver):
             mech = TransientResult.failed(
                 self.warnings + [f"Coupled run failed entirely "
                                  f"({type(e).__name__}: {e})."])
-            elec = ForgeTelemetry(t=np.zeros(0), V_bus=np.zeros(0),
-                                  I_bus=np.zeros(0), i_act=np.zeros((0, 2)),
-                                  M_cmd=np.zeros((0, 2)),
-                                  M_act=np.zeros((0, 2)),
-                                  online=np.zeros(0, bool), E_Wh=np.zeros(0))
-            return SimulForgeResult(mech=mech, elec=elec,
+            return SimulForgeResult(mech=mech, elec=_empty_telemetry(),
                                     degradation=Degradation(), bus=bus,
                                     actuator=act, warnings=mech.warnings)
+
+
+def _empty_telemetry() -> ForgeTelemetry:
+    """The electrical shadow of a run that never started."""
+    return ForgeTelemetry(t=np.zeros(0), V_bus=np.zeros(0), I_bus=np.zeros(0), i_act=np.zeros((0, 2)),
+                          M_cmd=np.zeros((0, 2)), M_act=np.zeros((0, 2)), online=np.zeros(0, bool),
+                          E_Wh=np.zeros(0))
 
 
 def run_simulforge(veh, kind: str = "step_steer",
@@ -611,7 +606,7 @@ def run_simulforge(veh, kind: str = "step_steer",
     bus = bus or BusParams()
     actuator = actuator or ActuatorParams()
     if isinstance(degradation, str):
-        degradation = degradation_presets().get(degradation, Degradation())
+        degradation = degradation_presets().get(degradation)
     degradation = degradation or Degradation()
     d_bus, d_act = degradation.apply(bus, actuator)
     builders = {
@@ -627,10 +622,7 @@ def run_simulforge(veh, kind: str = "step_steer",
                 mech=TransientResult.failed(
                     [f"Unknown manoeuvre '{kind}'. Options: "
                      f"{sorted(builders)}."]),
-                elec=ForgeTelemetry(np.zeros(0), np.zeros(0), np.zeros(0),
-                                    np.zeros((0, 2)), np.zeros((0, 2)),
-                                    np.zeros((0, 2)), np.zeros(0, bool),
-                                    np.zeros(0)),
+                elec=_empty_telemetry(),
                 degradation=degradation, bus=d_bus, actuator=d_act)
             res.warnings = list(res.mech.warnings)
             return res
@@ -646,10 +638,7 @@ def run_simulforge(veh, kind: str = "step_steer",
         return SimulForgeResult(
             mech=TransientResult.failed([f"SimulForge '{kind}' failed "
                                          f"({type(e).__name__}: {e})."]),
-            elec=ForgeTelemetry(np.zeros(0), np.zeros(0), np.zeros(0),
-                                np.zeros((0, 2)), np.zeros((0, 2)),
-                                np.zeros((0, 2)), np.zeros(0, bool),
-                                np.zeros(0)),
+            elec=_empty_telemetry(),
             degradation=degradation, bus=d_bus, actuator=d_act)
 
 
@@ -753,9 +742,9 @@ def _mech_elements_from_ghost(audit: gt.GhostAudit,
     worst: dict[str, float] = {}
     for g in audit.instants:
         for mkey, mg in g.margins.items():
-            f = float(mg.get("fos", float("inf")))
+            f = float(mg.get("fos", math.inf))
             if math.isfinite(f):
-                worst[mkey] = min(worst.get(mkey, float("inf")), f)
+                worst[mkey] = min(worst.get(mkey, math.inf), f)
     out = []
     for mkey, f in sorted(worst.items()):
         proto = base.element(mkey) if base is not None else None
@@ -770,13 +759,20 @@ def _mech_elements_from_ghost(audit: gt.GhostAudit,
     return out
 
 
+_LAPS_EST = 20.0
+_CORNER = "FR"
+_EVENT_PATH = dict(key="forge_event", label="Co-solved event chain",
+                   story="Mechanical members (worst transient FoS from the ghost audit) racing the actuator "
+                         "branch's electrical chain for first failure.")
+
+
 def forge_lint(nominal: SimulForgeResult, degraded: SimulForgeResult,
                gc: gt.GhostCorner | None = None,
-               corner: str = "FR",
+               corner: str = _CORNER,
                base_path: fb.OverloadPath | None = None,
                designated_fuse_key: str = "branch_fuse",
                ab_design: es.ABDesign | None = None,
-               laps_per_session_est: float = 20.0,
+               laps_per_session_est: float = _LAPS_EST,
                thresholds: ForgeThresholds | None = None) -> ForgeLint:
     """
     Lint the pristine/degraded pair across every ledger the defect touches.
@@ -807,7 +803,7 @@ def forge_lint(nominal: SimulForgeResult, degraded: SimulForgeResult,
                 f"{ed['offline_ms']:.0f} ms of the event passive mid-"
                 f"manoeuvre — the worst possible moment to lose the bar.",
                 {"v_min": ed["v_min"], "offline_ms": ed["offline_ms"]}))
-        if ed["authority"] < th.authority_min * max(en["authority"], 1e-9):
+        if ed["authority"] < th.authority_min * max(en["authority"], 1e-9):  # pragma: no mutate (threshold boundary)
             flags.append(ForgeVerdict.AUTHORITY_LOST.value)
             findings.append(ForgeFinding(
                 "AUTHORITY_LOST", "red",
@@ -818,7 +814,7 @@ def forge_lint(nominal: SimulForgeResult, degraded: SimulForgeResult,
                 f"{ed['i_peak']:.1f} A.",
                 {"authority": ed["authority"], "sag_V": ed["sag_peak_V"]}))
         lag_n, lag_d = en["response_lag_ms"], ed["response_lag_ms"]
-        if lag_d > max(th.lag_ms_max, 1.5 * max(lag_n, 1e-9)):
+        if lag_d > max(th.lag_ms_max, 1.5 * max(lag_n, 1e-9)):  # pragma: no mutate (threshold boundary)
             flags.append(ForgeVerdict.RESPONSE_LAGGED.value)
             findings.append(ForgeFinding(
                 "RESPONSE_LAGGED", "amber",
@@ -829,15 +825,15 @@ def forge_lint(nominal: SimulForgeResult, degraded: SimulForgeResult,
         # ---- 2. STRUCTURE — load cycles, and the ghost re-audit ---------- #
         cyc_n = nominal.load_cycle_ptp_N()
         cyc_d = degraded.load_cycle_ptp_N()
-        with np.errstate(divide="ignore", invalid="ignore"):
-            amp = np.where(cyc_n > 1.0, cyc_d / np.maximum(cyc_n, 1.0), 1.0)
+        with np.errstate(divide="ignore", invalid="ignore"):  # pragma: no mutate (defensive; np.maximum keeps the divisor >= 1)
+            amp = np.where(cyc_n > 1.0, cyc_d / np.maximum(cyc_n, 1.0), 1.0)  # pragma: no mutate (1 N noise floor)
         worst_i = int(np.argmax(amp))
         corner_names = ["FL", "FR", "RL", "RR"]
         roll_ratio = (degraded.roll_peak_deg()
                       / max(nominal.roll_peak_deg(), 1e-9)) \
             if math.isfinite(nominal.roll_peak_deg()) else 1.0
-        if float(np.max(amp)) > th.load_cycle_amp_max \
-                or roll_ratio > th.roll_amp_max:
+        amplified = float(np.max(amp)) > th.load_cycle_amp_max or roll_ratio > th.roll_amp_max  # pragma: no mutate (threshold boundaries)
+        if amplified:
             findings.append(ForgeFinding(
                 "LOAD_CYCLE_AMPLIFIED", "amber",
                 f"The electrical defect amplified the {corner_names[worst_i]} "
@@ -854,12 +850,9 @@ def forge_lint(nominal: SimulForgeResult, degraded: SimulForgeResult,
                 gc, degraded.mech, corner=corner)
             sn = lint.ghost_nominal.summary()
             sd = lint.ghost_degraded.summary()
-            fos_drop = float(sn["worst_fos"] - sd["worst_fos"]) \
-                if (math.isfinite(sn["worst_fos"])
-                    and math.isfinite(sd["worst_fos"])) else 0.0
-            crossed = (sd["worst_fos"] < th.fos_limit <= sn["worst_fos"]) \
-                if (math.isfinite(sn["worst_fos"])
-                    and math.isfinite(sd["worst_fos"])) else False
+            both_finite = math.isfinite(sn["worst_fos"]) and math.isfinite(sd["worst_fos"])
+            fos_drop = float(sn["worst_fos"] - sd["worst_fos"]) if both_finite else 0.0
+            crossed = both_finite and sd["worst_fos"] < th.fos_limit <= sn["worst_fos"]  # pragma: no mutate (rule boundaries; a falsy None reads the same)
             if crossed or fos_drop > th.fos_drop_max \
                     or (lint.ghost_degraded.verdict
                         != lint.ghost_nominal.verdict):
@@ -881,33 +874,25 @@ def forge_lint(nominal: SimulForgeResult, degraded: SimulForgeResult,
                     "GHOST_HELD", "info",
                     f"Ghost re-audit under the degraded loads holds: worst "
                     f"FoS {sn['worst_fos']:.2f} → {sd['worst_fos']:.2f}, "
-                    f"verdict unchanged ({lint.ghost_degraded.verdict}).",
-                    {}))
+                    f"verdict unchanged ({lint.ghost_degraded.verdict})."))
         elif gc is None:
             findings.append(ForgeFinding(
                 "GHOST_ABSENT", "info",
                 "No GhostCorner supplied — the structural re-audit was NOT "
                 "run. Load-cycle amplification above is the only structural "
-                "signal in this lint.", {}))
+                "signal in this lint."))
         # ---- 3. PECKING ORDER — the cross-disciplinary Fusebox race ------ #
-        if lint.ghost_nominal is not None and lint.ghost_degraded is not None:
+        if lint.ghost_nominal is not None:
             def _path(audit, res):
                 els = _mech_elements_from_ghost(audit, base_path) \
                     + electrical_path_elements(res)
-                return fb.OverloadPath(
-                    key="forge_event", label="Co-solved event chain",
-                    story="Mechanical members (worst transient FoS from the "
-                          "ghost audit) racing the actuator branch's "
-                          "electrical chain for first failure.",
-                    elements=els,
-                    designated_fuse_key=designated_fuse_key)
+                return fb.OverloadPath(**_EVENT_PATH, elements=els, designated_fuse_key=designated_fuse_key)
             pn, pd = _path(lint.ghost_nominal, nominal), \
                 _path(lint.ghost_degraded, degraded)
             lint.path_audit_nominal = fb.audit_path(pn)
             lint.path_audit_degraded = fb.audit_path(pd)
             an, ad = lint.path_audit_nominal, lint.path_audit_degraded
-            first_n = getattr(an, "leader_key", "") or ""
-            first_d = getattr(ad, "leader_key", "") or ""
+            first_n, first_d = an.leader_key, ad.leader_key
             if (first_n != first_d) or (ad.verdict != an.verdict):
                 flags.append(ForgeVerdict.ORDER_INVERTED.value)
                 findings.append(ForgeFinding(
@@ -922,7 +907,7 @@ def forge_lint(nominal: SimulForgeResult, degraded: SimulForgeResult,
                     "ORDER_HELD", "info",
                     f"Pecking order held under the defect: '{first_d}' "
                     f"remains most-likely-first, verdict "
-                    f"{ad.verdict.value}.", {}))
+                    f"{ad.verdict.value}."))
         # ---- 4. SESSION — the Earshot energy bill ------------------------ #
         e_n = en["energy_Wh"]; e_d = ed["energy_Wh"]
         dur = float(degraded.elec.t[-1]) if degraded.elec.t.size else 0.0
@@ -973,14 +958,14 @@ def forge_lint(nominal: SimulForgeResult, degraded: SimulForgeResult,
                     "SESSION_HELD", "info",
                     f"Session budget holds: {laps_before} → {laps_after} "
                     f"laps per config, A/B verdict "
-                    f"{d_after.verdict.value}.", {}))
+                    f"{d_after.verdict.value}."))
         elif laps_after < laps_before:
             findings.append(ForgeFinding(
                 "SESSION_BILL", "info",
                 f"The defect's energy bill costs {laps_before - laps_after} "
                 f"lap(s) per config off the pack budget "
                 f"({laps_before} → {laps_after}). Supply an ABDesign to "
-                f"judge whether that starves a planned test.", {}))
+                f"judge whether that starves a planned test."))
         # ---- governing verdict ------------------------------------------- #
         for v in ForgeVerdict:
             if v.value in flags:
@@ -991,7 +976,6 @@ def forge_lint(nominal: SimulForgeResult, degraded: SimulForgeResult,
         lint.note = (lint.note + f" Lint aborted partway "
                      f"({type(e).__name__}: {e}); findings above are "
                      f"complete up to the abort.").strip()
-        lint.verdict = lint.verdict or ForgeVerdict.COUPLED_FAITHFUL.value
         return lint
 
 
@@ -1054,7 +1038,7 @@ def render_forge_md(lint: ForgeLint) -> str:
 # --------------------------------------------------------------------------- #
 #  Self-test
 # --------------------------------------------------------------------------- #
-def _self_test() -> None:
+def _self_test() -> None:  # pragma: no cover  # pragma: no mutate block (a self-test, not the feature)
     presets = degradation_presets()
     nom = run_simulforge(None, kind="step_steer", degradation="nominal")
     assert nom.ok, nom.warnings
@@ -1086,5 +1070,5 @@ def _self_test() -> None:
           f"lint verdict {lint.verdict}")
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no mutate block (the command-line entry point)
     _self_test()

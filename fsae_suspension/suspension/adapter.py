@@ -44,6 +44,7 @@ precision while also being correct for struts, multilinks and beams.
 from __future__ import annotations
 
 import numpy as np
+from ._num import vec as _vec
 from .kinematics import CornerState
 from .topology import Mechanism, _unit
 
@@ -88,9 +89,9 @@ class GenericKinematics:
         lo = pos.get("lo", pos.get("hub", pos.get("axL", np.full(3, np.nan))))
         tro = pos.get("tro", pos.get("sa", np.full(3, np.nan)))
         return CornerState(
-            travel=travel, upper_outer=np.asarray(uo, float),
-            lower_outer=np.asarray(lo, float),
-            tie_rod_outer=np.asarray(tro, float),
+            travel=travel, upper_outer=_vec(uo),
+            lower_outer=_vec(lo),
+            tie_rod_outer=_vec(tro),
             wheel_center=wc, contact_patch=cp, camber=camber, toe=toe,
             caster=caster, kpi=kpi, scrub_radius=scrub,
             instant_center=ic, roll_center_height=np.nan,
@@ -159,7 +160,7 @@ class GenericKinematics:
             pd = r_dn["positions"][name_or_pos]
         else:
             pu, pd = name_or_pos
-        return (np.asarray(pu, float) - np.asarray(pd, float)) / (2 * d)
+        return (_vec(pu) - _vec(pd)) / (2 * d)
 
     @staticmethod
     def _ic_from_velocity(p1, v1, p2, v2):
@@ -170,8 +171,8 @@ class GenericKinematics:
         for in-plane coords (a, b). Two points give four equations in three
         unknowns (a_ic, b_ic, ω); we solve the linear least-squares system.
         Returns (a_ic, b_ic) or NaNs if degenerate (pure translation)."""
-        p1 = np.asarray(p1, float); p2 = np.asarray(p2, float)
-        v1 = np.asarray(v1, float); v2 = np.asarray(v2, float)
+        p1 = _vec(p1); p2 = _vec(p2)
+        v1 = _vec(v1); v2 = _vec(v2)
         # unknowns x = [a_ic, b_ic, w]
         #   eqn rows:  -w*0 ... rearranged to linear form:
         #   v_a + w*b - w*b_ic = 0  -> (w as unknown makes it bilinear); instead

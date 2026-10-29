@@ -171,12 +171,13 @@ ignore = [
 "**/__init__.py" = ["F401"]
 
 [tool.mutmut]
-# Mutation testing of the core solvers (.github/workflows/mutation.yml). mutmut changes the code on purpose (a flipped
-# sign, a swapped operator, an off-by-one) and checks that the tests below fail; a mutant that survives is a change
-# no test notices. Only the kinematics and the statics are mutated, against the suites that are meant to pin them.
-source_paths = ["suspension/"]
+# Mutation testing (.github/workflows/mutation.yml). mutmut changes the code on purpose (a flipped sign, a swapped
+# operator, an off-by-one) and checks that the tests below fail; a mutant that survives is a change no test notices.
+# The files and tests below are the "core" group; scripts/mutation_gate.py --group NAME points them at any group in
+# mutation_targets.toml, which lists every physics module held to the per-file floor.
+source_paths = ["suspension/", "powertrain/"]
 only_mutate = ["suspension/kinematics.py", "suspension/loadpath.py"]
-also_copy = ["manifests/", "scripts/", "powertrain/", "ui/", "benchmarks/", "coordinate_frames.py"]
+also_copy = ["manifests/", "data/", "scripts/", "ui/", "benchmarks/", "coordinate_frames.py"]
 pytest_add_cli_args_test_selection = [
     "tests/test_kinematics.py",
     "tests/test_load_case_physics.py",

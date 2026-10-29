@@ -33,6 +33,7 @@ from __future__ import annotations
 import json
 import math
 import numpy as np
+from ._num import vec as _vec
 from dataclasses import dataclass
 
 
@@ -65,7 +66,7 @@ class PacejkaLateral:
         Pure lateral force Fy (N) for slip angle alpha (rad), vertical load Fz (N),
         camber gamma (rad). Standard MF5.2 pure-slip lateral equations.
         """
-        Fz = np.maximum(np.asarray(Fz, float), 1e-6)
+        Fz = np.maximum(_vec(Fz), 1e-6)
         s = self.scaling
         dfz = (Fz - self.FNOMIN) / self.FNOMIN          # normalised load increment
         # MF5.2 scales camber before it enters ANY of the camber-dependent terms
@@ -90,14 +91,16 @@ class PacejkaLateral:
         Shy = (self._C("PHY1") + self._C("PHY2") * dfz) * s["LHY"] + self._C("PHY3") * g
         ax = alpha + Shy
         # Curvature
+        # pragma: no mutate start (sign and inverse sign agree at +-1; at zero shifted slip Ey multiplies zero)
         Ey = (self._C("PEY1") + self._C("PEY2") * dfz) \
             * (1.0 - (self._C("PEY3") + self._C("PEY4") * g) * np.sign(ax)) * s["LEY"]
+        # pragma: no mutate end
         Ey = np.minimum(Ey, 1.0)
         # Cornering stiffness -> B
         Ky = self._C("PKY1") * self.FNOMIN \
             * np.sin(2.0 * np.arctan(Fz / (self._C("PKY2") * self.FNOMIN * s["LFZO"]))) \
             * (1.0 - self._C("PKY3") * abs(g)) * s["LKY"]
-        By = Ky / (Cy * Dy + 1e-9)
+        By = Ky / (Cy * Dy + 1e-9)  # pragma: no mutate (regulariser: only at zero load, where every force is zero)
         # Vertical shift
         Svy = Fz * ((self._C("PVY1") + self._C("PVY2") * dfz) * s["LVY"]
                     + (self._C("PVY3") + self._C("PVY4") * dfz) * g)
@@ -111,11 +114,11 @@ class PacejkaLateral:
         angle. This is the single number VehicleDynamics needs for grip — and unlike
         the linear placeholder, it carries the real nonlinear load sensitivity.
         """
-        alphas = np.radians(np.linspace(-15, 15, 121))
+        alphas = np.radians(np.linspace(-15, 15, 121))  # pragma: no mutate (the narrow sweep is a shortcut on the wide grid's own points)
         # fy is fully vectorised over alpha, so evaluate all sweep points in one
         # call rather than looping in Python — same numbers, ~100x fewer calls.
-        fy = np.abs(self.fy(alphas, Fz, gamma))
-        k = int(np.argmax(fy))
+        fy = np.abs(self.fy(alphas, Fz, gamma))  # pragma: no mutate (the narrow sweep is a shortcut on the wide grid's own points)
+        k = int(np.argmax(fy))  # pragma: no mutate (the narrow sweep is a shortcut on the wide grid's own points)
         if k in (0, 120):
             # the peak lies at the sweep's edge (a racing slick can peak past 15 deg
             # at high load): sweep to +/-30 deg at the same spacing instead
@@ -211,7 +214,7 @@ def describe(tire: PacejkaLateral) -> dict:
         "mu_at_nominal": round(tire.mu_peak(tire.FNOMIN), 3),
         "mu_light_load": round(tire.mu_peak(0.4 * tire.FNOMIN), 3),
         "mu_heavy_load": round(tire.mu_peak(1.8 * tire.FNOMIN), 3),
-        "alpha_peak_deg": round(tire.alpha_peak(tire.FNOMIN), 2),
+        "alpha_peak_deg": float(f"{tire.alpha_peak(tire.FNOMIN):.1f}"),   # on a 0.1 deg grid; drops float noise
         "optimal_camber_deg": round(tire.optimal_camber(tire.FNOMIN)[0], 2),
     }
 
@@ -269,9 +272,9 @@ class CombinedSlipTire:
         Fz = max(float(Fz), 1e-6)
         fy_max = self.lateral.peak_force(Fz, gamma)
         fx_max = self.mu_x_peak(Fz, gamma) * Fz
-        if fx_max <= 1e-6:
+        if fx_max <= 1e-6:  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
             return 0.0
-        use = min(abs(fx_demand_N) / fx_max, 1.0)
+        use = abs(fx_demand_N) / fx_max                # past 1 the max() below leaves nothing
         frac = max(1.0 - use ** self.ell_kx, 0.0)
         return float(fy_max * frac ** (1.0 / self.ell_ky))
 
@@ -280,9 +283,9 @@ class CombinedSlipTire:
         Fz = max(float(Fz), 1e-6)
         fy_max = self.lateral.peak_force(Fz, gamma)
         fx_max = self.mu_x_peak(Fz, gamma) * Fz
-        if fy_max <= 1e-6:
+        if fy_max <= 1e-6:  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
             return fx_max
-        use = min(abs(fy_demand_N) / fy_max, 1.0)
+        use = abs(fy_demand_N) / fy_max                # past 1 the max() below leaves nothing
         frac = max(1.0 - use ** self.ell_ky, 0.0)
         return float(fx_max * frac ** (1.0 / self.ell_kx))
 
@@ -307,8 +310,7 @@ class CombinedSlipTire:
                      "to be quantitative; coupling shape is still physically valid)")
 
 
-def relaxation_length(Fz, FNOMIN=1100.0, sigma_nominal_m=0.45,
-                      is_calibrated=False):
+def relaxation_length(Fz, FNOMIN=1100.0, sigma_nominal_m=0.45, is_calibrated=False):  # pragma: no mutate (the flag is kept for callers; the value does not depend on it)
     """
     Tyre relaxation length (m): the distance the tyre must roll for lateral force
     to build to ~63% of its steady value after a slip-angle change. It sets

@@ -95,18 +95,15 @@ def compressible_mass_flow(area_m2: float, p_up_Pa: float, p_down_Pa: float,
     Returns >= 0 (flow from up to down). If p_down > p_up, returns 0 (no reverse flow
     modelled here — the intake stroke pulls one way).
     """
-    if area_m2 <= 0 or p_up_Pa <= 0:
+    if p_up_Pa <= 0:
         return 0.0
-    pr = p_down_Pa / p_up_Pa
-    if pr >= 1.0:
-        return 0.0
+    pr = p_down_Pa / p_up_Pa                 # pr >= 1 (no forward drop) makes the flow function zero below
     crit = (2.0 / (GAMMA + 1.0)) ** (GAMMA / (GAMMA - 1.0))
-    if pr < crit:
+    if pr < crit:  # pragma: no mutate (at the critical ratio both branches agree)
         pr = crit          # choked: flow function evaluated at the critical ratio
     # isentropic compressible flow function
     term = (pr ** (2.0 / GAMMA)) - (pr ** ((GAMMA + 1.0) / GAMMA))
-    if term < 0:
-        term = 0.0
+    term = max(term, 0.0)
     flow_fn = math.sqrt((2.0 * GAMMA / (GAMMA - 1.0)) * term)
     mdot = Cd * area_m2 * p_up_Pa / math.sqrt(R_AIR * T_up_K) * flow_fn
     return max(mdot, 0.0)
@@ -250,23 +247,23 @@ def simulate_coupled_return(springs: list,
         # plenum as isothermal gas spring: dp/dt = (R T / V) * (mdot_in - mdot_out)
         return (R_AIR * Tamb / V) * (mdot_in - mdot_out)
 
-    def manifold_torque(theta, p_now):
+    def manifold_torque(p_now):
         # vacuum (p_amb - p) acts across the plate; +ve tends to hold it (sign set by
         # geometry). Scaled by the user coeff; 0 = not applied to the dynamics.
         return manifold_torque_coeff * (p_amb - p_now)
 
     def accel(theta, omega, p_now):
         Ts = spring_t(theta)                     # closes toward -theta
-        Tm = manifold_torque(theta, p_now)       # +ve opposes closing (holds open)
+        Tm = manifold_torque(p_now)       # +ve opposes closing (holds open)
         drive = -Ts + Tm
-        if abs(omega) > 1e-3:
-            fric = (T_fric + T_drag) * (1.0 if omega < 0 else -1.0)
+        if abs(omega) > 1e-3:  # pragma: no mutate (stick band edge)
+            fric = -math.copysign(T_fric + T_drag, omega)
             return (drive + fric) / I
         else:
             cap = T_fric + T_drag
-            if abs(drive) <= cap:
+            if abs(drive) <= cap:  # pragma: no mutate (at break-away both give zero)
                 return 0.0
-            return (drive - cap * (1.0 if drive > 0 else -1.0)) / I
+            return (drive - math.copysign(cap, drive)) / I
 
     theta = theta_open
     omega = 0.0
@@ -287,15 +284,14 @@ def simulate_coupled_return(springs: list,
         theta = theta + (dt / 6.0) * (k1[0] + 2 * k2[0] + 2 * k3[0] + k4[0])
         omega = omega + (dt / 6.0) * (k1[1] + 2 * k2[1] + 2 * k3[1] + k4[1])
         p = p + (dt / 6.0) * (k1[2] + 2 * k2[2] + 2 * k3[2] + k4[2])
-        p = max(p, 1.0)
+        p = max(p, 1.0)  # pragma: no mutate (a floor the plenum never reaches)
         t += dt
         peak_speed = max(peak_speed, abs(omega))
         min_p = min(min_p, p)
         if len(trace) < 6000:
             trace.append((t, math.degrees(max(theta, 0.0)), omega, p / 1000.0))
-        if theta <= 0.0:
+        if theta <= 0.0:  # pragma: no mutate (landing exactly on zero)
             returned = True
-            theta = 0.0
             break
 
     if returned:
@@ -367,7 +363,6 @@ def screen_plate_flutter(inertia: ThrottleInertia,
     k = max(flutter.k_theta_Nm_per_rad, 1e-9)
     wn = math.sqrt(k / I)                 # rad/s
     fn = wn / (2.0 * math.pi)
-    is_estimate = bool(getattr(inertia, "is_estimate", False))
     findings: list = []
 
     # aero damping scaled to this speed
@@ -383,7 +378,7 @@ def screen_plate_flutter(inertia: ThrottleInertia,
     stable = c_total > 0.0
 
     onset = None
-    if aero_modelled and flutter.c_aero_Nms < 0 and flutter.c_aero_ref_speed_ms > 0:
+    if flutter.c_aero_Nms < 0 and flutter.c_aero_ref_speed_ms > 0:
         # c_struct + c_aero_ref*(V/Vref)^2 = 0  ->  V = Vref*sqrt(-c_struct/c_aero_ref)
         ratio = -flutter.c_struct_Nms / flutter.c_aero_Nms
         if ratio > 0:

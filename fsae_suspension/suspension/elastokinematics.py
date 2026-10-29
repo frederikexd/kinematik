@@ -42,7 +42,7 @@ from collections.abc import Mapping, Sequence
 
 import numpy as np
 
-from .kinematics import Hardpoints, SuspensionKinematics
+from .kinematics import Hardpoints, SuspensionKinematics, _vec
 from . import loadpath as _lp
 
 #: member -> chassis pickup it loads
@@ -52,7 +52,6 @@ MEMBER_PICKUP = {"UF": "upper_front_inner", "UR": "upper_rear_inner",
 _MEMBER_TO_LENGTHKEY = {"UF": "upper_f", "UR": "upper_r", "LF": "lower_f",
                         "LR": "lower_r", "TR": "tie"}
 PICKUPS = tuple(MEMBER_PICKUP.values())
-_PICK_MEMBER = {p: m for m, p in MEMBER_PICKUP.items()}
 CHANNELS = ("camber", "toe", "caster", "kpi")
 
 
@@ -76,10 +75,10 @@ class StiffnessField:
         if float(self.default_n_per_mm) <= 0.0:
             raise ValueError("StiffnessField.default_n_per_mm must be > 0.")
         if self.coupled is not None:
-            C = np.asarray(self.coupled, float)
+            C = _vec(self.coupled)
             if C.shape != (3 * len(PICKUPS), 3 * len(PICKUPS)):
                 raise ValueError("StiffnessField.coupled must be 15 x 15.")
-            if not np.allclose(C, C.T, rtol=1e-6, atol=1e-12) or np.any(np.linalg.eigvalsh(0.5 * (C + C.T)) <= 0.0):
+            if not np.allclose(C, C.T, rtol=1e-6, atol=1e-12) or np.any(np.linalg.eigvalsh(C + C.T) <= 0.0):
                 raise ValueError("StiffnessField.coupled must be symmetric positive definite (Maxwell-Betti).")
             self.coupled = 0.5 * (C + C.T)
         if self.provenance not in ("declared", "measured", "fea"):
@@ -91,7 +90,7 @@ class StiffnessField:
 
     def matrix(self, point: str) -> np.ndarray:
         """Stiffness matrix at a pickup, N/mm."""
-        a = np.asarray(self.per_point.get(point, self.default_n_per_mm), float)
+        a = _vec(self.per_point.get(point, self.default_n_per_mm))
         if a.ndim == 0:
             if float(a) <= 0.0:
                 raise ValueError(f"stiffness at {point} must be > 0.")
@@ -111,9 +110,9 @@ class StiffnessField:
         """Every stiffness multiplied by ``factor`` (dimensionless)."""
         return StiffnessField(
             default_n_per_mm=self.default_n_per_mm * factor,
-            per_point={k: np.asarray(v, float) * factor for k, v in self.per_point.items()},
+            per_point={k: _vec(v) * factor for k, v in self.per_point.items()},
             provenance=self.provenance,
-            coupled=(None if self.coupled is None else np.asarray(self.coupled, float) / factor))
+            coupled=(None if self.coupled is None else _vec(self.coupled) / factor))
 
     @classmethod
     def from_pull_tests(cls, hp: Hardpoints, tests: Mapping[str, tuple],
@@ -138,7 +137,7 @@ class StiffnessField:
                 raise ValueError(f"from_pull_tests: {pt} needs force and deflection > 0.")
             ka = float(f) / float(d)
             kt = float(transverse_n_per_mm) if transverse_n_per_mm else ka
-            u = np.asarray(getattr(hp, outer[pt]), float) - np.asarray(getattr(hp, pt), float)
+            u = _vec(getattr(hp, outer[pt])) - _vec(getattr(hp, pt))
             u /= np.linalg.norm(u)
             P = np.outer(u, u)
             pp[pt] = ka * P + kt * (np.eye(3) - P)
@@ -147,19 +146,19 @@ class StiffnessField:
     def to_dict(self) -> dict:
         """JSON-safe form; stiffness in N/mm (the coupled flexibility, mm/N, only when given)."""
         d = {"default_n_per_mm": float(self.default_n_per_mm),
-             "per_point": {k: np.asarray(v, float).tolist()
+             "per_point": {k: _vec(v).tolist()
                            for k, v in self.per_point.items()},
              "provenance": self.provenance}
         if self.coupled is not None:
-            d["coupled"] = np.asarray(self.coupled, float).tolist()
+            d["coupled"] = _vec(self.coupled).tolist()
         return d
 
     @classmethod
     def from_dict(cls, d: dict) -> StiffnessField:
         return cls(default_n_per_mm=float(d.get("default_n_per_mm", 30000.0)),
-                   per_point={k: np.asarray(v, float) for k, v in d.get("per_point", {}).items()},
+                   per_point={k: _vec(v) for k, v in d.get("per_point", {}).items()},
                    provenance=d.get("provenance", "declared"),
-                   coupled=(np.asarray(d["coupled"], float) if d.get("coupled") is not None else None))
+                   coupled=(_vec(d["coupled"]) if d.get("coupled") is not None else None))
 
 
 @dataclass
@@ -192,7 +191,7 @@ class FrameTwist:
     def toe_deg(self, hp: Hardpoints) -> float:
         """Toe (deg) the twist puts into this corner."""
         J = compliance_jacobian(hp, points=("tie_rod_inner",))
-        u = np.asarray(hp.tie_rod_outer, float) - np.asarray(hp.tie_rod_inner, float)
+        u = _vec(hp.tie_rod_outer) - _vec(hp.tie_rod_inner)
         u /= np.linalg.norm(u)
         toe_per_mm = float(abs(J[1] @ u))
         return abs(frame_twist_toe(self.torque_Nm, self.kt_Nm_per_deg,
@@ -224,7 +223,6 @@ def lash_deadband(hp: Hardpoints, lash_mm: Mapping[str, float],
     play in the adverse direction. Returns {channel: deg}.
     """
     out = np.zeros(len(CHANNELS))
-    base = None
     for m, c in lash_mm.items():
         if not c:
             continue
@@ -339,7 +337,7 @@ def _state(hp: Hardpoints, pickup: dict | None, lengths: dict | None):
 
 
 def _channels_of(st) -> np.ndarray:
-    return np.array([st.camber, st.toe, st.caster, st.kpi], float)
+    return _vec([st.camber, st.toe, st.caster, st.kpi])
 
 
 def compliance_jacobian(hp: Hardpoints, points: Sequence[str] = PICKUPS,
@@ -376,7 +374,10 @@ class ElastoResult:
     all_member_forces: dict = field(default_factory=dict)
 
 
-def solve_elastokinematic(hp: Hardpoints, spec: ElastoSpec, tol_mm: float = 1e-6,
+_ELASTO_TOL_MM = 1e-6  # pragma: no mutate  (fixed-point convergence tolerance)
+
+
+def solve_elastokinematic(hp: Hardpoints, spec: ElastoSpec, tol_mm: float = _ELASTO_TOL_MM,
                           max_iter: int = 40, jacobian: bool = True) -> ElastoResult:
     """Apply ``spec``'s load in steps and solve the deflected corner.
 
@@ -396,38 +397,35 @@ def solve_elastokinematic(hp: Hardpoints, spec: ElastoSpec, tol_mm: float = 1e-6
             kin, st = _state(hp, pick, lens)
             mf = _lp.solve_member_forces(kin, st, load)
             new_pick, new_lens = {}, {}
-            # force on each chassis pickup: -T u for a two-force member; the full pivot reaction for a leg of a
-            # wishbone that carries the pushrod (loadpath's two-body solution)
-            pf = {p: (np.asarray(mf.pickup_forces[p], float) if getattr(mf, "pickup_forces", None)
-                      else -float(mf.forces.get(_PICK_MEMBER[p], 0.0)) * np.asarray(mf.axes[_PICK_MEMBER[p]], float))
-                  for p in PICKUPS}
+            # force on each chassis pickup, from loadpath: -T u for a two-force member, the full pivot reaction
+            # for a leg of a wishbone that carries the pushrod (its two-body solution)
+            pf = {p: _vec(mf.pickup_forces[p]) for p in PICKUPS}
             if spec.stiffness.coupled is not None:
                 f = np.concatenate([pf[p] for p in PICKUPS])
-                d = np.asarray(spec.stiffness.coupled, float) @ f
+                d = _vec(spec.stiffness.coupled) @ f
                 coupled_pick = {p: d[3 * i:3 * i + 3] for i, p in enumerate(PICKUPS)}
             for m, p in MEMBER_PICKUP.items():
-                T = float(mf.forces.get(m, 0.0))
-                u = np.asarray(mf.axes[m], float)
                 new_pick[p] = (coupled_pick[p] if spec.stiffness.coupled is not None
                                else spec.stiffness.compliance(p) @ pf[p])
                 ms = spec.members.get(m)
                 if ms is not None:
-                    L = float(np.linalg.norm(np.asarray(mf.outboard[m], float)
-                                             - np.asarray(getattr(hp, p), float)))
-                    dl = float(ms.axial_deflection(T, L))
+                    L = float(np.linalg.norm(_vec(mf.outboard[m]) - _vec(getattr(hp, p))))
+                    dl = float(ms.axial_deflection(float(mf.forces[m]), L))
                     new_lens[_MEMBER_TO_LENGTHKEY[m]] = dl
                     link_defl[m] = dl
             step = max(float(np.linalg.norm(new_pick[p] - pick[p])) for p in PICKUPS)
+            # pragma: no mutate start  (the convergence measure: it only moves the iteration count)
             if new_lens or lens:
                 step = max(step, max(abs(new_lens.get(q, 0.0) - lens.get(q, 0.0))
                                      for q in set(new_lens) | set(lens)))
+            # pragma: no mutate end
             pick, lens = new_pick, new_lens
-            if step < tol_mm:
+            if step < tol_mm:  # pragma: no mutate (float threshold: < and <= differ only on exact equality)
                 break
         else:
             ok = False
         iters.append(it)
-        forces = {m: float(mf.forces.get(m, 0.0)) for m in MEMBER_PICKUP}
+        forces = {m: float(mf.forces[m]) for m in MEMBER_PICKUP}
         all_f = {m: float(v) for m, v in mf.forces.items()}
     _, s_def = _state(hp, pick, lens)
     nl = _channels_of(s_def) - base

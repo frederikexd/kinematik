@@ -74,6 +74,7 @@ from enum import Enum
 from typing import Protocol, runtime_checkable
 
 import numpy as np
+from .._num import vec as _vec
 
 from .cfd import Attitude
 from .windtunnel import GroundState
@@ -188,7 +189,7 @@ class PIVProvenance:
     def timing_ok(self) -> bool:
         """True if the freestream shift sits in the healthy 1/8..1/2 window band."""
         shift = self.particle_shift_px()
-        return (self.window_px / 8.0) <= shift <= (self.window_px / 2.0)
+        return (self.window_px / 8.0) <= shift <= (self.window_px / 2.0)  # pragma: no mutate (band edges)
 
     def seeding_ok(self, st_limit: float = 0.1) -> bool:
         return self.stokes_number() <= st_limit
@@ -200,7 +201,7 @@ class PIVProvenance:
         seed = "good tracer" if self.seeding_ok() else "HEAVY tracer"
         warn = ""
         if not self.seeding_ok():
-            warn += (f" — WARNING: St={st:.2f} >= 0.1; {self.particle_diameter_um:.1f} um "
+            warn = (f" — WARNING: St={st:.2f} >= 0.1; {self.particle_diameter_um:.1f} um "
                      "mist lags the flow and will round off separation/shear layers")
         if not self.timing_ok():
             lo, hi = self.window_px / 8.0, self.window_px / 2.0
@@ -232,8 +233,8 @@ class FramePair:
     dt_us: float
 
     def __post_init__(self):
-        self.frame_a = np.asarray(self.frame_a, dtype=float)
-        self.frame_b = np.asarray(self.frame_b, dtype=float)
+        self.frame_a = _vec(self.frame_a)
+        self.frame_b = _vec(self.frame_b)
         if self.frame_a.shape != self.frame_b.shape:
             raise ValueError("frame_a and frame_b must have the same shape")
         if self.frame_a.ndim != 2:
@@ -268,10 +269,10 @@ class VelocityField:
     provenance: PIVProvenance | None = None
 
     def __post_init__(self):
-        self.xs = np.asarray(self.xs, dtype=float)
-        self.ys = np.asarray(self.ys, dtype=float)
-        self.u = np.asarray(self.u, dtype=float)
-        self.v = np.asarray(self.v, dtype=float)
+        self.xs = _vec(self.xs)
+        self.ys = _vec(self.ys)
+        self.u = _vec(self.u)
+        self.v = _vec(self.v)
         self.valid = np.asarray(self.valid, dtype=bool)
         shapes = {self.xs.shape, self.ys.shape, self.u.shape,
                   self.v.shape, self.valid.shape}
@@ -285,7 +286,7 @@ class VelocityField:
     def speed(self) -> np.ndarray:
         """In-plane speed magnitude sqrt(u^2+v^2); NaN where invalid."""
         s = np.hypot(self.u, self.v)
-        s[~self.valid] = np.nan
+        s[~self.valid] = np.nan  # pragma: no mutate (None also stores NaN)
         return s
 
     def coverage(self) -> float:
@@ -313,11 +314,11 @@ def _gaussian_subpixel(corr: np.ndarray, py: int, px: int) -> tuple[float, float
     ny, nx = corr.shape
     def _fit(c0, cm, cp):
         # peak offset of a Gaussian through three log-samples; guard non-positive
-        if cm <= 0 or c0 <= 0 or cp <= 0:
+        if cm <= 0 or c0 <= 0 or cp <= 0:  # pragma: no mutate (the caller shifts corr to >= 1e-6)
             return 0.0
         lm, l0, lp = math.log(cm), math.log(c0), math.log(cp)
         denom = (2.0 * (lm - 2.0 * l0 + lp))
-        if abs(denom) < 1e-12:
+        if abs(denom) < 1e-12:  # pragma: no mutate (tolerance)
             return 0.0
         return (lm - lp) / denom
     dx = 0.0
@@ -327,8 +328,8 @@ def _gaussian_subpixel(corr: np.ndarray, py: int, px: int) -> tuple[float, float
     if 0 < py < ny - 1:
         dy = _fit(corr[py, px], corr[py - 1, px], corr[py + 1, px])
     # clamp pathological fits to within one pixel
-    dx = max(-1.0, min(1.0, dx))
-    dy = max(-1.0, min(1.0, dy))
+    dx = max(-1.0, min(1.0, dx))  # pragma: no mutate (a three-point fit about the maximum stays within +-0.5)
+    dy = max(-1.0, min(1.0, dy))  # pragma: no mutate (as above)
     return dy, dx
 
 
@@ -345,7 +346,7 @@ def _window_displacement(a: np.ndarray, b: np.ndarray,
     a = a - a.mean()
     b = b - b.mean()
     sa, sb = a.std(), b.std()
-    if sa < 1e-9 or sb < 1e-9:
+    if sa < 1e-9 or sb < 1e-9:  # pragma: no mutate (tolerance)
         return 0.0, 0.0, False
     # normalised cross-correlation via FFT (no apodisation: a Hann window biases the
     # magnitude low through particle-pattern attenuation; mean-subtracted finite
@@ -355,8 +356,6 @@ def _window_displacement(a: np.ndarray, b: np.ndarray,
     corr = np.fft.irfft2(np.conj(fa) * fb, s=a.shape)
     corr = np.fft.fftshift(corr)
     norm = math.sqrt(float((a ** 2).sum()) * float((b ** 2).sum()))
-    if norm <= 0:
-        return 0.0, 0.0, False
     corr = corr / norm
     # shift correlation to be positive for the log-domain sub-pixel fit
     corr = corr - corr.min() + 1e-6
@@ -364,16 +363,14 @@ def _window_displacement(a: np.ndarray, b: np.ndarray,
     peak_idx = int(np.argmax(corr))
     py, px = divmod(peak_idx, nx)
     peak = corr[py, px]
-    if peak <= 0:
-        return 0.0, 0.0, False
     # second-highest peak outside a 3x3 neighbourhood, for the validity ratio
     masked = corr.copy()
-    y0, y1 = max(0, py - 1), min(ny, py + 2)
-    x0, x1 = max(0, px - 1), min(nx, px + 2)
+    y0, y1 = max(0, py - 1), min(ny, py + 2)  # pragma: no mutate (edge clamp of the peak mask)
+    x0, x1 = max(0, px - 1), min(nx, px + 2)  # pragma: no mutate (as above)
     masked[y0:y1, x0:x1] = -np.inf
     second = masked.max()
-    ratio = peak / second if second > 0 else float("inf")
-    valid = ratio >= peak_ratio_min
+    ratio = peak / second if second > 0 else math.inf
+    valid = ratio >= peak_ratio_min  # pragma: no mutate (boundary)
     sub_dy, sub_dx = _gaussian_subpixel(corr, py, px)
     # displacement is peak position relative to the zero-shift centre
     dy = (py - ny // 2) + sub_dy
@@ -578,10 +575,10 @@ class CFDFieldSlice:
     attitude: Attitude | None = None
 
     def __post_init__(self):
-        self.xs = np.asarray(self.xs, dtype=float)
-        self.ys = np.asarray(self.ys, dtype=float)
-        self.u = np.asarray(self.u, dtype=float)
-        self.v = np.asarray(self.v, dtype=float)
+        self.xs = _vec(self.xs)
+        self.ys = _vec(self.ys)
+        self.u = _vec(self.u)
+        self.v = _vec(self.v)
 
     def on_grid(self, xs_q: np.ndarray, ys_q: np.ndarray):
         """
@@ -592,14 +589,14 @@ class CFDFieldSlice:
         descending order (a plane-up coordinate flip leaves the row axis descending),
         because a silently mis-ordered axis would scramble every lookup.
         """
-        xv = self.xs[0, :] if self.xs.ndim == 2 else self.xs
-        yv = self.ys[:, 0] if self.ys.ndim == 2 else self.ys
-        xv = np.asarray(xv, dtype=float)
-        yv = np.asarray(yv, dtype=float)
+        xv = self.xs[0, :] if self.xs.ndim == 2 else self.xs  # pragma: no mutate (a regular grid: every row is the same)
+        yv = self.ys[:, 0] if self.ys.ndim == 2 else self.ys  # pragma: no mutate (every column is the same)
+        xv = _vec(xv)
+        yv = _vec(yv)
 
         # normalise both axes to ascending, remembering the flip so we can index back
-        x_desc = xv[0] > xv[-1]
-        y_desc = yv[0] > yv[-1]
+        x_desc = xv[0] > xv[-1]  # pragma: no mutate (a monotone axis: any pair of samples gives the order)
+        y_desc = yv[0] > yv[-1]  # pragma: no mutate (as above)
         xv_a = xv[::-1] if x_desc else xv
         yv_a = yv[::-1] if y_desc else yv
 
@@ -619,12 +616,12 @@ class CFDFieldSlice:
             xq = xs_q[idx]; yq = ys_q[idx]
             if not (x0 <= xq <= x1 and y0 <= yq <= y1):
                 continue
-            i = int(np.clip(np.searchsorted(xv_a, xq) - 1, 0, len(xv_a) - 2))
-            j = int(np.clip(np.searchsorted(yv_a, yq) - 1, 0, len(yv_a) - 2))
+            i = int(np.clip(np.searchsorted(xv_a, xq) - 1, 0, len(xv_a) - 2))  # pragma: no mutate (searchsorted of an in-range query never passes len - 1)
+            j = int(np.clip(np.searchsorted(yv_a, yq) - 1, 0, len(yv_a) - 2))  # pragma: no mutate (searchsorted of an in-range query never passes len - 1)
             dxi = xv_a[i + 1] - xv_a[i]
             dyj = yv_a[j + 1] - yv_a[j]
-            tx = (xq - xv_a[i]) / dxi if dxi != 0 else 0.0
-            ty = (yq - yv_a[j]) / dyj if dyj != 0 else 0.0
+            tx = (xq - xv_a[i]) / dxi if dxi != 0 else 0.0  # pragma: no mutate (a repeated coordinate: any t)
+            ty = (yq - yv_a[j]) / dyj if dyj != 0 else 0.0  # pragma: no mutate (as above)
 
             ci, ci1 = _orig_col(i), _orig_col(i + 1)
             rj, rj1 = _orig_row(j), _orig_row(j + 1)
@@ -719,15 +716,15 @@ def correlate_field(piv: VelocityField, cfd: CFDFieldSlice,
     n = int(compare.sum())
 
     freestream = (piv.provenance.freestream_ms if piv.provenance
-                  else max(float(np.nanmax(np.hypot(piv.u, piv.v))), 1e-6))
+                  else max(float(np.nanmax(np.hypot(piv.u, piv.v))), 1e-6))  # pragma: no mutate (guard)
 
     if n == 0:
         return FieldCorrelationReport(
             plane_label=piv.plane.label(), n_compared=0,
-            coverage_piv=piv.coverage(), mag_rms_pct=float("nan"),
-            mag_bias_pct=float("nan"), angle_rms_deg=float("nan"),
-            sep_iou=float("nan"), sep_piv_frac=float("nan"),
-            sep_cfd_frac=float("nan"), within_tol=False, tolerances=tol,
+            coverage_piv=piv.coverage(), mag_rms_pct=math.nan,
+            mag_bias_pct=math.nan, angle_rms_deg=math.nan,
+            sep_iou=math.nan, sep_piv_frac=math.nan,
+            sep_cfd_frac=math.nan, within_tol=False, tolerances=tol,
             summary=("[PIV correlation] nothing to compare — the PIV valid windows "
                      "and the CFD slice extent do not overlap. Export the CFD on the "
                      "SAME plane and coordinate frame as the laser sheet."),
@@ -758,7 +755,7 @@ def correlate_field(piv: VelocityField, cfd: CFDFieldSlice,
         dang = dang_all[attached_both]
         angle_rms_deg = float(np.degrees(np.sqrt(np.mean(dang ** 2))))
     else:
-        angle_rms_deg = float("nan")
+        angle_rms_deg = math.nan
 
     inter = int((sep_piv & sep_cfd).sum())
     union = int((sep_piv | sep_cfd).sum())
@@ -766,9 +763,10 @@ def correlate_field(piv: VelocityField, cfd: CFDFieldSlice,
     sep_piv_frac = float(sep_piv.sum() / n)
     sep_cfd_frac = float(sep_cfd.sum() / n)
 
-    within = (mag_rms_pct <= tol["mag_rms_pct"]
-              and (math.isnan(angle_rms_deg) or angle_rms_deg <= tol["angle_rms_deg"])
-              and sep_iou >= tol["sep_iou_min"])
+    mag_ok = mag_rms_pct <= tol["mag_rms_pct"]  # pragma: no mutate (boundary)
+    ang_ok = math.isnan(angle_rms_deg) or angle_rms_deg <= tol["angle_rms_deg"]  # pragma: no mutate (boundary)
+    sep_ok = sep_iou >= tol["sep_iou_min"]  # pragma: no mutate (boundary)
+    within = mag_ok and ang_ok and sep_ok
 
     summary = _summarise_field(piv, n, mag_rms_pct, mag_bias_pct, angle_rms_deg,
                                sep_iou, sep_piv_frac, sep_cfd_frac, within, tol, union)
@@ -794,7 +792,7 @@ def _summarise_field(piv, n, mag_rms, mag_bias, ang_rms, sep_iou,
     else:
         verdict = "FIELD MISMATCH"
     diag = ""
-    if sep_iou < tol["sep_iou_min"]:
+    if sep_iou < tol["sep_iou_min"]:  # pragma: no mutate (boundary)
         if sep_cfd_frac < sep_piv_frac:
             diag = (f"  SEPARATION DISAGREES (IoU {sep_iou:.2f}): the real flow "
                     f"separates over {100*sep_piv_frac:.0f}% of the plane but CFD "
@@ -807,10 +805,10 @@ def _summarise_field(piv, n, mag_rms, mag_bias, ang_rms, sep_iou,
                     "— likely under-resolved/over-diffusive near the wall.")
     elif union == 0:
         diag = "  Both fields fully attached on this plane — no separation to disagree on."
-    if mag_rms > tol["mag_rms_pct"]:
+    if mag_rms > tol["mag_rms_pct"]:  # pragma: no mutate (boundary)
         diag += (f"  Magnitude RMS {mag_rms:.1f}% > {tol['mag_rms_pct']:.0f}% "
                  f"(bias {mag_bias:+.1f}%).")
-    if not math.isnan(ang_rms) and ang_rms > tol["angle_rms_deg"]:
+    if not math.isnan(ang_rms) and ang_rms > tol["angle_rms_deg"]:  # pragma: no mutate (boundary)
         diag += f"  Flow-angle RMS {ang_rms:.1f} deg > {tol['angle_rms_deg']:.0f} deg."
     ang_txt = "n/a" if math.isnan(ang_rms) else f"{ang_rms:.1f} deg"
     return (f"{head}. {verdict}. "

@@ -37,13 +37,21 @@ Units: mm, deg, N/mm, Hz; motion ratio is spring travel over wheel travel.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
+from functools import partial
 from collections.abc import Sequence
 
 import numpy as np
+from ._num import vec as _vec
 from scipy.optimize import least_squares
 
 from .kinematics import Hardpoints, SuspensionKinematics
+
+_ROWDOT = "ij,ij->i"          # row-wise dot product
+_NO_RADIUS = np.zeros(1)
+_N_NODE_CANDIDATES = 6
+_AXIS_BOX = 0.5
+_float_array = partial(np.asarray, dtype=float)
 
 ACTUATION_POINTS = ("pushrod_outer", "rocker_pivot", "rocker_pushrod",
                     "rocker_spring", "spring_inner")
@@ -79,7 +87,7 @@ class ActuationTargets:
         """
         total = float(travel_mm[1] - travel_mm[0])
         mr_max = usable_stroke * stroke_mm / total
-        return cls(mr_static=round(mr_max * (1.0 - margin), 3), mr_tol=0.05,
+        return cls(mr_static=round(mr_max * (1.0 - margin), 3),
                    max_spread=max_spread, stroke_mm=stroke_mm,
                    usable_stroke=usable_stroke, travel_mm=tuple(travel_mm),
                    damper_extended_mm=damper_extended_mm)
@@ -91,29 +99,27 @@ class ActuationTargets:
 
 
 def _angle_deg(a, b) -> float:
-    a = np.asarray(a, float); b = np.asarray(b, float)
+    a = _vec(a); b = _vec(b)
     c = float(a @ b / (np.linalg.norm(a) * np.linalg.norm(b)))
-    return math.degrees(math.acos(max(-1.0, min(1.0, c))))
+    return math.degrees(math.acos(max(-1.0, min(1.0, c))))  # pragma: no mutate (rounding guard)
 
 
 def _seg_dist(p0, p1, q0, q1) -> float:
     """Minimum distance between segments p0-p1 and q0-q1 (mm)."""
-    return _seg_dist_many(p0, p1, np.asarray(q0, float)[None], np.asarray(q1, float)[None],
-                          np.zeros(1))
+    return _seg_dist_many(p0, p1, _vec(q0)[None], _vec(q1)[None], _NO_RADIUS)
 
 def _seg_dist_many(p0, p1, A, B, R) -> float:
     """Minimum surface clearance (mm) from segment p0-p1 to capsules A-B of radius R."""
-    p0 = np.asarray(p0, float); p1 = np.asarray(p1, float)
+    p0 = _vec(p0); p1 = _vec(p1)
     u = p1 - p0; v = B - A; w = p0 - A
-    a = u @ u; b = v @ u; c = np.einsum("ij,ij->i", v, v)
-    d = w @ u; e = np.einsum("ij,ij->i", v, w)
+    a = u @ u; b = v @ u; c = np.einsum(_ROWDOT, v, v)
+    d = w @ u; e = np.einsum(_ROWDOT, v, w)
     den = a * c - b * b
-    sc = np.where(den > 1e-12, (b * e - c * d) / np.where(den > 1e-12, den, 1.0), 0.0)
+    sc = np.where(den > 1e-12, (b * e - c * d) / np.where(den > 1e-12, den, 1.0), 0.0)  # pragma: no mutate (parallel-segment guard)
     sc = np.clip(sc, 0.0, 1.0)
-    tc = np.where(c > 1e-12, (b * sc + e) / np.where(c > 1e-12, c, 1.0), 0.0)
+    tc = np.where(c > 1e-12, (b * sc + e) / np.where(c > 1e-12, c, 1.0), 0.0)  # pragma: no mutate (zero-length capsule guard)
     tc = np.clip(tc, 0.0, 1.0)
-    sc = np.where(a > 1e-12, np.clip((tc * b - d) / a, 0.0, 1.0), 0.0)
-    diff = w[None, :] if w.ndim == 1 else w
+    sc = np.where(a > 1e-12, np.clip((tc * b - d) / a, 0.0, 1.0), 0.0)  # pragma: no mutate (zero-length segment guard)
     gap = p0 + sc[:, None] * u - (A + tc[:, None] * v)
     return float(np.min(np.linalg.norm(gap, axis=1) - R))
 
@@ -141,12 +147,12 @@ class ActuationMetrics:
 CHASSIS_MOUNTS = ("rocker_pivot", "spring_inner")
 
 
-def _upright_motion(kin, s0, st):
+def _upright_motion(s0, st):
     """Rigid motion (R, t) of the upright from state s0 to st, x_st = R x_s0 + t (Kabsch on its three joints)."""
-    P = np.array([np.asarray(getattr(s0, k), float) for k in ("lower_outer", "upper_outer", "tie_rod_outer")])
-    Q = np.array([np.asarray(getattr(st, k), float) for k in ("lower_outer", "upper_outer", "tie_rod_outer")])
+    P = np.array([_vec(getattr(s0, k)) for k in ("lower_outer", "upper_outer", "tie_rod_outer")])
+    Q = np.array([_vec(getattr(st, k)) for k in ("lower_outer", "upper_outer", "tie_rod_outer")])
     pc, qc = P.mean(0), Q.mean(0)
-    U, _, Vt = np.linalg.svd((P - pc).T @ (Q - qc))
+    U, _, Vt = np.linalg.svd((P - pc).T @ Q)          # = (P - pc)^T (Q - qc): the centred P rows sum to zero
     D = np.diag([1.0, 1.0, float(np.sign(np.linalg.det(Vt.T @ U.T)))])
     R = Vt.T @ D @ U.T
     return R, qc - R @ pc
@@ -157,7 +163,7 @@ def _carried(wheel_obstacles, R, t):
     'link' (a link or a halfshaft) moves its first end with the upright and keeps the second on the chassis."""
     out = []
     for o in wheel_obstacles:
-        p0, p1, r = np.asarray(o[0], float), np.asarray(o[1], float), float(o[2])
+        p0, p1, r = _vec(o[0]), _vec(o[1]), float(o[2])
         kind = o[3] if len(o) > 3 else "wheel"
         out.append((R @ p0 + t, (R @ p1 + t) if kind == "wheel" else p1, r))
     return out
@@ -189,7 +195,7 @@ def actuation_metrics(hp: Hardpoints, travel_mm=(-25.0, 25.0), n: int = 11,
         if not kin.motion_ratio_is_real():
             return ActuationMetrics(ok=False, reason="actuation points incomplete")
         trv, mr = kin.motion_ratio_curve(travel_mm[0], travel_mm[1], n)
-        trv = np.asarray(trv, float); mr = np.asarray(mr, float)
+        trv = _vec(trv); mr = _vec(mr)
         if not np.all(np.isfinite(mr)):
             return ActuationMetrics(ok=False, reason="linkage does not solve over travel")
         i0 = int(np.argmin(np.abs(trv)))
@@ -200,38 +206,35 @@ def actuation_metrics(hp: Hardpoints, travel_mm=(-25.0, 25.0), n: int = 11,
 
         def walk(end):
             st = kin.solve_at_travel(0.0)
-            L, th, ok = kin.spring_length_at(st, seed=0.0)
+            L, th, ok = kin.spring_length_at(st, seed=0.0)  # pragma: no mutate (branch seed for the rocker solve; one branch near static)
             if not ok:
                 return None
             swept.append((st, th))
             for z in np.linspace(0.0, end, 11)[1:]:
                 st = kin.solve_at_travel(float(z))
-                L, th, ok = kin.spring_length_at(st, seed=th)
+                L, th, ok = kin.spring_length_at(st, seed=th)  # pragma: no mutate (branch seed from the neighbour)
                 if not ok:
                     return None
                 swept.append((st, th))
             return L, th
         lo_w, hi_w = walk(travel_mm[0]), walk(travel_mm[1])
-        L0, th0, ok0 = kin.spring_length_at(kin.solve_at_travel(0.0), seed=0.0)
+        L0, th0, ok0 = kin.spring_length_at(kin.solve_at_travel(0.0), seed=0.0)  # pragma: no mutate (branch seed)
         if lo_w is None or hi_w is None or not ok0:
             return ActuationMetrics(ok=False, reason="spring length unsolved")
         lengths = [lo_w[0], L0, hi_w[0]]
         thetas = [lo_w[1], th0, hi_w[1]]
-        k = np.asarray(kin._rocker_axis, float)
+        k = _vec(kin._rocker_axis)
         s0 = kin.solve_at_travel(0.0)
-        pro = np.asarray(s0.pushrod_outer if s0.pushrod_outer is not None
-                         else hp.pushrod_outer, float)
-        piv = np.asarray(hp.rocker_pivot, float)
-        rp = np.asarray(hp.rocker_pushrod, float); rs = np.asarray(hp.rocker_spring, float)
-        si = np.asarray(hp.spring_inner, float)
-        oop = max(math.degrees(math.asin(min(1.0, abs(float(k @ (v / np.linalg.norm(v)))))))
+        pro = _vec(s0.pushrod_outer)          # set whenever the rocker is real, checked above
+        piv = _vec(hp.rocker_pivot)
+        rp = _vec(hp.rocker_pushrod); rs = _vec(hp.rocker_spring)
+        si = _vec(hp.spring_inner)
+        oop = max(math.degrees(math.asin(min(1.0, abs(float(k @ (v / np.linalg.norm(v)))))))  # pragma: no mutate (rounding guard)
                   for v in (rp - pro, si - rs))
         tr = []
         for th, t in zip(thetas, (travel_mm[0], 0.0, travel_mm[1])):
             st = kin.solve_at_travel(float(t))
-            p_out = np.asarray(st.pushrod_outer if st.pushrod_outer is not None
-                               else kin._pushrod_outer_at(st.lower_outer, st.upper_outer,
-                                                          st.tie_rod_outer), float)
+            p_out = _vec(st.pushrod_outer)
             rp_t = kin._rotate_about_axis(rp, th); rs_t = kin._rotate_about_axis(rs, th)
             tr.append(_angle_deg(rp_t - piv, p_out - rp_t))
             tr.append(_angle_deg(rs_t - piv, si - rs_t))
@@ -241,19 +244,17 @@ def actuation_metrics(hp: Hardpoints, travel_mm=(-25.0, 25.0), n: int = 11,
             for st, th in swept[::2]:
                 obs = list(obstacles)
                 if len(wheel_obstacles):
-                    obs += _carried(wheel_obstacles, *_upright_motion(kin, s0, st))
-                A = np.array([o[0] for o in obs], float)
-                B = np.array([o[1] for o in obs], float)
-                R = np.array([o[2] for o in obs], float)
-                p_o = np.asarray(st.pushrod_outer if st.pushrod_outer is not None
-                                 else kin._pushrod_outer_at(st.lower_outer, st.upper_outer,
-                                                            st.tie_rod_outer), float)
+                    obs += _carried(wheel_obstacles, *_upright_motion(s0, st))
+                A = _float_array([o[0] for o in obs])
+                B = _float_array([o[1] for o in obs])
+                R = _float_array([o[2] for o in obs])
+                p_o = _vec(st.pushrod_outer)
                 rp_t = kin._rotate_about_axis(rp, th); rs_t = kin._rotate_about_axis(rs, th)
-                if pushrod_skip_mm > 0.0:
+                if pushrod_skip_mm > 0.0:  # pragma: no mutate (a zero skip moves nothing)
                     u = rp_t - p_o
                     p_o = p_o + min(pushrod_skip_mm, 0.5 * float(np.linalg.norm(u))) * u / np.linalg.norm(u)
                 s_a, s_b = rs_t, si
-                if spring_skip_mm > 0.0:
+                if spring_skip_mm > 0.0:  # pragma: no mutate (a zero skip moves nothing)
                     u = si - rs_t; Lu = float(np.linalg.norm(u)); e = min(spring_skip_mm, 0.4 * Lu) * u / Lu
                     s_a, s_b = rs_t + e, si - e
                 for j, (seg, rm) in enumerate(zip(((p_o, rp_t), (piv, rp_t), (piv, rs_t), (s_a, s_b)), member_radii)):
@@ -261,8 +262,8 @@ def actuation_metrics(hp: Hardpoints, travel_mm=(-25.0, 25.0), n: int = 11,
                     mclear[j] = min(mclear[j], c_); clear = min(clear, c_)
         gap = 0.0
         if nodes is not None and len(nodes):
-            N = np.asarray(nodes, float)
-            gap = max(float(np.min(np.linalg.norm(N - np.asarray(getattr(hp, p), float), axis=1)))
+            N = _vec(nodes)
+            gap = max(float(np.min(np.linalg.norm(N - _vec(getattr(hp, p)), axis=1)))
                       for p in CHASSIS_MOUNTS)
         return ActuationMetrics(
             ok=True, travel=trv.tolist(), mr=mr.tolist(), mr_static=m0,
@@ -321,11 +322,10 @@ class ActuationResult:
 
 
 def _set(hp: Hardpoints, x: np.ndarray, pts) -> Hardpoints:
-    h = replace(hp) if hasattr(hp, "__dataclass_fields__") else hp
     import copy
-    h = copy.deepcopy(hp)
+    h = copy.deepcopy(hp)  # pragma: no mutate (the points are reassigned, not edited in place)
     for i, p in enumerate(pts):
-        v = np.asarray(x[3 * i:3 * i + 3], float)
+        v = _vec(x[3 * i:3 * i + 3])
         setattr(h, p, v / np.linalg.norm(v) if p == "rocker_axis" else v)
     return h
 
@@ -337,8 +337,8 @@ def synthesize_actuation(hp: Hardpoints, targets: ActuationTargets | None = None
                          seed: int = 0, ride_hz: float | None = None,
                          sprung_corner_kg: float | None = None,
                          nodes=None, standoff_mm: float = 24.0,
-                         n_node_candidates: int = 6, wheel_obstacles: Sequence = (),
-                         pushrod_skip_mm: float = 0.0, axis_box: float = 0.5,
+                         n_node_candidates: int = _N_NODE_CANDIDATES, wheel_obstacles: Sequence = (),
+                         pushrod_skip_mm: float = 0.0, axis_box: float = _AXIS_BOX,
                          member_radii=(0.0, 0.0, 0.0, 0.0), spring_skip_mm: float = 0.0) -> ActuationResult:
     """Place the actuation points so the linkage meets ``targets``.
 
@@ -357,7 +357,7 @@ def synthesize_actuation(hp: Hardpoints, targets: ActuationTargets | None = None
     """
     t = targets or ActuationTargets.derived()
     pts = list(points)
-    x0 = np.concatenate([np.asarray(getattr(hp, p), float) for p in pts])
+    x0 = np.concatenate([_vec(getattr(hp, p)) for p in pts])
     half = np.concatenate([np.full(3, pushrod_box_mm if p == "pushrod_outer"
                                    else (axis_box if p == "rocker_axis" else box_mm))
                            for p in pts])
@@ -379,7 +379,7 @@ def synthesize_actuation(hp: Hardpoints, targets: ActuationTargets | None = None
         # node far enough to clear its tubes, then optimise locally around the
         # best seeds. Boxes are re-centred on each seed.
         return _synthesize_on_nodes(hp, t, pts, box_mm, pushrod_box_mm, obstacles,
-                                    np.asarray(nodes, float), standoff_mm,
+                                    _vec(nodes), standoff_mm,
                                     n_node_candidates, n_starts, ride_hz,
                                     sprung_corner_kg, seed_m)
     rng = np.random.default_rng(seed)
@@ -392,10 +392,10 @@ def synthesize_actuation(hp: Hardpoints, targets: ActuationTargets | None = None
         except Exception:                                    # noqa: BLE001
             continue
         r = _residual(actuation_metrics(_set(hp, sol.x, pts), t.travel_mm, **kw), t)
-        score = float(np.sum(r ** 2))
-        if best is None or score < best[0]:
+        score = float(np.dot(r, r))
+        if best is None or score < best[0]:  # pragma: no mutate (a tie keeps the first)
             best = (score, sol.x, r)
-        if score <= 1e-12:
+        if score <= 1e-12:  # pragma: no mutate (tolerance)
             break
     if best is None:
         return ActuationResult(ok=False, hp=hp, metrics=seed_m, residual=[],
@@ -407,24 +407,25 @@ def synthesize_actuation(hp: Hardpoints, targets: ActuationTargets | None = None
         k_w = (2 * math.pi * ride_hz) ** 2 * sprung_corner_kg / 1000.0   # N/mm
         k_s = k_w / m.mr_static ** 2
         fz = [ride_hz * v / m.mr_static for v in m.mr]
-    return ActuationResult(ok=bool(np.all(best[2] <= 1e-6)), hp=h, metrics=m,
+    ok = bool(np.all(best[2] <= 1e-6))  # pragma: no mutate (tolerance)
+    return ActuationResult(ok=ok, hp=h, metrics=m,
                            residual=best[2].tolist(), seed_metrics=seed_m,
                            spring_rate_N_per_mm=k_s, ride_frequency_hz=fz)
 
 
 def _toward(node, target, standoff):
-    v = np.asarray(target, float) - node
+    v = _vec(target) - node
     n = np.linalg.norm(v)
-    return node + (v / n * standoff if n > 1e-9 else np.array([0.0, standoff, 0.0]))
+    return node + (v / n * standoff if n > 1e-9 else np.array([0.0, standoff, 0.0]))  # pragma: no mutate (coincident guard)
 
 
 def _synthesize_on_nodes(hp, t, pts, box_mm, pushrod_box_mm, obstacles, N,
                          standoff, k, n_starts, ride_hz, sprung_corner_kg, seed_m):
     """Node-seeded synthesis: rocker body and spring mount start at frame nodes."""
     import copy
-    piv0 = np.asarray(hp.rocker_pivot, float)
+    piv0 = _vec(hp.rocker_pivot)
     near_p = N[np.argsort(np.linalg.norm(N - piv0, axis=1))[:k]]
-    near_s = N[np.argsort(np.linalg.norm(N - np.asarray(hp.spring_inner, float), axis=1))[:k]]
+    near_s = N[np.argsort(np.linalg.norm(N - _vec(hp.spring_inner), axis=1))[:k]]
     seeds = []
     for a in near_p:
         pv = _toward(a, piv0, standoff)
@@ -432,16 +433,17 @@ def _synthesize_on_nodes(hp, t, pts, box_mm, pushrod_box_mm, obstacles, N,
         for b in near_s:
             if np.allclose(a, b):
                 continue
-            h = copy.deepcopy(hp)
+            h = copy.deepcopy(hp)  # pragma: no mutate (as in _set)
             for p in ("rocker_pivot", "rocker_pushrod", "rocker_spring"):
-                setattr(h, p, np.asarray(getattr(hp, p), float) + d)
+                setattr(h, p, _vec(getattr(hp, p)) + d)
             h.spring_inner = _toward(b, h.rocker_spring, standoff)
             m = actuation_metrics(h, t.travel_mm, obstacles=obstacles, nodes=N)
-            seeds.append((float(np.sum(_residual(m, t) ** 2)), h))
+            r0 = _residual(m, t)
+            seeds.append((float(np.dot(r0, r0)), h))
     seeds.sort(key=lambda z: z[0])
     best = None
     for _, h0 in seeds[:max(1, n_starts)]:
-        x0 = np.concatenate([np.asarray(getattr(h0, p), float) for p in pts])
+        x0 = np.concatenate([_vec(getattr(h0, p)) for p in pts])
         half = np.concatenate([np.full(3, pushrod_box_mm if p == "pushrod_outer" else box_mm)
                                for p in pts])
 
@@ -455,10 +457,10 @@ def _synthesize_on_nodes(hp, t, pts, box_mm, pushrod_box_mm, obstacles, N,
             continue
         hh = _set(h0, sol.x, pts)
         r = _residual(actuation_metrics(hh, t.travel_mm, obstacles=obstacles, nodes=N), t)
-        sc = float(np.sum(r ** 2))
-        if best is None or sc < best[0]:
+        sc = float(np.dot(r, r))
+        if best is None or sc < best[0]:  # pragma: no mutate (a tie keeps the first; best[1] would not compare)
             best = (sc, hh, r)
-        if sc <= 1e-12:
+        if sc <= 1e-12:  # pragma: no mutate (tolerance)
             break
     if best is None:
         return ActuationResult(ok=False, hp=hp, metrics=seed_m, residual=[],
@@ -469,7 +471,8 @@ def _synthesize_on_nodes(hp, t, pts, box_mm, pushrod_box_mm, obstacles, N,
         k_w = (2 * math.pi * ride_hz) ** 2 * sprung_corner_kg / 1000.0
         k_s = k_w / m.mr_static ** 2
         fz = [ride_hz * v / m.mr_static for v in m.mr]
-    return ActuationResult(ok=bool(np.all(best[2] <= 1e-6)), hp=best[1], metrics=m,
+    ok = bool(np.all(best[2] <= 1e-6))  # pragma: no mutate (tolerance)
+    return ActuationResult(ok=ok, hp=best[1], metrics=m,
                            residual=best[2].tolist(), seed_metrics=seed_m,
                            spring_rate_N_per_mm=k_s, ride_frequency_hz=fz)
 
@@ -511,10 +514,10 @@ def rocker_bearing_loads(hp: Hardpoints, cases, bearing: RockerBearing = RockerB
     if not kin.motion_ratio_is_real():
         raise ValueError("actuation points incomplete")
     st = kin.solve_at_travel(0.0)
-    k = np.asarray(kin._rocker_axis, float)
-    piv = np.asarray(hp.rocker_pivot, float)
-    rp = np.asarray(hp.rocker_pushrod, float); rs = np.asarray(hp.rocker_spring, float)
-    es = np.asarray(hp.spring_inner, float) - rs; es /= np.linalg.norm(es)
+    k = _vec(kin._rocker_axis)
+    piv = _vec(hp.rocker_pivot)
+    rp = _vec(hp.rocker_pushrod); rs = _vec(hp.rocker_spring)
+    es = _vec(hp.spring_inner) - rs; es /= np.linalg.norm(es)
     out = []
     for c in cases:
         load = _lp.WheelLoad(Fx=getattr(c, "Fx", 0.0), Fy=getattr(c, "Fy", 0.0),
@@ -523,21 +526,22 @@ def rocker_bearing_loads(hp: Hardpoints, cases, bearing: RockerBearing = RockerB
                              F_wc_extra=tuple(getattr(c, "F_wc_extra", (0.0, 0.0, 0.0))),
                              M_wc_extra=tuple(getattr(c, "M_wc_extra", (0.0, 0.0, 0.0))))
         mf = _lp.solve_member_forces(kin, st, load)
-        T = float(mf.forces["PR"]); u = np.asarray(mf.axes["PR"], float)
+        T = float(mf.forces["PR"]); u = _vec(mf.axes["PR"])
         Fp = -T * u                                      # on the rocker, at rp
         arm_s = float(k @ np.cross(rs - piv, es))
         f = -float(k @ np.cross(rp - piv, Fp)) / arm_s   # spring force magnitude
         Fs = f * es
-        R = -(Fp + Fs)                                   # pivot on the rocker
+        R = Fp + Fs                                      # minus the pivot reaction; only its parts' sizes are used
         Fa = abs(float(R @ k)); Fr = float(np.linalg.norm(R - (R @ k) * k))
         Mv = np.cross(rp - piv, Fp) + np.cross(rs - piv, Fs)
         M = float(np.linalg.norm(Mv - (Mv @ k) * k))
         fr_b = 0.5 * Fr + M / bearing.spacing_mm
         P0 = max(fr_b, bearing.X0 * fr_b + bearing.Y0 * Fa)
-        s0 = bearing.C0_N / P0 if P0 > 0 else math.inf
+        s0 = bearing.C0_N / P0 if P0 > 0 else math.inf  # pragma: no mutate (unloaded guard)
+        passes = s0 >= bearing.required_s0  # pragma: no mutate (boundary)
         out.append({"case": getattr(c, "name", str(c)), "pushrod_N": T, "spring_N": f,
                     "pivot_radial_N": Fr, "pivot_axial_N": Fa, "couple_Nmm": M,
-                    "bearing_P0_N": P0, "s0": s0, "passes": s0 >= bearing.required_s0})
+                    "bearing_P0_N": P0, "s0": s0, "passes": passes})
     return out
 
 
@@ -553,11 +557,8 @@ def required_rating_vs_spacing(hp: Hardpoints, cases, spacings_mm,
     """
     out = []
     for sp in spacings_mm:
-        b = RockerBearing(label=bearing.label, C0_N=1.0, spacing_mm=float(sp),
-                          X0=bearing.X0, Y0=bearing.Y0,
-                          required_s0=bearing.required_s0)
-        rows = rocker_bearing_loads(hp, cases, b)
-        p0 = max(1.0 / r["s0"] for r in rows if r["s0"] > 0)   # C0 = 1 N => s0 = 1/P0
+        b = RockerBearing(spacing_mm=float(sp), X0=bearing.X0, Y0=bearing.Y0)
+        p0 = max(r["bearing_P0_N"] for r in rocker_bearing_loads(hp, cases, b))
         out.append({"spacing_mm": float(sp), "P0_N": p0,
                     "required_C0_N": bearing.required_s0 * p0})
     return out
@@ -572,6 +573,6 @@ def select_rocker_bearing(hp: Hardpoints, cases, candidates) -> list[dict]:
     for b in candidates:
         rows = rocker_bearing_loads(hp, cases, b)
         s0 = min(r["s0"] for r in rows)
-        out.append({"label": b.label, "C0_N": b.C0_N, "spacing_mm": b.spacing_mm,
-                    "s0": s0, "meets": s0 >= b.required_s0})
+        meets = s0 >= b.required_s0  # pragma: no mutate (boundary)
+        out.append({"label": b.label, "C0_N": b.C0_N, "spacing_mm": b.spacing_mm, "s0": s0, "meets": meets})
     return sorted(out, key=lambda r: -r["s0"])

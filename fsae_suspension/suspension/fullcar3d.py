@@ -45,7 +45,9 @@ for analysis.
 
 from __future__ import annotations
 
+import math
 import numpy as np
+from ._num import vec as _vec
 import plotly.graph_objects as go
 
 from .kinematics import Hardpoints, SuspensionKinematics
@@ -151,7 +153,7 @@ def _box(cx, cy, cz, lx, ly, lz):
 
 def _prism_xsection(profile_xy, x_positions, scales):
     """Loft a 2D cross-section (y,z) along x. scales: (sy,sz,oy,oz) per station."""
-    prof = np.asarray(profile_xy, float)
+    prof = _vec(profile_xy)
     n = len(prof)
     rings = []
     for x, (sy, sz, oy, oz) in zip(x_positions, scales):
@@ -174,13 +176,13 @@ def _ellipse_ring(n=20):
 
 
 def _cylinder(center, axis, radius, length, n=24, cap=True):
-    axis = np.asarray(axis, float); axis /= (np.linalg.norm(axis) + 1e-12)
+    axis = _vec(axis); axis /= (np.linalg.norm(axis) + 1e-12)
     ref = np.array([0, 0, 1.0]) if abs(axis[2]) < 0.9 else np.array([1.0, 0, 0])
     u = np.cross(axis, ref); u /= (np.linalg.norm(u) + 1e-12)
     v = np.cross(axis, u)
     th = np.linspace(0, 2 * np.pi, n, endpoint=False)
     rim = np.array([radius * (np.cos(t) * u + np.sin(t) * v) for t in th])
-    c = np.asarray(center, float)
+    c = _vec(center)
     a0, a1 = c - axis * (length / 2), c + axis * (length / 2)
     verts = np.vstack([a0 + rim, a1 + rim])
     I, J, K = [], [], []
@@ -218,7 +220,7 @@ def _orient_part_mesh(verts, *, axis_map="z_up", yaw_deg=0.0, scale=1.0,
     yaw_deg    : rotation about the car's z-axis (vertical) — spins it flat.
     The three are applied roll -> pitch -> yaw, after the CAD-up-axis remap.
     """
-    V = np.asarray(verts, float).reshape(-1, 3) * float(scale)
+    V = _vec(verts).reshape(-1, 3) * float(scale)
     # Defensive recentre: placement translates the part's CENTRE to `centre`, so
     # the incoming verts must be centred on their own bbox. load_part_mesh does
     # this, but a payload from elsewhere (older cache, hand-built) might not — in
@@ -251,7 +253,7 @@ def _orient_part_mesh(verts, *, axis_map="z_up", yaw_deg=0.0, scale=1.0,
         V = V @ _rot_y(pitch_deg).T
     if yaw_deg:
         V = V @ _rot_z(yaw_deg).T
-    return V + np.asarray(centre, float)
+    return V + _vec(centre)
 
 
 def _airfoil_section(n=14, thickness=0.12):
@@ -301,7 +303,7 @@ def _wing_element(cx, cy, cz, chord, span, *, thickness=0.12, aoa_deg=-6.0,
 
 def _tube(p0, p1, radius, n=12):
     """A capped cylinder between two endpoints — for roll hoops and frame tubes."""
-    p0 = np.asarray(p0, float); p1 = np.asarray(p1, float)
+    p0 = _vec(p0); p1 = _vec(p1)
     axis = p1 - p0
     length = np.linalg.norm(axis) + 1e-12
     center = (p0 + p1) / 2
@@ -310,7 +312,7 @@ def _tube(p0, p1, radius, n=12):
 
 def _swept_tube(points, radius, n=10):
     """A tube following a polyline of points — for the curved main roll hoop."""
-    pts = [np.asarray(p, float) for p in points]
+    pts = [_vec(p) for p in points]
     V = []
     I = []
     J = []
@@ -326,7 +328,7 @@ def _swept_tube(points, radius, n=10):
 
 def _sphere(center, radius, n=16):
     """A UV sphere — used for the driver's helmet."""
-    c = np.asarray(center, float)
+    c = _vec(center)
     u = np.linspace(0, np.pi, n)          # polar
     w = np.linspace(0, 2 * np.pi, n)      # azimuth
     U, W = np.meshgrid(u, w)
@@ -511,8 +513,8 @@ def _extract_corner(corner, ride_drop_mm, color_registry):
     raw = corner.render_segments()
     segs = []
     for p, q, label in raw:
-        p = np.asarray(p, float)
-        q = np.asarray(q, float)
+        p = _vec(p)
+        q = _vec(q)
         if label == "Wheel":
             continue  # the wheel hub line is drawn from wc/cp below
         color, base = _agnostic_color(label, color_registry)
@@ -531,10 +533,10 @@ def _extract_corner(corner, ride_drop_mm, color_registry):
     }
     markers = [(_AGN.get(str(k).lower(),
                          str(k).replace("_", " ").capitalize()),
-                np.asarray(v, float)) for k, v in named.items()]
+                _vec(v)) for k, v in named.items()]
     st = corner.static
-    wc = np.asarray(st.wheel_center, float)
-    cp = np.asarray(st.contact_patch, float)
+    wc = _vec(st.wheel_center)
+    cp = _vec(st.contact_patch)
     cam = getattr(st, "camber", -1.5)
     return dict(segments=segs, markers=markers,
                 wheel_center=wc, contact_patch=cp, camber=cam)
@@ -954,7 +956,7 @@ def build_full_car_figure(
         if spec is None:
             return V
         dx, dy, dz, sx, sy, sz = spec
-        A = np.asarray(V, float)
+        A = _vec(V)
         flat = A.reshape(-1, 3)
         if name in _PER_INSTANCE:
             c = flat.mean(axis=0)            # this instance's own centre
@@ -1025,7 +1027,7 @@ def build_full_car_figure(
     part_pts: dict[str, list] = {}
 
     def _accrue(subsys, pts, part=None, corner=None):
-        arr = np.asarray(pts, float).reshape(-1, 3).tolist()
+        arr = _vec(pts).reshape(-1, 3).tolist()
         if subsys:
             subsys_pts.setdefault(subsys, []).extend(arr)
         if part:
@@ -1088,7 +1090,7 @@ def build_full_car_figure(
         # suppression, so a replacing CAD part can land in exactly the same place
         # its placeholder occupied — even when the placeholder is now hidden.
         # Every body is drawn under a name (custom parts default to "Custom part").
-        _vv = np.asarray(_apply_ov(name, verts), float).reshape(-1, 3)
+        _vv = _vec(_apply_ov(name, verts)).reshape(-1, 3)
         _lo, _hi = _vv.min(axis=0), _vv.max(axis=0)
         if name in _part_boxes:
             _pb = _part_boxes[name]
@@ -1308,7 +1310,7 @@ def build_full_car_figure(
 
         def _frame_tube(p, q):
             nonlocal _off
-            v, i, j, k = _tube(np.asarray(p, float), np.asarray(q, float),
+            v, i, j, k = _tube(_vec(p), _vec(q),
                                _rt, n=10)
             _fv.append(v)
             _fi.extend((np.asarray(i) + _off).tolist())
@@ -1754,14 +1756,14 @@ def build_full_car_figure(
         _focus_token = f"focus:{focus_subsystem}"
     if _focus_pts:
         camera_revision = _focus_token
-        pts = np.asarray(_focus_pts, float)
+        pts = _vec(_focus_pts)
         lo, hi = pts.min(axis=0), pts.max(axis=0)
         ctr = (lo + hi) / 2.0
 
         # Aspect mode is "data", so camera coordinates are normalised against the
         # full scene span on each axis. Express the focus centre in that space and
         # bring the eye close along the standard viewing direction.
-        all_pts = np.asarray([p for b in subsys_pts.values() for p in b], float)
+        all_pts = _vec([p for b in subsys_pts.values() for p in b])
         smin, smax = all_pts.min(axis=0), all_pts.max(axis=0)
         span = np.where((smax - smin) == 0, 1.0, (smax - smin))
         c_norm = (ctr - (smin + smax) / 2.0) / span  # centred, normalised
@@ -1785,7 +1787,7 @@ def build_full_car_figure(
     # Global scene extents (mm) over every accrued vertex — feeds the units-
     # aware axis tick generator so ticks land on round mm OR round inches.
     # The suspension pickups always accrue, so there is at least one vertex.
-    _all = np.vstack([np.asarray(_p, float).reshape(-1, 3) for _p in subsys_pts.values()])
+    _all = np.vstack([_vec(_p).reshape(-1, 3) for _p in subsys_pts.values()])
     _ext_lo, _ext_hi = _all.min(axis=0), _all.max(axis=0)
 
     fig.update_layout(
@@ -1814,7 +1816,7 @@ def build_full_car_figure(
     # Expose each subsystem's centroid (mean of all its accrued vertices) so a
     # caller can float a label on it — e.g. the role picker tags every lit
     # subteam by name at the centre of the parts it owns.
-    _centroids = {_s: np.asarray(_pts, float).reshape(-1, 3).mean(axis=0).tolist()
+    _centroids = {_s: _vec(_pts).reshape(-1, 3).mean(axis=0).tolist()
                   for _s, _pts in subsys_pts.items()}
     # Attach as a plain Python attribute, bypassing plotly's Figure.__setattr__
     # guard via object.__setattr__. This avoids stuffing a nested dict into
@@ -2465,8 +2467,8 @@ def dummy_body_footprint(fig, name: str) -> dict | None:
 
     Returns None if the body isn't present in the figure (e.g. already hidden).
     """
-    xs_lo = ys_lo = zs_lo = float("inf")
-    xs_hi = ys_hi = zs_hi = float("-inf")
+    xs_lo = ys_lo = zs_lo = math.inf
+    xs_hi = ys_hi = zs_hi = -math.inf
     found = False
     for t in getattr(fig, "data", []):
         if getattr(t, "name", None) != name:
@@ -2477,8 +2479,8 @@ def dummy_body_footprint(fig, name: str) -> dict | None:
         if x is None or y is None or z is None:
             continue
         try:
-            xa = np.asarray(x, float); ya = np.asarray(y, float)
-            za = np.asarray(z, float)
+            xa = _vec(x); ya = _vec(y)
+            za = _vec(z)
             xa = xa[np.isfinite(xa)]; ya = ya[np.isfinite(ya)]
             za = za[np.isfinite(za)]
             if not len(xa) or not len(ya) or not len(za):

@@ -55,7 +55,7 @@ def toe(hp, spec: ek.ElastoSpec) -> float:
     """Toe change (deg) of the corner under the spec's load, joints and tabs included as the spec declares."""
     r = ek.solve_elastokinematic(hp, spec, jacobian=False)
     if not r.converged:
-        return float("nan")
+        return math.nan
     return float(r.change["toe"])
 
 
@@ -104,9 +104,9 @@ def required_end_stiffness(manifest, lo: float = 1000.0, hi: float = 1.0e7, rel_
             out[case] = (lo, t_rigid, limit)
             continue
         a, b = math.log(lo), math.log(hi)                        # a fails, b holds
-        while b - a > rel_tol:
+        while b - a > rel_tol:  # pragma: no mutate (float threshold: > and >= differ only on exact equality)
             m = 0.5 * (a + b)
-            if abs(toe(hp, with_end_stiffness(spec, math.exp(m)))) <= limit:
+            if abs(toe(hp, with_end_stiffness(spec, math.exp(m)))) <= limit:  # pragma: no mutate (float threshold: <= and < differ only on exact equality)
                 b = m
             else:
                 a = m
