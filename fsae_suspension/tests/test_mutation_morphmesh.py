@@ -15,7 +15,7 @@ from tests._golden import check, plain
 
 def check(name, results, _check=check):
     """Iterative solves agree across CPUs (different LAPACK/SIMD paths) only to about 1e-8, so compare at 1e-7."""
-    _check(name, results, rel=1e-7)
+    _check(name, results, rel=1e-7, abs_=1e-5)          # abs: near-zero stress cells (MPa) vary at ~1e-7
 
 HP = Hardpoints.default()
 

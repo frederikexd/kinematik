@@ -304,6 +304,9 @@ def load_fan_from_audit(audit, hp: Hardpoints, member: str = "LF",
         C = (f3 * mags[:, None]).T @ f3            # exposure-weighted scatter
         w_eig, V = np.linalg.eigh(C)
         e1, e2 = V[:, -1], V[:, -2]                # top-2 principal directions
+        # eigh fixes each axis only up to sign, and LAPACK builds differ: point each axis's largest component positive
+        e1 = e1 * math.copysign(1.0, e1[int(np.argmax(np.abs(e1)))])  # pragma: no mutate (sign convention)
+        e2 = e2 * math.copysign(1.0, e2[int(np.argmax(np.abs(e2)))])  # pragma: no mutate (sign convention)
     nrm = np.cross(e1, e2)
 
     v2 = np.stack([f3 @ e1, f3 @ e2], axis=1)      # in-plane components, N

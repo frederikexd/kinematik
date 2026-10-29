@@ -14,9 +14,10 @@ from suspension.aero import cfd
 from suspension.aero import panel_method as pm
 from tests._golden import check, plain
 
-# part of the solve runs in float32, so results agree across CPUs only to about 1e-7 (a zero lift reads as +-1e-9
-# noise); 1e-6 still fails every mutant that changes the physics
-_TOL = dict(rel=1e-6, abs_=1e-6)
+# part of the solve runs in float32 (about 7 significant digits), and the summation order differs between CPUs'
+# SIMD kernels: an older kernel moves a lift by 2e-6. Compare at 1e-4, which still fails every mutant that changes
+# the physics
+_TOL = dict(rel=1e-4, abs_=1e-6)
 
 PM = pm.PanelMethodModel
 
@@ -69,6 +70,10 @@ def test_solves(geo, tmp_path, monkeypatch):
     }
     for k, (p, s) in cases.items():
         res[k] = PM(p).solve(s)
+    # a zero reference area falls back to a sliver, so every coefficient is a near-zero force over a near-zero area
+    # and its digits depend on the CPU; record that the fallback ran (huge Cd, converged), not the digits
+    lr = res["slab_lowref"]
+    res["slab_lowref"] = [lr.converged, lr.c_drag > 1e5, lr.notes.split(",")[0]]
     monkeypatch.setattr("suspension.aero.vortex_lattice.VortexLatticeModel", _FakeVLM)
     for mode in ("ok", "bad", "raise"):
         monkeypatch.setattr(_FakeVLM, "mode", mode)
