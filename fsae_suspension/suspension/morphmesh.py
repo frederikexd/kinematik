@@ -358,11 +358,14 @@ def load_fan_from_audit(audit, hp: Hardpoints, member: str = "LF",
             seg_v, seg_m, seg_t = vv[lo:hi], mm_[lo:hi], tt_[lo:hi]
             mean = (seg_v * seg_m[:, None]).sum(0)    # one lobe, sorted by angle: never cancels to zero
             d2 = mean / np.linalg.norm(mean)
+            ang = math.degrees(math.atan2(d2[1], d2[0]))
+            if ang <= -180.0 + 1e-9:  # pragma: no mutate (branch cut: a straight-back arrow reads +180 on every CPU)
+                ang = 180.0
             out.append(LoadCase(
                 dir2=d2, F_N=float(seg_m.max()),
                 weight=float(seg_m.sum() / total), n_instants=int(hi - lo),
                 t_lo_s=float(seg_t.min()), t_hi_s=float(seg_t.max()),
-                angle_deg=math.degrees(math.atan2(d2[1], d2[0]))))
+                angle_deg=ang))
             lo = hi
         return out
 

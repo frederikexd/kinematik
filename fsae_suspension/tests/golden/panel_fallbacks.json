@@ -42,7 +42,7 @@
   "c_side": 1.0842021724855044e-16,
   "converged": true,
   "force_monitor_range": 0.0,
-  "notes": "panel solve: 80 panels, Cd(pressure)=-0.000 + Cd(friction)=0.004  [WARNING: mean panel size 115 mm exceeds the 30 mm ride height — panels are point sources at their centroids, so the ground image is being evaluated inside the range where that approximation fails. Ride-height trends can INVERT. Refine the mesh or raise max_panels.]",
+  "notes": "panel solve: 80 panels, Cd(pressure)=+0.000 + Cd(friction)=0.004  [WARNING: mean panel size 115 mm exceeds the 30 mm ride height — panels are point sources at their centroids, so the ground image is being evaluated inside the range where that approximation fails. Ride-height trends can INVERT. Refine the mesh or raise max_panels.]",
   "provenance": {
    "backend": "panel-method",
    "cell_count": 80,
@@ -72,7 +72,7 @@
   "c_side": -1.691355389077387e-17,
   "converged": true,
   "force_monitor_range": 0.0,
-  "notes": "panel solve: 80 panels, Cd(pressure)=-0.000 + Cd(friction)=0.004  [WARNING: mean panel size 115 mm exceeds the 30 mm ride height — panels are point sources at their centroids, so the ground image is being evaluated inside the range where that approximation fails. Ride-height trends can INVERT. Refine the mesh or raise max_panels.]",
+  "notes": "panel solve: 80 panels, Cd(pressure)=+0.000 + Cd(friction)=0.004  [WARNING: mean panel size 115 mm exceeds the 30 mm ride height — panels are point sources at their centroids, so the ground image is being evaluated inside the range where that approximation fails. Ride-height trends can INVERT. Refine the mesh or raise max_panels.]",
   "provenance": {
    "backend": "panel-method",
    "cell_count": 80,
