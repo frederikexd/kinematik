@@ -365,6 +365,7 @@ class PanelMethodModel:
         # approximation fails first.
         res_warn = self._resolution_warning(centroids, areas, ride_gap)
 
+        cd_p_txt = f"{round(c_drag_pressure, 3) + 0.0:+.3f}"  # pragma: no mutate (a pressure drag that rounds to zero prints +0.000 on every CPU)
         return CoeffResult(
             attitude=spec.attitude,
             c_lift=c_lift, c_drag=c_drag, c_side=c_side,
@@ -372,7 +373,7 @@ class PanelMethodModel:
             converged=not ill,              # direct solve; False only if ill-conditioned
             force_monitor_range=0.0,
             provenance=self.provenance(n_panels=n),
-            notes=(f"panel solve: {n} panels, Cd(pressure)={c_drag_pressure:+.3f} "
+            notes=(f"panel solve: {n} panels, Cd(pressure)={cd_p_txt} "
                    f"+ Cd(friction)={c_drag_friction:.3f}" + lift_note
                    + res_warn + cond_note),
         )
