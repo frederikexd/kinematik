@@ -1,5 +1,5 @@
 <!--
-  KinematiK: Formula SAE / Formula EV pre-validation platform
+  KinematiK: Formula Student / Formula student EV pre-validation platform
   Copyright (c) 2026 Frederik Thio. AGPL-3.0.
 -->
 
