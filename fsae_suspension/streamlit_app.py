@@ -427,7 +427,19 @@ def _ax_wrap_input(_orig):
                 kwargs["kwargs"] = None
         except Exception:
             pass
-        return _orig(*args, **kwargs)
+        try:
+            return _orig(*args, **kwargs)
+        except Exception as _e:
+            # Streamlit forbids callbacks on widgets inside st.form (only the submit button may have one): drop the
+            # engagement callback, restore the caller's own, and render the widget plainly
+            if kwargs.get("on_change") is not _ax_engage_cb or "form" not in str(_e).lower():
+                raise
+            _a = kwargs.get("args") or (None, None, None, None)
+            kwargs["on_change"], kwargs["args"], kwargs["kwargs"] = _a[1], _a[2], _a[3]
+            if kwargs["on_change"] is None:
+                for _k in ("on_change", "args", "kwargs"):
+                    kwargs.pop(_k, None)
+            return _orig(*args, **kwargs)
     return _wrapped
 
 
