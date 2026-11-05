@@ -74,7 +74,7 @@ jobs:
             tests/test_brake_thermal_closed_form.py tests/test_energy_rotor_gas_physics.py \
             tests/test_gap_closures_dynamics.py tests/test_ev_electrical_check.py tests/test_ev_sheet_resolution.py \
             tests/test_fullcar3d.py tests/test_ev_excel_roundtrip.py tests/test_ev_excel_database.py \
-            tests/test_storage_diagnosis.py \
+            tests/test_storage_diagnosis.py tests/test_mutation_ev_electrical_check.py \
             --cov=powertrain.engine --cov=suspension.aero.underfloor --cov=suspension.fit_forecast \
             --cov=suspension.brake_thermal --cov=suspension.ev_electrical_check --cov=suspension.fullcar3d \
             --cov=suspension.ev_excel_roundtrip \
