@@ -42,6 +42,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from collections.abc import Sequence
+import math
 
 import numpy as np
 from ._num import vec as _vec
@@ -279,24 +280,275 @@ class ElecCheckResult:
 
 def traction_power_w(v, a, *, vehicle_mass_kg: float = 230.0, drag_cda: float = 1.10,
                      crr: float = 0.018, rho_air: float = 1.225,
-                     drivetrain_eff: float = 0.90):
+                     drivetrain_eff: float = 0.90, regen_eff: float = 0.0,
+                     regen_cap_w: float = math.inf, rot_mass_factor: float = 1.0, aux_power_w: float = 0.0,
+                     motor_eff_map=None, cla_m2: float = 0.0, tire: TireLosses | None = None, a_lat=None,
+                     toe_rad=None):
     """Tractive force, wheel power and pack power along a speed profile.
 
-        F       = m a + ½ ρ CdA v² + Crr m g
+        F       = k m a + ½ ρ CdA v² + Crr m g          (k: rotating-inertia factor)
         P_wheel = F v
-        P_pack  = max(P_wheel, 0) / η
+        P_pack  = max(P_wheel, 0) / η  +  regen_eff · max(min(P_wheel, 0), −regen_cap_w)  +  P_aux
 
     When the deceleration is larger than the road load alone would give, the car
-    is coasting or on the brakes and the motor draws nothing (no regeneration is
-    credited). Returns (F_N, P_wheel_W, P_pack_W) as arrays.
+    is coasting or on the brakes. With regen_eff = 0 (the default) the motor
+    draws nothing there; with regen_eff > 0 the braking power, up to regen_cap_w
+    at the wheels, flows back into the pack at that efficiency (wheel to pack),
+    and P_pack goes negative. aux_power_w is drawn all the time, moving or not
+    (low-voltage system, pumps, fans). Returns (F_N, P_wheel_W, P_pack_W) as arrays.
+
+    motor_eff_map, a pair (shaft power in W, motor-and-inverter efficiency), makes
+    the drive efficiency depend on load, as a motor's does: driving, the pack then
+    supplies P_shaft / η_motor(P_shaft) with P_shaft = P_wheel / η, the
+    efficiency interpolated linearly in shaft power and held flat beyond the
+    table (the way GT-SUITE and FASTSim read a motor map). η then covers the
+    gearing alone; regen keeps its own regen_eff. A MotorEfficiencyMap instead
+    reads the efficiency off the motor's speed-and-torque table, as suppliers
+    give it.
+
+    The tires carry the weight plus the downforce, Fz = m g + ½ ρ ClA v²
+    (cla_m2, 0 by default), and rolling resistance is Crr Fz, or, with tire
+    (a TireLosses, e.g. from a .tir file), the tire's own load- and
+    speed-dependent rolling resistance. With a_lat (lateral acceleration, m/s²,
+    one value per point) and tire, cornering costs the slip-angle drag
+    F_y² / C_α (F_y = m a_lat, C_α the tires' cornering stiffness at Fz), which
+    a straight-line road load leaves out. With toe_rad (each tire's toe angle as
+    the car runs, rad) and tire, the tires also scrub against each other all
+    the time: C_α,i tan δ_i sin δ_i, the alignment's share of the road load.
     """
     v = _vec(v)
     a = _vec(a)
-    F = (vehicle_mass_kg * a + 0.5 * rho_air * drag_cda * v ** 2
-         + crr * vehicle_mass_kg * 9.81)
+    fz = vehicle_mass_kg * 9.81 + 0.5 * rho_air * cla_m2 * v ** 2
+    rolling = crr * fz if tire is None else tire.rolling_force_n(fz, v)
+    F = rot_mass_factor * vehicle_mass_kg * a + 0.5 * rho_air * drag_cda * v ** 2 + rolling
+    if a_lat is not None:
+        if tire is None:
+            raise ValueError("cornering drag needs the tires' cornering stiffness: pass tire=TireLosses(...)")
+        F = F + tire.cornering_drag_n(vehicle_mass_kg * _vec(a_lat), fz)
+    if toe_rad is not None:
+        if tire is None:
+            raise ValueError("toe scrub needs the tires' cornering stiffness: pass tire=TireLosses(...)")
+        F = F + tire.toe_drag_n(toe_rad, fz)
     P_wheel = F * v
     P_pack = np.maximum(P_wheel, 0.0) / max(drivetrain_eff, 0.50)
-    return F, P_wheel, P_pack
+    if isinstance(motor_eff_map, MotorEfficiencyMap):
+        P_pack = P_pack / motor_eff_map.efficiency_at(P_pack, v)
+    elif motor_eff_map is not None:
+        P_pack = P_pack / motor_efficiency(P_pack, motor_eff_map)
+    if regen_eff:
+        P_pack = P_pack + regen_eff * np.maximum(np.minimum(P_wheel, 0.0), -regen_cap_w)
+    return F, P_wheel, P_pack + aux_power_w
+
+
+def _bilinear(xg, yg, z, x, y):
+    """z (rows along xg, columns along yg) at the points (x, y), bilinear, held flat beyond the grid."""
+    x = np.clip(x, xg[0], xg[-1])
+    y = np.clip(y, yg[0], yg[-1])
+    # either searchsorted side, and the floor of 0 (x is already clipped), give the same value: the interpolation is
+    # continuous across a grid line
+    i = np.clip(np.searchsorted(xg, x, side="right") - 1, 0, xg.size - 2)  # pragma: no mutate
+    j = np.clip(np.searchsorted(yg, y, side="right") - 1, 0, yg.size - 2)  # pragma: no mutate
+    tx = (x - xg[i]) / (xg[i + 1] - xg[i])
+    ty = (y - yg[j]) / (yg[j + 1] - yg[j])
+    return (z[i, j] * (1 - tx) * (1 - ty) + z[i + 1, j] * tx * (1 - ty)
+            + z[i, j + 1] * (1 - tx) * ty + z[i + 1, j + 1] * tx * ty)
+
+
+@dataclass(frozen=True)
+class MotorEfficiencyMap:
+    """A motor's efficiency over speed and torque, the way suppliers tabulate it: efficiency[i][j] at rpm[i] and
+    torque_nm[j], fractions in (0, 1]. n_motors identical motors share the drive equally, each through gear_ratio
+    (motor turns per wheel turn) to wheels of wheel_radius_m."""
+    rpm: tuple
+    torque_nm: tuple
+    efficiency: tuple
+    n_motors: int = 1
+    gear_ratio: float = 1.0
+    wheel_radius_m: float = 0.225
+
+    def __post_init__(self):
+        n, t, e = _vec(self.rpm), _vec(self.torque_nm), _vec(self.efficiency)
+        if n.ndim != 1 or t.ndim != 1 or n.size < 2 or t.size < 2 or e.shape != (n.size, t.size):
+            raise ValueError("the motor map needs at least two speeds and two torques, and one efficiency per pair "
+                             "(rows: speed, columns: torque)")
+        if np.any(np.diff(n) <= 0) or np.any(np.diff(t) <= 0):
+            raise ValueError("motor map speeds and torques must rise strictly")
+        if np.any(e <= 0) or np.any(e > 1):
+            raise ValueError("motor map efficiencies must lie in (0, 1]")
+        if self.n_motors < 1 or self.gear_ratio <= 0 or self.wheel_radius_m <= 0:
+            raise ValueError("motor count, gear ratio and wheel radius must be positive")
+
+    def efficiency_at(self, p_shaft_w, v_ms):
+        """Efficiency of each motor when they together deliver p_shaft_w (W) at road speed v_ms (m/s)."""
+        w = np.abs(_vec(v_ms)) / self.wheel_radius_m * self.gear_ratio            # motor speed, rad/s
+        torque = np.abs(_vec(p_shaft_w)) / (self.n_motors * np.maximum(w, 1e-9))
+        return _bilinear(_vec(self.rpm), _vec(self.torque_nm), _vec(self.efficiency), w * 30.0 / math.pi, torque)
+
+
+@dataclass(frozen=True)
+class TireLosses:
+    """Rolling resistance and cornering stiffness of the car's tires, in the terms of a Pacejka MF 6.1 .tir file
+    (TireLosses.from_tir), at nominal pressure and no camber. Per tire, at load f_z and speed v:
+        rolling force   F_r  = f_z (QSY1 + QSY3 |v / V0| + QSY4 (v / V0)^4) (f_z / Fz0)^(QSY7 - 1)
+        cornering stiff C_α  = |PKY1| Fz0 sin(PKY4 atan(f_z / (PKY2 Fz0)))          (N/rad)
+    n_tires share the load equally."""
+    qsy1: float = 0.01
+    qsy3: float = 0.0
+    qsy4: float = 0.0
+    qsy7: float = 1.0
+    fz_nom_n: float = 1000.0
+    v_ref_ms: float = 16.7
+    pky1: float = -15.0
+    pky2: float = 1.7
+    pky4: float = 2.0
+    n_tires: int = 4
+
+    def __post_init__(self):
+        if self.fz_nom_n <= 0 or self.v_ref_ms <= 0 or self.n_tires < 1 or self.pky2 <= 0:
+            raise ValueError("nominal load, reference speed, PKY2 and the tire count must be positive")
+
+    def rolling_force_n(self, fz_total_n, v_ms):
+        """Rolling resistance of all the tires together (N) under a total load fz_total_n (N) at speed v_ms (m/s)."""
+        fz = np.maximum(_vec(fz_total_n), 0.0) / self.n_tires
+        u = _vec(v_ms) / self.v_ref_ms
+        return self.n_tires * fz * (self.qsy1 + self.qsy3 * np.abs(u) + self.qsy4 * u ** 4) * (
+            np.maximum(fz, 1e-9) / self.fz_nom_n) ** (self.qsy7 - 1.0)            # no load, no rolling force
+
+    def cornering_stiffness_n_rad(self, fz_total_n):
+        """Cornering stiffness of all the tires together (N/rad) under a total load fz_total_n (N)."""
+        fz = np.maximum(_vec(fz_total_n), 0.0) / self.n_tires
+        return self.n_tires * abs(self.pky1) * self.fz_nom_n * np.sin(
+            self.pky4 * np.arctan(fz / (self.pky2 * self.fz_nom_n)))
+
+    def cornering_drag_n(self, f_lat_n, fz_total_n):
+        """Slip-angle drag (N) while the tires make the lateral force f_lat_n (N): F_y tan α ≈ F_y² / C_α, with the
+        tires sharing the force in proportion to their stiffness."""
+        c = np.maximum(self.cornering_stiffness_n_rad(fz_total_n), 1e-9)
+        return _vec(f_lat_n) ** 2 / c
+
+    def toe_drag_n(self, toe_rad, fz_total_n):
+        """Scrub drag (N) of tires running at toe angles toe_rad (rad, one per tire, sign immaterial): each at slip
+        angle δ makes C_α δ sideways, which costs C_α tan δ sin δ along the road; C_α per tire at an equal share of
+        fz_total_n (N)."""
+        toe = _vec(toe_rad)
+        if toe.ndim != 1 or toe.size != self.n_tires:
+            raise ValueError(f"give one toe angle per tire ({self.n_tires})")
+        c = self.cornering_stiffness_n_rad(fz_total_n) / self.n_tires
+        return c * float(np.sum(np.tan(toe) * np.sin(toe)))
+
+    @classmethod
+    def from_tir(cls, text: str, n_tires: int = 4) -> TireLosses:
+        """From the text of a .tir file (keys in capitals, as the format writes them). Coefficients the file does not
+        give keep the class defaults; LONGVL is the reference speed V0 (m/s) and FNOMIN the nominal load Fz0 (N)."""
+        import re
+        keys = {"QSY1": "qsy1", "QSY3": "qsy3", "QSY4": "qsy4", "QSY7": "qsy7", "FNOMIN": "fz_nom_n",
+                "LONGVL": "v_ref_ms", "PKY1": "pky1", "PKY2": "pky2", "PKY4": "pky4"}
+        kw = {}
+        for key, name in keys.items():
+            m = re.search(rf"(?m)^\s*{key}\s*=\s*([-+0-9.eE]+)", text)
+            if m:
+                kw[name] = float(m.group(1))
+        return cls(n_tires=n_tires, **kw)
+
+
+def motor_efficiency(p_shaft_w, eff_map):
+    """Efficiency (dimensionless) at shaft power p_shaft_w (W) from a (power W, efficiency) table: linear between
+    the points, flat beyond them. The table needs at least two points, power rising strictly, efficiency in (0, 1]."""
+    pw, eta = (np.asarray(x, dtype=float) for x in eff_map)  # pragma: no mutate (np.interp takes ints too)
+    if pw.ndim != 1 or pw.size < 2 or pw.size != eta.size:
+        raise ValueError("the motor map needs at least two (power, efficiency) points of equal length")
+    if np.any(np.diff(pw) <= 0):
+        raise ValueError("motor map power must rise strictly")
+    if np.any(eta <= 0) or np.any(eta > 1):
+        raise ValueError("motor map efficiencies must lie in (0, 1]")
+    return np.interp(np.abs(_vec(p_shaft_w)), pw, eta)
+
+
+def pack_along_lap(p_terminal_w, t_s, *, ocv_soc, soc0: float, capacity_ah: float, r_pack_ohm: float,
+                   r_soc_temp=None, heat_capacity_j_k: float | None = None, temp0_k: float = 298.15,
+                   temps_out: list | None = None):
+    """Terminal voltage (V), current (A) and state of charge along a lap for a pack whose open-circuit voltage falls
+    as it discharges: ocv_soc is a (state of charge, V) table, read linearly. Each step draws p_terminal_w (W) at
+    the terminals through the pack's resistance (as battery_internal_power_w, clipped at the most the pack can give)
+    from the voltage at the charge left; the charge then drops by I dt / capacity. Returns (v_terminal_V, i_A, soc).
+
+    The resistance is r_pack_ohm, or, with r_soc_temp = (states of charge, temperatures K, resistances Ω with one row
+    per state of charge), read bilinearly at the charge and temperature of the moment. With heat_capacity_j_k
+    (J/K) the pack starts at temp0_k and heats by I² R dt / C each step (no cooling: a lap is short against a
+    pack's thermal time constant); temps_out, if a list, receives the temperature at every point (K)."""
+    p, t = _vec(p_terminal_w), _vec(t_s)
+    if p.shape != t.shape or p.size < 1:
+        raise ValueError("one power per time point")
+    if capacity_ah <= 0:
+        raise ValueError("capacity must be positive")
+    soc_pts, v_pts = (np.asarray(x, dtype=float) for x in ocv_soc)  # pragma: no mutate (np.interp takes ints)
+    if soc_pts.size < 2 or soc_pts.size != v_pts.size or np.any(np.diff(soc_pts) <= 0):
+        raise ValueError("the OCV table needs at least two (state of charge, V) points, charge rising strictly")
+    if r_soc_temp is not None:
+        rs, rt, rr = (np.asarray(x, dtype=float) for x in r_soc_temp)  # pragma: no mutate (bilinear takes ints)
+        if rs.size < 2 or rt.size < 2 or rr.shape != (rs.size, rt.size):
+            raise ValueError("the resistance table needs at least two charges and two temperatures, one value each")
+    if heat_capacity_j_k is not None and heat_capacity_j_k <= 0:
+        raise ValueError("heat capacity must be positive")
+    dt = np.diff(t, prepend=t[0])
+    soc = np.empty_like(p)
+    i = np.empty_like(p)
+    v = np.empty_like(p)
+    q, temp, r = float(soc0), float(temp0_k), r_pack_ohm
+    for k in range(p.size):
+        if k:
+            q -= i[k - 1] * dt[k] / (3600.0 * capacity_ah)
+            if heat_capacity_j_k is not None:
+                temp += i[k - 1] ** 2 * r * dt[k] / heat_capacity_j_k
+        if r_soc_temp is not None:
+            r = float(_bilinear(rs, rt, rr, q, temp))
+        ocv = float(np.interp(q, soc_pts, v_pts))
+        i[k] = battery_internal_power_w(p[k], ocv, r)[1]
+        v[k] = ocv - i[k] * r
+        soc[k] = q
+        if temps_out is not None:
+            temps_out.append(temp)
+    return v, i, soc
+
+
+def pack_temperature_along(i_a, t_s, *, r_pack_ohm: float, heat_capacity_j_k: float, temp0_k: float,
+                           cooling_w_k: float = 0.0, ambient_k: float | None = None):
+    """Pack temperature (K) along a log of pack current i_a (A) at times t_s (s): a lumped pack of heat capacity
+    heat_capacity_j_k (J/K) heated by I² R and cooled by cooling_w_k (W/K) towards ambient_k (K):
+        C dT/dt = I² R − hA (T − T_ambient)
+    stepped forward from temp0_k (the current of each step heats over the step that follows it)."""
+    i, t = _vec(i_a), _vec(t_s)
+    if i.shape != t.shape or i.size < 1:
+        raise ValueError("one current per time point")
+    if heat_capacity_j_k <= 0 or cooling_w_k < 0:
+        raise ValueError("heat capacity must be positive and cooling not negative")
+    if cooling_w_k and ambient_k is None:
+        raise ValueError("cooling needs an ambient temperature")
+    dt = np.diff(t)
+    temps = np.empty_like(i)
+    temps[0] = temp0_k
+    for k in range(1, i.size):
+        loss = cooling_w_k * (temps[k - 1] - ambient_k) if cooling_w_k else 0.0
+        temps[k] = temps[k - 1] + (i[k - 1] ** 2 * r_pack_ohm - loss) * dt[k - 1] / heat_capacity_j_k
+    return temps
+
+
+def battery_internal_power_w(p_terminal_w, ocv_v: float, r_pack_ohm: float):
+    """Power the cells give up (positive) or take in (negative) for a terminal power, with the pack's I²R loss.
+
+        V_oc I − I² R = P_terminal   →   I = (V_oc − √(V_oc² − 4 R P_terminal)) / (2 R)
+        P_internal = V_oc I = P_terminal + I² R
+
+    The loss is counted both ways: discharging costs more than the terminal power, charging stores less. A demand
+    above the pack's maximum transferable power V_oc² / 4R is clipped to it (I = V_oc / 2R). Returns
+    (P_internal_W, I_A).
+    """
+    p = _vec(p_terminal_w)
+    if r_pack_ohm <= 0:
+        return p.copy(), p / ocv_v
+    disc = np.maximum(ocv_v * ocv_v - 4.0 * r_pack_ohm * p, 0.0)
+    i = (ocv_v - np.sqrt(disc)) / (2.0 * r_pack_ohm)
+    return ocv_v * i, i
 
 
 def fuse_limited_speed(max_pack_power_w: float, *, vehicle_mass_kg: float = 230.0,

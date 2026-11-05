@@ -1,0 +1,8 @@
+case hock_fs_car
+vehicle data Vehicle_data_dwishbone
+event CRG Hockenheim F
+fs_car 1
+vGain 1
+run 2026-11-05 15:54:58Z
+wall time 545 s
+MATLAB 26.2.0.3433840 (R2026b) Update 1

@@ -194,15 +194,18 @@ def _long(car, v, pt, mlat, lat, brake=False):
     else:
         F = mu * N * math.sqrt(max(1 - fr * fr, 0))
     drag = 0.5 * pt.rho * pt.cda * v * v
+    k = max(pt.rot_mass_factor, 1.0)
     if brake:
-        return (min(F, pt.brake_g_cap * m * G) + drag) / m
-    return (min(F, pt.tractive_force(v)) - drag - pt.crr * (m * G + Fd)) / m
+        return (min(F, pt.brake_g_cap * m * G) + drag) / (m * k)
+    return (min(F, pt.tractive_force(v)) - drag - pt.crr * (m * G + Fd)) / (m * k)
 
 
 CT = NS(ell_kx=1.6, ell_ky=2.4, mu_x_ratio=1.15)
 
 
-@pytest.mark.parametrize("pt", [lt.Powertrain(), lt.Powertrain(drive="awd", combined_tire=CT, cla=-1.0),
+@pytest.mark.parametrize("pt", [lt.Powertrain(), lt.Powertrain(drive="awd", combined_tire=CT, cla=-1.0,
+                                                              rot_mass_factor=1.3),
+                                lt.Powertrain(rot_mass_factor=0.5),
                                 lt.Powertrain(combined_tire=NS(), power_kw=200.0, brake_g_cap=0.8),
                                 lt.Powertrain(combined_tire=NS(ell_kx=0.0, ell_ky=0.0, mu_x_ratio=1.0))])
 def test_the_accel_and_brake_limits(pt):
@@ -637,3 +640,17 @@ def test_characterized_paths():
     res["compare"] = {k: (v if not isinstance(v, lt.Track) else [[sg.length_m, sg.radius_m] for sg in v.segments])
                       for k, v in cmp.items()}
     check("laptime_paths", res)
+
+
+def test_the_spinning_parts_slow_every_change_of_speed():
+    car = _car(1.5, mass=290.0, wf=0.45)
+    car._kx_lat_limit_table = (VS, [1.5 * (1 + 0.004 * x) for x in VS], 1.5)
+    assert lt.Powertrain().rot_mass_factor == 1.0
+    for v in (5.0, 20.0):
+        a1 = lt._accel_long(car, v, lt.Powertrain(), 1.5, 0.0)
+        assert lt._accel_long(car, v, lt.Powertrain(rot_mass_factor=1.25), 1.5, 0.0) == pytest.approx(a1 / 1.25)
+        d1 = lt._decel_long(car, v, lt.Powertrain(), 1.5, 0.0)
+        assert lt._decel_long(car, v, lt.Powertrain(rot_mass_factor=1.25), 1.5, 0.0) == pytest.approx(d1 / 1.25)
+        assert lt._accel_long(car, v, lt.Powertrain(rot_mass_factor=0.8), 1.5, 0.0) == pytest.approx(a1)  # floor 1
+    slow = lt.acceleration_time(car, lt.Powertrain(rot_mass_factor=1.2)).lap_time_s
+    assert slow > lt.acceleration_time(car, lt.Powertrain()).lap_time_s

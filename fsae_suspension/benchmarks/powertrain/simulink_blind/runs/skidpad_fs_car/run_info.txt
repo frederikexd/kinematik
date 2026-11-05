@@ -1,0 +1,8 @@
+case skidpad_fs_car
+vehicle data Vehicle_data_dwishbone
+event Skidpad
+fs_car 1
+vGain 1
+run 2026-11-05 16:15:41Z
+wall time 136 s
+MATLAB 26.2.0.3433840 (R2026b) Update 1
