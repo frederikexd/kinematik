@@ -3,6 +3,7 @@ ceiling, the torque curve with its limiter and power cap, CSV import in every un
 upshift crossover found independently, the standing-start integration written out step by step, fuel and coolant
 heat from the wheel power, the endurance tank, engine braking, and every feasibility finding word for word."""
 import math
+import warnings
 from types import SimpleNamespace as NS
 
 import numpy as np
@@ -196,6 +197,25 @@ def _shift_oracle(g, e):
         else:
             out.append(brentq(d, lo, vr * 0.999, xtol=1e-12))
     return out
+
+
+def test_fixed_upshift_speeds():
+    e = ENG()
+    g = ice.Gearbox(**GB, upshift_kmh=(30, 60))
+    assert ice.Gearbox(**GB).upshift_kmh is None
+    red0 = g.speed_at(e.redline_rpm, 0)
+    assert g.shift_speeds(e) == pytest.approx([min(30 / 3.6, red0), min(60 / 3.6, g.speed_at(e.redline_rpm, 1))])
+    fast = ice.Gearbox(**GB, upshift_kmh=(red0 * 3.6 + 50, red0 * 3.6 + 60))  # past the limiter: capped there
+    assert fast.shift_speeds(e) == pytest.approx([red0, fast.speed_at(e.redline_rpm, 1)])
+    slow = ice.Gearbox(**GB, upshift_kmh=(5, 6))
+    assert slow.shift_speeds(e) == pytest.approx([5 / 3.6, 6 / 3.6])
+    for bad in ((30,), (30, 60, 90), (0, 60), (-1, 60), (60, 30), (60, 60)):
+        with pytest.raises(ValueError) as err:
+            ice.Gearbox(**GB, upshift_kmh=bad)
+        assert str(err.value) == "upshift speeds: one per upshift, positive and rising"
+    la = ice.simulate_launch(e, slow, ice.ICEVehicle(mass_kg=260.0), launch_rpm=6000.0)
+    lb = ice.simulate_launch(e, ice.Gearbox(**GB), ice.ICEVehicle(mass_kg=260.0), launch_rpm=6000.0)
+    assert la.time_s != lb.time_s
 
 
 def test_shift_speeds():
@@ -487,6 +507,177 @@ def test_fuel_for_a_lap():
     with pytest.raises(ValueError) as err:
         ice.fuel_for_lap(NS(s=[0.0], v=[1.0]), e, g)
     assert str(err.value) == "the lap has no speed trace"
+
+
+def _willans_fuel(lap, eng, gb, veh, wl, rpm_pts=None, fuel_key="gasoline", over=0.05, cf=0.28):
+    f = ice.fuel(fuel_key)
+    s, v = np.asarray(lap.s, float), np.asarray(lap.v, float)
+    ds = np.diff(s)
+    vm = 0.5 * (v[1:] + v[:-1])
+    dt = ds / np.maximum(vm, 0.05)
+    a = np.diff(v * v) / (2 * np.maximum(ds, 1e-6))
+    me = np.array([veh.m_eff(gb.overall(gb.best_gear(x, eng)), eng, gb.efficiency, gb.tire_radius_m) for x in vm])
+    pw = (me * a + 0.5 * veh.rho * veh.cda_m2 * vm ** 2 + veh.crr * veh.mass_kg * 9.81) * vm
+    pw = np.minimum(pw, np.array([gb.envelope_force(x, eng) for x in vm]) * vm)
+    pe = np.where(pw > 0, pw / gb.efficiency, 0.0)
+    if rpm_pts is None:
+        n = np.array([x / gb.tire_radius_m * gb.overall(gb.best_gear(x, eng)) * 30 / math.pi for x in vm])
+    else:
+        n = 0.5 * (np.asarray(rpm_pts[1:], float) + np.asarray(rpm_pts[:-1], float))
+    n = np.maximum(n, eng.idle_rpm)
+    fmep = (wl.fmep_kpa + wl.fmep_kpa_per_krpm * n / 1000) * 1000
+    fuel_w = (pe + fmep * eng.displacement_cc * 1e-6 * n / 120) / wl.eta_indicated
+    rate = np.where(pw > 0, fuel_w / (f.lhv_mj_kg * 1e6), over / 1e3)
+    kg = rate @ dt
+    chem = rate * f.lhv_mj_kg * 1e6
+    t = dt.sum()
+    lit = kg / f.density_kg_l
+    L = s[-1] - s[0]
+    return dict(fuel_kg=kg, fuel_l=lit, co2_kg=lit * f.co2_kg_per_l, engine_work_mj=(pe * dt).sum() / 1e6,
+                lap_time_s=t, lap_m=L, peak_fuel_g_s=rate.max() * 1e3, mean_coolant_heat_w=(chem * dt).sum() / t * cf,
+                peak_coolant_heat_w=chem.max() * cf, l_per_100km=lit / L * 1e5)
+
+
+def test_the_willans_line():
+    wl = ice.WillansLine(0.38, 120.0, 25.0)
+    assert wl.source == "user"
+    p, n = np.array([0.0, 20e3, 60e3]), np.array([3000.0, 6000.0, 10000.0])
+    fmep = (120.0 + 25.0 * n / 1000) * 1000
+    want = (p + fmep * 599e-6 * n / 120) / 0.38
+    assert np.allclose(wl.fuel_power_w(p, n, 599.0), want, rtol=1e-12)
+    assert np.allclose(wl.bte(p, n, 599.0), p / want, rtol=1e-12)
+    assert ice.WillansLine(0.38, 120.0).fmep_kpa_per_krpm == 0.0
+    # a dyno sweep on that line, plus a motoring point and a fuel-cut point that must be left out
+    n = np.array([3000.0, 5000.0, 7000.0, 9000.0, 11000.0, 4000.0, 8000.0, 6000.0, 6000.0])
+    t = np.array([20.0, 45.0, 55.0, 60.0, 50.0, 10.0, 35.0, -8.0, 30.0])
+    p = t * n * math.pi / 30
+    g = wl.fuel_power_w(p, n, 599.0) / 43e3
+    g[-1] = 0.0
+    fit = ice.fit_willans(t, n, g, 599.0, 43.0)
+    assert (fit.eta_indicated, fit.fmep_kpa, fit.fmep_kpa_per_krpm) == pytest.approx((0.38, 120.0, 25.0), rel=1e-9)
+    assert fit.source == "fitted" and ice.fit_willans(t, n, g, 599.0, 43.0, source="dyno").source == "dyno"
+    with pytest.raises(ValueError) as err:                              # two firing points and a stopped one
+        ice.fit_willans([10.0, 20.0, 30.0], [3000.0, 4000.0, 0.0], [1.0, 2.0, 3.0], 599.0, 43.0)
+    assert str(err.value) == "a Willans line needs at least three firing points"
+    # off-line points, one with under a watt of brake power: the fit is the least-squares one through all of them
+    n2 = np.array([3000.0, 5000.0, 7000.0, 9000.0, 0.03])
+    t2 = np.array([20.0, 45.0, 55.0, 60.0, 100.0])
+    g2 = np.array([0.5, 1.5, 2.6, 3.4, 2.0])
+    p2 = t2 * n2 * math.pi / 30
+    sw = 599e-6 * n2 / 120
+    c, *_ = np.linalg.lstsq(np.column_stack([p2, sw * 1000, sw * n2]), g2 * 43e3, rcond=None)
+    fit = ice.fit_willans(t2, n2, g2, 599.0, 43.0)
+    assert (fit.eta_indicated, fit.fmep_kpa, fit.fmep_kpa_per_krpm) == pytest.approx(
+        (1 / c[0], c[1] / c[0], c[2] / c[0]), rel=1e-9)
+    three = ice.fit_willans(t[:3], n[:3], wl.fuel_power_w(p[:3], n[:3], 599.0) / 43e3, 599.0, 43.0)
+    assert three.eta_indicated == pytest.approx(0.38, rel=1e-9)            # three firing points are enough
+    hi = ice.WillansLine(0.6, 50.0, 10.0)                                 # high efficiency, still below 1
+    assert ice.fit_willans(t, n, hi.fuel_power_w(p, n, 599.0) / 43e3, 599.0, 43.0).eta_indicated == pytest.approx(0.6)
+    for eta in (1.0, 1.5):
+        bad = ice.WillansLine(eta, 50.0, 10.0)
+        with pytest.raises(ValueError) as err:
+            ice.fit_willans(t, n, bad.fuel_power_w(p, n, 599.0) / 43e3, 599.0, 43.0)
+        assert str(err.value) == "the points give no indicated efficiency below 1: not a firing engine sweep"
+
+
+def _sweep(wl, cols=("rpm", "torque_nm", "fuel_g_s"), noise=None, loads=(1.0, 0.55, 0.25), lhv=43.0):
+    rows, k = [",".join(cols)], 0
+    for frac in loads:
+        for n, tf in ((6000.0, 52.0), (8000.0, 55.0), (10000.0, 53.0)):
+            t = tf * frac
+            p = t * n * math.pi / 30
+            g = wl.fuel_power_w(p, n, 599.0) / (lhv * 1e3) * (1 + (noise[k] if noise else 0.0))
+            k += 1
+            vals = {"rpm": n, "torque_nm": t, "power_kw": p / 1e3, "fuel_g_s": g, "fuel_kg_h": g * 3.6,
+                    "bsfc_g_kwh": g / (p / 1e3) * 3600}
+            rows.append(",".join(f"{vals[c]:.9g}" for c in cols))
+    return "\n".join(rows)
+
+
+def test_a_fuel_map_from_a_dyno_csv():
+    wl = ice.WillansLine(0.36, 150.0, 15.0)
+    for cols in (("rpm", "torque_nm", "fuel_g_s"), ("rpm", "torque_nm", "fuel_kg_h"),
+                 ("rpm", "bsfc_g_kwh", "power_kw"), ("rpm", "power_kw", "bsfc_g_kwh")):
+        fm = ice.fuel_map_from_csv(_sweep(wl, cols), 599.0, 43.0)
+        assert (fm.line.eta_indicated, fm.line.fmep_kpa, fm.line.fmep_kpa_per_krpm) == pytest.approx(
+            (0.36, 150.0, 15.0), rel=1e-6), cols
+        assert fm.n_points == 9 and fm.rms_error < 1e-6 and fm.warnings == [] and fm.line.source == "dyno fuel map"
+    tpl = ice.fuel_map_from_csv(ice.FUEL_MAP_TEMPLATE, 599.0, 43.0)
+    assert tpl.warnings == [] and tpl.line.eta_indicated == pytest.approx(0.36, rel=1e-3)
+    eng = ice.EngineMap.from_csv(_sweep(wl, ("rpm", "fuel_g_s", "torque_nm"), loads=(1.0,)))
+    assert eng.torque_nm == pytest.approx([52.0, 55.0, 53.0])          # the fuel column is not the curve
+    with pytest.raises(ValueError) as err:
+        ice.fuel_map_from_csv("rpm,torque_nm\n6000,50\n8000,52\n9000,40\n", 599.0, 43.0)
+    assert str(err.value) == "no fuel column found (headers: fuel_g_s, fuel_kg_h or bsfc_g_kwh)"
+    with pytest.raises(ValueError) as err:
+        ice.fuel_map_from_csv(_sweep(wl, loads=(1.0, 0.55)), 599.0, 43.0)
+    assert str(err.value) == ("the points cover too few loads to separate friction from efficiency: add "
+                              "part-throttle points (at least three throttle openings)")
+    # a full-load point at 6400 rpm sits in its own 100 rpm band: still only two load levels
+    with pytest.raises(ValueError):
+        ice.fuel_map_from_csv(_sweep(wl, loads=(1.0, 0.55)) + "\n6400,70,4.0", 599.0, 43.0)
+    # dyno speeds wander a few rpm between throttle openings: points within a band share its full-load torque
+    jitter = _sweep(wl).splitlines()
+    jitter = jitter[:4] + [f"{float(r.split(',')[0]) + 20:.0f}," + r.split(",", 1)[1] for r in jitter[4:]]
+    assert ice.fuel_map_from_csv("\n".join(jitter), 599.0, 43.0).n_points == 9
+    # motoring (no power), a fuel cut (no fuel) and a light-load point under 1 kW: only the firing points count
+    extra = _sweep(wl) + "\n3000,0,0.5\n4000,10,0" + \
+        f"\n3000,1.0,{wl.fuel_power_w(1.0 * 3000 * math.pi / 30, 3000, 599.0) / 43e3:.9g}"
+    assert ice.fuel_map_from_csv(extra, 599.0, 43.0).n_points == 10
+    assert ice.fuel_map_from_csv(_sweep(wl, loads=(1.0, 0.55, 0.15)), 599.0, 43.0).n_points == 9
+    noisy = ice.fuel_map_from_csv(_sweep(wl, noise=[0.12, -0.1, 0.15, -0.12, 0.1, -0.15, 0.12, -0.1, 0.1]), 599.0,
+                                  43.0)
+    model = []
+    for line in _sweep(wl).splitlines()[1:]:
+        n, t, _ = (float(x) for x in line.split(","))
+        model.append(noisy.line.fuel_power_w(t * n * math.pi / 30, n, 599.0) / 43e3)
+    meas = [float(x.split(",")[2]) for x in _sweep(wl, noise=[0.12, -0.1, 0.15, -0.12, 0.1, -0.15, 0.12, -0.1,
+                                                              0.1]).splitlines()[1:]]
+    assert noisy.rms_error == pytest.approx(float(np.sqrt(np.mean((np.array(model) / meas - 1) ** 2))), rel=1e-9)
+    assert noisy.warnings[-1] == f"the line misses the points by {noisy.rms_error:.0%} RMS: check the sweep for " \
+                                 "unsteady or rich points"
+    edge = ice.fuel_map_from_csv(_sweep(wl, noise=[0.08] * 9), 599.0, 43.0)  # a uniform offset fits exactly
+    assert edge.rms_error < 1e-6 and edge.warnings == []
+    low = ice.fuel_map_from_csv(_sweep(ice.WillansLine(0.2, 150.0, 15.0)), 599.0, 43.0)
+    assert low.warnings == ["indicated efficiency 0.20 is outside 0.25-0.50, typical of spark-ignition engines: "
+                            "check the units of the fuel column"]
+    for eta in (0.25, 0.5):
+        assert ice.fuel_map_from_csv(_sweep(ice.WillansLine(eta, 150.0, 15.0)), 599.0, 43.0).warnings == []
+    assert ice.fuel_map_from_csv(_sweep(ice.WillansLine(0.55, 150.0, 15.0)), 599.0, 43.0).warnings[0].startswith(
+        "indicated efficiency 0.55")
+    for fm0, fm1 in ((150.0, -20.0), (-200.0, 30.0)):                   # negative at the top, or at the bottom
+        neg = ice.fuel_map_from_csv(_sweep(ice.WillansLine(0.36, fm0, fm1)), 599.0, 43.0)
+        assert neg.warnings == ["friction and pumping come out negative in the measured speed range: add "
+                                "part-throttle points"], (fm0, fm1)
+    assert ice.fuel_map_from_csv(_sweep(ice.WillansLine(0.36, 60.0, -5.0)), 599.0, 43.0).warnings == []
+    assert ice.fuel_map_from_csv(_sweep(ice.WillansLine(0.36, 60.5, -6.0)), 599.0, 43.0).warnings == []  # +0.5 kPa
+    assert ice.fuel_map_from_csv(_sweep(ice.WillansLine(0.36, 59.97, -6.0)), 599.0, 43.0).warnings  # -0.03 kPa
+
+
+def test_fuel_for_a_lap_on_a_willans_line():
+    e = ENG(idle_rpm=2500.0, displacement_cc=599.0)
+    g = ice.Gearbox(**GB)
+    veh = ice.ICEVehicle(mass_kg=260.0)
+    wl = ice.WillansLine(0.36, 150.0, 20.0)
+    lap = NS(s=np.r_[0.0, 20.0, 40.0, 60.0, 90.0, 140.0, 200.0], v=np.r_[2.0, 15.0, 20.0, 18.0, 0.5, 25.0, 30.0])
+    r = ice.fuel_for_lap(lap, e, g, veh, fuel_key="e85", overrun_fuel_g_s=0.08, coolant_frac=0.3, willans=wl)
+    want = _willans_fuel(lap, e, g, veh, wl, None, "e85", 0.08, 0.3)
+    for k, w in want.items():
+        assert getattr(r, k) == pytest.approx(w, rel=1e-12), k
+    rpm = np.r_[2000.0, 6000.0, 8000.0, 7500.0, 1500.0, 9000.0, 9500.0]
+    logged = NS(s=lap.s, v=lap.v, rpm=rpm)
+    r = ice.fuel_for_lap(logged, e, g, veh, willans=wl)
+    for k, w in _willans_fuel(lap, e, g, veh, wl, rpm).items():
+        assert getattr(r, k) == pytest.approx(w, rel=1e-12), k
+    assert r.fuel_kg != ice.fuel_for_lap(lap, e, g, veh, willans=wl).fuel_kg
+    rep = ice.fuel_for_lap(LAP, ice.EngineMap.representative_600_i4(), ice.Gearbox(), willans=wl)
+    assert rep.warnings == []
+    assert ENG().fuel_map is None
+    own = ice.fuel_for_lap(logged, ENG(idle_rpm=2500.0, displacement_cc=599.0, fuel_map=wl), g, veh)
+    assert own.fuel_kg == r.fuel_kg                                    # the engine's own map is used by default
+    other = ice.WillansLine(0.30, 300.0)
+    assert ice.fuel_for_lap(logged, ENG(idle_rpm=2500.0, displacement_cc=599.0, fuel_map=other), g, veh,
+                            willans=wl).fuel_kg == r.fuel_kg              # an explicit line wins
 
 
 def _fr(fuel_l=0.5, lap_m=1000.0, peak=3.0, mean_heat=9000.0):
@@ -791,3 +982,88 @@ def test_compare_engines_hands_on_its_own_objects(monkeypatch):
     ice.compare_engines([ice.EngineOption("a", e, g)], NS(p=P()), "T")
     assert got["launch"][0] is e and got["launch"][1] is g and got["lap"][0] is e and got["lap"][1] is g
     assert got["fuel"][0] is e and got["fuel"][1] is g and got["end"] is fr
+
+
+def test_the_power_efficiency_map():
+    m = ice.PowerEfficiencyMap((0.0, 1e4, 5e4), (0.0, 0.25, 0.35), idle_fuel_w=3000.0, source="FASTSim")
+    p = np.r_[-5.0, 0.0, 1e3, 1e4, 3e4, 5e4, 8e4]
+    eff = np.interp(np.maximum(p, 0.0), [0.0, 1e4, 5e4], [0.0, 0.25, 0.35])
+    burn = np.array([0.0 if x <= 0 else x / e for x, e in zip(np.maximum(p, 0.0), eff)])
+    assert m.fuel_power_w(p, 9000.0, 599.0) == pytest.approx(np.maximum(burn, 3000.0), rel=1e-12)
+    assert m.fuel_power_w(1e3) == pytest.approx(1e3 / 0.025)        # linear between the points
+    assert m.fuel_power_w(3e4) == pytest.approx(1e5)
+    assert m.fuel_power_w(8e4) == pytest.approx(8e4 / 0.35)         # flat beyond the last
+    assert m.fuel_power_w(0.0) == 3000.0 and m.fuel_power_w(500.0) == pytest.approx(4e4)   # P / eta stays finite
+    assert ice.PowerEfficiencyMap((0.0, 1e4), (0.2, 0.3), idle_fuel_w=3000.0).fuel_power_w(300.0) == 3000.0  # idle
+    assert m.bte(3e4) == pytest.approx(0.3) and m.source == "FASTSim"
+    bare = ice.PowerEfficiencyMap((0.0, 2e3), (0.0, 0.3))
+    assert bare.idle_fuel_w == 0.0 and bare.source == "user"
+    assert bare.fuel_power_w(0.0) == 0.0 and bare.fuel_power_w(1e3) == pytest.approx(1e3 / 0.15)
+    assert bare.fuel_power_w(0.5) == pytest.approx(0.5 / (0.3 * 0.5 / 2e3))   # under 1 W still on the map
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        assert bare.fuel_power_w(np.r_[0.0, 0.0]) == pytest.approx([0.0, 0.0])   # no 0/0 warning
+    fine = ice.PowerEfficiencyMap((0.0, 0.5), (0.1, 0.2))                       # points under 1 W apart
+    assert fine.fuel_power_w(0.25) == pytest.approx(0.25 / 0.15)
+    late = ice.PowerEfficiencyMap((1e3, 2e3), (0.2, 0.3))
+    assert late.fuel_power_w(500.0) == pytest.approx(2500.0)          # flat below the first point
+    for args, msg in [(((1e3,), (0.2,)), "the efficiency map needs at least two (power, efficiency) points of equal "
+                                         "length"),
+                      (((1e3, 2e3, 3e3), (0.2, 0.3)), "the efficiency map needs at least two (power, efficiency) "
+                                                      "points of equal length"),
+                      (((1e3, 1e3), (0.2, 0.3)), "map power must rise strictly"),
+                      (((-1.0, 1e3), (0.2, 0.3)), "map power starts at zero or above"),
+                      (((0.0, 1e3), (-0.1, 0.3)), "map efficiencies must lie in (0, 1); only the zero-power point may "
+                                                  "be 0"),
+                      (((0.0, 1e3), (0.1, 1.0)), "map efficiencies must lie in (0, 1); only the zero-power point may be 0"),
+                      (((0.0, 1e3), (0.1, 0.0)), "map efficiencies must lie in (0, 1); only the zero-power point may be 0"),
+                      (((0.0, 0.5), (0.1, 0.0)), "map efficiencies must lie in (0, 1); only the zero-power point may be 0")]:
+        with pytest.raises(ValueError) as err:
+            ice.PowerEfficiencyMap(*args)
+        assert str(err.value) == msg
+    with pytest.raises(ValueError) as err:
+        ice.PowerEfficiencyMap((0.0, 1e3), (0.1, 0.3), idle_fuel_w=-1.0)
+    assert str(err.value) == "idle fuel power cannot be negative"
+
+
+def _aux_fuel(lap, eng, gb, veh, aux, model=None, bte=0.3, over=0.05, fuel_key="gasoline", cf=0.28):
+    f = ice.fuel(fuel_key)
+    s, v = np.asarray(lap.s, float), np.asarray(lap.v, float)
+    ds = np.diff(s)
+    vm = 0.5 * (v[1:] + v[:-1])
+    dt = ds / np.maximum(vm, 0.05)
+    a = np.diff(v * v) / (2 * np.maximum(ds, 1e-6))
+    me = np.array([veh.m_eff(gb.overall(gb.best_gear(x, eng)), eng, gb.efficiency, gb.tire_radius_m) for x in vm])
+    pw = (me * a + 0.5 * veh.rho * veh.cda_m2 * vm ** 2 + veh.crr * veh.mass_kg * 9.81) * vm
+    pw = np.minimum(pw, np.array([gb.envelope_force(x, eng) for x in vm]) * vm)
+    pe = np.where(pw > 0, pw / gb.efficiency, 0.0) + aux
+    n = np.maximum([x / gb.tire_radius_m * gb.overall(gb.best_gear(x, eng)) * 30 / math.pi for x in vm], eng.idle_rpm)
+    lhv = f.lhv_mj_kg * 1e6
+    fuel_w = pe / bte if model is None else model.fuel_power_w(pe, n, eng.displacement_cc)
+    rate = np.where(pw > 0, fuel_w / lhv, np.maximum(over / 1e3, fuel_w / lhv))
+    kg, chem, t = rate @ dt, rate * lhv, dt.sum()
+    lit = kg / f.density_kg_l
+    L = s[-1] - s[0]
+    return dict(fuel_kg=kg, fuel_l=lit, co2_kg=lit * f.co2_kg_per_l, engine_work_mj=(pe * dt).sum() / 1e6,
+                lap_time_s=t, lap_m=L, peak_fuel_g_s=rate.max() * 1e3, mean_coolant_heat_w=(chem * dt).sum() / t * cf,
+                peak_coolant_heat_w=chem.max() * cf, l_per_100km=lit / L * 1e5)
+
+
+@pytest.mark.parametrize("aux", [4000.0, 100.0])        # above and below the overrun fuel off the throttle
+def test_fuel_for_a_lap_with_auxiliary_load(aux):
+    e = ENG(idle_rpm=2500.0, displacement_cc=599.0)
+    g = ice.Gearbox(**GB)
+    veh = ice.ICEVehicle(mass_kg=260.0)
+    lap = NS(s=np.r_[0.0, 20.0, 40.0, 60.0, 90.0, 140.0, 200.0], v=np.r_[2.0, 15.0, 20.0, 18.0, 0.5, 25.0, 30.0])
+    models = [None, ice.WillansLine(0.36, 150.0, 20.0),
+              ice.PowerEfficiencyMap((0.0, 1e4, 6e4), (0.0, 0.25, 0.33), idle_fuel_w=1500.0)]
+    for model in models:
+        r = ice.fuel_for_lap(lap, e, g, veh, fuel_key="e85", bte=0.27, overrun_fuel_g_s=0.08, coolant_frac=0.3,
+                             willans=model, aux_power_w=aux)
+        for k, w in _aux_fuel(lap, e, g, veh, aux, model, 0.27, 0.08, "e85", 0.3).items():
+            assert getattr(r, k) == pytest.approx(w, rel=1e-12), (k, model)
+        assert r.fuel_kg > ice.fuel_for_lap(lap, e, g, veh, fuel_key="e85", bte=0.27, overrun_fuel_g_s=0.08,
+                                            willans=model).fuel_kg
+    with pytest.raises(ValueError) as err:
+        ice.fuel_for_lap(lap, e, g, veh, aux_power_w=-1.0)
+    assert str(err.value) == "auxiliary power cannot be negative"

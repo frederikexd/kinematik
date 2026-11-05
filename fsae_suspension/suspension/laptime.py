@@ -176,6 +176,9 @@ class Powertrain:
     combined_tire: object = None     # optional tiremodel.CombinedSlipTire for the
                                      # friction-ellipse coupling (Fx can exceed Fy
                                      # peak, tunable exponents). None => symmetric circle.
+    rot_mass_factor: float = 1.0     # (m + wheel, rotor and gear inertia reflected to the
+                                     # contact patch) / m: the spinning parts take their
+                                     # share of every change of speed. 1 => ignored.
 
     def power_w(self) -> float:
         return max(self.power_kw, 0.0) * 1000.0 * max(self.drivetrain_eff, 0.05)
@@ -425,7 +428,7 @@ def _accel_long(veh: VehicleDynamics, v: float, pt: Powertrain,
     # resistances
     F_drag = 0.5 * pt.rho * pt.cda * v * v
     F_roll = pt.crr * (m * g + F_down)
-    a = (F_drive - F_drag - F_roll) / m
+    a = (F_drive - F_drag - F_roll) / (m * max(pt.rot_mass_factor, 1.0))
     return a
 
 
@@ -483,7 +486,7 @@ def _decel_long(veh: VehicleDynamics, v: float, pt: Powertrain,
         F_grip *= long_grip_frac
     F_brake = min(F_grip, pt.brake_g_cap * m * g)
     F_drag = 0.5 * pt.rho * pt.cda * v * v
-    a = (F_brake + F_drag) / m
+    a = (F_brake + F_drag) / (m * max(pt.rot_mass_factor, 1.0))
     return a
 
 

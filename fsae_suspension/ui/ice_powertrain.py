@@ -13,6 +13,7 @@ engine braking against the brake balance, the feasibility gate and the ledger.
 All physics lives in suspension/ice_powertrain.py. This module only orchestrates and draws (see ui/__init__.py).
 Session keys used:
     ice_curve_csv     the uploaded dyno or engine-code curve (text), None for the representative shape
+    ice_fuel_map_csv  the uploaded dyno fuel sweep (text), None for one declared BTE
     ledger            the shared IntegrationLedger (written only on "Publish")
 """
 from __future__ import annotations
@@ -37,6 +38,7 @@ def render():
 
     ss = st.session_state
     ss.setdefault("ice_curve_csv", None)
+    ss.setdefault("ice_fuel_map_csv", None)
     st.info("Beta: the combustion powertrain is new. Its physics is checked against closed forms, not yet against "
             "GT-SUITE, OptimumLap or a dyno. Feedback on results that look wrong is very welcome.")
     st.caption(
@@ -52,8 +54,16 @@ def render():
                                 key=f"ice_restr_{fuel_key}",
                                 help=f"Rule maximum for {f.name}: {f.restrictor_mm} mm (check the current rules).")
         bte = st.number_input("Brake thermal efficiency", 0.15, 0.45, 0.30, 0.01, key="ice_bte",
-                              help="One number for the whole map: fuel is a planning estimate until a BSFC map "
-                                   "from the dyno replaces it.")
+                              help="One number for the whole map: fuel is a planning estimate until a fuel map "
+                                   "from the dyno replaces it (upload it below).")
+        fup = st.file_uploader("Fuel map (dyno sweep CSV: rpm, torque_nm, fuel_g_s or bsfc_g_kwh)",
+                               type=["csv", "txt"], key="ice_fuel_map_up",
+                               help="Points at several throttle openings, not only full load. Fits a Willans line: "
+                                    "fuel power = (brake power + friction and pumping) / indicated efficiency.")
+        if fup is not None:
+            ss.ice_fuel_map_csv = fup.getvalue().decode("utf-8", "replace")
+        st.download_button("Fuel map template", ice.FUEL_MAP_TEMPLATE, "fuel_map_template.csv", "text/csv",
+                           key="ice_fuel_map_tpl")
     with c2:
         up = st.file_uploader("Torque curve (CSV: rpm, torque_nm or power_kw)", type=["csv", "txt"],
                               key="ice_curve_up")
@@ -83,15 +93,26 @@ def render():
     except Exception as e:                                  # noqa: BLE001 - show the input error
         st.error(f"Check the engine curve and the gear ratios: {e}")
         return
+    fmap = None
+    if ss.ice_fuel_map_csv:
+        try:
+            fmap = ice.fuel_map_from_csv(ss.ice_fuel_map_csv, eng.displacement_cc, f.lhv_mj_kg)
+            eng.fuel_map = fmap.line
+            pk = int(np.argmax([eng.power_kw_at(x) for x in eng.rpm]))
+            bte = float(fmap.line.bte(eng.power_kw_at(eng.rpm[pk]) * 1e3, eng.rpm[pk], eng.displacement_cc))
+        except Exception as e:                              # noqa: BLE001 - show the input error
+            st.error(f"Check the fuel map: {e}. Fuel uses the declared BTE until it reads.")
+            fmap = None
     veh = ice.ICEVehicle(mass_kg=mass, driven_weight_frac=rear)
     rep_curve = eng.source.startswith("representative")
     grade = "estimate" if rep_curve else "modelled"
     why = "the representative torque curve" if rep_curve else "the declared torque curve"
+    fuel_why = "the dyno fuel map" if fmap else "the declared BTE"
 
     def gv(value, unit, digits=4, fuel_based=False):
-        """A result with its evidence grade; fuel results also rest on the declared BTE (uncalibrated)."""
-        return graded(value, grade, unit, digits=digits, calibrated=not fuel_based,
-                      limited_by="the declared BTE" if fuel_based else why)
+        """A result with its evidence grade; fuel results also rest on the BTE or the dyno fuel map."""
+        return graded(value, grade, unit, digits=digits, calibrated=not fuel_based or fmap is not None,
+                      limited_by=fuel_why if fuel_based else why)
     if eng.source.startswith("representative"):
         st.warning("Representative engine curve in use: load your dyno or engine-code curve for real numbers.")
 
@@ -165,6 +186,26 @@ def render():
                                        index=lap.lap.s), x_label="distance (m)")
             for w in lap.warnings + fr.warnings:
                 st.caption("⚠️ " + w)
+            if fmap is None:
+                st.caption("Fuel rests on one declared BTE for every operating point. Upload a dyno fuel map to "
+                           "count part-throttle running at what it costs.")
+            else:
+                wl = fmap.line
+                lim = "your dyno fuel map"
+                st.success("Dyno fuel map in use: indicated efficiency "
+                           + graded(wl.eta_indicated, "measured", "", digits=3, limited_by=lim)
+                           + ", friction and pumping " + graded(wl.fmep_kpa, "measured", "kPa", digits=3, limited_by=lim)
+                           + " + " + graded(wl.fmep_kpa_per_krpm, "measured", "kPa per 1000 rpm", digits=3,
+                                            limited_by=lim)
+                           + f", fitted to {fmap.n_points} points within "
+                           + graded(100 * fmap.rms_error, "measured", "% RMS", digits=2, limited_by=lim)
+                           + ". BTE at peak power: " + graded(bte, "measured", "", digits=3, limited_by=lim) + ".")
+                for w in fmap.warnings:
+                    st.warning(w)
+                pw = np.linspace(2.0, max(eng.power_kw_at(x) for x in eng.rpm), 60)
+                st.line_chart(pd.DataFrame({f"{int(n)} rpm": wl.bte(pw * 1e3, n, eng.displacement_cc)
+                                            for n in np.linspace(eng.rpm[0], eng.redline_rpm, 4)}, index=pw),
+                              x_label="brake power (kW)", y_label="brake thermal efficiency")
 
     cool = None
     with tabs[4]:

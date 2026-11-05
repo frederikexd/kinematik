@@ -1,0 +1,57 @@
+{
+  "_note": "One input set for KinematiK and every reference tool (docs/POWERTRAIN_BENCHMARK_PLAN.md). Change it only before the first run.",
+  "vehicle": {
+    "mass_kg": 300.0,
+    "cg_height_m": 0.28,
+    "wheelbase_m": 1.55,
+    "tire_radius_m": 0.225,
+    "mu": 1.4,
+    "crr": 0.015,
+    "cda_m2": 1.1,
+    "cla_m2": 2.5,
+    "rear_aero_frac": 0.5,
+    "rho_kg_m3": 1.225
+  },
+  "ev": {
+    "rear_static_share": 0.52,
+    "pack_power_kw": 80.0,
+    "inverter_eff": 0.97,
+    "motor_eff": 0.9545,
+    "driveline_eff": 0.95,
+    "final_drive": 7.0,
+    "motor_peak_torque_nm": 120.0,
+    "motor_max_rpm": 23500.0,
+    "motor_curve_csv": "motor_curve.csv",
+    "pack": {
+      "series": 140,
+      "parallel": 3,
+      "cell_v": 3.6,
+      "cell_ah": 5.0,
+      "cell_ohm": 0.0128
+    }
+  },
+  "ice": {
+    "rear_static_share": 0.55,
+    "fuel": "gasoline",
+    "restrictor_mm": 20.0,
+    "restrictor_cd": 0.95,
+    "engine_curve_csv": "engine_curve.csv",
+    "redline_rpm": 13500.0,
+    "primary": 2.111,
+    "gears": [
+      2.75,
+      2.0,
+      1.667,
+      1.444,
+      1.304,
+      1.208
+    ],
+    "final_drive": 3.0,
+    "shift_time_s": 0.08,
+    "launch_rpm": 9000.0,
+    "driveline_eff": 0.92,
+    "bte": 0.3,
+    "engine_inertia_kgm2": 0.025,
+    "wheel_inertia_kgm2": 0.6
+  }
+}

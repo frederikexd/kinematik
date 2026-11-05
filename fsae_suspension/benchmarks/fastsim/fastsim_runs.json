@@ -1,0 +1,346 @@
+{
+ "fastsim_version": "3.1.0",
+ "air_density_note": "FASTSim's constant air density, kg/m3",
+ "vehicles": {
+  "zoe": {
+   "fastsim_resource": "2022_Renault_Zoe_ZE50_R135.yaml",
+   "powertrain": "ev",
+   "setup": "as bundled",
+   "mass_kg": 1600.0,
+   "cda_m2": 0.8290143180000001,
+   "crr": 0.009,
+   "wheel_radius_m": 0.31045,
+   "wheel_inertia_total_kgm2": 3.26,
+   "rho": 1.1728476932776806,
+   "aux_w": 250.0,
+   "transmission_eff": 0.92,
+   "motor_max_w": 100000.0,
+   "motor_power_frac": [
+    0.0,
+    0.02,
+    0.04,
+    0.06,
+    0.08,
+    0.1,
+    0.2,
+    0.4,
+    0.6,
+    0.8,
+    1.0
+   ],
+   "motor_eff": [
+    0.84,
+    0.86,
+    0.88,
+    0.9,
+    0.91,
+    0.92,
+    0.9400000000000001,
+    0.95,
+    0.95,
+    0.9400000000000001,
+    0.93
+   ],
+   "motor_interp": "Linear",
+   "fastsim_vehicle_sha256": "b03694c9033f74ccff377b29e9cfac47af7b2ace65e56d3e23f8852fd9701f08"
+  },
+  "leaf": {
+   "fastsim_resource": "2016 Nissan Leaf 30 kWh thrml.yaml",
+   "powertrain": "ev",
+   "setup": "cabin, HVAC and battery thermal models off",
+   "mass_kg": 1636.03,
+   "cda_m2": 0.867825,
+   "crr": 0.008,
+   "wheel_radius_m": 0.336,
+   "wheel_inertia_total_kgm2": 3.26,
+   "rho": 1.1728476932776806,
+   "aux_w": 250.0,
+   "transmission_eff": 0.98,
+   "motor_max_w": 80000.0,
+   "motor_power_frac": [
+    0.0,
+    0.02,
+    0.04,
+    0.06,
+    0.08,
+    0.1,
+    0.2,
+    0.4,
+    0.6,
+    0.8,
+    1.0
+   ],
+   "motor_eff": [
+    0.84,
+    0.86,
+    0.88,
+    0.9,
+    0.91,
+    0.92,
+    0.9400000000000001,
+    0.95,
+    0.95,
+    0.9400000000000001,
+    0.93
+   ],
+   "motor_interp": "Step-Lower",
+   "fastsim_vehicle_sha256": "fc40957d40570c43948e32102d270256ad1204d8852e4a01ee324dd3d784d219"
+  },
+  "model3": {
+   "fastsim_resource": "2022 Tesla Model 3 RWD thrml.yaml",
+   "powertrain": "ev",
+   "setup": "cabin, HVAC and battery thermal models off",
+   "mass_kg": 1752.0,
+   "cda_m2": 0.5106,
+   "crr": 0.007,
+   "wheel_radius_m": 0.33435,
+   "wheel_inertia_total_kgm2": 3.26,
+   "rho": 1.1728476932776806,
+   "aux_w": 250.0,
+   "transmission_eff": 0.98,
+   "motor_max_w": 239000.0,
+   "motor_power_frac": [
+    0.0,
+    0.02,
+    0.04,
+    0.06,
+    0.08,
+    0.1,
+    0.2,
+    0.4,
+    0.6,
+    0.8,
+    1.0
+   ],
+   "motor_eff": [
+    0.84,
+    0.86,
+    0.88,
+    0.9,
+    0.91,
+    0.92,
+    0.9400000000000001,
+    0.95,
+    0.95,
+    0.9400000000000001,
+    0.93
+   ],
+   "motor_interp": "Step-Lower",
+   "fastsim_vehicle_sha256": "869ef62eb092c96837e14040c48b4f0cb31c2d4677d79fc2d4f2415301b761bf"
+  },
+  "fusion": {
+   "fastsim_resource": "2012_Ford_Fusion.yaml",
+   "powertrain": "ice",
+   "setup": "as bundled",
+   "mass_kg": 1644.2724500334996,
+   "cda_m2": 0.8331600000000001,
+   "crr": 0.007,
+   "wheel_radius_m": 0.326,
+   "wheel_inertia_total_kgm2": 3.28,
+   "rho": 1.1728476932776806,
+   "aux_w": 700.0,
+   "transmission_eff": 0.875,
+   "engine_max_w": 130500.0,
+   "engine_power_frac": [
+    0.0,
+    0.005,
+    0.015,
+    0.04,
+    0.06,
+    0.1,
+    0.14,
+    0.2,
+    0.4,
+    0.6,
+    0.8,
+    1.0
+   ],
+   "engine_eff": [
+    0.1,
+    0.12,
+    0.16,
+    0.22,
+    0.28,
+    0.33,
+    0.35,
+    0.36,
+    0.35,
+    0.34,
+    0.32,
+    0.3
+   ],
+   "engine_interp": "Linear",
+   "idle_fuel_w": 0.0,
+   "displacement_cc": 2000.0,
+   "fastsim_vehicle_sha256": "c17963056744193b3819af26745b07716286a1a8d1788c2256d82edc503c08fa"
+  },
+  "pacifica": {
+   "fastsim_resource": "2026_Chrysler_Pacifica_Select.yaml",
+   "powertrain": "ice",
+   "setup": "stop-start and deceleration fuel cut-off off",
+   "mass_kg": 2398.14286,
+   "cda_m2": 1.0078363537164239,
+   "crr": 0.0064798953284486704,
+   "wheel_radius_m": 0.36865,
+   "wheel_inertia_total_kgm2": 3.26,
+   "rho": 1.1728476932776806,
+   "aux_w": 700.0,
+   "transmission_eff": 0.95,
+   "engine_max_w": 211088.0,
+   "engine_power_frac": [
+    0.0,
+    0.005,
+    0.015,
+    0.04,
+    0.06,
+    0.1,
+    0.14,
+    0.2,
+    0.4,
+    0.6,
+    0.8,
+    1.0
+   ],
+   "engine_eff": [
+    0.0,
+    0.09338201,
+    0.1379206,
+    0.2211109,
+    0.2799027,
+    0.3063719,
+    0.3152537,
+    0.3073243,
+    0.3039319,
+    0.2905037,
+    0.2905037,
+    0.2905037
+   ],
+   "engine_interp": "Linear",
+   "idle_fuel_w": 13000.0,
+   "displacement_cc": 2000.0,
+   "fastsim_vehicle_sha256": "7f51ea0e8f579a1414091cb6569577cfcb29251dea73a5e66961aa8cd71c2aab"
+  }
+ },
+ "results": {
+  "zoe_udds": {
+   "energy_wh_km": 113.18170159487005,
+   "tractive_wh_km": 126.13484740512875,
+   "distance_km": 11.990433188724952,
+   "trace_missed_max_ms": 0.0
+  },
+  "zoe_hwy": {
+   "energy_wh_km": 136.2693090698491,
+   "tractive_wh_km": 121.16998979012963,
+   "distance_km": 16.506817470511123,
+   "trace_missed_max_ms": 0.0
+  },
+  "zoe_us06": {
+   "energy_wh_km": 189.90253620222,
+   "tractive_wh_km": 199.33471663093488,
+   "distance_km": 12.88758204800001,
+   "trace_missed_max_ms": 0.0
+  },
+  "zoe_nedc": {
+   "energy_wh_km": 127.8749869503403,
+   "tractive_wh_km": 127.08618109437008,
+   "distance_km": 10.972638300000026,
+   "trace_missed_max_ms": 0.0
+  },
+  "leaf_udds": {
+   "energy_wh_km": 99.62003041695922,
+   "tractive_wh_km": 126.04101139301105,
+   "distance_km": 11.990433188724952,
+   "trace_missed_max_ms": 0.0
+  },
+  "leaf_hwy": {
+   "energy_wh_km": 127.17932327532347,
+   "tractive_wh_km": 121.3456837883755,
+   "distance_km": 16.506817470511123,
+   "trace_missed_max_ms": 0.0
+  },
+  "leaf_us06": {
+   "energy_wh_km": 175.02375417038292,
+   "tractive_wh_km": 201.82551026867586,
+   "distance_km": 12.886963183137473,
+   "trace_missed_max_ms": 0.22684868913925982
+  },
+  "leaf_nedc": {
+   "energy_wh_km": 116.08854147602318,
+   "tractive_wh_km": 126.98493277250267,
+   "distance_km": 10.972638300000026,
+   "trace_missed_max_ms": 0.0
+  },
+  "model3_udds": {
+   "energy_wh_km": 91.14322095468212,
+   "tractive_wh_km": 119.79574839267637,
+   "distance_km": 11.990433188724952,
+   "trace_missed_max_ms": 0.0
+  },
+  "model3_hwy": {
+   "energy_wh_km": 97.8476477326621,
+   "tractive_wh_km": 93.11150514728094,
+   "distance_km": 16.506817470511123,
+   "trace_missed_max_ms": 0.0
+  },
+  "model3_us06": {
+   "energy_wh_km": 133.3016787798169,
+   "tractive_wh_km": 168.99569025655111,
+   "distance_km": 12.88758204800001,
+   "trace_missed_max_ms": 0.0
+  },
+  "model3_nedc": {
+   "energy_wh_km": 97.12127104998895,
+   "tractive_wh_km": 110.27035782159933,
+   "distance_km": 10.972638300000026,
+   "trace_missed_max_ms": 0.0
+  },
+  "fusion_udds": {
+   "energy_wh_km": 609.0950105186564,
+   "tractive_wh_km": 122.39061617744255,
+   "distance_km": 11.990433188724952,
+   "trace_missed_max_ms": 0.0
+  },
+  "fusion_hwy": {
+   "energy_wh_km": 445.7358734922299,
+   "tractive_wh_km": 114.82102235914262,
+   "distance_km": 16.506817470511123,
+   "trace_missed_max_ms": 0.0
+  },
+  "fusion_us06": {
+   "energy_wh_km": 685.9525222051667,
+   "tractive_wh_km": 195.07279862839798,
+   "distance_km": 12.879623900484308,
+   "trace_missed_max_ms": 0.8673615307820022
+  },
+  "fusion_nedc": {
+   "energy_wh_km": 599.8592083407473,
+   "tractive_wh_km": 121.82886395409983,
+   "distance_km": 10.972638300000026,
+   "trace_missed_max_ms": 0.0
+  },
+  "pacifica_udds": {
+   "energy_wh_km": 942.0483857728674,
+   "tractive_wh_km": 169.25860349944392,
+   "distance_km": 11.990433188724952,
+   "trace_missed_max_ms": 0.0
+  },
+  "pacifica_hwy": {
+   "energy_wh_km": 610.572087521238,
+   "tractive_wh_km": 147.95432384876295,
+   "distance_km": 16.506817470511123,
+   "trace_missed_max_ms": 0.0
+  },
+  "pacifica_us06": {
+   "energy_wh_km": 981.7127201180512,
+   "tractive_wh_km": 258.86754328162044,
+   "distance_km": 12.886643075070653,
+   "trace_missed_max_ms": 0.44654767704811604
+  },
+  "pacifica_nedc": {
+   "energy_wh_km": 909.8593856864156,
+   "tractive_wh_km": 163.44006891450604,
+   "distance_km": 10.972638300000026,
+   "trace_missed_max_ms": 0.0
+  }
+ }
+}

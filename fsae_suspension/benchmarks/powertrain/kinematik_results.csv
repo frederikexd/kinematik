@@ -1,0 +1,6 @@
+case,metric,value
+ev_75m,time_s,4.56466
+ev_75m,v_end_ms,32.0493
+ice_75m,time_s,4.477
+ice_75m,v_end_ms,28.4259
+ice_restrictor,choked_flow_kg_s,0.0707868

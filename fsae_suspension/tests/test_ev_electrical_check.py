@@ -63,6 +63,33 @@ def test_braking_draws_nothing_from_the_pack():
     assert np.all(r.power_profile_kw == 0.0) and r.peak_current_a == 0.0
 
 
+def test_regeneration_returns_braking_power_at_its_efficiency_up_to_the_cap():
+    v = np.array([20.0, 20.0])
+    a = np.array([-4.0, -1.0])
+    _, p_wheel, p_off = ec.traction_power_w(v, a, crr=0.0, drag_cda=0.0, vehicle_mass_kg=300.0)
+    assert np.allclose(p_wheel, [-24e3, -6e3]) and np.all(p_off == 0.0)
+    _, _, p = ec.traction_power_w(v, a, crr=0.0, drag_cda=0.0, vehicle_mass_kg=300.0, regen_eff=0.8,
+                                  regen_cap_w=10e3)
+    assert np.allclose(p, [-0.8 * 10e3, -0.8 * 6e3])           # first capped at 10 kW, second below the cap
+    _, _, p = ec.traction_power_w(10.0, 2.0, crr=0.0, drag_cda=0.0, vehicle_mass_kg=300.0, drivetrain_eff=0.8,
+                                  rot_mass_factor=1.05)
+    assert np.isclose(float(p), 1.05 * 300.0 * 2.0 * 10.0 / 0.8)  # k m a v / eta
+    _, _, p = ec.traction_power_w([0.0, 20.0], [0.0, -4.0], crr=0.0, drag_cda=0.0, vehicle_mass_kg=300.0,
+                                  aux_power_w=300.0)
+    assert np.allclose(p, [300.0, 300.0])                     # standing or braking: the auxiliaries still draw
+
+
+def test_pack_resistance_costs_i_squared_r_both_ways():
+    v_oc, r = 360.0, 0.1
+    p_int, i = ec.battery_internal_power_w([36e3, -36e3, 0.0], v_oc, r)
+    assert np.allclose(v_oc * i - i * i * r, [36e3, -36e3, 0.0])      # terminal power balances
+    assert np.allclose(p_int, [36e3 + i[0] ** 2 * r, -36e3 + i[1] ** 2 * r, 0.0])
+    p_max, i_max = ec.battery_internal_power_w(1e6, v_oc, r)           # above V_oc^2 / 4R: clipped there
+    assert np.isclose(float(i_max), v_oc / (2 * r)) and np.isclose(float(p_max), v_oc ** 2 / (2 * r))
+    p0, i0 = ec.battery_internal_power_w(36e3, v_oc, 0.0)              # no resistance: no loss
+    assert float(p0) == 36e3 and np.isclose(float(i0), 100.0)
+
+
 def test_road_load_power_counts_the_net_force():
     v = np.array([0.0, 10.0, 10.0, 10.0])
     road = 0.5 * RHO * CDA * 100 + CRR * M * 9.81

@@ -1,0 +1,10 @@
+tool,case,metric,value
+Simulink,ev_75m,time_s,
+Simulink,ev_75m,v_end_ms,
+Simulink,ice_75m,time_s,
+Simulink,ice_75m,v_end_ms,
+Amesim,ev_75m,time_s,
+Amesim,ev_75m,v_end_ms,
+Amesim,ice_75m,time_s,
+Amesim,ice_75m,v_end_ms,
+Amesim,ice_restrictor,choked_flow_kg_s,

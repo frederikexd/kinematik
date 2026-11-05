@@ -123,6 +123,32 @@ def restrictor_power_ceiling_kw(fuel_key: str = "gasoline", d_mm: float | None =
     return m_air / f.afr_stoich * f.lhv_mj_kg * 1e3 * bte
 
 
+def _read_dyno_csv(text: str):
+    """Header, data rows, rpm and crank torque (Nm) of a dyno export: rpm plus torque (torque_nm, Nm, lbft) or
+    power (power_kw, kW, hp); units are taken from the header, a bare 'torque' or 'power' is Nm or kW."""
+    rows = [r for r in io.StringIO(text.strip()).read().splitlines() if r.strip()]
+    head = [h.strip().lower() for h in rows[0].replace(";", ",").replace("\t", ",").split(",")]
+    data = np.array([[float(x) for x in r.replace(";", ",").replace("\t", ",").split(",")[:len(head)]]
+                     for r in rows[1:]])
+    i_rpm = next(i for i, h in enumerate(head) if "rpm" in h)
+    rpm = data[:, i_rpm]
+    tq = None
+    for i, h in enumerate(head):
+        if "bsfc" in h:                                 # a fuel-map column (its unit has "kW" in it), not the curve
+            continue
+        if "lb" in h and "ft" in h:
+            tq = data[:, i] * 1.3558179
+        elif "torque" in h or h in ("nm", "tq"):
+            tq = data[:, i]
+        elif "hp" in h and tq is None:
+            tq = data[:, i] * 745.69987 / np.maximum(rpm * 2 * math.pi / 60, 1e-6)  # pragma: no mutate
+        elif ("power" in h or "kw" in h) and tq is None:
+            tq = data[:, i] * 1e3 / np.maximum(rpm * 2 * math.pi / 60, 1e-6)  # pragma: no mutate
+    if tq is None:
+        raise ValueError("no torque or power column found (headers: rpm plus torque_nm, lbft, power_kw or hp)")
+    return head, data, rpm, tq
+
+
 # =========================================================================== #
 #  Engine
 # =========================================================================== #
@@ -139,6 +165,8 @@ class EngineMap:
     name: str = ""
     source: str = "user"               # "user" | "dyno" | "engine code" | "representative"
     power_cap_kw: float | None = None  # a power ceiling applied at every rpm (set by restricted())
+    fuel_map: WillansLine | PowerEfficiencyMap | None = None  # part-load fuel (fit_willans on a dyno sweep, or a
+    # PowerEfficiencyMap); None: one declared BTE
 
     def __post_init__(self):
         r = _vec(self.rpm)
@@ -201,24 +229,7 @@ class EngineMap:
     def from_csv(cls, text: str, redline_rpm: float | None = None, **kw) -> EngineMap:
         """Read a dyno or engine-code export: a header row, then rpm and either torque (torque_nm, Nm, lbft)
         or power (power_kw, kW, hp). Units are taken from the header; a bare 'torque' or 'power' is Nm or kW."""
-        rows = [r for r in io.StringIO(text.strip()).read().splitlines() if r.strip()]
-        head = [h.strip().lower() for h in rows[0].replace(";", ",").replace("\t", ",").split(",")]
-        data = np.array([[float(x) for x in r.replace(";", ",").replace("\t", ",").split(",")[:len(head)]]
-                         for r in rows[1:]])
-        i_rpm = next(i for i, h in enumerate(head) if "rpm" in h)
-        rpm = data[:, i_rpm]
-        tq = None
-        for i, h in enumerate(head):
-            if "lb" in h and "ft" in h:
-                tq = data[:, i] * 1.3558179
-            elif "torque" in h or h in ("nm", "tq"):
-                tq = data[:, i]
-            elif "hp" in h and tq is None:
-                tq = data[:, i] * 745.69987 / np.maximum(rpm * 2 * math.pi / 60, 1e-6)  # pragma: no mutate
-            elif ("power" in h or "kw" in h) and tq is None:
-                tq = data[:, i] * 1e3 / np.maximum(rpm * 2 * math.pi / 60, 1e-6)  # pragma: no mutate
-        if tq is None:
-            raise ValueError("no torque or power column found (headers: rpm plus torque_nm, lbft, power_kw or hp)")
+        _, _, rpm, tq = _read_dyno_csv(text)
         order = np.argsort(rpm)
         return cls(rpm=list(rpm[order]), torque_nm=list(tq[order]),
                    redline_rpm=float(redline_rpm or rpm.max()), source=kw.pop("source", "dyno"), **kw)
@@ -237,10 +248,15 @@ class Gearbox:
     efficiency: float = 0.92            # gearbox and chain, crank to wheel (declared)
     tire_radius_m: float = 0.225
     source: str = "representative: CBR600RR (2007+) primary and gear ratios; check your engine's service manual"
+    upshift_kmh: tuple | None = None    # fixed upshift road speeds (a shift-light plan or an automatic's schedule)
 
     def __post_init__(self):
         if not self.ratios or any(r <= 0 for r in self.ratios) or self.primary <= 0 or self.final_drive <= 0:
             raise ValueError("every ratio must be positive")
+        if self.upshift_kmh is not None:
+            u = tuple(float(x) for x in self.upshift_kmh)
+            if len(u) != len(self.ratios) - 1 or any(x <= 0 for x in u) or any(a >= b for a, b in zip(u, u[1:])):
+                raise ValueError("upshift speeds: one per upshift, positive and rising")
         if any(a <= b for a, b in zip(self.ratios, self.ratios[1:])):
             raise ValueError("gear ratios must fall from first gear to top gear")
 
@@ -282,7 +298,10 @@ class Gearbox:
 
     def shift_speeds(self, eng: EngineMap) -> list[float]:
         """Upshift speed out of each gear but the last: where the next gear's force overtakes this one's, found
-        by bisection, or this gear's redline speed if the next gear never overtakes before it. Speeds in m/s."""
+        by bisection, or this gear's redline speed if the next gear never overtakes before it. Speeds in m/s.
+        With upshift_kmh set, those speeds instead, each capped at its gear's redline speed (the limiter)."""
+        if self.upshift_kmh is not None:
+            return [min(x / 3.6, self.speed_at(eng.redline_rpm, g)) for g, x in enumerate(self.upshift_kmh)]
         out = []
         for g in range(self.n - 1):
             v_red = self.speed_at(eng.redline_rpm, g)
@@ -555,6 +574,152 @@ def simulate_lap(vdyn, track, eng: EngineMap, gb: Gearbox, veh: ICEVehicle | Non
 #  Fuel, endurance, CO2 and the heat that reaches the coolant
 # =========================================================================== #
 @dataclass
+class WillansLine:
+    """Fuel power against brake power (the Willans line): the engine burns
+        P_fuel = (P_brake + FMEP · V_d · n / 2) / eta_indicated,   FMEP = fmep_kpa + fmep_kpa_per_krpm · rpm / 1000
+    so its efficiency rises with load, as a real engine's does (one BTE cannot: it over-fuels at full load and
+    under-fuels at part throttle). FMEP here is friction plus pumping, mean effective pressure in kPa; n is
+    revolutions per second and V_d / 2 the volume swept per revolution of a four-stroke. Fit it to an engine-dyno
+    sweep with fit_willans."""
+    eta_indicated: float
+    fmep_kpa: float
+    fmep_kpa_per_krpm: float = 0.0
+    source: str = "user"
+
+    def fuel_power_w(self, p_brake_w, rpm, displacement_cc: float):
+        """Fuel (chemical) power in W for brake power p_brake_w (W) at engine speed rpm."""
+        p = _vec(p_brake_w)
+        n = _vec(rpm)
+        fmep_pa = (self.fmep_kpa + self.fmep_kpa_per_krpm * n / 1000.0) * 1000.0
+        return (p + fmep_pa * displacement_cc * 1e-6 * n / 120.0) / self.eta_indicated
+
+    def bte(self, p_brake_w, rpm, displacement_cc: float):
+        """Brake thermal efficiency at that operating point (dimensionless)."""
+        return _vec(p_brake_w) / self.fuel_power_w(p_brake_w, rpm, displacement_cc)
+
+
+@dataclass
+class PowerEfficiencyMap:
+    """Brake thermal efficiency against brake power, as a table: the engine burns
+        P_fuel = max(P_brake / eta(P_brake), idle_fuel_w)
+    with eta linear between the points and flat beyond them. This is how GT-SUITE's and FASTSim's engine maps are
+    read when the engine speed is set by the duty, and it follows a measured efficiency curve exactly where a
+    Willans line can only fit it. idle_fuel_w is the fuel power the engine burns running at all (W). Use it like a
+    WillansLine (fuel_for_lap(willans=...), EngineMap.fuel_map); engine speed and displacement do not enter."""
+    power_w: tuple
+    efficiency: tuple
+    idle_fuel_w: float = 0.0
+    source: str = "user"
+
+    def __post_init__(self):
+        p, e = _vec(self.power_w), _vec(self.efficiency)
+        if p.size < 2 or p.size != e.size:
+            raise ValueError("the efficiency map needs at least two (power, efficiency) points of equal length")
+        if np.any(np.diff(p) <= 0):
+            raise ValueError("map power must rise strictly")
+        if p[0] < 0:
+            raise ValueError("map power starts at zero or above")
+        if np.any(e < 0) or np.any(e >= 1) or np.any(e[p > 0] == 0):
+            raise ValueError("map efficiencies must lie in (0, 1); only the zero-power point may be 0")
+        if self.idle_fuel_w < 0:
+            raise ValueError("idle fuel power cannot be negative")
+        self._p, self._e = p, e
+
+    def fuel_power_w(self, p_brake_w, rpm=None, displacement_cc: float = 0.0):  # pragma: no mutate (unused)
+        """Fuel (chemical) power in W for brake power p_brake_w (W)."""
+        p = np.maximum(_vec(p_brake_w), 0.0)
+        e = np.interp(p, self._p, self._e)
+        with np.errstate(invalid="ignore"):                 # 0 / 0 at zero power, where p > 0 is False
+            burn = np.where(p > 0, p / e, 0.0)
+        return np.maximum(burn, self.idle_fuel_w)
+
+    def bte(self, p_brake_w, rpm=None, displacement_cc: float = 0.0):  # pragma: no mutate (unused)
+        """Brake thermal efficiency at that brake power (dimensionless)."""
+        return _vec(p_brake_w) / self.fuel_power_w(p_brake_w)
+
+
+def fit_willans(torque_nm, rpm, fuel_g_s, displacement_cc: float, lhv_mj_kg: float, *,
+                source: str = "fitted") -> WillansLine:
+    """Least-squares Willans line through engine-dyno points: brake torque (N·m), speed (rpm) and fuel flow (g/s)
+    at each. Points with no torque or no fuel are left out (motoring, fuel cut)."""
+    n, f = _vec(rpm), _vec(fuel_g_s)
+    p = _vec(torque_nm) * n * math.pi / 30.0
+    ok = (p > 0) & (f > 0)
+    if ok.sum() < 3:
+        raise ValueError("a Willans line needs at least three firing points")
+    sweep = displacement_cc * 1e-6 * n[ok] / 120.0
+    x = np.column_stack([p[ok], sweep * 1000.0, sweep * n[ok]])
+    c, *_ = np.linalg.lstsq(x, f[ok] * lhv_mj_kg * 1e3, rcond=None)  # pragma: no mutate (None is the default)
+    if c[0] <= 1.0:
+        raise ValueError("the points give no indicated efficiency below 1: not a firing engine sweep")
+    eta = 1.0 / c[0]
+    return WillansLine(float(eta), float(c[1] * eta), float(c[2] * eta), source)
+
+
+# the layout a fuel-map upload expects (example numbers, not a real engine)
+FUEL_MAP_TEMPLATE = """rpm,torque_nm,fuel_g_s
+6000,52.0,2.575
+8000,55.0,3.673
+10000,53.0,4.553
+6000,28.6,1.625
+8000,30.3,2.336
+10000,29.2,2.943
+6000,13.0,0.992
+8000,13.8,1.443
+10000,13.2,1.860
+"""
+
+
+@dataclass
+class FuelMapFit:
+    """A Willans line fitted to a dyno sweep, and how well it holds: rms_error is the RMS relative error of the
+    fitted fuel flow against the points used; warnings name anything that makes the line doubtful."""
+    line: WillansLine
+    n_points: int
+    rms_error: float
+    warnings: list = field(default_factory=list)
+
+
+def fuel_map_from_csv(text: str, displacement_cc: float, lhv_mj_kg: float) -> FuelMapFit:
+    """Fit a fuel map to a dyno sweep: a header row, then rpm, torque (torque_nm, Nm, lbft) or power (power_kw, kW,
+    hp), and fuel flow (fuel_g_s, fuel_kg_h) or BSFC (bsfc_g_kwh). Put in points at several throttle openings:
+    full-load points alone cannot tell friction from efficiency."""
+    head, data, rpm, tq = _read_dyno_csv(text)
+    p_kw = tq * rpm * math.pi / 30.0 / 1e3
+    fuel = None
+    for i, h in enumerate(head):
+        col = data[:, i]
+        if "bsfc" in h:
+            fuel = col * p_kw / 3600.0
+        elif "fuel" in h and "kg" in h:
+            fuel = col / 3.6
+        elif "fuel" in h:
+            fuel = col
+    if fuel is None:
+        raise ValueError("no fuel column found (headers: fuel_g_s, fuel_kg_h or bsfc_g_kwh)")
+    ok = (p_kw > 0) & (fuel > 0)
+    band = np.round(rpm[ok], -2)                        # load: torque over the highest torque at that speed
+    load = tq[ok] / np.array([tq[ok][band == b].max() for b in band])
+    if np.sum(np.diff(np.sort(load)) > 0.15) + 1 < 3:      # load levels at least 15 % of full load apart
+        raise ValueError("the points cover too few loads to separate friction from efficiency: add part-throttle "
+                         "points (at least three throttle openings)")
+    line = fit_willans(tq, rpm, fuel, displacement_cc, lhv_mj_kg, source="dyno fuel map")
+    model = line.fuel_power_w(p_kw[ok] * 1e3, rpm[ok], displacement_cc) / (lhv_mj_kg * 1e3)
+    rms = float(np.sqrt(np.mean((model / fuel[ok] - 1.0) ** 2)))
+    w = []
+    if not 0.25 <= line.eta_indicated <= 0.50:
+        w.append(f"indicated efficiency {line.eta_indicated:.2f} is outside 0.25-0.50, typical of spark-ignition "
+                 "engines: check the units of the fuel column")
+    lo, hi = float(rpm[ok].min()), float(rpm[ok].max())
+    fmep_lo, fmep_hi = (line.fmep_kpa + line.fmep_kpa_per_krpm * x / 1000.0 for x in (lo, hi))
+    if min(fmep_lo, fmep_hi) < 0:
+        w.append("friction and pumping come out negative in the measured speed range: add part-throttle points")
+    if rms > 0.08:
+        w.append(f"the line misses the points by {rms:.0%} RMS: check the sweep for unsteady or rich points")
+    return FuelMapFit(line, int(ok.sum()), rms, w)
+
+
+@dataclass
 class FuelResult:
     fuel_kg: float
     fuel_l: float
@@ -570,11 +735,22 @@ class FuelResult:
 
 
 def fuel_for_lap(lap, eng: EngineMap, gb: Gearbox, veh: ICEVehicle | None = None, *, fuel_key: str = "gasoline",
-                 bte: float = 0.30, overrun_fuel_g_s: float = 0.05, coolant_frac: float = 0.28) -> FuelResult:
+                 bte: float = 0.30, overrun_fuel_g_s: float = 0.05, coolant_frac: float = 0.28,
+                 willans: WillansLine | PowerEfficiencyMap | None = None, aux_power_w: float = 0.0) -> FuelResult:
     """Fuel for one lap from its speed trace. Where the car accelerates or holds speed, the engine supplies
         P_engine = (m_eff a + 1/2 rho CdA v^2 + Crr m g) v / eta_gearbox
     and burns P_engine / (BTE x LHV); off the throttle it burns overrun_fuel_g_s. The coolant takes coolant_frac of
-    the fuel's chemical power (typically a quarter to a third for a spark-ignition engine at load)."""
+    the fuel's chemical power (typically a quarter to a third for a spark-ignition engine at load).
+
+    With a Willans line (willans=, or the engine's own fuel_map) the engine burns willans.fuel_power_w(P_engine, rpm) instead, so part-throttle running costs
+    what it does on the dyno rather than the full-load BTE. The engine speed is the logged one when the lap carries
+    an rpm trace (lap.rpm, one value per point), otherwise that of the gear with the most drive force, the gear a
+    driver on the limit is in. A PowerEfficiencyMap in place of the Willans line reads the fuel off that table.
+
+    aux_power_w is what the engine drives besides the wheels all lap (alternator load, pumps, fans; W): it adds to
+    P_engine on the throttle, and off it the engine burns at least the fuel that load costs."""
+    if aux_power_w < 0:
+        raise ValueError("auxiliary power cannot be negative")
     veh = veh or ICEVehicle()
     f = fuel(fuel_key)
     s, v = _vec(lap.s), _vec(lap.v)
@@ -588,8 +764,25 @@ def fuel_for_lap(lap, eng: EngineMap, gb: Gearbox, veh: ICEVehicle | None = None
     p_wheel = (m_eff * a + 0.5 * veh.rho * veh.cda_m2 * vm ** 2 + veh.crr * veh.mass_kg * G) * vm
     p_wheel = np.minimum(p_wheel, np.array([gb.envelope_force(x, eng) for x in vm]) * vm)   # never above the curve
     on = p_wheel > 0  # pragma: no mutate
-    p_eng = np.where(on, p_wheel / gb.efficiency, 0.0)
-    fuel_rate = np.where(on, p_eng / (bte * f.lhv_mj_kg * 1e6), overrun_fuel_g_s / 1e3)      # kg/s
+    p_eng = np.where(on, p_wheel / gb.efficiency, 0.0) + aux_power_w
+    over = np.full(p_eng.shape, overrun_fuel_g_s / 1e3)
+    if aux_power_w:
+        over = np.maximum(over, aux_power_w / (bte * f.lhv_mj_kg * 1e6))
+    fuel_rate = np.where(on, p_eng / (bte * f.lhv_mj_kg * 1e6), over)      # kg/s
+    willans = willans or eng.fuel_map
+    if willans is not None:
+        logged = getattr(lap, "rpm", None)
+        if logged is not None:
+            r = _vec(logged)
+            rpm = 0.5 * (r[1:] + r[:-1])
+        else:
+            rpm = np.array([gb.rpm_at(x, gb.best_gear(x, eng)) for x in vm])
+        rpm = np.maximum(rpm, eng.idle_rpm)
+        p_fuel = willans.fuel_power_w(p_eng, rpm, eng.displacement_cc)
+        over = np.full(p_eng.shape, overrun_fuel_g_s / 1e3)
+        if aux_power_w:
+            over = np.maximum(over, p_fuel / (f.lhv_mj_kg * 1e6))
+        fuel_rate = np.where(on, p_fuel / (f.lhv_mj_kg * 1e6), over)
     fuel_kg = float(np.sum(fuel_rate * dt))
     chem_w = fuel_rate * f.lhv_mj_kg * 1e6
     t_lap = float(np.sum(dt))
@@ -597,7 +790,7 @@ def fuel_for_lap(lap, eng: EngineMap, gb: Gearbox, veh: ICEVehicle | None = None
     lap_m = float(s[-1] - s[0])
     lap_safe = max(lap_m, 1e-6)  # pragma: no mutate
     w = []
-    if eng.source.startswith("representative"):
+    if eng.source.startswith("representative") and willans is None:
         w.append("fuel rests on a declared BTE and a representative curve; replace with a BSFC map from the dyno")
     return FuelResult(fuel_kg, fuel_l, fuel_l * f.co2_kg_per_l, float(np.sum(p_eng * dt)) / 1e6, t_lap, lap_m,
                       float(fuel_rate.max() * 1e3), float(np.sum(chem_w * dt) / t_lap * coolant_frac),

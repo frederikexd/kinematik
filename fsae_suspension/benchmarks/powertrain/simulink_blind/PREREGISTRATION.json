@@ -1,0 +1,76 @@
+{
+ "created_utc": "2026-11-05T09:29:36Z",
+ "statement": "Sealed before any of these Simulink runs. Graded only from the code whose SHA-256 is listed here; the limits are not changed after a run. Every case is reported, pass or fail.",
+ "cases": [
+  {
+   "name": "hock_fs_car",
+   "kind": "lap",
+   "vehicle_data": "Vehicle_data_dwishbone",
+   "event": "CRG Hockenheim F",
+   "fs_car": true,
+   "vGain": 1.0
+  },
+  {
+   "name": "hock_fs_car_fast",
+   "kind": "lap",
+   "vehicle_data": "Vehicle_data_dwishbone",
+   "event": "CRG Hockenheim F",
+   "fs_car": true,
+   "vGain": 1.25
+  },
+  {
+   "name": "hock_pushrod_fast",
+   "kind": "lap",
+   "vehicle_data": "Vehicle_data_dwpushrod",
+   "event": "CRG Hockenheim F",
+   "fs_car": true,
+   "vGain": 1.25
+  },
+  {
+   "name": "skidpad_fs_car",
+   "kind": "lap",
+   "vehicle_data": "Vehicle_data_dwishbone",
+   "event": "Skidpad",
+   "fs_car": true,
+   "vGain": 1.0
+  },
+  {
+   "name": "launch_fs_car",
+   "kind": "launch",
+   "vehicle_data": "Vehicle_data_dwishbone",
+   "event": "WOT Braking",
+   "fs_car": true,
+   "vGain": null
+  },
+  {
+   "name": "launch_stock",
+   "kind": "launch",
+   "vehicle_data": "Vehicle_data_dwishbone",
+   "event": "WOT Braking",
+   "fs_car": false,
+   "vGain": null
+  }
+ ],
+ "limits": {
+  "lap": {
+   "energy_kwh_per_km": 0.02,
+   "peak_current_a": 0.02,
+   "rms_current_a": 0.02,
+   "min_pack_voltage_v": 0.02,
+   "pack_resistance_ohm": 0.15
+  },
+  "launch": {
+   "launch_75m_time_s": 0.02,
+   "launch_75m_speed_ms": 0.02
+  }
+ },
+ "code_sha256": {
+  "suspension/ev_electrical_check.py": "bbd6ccf92222bf88e047a72826da9e3fb10ab5b690294f50dfd99df9aebbe7c2",
+  "suspension/laptime.py": "114e31522d3687909ae9bcd4bffa4a2d1559bf2149b09da2f380d689a32bcc48",
+  "suspension/_num.py": "20f8263c1cc44c17a2f8d0e09e5838c431d9d88bb1a73728a1e48388e1aeb867",
+  "scripts/powertrain_benchmark.py": "34a9d59892d72a57358c853890f1c4967393e00b176c741438ce64c7ccdd791d",
+  "benchmarks/powertrain/matlab/kinematik_blind_runs.m": "aa3dcb4963c5e0c2d86f788865e270cc60007c89cc85cd3184d20cf80425b78a",
+  "benchmarks/powertrain/matlab/simulink_lap.m": "afcde0e37d34584552099eb357b5f3cdd8a1799aab1a7294814aca6a0f213d5f",
+  "benchmarks/powertrain/matlab/export_achilles.m": "a9f6d577545ebf0b1c0406e2b207b4a3f7642e5bdca47b2c2acde922368031d8"
+ }
+}

@@ -1,0 +1,34 @@
+
+hock_fs_car: graded
+  energy_kwh_per_km          0.1237     0.1433  13.7%     2%  FAIL
+  peak_current_a              77.13      115.5  33.2%     2%  FAIL
+  rms_current_a               35.67       44.5  19.9%     2%  FAIL
+  min_pack_voltage_v          267.3      251.6   6.3%     2%  FAIL
+  pack_resistance_ohm        0.2436     0.3289  25.9%    15%  FAIL
+
+hock_fs_car_fast: graded
+  energy_kwh_per_km          0.1237     0.1433  13.7%     2%  FAIL
+  peak_current_a              77.13      115.5  33.2%     2%  FAIL
+  rms_current_a               35.67       44.5  19.9%     2%  FAIL
+  min_pack_voltage_v          267.3      251.6   6.3%     2%  FAIL
+  pack_resistance_ohm        0.2436     0.3289  25.9%    15%  FAIL
+
+hock_pushrod_fast: graded
+  energy_kwh_per_km          0.1244     0.1302   4.5%     2%  FAIL
+  peak_current_a              76.73      115.2  33.4%     2%  FAIL
+  rms_current_a               35.96      40.27  10.7%     2%  FAIL
+  min_pack_voltage_v          267.4      254.1   5.2%     2%  FAIL
+  pack_resistance_ohm        0.2436      0.308  20.9%    15%  FAIL
+
+skidpad_fs_car: graded
+  energy_kwh_per_km         0.02803    0.07482  62.5%     2%  FAIL
+  peak_current_a              12.34      18.53  33.4%     2%  FAIL
+  rms_current_a               2.548      5.959  57.2%     2%  FAIL
+  min_pack_voltage_v          283.1        281   0.8%     2%  PASS
+  pack_resistance_ohm        0.2436     0.2836  14.1%    15%  PASS
+
+launch_fs_car: not run
+
+launch_stock: not run
+
+2/20 graded metrics within their sealed limits

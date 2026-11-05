@@ -1,0 +1,127 @@
+{
+ "created_utc": "2026-11-05T20:37:44Z",
+ "statement": "Sealed before any of these Simulink runs. Graded only from the code whose SHA-256 is listed here; the limits are not changed after a run. Every case is reported, pass or fail.",
+ "cases": [
+  {
+   "name": "hock_fs2",
+   "kind": "lap",
+   "skip_s": 3.0,
+   "vehicle_data": "Vehicle_data_dwishbone",
+   "event": "CRG Hockenheim F",
+   "fs_car": true,
+   "speed": 1.0
+  },
+  {
+   "name": "hock_fs2_fast",
+   "kind": "lap",
+   "skip_s": 3.0,
+   "vehicle_data": "Vehicle_data_dwishbone",
+   "event": "CRG Hockenheim F",
+   "fs_car": true,
+   "speed": 1.15
+  },
+  {
+   "name": "hock_fs2_pushrod_fast",
+   "kind": "lap",
+   "skip_s": 3.0,
+   "vehicle_data": "Vehicle_data_dwpushrod",
+   "event": "CRG Hockenheim F",
+   "fs_car": true,
+   "speed": 1.15
+  },
+  {
+   "name": "hock_stock_fast",
+   "kind": "lap",
+   "skip_s": 3.0,
+   "vehicle_data": "Vehicle_data_dwishbone",
+   "event": "CRG Hockenheim F",
+   "fs_car": false,
+   "speed": 1.15
+  },
+  {
+   "name": "skidpad_fs2",
+   "kind": "lap",
+   "skip_s": 3.0,
+   "vehicle_data": "Vehicle_data_dwishbone",
+   "event": "Skidpad",
+   "fs_car": true,
+   "speed": 1.0
+  },
+  {
+   "name": "launch_fs2",
+   "kind": "launch",
+   "event": "WOT Braking",
+   "vehicle_data": "Vehicle_data_dwishbone",
+   "speed": null,
+   "pedal": 0.1,
+   "torque_per_pedal_nm": 400.0,
+   "fs_car": true
+  },
+  {
+   "name": "launch_stock2",
+   "kind": "launch",
+   "event": "WOT Braking",
+   "vehicle_data": "Vehicle_data_dwishbone",
+   "speed": null,
+   "pedal": 0.1,
+   "torque_per_pedal_nm": 400.0,
+   "fs_car": false
+  }
+ ],
+ "limits": {
+  "lap": {
+   "energy_kwh_per_km": 0.03,
+   "peak_current_a": 0.03,
+   "rms_current_a": 0.03,
+   "min_pack_voltage_v": 0.03,
+   "pack_resistance_ohm": 0.03,
+   "pack_temp_rise_k": 0.03,
+   "drive_loss_kwh_per_km": 0.03
+  },
+  "launch": {
+   "launch_75m_time_s": 0.03,
+   "launch_75m_speed_ms": 0.03
+  }
+ },
+ "code_sha256": {
+  "suspension/ev_electrical_check.py": "1bfec1f0387b48b7c1177e926e27e33d636d4e474ee899b191396cfe99d66e5c",
+  "suspension/laptime.py": "114e31522d3687909ae9bcd4bffa4a2d1559bf2149b09da2f380d689a32bcc48",
+  "suspension/_num.py": "20f8263c1cc44c17a2f8d0e09e5838c431d9d88bb1a73728a1e48388e1aeb867",
+  "scripts/powertrain_benchmark.py": "35d085d811c75f687e7f5906b7247c31de03a57fd2660c63ccf6d292b2d3774b",
+  "benchmarks/powertrain/matlab/kinematik_blind2_runs.m": "bc2e773bec3e6a07113c10d83a2047b35eda68b9846b590b12ea6ec948533544",
+  "benchmarks/powertrain/matlab/simulink_lap.m": "39d20af8565c3084f2071eff5c0306d53eb97391239c8d8aaadf620a0c74a5d5",
+  "benchmarks/powertrain/matlab/export_achilles.m": "484a7685dc5ac7ddc1421225e1201c4891d4a6f54ef47b3172c3c2076ff5eddf"
+ },
+ "fitness_for_use": {
+  "energy_kwh_per_km": {
+   "rel": 0.05
+  },
+  "peak_current_a": {
+   "rel": 0.1,
+   "safe": "over"
+  },
+  "rms_current_a": {
+   "rel": 0.1,
+   "safe": "over"
+  },
+  "min_pack_voltage_v": {
+   "rel": 0.03
+  },
+  "pack_resistance_ohm": {
+   "rel": 0.1
+  },
+  "pack_temp_rise_k": {
+   "rel": 0.1,
+   "abs": 0.5
+  },
+  "drive_loss_kwh_per_km": {
+   "rel": 0.1
+  },
+  "launch_75m_time_s": {
+   "rel": 0.03
+  },
+  "launch_75m_speed_ms": {
+   "rel": 0.03
+  }
+ }
+}

@@ -1,0 +1,854 @@
+{
+  "x_note": "Published GT-SUITE results that KinematiK's powertrain modules are graded against (scripts/gt_suite_benchmark.py). Values are copied from the papers' tables and figure labels; inputs the papers do not give are marked as assumptions.",
+  "ev": {
+    "paper": "Tahir Baig, M. and Samuel, S., Numerical Simulation of Electric Powertrain for Examining Real World Performance of EVs at Sub-Zero Temperatures, SAE Technical Paper 2021-01-1245, 2021, doi:10.4271/2021-01-1245",
+    "car": "BMW i3 60 Ah (2013), GT-SUITE model validated against Argonne National Laboratory dynamometer data",
+    "vehicle": {
+      "mass_kg": 1443,
+      "cd": 0.29,
+      "frontal_area_m2": 2.38,
+      "crr": 0.015,
+      "final_drive": 9.7,
+      "differential_eff": 0.95,
+      "tire": "155/70 R19",
+      "rho_kg_m3": 1.184,
+      "x_source": "Table 1 and Table 2; air density at the 25 degC test temperature; tire radius from 155/70 R19 (unloaded); pack voltage: Table 4 (96 x 3.7 V)",
+      "axle_inertia_kgm2": 1.25,
+      "tire_radius_m": 0.3498,
+      "regen_cap_kw": 50,
+      "pack_ocv_v": 355.2
+    },
+    "assumed": {
+      "motor_inverter_eff": {
+        "nominal": 0.9,
+        "low": 0.85,
+        "high": 0.93
+      },
+      "rho_kg_m3": {
+        "nominal": 1.184,
+        "low": 1.149,
+        "high": 1.219
+      },
+      "x_note": "not in the paper (GT-SUITE used BMW's efficiency maps and a lookup-table cell model): a typical PMSM plus inverter cycle average, regeneration through the same efficiency, and a pack resistance of 96 cells at about 1 mOhm (60 Ah prismatic NMC, 25 degC). Every result is also computed at the corners of these bands.",
+      "pack_r_ohm": {
+        "nominal": 0.09,
+        "low": 0.06,
+        "high": 0.13
+      }
+    },
+    "cycles": {
+      "udds": "udds.csv",
+      "hwy": "hwfet.csv",
+      "us06": "us06.csv",
+      "x_source": "EPA cycles (public domain), from NREL FASTSim's resources/cycles"
+    },
+    "wh_per_km_25c": {
+      "udds": 116,
+      "hwy": 144,
+      "us06": 205,
+      "x_source": "Table 6, 25 degC row"
+    },
+    "wh_per_km_0c": {
+      "udds": 121,
+      "hwy": 149,
+      "us06": 227,
+      "x_source": "Table 6, 0 degC row (not graded: KinematiK has no temperature-dependent battery model)"
+    },
+    "wh_per_km_minus20c": {
+      "udds": 167,
+      "hwy": 206,
+      "us06": 233,
+      "x_source": "Table 6, -20 degC row (not graded, as above)"
+    }
+  },
+  "ice": {
+    "paper": "Almeida, F.L., de Moraes, H.F., Sokolowski, D. and Capana, G.H., Forward 1D Vehicle Dynamics Simulation focused on Fuel Consumption Concerns with the Inclusion of the Complete Driveline and Accessory Load Influence, SAE Technical Paper 2012-36-0247, 2012",
+    "car": "12 t GVW truck, MWM-International MaxxForce 4.8H diesel, LC6T55 gearbox, GT-SUITE forward model",
+    "vehicle": {
+      "mass_kg": 12000,
+      "cd": 0.8,
+      "frontal_area_m2": 4.335,
+      "tire_radius_m": 0.4864,
+      "gearbox_eff": 0.98,
+      "axle_eff": 0.98,
+      "ambient_c": 30,
+      "ambient_bar": 0.95,
+      "diesel_density_kg_l": 0.835,
+      "x_source": "vehicle, transmission and engine sections"
+    },
+    "assumed": {
+      "diesel_lhv_mj_kg": 42.6,
+      "x_note": "typical published value; the paper gives density only"
+    },
+    "speeds_kmh": [
+      40,
+      50,
+      60,
+      70,
+      80,
+      90
+    ],
+    "dynamics_power_kw": [
+      10.07,
+      14.46,
+      20.08,
+      27.2,
+      36.07,
+      46.92
+    ],
+    "x_dynamics_source": "Figure 28, 'Dynamics' row: engine power that moves the truck at constant speed",
+    "km_per_l_without_accessories": [
+      14.08,
+      12.22,
+      10.89,
+      9.4,
+      7.97,
+      6.81
+    ],
+    "x_fuel_source": "Table 1, 'wo' column (GT-SUITE without accessory loads)",
+    "calibrate_at_kmh": 40,
+    "x_calibration": "the paper gives neither its rolling-resistance constants nor its BSFC map as numbers, so Crr and BTE are set from the 40 km/h point alone and the other five speeds are predictions"
+  },
+  "tolerance": {
+    "limit": 0.05,
+    "x_why": "KinematiK against another model whose own validation error is 2 % (EV SOC, paper) and up to 7-10 % (ICE fuel, paper), with inputs partly assumed: 5 % is tighter than either paper's own error against test data"
+  },
+  "argonne": {
+    "source": "Argonne National Laboratory, Downloadable Dynamometer Database (D3), 2014 BMW i3 BEV, tests 61505019-61505044 (May 2015), D3 Master Summary List rev. 1",
+    "attribution": "This data is from the Downloadable Dynamometer Database and was generated at the Advanced Mobility Technology Laboratory (AMTL) at Argonne National Laboratory under the funding and guidance of the U.S. Department of Energy (DOE)",
+    "test_weight_lb": 3182,
+    "target_a_lb": 23.6,
+    "target_b_lb_per_mph": 0.6633,
+    "target_c_lb_per_mph2": 0.0117,
+    "x_road_load": "coast-down targets from the summary sheet: F = A + B v + C v^2 (lb, mph). KinematiK's road load is Crr m g + 1/2 rho CdA v^2, so Crr and CdA are the least-squares fit of the targets over 0-36 m/s",
+    "x_segments": "graded: 25 degC, HVAC off, hot start. Cold starts and the other temperatures are reported, not graded (KinematiK has no thermal model). argonne_wh is Argonne's own DC energy for the segment, used to check the extraction. Test 61505028 (about 2 degC) is left out: its phases do not reproduce Argonne's own segment energies (up to 6 % apart), so its phase boundaries are not trusted",
+    "segments": [
+      {
+        "test": "61505019",
+        "cycle": "udds",
+        "phases": [
+          1,
+          2
+        ],
+        "start": "cold",
+        "ambient_c": 23,
+        "hvac": "off",
+        "argonne_wh": 1248,
+        "graded": false
+      },
+      {
+        "test": "61505019",
+        "cycle": "hwy",
+        "phases": [
+          3
+        ],
+        "start": "hot",
+        "ambient_c": 25,
+        "hvac": "off",
+        "argonne_wh": 1897,
+        "graded": true
+      },
+      {
+        "test": "61505019",
+        "cycle": "udds",
+        "phases": [
+          4,
+          5
+        ],
+        "start": "hot",
+        "ambient_c": 21,
+        "hvac": "off",
+        "argonne_wh": 1153,
+        "graded": true
+      },
+      {
+        "test": "61505019",
+        "cycle": "us06",
+        "phases": [
+          6,
+          7
+        ],
+        "start": "hot",
+        "ambient_c": 25,
+        "hvac": "off",
+        "argonne_wh": 1982,
+        "graded": true
+      },
+      {
+        "test": "61505020",
+        "cycle": "us06",
+        "phases": [
+          3,
+          4
+        ],
+        "start": "hot",
+        "ambient_c": 25,
+        "hvac": "off",
+        "argonne_wh": 1967,
+        "graded": true
+      },
+      {
+        "test": "61505021",
+        "cycle": "udds",
+        "phases": [
+          1,
+          2
+        ],
+        "start": "hot",
+        "ambient_c": 21,
+        "hvac": "off",
+        "argonne_wh": 1155,
+        "graded": true
+      },
+      {
+        "test": "61505021",
+        "cycle": "hwy",
+        "phases": [
+          3
+        ],
+        "start": "hot",
+        "ambient_c": 25,
+        "hvac": "off",
+        "argonne_wh": 1918,
+        "graded": true
+      },
+      {
+        "test": "61505021",
+        "cycle": "udds",
+        "phases": [
+          4,
+          5
+        ],
+        "start": "hot",
+        "ambient_c": 21,
+        "hvac": "off",
+        "argonne_wh": 1163,
+        "graded": true
+      },
+      {
+        "test": "61505044",
+        "cycle": "udds",
+        "phases": [
+          1,
+          2
+        ],
+        "start": "cold",
+        "ambient_c": -17,
+        "hvac": "72F",
+        "argonne_wh": 3897,
+        "graded": false
+      },
+      {
+        "test": "61505044",
+        "cycle": "hwy",
+        "phases": [
+          3
+        ],
+        "start": "hot",
+        "ambient_c": -14,
+        "hvac": "72F",
+        "argonne_wh": 3347,
+        "graded": false
+      },
+      {
+        "test": "61505044",
+        "cycle": "udds",
+        "phases": [
+          4,
+          5
+        ],
+        "start": "hot",
+        "ambient_c": -18,
+        "hvac": "72F",
+        "argonne_wh": 3064,
+        "graded": false
+      },
+      {
+        "test": "61505044",
+        "cycle": "us06",
+        "phases": [
+          6,
+          7
+        ],
+        "start": "hot",
+        "ambient_c": -13,
+        "hvac": "72F",
+        "argonne_wh": 2997,
+        "graded": false
+      },
+      {
+        "test": "61505039",
+        "cycle": "udds",
+        "phases": [
+          1,
+          2
+        ],
+        "start": "cold",
+        "ambient_c": -6,
+        "hvac": "72F",
+        "argonne_wh": 3133.56,
+        "graded": false
+      },
+      {
+        "test": "61505039",
+        "cycle": "hwy",
+        "phases": [
+          3
+        ],
+        "start": "hot",
+        "ambient_c": -4,
+        "hvac": "72F",
+        "argonne_wh": 2837,
+        "graded": false
+      },
+      {
+        "test": "61505039",
+        "cycle": "udds",
+        "phases": [
+          4,
+          5
+        ],
+        "start": "hot",
+        "ambient_c": -7,
+        "hvac": "72F",
+        "argonne_wh": 2366,
+        "graded": false
+      },
+      {
+        "test": "61505039",
+        "cycle": "us06",
+        "phases": [
+          6,
+          7
+        ],
+        "start": "hot",
+        "ambient_c": -3,
+        "hvac": "72F",
+        "argonne_wh": 2651,
+        "graded": false
+      },
+      {
+        "test": "61505024",
+        "cycle": "udds",
+        "phases": [
+          1,
+          2
+        ],
+        "start": "cold",
+        "ambient_c": 35,
+        "hvac": "72F, 850 W/m2 sun",
+        "argonne_wh": 1516,
+        "graded": false
+      },
+      {
+        "test": "61505024",
+        "cycle": "hwy",
+        "phases": [
+          3
+        ],
+        "start": "hot",
+        "ambient_c": 38,
+        "hvac": "72F, 850 W/m2 sun",
+        "argonne_wh": 1936,
+        "graded": false
+      },
+      {
+        "test": "61505024",
+        "cycle": "udds",
+        "phases": [
+          4,
+          5
+        ],
+        "start": "hot",
+        "ambient_c": 34,
+        "hvac": "72F, 850 W/m2 sun",
+        "argonne_wh": 1372,
+        "graded": false
+      },
+      {
+        "test": "61505024",
+        "cycle": "us06",
+        "phases": [
+          6,
+          7
+        ],
+        "start": "hot",
+        "ambient_c": 38,
+        "hvac": "72F, 850 W/m2 sun",
+        "argonne_wh": 2133,
+        "graded": false
+      }
+    ],
+    "launches": {
+      "test": "61505016",
+      "min_pedal_pct": 90,
+      "min_speed_ms": 26.82,
+      "motor": {
+        "peak_torque_nm": 250,
+        "peak_power_kw": 125,
+        "max_rpm": 11400,
+        "x_source": "BMW i3 spec (SAE 2021-01-1245 Table 2: 125 kW, 250 Nm); 11,400 rpm maximum motor speed"
+      },
+      "assumed": {
+        "driveline_eff": 0.95,
+        "rot_inertia_factor": 1.02,
+        "x_note": "differential efficiency from SAE 2021-01-1245 Table 1; rotating inertia (wheels, axles, rotor) as 2 % of the test weight. The effective ratio of motor speed to road speed is measured from the log (Motor_Speed against Dyno_Speed), not assumed"
+      },
+      "x_note": "wide-open-throttle standing starts in 'WOTx5 and Dyno Regen' (25 degC, HVAC off), cut at 10 Hz from 1 s before the pedal passes 90 % until it drops below; only runs from rest that pass 60 mph"
+    }
+  },
+  "argonne_ice": {
+    "source": "Argonne National Laboratory, Downloadable Dynamometer Database (D3), 2019 Chevrolet Blazer RS AWD (VIN 3GNKBJRS7KS569010), tests 61908016-61908022, August 2019, TDMS extended datasets",
+    "attribution": "This data is from the Downloadable Dynamometer Database and was generated at the Advanced Mobility Technology Laboratory (AMTL) at Argonne National Laboratory under the funding and guidance of the U.S. Department of Energy (DOE)",
+    "test_weight_lb": 4250,
+    "target_a_lb": 26.65,
+    "target_b_lb_per_mph": 0.3552,
+    "target_c_lb_per_mph2": 0.0247,
+    "fuel_density_g_ml": 0.7433,
+    "fuel_net_hv_btu_lbm": 17949,
+    "engine": "3.6 L V6 (LGX), 9-speed automatic (9T65), all-wheel drive on a 4WD dyno",
+    "gear_ratios": [
+      4.69,
+      2.99,
+      2.15,
+      1.77,
+      1.52,
+      1.28,
+      1.0,
+      0.85,
+      0.69
+    ],
+    "final_drive": 3.49,
+    "tire_radius_m": 0.37,
+    "x_driveline": "ratios: 9T65 published values (first and seventh confirmed against the logged input/output shaft speeds: 4.716 and 1.000); final drive 3.49 from the logged output shaft against wheel speed at 0.37 m rolling radius",
+    "torque_curve_test": "61908020",
+    "x_reference": "fuel per segment is Argonne's bag (carbon balance) value from the TDMS properties, the certification method; the logged direct fuel flow (Eng_FuelFlow_Direct2) reads 1.5-3.8 % lower and is used for traces, idle and overrun rates",
+    "segments": [
+      {
+        "test": "61908016",
+        "cycle": "udds",
+        "phases": [
+          3,
+          4
+        ],
+        "bag_fuel_g": 884.7,
+        "graded": true
+      },
+      {
+        "test": "61908017",
+        "cycle": "udds",
+        "phases": [
+          1,
+          2
+        ],
+        "bag_fuel_g": 887.3,
+        "graded": true
+      },
+      {
+        "test": "61908018",
+        "cycle": "hwy",
+        "phases": [
+          1
+        ],
+        "bag_fuel_g": 827.1,
+        "graded": true
+      },
+      {
+        "test": "61908018",
+        "cycle": "hwy",
+        "phases": [
+          2
+        ],
+        "bag_fuel_g": 813.1,
+        "graded": true
+      },
+      {
+        "test": "61908019",
+        "cycle": "us06",
+        "phases": [
+          1,
+          2
+        ],
+        "bag_fuel_g": 1055.5,
+        "graded": true
+      },
+      {
+        "test": "61908019",
+        "cycle": "us06",
+        "phases": [
+          3,
+          4
+        ],
+        "bag_fuel_g": 1038.1,
+        "graded": true
+      },
+      {
+        "test": "61908016",
+        "cycle": "udds",
+        "phases": [
+          1,
+          2
+        ],
+        "bag_fuel_g": 964.5,
+        "graded": false,
+        "note": "cold start"
+      },
+      {
+        "test": "61908011",
+        "cycle": "hwy",
+        "phases": [
+          1
+        ],
+        "bag_fuel_g": 1015.9,
+        "graded": false,
+        "note": "coast-down session: 20 % more fuel than the same cycle on 61908018"
+      },
+      {
+        "test": "61908011",
+        "cycle": "hwy",
+        "phases": [
+          2
+        ],
+        "bag_fuel_g": 975.1,
+        "graded": false,
+        "note": "coast-down session"
+      },
+      {
+        "test": "61908022",
+        "cycle": "wltp",
+        "phases": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "bag_fuel_g": 1588.2,
+        "graded": false,
+        "note": "19 degC; WLTP is outside the cycles the efficiency is fitted on"
+      }
+    ],
+    "calibration": {
+      "test": "61908021",
+      "phases": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "x_note": "steady-speed stairs 0-80-0 mph at 0, 3 and 6 % grade (phases 1-3) after a standstill (phase 0). Everything the Willans prediction needs is taken from this test alone: the Willans line from its engine torque, speed and fuel flow (all phases, 5 s means so the fuel meter's lag averages out), the driveline efficiency against the coast-down road load (phase 1, level road), and the idle and overrun fuel rates (phases 0 and 1). The graded cycles are then predicted blind."
+    }
+  },
+  "fsk2023": {
+    "source": "Team A-FA (Ajou University), Formula Student Korea 2023 endurance, 27 Aug 2023: on-car telemetry (inverter DC bus voltage and current, BMS state of charge) published at https://github.com/luftaquila/a-fa-telemetry-endurance-viewer (file data.msgpack)",
+    "repo_commit": "3508404e37853dc844663244337a48fbaaf600c7",
+    "file_sha256": "49118facc0e157dcb2207359f9f927865254db0afd2e9a513426315ac14a3095",
+    "x_license": "the repository carries no license, so the data is not copied into KinematiK: the benchmark reads your own clone and checks the file against file_sha256",
+    "stint_gap_s": 60,
+    "rest_current_a": 3.0,
+    "loaded_current_a": 30.0,
+    "x_method": "pack resistance and a linear open-circuit voltage are fitted on stint 1 (state of charge 94-71 %); on stint 2 (71-58 %) the open-circuit voltage is read at rest (|I| < 3 A) and KinematiK's battery_internal_power_w predicts the current and terminal voltage from the measured terminal power. Graded: the mean voltage sag under load (> 30 A) and the I^2 R loss energy over stint 2",
+    "x_data_notes": "the BMS pack voltage is filtered (it barely sags under load), so the inverter's DC bus voltage and current are used; the inverter's torque estimate gives a mechanical power above the electrical one and is not used"
+  },
+  "ice_gears": {
+    "paper": "Zainal Abidin, S.F., Ripin, M.H., Abdul Jalal, R.I. and Aziz, N., Optimizing Gear Ratios for Vehicle Performance Enhancement Using Taguchi Method, Journal of Advanced Industrial Technology and Application 5(1), 11-20, 2024 (open access, CC BY-NC-SA 4.0)",
+    "car": "Proton Saga 1.3 L VVT, 4-speed automatic, GT-SUITE (GT-Drive) model correlated to the car: NEDC 6.62 against 6.60 L/100 km, 0-100 km/h 13.4 against 13.2 s (Table 3)",
+    "vehicle": {
+      "mass_kg": 1150,
+      "cd": 0.33,
+      "crr": 0.0103,
+      "tire_radius_m": 0.284,
+      "peak_torque_nm": 120,
+      "peak_torque_rpm": 4000,
+      "peak_power_kw": 70,
+      "peak_power_rpm": 5750,
+      "x_source": "Table 2 (curb 1075 kg plus a 75 kg driver; rolling resistance '10.3%' read as 0.0103; tire rolling radius 284 mm)"
+    },
+    "assumed": {
+      "frontal_area_m2": 2.14,
+      "final_drive": 4.0,
+      "torque_curve_rpm": [
+        1000,
+        2000,
+        3000,
+        4000,
+        5000,
+        5750,
+        6500
+      ],
+      "torque_curve_nm": [
+        85,
+        100,
+        112,
+        120,
+        118,
+        116,
+        100
+      ],
+      "redline_rpm": 6500,
+      "launch_rpm": 2500,
+      "shift_time_s": 0.3,
+      "gearbox_eff": 0.88,
+      "x_note": "not in the paper: frontal area (0.85 x width x height), final drive, the torque curve's shape between the two published points, a torque-converter stall speed as the launch rpm, the shift time and the automatic's efficiency. The torque curve is scaled so the standard gear set matches the paper's base 402 m time (Table 17, 22.82 s); the 25 gear sets are then predicted. Upshift speeds: the paper's car is a 4-speed automatic and its schedule is not published, so the schedule of the same class of Toyota 4-speed automatic from Setiawan and Farid, Cylinder 11(1) 2025, Table 3 (25, 45, 65 km/h) is used, unchanged",
+      "upshift_kmh": [
+        25,
+        45,
+        65
+      ]
+    },
+    "base_gears": [
+      2.919,
+      1.551,
+      1.0,
+      0.713
+    ],
+    "base_402m_s": 22.82,
+    "gear_sets": [
+      [
+        2.627,
+        1.396,
+        0.9,
+        0.642
+      ],
+      [
+        2.627,
+        1.473,
+        0.95,
+        0.677
+      ],
+      [
+        2.627,
+        1.551,
+        1.0,
+        0.713
+      ],
+      [
+        2.627,
+        1.628,
+        1.05,
+        0.749
+      ],
+      [
+        2.627,
+        1.706,
+        1.1,
+        0.784
+      ],
+      [
+        2.773,
+        1.396,
+        0.95,
+        0.713
+      ],
+      [
+        2.773,
+        1.473,
+        1.0,
+        0.749
+      ],
+      [
+        2.773,
+        1.551,
+        1.05,
+        0.784
+      ],
+      [
+        2.773,
+        1.628,
+        1.1,
+        0.642
+      ],
+      [
+        2.773,
+        1.706,
+        0.9,
+        0.677
+      ],
+      [
+        2.919,
+        1.396,
+        1.0,
+        0.784
+      ],
+      [
+        2.919,
+        1.473,
+        1.05,
+        0.642
+      ],
+      [
+        2.919,
+        1.551,
+        1.1,
+        0.677
+      ],
+      [
+        2.919,
+        1.628,
+        0.9,
+        0.713
+      ],
+      [
+        2.919,
+        1.706,
+        0.95,
+        0.749
+      ],
+      [
+        3.065,
+        1.396,
+        1.05,
+        0.677
+      ],
+      [
+        3.065,
+        1.473,
+        1.1,
+        0.713
+      ],
+      [
+        3.065,
+        1.551,
+        0.9,
+        0.749
+      ],
+      [
+        3.065,
+        1.628,
+        0.95,
+        0.784
+      ],
+      [
+        3.065,
+        1.706,
+        1.0,
+        0.642
+      ],
+      [
+        3.211,
+        1.396,
+        1.1,
+        0.749
+      ],
+      [
+        3.211,
+        1.473,
+        0.9,
+        0.784
+      ],
+      [
+        3.211,
+        1.551,
+        0.95,
+        0.642
+      ],
+      [
+        3.211,
+        1.628,
+        1.0,
+        0.677
+      ],
+      [
+        3.211,
+        1.706,
+        1.05,
+        0.713
+      ]
+    ],
+    "time_402m_s": [
+      23.69,
+      23.35,
+      23.03,
+      22.77,
+      22.47,
+      23.21,
+      22.9,
+      22.59,
+      22.86,
+      23.2,
+      22.76,
+      22.99,
+      22.71,
+      23.06,
+      22.72,
+      22.85,
+      22.56,
+      22.94,
+      22.6,
+      22.82,
+      22.43,
+      22.85,
+      23.01,
+      22.7,
+      22.39
+    ],
+    "x_results_source": "Table 5 (GT-SUITE 0-402 m times for an L25 orthogonal array of gear sets)"
+  },
+  "ev_2w": {
+    "paper": "Jallow, A.O., Nkandu, A., Samuel, T., Kulkarni, A.R. and Pal, A., Performance study of a retrofitted electric two-wheeler using GT-suite, Materials Research Proceedings 49 (2025) 186-196, doi:10.21741/9781644903438-19",
+    "vehicle": {
+      "mass_kg": 220,
+      "gear_ratio": 6,
+      "driveline_eff": 0.97,
+      "crr": 0.013,
+      "cd": 0.9,
+      "frontal_area_m2": 0.75,
+      "rho_kg_m3": 1.225,
+      "wheel_radius_m": 0.216,
+      "motor_kw": 5.0,
+      "x_source": "Table 1; 5 kW BLDC motor (Table 4)"
+    },
+    "top_speed_kmh": 80.44,
+    "motor_rpm_at_top": 5927.0,
+    "x_results_source": "Table 3 (GT-SUITE simulation column)"
+  },
+  "ev_avanza": {
+    "paper": "Setiawan, Y. and Farid, M., Integration of Automatic Transmission Towards Converted Electric Vehicle: A GT-Suite Approach, Cylinder 11(1), 2025 (CC BY 4.0)",
+    "vehicle": {
+      "mass_kg": 1250,
+      "cd": 0.3,
+      "frontal_area_m2": 2.23,
+      "final_drive": 5.125,
+      "motor_peak_torque_nm": 220,
+      "motor_peak_kw": 60,
+      "motor_max_rpm": 12000,
+      "motor_eff": 0.95,
+      "pack_v": 268.8,
+      "x_source": "Table 1 and the text (motor: 60 kW peak, 220 Nm, 12,000 rpm, 95 % efficiency)"
+    },
+    "assumed": {
+      "tire_radius_m": 0.3,
+      "crr": {
+        "nominal": 0.01,
+        "low": 0.008,
+        "high": 0.012
+      },
+      "driveline_eff": 0.97,
+      "rho_kg_m3": 1.2,
+      "rot_inertia_factor": 1.04,
+      "x_note": "not in the paper: tire radius (0.30 m reproduces the paper's 191.3 km/h at the automatic's 6,000 rpm input limit in fourth: 0.696 x 5.125), rolling resistance, driveline efficiency, whether regeneration is on"
+    },
+    "single_gear": {
+      "t_0_100_s": 14.0,
+      "top_speed_kmh": 190.0,
+      "nedc_km_per_kwh": 8.55
+    },
+    "automatic": {
+      "t_0_100_s": 13.3,
+      "top_speed_kmh": 191.3,
+      "nedc_km_per_kwh": 8.77,
+      "ratios": [
+        2.731,
+        1.526,
+        1.0,
+        0.696
+      ],
+      "upshift_kmh": [
+        25,
+        45,
+        65
+      ],
+      "x_note": "reported, not graded: KinematiK's EV drivetrain is single-speed"
+    },
+    "x_results_source": "section 3 (0-100 km/h, top speed, NEDC energy) for the single-gear and automatic versions"
+  }
+}
