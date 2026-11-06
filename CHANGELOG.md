@@ -11,6 +11,14 @@ reloads once. Only clearing the site's cookies and stored data, or a private win
 or fingerprint is used, so teammates on one network each keep their own. A cookie that is garbled or in the future
 counts as a spent preview. `suspension/preview.py`, `suspension/auth_ui.py`, `tests/test_preview.py`, PRIVACY.md.
 
+**Fixed: the preview restarted on every refresh.** The script that writes the preview's start to the browser ran in a
+zero-height `st.iframe`, which current Streamlit refuses (`StreamlitInvalidHeightError`); the error was swallowed, so
+nothing was written and a refresh, a new tab or an expired preview offered a fresh one. It now runs at 1 px (with
+`components.html` where `st.iframe` is missing), and a failure is logged. Checked in a real browser: a refresh and a
+new tab continue the same clock, an expired preview stays expired, clearing only the cookies does not reset it, and
+only clearing the cookies and the site's stored data offers a new preview. The tests' stand-in for Streamlit now
+enforces its height rule, so the old bug fails them.
+
 
 ## 1.4.0 (2026-11-05)
 

@@ -76,10 +76,22 @@ def _sync_preview_with_browser(st) -> None:
     if ss.get(_SS_PV_SYNCED) == mark:
         return
     ss[_SS_PV_SYNCED] = mark
+    _run_browser_script(st, _preview.recover_script() if t0 is None else _preview.persist_script(t0))
+
+
+def _run_browser_script(st, html: str) -> None:
+    """Run a snippet in the visitor's browser. st.iframe refuses a height of 0 (StreamlitInvalidHeightError), so it
+    gets 1 px; Streamlit versions without st.iframe use components.html, which takes 0. A failure is logged, not
+    swallowed: a preview whose clock is never written to the browser would restart on every refresh."""
     try:
-        st.iframe(_preview.recover_script() if t0 is None else _preview.persist_script(t0), height=0)
-    except Exception:
-        pass
+        if hasattr(st, "iframe"):
+            st.iframe(html, height=1)
+        else:
+            import streamlit.components.v1 as components
+            components.html(html, height=0)
+    except Exception as exc:  # noqa: BLE001 — the gate must still render; the failure is made visible in the log
+        import logging
+        logging.getLogger(__name__).warning("preview: could not run the browser script: %r", exc)
 
 
 def _render_preview_offer(st) -> None:
