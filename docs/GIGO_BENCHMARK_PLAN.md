@@ -301,3 +301,19 @@ roughly two thirds to five sixths of harmful input errors at entry.
 **Next, as a new sealed round on fresh decks:** check the primary reduction and the launch speed (against the
 engine curve and redline, as the redline is now), refuse a zero or negative mass, and leave the plausible-but-wrong
 class to measurement (corner scales, datasheets), which no range can replace.
+
+## After round 3: three fixes, not yet measured
+
+Made after round 3's result, from the gaps it named; no sealed round has measured them yet, so round 3's numbers
+stay the record until one does.
+
+* **A vehicle mass of zero or less is refused** where a deck enters KinematiK, instead of being warned about and
+  then divided by.
+* **The combustion car's primary reduction is checked** (1 to 4, a direct drive to a motorcycle engine's primary
+  gears), and so is the gearing as a whole: the top-gear speed at redline must lie between 20 and 70 m/s for a
+  Formula Student car (10 to 150 m/s for any car). An inverted or mistyped primary, gear or final drive moves it out.
+* **The launch speed is checked against the redline:** between a fifth of the redline and the redline, which a
+  launch speed typed in rad/s is not.
+
+Every deck in the repository still passes clean. To claim these in numbers, run round 4 on decks the checks have not
+seen, sealed the same way.

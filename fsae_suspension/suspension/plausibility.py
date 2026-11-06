@@ -56,6 +56,12 @@ GENERIC = {
                           "an efficiency typed in percent"),
     "engine_redline_rpm": (1500.0, 22000.0, "rpm", "a truck diesel to a superbike", "rad/s typed into rpm"),
     "engine_peak_torque_nm": (5.0, 4000.0, "N·m", "a lawnmower to a truck", "a torque unit slip"),
+    "primary_reduction": (1.0, 4.0, "", "a direct drive to a motorcycle engine's primary gears",
+                          "the ratio entered as its inverse, or a decimal point shifted"),
+    "top_gear_speed_ms": (10.0, 150.0, "m/s", "a city car to a hypercar, at redline in top gear",
+                          "a ratio inverted or mistyped (primary, gear or final drive)"),
+    "launch_frac_of_redline": (0.2, 1.0, "", "a launch between a fifth of the redline and the redline",
+                               "a launch speed in rad/s typed into rpm"),
 }
 
 #: A Formula Student car (FS/FSAE rules and the cars in benchmarks/powertrain); missing names fall back to GENERIC.
@@ -75,6 +81,8 @@ FSAE = {
     "wheelbase_m": (1.525, 2.2, "m", "the rules' 1525 mm minimum to a long car", "mm typed into metres"),
     "engine_redline_rpm": (7000.0, 17000.0, "rpm", "a large single to a 600 cc four", "rad/s typed into rpm"),
     "engine_peak_torque_nm": (20.0, 150.0, "N·m", "a small single to a turbocharged twin", "a torque unit slip"),
+    "top_gear_speed_ms": (20.0, 70.0, "m/s", "a tight gearing to a car geared for 250 km/h",
+                          "a ratio inverted or mistyped (primary, gear or final drive)"),
 }
 
 CLASSES = {None: {}, "generic": {}, "fsae": FSAE}
@@ -132,6 +140,8 @@ def check_deck(inp: dict, vehicle_class: str = "fsae", where: str = "inputs.json
     agree but do not: the declared motor peak torque (N·m) and top speed (rpm) against the motor curve, and the
     engine's redline (rpm) against its curve (motor_curve, engine_curve: (rpm, torque_nm) sequences, optional)."""
     veh, ev, ic = inp["vehicle"], inp.get("ev"), inp.get("ice")
+    if veh.get("mass_kg") is not None and not veh["mass_kg"] > 0:
+        raise ValueError(f"{where}: the vehicle mass must be positive (it is {veh['mass_kg']:g} kg)")
     effs = [sec[k] for sec in (ev, ic) if sec for k in ("inverter_eff", "motor_eff", "driveline_eff")
             if sec.get(k) is not None]
     bte = (ic or {}).get("bte")
@@ -156,7 +166,12 @@ def check_deck(inp: dict, vehicle_class: str = "fsae", where: str = "inputs.json
     out = check(vals, vehicle_class, where, warn=False) + out
     if ic:
         ivals = {"final_drive": ic.get("final_drive"), "brake_thermal_eff": bte,
-                 "engine_redline_rpm": ic.get("redline_rpm")}
+                 "engine_redline_rpm": ic.get("redline_rpm"), "primary_reduction": ic.get("primary")}
+        red, gears, r = ic.get("redline_rpm"), ic.get("gears"), veh.get("tire_radius_m")
+        if red and gears and r and ic.get("primary") and ic.get("final_drive"):
+            ivals["top_gear_speed_ms"] = red / (ic["primary"] * min(gears) * ic["final_drive"]) * math.pi / 30 * r
+        if red and ic.get("launch_rpm") is not None:
+            ivals["launch_frac_of_redline"] = ic["launch_rpm"] / red
         if engine_curve is not None:
             rpm, tq = engine_curve
             p = max(r * t for r, t in zip(rpm, tq)) * math.pi / 30.0

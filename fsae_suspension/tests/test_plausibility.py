@@ -281,10 +281,12 @@ def test_a_brake_thermal_efficiency_that_is_not_a_fraction_is_refused(bte):
     (("ev", "motor_peak_torque_nm"), 88.5, r"^x: motor_peak_torque_nm = 88.5 disagrees with 120 from the curve \(-26%\)"),
     (("ev", "motor_max_rpm"), 2461.0, r"^x: motor_max_rpm = 2461 disagrees with 2.35e\+04 from the curve")])
 def test_each_deck_check_names_its_input(path, value, pattern):
+    import re
     d = _bench()
     d[path[0]][path[1]] = value
-    with pytest.warns(W, match=pattern):
-        pl.check_deck(d, where="x", **_curves())
+    with pytest.warns(W):
+        out = pl.check_deck(d, where="x", **_curves())
+    assert any(re.match(pattern, m) for m in out), out
 
 
 def test_the_redline_is_checked_against_its_range_and_its_curve():
@@ -293,9 +295,10 @@ def test_the_redline_is_checked_against_its_range_and_its_curve():
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
         out = pl.check_deck(d, where="x", **_curves())
-    assert [str(x.message) for x in w] == out and len(out) == 2
+    assert [str(x.message) for x in w] == out
     assert out[0].startswith("x (engine): redline_rpm = 1414 disagrees with 1.35e+04 from the curve (-90%)")
-    assert out[1].startswith("x (engine): engine_redline_rpm = 1414 rpm is outside 7000–17000 rpm")
+    assert [m.split(" = ")[0] for m in out[1:]] == ["x (engine): engine_redline_rpm", "x (engine): top_gear_speed_ms",
+                                                   "x (engine): launch_frac_of_redline"]
 
 
 def test_the_engine_curve_gives_peak_torque_power_and_specific_power():
@@ -305,10 +308,8 @@ def test_the_engine_curve_gives_peak_torque_power_and_specific_power():
         out = pl.check_deck(d, where="x", engine_curve=(rpm, [t * 1000 for t in tq]))
     names = [m.split(" = ")[0] for m in out]
     assert names == ["x (engine): engine_peak_torque_nm", "x (engine): peak_power_w", "x (engine): specific_power_w_kg"]
-    d["vehicle"]["mass_kg"] = 0.0
-    with pytest.warns(W):
-        out = pl.check_deck(d, where="x", engine_curve=(rpm, tq))
-    assert not any("specific_power" in m for m in out)
+    del d["vehicle"]["mass_kg"]
+    assert _quiet(pl.check_deck, d, where="x", engine_curve=(rpm, tq)) == []
 
 
 def test_curve_agreement_has_a_five_percent_band_and_ignores_what_is_missing():
@@ -324,6 +325,56 @@ def test_a_deck_with_only_one_section_or_no_curves_is_checked_as_far_as_it_goes(
     ice_only = {"vehicle": d["vehicle"], "ice": d["ice"]}
     assert _quiet(pl.check_deck, ev_only) == [] and _quiet(pl.check_deck, ice_only) == []
     ice_only["ice"]["redline_rpm"] = 1414.0
-    with pytest.warns(W, match=r"^inputs.json \(engine\): engine_redline_rpm"):
-        assert len(pl.check_deck(ice_only)) == 1        # no curve, so no disagreement to report
+    with pytest.warns(W):
+        out = pl.check_deck(ice_only)
+    assert out[0].startswith("inputs.json (engine): engine_redline_rpm")
+    assert not any("disagrees" in m for m in out)        # no curve, so no disagreement to report
     assert _quiet(pb.check_deck, _bench(), base=ROOT / "nowhere") == []
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+#  Added after garbage-in round 3: a mass of 0 refused, the primary reduction, gearing and launch speed checked
+# ---------------------------------------------------------------------------------------------------------------------
+@pytest.mark.parametrize("mass", [0.0, -300.0])
+def test_a_deck_with_no_mass_is_refused(mass):
+    d = _bench()
+    d["vehicle"]["mass_kg"] = mass
+    with pytest.raises(ValueError, match=r"^x: the vehicle mass must be positive \(it is -?\d+ kg\)$"):
+        pl.check_deck(d, where="x")
+
+
+@pytest.mark.parametrize("primary, names", [
+    (1 / 2.111, ["x (engine): primary_reduction", "x (engine): top_gear_speed_ms"]),     # inverted
+    (21.11, ["x (engine): primary_reduction", "x (engine): top_gear_speed_ms"]),         # decimal point shifted
+    (4.2, ["x (engine): primary_reduction"])])                                           # odd, gearing still plausible
+def test_the_primary_reduction_and_top_gear_speed(primary, names):
+    d = _bench()
+    d["ice"]["primary"] = primary
+    with pytest.warns(W):
+        out = pl.check_deck(d, where="x")
+    assert [m.split(" = ")[0] for m in out] == names
+
+
+def test_a_whole_gearbox_off_by_a_factor_shows_in_the_top_gear_speed():
+    d = _bench()
+    d["ice"]["final_drive"] = 12.0                       # still a plausible final drive, but the car tops out slowly
+    with pytest.warns(W, match=r"^x \(engine\): top_gear_speed_ms = 10.39 m/s is outside 20–70 m/s"):
+        pl.check_deck(d, where="x")
+
+
+@pytest.mark.parametrize("launch, warns", [(9000 / 9.5493, True), (14000.0, True), (2700.0, False), (13500.0, False)])
+def test_the_launch_speed_against_the_redline(launch, warns):
+    d = _bench()
+    d["ice"]["launch_rpm"] = launch
+    if warns:
+        with pytest.warns(W, match=r"^x \(engine\): launch_frac_of_redline = "):
+            pl.check_deck(d, where="x")
+    else:
+        assert _quiet(pl.check_deck, d, where="x") == []
+
+
+def test_gearing_and_launch_are_left_alone_when_their_inputs_are_missing():
+    d = _bench()
+    for k in ("gears", "launch_rpm"):
+        del d["ice"][k]
+    assert _quiet(pl.check_deck, d) == []
