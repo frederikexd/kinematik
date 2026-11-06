@@ -1,0 +1,9 @@
+case hock_fs2_pushrod_fast
+vehicle data Vehicle_data_dwpushrod
+event CRG Hockenheim F
+fs_car 1
+speed 1.15
+pedal 0.1
+run 2026-11-05 22:56:20Z
+wall time 255 s
+MATLAB 26.2.0.3433840 (R2026b) Update 1

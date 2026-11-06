@@ -382,6 +382,31 @@ def test_the_blind_runs_are_stored_and_grade_as_reported():
     assert (sum(oks), len(oks)) == (2, 20)
 
 
+def _check_manifest(runs):
+    import hashlib
+    for line in (runs / "MANIFEST.sha256").read_text().splitlines():
+        digest, name = line.split(maxsplit=1)
+        assert hashlib.sha256((runs / name).read_bytes()).hexdigest() == digest, name
+
+
+@pytest.mark.parametrize("folder, research, fit, unsafe", [("runs", (28, 39), 34, 0),
+                                                           ("runs_old_exporter", (8, 29), 15, 5)])
+def test_the_round_two_runs_are_stored_and_grade_as_reported(folder, research, fit, unsafe):
+    """Round 2 as run on 5 Nov 2026 after the seal (commit 788a137): `runs` with the sealed MATLAB files, 28 of 39
+    within 3 %; `runs_old_exporter` with outdated simulink_lap.m and export_achilles.m (a protocol deviation, kept on
+    record), 8 of 29. Re-graded only while the code is still the sealed code."""
+    runs = pb.BLIND2 / folder
+    _check_manifest(runs)
+    r = pb.grade_blind(runs, pb.BLIND2 / "PREREGISTRATION.json")
+    if r["changed"]:
+        pytest.skip("the code has moved on from the sealed commit; the stored GRADED.txt is the record")
+    assert all(c["status"] == "graded" for c in r["cases"]) and len(r["cases"]) == len(pb.BLIND2_CASES)
+    oks = [ok for c in r["cases"] for *_, ok in c["rows"]]
+    fits = [f for c in r["cases"] for f in c["fitness"].values()]
+    assert (sum(oks), len(oks)) == research
+    assert sum(bool(ok) for ok, _ in fits) == fit and sum(u for _, u in fits) == unsafe
+
+
 def test_round_two_cases_are_the_ones_matlab_runs():
     import re
     m = (pb.BENCH / "matlab" / "kinematik_blind2_runs.m").read_text()

@@ -3,6 +3,15 @@
 One page for a reviewer. Each claim links to the benchmark that grades it; every number below is reproduced by a
 script and held by a test in CI, from reference files pinned by SHA-256. Misses are listed with the hits.
 
+## In one table
+
+| Reference | What it checks | Kind | Result |
+|---|---|---|---|
+| NREL FASTSim 3.1.0 | the energy chain is implemented right (identical inputs) | tool | 20 of 20 cases; worst 0.04 % |
+| Published GT-SUITE models (5 papers) | agreement with the industry-standard tool | tool, published | 41 of 44 within 5 % (misses traced to the papers' own gaps) |
+| MathWorks' Simscape Formula Student car, **blind** | cases KinematiK's code had not seen, sealed on GitHub before the runs | tool, multibody | **28 of 39 within 3 %; 34 of 39 fit for use; no miss on the unsafe side** |
+| Argonne dyno (BMW i3, Chevrolet Blazer); Team A-FA FSK 2023 telemetry | real hardware | **measured** | energy 3.7 %, fuel 3.8 % (means); launch within 1 %; pack sag 3.7 % |
+
 ## The evidence
 
 | Claim | Evidence | Kind | Result | Where |
@@ -14,26 +23,25 @@ script and held by a test in CI, from reference files pinned by SHA-256. Misses 
 | EV energy and ICE power and fuel against GT-SUITE | 2 papers (BMW i3, 12 t truck) and 3 more (e-two-wheeler, Avanza, Proton); inputs the papers omit are assumed and banded | tool, published | 41 of 44 within 5 %; misses: i3 US06 −7.0 %, Avanza 0–100 −9.9 %, Proton gear sensitivity | GT_SUITE_BENCHMARK.md |
 | The energy chain implemented right: road load, drivetrain, motor map, regeneration, aux, engine map, idle fuel | NREL FASTSim 3.1.0, 5 vehicles × 4 cycles, every input stated by FASTSim, nothing assumed | tool, exact inputs | 20 of 20; MAE 0.02 %, worst 0.04 % | FASTSIM_BENCHMARK.md |
 | Energy, current and pack voltage of a four-motor Formula Student EV over a full lap, given the speed | MathWorks' Formula Student car in Simscape, Hockenheim | tool, multibody | energy −3.3 %, peak current −5.6 %, RMS −3.6 % (outside the 2 % limit); voltage +0.3 %, resistance −13 % (within) | POWERTRAIN_BENCHMARK_PLAN.md |
-| The same, on cases the code has not seen | Six Simscape runs sealed before they were run (4 ran; both launches failed in Simscape) | tool, **blind** | **round 1: 2 of 20 within limits** (diagnosed: the case changed the car's alignment); **round 2 sealed at 3 %, pending** | POWERTRAIN_BENCHMARK_PLAN.md |
+| The same, on cases the code has not seen | Seven Simscape runs sealed and pushed before they were run (all seven ran) | tool, **blind** | **round 2 (sealed in commit 788a137, run after it): 28 of 39 within 3 %**; energy, current, voltage, resistance and both launches 28 of 29; pack temperature rise and motor/inverter heat 0 of 10 (over-predicted 3.5–14 %). 34 of 39 fit for use, none on the unsafe side. Round 1: 2 of 20 (diagnosed: the case changed the car's alignment) | POWERTRAIN_BENCHMARK_PLAN.md |
 
 ## Every element against 3 %
 
 The bar a reader asked for: is each element of the EV and ICE modules within 3 % of an independent reference? The
-honest answer per element, with the strongest reference it has. "Within" is a measured result; "pending" is a test
-sealed and not yet run; anything else says why not.
+honest answer per element, with the strongest reference it has. "Within" is a measured result; anything else says why not.
 
 | Module | Element (KinematiK function) | Strongest reference | Result | Within 3 %? |
 |---|---|---|---|---|
 | EV | Road load: mass, rolling resistance, drag, wheel inertia (`traction_power_w`) | FASTSim, identical inputs, 5 vehicles × 4 cycles | ≤ 0.03 % | **yes** (implementation) |
 | EV | Drive efficiency, motor map, regeneration, auxiliaries (`traction_power_w`, `motor_efficiency`) | FASTSim, identical inputs | ≤ 0.04 % | **yes** (implementation) |
 | EV | Energy on a measured drive cycle | Argonne i3, 7 dyno segments, efficiencies held out | mean 3.7 %, worst 6.6 % | **no**: 6 of 7 within 5 %; the dyno repeats to about 2–3 % itself |
-| EV | Motor speed × torque map, tire rolling resistance under load, cornering drag, toe scrub (`MotorEfficiencyMap`, `TireLosses`) | Simscape Formula Student car, blind round 2 | round 1 failed (2/20, diagnosed); in-sample now −1.5 % on energy | **pending** (round 2, 3 %) |
-| EV | Pack: I²R, voltage falling with charge, resistance with temperature, self-heating (`battery_internal_power_w`, `pack_along_lap`) | Simscape, blind round 2; A-FA telemetry (measured) | A-FA sag −3.7 %, I²R −4.7 % (constant-voltage model); Simscape in-sample: voltage 0.0 to +0.5 %, peak current +1.2 to −8.6 % | **pending** (round 2); **no** on A-FA with the old model |
-| EV | Launch, 75 m and 0–60 mph (`laptime.acceleration_time`, `powertrain.engine.simulate_launch`) | Argonne i3 WOT runs (measured); Simscape part-pedal launches | i3 0–60 within 1 % | **yes** on the i3; Simscape **pending** |
+| EV | Motor speed × torque map, tire rolling resistance under load, cornering drag, toe scrub (`MotorEfficiencyMap`, `TireLosses`) | Simscape Formula Student car, blind round 2 (4 laps, 1 skidpad) | energy −2.0 to +1.7 % on the four laps; skidpad −5.1 % | **yes** on the laps (4 of 4); **no** on the skidpad (−5.1 %: steady cornering at 1–6 m/s; diagnosed from Simscape's energy balance as camber thrust and load transfer in tire slip, and rolling loss at the wheel's spin, which the lumped model leaves out: POWERTRAIN_BENCHMARK_PLAN.md) |
+| EV | Pack: I²R, voltage falling with charge, resistance with temperature, self-heating (`battery_internal_power_w`, `pack_along_lap`) | Simscape, blind round 2; A-FA telemetry (measured) | Simscape blind round 2: peak current 0.0–2.9 %, RMS 0.2–2.1 %, minimum voltage ≤ 0.1 %, resistance ≤ 0.4 % (5 cases each); A-FA sag −3.7 %, I²R −4.7 % (constant-voltage model) | **yes** against Simscape (20 of 20); **no** on A-FA with the old model |
+| EV | Launch, 75 m and 0–60 mph (`laptime.acceleration_time`, `powertrain.engine.simulate_launch`) | Argonne i3 WOT runs (measured); Simscape part-pedal launches | i3 0–60 within 1 %; Simscape blind round 2: 75 m time +1.0 % (both cars), speed −1.2 / −0.9 % | **yes** (i3 and both Simscape launches) |
 | EV | Energy and top speed against published GT-SUITE models | 3 papers (i3, two-wheeler, Avanza) | i3 UDDS/HWY −2.0 / −1.3 %, US06 −7.0 %; two-wheeler top speed −2.7 %; Avanza top speed −4.1 %, 0–100 −9.9 % | **partly**. US06: the paper is itself 34 % above Argonne's measurement of the same car; Avanza: the paper does not publish its motor curve. Neither can honestly be made to agree within 3 %; both are reported as reference uncertainty, not tuned |
 | EV | Lap time (`laptime.simulate_lap`) | none graded | — | **not validated**: no published Formula Student lap gives both the car's parameters and a measured lap. The closest, SAE 2019-01-0163 (Queen's University Belfast), compares its simulator with DUT12's FSG 2012 times (acceleration 3.454 s, endurance lap 78.297 s), but Delft published only the layout (four AMK hub motors, Hoosier 18 × 6-10 tires): the paper estimated the mass, gearing and motor data and used FSG's track file, which is not public. Needs a logged lap of a known car |
-| EV | Battery temperature (`pack_temperature_along`, `pack_along_lap` heating) | Team A-FA FSK 2023 endurance, BMS cell temperatures (measured): heat capacity and cooling fitted on stint 1, stint 2 predicted; Simscape pack, blind round 2 | stint 2: RMS 0.34 K, worst 0.85 K over 2,119 readings; rise 7.20 K against 6.50 K measured (+10.8 %) | **no** on the rise, but the BMS reports whole degrees, so a 6.5 K rise is only known to about ±8 %: 3 % cannot be resolved in this data. The RMS is under the sensor's step. Simscape **pending** (round 2, 3 %) |
-| EV | Heat from the motors and inverter, driving (`traction_power_w` with the motor map) | Simscape, blind round 2 (battery power minus the motors' shaft power) | in-sample on round 1's lap: +12 % | **pending** (round 2, 3 %) |
+| EV | Battery temperature (`pack_temperature_along`, `pack_along_lap` heating) | Team A-FA FSK 2023 endurance, BMS cell temperatures (measured): heat capacity and cooling fitted on stint 1, stint 2 predicted; Simscape pack, blind round 2 | stint 2: RMS 0.34 K, worst 0.85 K over 2,119 readings; rise 7.20 K against 6.50 K measured (+10.8 %) | **no** on the rise, but the BMS reports whole degrees, so a 6.5 K rise is only known to about ±8 %: 3 % cannot be resolved in this data. The RMS is under the sensor's step. Simscape blind round 2: rise over-predicted 3.5–11 % (5 of 5 outside 3 %, 5 of 5 within the ±10 % / 0.5 K fitness bar): **no** at 3 %, conservative |
+| EV | Heat from the motors and inverter, driving (`traction_power_w` with the motor map) | Simscape, blind round 2 (battery power minus the motors' shaft power) | Simscape blind round 2: over-predicted by 7.0–13.9 % (5 of 5) | **no**: KinematiK consistently puts 10–14 % more loss in the motors and inverter than Simscape's motor blocks on the laps; the over-prediction is on the safe side for cooling, but 4 of 5 are outside the ±10 % fitness bar |
 | ICE | Engine power and fuel at steady speed (`fuel_for_lap`, constant BTE) | GT-SUITE truck paper, every speed as calibration point | power within 1 %, fuel MAE 2.2 % | **yes** |
 | ICE | Fuel through an engine map (`PowerEfficiencyMap`) | FASTSim, identical inputs, 2 vehicles × 4 cycles | ≤ 0.02 % | **yes** (implementation) |
 | ICE | Fuel through a Willans line (`WillansLine`, `fit_willans`) | Argonne Blazer, 6 segments, line from the stairs test alone (measured) | mean 3.8 %, worst −6.3 % (1.9 % against the meter it was fitted to) | **no**: the line cannot follow a measured map at light load; the engine-map option is the route under 3 % |
@@ -74,19 +82,24 @@ accurate as the research claim. Both are reported.
 * **FASTSim checks the arithmetic, not the physics.** It is given identical inputs and agrees to 0.04 %: the code
   does what it says. It cannot show that the physics is complete, because FASTSim leaves out the same things a
   point-mass model leaves out (cornering, tire slip, load transfer).
-* **The Hockenheim lap is in-sample.** The motor map, tire losses, cornering drag and rotating inertia were added
-  because that lap showed KinematiK 21.7 % short; they are physics, with every value taken from the model's own
-  files and nothing fitted, but the −3.3 % was measured on the lap that prompted them. The sealed runs tested
-  whether they generalize, and they did not: on a lighter car with a smaller pack, KinematiK is 5–14 % short on
-  Hockenheim energy and 33 % short on peak current.
+* **The Hockenheim lap is in-sample; round 2 is not.** The motor map, tire losses, cornering drag and rotating
+  inertia were added because the stock lap showed KinematiK 21.7 % short. Round 1 (sealed) failed, 2 of 20,
+  because the case itself changed the car's alignment. Round 2 fixed the cases, not the grading: sealed and
+  pushed to GitHub (commit 788a137, 21:26 UTC) before the seven runs (22:42–23:13 UTC), graded by the sealed code,
+  28 of 39 within 3 %.
+* **Two round-2 runs are on record.** The first (21:44–22:13 UTC) used outdated copies of `simulink_lap.m` and
+  `export_achilles.m` in MATLAB (no resistance table, no wheel-inertia measurement, no temperature channels): 8 of
+  29. It is stored and graded beside the run with the sealed files (`simulink_blind2/runs_old_exporter/`). Seven
+  more runs made before the seal, with the same outdated files, were byte-identical to it: the simulation
+  reproduces exactly.
 * **Assumed inputs.** The GT-SUITE papers omit motor maps, BSFC maps and rolling resistance; those rows carry bands
   from the assumed values, and a pass means the paper's value is inside KinematiK's band.
 
 ## Not validated
 
-* **EV energy and current of a Formula Student-sized car against Simulink.** Round 1 failed (above; diagnosed as
-  the case's own alignment change, plus a start-up spike and a constant pack voltage); round 2 is sealed and not yet
-  run.
+* **Motor and inverter heat, and pack temperature rise, to 3 %.** Blind round 2 over-predicts both on every case
+  (heat 7–14 %, temperature rise 3.5–11 %). Closing it needs the loss split inside Simscape's motor and inverter
+  blocks; any change is a new sealed round, not a re-grade of this one.
 
 * **Lap time against a real car.** KinematiK's lap time is checked only against itself and, ungraded, against
   Simscape's driver, which drives below the limit. A logged lap with a known car is needed.

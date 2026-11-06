@@ -285,6 +285,59 @@ What to expect, from the two laps already seen (in-sample, so not evidence): wit
 within 1.5 % on every metric and the round-1 FS lap within 4 % on all but peak current (−8.6 %, at the exit of the
 hairpin, where something still unmodeled costs about 2 kW).
 
+### Result of round 2 (5 Nov 2026): 28 of 39 within 3 %
+
+**Timeline (UTC).** Seal commit `788a137` pushed at 21:26. Run with the sealed MATLAB files 22:42–23:13
+(`simulink_blind2/runs/`, all seven cases ran). Graded by `simulink-blind2` with the code the seal fingerprints.
+
+| Case | Energy | Peak A | RMS A | Min V | Temp rise | Drive loss | R | 75 m time | 75 m speed |
+|---|---|---|---|---|---|---|---|---|---|
+| hock_fs2 | +1.5 % | +1.9 % | +1.8 % | 0.0 % | +10.2 % | +13.9 % | +0.1 % | | |
+| hock_fs2_fast | +1.7 % | +1.1 % | +2.1 % | −0.1 % | +11.0 % | +13.8 % | +0.1 % | | |
+| hock_fs2_pushrod_fast | −0.8 % | +0.7 % | −0.2 % | 0.0 % | +5.7 % | +11.3 % | 0.0 % | | |
+| hock_stock_fast | −2.0 % | 0.0 % | −1.2 % | 0.0 % | +3.5 % | +10.4 % | −0.1 % | | |
+| skidpad_fs2 | −5.1 % | +2.9 % | −0.3 % | 0.0 % | +5.4 % | +7.0 % | +0.4 % | | |
+| launch_fs2 | | | | | | | | +1.0 % | −1.2 % |
+| launch_stock2 | | | | | | | | +1.0 % | −0.9 % |
+
+KinematiK against Simscape (positive: KinematiK higher). **28 of 39 within the sealed 3 %**; 34 of 39 within the
+sealed fitness-for-use bars, none missed on the unsafe side. The energy, current, voltage, resistance and launch
+rows: 28 of 29. The two thermal rows: 0 of 10, both over-predicted on every case (more heat than Simscape, the
+conservative side). `GRADED.txt` holds the full output; `MANIFEST.sha256` the run files.
+
+**Protocol deviations, recorded.**
+
+* Round 1's seal was made locally and not pushed before its runs; its 2 of 20 is reported as is.
+* The first round-2 run after the seal (21:44–22:13) used outdated `simulink_lap.m` and `export_achilles.m` left in
+  MATLAB Drive: no pack resistance table, a rotating-inertia factor of 1.067 where the wheels give about 1.69, and no
+  temperature or motor-power channels. Graded by the same sealed code it scores 8 of 29 (two thermal metrics not
+  gradable); it is kept in `simulink_blind2/runs_old_exporter/`. The rerun with the three files whose hashes the
+  seal holds is the result above. Neither the code nor the limits changed between the two.
+* Seven runs were made before the seal (19:50–20:17), with the same outdated files, while the seal was still being
+  revised; they were not opened before grading and are byte-identical to `runs_old_exporter` (the simulation is
+  deterministic), so they are not stored twice.
+
+**After the close: why the skidpad is 5.1 % low (a diagnosis, not a re-grade).** A signal dump of `skidpad_fs2`
+(the sealed case re-run in check mode, nothing written to the results) balances Simscape's energy to 97 % from
+the wheels' own forces, slips and spin. KinematiK's shaft energy is 7.2 % (2,050 J) short; its motor losses are
+about 7 % high, which is why the pack shows −5.1 %. The shortfall, by sink:
+
+| Sink | Simscape | KinematiK | Short | Cause |
+|---|---|---|---|---|
+| Lateral tire slip | 5,912 J | 5,130 J | −782 J | camber thrust from body roll (≈ 610 J) and inner/outer load transfer (172 J), neither in the lumped model |
+| Rolling resistance | 7,386 J | 7,126 J | −260 J | the resistance torque turns at the wheel's spin (0.226 m rolling radius), not at the free radius (0.233 m) |
+| Aero drag | 7,054 J | 7,056 J | 0 | |
+| Speeding up the car and its wheels | 8,108 J | 8,093 J | 0 | |
+| Brake drag while driving | 122 J | 0 | −122 J | residual pad drag |
+| Not itemized by the logged signals | ≈ 819 J | 0 | −819 J | bearings, dampers or other losses the log does not separate |
+
+The model is right about aero and inertia, and short on the second-order tire terms that matter most in slow,
+steady cornering. The candidate additions (camber thrust, per-tire loads, rolling loss at the wheel's spin) are
+recorded for a future version, to be tested against new data rather than against this skidpad.
+
+The benchmark closes here: no further round on these cases, and no re-grading. The thermal rows are a known
+limitation (docs/POWERTRAIN_VALIDATION.md); a change to them would be tested in a new sealed round.
+
 **Simcenter Amesim (cases 1, 2, 5, 6).** Build the same car from the IFP Drive and Powertrain libraries: a vehicle
 body with the `inputs.json` parameters, a tabulated engine (`engine_curve.csv`) or e-motor (`motor_curve.csv`),
 the gearbox and final drive, and constant-friction tires. Run the 75 m launch and the endurance speed trace as in
