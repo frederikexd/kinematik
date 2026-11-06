@@ -166,3 +166,32 @@ slip), which are not counted as harmful.
 rolling resistance, wheel radius, grip and gear ratio, with Formula Student cars inside the ranges), tested on a new
 seed, with the false-alarm set as the guard against checks that would flag a valid car.
 
+## Round 2: plausibility checks at entry (sealed before running)
+
+**What changed in KinematiK.** `suspension/plausibility.py` holds, for each powertrain input, the range any real
+vehicle of its class falls in, why the range is there, and the slip a value outside it usually is. Two classes:
+`GENERIC` (an e-scooter to a 40 t truck; catches thousandfold, percent and length-unit slips) and `FSAE` (a Formula
+Student car, from the rules and the cars in this repository; also catches pounds for kilograms, ft² for m², a
+diameter for a radius and an inverted ratio). A value outside its range raises a `PlausibilityWarning` naming the
+likely slip; a drive or gearbox efficiency above 1 is refused. The checks run where inputs enter: the road-load
+function, the ICE vehicle, gearbox, engine map and fuel function, and the loader of a Formula Student deck exported
+from Simscape.
+
+**What did not change.** The catalog of errors, the decks, the harm bars and the gates. The random typing errors
+are drawn again, from the commit hash of this round's seal, so they are new.
+
+**One fix to the harness.** In round 1 a Formula Student launch that never reached 75 m made the benchmark's own
+clocking raise, and the row was marked "refused" although KinematiK had checked nothing. Now such a launch is a
+result (75 m never reached: infinitely slow, so harmful), not a refusal.
+
+**The honest caveat.** The ranges were written after round 1, by the people who saw which errors got through. Each
+range is set by the vehicles of its class, not by the errors (a Formula Student car's wheel is 10 to 13 inches;
+the rules cap a pack at 600 V and set a 1525 mm minimum wheelbase), and the false-alarm guard is unchanged: every
+existing test and benchmark deck (the FASTSim, GT-SUITE, Argonne, A-FA and Simscape decks) runs with warnings as
+errors, and none raises one. The fresh random set is the part no one has seen.
+
+**Predictions, sealed:** Gate 1 catches between 50 and 90 % of the harmful errors overall, and at least 75 % on the
+Formula Student deck (where no second opinion is possible); Gate 2 at least 95 %; no false alarm from either gate.
+Expected misses, stated now: a factor of 2.2 (pounds) or 1.34 (horsepower) on a road car, whose generic range spans
+a scooter to a truck; the driver left out of the mass (16 %, still a plausible car); torque in lb·ft and motor
+speed in rad/s on the Formula Student car (both still plausible values).

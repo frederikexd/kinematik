@@ -45,6 +45,7 @@ from collections.abc import Sequence
 import math
 
 import numpy as np
+from . import plausibility
 from ._num import vec as _vec
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -316,6 +317,12 @@ def traction_power_w(v, a, *, vehicle_mass_kg: float = 230.0, drag_cda: float = 
     the car runs, rad) and tire, the tires also scrub against each other all
     the time: C_α,i tan δ_i sin δ_i, the alignment's share of the road load.
     """
+    if not 0.0 < drivetrain_eff <= 1.0 or not 0.0 <= regen_eff <= 1.0:
+        raise ValueError("drive and regeneration efficiencies are fractions, at most 1: was one typed in percent?")
+    peak = None if motor_eff_map is None or isinstance(motor_eff_map, MotorEfficiencyMap) else max(motor_eff_map[0])
+    plausibility.check({"mass_kg": vehicle_mass_kg, "cda_m2": drag_cda, "cla_m2": cla_m2,
+                        "crr": None if tire is not None else crr, "drivetrain_eff": drivetrain_eff,
+                        "aux_power_w": aux_power_w, "peak_power_w": peak}, where="traction_power_w")
     v = _vec(v)
     a = _vec(a)
     fz = vehicle_mass_kg * 9.81 + 0.5 * rho_air * cla_m2 * v ** 2

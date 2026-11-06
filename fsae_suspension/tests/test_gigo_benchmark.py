@@ -12,12 +12,15 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import gigo_benchmark as gb  # noqa: E402
 
 
-def test_the_seal_holds_the_catalog_the_runner_uses():
-    rec = json.loads(gb.SEAL.read_text())
+@pytest.mark.parametrize("seal, predictions, extra", [(gb.SEAL1, gb.ROUND1_PREDICTIONS, {"suspension/plausibility.py"}),
+                                                     (gb.SEAL, gb.PREDICTIONS, set())])
+def test_each_seal_holds_the_catalog_the_runner_uses(seal, predictions, extra):
+    """Both rounds share the catalog; round 2 adds the plausibility module to the sealed code."""
+    rec = json.loads(seal.read_text())
     assert rec["corruptions"] == json.loads(json.dumps(gb.systematic() + gb.curated(), ensure_ascii=False))
-    assert rec["predictions"] == gb.PREDICTIONS and rec["random"]["n"] == gb.N_RANDOM
+    assert rec["predictions"] == predictions and rec["random"]["n"] == gb.N_RANDOM
     assert rec["gates"]["gate2_rel"] == gb.GATE2_REL and rec["gates"]["harm_rel_fastsim"] == gb.HARM_REL
-    assert set(rec["code_sha256"]) == set(gb.SEALED_CODE) and rec["created_utc"].endswith("Z")
+    assert set(rec["code_sha256"]) | extra == set(gb.SEALED_CODE) and rec["created_utc"].endswith("Z")
 
 
 def test_every_field_meets_every_confusion_of_its_dimension():
@@ -59,15 +62,15 @@ def test_a_curated_error_hits_the_right_input_of_the_formula_student_deck():
     assert json.dumps(inp) != json.dumps(out) and json.dumps(gb._fsae_deck()) == json.dumps(inp)   # NaN-safe
 
 
-def test_the_stored_run_grades_as_reported():
+def test_the_stored_round_one_run_grades_as_reported():
     """The run of 6 Nov 2026 (seed: seal commit 4c18a8a): Gate 1 0 of 120 harmful, Gate 2 99 of 99, no false alarm.
     Re-graded only while the code is still the sealed code."""
     import hashlib
-    digest, name = (gb.BENCH / "MANIFEST.sha256").read_text().split()
-    assert hashlib.sha256((gb.BENCH / name).read_bytes()).hexdigest() == digest
-    runs = json.loads(gb.RUNS.read_text())
+    digest, name = (gb.BENCH1 / "MANIFEST.sha256").read_text().split()
+    assert hashlib.sha256((gb.BENCH1 / name).read_bytes()).hexdigest() == digest
+    runs = json.loads(gb.RUNS1.read_text())
     assert runs["seed_commit"] == "4c18a8ae7579eee7a5eceaf85f99685983c5c46c"
-    rec = json.loads(gb.SEAL.read_text())
+    rec = json.loads(gb.SEAL1.read_text())
     if rec["code_sha256"] != gb.code_fingerprint():
         pytest.skip("the code has moved on from the sealed commit; the stored GRADED.txt is the record")
     gr = gb.grade(runs)

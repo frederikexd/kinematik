@@ -389,6 +389,7 @@ name = "ice_powertrain"
 files = ["suspension/ice_powertrain.py"]
 tests = [
     "tests/test_mutation_ice_powertrain.py",
+    "tests/test_plausibility.py",
 ]
 deselect = []
 
@@ -545,6 +546,7 @@ name = "ev_electrical_check"
 files = ["suspension/ev_electrical_check.py"]
 tests = [
     "tests/test_mutation_ev_electrical_check.py",
+    "tests/test_plausibility.py",
 ]
 deselect = []
 

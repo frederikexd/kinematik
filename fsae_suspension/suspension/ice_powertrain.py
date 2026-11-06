@@ -49,6 +49,7 @@ import math
 from dataclasses import dataclass, field, replace
 
 import numpy as np
+from . import plausibility
 from ._num import vec as _vec
 
 from .throttle_dynamics import compressible_mass_flow
@@ -259,6 +260,10 @@ class Gearbox:
                 raise ValueError("upshift speeds: one per upshift, positive and rising")
         if any(a <= b for a, b in zip(self.ratios, self.ratios[1:])):
             raise ValueError("gear ratios must fall from first gear to top gear")
+        if not 0.0 < self.efficiency <= 1.0:
+            raise ValueError("the gearbox efficiency is a fraction, at most 1: was it typed in percent?")
+        plausibility.check({"final_drive": self.final_drive, "wheel_radius_m": self.tire_radius_m,
+                            "drivetrain_eff": self.efficiency}, where="Gearbox")
 
     @property
     def n(self) -> int:
@@ -339,6 +344,11 @@ class ICEVehicle:
     crr: float = 0.015
     rho: float = 1.225
     wheel_inertia_kgm2: float = 0.6     # all four wheels with tires and brake discs (declared estimate)
+
+    def __post_init__(self):
+        plausibility.check({"mass_kg": self.mass_kg, "cg_height_m": self.cg_height_m, "wheelbase_m": self.wheelbase_m,
+                            "mu": self.mu, "cda_m2": self.cda_m2, "cla_m2": self.cla_m2, "crr": self.crr},
+                           where="ICEVehicle")
 
     def m_eff(self, gear_overall: float | None, eng: EngineMap | None, eff: float = 1.0, r: float = 0.225) -> float:
         """Translational mass plus rotating inertia reflected to the wheel; the engine counts only when it is
@@ -623,6 +633,7 @@ class PowerEfficiencyMap:
             raise ValueError("map efficiencies must lie in (0, 1); only the zero-power point may be 0")
         if self.idle_fuel_w < 0:
             raise ValueError("idle fuel power cannot be negative")
+        plausibility.check({"peak_power_w": float(p[-1])}, where="PowerEfficiencyMap")
         self._p, self._e = p, e
 
     def fuel_power_w(self, p_brake_w, rpm=None, displacement_cc: float = 0.0):  # pragma: no mutate (unused)
@@ -751,6 +762,7 @@ def fuel_for_lap(lap, eng: EngineMap, gb: Gearbox, veh: ICEVehicle | None = None
     P_engine on the throttle, and off it the engine burns at least the fuel that load costs."""
     if aux_power_w < 0:
         raise ValueError("auxiliary power cannot be negative")
+    plausibility.check({"aux_power_w": aux_power_w}, where="fuel_for_lap")
     veh = veh or ICEVehicle()
     f = fuel(fuel_key)
     s, v = _vec(lap.s), _vec(lap.v)
