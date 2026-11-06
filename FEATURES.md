@@ -12,8 +12,8 @@ One environment. Every subsystem. The entire car.
 |---|---|
 | **Suspension / Dynamics** | 3D constraint solver, camber gain, bump steer, roll centre migration, load transfer, grip balance, compliance, setup optimiser, GGV, transient, upright mount-plate DXF |
 | **Aerodynamics** | Downforce & ground effect, wing/diffuser sizing, aero map, virtual wind tunnel, wing-section (airfoil) DXF |
-| **EV Powertrain** | Motor architecture comparison, energy budget, regen, lap time, torque vectoring, motor-flange DXF |
-| **Combustion (ICE) Powertrain** | Engine curve against the intake restrictor, gears and shift points, clutch launch and 75 m, final-drive sweep, lap time, fuel per lap and for the endurance, CO2, engine heat into the cooling loop, engine braking against the brake balance, feasibility gate, engine-option comparison |
+| **EV Powertrain** | Motor architecture comparison, energy budget, regen, lap time, torque vectoring, motor-flange DXF, motor efficiency map over speed × torque, tyre rolling resistance, cornering drag and toe scrub from a `.tir` file, pack voltage and resistance with charge and temperature, pack self-heating along a lap; benchmarked against NREL FASTSim, GT-SUITE, MathWorks Simscape and measured data |
+| **Combustion (ICE) Powertrain** | Engine curve against the intake restrictor, gears and shift points, clutch launch and 75 m, final-drive sweep, lap time, fuel per lap and for the endurance, CO2, engine heat into the cooling loop, engine braking against the brake balance, feasibility gate, engine-option comparison, engine efficiency map with an idle-fuel floor |
 | **Accumulator** | Cell sizing, pack topology, FSAE-EV rules checks, thermal model, electrical feasibility gate, segment-box DXF |
 | **Brakes** | Bias & lock-up, hydraulic sizing, bolt & bracket FoS, rotor thermal, fade test, rotor optimiser + rotor DXF export, caliper-bracket DXF |
 | **Chassis / Frame** | 3D model, team fit, weight & CG ledger, handover export, node-gusset DXF, **Frame Planner** (node/tube frame graph with 3D wireframe, triangulation & load-path audit with per-defect fixes, Size C→B sourcing trade study, alternative-tubing equivalency screen, panel & attachment planner for seat/harness/floor/firewall/aero panels) |
@@ -24,6 +24,7 @@ One environment. Every subsystem. The entire car.
 | **Integration** | Cross-subsystem ledger, coupling graph, risk propagation, manufacturing-release gate, **Verdict Center** (per-subsystem works / look-closer / attention) |
 | **Frames & Datums** | Team coordinate convention charter, live floating datums with drift watch, frame Rosetta, migration wizard with SolidWorks XYZ export, sign-convention linter, judge-ready charter export, frame tags on every DXF / handover / ledger |
 | **Proof Engine** | Quantified evidence grades with staleness decay, deterministic uncertainty attribution to lap time / energy / thermal / mass, evidence actions ranked by uncertainty retired per hour, sha256-sealed pre-registered validation contracts, PASS / FAIL / DISCREPANT verdicts |
+| **Input plausibility** | Every powertrain input checked where it enters against the range real vehicles of its class fall in (general and Formula Student), cross-checks against the motor and engine curves, gearing and launch speed; a warning names the likely slip ("pounds typed as kilograms?"); efficiencies above 1 and a zero mass refused. Measured by a sealed garbage-in benchmark: 77 % of harmful input errors caught at entry on unseen Formula Student cars, no false alarms |
 | **Saboteur** | Mutation testing for the input deck: ten catalogued corruption classes injected into a shadow ledger, silent-killer detection, tripwire checksums picked by deterministic detectability set-cover, sha256-sealed pre-flight sheets, corruption fingerprinting that names the garbage class from the tripped pattern |
 | **Phantom Car** | The margin audit: disclosed design assumptions priced in σ of the evidence-graded ledger, a sha256-sealed team design percentile, ALIGNED/STACKED/NAKED/ANTI-HEDGED verdicts with releasable envelope and exposure priced, a two-cars contradiction detector, FORM reliability index β per load case, and a nominal / coherent / phantom comparison per objective |
 | **Earshot** | The test-day power audit: laps-per-config and minimum detectable effect from the two-sample power formula with the lap budget set by the pack, exact linear-drift bias per AABB/ABAB/ABBA run order with swap costs, instrument-propagated delivered bands that decide the evidence grade a test earns (SHARPENS/MOOT), sha256-sealed session sheets with DETECTED / NOT-DETECTED (miss probability priced) / VOID verdicts |
@@ -40,6 +41,34 @@ One environment. Every subsystem. The entire car.
 ---
 
 # Recent additions
+
+
+## 🔋 Powertrain, benchmarked — and wrong inputs caught where they enter
+
+A pre-validation tool is only worth trusting if its own numbers hold up, so the EV and combustion powertrain was put
+against four independent references, with the blind rounds sealed on GitHub before they ran:
+
+- **NREL FASTSim 3.1.0, identical inputs:** 20 of 20 vehicle-cycle cases, worst energy difference 0.04 %, and a sixth
+  car never used before within 0.04 %.
+- **Five published GT-SUITE studies:** 41 of 44 results within 5 %.
+- **MathWorks' Simscape Formula Student model, blind:** 28 of 39 metrics within 3 %; energy, current, voltage, pack
+  resistance and the 75 m launch 28 of 29.
+- **Measured data:** Argonne National Laboratory's dyno (energy 3.7 %, fuel 3.8 % on average, launch within 1 %) and a
+  Formula Student team's race telemetry (pack voltage sag 3.7 %).
+
+The physics behind it is new: motor efficiency over speed and torque, tyre rolling resistance, cornering drag and toe
+scrub from a `.tir` file, rotating inertia, a pack whose voltage and resistance follow charge and temperature and heat
+it along the lap, and an engine efficiency map with an idle-fuel floor (PHYSICS.md §25.6).
+
+**Input plausibility** (`suspension/plausibility.py`) checks every powertrain input where it enters: against the range
+real cars of its class fall in, against the motor and engine curves it must agree with, and for gearing and a launch
+speed that fit the engine. A warning names the likely slip ("pounds typed as kilograms?"), and an efficiency above 1 or
+a zero mass is refused. A sealed garbage-in benchmark measured it: from 0 of 120 harmful errors caught at entry before
+the checks to 77 % on Formula Student cars they were never written against, with no false alarms; beside FASTSim as a
+second opinion, every harmful error. What it cannot catch is named too: a value that is wrong but still believable,
+such as a driver left out of the mass.
+
+Details: `docs/POWERTRAIN_VALIDATION.md`, `docs/GIGO_BENCHMARK_PLAN.md`, VALIDATION.md.
 
 
 ## 🧭 Frames & Datums — one convention, whole team, zero ambiguity
