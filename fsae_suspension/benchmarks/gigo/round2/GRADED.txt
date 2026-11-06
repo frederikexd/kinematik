@@ -1,0 +1,36 @@
+
+systematic: 160 corruptions, 74 harmful (beyond the fitness bar), 22 refused by FASTSim itself
+  Gate 1, at entry:        45/74 (61%) of the harmful ones
+  Gate 2, second opinion:  61/61 (100%) of the harmful ones on FASTSim decks
+  either gate:             74/74 (100%)
+  left the value unchanged (not counted): 5
+
+random: 53 corruptions, 19 harmful (beyond the fitness bar), 8 refused by FASTSim itself
+  Gate 1, at entry:        9/19 (47%) of the harmful ones
+  Gate 2, second opinion:  15/15 (100%) of the harmful ones on FASTSim decks
+  either gate:             18/19 (95%)
+  left the value unchanged (not counted): 7
+    silent and harmful: fsae inverter_eff typo_15_drop (23%)
+
+curated: 56 corruptions, 26 harmful (beyond the fitness bar), 5 refused by FASTSim itself
+  Gate 1, at entry:        11/26 (42%) of the harmful ones
+  Gate 2, second opinion:  23/23 (100%) of the harmful ones on FASTSim decks
+  either gate:             25/26 (96%)
+    silent and harmful: fsae mass_kg driver_dropped (16%)
+
+all: 269 corruptions, 119 harmful (beyond the fitness bar), 35 refused by FASTSim itself
+  Gate 1, at entry:        65/119 (55%) of the harmful ones
+  Gate 2, second opinion:  99/99 (100%) of the harmful ones on FASTSim decks
+  either gate:             117/119 (98%)
+  left the value unchanged (not counted): 12
+
+false alarms, Gate 1: none
+false alarms, Gate 2: none
+
+Formula Student deck (no second opinion there): Gate 1 caught 18/20 of the harmful errors
+
+sealed predictions:
+  Gate 2 >= 95%: 100% -> held
+  Gate 1 in [50%, 90%): 55% -> held
+  Gate 1 on the Formula Student deck >= 75%: 90% -> held
+  false alarms Gate 1 = 0: 0; Gate 2 = 0: 0

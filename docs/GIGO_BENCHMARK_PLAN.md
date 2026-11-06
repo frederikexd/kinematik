@@ -1,8 +1,9 @@
 # Garbage-in benchmark
 
-**Result (6 Nov 2026, seal `4c18a8a`, run with its hash as the seed): at entry, KinematiK caught 0 of 120 harmful
-input errors; as a second opinion beside FASTSim it caught 99 of 99; no false alarm on any valid car.** Details
-below, under Result.
+**Round 1 (seal `4c18a8a`): at entry, KinematiK caught 0 of 120 harmful input errors; as a second opinion beside
+FASTSim, 99 of 99. Round 2 (seal `383bda9`, with plausibility checks at entry): 65 of 119 at entry, 18 of 20 on the
+Formula Student deck, 99 of 99 as a second opinion, 117 of 119 by either; no false alarm on any valid car in either
+round.** Details below.
 
 The powertrain benchmark (POWERTRAIN_VALIDATION.md) shows KinematiK computes the right answer from the right inputs.
 KinematiK's pitch is more than that: it should stop wrong inputs from reaching, or quietly coming back from, an
@@ -195,3 +196,33 @@ Formula Student deck (where no second opinion is possible); Gate 2 at least 95 %
 Expected misses, stated now: a factor of 2.2 (pounds) or 1.34 (horsepower) on a road car, whose generic range spans
 a scooter to a truck; the driver left out of the mass (16 %, still a plausible car); torque in lb·ft and motor
 speed in rad/s on the Formula Student car (both still plausible values).
+
+## Result of round 2 (6 Nov 2026)
+
+Run at 00:36 UTC with the hash of the pushed seal (`383bda91…`) as the seed; graded by the sealed code
+(`benchmarks/gigo/round2/runs.json`, `MANIFEST.sha256`, `GRADED.txt`).
+
+| Set | Errors | Harmful | Gate 1, at entry | Gate 2, second opinion | Caught by either |
+|---|---|---|---|---|---|
+| Systematic | 160 | 74 | 45 of 74 | 61 of 61 | 74 of 74 |
+| Random typing errors (new draw) | 53 | 19 | 9 of 19 | 15 of 15 | 18 of 19 |
+| Curated | 56 | 26 | 11 of 26 | 23 of 23 | 25 of 26 |
+| **All** | **269** | **119** | **65 of 119 (55 %)** | **99 of 99 (100 %)** | **117 of 119 (98 %)** |
+
+On the Formula Student deck, where no second opinion is possible, the entry checks caught **18 of 20** harmful
+errors (round 1: 0 of 21). No false alarm on any clean deck. All four sealed predictions held: Gate 1 overall
+55 % (sealed: 50–90 %), Formula Student deck 90 % (sealed: at least 75 %), Gate 2 100 % (at least 95 %), no false
+alarm. Gate 1 also flagged 66 wrong values too small to cross the harm bar.
+
+**What still gets through at entry**, as predicted before the run:
+
+* On road cars, factors their wide range cannot see: a mass in pounds (×2.2 or ÷2.2), a drag area in ft², the drag
+  coefficient typed for CdA, horsepower for kW, an efficiency applied twice. Every one of these was caught by the
+  second opinion.
+* On the Formula Student car, two errors that leave a believable car: the 75 kg driver left out of the mass (16 %
+  off) and an inverter efficiency typed 0.89 instead of 0.98 (a dropped digit, 23 % off). No range can catch these;
+  only a measurement (corner scales, an inverter datasheet) can.
+
+**What it means.** With both gates, KinematiK caught 117 of the 119 harmful input errors in this benchmark, and
+on a Formula Student car, the class it is built for, the entry checks alone catch 9 in 10. The remaining misses
+are values that are wrong but physically plausible; they are listed by name.

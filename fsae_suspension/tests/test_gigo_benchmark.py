@@ -79,3 +79,23 @@ def test_the_stored_round_one_run_grades_as_reported():
     assert (a["gate1_harmful"], a["gate2_harmful"], a["gate2_applicable"], a["either_harmful"]) == (0, 99, 99, 99)
     assert gr["false_alarms_gate1"] == [] and gr["false_alarms_gate2"] == []
     assert len(a["silent_harmful"]) == 21 and all(s.startswith("fsae ") for s in a["silent_harmful"])
+
+
+def test_the_stored_round_two_run_grades_as_reported():
+    """Round 2 (seed: seal commit 383bda9, with suspension/plausibility.py at entry): Gate 1 65 of 119 harmful, 18 of
+    20 on the Formula Student deck; Gate 2 99 of 99; no false alarm. Re-graded only while the code is the sealed code."""
+    import hashlib
+    digest, name = (gb.BENCH / "MANIFEST.sha256").read_text().split()
+    assert hashlib.sha256((gb.BENCH / name).read_bytes()).hexdigest() == digest
+    runs = json.loads(gb.RUNS.read_text())
+    assert runs["seed_commit"] == "383bda9126b0885acfe3e6ad0b8e62b6202740a9"
+    if json.loads(gb.SEAL.read_text())["code_sha256"] != gb.code_fingerprint():
+        pytest.skip("the code has moved on from the sealed commit; the stored GRADED.txt is the record")
+    gr = gb.grade(runs)
+    a = gb.summarize(gr)["all"]
+    assert (a["corruptions"], a["harmful"], a["no_change"], a["tool_refused"]) == (269, 119, 12, 35)
+    assert (a["gate1_harmful"], a["gate2_harmful"], a["gate2_applicable"], a["either_harmful"]) == (65, 99, 99, 117)
+    fs = [r for r in gr["rows"] if not r.get("status") and r["harmful"] and r["deck"] == "fsae"]
+    assert (sum(r["gate1"] for r in fs), len(fs)) == (18, 20)
+    assert gr["false_alarms_gate1"] == [] and gr["false_alarms_gate2"] == []
+    assert sorted(a["silent_harmful"]) == ["fsae inverter_eff typo_15_drop (23%)", "fsae mass_kg driver_dropped (16%)"]

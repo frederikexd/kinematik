@@ -11,7 +11,7 @@ script and held by a test in CI, from reference files pinned by SHA-256. Misses 
 | Published GT-SUITE models (5 papers) | agreement with the industry-standard tool | tool, published | 41 of 44 within 5 % (misses traced to the papers' own gaps) |
 | MathWorks' Simscape Formula Student car, **blind** | cases KinematiK's code had not seen, sealed on GitHub before the runs | tool, multibody | **28 of 39 within 3 %; 34 of 39 fit for use; no miss on the unsafe side** |
 | Argonne dyno (BMW i3, Chevrolet Blazer); Team A-FA FSK 2023 telemetry | real hardware | **measured** | energy 3.7 %, fuel 3.8 % (means); launch within 1 %; pack sag 3.7 % |
-| Garbage-in benchmark, sealed (GIGO_BENCHMARK_PLAN.md) | whether KinematiK catches wrong inputs | **blind**, seeded by the seal | as a second opinion beside FASTSim: 99 of 99 harmful errors; **at entry: 0 of 120**; no false alarm |
+| Garbage-in benchmark, sealed (GIGO_BENCHMARK_PLAN.md) | whether KinematiK catches wrong inputs | **blind**, seeded by the seal | round 2, with plausibility checks: **at entry 65 of 119 (18 of 20 on the Formula Student car)**, as a second opinion 99 of 99, **117 of 119 by either**; no false alarm. Round 1, before the checks: 0 of 120 at entry |
 
 ## The evidence
 
@@ -102,9 +102,10 @@ accurate as the research claim. Both are reported.
   (heat 7–14 %, temperature rise 3.5–11 %). Closing it needs the loss split inside Simscape's motor and inverter
   blocks; any change is a new sealed round, not a re-grade of this one.
 
-* **Catching a wrong input at entry.** The garbage-in benchmark: KinematiK accepted every harmful wrong value
-  given to it (0 of 120 refused or warned); it catches them only as a second opinion beside another tool (99 of
-  99). A misread datasheet entered in both tools is not caught today.
+* **Wrong inputs that are still plausible.** The garbage-in benchmark's entry checks catch 18 of 20 harmful errors on
+  a Formula Student car, but not a driver left out of the mass or an inverter efficiency off by a dropped digit:
+  values that are wrong but believable. On road cars the wide ranges miss factor-of-two slips (pounds, ft²,
+  horsepower), which the second opinion catches.
 * **Lap time against a real car.** KinematiK's lap time is checked only against itself and, ungraded, against
   Simscape's driver, which drives below the limit. A logged lap with a known car is needed.
 * **Battery temperature against a car with a known pack.** The A-FA test fits the pack's heat capacity and cooling
