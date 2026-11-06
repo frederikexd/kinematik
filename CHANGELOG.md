@@ -4,6 +4,52 @@
 ## Unreleased
 
 
+## 1.4.0 (2026-11-05)
+
+**The powertrain is benchmarked against four independent references.** The EV and combustion logic was checked
+against NREL FASTSim 3.1.0 with identical inputs (20 of 20 vehicle-cycle cases, worst energy difference 0.04 %, and a
+sixth car never used before within 0.04 %), five published GT-SUITE studies (41 of 44 results within 5 %), MathWorks'
+Simscape Formula Student model in seven cases sealed on GitHub before they ran (28 of 39 metrics within 3 %; energy,
+current, voltage, pack resistance and the 75 m launch 28 of 29), and measured data from Argonne National Laboratory's
+dyno and a Formula Student team's race telemetry (energy 3.7 % and fuel 3.8 % on average, launch within 1 %, pack
+voltage sag 3.7 %). `docs/POWERTRAIN_VALIDATION.md`, `docs/FASTSIM_BENCHMARK.md`, `docs/GT_SUITE_BENCHMARK.md` and
+`docs/POWERTRAIN_BENCHMARK_PLAN.md` hold the results, the protocol and every miss; the scripts and their tests rerun
+each number.
+
+**Powertrain physics.** `ev_electrical_check.traction_power_w` takes a motor efficiency map over speed and torque
+(`MotorEfficiencyMap`), tire rolling resistance under load and speed, cornering drag and toe scrub (`TireLosses`, read
+from a Magic Formula `.tir` file) and downforce on the tires. `pack_along_lap` follows the open-circuit voltage down
+with the state of charge, takes a resistance table over charge and temperature, and heats the pack by I²R;
+`pack_temperature_along` gives the pack temperature along a lap. `laptime.Powertrain.rot_mass_factor` counts rotating
+inertia in acceleration and braking. `ice_powertrain.PowerEfficiencyMap` reads an engine efficiency map with an
+idle-fuel floor, and `fuel_for_lap` takes an auxiliary load. Fitness-for-use bars (the error a design decision can
+carry) are reported beside the 3 % research bar, with an under-predicted current flagged as unsafe.
+
+**Wrong inputs are caught where they enter.** `suspension/plausibility.py` compares every powertrain input with the
+range real vehicles of its class fall in (a general class and a Formula Student class), and cross-checks inputs that
+must agree: the declared motor torque and top speed and the engine's redline against their curves, the gearing
+against a plausible top-gear speed, the launch speed against the redline. A value outside its range raises a
+`PlausibilityWarning` naming the likely slip ("pounds typed as kilograms?"). A sealed garbage-in benchmark
+(`docs/GIGO_BENCHMARK_PLAN.md`), its random errors seeded by each seal's commit, measured it in three rounds: at
+entry 0 of 120 harmful errors before the checks, 65 of 119 with them, and 64 of 83 on two Formula Student cars the
+checks were never written against (77 %, 95 % CI 67–85 %); as a second opinion beside FASTSim, every harmful error;
+no false alarm in any round.
+
+**Behaviour changes:**
+- a drive, gearbox or brake thermal efficiency above 1 (usually typed in percent) and a vehicle mass of zero or less
+  are refused with a `ValueError`; they used to give a wrong answer silently;
+- a `PlausibilityWarning` is an error in the test suite (`pyproject.toml`), so a valid car that trips a check fails
+  CI; the four tests that feed textbook numbers on purpose carry a mark saying so;
+- the `core-coverage` job runs the pack and plausibility tests, which hold `ev_electrical_check.py` at 100 %.
+
+**Not validated yet:** lap time against a real car; a Formula Student engine's fuel map and coolant heat (no open
+measured reference); pack and motor heat, over-predicted by 3.5–14 % against Simscape (the safe side for cooling);
+skidpad energy, 5 % low (diagnosed: camber thrust, load transfer and rolling loss at the wheel's spin). Inputs that
+are wrong but still look like a believable car (a driver left out of the mass, an efficiency off by a dropped digit)
+are not caught at entry. The primary-reduction, gearing and launch-speed checks were added after the last sealed round
+and are not yet measured by one.
+
+
 ## 1.3.0 (2026-10-29)
 
 **CI runs the same on any machine.** Fixes found when the new suites first ran on GitHub's runners:
