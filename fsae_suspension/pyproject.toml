@@ -90,6 +90,9 @@ filterwarnings = [
     # scrolling past, which is the whole point of having the filter.
     "error::DeprecationWarning",
     "error::PendingDeprecationWarning",
+    # A plausibility warning on a real car is a false alarm (docs/GIGO_BENCHMARK_PLAN.md): every test and benchmark
+    # deck runs with it as an error; a test that feeds textbook numbers on purpose says so with a filterwarnings mark.
+    "error::suspension.plausibility.PlausibilityWarning",
     # Third-party deprecations are not ours to fix and must not gate our CI.
     # Keep this list SHORT and justified — each entry is a blind spot.
     "default::DeprecationWarning:streamlit.*",

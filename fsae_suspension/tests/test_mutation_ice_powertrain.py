@@ -891,6 +891,7 @@ def test_publishing_to_the_ledger():
     assert ice.publish_to_ledger(b, e) is b
 
 
+@pytest.mark.filterwarnings("ignore::suspension.plausibility.PlausibilityWarning")   # textbook numbers, not a car
 def test_pass_through_and_edges(monkeypatch):
     """Non-default objects everywhere one is handed on, so a dropped or swapped argument changes the answer."""
     from suspension import laptime as lt
@@ -984,6 +985,7 @@ def test_compare_engines_hands_on_its_own_objects(monkeypatch):
     assert got["fuel"][0] is e and got["fuel"][1] is g and got["end"] is fr
 
 
+@pytest.mark.filterwarnings("ignore::suspension.plausibility.PlausibilityWarning")   # textbook numbers, not a car
 def test_the_power_efficiency_map():
     m = ice.PowerEfficiencyMap((0.0, 1e4, 5e4), (0.0, 0.25, 0.35), idle_fuel_w=3000.0, source="FASTSim")
     p = np.r_[-5.0, 0.0, 1e3, 1e4, 3e4, 5e4, 8e4]
