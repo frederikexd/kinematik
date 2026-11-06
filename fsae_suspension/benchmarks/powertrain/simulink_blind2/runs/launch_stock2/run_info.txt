@@ -1,0 +1,9 @@
+case launch_stock2
+vehicle data Vehicle_data_dwishbone
+event WOT Braking
+fs_car 0
+speed NaN
+pedal 0.1
+run 2026-11-05 23:13:38Z
+wall time 70 s
+MATLAB 26.2.0.3433840 (R2026b) Update 1

@@ -39,7 +39,9 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import fastsim_benchmark as fb  # noqa: E402
 import powertrain_benchmark as pb  # noqa: E402
 
-BENCH = ROOT / "benchmarks" / "gigo"
+BENCH1 = ROOT / "benchmarks" / "gigo"                  # round 1 (6 Nov 2026): the code as it was, no entry checks
+SEAL1, RUNS1 = BENCH1 / "PREREGISTRATION.json", BENCH1 / "runs.json"
+BENCH = BENCH1 / "round2"                               # round 2: with suspension/plausibility.py at entry
 SEAL = BENCH / "PREREGISTRATION.json"
 RUNS = BENCH / "runs.json"
 GATE2_REL = 0.01            # KinematiK and FASTSim agree to 0.04 % on clean decks
@@ -48,12 +50,14 @@ N_RANDOM = 60
 RANDOM_VERSION = "1"        # bump if the typo generator changes (a new seal)
 SEALED_CODE = ("scripts/gigo_benchmark.py", "scripts/fastsim_benchmark.py", "scripts/powertrain_benchmark.py",
                "suspension/ev_electrical_check.py", "suspension/ice_powertrain.py", "suspension/laptime.py",
-               "suspension/_num.py")
+               "suspension/_num.py", "suspension/plausibility.py")
 FS_DECK = ROOT / "benchmarks" / "powertrain" / "simulink_blind2" / "runs"
 FS_LAP, FS_LAUNCH = "hock_fs2", "launch_fs2"
 CLEAN_FS_DECKS = tuple(c["name"] for c in pb.BLIND2_CASES) + ("../../simulink_hockenheim",)
-PREDICTIONS = {"gate2_catch_harmful_min": 0.95, "gate1_catch_harmful_max": 0.30, "gate1_false_alarms": 0,
-               "gate2_false_alarms": 0}
+PREDICTIONS = {"gate2_catch_harmful_min": 0.95, "gate1_catch_harmful_min": 0.50, "gate1_catch_harmful_max": 0.90,
+               "gate1_fsae_catch_harmful_min": 0.75, "gate1_false_alarms": 0, "gate2_false_alarms": 0}
+ROUND1_PREDICTIONS = {"gate2_catch_harmful_min": 0.95, "gate1_catch_harmful_max": 0.30, "gate1_false_alarms": 0,
+                      "gate2_false_alarms": 0}
 
 # ---------------------------------------------------------------------------------------------------------------------
 #  Confusions by dimension: (key, what happened, factor) or a named transform
@@ -260,7 +264,24 @@ def corrupt_fastsim(d: dict, c: dict) -> dict:
 
 
 def fastsim_run(d: dict, veh: str) -> dict:
-    """FASTSim's energy per km on each cycle, or why it refused."""
+    """FASTSim's energy per km on each cycle, or why it refused, in a process of its own: FASTSim's compiled core
+    can crash outright (a segmentation fault) on a corrupted deck, and that is the tool refusing it, not the end of
+    the benchmark."""
+    import subprocess
+    with tempfile.TemporaryDirectory() as tmp:
+        f = Path(tmp) / "deck.json"
+        f.write_text(json.dumps(d))
+        try:
+            proc = subprocess.run([sys.executable, "-I", str(Path(__file__).resolve()), "_fastsim", veh, str(f)],
+                                  capture_output=True, text=True, timeout=600)
+        except subprocess.TimeoutExpired:
+            return {cyc: {"refused": "FASTSim did not finish in 600 s"} for cyc in fb.CYCLES}
+    if proc.returncode != 0:
+        return {cyc: {"refused": f"FASTSim crashed (exit {proc.returncode})"} for cyc in fb.CYCLES}
+    return json.loads(proc.stdout.strip().splitlines()[-1])
+
+
+def _fastsim_run_here(d: dict, veh: str) -> dict:
     import numpy as np
     import fastsim as fs
     out = {}
@@ -330,8 +351,14 @@ def _fsae_eval(inp: dict, curve_dir: Path) -> tuple:
         try:
             rows = pb.simulink_lap_rows(tmp / "inputs.json", FS_DECK / FS_LAP / "simulink_lap.csv", skip_s=3.0)["rows"]
             out.update({m: k for m, k, _ in rows})
-            for m, k, _ in pb.blind_launch_rows(tmp / "inputs.json", FS_DECK / FS_LAUNCH / "simulink_lap.csv"):
-                out[m] = k
+            try:
+                for m, k, _ in pb.blind_launch_rows(tmp / "inputs.json", FS_DECK / FS_LAUNCH / "simulink_lap.csv"):
+                    out[m] = k
+            except ValueError as exc:
+                if "never reaches 75 m" not in str(exc):
+                    raise
+                out["launch_75m_time_s"] = math.inf   # KinematiK's launch never got there: a result, not a check
+                flags.append("result: the launch never reached 75 m")
         except ValueError as exc:
             flags.append(f"refused: {exc}")
         except Exception as exc:  # noqa: BLE001
@@ -432,9 +459,9 @@ def _new_flags(flags, clean_flags):
     return [f for f in flags if f not in clean_flags]
 
 
-def grade(runs=None) -> dict:
+def grade(runs=None, runs_path=None) -> dict:
     """Every row judged: harm, Gate 1 (refused or new warning) and Gate 2 (FASTSim decks)."""
-    runs = runs or json.loads(RUNS.read_text())
+    runs = runs or json.loads(Path(runs_path or RUNS).read_text())
     graded = []
     for r in runs["rows"]:
         g = {k: r[k] for k in ("set", "deck", "field", "key", "story")}
@@ -499,9 +526,9 @@ def summarize(gr: dict) -> dict:
     return out
 
 
-def report() -> int:
-    rec = json.loads(SEAL.read_text())
-    gr = grade()
+def report(seal_path=None, runs_path=None) -> int:
+    rec = json.loads(Path(seal_path or SEAL).read_text())
+    gr = grade(runs_path=runs_path)
     sm = summarize(gr)
     pct = lambda a, b: f"{a}/{b} ({a / b:.0%})" if b else "n/a"  # noqa: E731
     for s, v in sm.items():
@@ -526,9 +553,19 @@ def report() -> int:
     p = rec["predictions"]
     g2 = a["gate2_harmful"] / a["gate2_applicable"] if a["gate2_applicable"] else math.nan
     g1 = a["gate1_harmful"] / a["harmful"] if a["harmful"] else math.nan
+    fsh = [r for r in gr["rows"] if not r.get("status") and r["harmful"] and r["deck"] == "fsae"]
+    g1f = sum(r["gate1"] for r in fsh) / len(fsh) if fsh else math.nan
+    print(f"\nFormula Student deck (no second opinion there): Gate 1 caught {sum(r['gate1'] for r in fsh)}/{len(fsh)} "
+          "of the harmful errors")
     print("\nsealed predictions:")
-    print(f"  Gate 2 >= {p['gate2_catch_harmful_min']:.0%}: {g2:.0%} -> {'held' if g2 >= p['gate2_catch_harmful_min'] else 'MISSED'}")
-    print(f"  Gate 1 < {p['gate1_catch_harmful_max']:.0%}: {g1:.0%} -> {'held' if g1 < p['gate1_catch_harmful_max'] else 'MISSED'}")
+    ok = lambda c: "held" if c else "MISSED"  # noqa: E731
+    if "gate2_catch_harmful_min" in p:
+        print(f"  Gate 2 >= {p['gate2_catch_harmful_min']:.0%}: {g2:.0%} -> {ok(g2 >= p['gate2_catch_harmful_min'])}")
+    lo, hi = p.get("gate1_catch_harmful_min", 0.0), p.get("gate1_catch_harmful_max", 1.0)
+    print(f"  Gate 1 in [{lo:.0%}, {hi:.0%}): {g1:.0%} -> {ok(lo <= g1 < hi)}")
+    if "gate1_fsae_catch_harmful_min" in p:
+        print(f"  Gate 1 on the Formula Student deck >= {p['gate1_fsae_catch_harmful_min']:.0%}: {g1f:.0%} -> "
+              f"{ok(g1f >= p['gate1_fsae_catch_harmful_min'])}")
     print(f"  false alarms Gate 1 = 0: {len(gr['false_alarms_gate1'])}; Gate 2 = 0: {len(gr['false_alarms_gate2'])}")
     return 0
 
@@ -546,6 +583,11 @@ def main(argv=None) -> int:
         return report()
     if argv[:1] == ["report"]:
         return report()
+    if argv[:1] == ["report1"]:                          # round 1, as stored
+        return report(SEAL1, RUNS1)
+    if len(argv) == 3 and argv[0] == "_fastsim":          # one deck, in its own process (fastsim_run)
+        print(json.dumps(_fastsim_run_here(json.loads(Path(argv[2]).read_text()), argv[1])))
+        return 0
     print(__doc__)
     return 2
 

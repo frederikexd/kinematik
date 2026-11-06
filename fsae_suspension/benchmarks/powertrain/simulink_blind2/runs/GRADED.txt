@@ -1,0 +1,56 @@
+
+hock_fs2: graded
+  energy_kwh_per_km          0.1295     0.1276   1.5%     3%  PASS  fit for use
+  peak_current_a              79.95      78.46   1.9%     3%  PASS  fit for use
+  rms_current_a               38.45      37.76   1.8%     3%  PASS  fit for use
+  min_pack_voltage_v          274.5      274.6   0.0%     3%  PASS  fit for use
+  pack_temp_rise_k            1.054     0.9571  10.2%     3%  FAIL  fit for use
+  drive_loss_kwh_per_km     0.02139    0.01878  13.9%     3%  FAIL  NOT fit for use
+  pack_resistance_ohm       0.09203    0.09192   0.1%     3%  PASS  fit for use
+
+hock_fs2_fast: graded
+  energy_kwh_per_km          0.1689     0.1661   1.7%     3%  PASS  fit for use
+  peak_current_a              122.8      121.4   1.1%     3%  PASS  fit for use
+  rms_current_a               58.47      57.26   2.1%     3%  PASS  fit for use
+  min_pack_voltage_v          268.9      269.2   0.1%     3%  PASS  fit for use
+  pack_temp_rise_k            2.185      1.969  11.0%     3%  FAIL  fit for use
+  drive_loss_kwh_per_km     0.02703    0.02375  13.8%     3%  FAIL  NOT fit for use
+  pack_resistance_ohm       0.09605    0.09593   0.1%     3%  PASS  fit for use
+
+hock_fs2_pushrod_fast: graded
+  energy_kwh_per_km          0.1693     0.1707   0.8%     3%  PASS  fit for use
+  peak_current_a              124.9        124   0.7%     3%  PASS  fit for use
+  rms_current_a               58.75      58.86   0.2%     3%  PASS  fit for use
+  min_pack_voltage_v          268.7      268.7   0.0%     3%  PASS  fit for use
+  pack_temp_rise_k             2.21       2.09   5.7%     3%  FAIL  fit for use
+  drive_loss_kwh_per_km     0.02705    0.02431  11.3%     3%  FAIL  NOT fit for use
+  pack_resistance_ohm       0.09629    0.09625   0.0%     3%  PASS  fit for use
+
+hock_stock_fast: graded
+  energy_kwh_per_km          0.1819     0.1856   2.0%     3%  PASS  fit for use
+  peak_current_a              146.8      146.8   0.0%     3%  PASS  fit for use
+  rms_current_a               62.74      63.52   1.2%     3%  PASS  fit for use
+  min_pack_voltage_v          281.2      281.2   0.0%     3%  PASS  fit for use
+  pack_temp_rise_k            0.803      0.776   3.5%     3%  FAIL  fit for use
+  drive_loss_kwh_per_km     0.02813    0.02548  10.4%     3%  FAIL  NOT fit for use
+  pack_resistance_ohm       0.03095    0.03098   0.1%     3%  PASS  fit for use
+
+skidpad_fs2: graded
+  energy_kwh_per_km         0.03222    0.03394   5.1%     3%  FAIL  NOT fit for use
+  peak_current_a              18.66      18.14   2.9%     3%  PASS  fit for use
+  rms_current_a                3.55       3.56   0.3%     3%  PASS  fit for use
+  min_pack_voltage_v          284.4      284.5   0.0%     3%  PASS  fit for use
+  pack_temp_rise_k         0.001808   0.001716   5.4%     3%  FAIL  fit for use
+  drive_loss_kwh_per_km    0.005364   0.005015   7.0%     3%  FAIL  fit for use
+  pack_resistance_ohm       0.08715    0.08685   0.4%     3%  PASS  fit for use
+
+launch_fs2: graded
+  launch_75m_time_s           7.162      7.091   1.0%     3%  PASS  fit for use
+  launch_75m_speed_ms         19.68      19.93   1.2%     3%  PASS  fit for use
+
+launch_stock2: graded
+  launch_75m_time_s           8.054      7.976   1.0%     3%  PASS  fit for use
+  launch_75m_speed_ms          17.6      17.77   0.9%     3%  PASS  fit for use
+
+28/39 graded metrics within their sealed limits
+34/39 within the sealed fitness-for-use bars; 0 missed on the unsafe side

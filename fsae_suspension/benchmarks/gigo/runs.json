@@ -1,0 +1,7777 @@
+{
+ "seed_commit": "4c18a8ae7579eee7a5eceaf85f99685983c5c46c",
+ "run_utc": "2026-11-06T00:12:32Z",
+ "fastsim_version": "3.1.0",
+ "clean": {
+  "fastsim:zoe": {
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 113.18170159487005
+    },
+    "hwy": {
+     "energy_wh_km": 136.2693090698491
+    },
+    "us06": {
+     "energy_wh_km": 189.90253620222
+    },
+    "nedc": {
+     "energy_wh_km": 127.8749869503403
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 113.22426511435056,
+     "hwy": 136.3138467528611,
+     "us06": 189.94540694032668,
+     "nedc": 127.91949171819134
+    },
+    []
+   ]
+  },
+  "fastsim:leaf": {
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 99.62003041695922
+    },
+    "hwy": {
+     "energy_wh_km": 127.17932327532347
+    },
+    "us06": {
+     "energy_wh_km": 175.02375417038292
+    },
+    "nedc": {
+     "energy_wh_km": 116.08854147602318
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 99.65649472664568,
+     "hwy": 127.21898539239052,
+     "us06": 175.06173335051804,
+     "nedc": 116.12823388557086
+    },
+    []
+   ]
+  },
+  "fastsim:model3": {
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 91.14322095468212
+    },
+    "hwy": {
+     "energy_wh_km": 97.8476477326621
+    },
+    "us06": {
+     "energy_wh_km": 133.3016787798169
+    },
+    "nedc": {
+     "energy_wh_km": 97.12127104998895
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 91.17982219460713,
+     "hwy": 97.88629130461918,
+     "us06": 133.32277458896556,
+     "nedc": 97.15986344814335
+    },
+    []
+   ]
+  },
+  "fastsim:fusion": {
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 609.0950105186564
+    },
+    "hwy": {
+     "energy_wh_km": 445.7358734922299
+    },
+    "us06": {
+     "energy_wh_km": 685.9525222051667
+    },
+    "nedc": {
+     "energy_wh_km": 599.8592083407473
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 609.0654830969955,
+     "hwy": 445.8145426475895,
+     "us06": 686.0041144195922,
+     "nedc": 599.9462481741213
+    },
+    []
+   ]
+  },
+  "fastsim:pacifica": {
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 942.0483857728674
+    },
+    "hwy": {
+     "energy_wh_km": 610.572087521238
+    },
+    "us06": {
+     "energy_wh_km": 981.7127201180512
+    },
+    "nedc": {
+     "energy_wh_km": 909.8593856864156
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 941.9118235512549,
+     "hwy": 610.6807401214307,
+     "us06": 981.7646142373602,
+     "nedc": 909.9802231128028
+    },
+    []
+   ]
+  },
+  "fsae": {
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  "fsae_clean:hock_fs2": {
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  "fsae_clean:hock_fs2_fast": {
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.1297326029121879,
+     "peak_current_a": 80.25396772454883,
+     "rms_current_a": 38.525186724559134,
+     "min_pack_voltage_v": 274.4658926804276,
+     "pack_temp_rise_k": 1.0586711578623067,
+     "drive_loss_kwh_per_km": 0.021417373664407695,
+     "pack_resistance_ohm": 0.09207616752832759,
+     "launch_75m_time_s": 4.809563395923612,
+     "launch_75m_speed_ms": 27.830608539775145
+    },
+    []
+   ]
+  },
+  "fsae_clean:hock_fs2_pushrod_fast": {
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.13003736098167298,
+     "peak_current_a": 81.45878741069968,
+     "rms_current_a": 38.70927266966297,
+     "min_pack_voltage_v": 274.38106087395147,
+     "pack_temp_rise_k": 1.0691618843165998,
+     "drive_loss_kwh_per_km": 0.02144912268362606,
+     "pack_resistance_ohm": 0.09230752693902133,
+     "launch_75m_time_s": 4.796944803845577,
+     "launch_75m_speed_ms": 27.72923615282837
+    },
+    []
+   ]
+  },
+  "fsae_clean:hock_stock_fast": {
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.14036642577539654,
+     "peak_current_a": 96.34472029318471,
+     "rms_current_a": 41.87072352813292,
+     "min_pack_voltage_v": 282.9030098079785,
+     "pack_temp_rise_k": 0.4072392151700228,
+     "drive_loss_kwh_per_km": 0.02282381297688829,
+     "pack_resistance_ohm": 0.030541439745624045,
+     "launch_75m_time_s": 4.743597247701628,
+     "launch_75m_speed_ms": 26.38646328829082
+    },
+    []
+   ]
+  },
+  "fsae_clean:skidpad_fs2": {
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12911951507692554,
+     "peak_current_a": 79.28371835762529,
+     "rms_current_a": 38.288444000347084,
+     "min_pack_voltage_v": 274.5549744706808,
+     "pack_temp_rise_k": 1.0452584736536323,
+     "drive_loss_kwh_per_km": 0.02133028982640832,
+     "pack_resistance_ohm": 0.09192730619045723,
+     "launch_75m_time_s": 4.781935120552466,
+     "launch_75m_speed_ms": 27.957657136338234
+    },
+    []
+   ]
+  },
+  "fsae_clean:launch_fs2": {
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12923794946631373,
+     "peak_current_a": 79.83841900943008,
+     "rms_current_a": 38.367621997673325,
+     "min_pack_voltage_v": 274.5188602732294,
+     "pack_temp_rise_k": 1.0497320225346698,
+     "drive_loss_kwh_per_km": 0.021342007428910615,
+     "pack_resistance_ohm": 0.09201779856523155,
+     "launch_75m_time_s": 4.7984916579469585,
+     "launch_75m_speed_ms": 27.87909840982407
+    },
+    []
+   ]
+  },
+  "fsae_clean:launch_stock2": {
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.1392860514339582,
+     "peak_current_a": 95.66535094901042,
+     "rms_current_a": 41.56282667155688,
+     "min_pack_voltage_v": 282.9264225626076,
+     "pack_temp_rise_k": 0.4011941936626613,
+     "drive_loss_kwh_per_km": 0.022662737744903284,
+     "pack_resistance_ohm": 0.030534588067543004,
+     "launch_75m_time_s": 4.731529150668954,
+     "launch_75m_speed_ms": 26.43567735723916
+    },
+    []
+   ]
+  },
+  "fsae_clean:../../simulink_hockenheim": {
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.1376501888491722,
+     "peak_current_a": 89.75258577463575,
+     "rms_current_a": 40.594468732362344,
+     "min_pack_voltage_v": 283.7515310338592,
+     "drive_loss_kwh_per_km": 0.022501756092946443,
+     "pack_resistance_ohm": 0.026478000000018275,
+     "launch_75m_time_s": 4.679890365760345,
+     "launch_75m_speed_ms": 26.946628641835055
+    },
+    []
+   ]
+  }
+ },
+ "rows": [
+  {
+   "set": "systematic",
+   "deck": "fastsim:zoe",
+   "field": "mass_kg",
+   "key": "lb_into_kg",
+   "story": "pounds typed into a kg field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 194.37599256712127
+    },
+    "hwy": {
+     "energy_wh_km": 196.99759062311085
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "energy_wh_km": 201.59719183050484
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 194.46744848661854,
+     "hwy": 197.09423270622796,
+     "us06": 279.36961493132037,
+     "nedc": 201.69448390238782
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:zoe",
+   "field": "mass_kg",
+   "key": "kg_into_lb",
+   "story": "kg typed into a lb field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 76.07354816565936
+    },
+    "hwy": {
+     "energy_wh_km": 109.10165247346627
+    },
+    "us06": {
+     "energy_wh_km": 152.805034253219
+    },
+    "nedc": {
+     "energy_wh_km": 93.91294693674239
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 76.09344731768233,
+     "hwy": 109.12216299912103,
+     "us06": 152.82482149874,
+     "nedc": 93.93342995764134
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:zoe",
+   "field": "mass_kg",
+   "key": "g_into_kg",
+   "story": "grams typed into a kg field",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 118581.7291986952,
+     "hwy": 67922.95565778052,
+     "us06": 136126.92890719615,
+     "nedc": 97148.47419642963
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:zoe",
+   "field": "mass_kg",
+   "key": "t_into_kg",
+   "story": "tonnes typed into a kg field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 44.78974025500716
+    },
+    "hwy": {
+     "energy_wh_km": 87.46307475356741
+    },
+    "us06": {
+     "energy_wh_km": 125.57912962047335
+    },
+    "nedc": {
+     "energy_wh_km": 66.87242053044638
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 44.789788871028016,
+     "hwy": 87.46312089166835,
+     "us06": 125.57917522203388,
+     "nedc": 66.87246845251548
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:zoe",
+   "field": "cda_m2",
+   "key": "ft2_into_m2",
+   "story": "ft² typed into an m² field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 438.0562912094988
+    },
+    "hwy": {
+     "energy_wh_km": 909.1804429580548
+    },
+    "us06": {
+     "energy_wh_km": 1024.8421076995621
+    },
+    "nedc": {
+     "energy_wh_km": 575.9825206303788
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 438.2376076178711,
+     "hwy": 919.7810983246156,
+     "us06": 1364.1879500724492,
+     "nedc": 674.4975664146564
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:zoe",
+   "field": "cda_m2",
+   "key": "m2_into_ft2",
+   "story": "m² typed into a ft² field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 84.35436781020111
+    },
+    "hwy": {
+     "energy_wh_km": 65.54603812622406
+    },
+    "us06": {
+     "energy_wh_km": 89.38182691316065
+    },
+    "nedc": {
+     "energy_wh_km": 78.78731937423399
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 84.3964850293029,
+     "hwy": 65.59011617979425,
+     "us06": 89.42267468642379,
+     "nedc": 78.83249255618286
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:zoe",
+   "field": "crr",
+   "key": "percent",
+   "story": "typed in percent",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 4543.58578465723
+    },
+    "hwy": {
+     "energy_wh_km": 4519.638446596781
+    },
+    "us06": {
+     "energy_wh_km": 4529.29517834348
+    },
+    "nedc": {
+     "energy_wh_km": 4537.429969622838
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 4625.4745957089945,
+     "hwy": 4671.017849688175,
+     "us06": 4710.3283706906095,
+     "nedc": 4646.744902123901
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:zoe",
+   "field": "crr",
+   "key": "per_mille",
+   "story": "typed per thousand (kg/t)",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 45932.21706230183
+    },
+    "hwy": {
+     "energy_wh_km": 45861.762364648304
+    },
+    "us06": {
+     "energy_wh_km": 45883.73179795252
+    },
+    "nedc": {
+     "energy_wh_km": 45920.07697756829
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 45904.375145872735,
+     "hwy": 45947.39369318143,
+     "us06": 45987.14370645452,
+     "nedc": 45926.77969411418
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:zoe",
+   "field": "wheel_radius_m",
+   "key": "diameter",
+   "story": "diameter typed as radius",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 112.77530458771574
+    },
+    "hwy": {
+     "energy_wh_km": 136.16839569043387
+    },
+    "us06": {
+     "energy_wh_km": 189.45323818589557
+    },
+    "nedc": {
+     "energy_wh_km": 127.58714858610966
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 112.81790697525707,
+     "hwy": 136.21298087749972,
+     "us06": 189.49617754244034,
+     "nedc": 127.63165237554857
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:zoe",
+   "field": "wheel_radius_m",
+   "key": "inch",
+   "story": "inches typed into a metre field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 112.64034478973625
+    },
+    "hwy": {
+     "energy_wh_km": 136.135054059341
+    },
+    "us06": {
+     "energy_wh_km": 189.30518377433611
+    },
+    "nedc": {
+     "energy_wh_km": 127.49136110143245
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 112.68296359215088,
+     "hwy": 136.17963544355123,
+     "us06": 189.34815705571947,
+     "nedc": 127.53586718550491
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:zoe",
+   "field": "wheel_radius_m",
+   "key": "mm",
+   "story": "millimetres typed into a metre field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 112.63999632814277
+    },
+    "hwy": {
+     "energy_wh_km": 136.1349678703378
+    },
+    "us06": {
+     "energy_wh_km": 189.30480239811172
+    },
+    "nedc": {
+     "energy_wh_km": 127.49111356375374
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 112.68261513651693,
+     "hwy": 136.17954924804363,
+     "us06": 189.34777566507066,
+     "nedc": 127.53561965375515
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:zoe",
+   "field": "wheel_radius_m",
+   "key": "cm",
+   "story": "centimetres typed into a metre field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 112.64004988281239
+    },
+    "hwy": {
+     "energy_wh_km": 136.13498111664148
+    },
+    "us06": {
+     "energy_wh_km": 189.30486101136867
+    },
+    "nedc": {
+     "energy_wh_km": 127.49115160752551
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 112.68266869027065,
+     "hwy": 136.17956249534694,
+     "us06": 189.3478342805445,
+     "nedc": 127.53565769661571
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:zoe",
+   "field": "aux_power_w",
+   "key": "kilo_low",
+   "story": "W typed into a kW field (or kW into W)",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 105.26085557495244
+    },
+    "hwy": {
+     "energy_wh_km": 133.05416023241807
+    },
+    "us06": {
+     "energy_wh_km": 186.6726828561876
+    },
+    "nedc": {
+     "energy_wh_km": 120.41438378801791
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 105.30341909443298,
+     "hwy": 133.09869791543005,
+     "us06": 186.71555359429428,
+     "nedc": 120.45888855586894
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:zoe",
+   "field": "aux_power_w",
+   "key": "kilo_high",
+   "story": "kW typed into a W field",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "energy_wh_km": 3419.7558822346264
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 8034.070285031925,
+     "hwy": 3351.4626841839126,
+     "us06": 3419.798752972735,
+     "nedc": 7588.522654040602
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:zoe",
+   "field": "aux_power_w",
+   "key": "hp_into_kw",
+   "story": "hp typed into a kW field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 115.88557237536286
+    },
+    "hwy": {
+     "energy_wh_km": 137.36683665397396
+    },
+    "us06": {
+     "energy_wh_km": 191.00508333741917
+    },
+    "nedc": {
+     "energy_wh_km": 130.42174860240758
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 115.92813589484334,
+     "hwy": 137.41137433698597,
+     "us06": 191.04795407552584,
+     "nedc": 130.4662533702586
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:zoe",
+   "field": "aux_power_w",
+   "key": "kw_into_hp",
+   "story": "kW typed into an hp field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 111.16542235929356
+    },
+    "hwy": {
+     "energy_wh_km": 135.45088161602672
+    },
+    "us06": {
+     "energy_wh_km": 189.08036566397362
+    },
+    "nedc": {
+     "energy_wh_km": 125.97586415420955
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 111.20798587877407,
+     "hwy": 135.49541929903873,
+     "us06": 189.1232364020803,
+     "nedc": 126.0203689220606
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:zoe",
+   "field": "transmission_eff",
+   "key": "percent",
+   "story": "efficiency typed in percent",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": -619.3759344328237,
+     "hwy": -99.55181309713677,
+     "us06": -241.1915490526385,
+     "nedc": -336.813882686956
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:zoe",
+   "field": "transmission_eff",
+   "key": "applied_twice",
+   "story": "the same efficiency applied twice",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 129.28338106982284
+    },
+    "hwy": {
+     "energy_wh_km": 149.0039112943638
+    },
+    "us06": {
+     "energy_wh_km": 213.11420443918226
+    },
+    "nedc": {
+     "energy_wh_km": 142.95303144295934
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 129.32819587944593,
+     "hwy": 149.05181471067195,
+     "us06": 213.22028811105505,
+     "nedc": 143.00050384537707
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:zoe",
+   "field": "motor_power_w",
+   "key": "kilo_low",
+   "story": "W typed into a kW field (or kW into W)",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 154.69703999577837,
+     "hwy": 144.76732235894167,
+     "us06": 235.98776554285666,
+     "nedc": 155.68977804034654
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:zoe",
+   "field": "motor_power_w",
+   "key": "kilo_high",
+   "story": "kW typed into a W field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 126.81090382784869
+    },
+    "hwy": {
+     "energy_wh_km": 150.63087848048778
+    },
+    "us06": {
+     "energy_wh_km": 217.6581715734989
+    },
+    "nedc": {
+     "energy_wh_km": 141.91155940724076
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 126.85718793232641,
+     "hwy": 150.68086680267035,
+     "us06": 217.70598897511297,
+     "nedc": 141.96035650099756
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:zoe",
+   "field": "motor_power_w",
+   "key": "hp_into_kw",
+   "story": "hp typed into a kW field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 114.75329295929909
+    },
+    "hwy": {
+     "energy_wh_km": 137.7245309450057
+    },
+    "us06": {
+     "energy_wh_km": 191.0007520893857
+    },
+    "nedc": {
+     "energy_wh_km": 129.26634106570336
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 114.79623317517117,
+     "hwy": 137.76927843089382,
+     "us06": 191.04363156860626,
+     "nedc": 129.311104995879
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:zoe",
+   "field": "motor_power_w",
+   "key": "kw_into_hp",
+   "story": "kW typed into an hp field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 111.81157709688311
+    },
+    "hwy": {
+     "energy_wh_km": 135.04271385217413
+    },
+    "us06": {
+     "energy_wh_km": 189.2211859637209
+    },
+    "nedc": {
+     "energy_wh_km": 126.61124597124638
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 111.85386865098364,
+     "hwy": 135.08698702990955,
+     "us06": 189.45407624296442,
+     "nedc": 126.65528928722097
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:zoe",
+   "field": "motor_eff_map",
+   "key": "percent",
+   "story": "efficiency typed in percent",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": null,
+     "hwy": null,
+     "us06": null,
+     "nedc": null
+    },
+    [
+     "refused: motor map efficiencies must lie in (0, 1]",
+     "refused: motor map efficiencies must lie in (0, 1]",
+     "refused: motor map efficiencies must lie in (0, 1]",
+     "refused: motor map efficiencies must lie in (0, 1]"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:zoe",
+   "field": "motor_eff_map",
+   "key": "applied_twice",
+   "story": "the same efficiency applied twice",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 133.96055521311953
+    },
+    "hwy": {
+     "energy_wh_km": 149.3598397036627
+    },
+    "us06": {
+     "energy_wh_km": 211.1169087908347
+    },
+    "nedc": {
+     "energy_wh_km": 146.13794684885616
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 134.0043736467667,
+     "hwy": 149.40614721572538,
+     "us06": 211.16067475100382,
+     "nedc": 146.18478239986854
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:leaf",
+   "field": "mass_kg",
+   "key": "lb_into_kg",
+   "story": "pounds typed into a kg field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 165.04199219752198
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "energy_wh_km": 175.86840222695304
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 165.1073000193995,
+     "hwy": 178.2199354068418,
+     "us06": 253.3467261551605,
+     "nedc": 175.9544650810711
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:leaf",
+   "field": "mass_kg",
+   "key": "kg_into_lb",
+   "story": "kg typed into a lb field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 69.6370624466818
+    },
+    "hwy": {
+     "energy_wh_km": 104.17108288725947
+    },
+    "us06": {
+     "energy_wh_km": 145.6123046042505
+    },
+    "nedc": {
+     "energy_wh_km": 88.15110705629266
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 69.65212372389603,
+     "hwy": 104.18934257050304,
+     "us06": 145.584481367876,
+     "nedc": 88.16936295537742
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:leaf",
+   "field": "mass_kg",
+   "key": "g_into_kg",
+   "story": "grams typed into a kg field",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 110722.18535588136,
+     "hwy": 61483.715751231015,
+     "us06": 127420.63562429206,
+     "nedc": 89112.92252783361
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:leaf",
+   "field": "mass_kg",
+   "key": "t_into_kg",
+   "story": "tonnes typed into a kg field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 44.13691005828476
+    },
+    "hwy": {
+     "energy_wh_km": 85.70975724584206
+    },
+    "us06": {
+     "energy_wh_km": 123.63350408789655
+    },
+    "nedc": {
+     "energy_wh_km": 65.95127639326016
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 44.13695282994241,
+     "hwy": 85.70979843124952,
+     "us06": 123.62715308950179,
+     "nedc": 65.95131862932746
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:leaf",
+   "field": "cda_m2",
+   "key": "ft2_into_m2",
+   "story": "ft² typed into an m² field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 411.49716337308485
+    },
+    "hwy": {
+     "energy_wh_km": 836.0630020575012
+    },
+    "us06": {
+     "energy_wh_km": 883.3652381174754
+    },
+    "nedc": {
+     "energy_wh_km": 521.8793338110415
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 422.1468415465534,
+     "hwy": 899.4572879024688,
+     "us06": 1332.6299715043845,
+     "nedc": 655.1665992253612
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:leaf",
+   "field": "cda_m2",
+   "key": "m2_into_ft2",
+   "story": "m² typed into a ft² field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 70.5998117706806
+    },
+    "hwy": {
+     "energy_wh_km": 56.77116491401174
+    },
+    "us06": {
+     "energy_wh_km": 74.2927995006951
+    },
+    "nedc": {
+     "energy_wh_km": 67.26206163547009
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 70.62977358344746,
+     "hwy": 56.80081627746624,
+     "us06": 74.24229097220241,
+     "nedc": 67.30258056941304
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:leaf",
+   "field": "crr",
+   "key": "percent",
+   "story": "typed in percent",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 3842.0994273504957
+    },
+    "hwy": {
+     "energy_wh_km": 3819.6387022703225
+    },
+    "us06": {
+     "energy_wh_km": 3829.8416193677967
+    },
+    "nedc": {
+     "energy_wh_km": 3841.070273862269
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 3952.165154227636,
+     "hwy": 3996.6403374978922,
+     "us06": 4035.2863374105773,
+     "nedc": 3973.30070987126
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:leaf",
+   "field": "crr",
+   "key": "per_mille",
+   "story": "typed per thousand (kg/t)",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 38812.23790477805
+    },
+    "hwy": {
+     "energy_wh_km": 38739.89308586494
+    },
+    "us06": {
+     "energy_wh_km": 38763.36345688448
+    },
+    "nedc": {
+     "energy_wh_km": 38802.93210992021
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 39173.861046822945,
+     "hwy": 39216.024394489585,
+     "us06": 39255.10244660624,
+     "nedc": 39195.82443063756
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:leaf",
+   "field": "wheel_radius_m",
+   "key": "diameter",
+   "story": "diameter typed as radius",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 99.38165104979508
+    },
+    "hwy": {
+     "energy_wh_km": 127.12536926609327
+    },
+    "us06": {
+     "energy_wh_km": 174.77051724403955
+    },
+    "nedc": {
+     "energy_wh_km": 115.9467855961824
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 99.41998414429091,
+     "hwy": 127.16502989533562,
+     "us06": 174.80376633867448,
+     "nedc": 115.98648386195575
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:leaf",
+   "field": "wheel_radius_m",
+   "key": "inch",
+   "story": "inches typed into a metre field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 99.2998071787138
+    },
+    "hwy": {
+     "energy_wh_km": 127.10722617133752
+    },
+    "us06": {
+     "energy_wh_km": 174.6847630628361
+    },
+    "nedc": {
+     "energy_wh_km": 115.89343305317033
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 99.33816637270077,
+     "hwy": 127.14690209471487,
+     "us06": 174.71646985527326,
+     "nedc": 115.93313206829832
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:leaf",
+   "field": "wheel_radius_m",
+   "key": "mm",
+   "story": "millimetres typed into a metre field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 99.29957423740028
+    },
+    "hwy": {
+     "energy_wh_km": 127.10717171506126
+    },
+    "us06": {
+     "energy_wh_km": 174.68454961830147
+    },
+    "nedc": {
+     "energy_wh_km": 115.8932702151911
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 99.33793343138724,
+     "hwy": 127.14684763843862,
+     "us06": 174.7162523416127,
+     "nedc": 115.93296923031909
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:leaf",
+   "field": "wheel_radius_m",
+   "key": "cm",
+   "story": "centimetres typed into a metre field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 99.29961003784581
+    },
+    "hwy": {
+     "energy_wh_km": 127.10718008437507
+    },
+    "us06": {
+     "energy_wh_km": 174.684582422312
+    },
+    "nedc": {
+     "energy_wh_km": 115.89329524154695
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 99.33796923183276,
+     "hwy": 127.14685600775242,
+     "us06": 174.7162857710024,
+     "nedc": 115.93299425667492
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:leaf",
+   "field": "aux_power_w",
+   "key": "kilo_low",
+   "story": "W typed into a kW field (or kW into W)",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 91.69918439704162
+    },
+    "hwy": {
+     "energy_wh_km": 123.96417443789245
+    },
+    "us06": {
+     "energy_wh_km": 171.7937457185495
+    },
+    "nedc": {
+     "energy_wh_km": 108.62793831370077
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 91.73564870672811,
+     "hwy": 124.00383655495946,
+     "us06": 171.83172489868463,
+     "nedc": 108.66763072324845
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:leaf",
+   "field": "aux_power_w",
+   "key": "kilo_high",
+   "story": "kW typed into a W field",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 8020.502514644219,
+     "hwy": 3342.3678228234417,
+     "us06": 3405.0701851839276,
+     "nedc": 7576.73139620798
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:leaf",
+   "field": "aux_power_w",
+   "key": "hp_into_kw",
+   "story": "hp typed into a kW field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 102.32390119745203
+    },
+    "hwy": {
+     "energy_wh_km": 128.27685085944836
+    },
+    "us06": {
+     "energy_wh_km": 176.1263542527095
+    },
+    "nedc": {
+     "energy_wh_km": 118.63530312809043
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 102.36036550713845,
+     "hwy": 128.31651297651536,
+     "us06": 176.16433343284456,
+     "nedc": 118.67499553763815
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:leaf",
+   "field": "aux_power_w",
+   "key": "kw_into_hp",
+   "story": "kW typed into an hp field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 97.60375118138275
+    },
+    "hwy": {
+     "energy_wh_km": 126.36089582150115
+    },
+    "us06": {
+     "energy_wh_km": 174.20154414940893
+    },
+    "nedc": {
+     "energy_wh_km": 114.18941867989244
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 97.6402154910692,
+     "hwy": 126.40055793856813,
+     "us06": 174.239523329544,
+     "nedc": 114.22911108944014
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:leaf",
+   "field": "transmission_eff",
+   "key": "percent",
+   "story": "efficiency typed in percent",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": -514.3134958416857,
+     "hwy": -83.42657360756446,
+     "us06": -195.89512941617647,
+     "nedc": -270.68483871624295
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:leaf",
+   "field": "transmission_eff",
+   "key": "applied_twice",
+   "story": "the same efficiency applied twice",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 103.38267480351101
+    },
+    "hwy": {
+     "energy_wh_km": 130.04077439383659
+    },
+    "us06": {
+     "energy_wh_km": 180.39468348895164
+    },
+    "nedc": {
+     "energy_wh_km": 119.41518167891313
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 103.42137870078152,
+     "hwy": 130.08111692882773,
+     "us06": 180.4799143112611,
+     "nedc": 119.45542821883498
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:leaf",
+   "field": "motor_power_w",
+   "key": "kilo_low",
+   "story": "W typed into a kW field (or kW into W)",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 145.6862746085782,
+     "hwy": 136.30333182041807,
+     "us06": 224.50115473869897,
+     "nedc": 146.54944430920682
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:leaf",
+   "field": "motor_power_w",
+   "key": "kilo_high",
+   "story": "kW typed into a W field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 112.11729565173363
+    },
+    "hwy": {
+     "energy_wh_km": 140.2687734223299
+    },
+    "us06": {
+     "energy_wh_km": 201.1060426321456
+    },
+    "nedc": {
+     "energy_wh_km": 128.83145871361265
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 112.15758334246053,
+     "hwy": 140.31171851373225,
+     "us06": 201.21926435657394,
+     "nedc": 128.87360790167673
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:leaf",
+   "field": "motor_power_w",
+   "key": "hp_into_kw",
+   "story": "hp typed into a kW field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 101.14848714649855
+    },
+    "hwy": {
+     "energy_wh_km": 128.32320896166664
+    },
+    "us06": {
+     "energy_wh_km": 176.17237796511625
+    },
+    "nedc": {
+     "energy_wh_km": 117.57565540166514
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 101.18710321407262,
+     "hwy": 128.3632102881844,
+     "us06": 176.19146562073212,
+     "nedc": 117.5995963698758
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:leaf",
+   "field": "motor_power_w",
+   "key": "kw_into_hp",
+   "story": "kW typed into an hp field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 98.39052470360163
+    },
+    "hwy": {
+     "energy_wh_km": 126.04332670034893
+    },
+    "us06": {
+     "energy_wh_km": 174.18059024314678
+    },
+    "nedc": {
+     "energy_wh_km": 114.71423122468526
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 98.42684472685012,
+     "hwy": 126.08265430357285,
+     "us06": 174.5093406732253,
+     "nedc": 114.75354453735983
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:leaf",
+   "field": "motor_eff_map",
+   "key": "percent",
+   "story": "efficiency typed in percent",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": null,
+     "hwy": null,
+     "us06": null,
+     "nedc": null
+    },
+    [
+     "refused: motor map efficiencies must lie in (0, 1]",
+     "refused: motor map efficiencies must lie in (0, 1]",
+     "refused: motor map efficiencies must lie in (0, 1]",
+     "refused: motor map efficiencies must lie in (0, 1]"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:leaf",
+   "field": "motor_eff_map",
+   "key": "applied_twice",
+   "story": "the same efficiency applied twice",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 120.67416197329557
+    },
+    "hwy": {
+     "energy_wh_km": 140.2570122681384
+    },
+    "us06": {
+     "energy_wh_km": 196.47843343108428
+    },
+    "nedc": {
+     "energy_wh_km": 134.52963791206096
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 120.71066296650834,
+     "hwy": 140.29976054809882,
+     "us06": 196.56290678192957,
+     "nedc": 134.57272315845094
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:model3",
+   "field": "mass_kg",
+   "key": "lb_into_kg",
+   "story": "pounds typed into a kg field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 158.75556473353498
+    },
+    "hwy": {
+     "energy_wh_km": 148.55548674437478
+    },
+    "us06": {
+     "energy_wh_km": 201.74899241374416
+    },
+    "nedc": {
+     "energy_wh_km": 158.64137518185717
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 158.83410171504943,
+     "hwy": 148.63770404577497,
+     "us06": 201.86570378877553,
+     "nedc": 158.7254606974487
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:model3",
+   "field": "mass_kg",
+   "key": "kg_into_lb",
+   "story": "kg typed into a lb field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 58.67615397911691
+    },
+    "hwy": {
+     "energy_wh_km": 74.50233625782177
+    },
+    "us06": {
+     "energy_wh_km": 102.82037143326002
+    },
+    "nedc": {
+     "energy_wh_km": 68.25932493192128
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 58.69317462694848,
+     "hwy": 74.52032088782242,
+     "us06": 102.83744532584473,
+     "nedc": 68.27700708047664
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:model3",
+   "field": "mass_kg",
+   "key": "g_into_kg",
+   "story": "grams typed into a kg field",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 113914.22009631364,
+     "hwy": 61412.199865361814,
+     "us06": 132859.22825169965,
+     "nedc": 90367.4326216616
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:model3",
+   "field": "mass_kg",
+   "key": "t_into_kg",
+   "story": "tonnes typed into a kg field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 30.226945507182016
+    },
+    "hwy": {
+     "energy_wh_km": 55.10367168472468
+    },
+    "us06": {
+     "energy_wh_km": 79.06504199976014
+    },
+    "nedc": {
+     "energy_wh_km": 43.7285114618657
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 30.22698593950363,
+     "hwy": 55.10371275536726,
+     "us06": 79.06508213278735,
+     "nedc": 43.72855204073952
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:model3",
+   "field": "cda_m2",
+   "key": "ft2_into_m2",
+   "story": "ft² typed into an m² field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 282.34835492048944
+    },
+    "hwy": {
+     "energy_wh_km": 549.3983194768027
+    },
+    "us06": {
+     "energy_wh_km": 794.2385328499925
+    },
+    "nedc": {
+     "energy_wh_km": 412.2630082105987
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 282.38606714733595,
+     "hwy": 549.4356677554404,
+     "us06": 794.3408699684743,
+     "nedc": 412.30059153197044
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:model3",
+   "field": "cda_m2",
+   "key": "m2_into_ft2",
+   "story": "m² typed into a ft² field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 73.74597111524446
+    },
+    "hwy": {
+     "energy_wh_km": 54.984548449111585
+    },
+    "us06": {
+     "energy_wh_km": 73.78135559685487
+    },
+    "nedc": {
+     "energy_wh_km": 67.16196287224112
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 73.7821373247671,
+     "hwy": 55.02218161034962,
+     "us06": 73.81634407596349,
+     "nedc": 67.20084031277709
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:model3",
+   "field": "crr",
+   "key": "percent",
+   "story": "typed in percent",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 3610.5631642455987
+    },
+    "hwy": {
+     "energy_wh_km": 3580.9162091549365
+    },
+    "us06": {
+     "energy_wh_km": 3586.3400936239927
+    },
+    "nedc": {
+     "energy_wh_km": 3602.4139164635612
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 3642.9436314738286,
+     "hwy": 3711.5886293175895,
+     "us06": 3734.6990903037185,
+     "nedc": 3672.87341046008
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:model3",
+   "field": "crr",
+   "key": "per_mille",
+   "story": "typed per thousand (kg/t)",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "energy_wh_km": 35813.203596931584
+    },
+    "us06": {
+     "energy_wh_km": 35848.84908880493
+    },
+    "nedc": {
+     "energy_wh_km": 35883.81783063949
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 36693.57540188294,
+     "hwy": 36718.48597034085,
+     "us06": 36740.96674768131,
+     "nedc": 36706.5919711352
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:model3",
+   "field": "wheel_radius_m",
+   "key": "diameter",
+   "story": "diameter typed as radius",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 90.87455756694712
+    },
+    "hwy": {
+     "energy_wh_km": 97.7898638478488
+    },
+    "us06": {
+     "energy_wh_km": 133.0284741048745
+    },
+    "nedc": {
+     "energy_wh_km": 96.95411172422165
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 90.91119153830567,
+     "hwy": 97.82857032896193,
+     "us06": 133.06470191040253,
+     "nedc": 96.9927098049311
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:model3",
+   "field": "wheel_radius_m",
+   "key": "inch",
+   "story": "inches typed into a metre field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 90.79268992931765
+    },
+    "hwy": {
+     "energy_wh_km": 97.75928900587215
+    },
+    "us06": {
+     "energy_wh_km": 132.95343388759207
+    },
+    "nedc": {
+     "energy_wh_km": 96.88954046734513
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 90.82932608831089,
+     "hwy": 97.79800843608243,
+     "us06": 132.98968100235035,
+     "nedc": 96.92814022744695
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:model3",
+   "field": "wheel_radius_m",
+   "key": "mm",
+   "story": "millimetres typed into a metre field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 90.7923993542462
+    },
+    "hwy": {
+     "energy_wh_km": 97.75921002176723
+    },
+    "us06": {
+     "energy_wh_km": 132.95316247463214
+    },
+    "nedc": {
+     "energy_wh_km": 96.88934992281936
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 90.82903551323943,
+     "hwy": 97.79793001401949,
+     "us06": 132.98941030924797,
+     "nedc": 96.92794968292115
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:model3",
+   "field": "wheel_radius_m",
+   "key": "cm",
+   "story": "centimetres typed into a metre field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 90.79244401234851
+    },
+    "hwy": {
+     "energy_wh_km": 97.7592221607309
+    },
+    "us06": {
+     "energy_wh_km": 132.95320418773457
+    },
+    "nedc": {
+     "energy_wh_km": 96.88937920735806
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 90.82908017134177,
+     "hwy": 97.79794206660367,
+     "us06": 132.98945191171651,
+     "nedc": 96.92797896745986
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:model3",
+   "field": "aux_power_w",
+   "key": "kilo_low",
+   "story": "W typed into a kW field (or kW into W)",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 83.22237493476452
+    },
+    "hwy": {
+     "energy_wh_km": 94.63249889523107
+    },
+    "us06": {
+     "energy_wh_km": 130.07182543378448
+    },
+    "nedc": {
+     "energy_wh_km": 89.66066788766653
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 83.25897617468955,
+     "hwy": 94.67114246718813,
+     "us06": 130.09292124293316,
+     "nedc": 89.69926028582094
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:model3",
+   "field": "aux_power_w",
+   "key": "kilo_high",
+   "story": "kW typed into a W field",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 8012.02584211218,
+     "hwy": 3313.0351287356707,
+     "us06": 3363.176120621374,
+     "nedc": 7557.763025770553
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:model3",
+   "field": "aux_power_w",
+   "key": "hp_into_kw",
+   "story": "hp typed into a kW field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 93.84709173517491
+    },
+    "hwy": {
+     "energy_wh_km": 98.94517531678694
+    },
+    "us06": {
+     "energy_wh_km": 134.40422591501607
+    },
+    "nedc": {
+     "energy_wh_km": 99.6680327020562
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 93.8836929750999,
+     "hwy": 98.98381888874404,
+     "us06": 134.42532172416472,
+     "nedc": 99.7066251002106
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:model3",
+   "field": "aux_power_w",
+   "key": "kw_into_hp",
+   "story": "kW typed into an hp field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 89.12694171910562
+    },
+    "hwy": {
+     "energy_wh_km": 97.02922027883974
+    },
+    "us06": {
+     "energy_wh_km": 132.4795082415705
+    },
+    "nedc": {
+     "energy_wh_km": 95.2221482538582
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 89.16354295903062,
+     "hwy": 97.0678638507968,
+     "us06": 132.50060405071915,
+     "nedc": 95.26074065201259
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:model3",
+   "field": "transmission_eff",
+   "key": "percent",
+   "story": "efficiency typed in percent",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": -1505.6466249465175,
+     "hwy": -313.17919186355385,
+     "us06": -668.811491754409,
+     "nedc": -792.3525071664579
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:model3",
+   "field": "transmission_eff",
+   "key": "applied_twice",
+   "story": "the same efficiency applied twice",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 94.96516140891552
+    },
+    "hwy": {
+     "energy_wh_km": 100.24798296688006
+    },
+    "us06": {
+     "energy_wh_km": 138.12191584160783
+    },
+    "nedc": {
+     "energy_wh_km": 100.39683005874632
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 94.99907606866638,
+     "hwy": 100.28725117067026,
+     "us06": 138.1535044148976,
+     "nedc": 100.43603709310545
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:model3",
+   "field": "motor_power_w",
+   "key": "kilo_low",
+   "story": "W typed into a kW field (or kW into W)",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 137.62832226402887,
+     "hwy": 105.0544518431869,
+     "us06": 187.94272621849794,
+     "nedc": 127.64656872187446
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:model3",
+   "field": "motor_power_w",
+   "key": "kilo_high",
+   "story": "kW typed into a W field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 97.32625272309342
+    },
+    "hwy": {
+     "energy_wh_km": 102.58366422177184
+    },
+    "us06": {
+     "energy_wh_km": 149.60182024355998
+    },
+    "nedc": {
+     "energy_wh_km": 103.02334118263711
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 97.3635468812305,
+     "hwy": 102.62337371766475,
+     "us06": 149.63984589380746,
+     "nedc": 103.06283599954278
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:model3",
+   "field": "motor_power_w",
+   "key": "hp_into_kw",
+   "story": "hp typed into a kW field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 92.74315047094875
+    },
+    "hwy": {
+     "energy_wh_km": 99.23467436844967
+    },
+    "us06": {
+     "energy_wh_km": 135.3576951173014
+    },
+    "nedc": {
+     "energy_wh_km": 98.70324008440198
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 92.77996109160777,
+     "hwy": 99.27366335626294,
+     "us06": 135.39424594932026,
+     "nedc": 98.74208726061771
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:model3",
+   "field": "motor_power_w",
+   "key": "kw_into_hp",
+   "story": "kW typed into an hp field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 89.44799156653669
+    },
+    "hwy": {
+     "energy_wh_km": 96.38189543189074
+    },
+    "us06": {
+     "energy_wh_km": 131.40754695061784
+    },
+    "nedc": {
+     "energy_wh_km": 95.72035333690782
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 89.48433742284776,
+     "hwy": 96.4201133784639,
+     "us06": 131.44344706726608,
+     "nedc": 95.75863758489093
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:model3",
+   "field": "motor_eff_map",
+   "key": "percent",
+   "story": "efficiency typed in percent",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": null,
+     "hwy": null,
+     "us06": null,
+     "nedc": null
+    },
+    [
+     "refused: motor map efficiencies must lie in (0, 1]",
+     "refused: motor map efficiencies must lie in (0, 1]",
+     "refused: motor map efficiencies must lie in (0, 1]",
+     "refused: motor map efficiencies must lie in (0, 1]"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:model3",
+   "field": "motor_eff_map",
+   "key": "applied_twice",
+   "story": "the same efficiency applied twice",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 119.74224437098735
+    },
+    "hwy": {
+     "energy_wh_km": 115.35452245027064
+    },
+    "us06": {
+     "energy_wh_km": 160.97534742448636
+    },
+    "nedc": {
+     "energy_wh_km": 121.08639083227455
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 119.78202208020642,
+     "hwy": 115.39808245016117,
+     "us06": 160.98057746042588,
+     "nedc": 121.12993796703093
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:fusion",
+   "field": "mass_kg",
+   "key": "lb_into_kg",
+   "story": "pounds typed into a kg field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 955.0321632142843
+    },
+    "hwy": {
+     "energy_wh_km": 621.866558799962
+    },
+    "us06": {
+     "energy_wh_km": 1143.428698494388
+    },
+    "nedc": {
+     "energy_wh_km": 890.1218048259684
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 955.3073888161143,
+     "hwy": 622.0435276553911,
+     "us06": 1142.5390094610054,
+     "nedc": 890.2719124397984
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:fusion",
+   "field": "mass_kg",
+   "key": "kg_into_lb",
+   "story": "kg typed into a lb field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 467.07898110914346
+    },
+    "hwy": {
+     "energy_wh_km": 379.52146823728725
+    },
+    "us06": {
+     "energy_wh_km": 510.1574586652336
+    },
+    "nedc": {
+     "energy_wh_km": 475.1369499094685
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 467.01543579616595,
+     "hwy": 379.5567975774707,
+     "us06": 509.76991166685144,
+     "nedc": 475.1791825833193
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:fusion",
+   "field": "mass_kg",
+   "key": "g_into_kg",
+   "story": "grams typed into a kg field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 133443.63948903387
+    },
+    "hwy": {
+     "energy_wh_km": 101639.42091105593
+    },
+    "us06": {
+     "energy_wh_km": 127490.89970802661
+    },
+    "nedc": {
+     "energy_wh_km": 131883.47542373804
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 6860.0946088387855,
+     "hwy": 4194.206988337073,
+     "us06": 3044.0885719577095,
+     "nedc": 7761.792548673787
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:fusion",
+   "field": "mass_kg",
+   "key": "t_into_kg",
+   "story": "tonnes typed into a kg field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 328.89073869680766
+    },
+    "hwy": {
+     "energy_wh_km": 339.62606164743016
+    },
+    "us06": {
+     "energy_wh_km": 410.88237952708374
+    },
+    "nedc": {
+     "energy_wh_km": 373.13920469929457
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 328.7887674998434,
+     "hwy": 339.6261440066225,
+     "us06": 410.6648539953609,
+     "nedc": 373.13933690164316
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:fusion",
+   "field": "cda_m2",
+   "key": "ft2_into_m2",
+   "story": "ft² typed into an m² field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 1456.0973726961927
+    },
+    "hwy": {
+     "energy_wh_km": 2745.0406985285545
+    },
+    "us06": {
+     "energy_wh_km": 3734.4520036236636
+    },
+    "nedc": {
+     "energy_wh_km": 2011.1592209472508
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 1456.0828016965418,
+     "hwy": 2745.171425766008,
+     "us06": 3569.9441073381845,
+     "nedc": 2000.533306090523
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:fusion",
+   "field": "cda_m2",
+   "key": "m2_into_ft2",
+   "story": "m² typed into a ft² field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 546.1196295432911
+    },
+    "hwy": {
+     "energy_wh_km": 287.676787263255
+    },
+    "us06": {
+     "energy_wh_km": 463.01397812396567
+    },
+    "nedc": {
+     "energy_wh_km": 483.8570461672105
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 546.0866795824888,
+     "hwy": 287.7525323592059,
+     "us06": 461.6290891268525,
+     "nedc": 483.95870726384453
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:fusion",
+   "field": "crr",
+   "key": "percent",
+   "story": "typed in percent",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 11833.370907915627
+    },
+    "hwy": {
+     "energy_wh_km": 11904.35606930487
+    },
+    "us06": {
+     "energy_wh_km": 11878.79051305735
+    },
+    "nedc": {
+     "energy_wh_km": 11792.815056746202
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 9192.859094827676,
+     "hwy": 5516.790746878075,
+     "us06": 4786.718575324306,
+     "nedc": 7812.573658331818
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:fusion",
+   "field": "crr",
+   "key": "per_mille",
+   "story": "typed per thousand (kg/t)",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 119643.46639466245
+    },
+    "hwy": {
+     "energy_wh_km": 119726.1128654411
+    },
+    "us06": {
+     "energy_wh_km": 119629.33233177547
+    },
+    "nedc": {
+     "energy_wh_km": 119918.49399477403
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 10684.646074828875,
+     "hwy": 5564.498818263076,
+     "us06": 5077.801023300707,
+     "nedc": 9325.935427996264
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:fusion",
+   "field": "wheel_radius_m",
+   "key": "diameter",
+   "story": "diameter typed as radius",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 606.3572666371148
+    },
+    "hwy": {
+     "energy_wh_km": 444.9845814691074
+    },
+    "us06": {
+     "energy_wh_km": 682.1149228840542
+    },
+    "nedc": {
+     "energy_wh_km": 597.8281982831745
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 606.3279292213733,
+     "hwy": 445.06323214417904,
+     "us06": 682.1306115730149,
+     "nedc": 597.9151481604038
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:fusion",
+   "field": "wheel_radius_m",
+   "key": "inch",
+   "story": "inches typed into a metre field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 605.4487790366193
+    },
+    "hwy": {
+     "energy_wh_km": 444.7380478293226
+    },
+    "us06": {
+     "energy_wh_km": 680.8351525427668
+    },
+    "nedc": {
+     "energy_wh_km": 597.1557496775116
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 532.4978710035145,
+     "hwy": 435.95268583377515,
+     "us06": 504.83700032228654,
+     "nedc": 558.1541990656502
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:fusion",
+   "field": "wheel_radius_m",
+   "key": "mm",
+   "story": "millimetres typed into a metre field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 605.4464333432242
+    },
+    "hwy": {
+     "energy_wh_km": 444.7374086934428
+    },
+    "us06": {
+     "energy_wh_km": 680.8318392521686
+    },
+    "nedc": {
+     "energy_wh_km": 597.1540123913081
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 228.18132569528282,
+     "hwy": 127.75273683199892,
+     "us06": 120.49468891162941,
+     "nedc": 225.2498722378066
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:fusion",
+   "field": "wheel_radius_m",
+   "key": "cm",
+   "story": "centimetres typed into a metre field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 605.4467938506998
+    },
+    "hwy": {
+     "energy_wh_km": 444.73750692205317
+    },
+    "us06": {
+     "energy_wh_km": 680.8323484679669
+    },
+    "nedc": {
+     "energy_wh_km": 597.1542793929113
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 431.3724539912436,
+     "hwy": 344.59400017829523,
+     "us06": 309.9630938134023,
+     "nedc": 439.44849812127217
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:fusion",
+   "field": "aux_power_w",
+   "key": "kilo_low",
+   "story": "W typed into a kW field (or kW into W)",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 490.3260930852624
+    },
+    "hwy": {
+     "energy_wh_km": 417.84836399850593
+    },
+    "us06": {
+     "energy_wh_km": 645.5630997045982
+    },
+    "nedc": {
+     "energy_wh_km": 491.69493531071504
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 490.40490564468206,
+     "hwy": 417.92972844287203,
+     "us06": 645.642009242431,
+     "nedc": 491.7870094818607
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:fusion",
+   "field": "aux_power_w",
+   "key": "kilo_high",
+   "story": "kW typed into a W field",
+   "fastsim": {
+    "udds": {
+     "refused": "FASTSim crashed (exit -11)"
+    },
+    "hwy": {
+     "refused": "FASTSim crashed (exit -11)"
+    },
+    "us06": {
+     "refused": "FASTSim crashed (exit -11)"
+    },
+    "nedc": {
+     "refused": "FASTSim crashed (exit -11)"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 74426.89627219253,
+     "hwy": 30475.61819565699,
+     "us06": 30926.69062729321,
+     "nedc": 70166.21269348901
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:fusion",
+   "field": "aux_power_w",
+   "key": "hp_into_kw",
+   "story": "hp typed into a kW field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 642.6253454465472
+    },
+    "hwy": {
+     "energy_wh_km": 454.45721463814334
+    },
+    "us06": {
+     "energy_wh_km": 697.8729751782214
+    },
+    "nedc": {
+     "energy_wh_km": 630.831671209082
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 642.5672700540953,
+     "hwy": 454.535266442063,
+     "us06": 697.9177479956932,
+     "nedc": 630.915963999632
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:fusion",
+   "field": "aux_power_w",
+   "key": "kw_into_hp",
+   "story": "kW typed into an hp field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 582.0901842518339
+    },
+    "hwy": {
+     "energy_wh_km": 439.00330880689074
+    },
+    "us06": {
+     "energy_wh_km": 676.53136956748
+    },
+    "nedc": {
+     "energy_wh_km": 574.9193885486209
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 582.0842931824034,
+     "hwy": 439.0825018010069,
+     "us06": 676.5889884827635,
+     "nedc": 575.0085040349428
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:fusion",
+   "field": "transmission_eff",
+   "key": "percent",
+   "story": "efficiency typed in percent",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 191.85886318029833,
+     "hwy": 82.78654256839275,
+     "us06": 88.45150294808202,
+     "nedc": 181.24401444795572
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:fusion",
+   "field": "transmission_eff",
+   "key": "applied_twice",
+   "story": "the same efficiency applied twice",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 658.4248458849632
+    },
+    "hwy": {
+     "energy_wh_km": 490.6008153477618
+    },
+    "us06": {
+     "energy_wh_km": 775.4525306145055
+    },
+    "nedc": {
+     "energy_wh_km": 651.903868333029
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 658.4040070855431,
+     "hwy": 490.69319280479374,
+     "us06": 776.7064884852543,
+     "nedc": 652.0109932663717
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:fusion",
+   "field": "engine_power_w",
+   "key": "kilo_low",
+   "story": "W typed into a kW field (or kW into W)",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 81.19503183847006,
+     "hwy": 34.96191937197303,
+     "us06": 33.970372986140845,
+     "nedc": 77.37827497464788
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:fusion",
+   "field": "engine_power_w",
+   "key": "kilo_high",
+   "story": "kW typed into a W field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 1614.3365659035012
+    },
+    "hwy": {
+     "energy_wh_km": 1396.0913007023066
+    },
+    "us06": {
+     "energy_wh_km": 2298.269018789239
+    },
+    "nedc": {
+     "energy_wh_km": 1593.9745252286132
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 1614.47462817636,
+     "hwy": 1396.421406316621,
+     "us06": 2295.4027291199454,
+     "nedc": 1594.28597946134
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:fusion",
+   "field": "engine_power_w",
+   "key": "hp_into_kw",
+   "story": "hp typed into a kW field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 663.4025337304829
+    },
+    "hwy": {
+     "energy_wh_km": 485.4592017092234
+    },
+    "us06": {
+     "energy_wh_km": 699.5219043267457
+    },
+    "nedc": {
+     "energy_wh_km": 648.9745566765629
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 663.3732147109652,
+     "hwy": 485.53831785022186,
+     "us06": 699.0593679586268,
+     "nedc": 649.0663761460781
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:fusion",
+   "field": "engine_power_w",
+   "key": "kw_into_hp",
+   "story": "kW typed into an hp field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 567.4707643833682
+    },
+    "hwy": {
+     "energy_wh_km": 420.7610654229622
+    },
+    "us06": {
+     "energy_wh_km": 682.8768111771232
+    },
+    "nedc": {
+     "energy_wh_km": 564.8918205870268
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 567.4430412233218,
+     "hwy": 420.8438498271063,
+     "us06": 685.4197711463914,
+     "nedc": 564.9765704095664
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:fusion",
+   "field": "engine_eff_map",
+   "key": "percent",
+   "story": "efficiency typed in percent",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": null,
+     "hwy": null,
+     "us06": null,
+     "nedc": null
+    },
+    [
+     "refused: map efficiencies must lie in (0, 1); only the zero-power point may be 0",
+     "refused: map efficiencies must lie in (0, 1); only the zero-power point may be 0",
+     "refused: map efficiencies must lie in (0, 1); only the zero-power point may be 0",
+     "refused: map efficiencies must lie in (0, 1); only the zero-power point may be 0"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:fusion",
+   "field": "engine_eff_map",
+   "key": "applied_twice",
+   "story": "the same efficiency applied twice",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 2603.325795233989
+    },
+    "hwy": {
+     "energy_wh_km": 1468.4214236988457
+    },
+    "us06": {
+     "energy_wh_km": 2123.687981520765
+    },
+    "nedc": {
+     "energy_wh_km": 2562.9022465756093
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 2602.6504003432515,
+     "hwy": 1468.572771472675,
+     "us06": 2123.6650398192787,
+     "nedc": 2563.1034307236414
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:fusion",
+   "field": "idle_fuel_w",
+   "key": "kilo_low",
+   "story": "W typed into a kW field (or kW into W)",
+   "no_change": true
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:fusion",
+   "field": "idle_fuel_w",
+   "key": "kilo_high",
+   "story": "kW typed into a W field",
+   "no_change": true
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:fusion",
+   "field": "idle_fuel_w",
+   "key": "hp_into_kw",
+   "story": "hp typed into a kW field",
+   "no_change": true
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:fusion",
+   "field": "idle_fuel_w",
+   "key": "kw_into_hp",
+   "story": "kW typed into an hp field",
+   "no_change": true
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:pacifica",
+   "field": "mass_kg",
+   "key": "lb_into_kg",
+   "story": "pounds typed into a kg field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 1473.2755632091937
+    },
+    "hwy": {
+     "energy_wh_km": 883.2376336579479
+    },
+    "us06": {
+     "energy_wh_km": 1665.9019814876672
+    },
+    "nedc": {
+     "energy_wh_km": 1340.3460516171262
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 1473.2402957066438,
+     "hwy": 883.4749316518125,
+     "us06": 1663.246740418546,
+     "nedc": 1340.582781746606
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:pacifica",
+   "field": "mass_kg",
+   "key": "kg_into_lb",
+   "story": "kg typed into a lb field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 733.8149660010274
+    },
+    "hwy": {
+     "energy_wh_km": 511.3689944888423
+    },
+    "us06": {
+     "energy_wh_km": 703.9777972129225
+    },
+    "nedc": {
+     "energy_wh_km": 726.9897590407011
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 733.6325348056529,
+     "hwy": 511.4141170699959,
+     "us06": 703.2501213713455,
+     "nedc": 727.0495073553398
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:pacifica",
+   "field": "mass_kg",
+   "key": "g_into_kg",
+   "story": "grams typed into a kg field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 179245.0366475001
+    },
+    "hwy": {
+     "energy_wh_km": 126741.06557802368
+    },
+    "us06": {
+     "energy_wh_km": 167848.58521779813
+    },
+    "nedc": {
+     "energy_wh_km": 175409.60491958377
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 11455.461544577169,
+     "hwy": 7002.044431317047,
+     "us06": 5055.992879108099,
+     "nedc": 12952.436742534028
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:pacifica",
+   "field": "mass_kg",
+   "key": "t_into_kg",
+   "story": "tonnes typed into a kg field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 528.351232759358
+    },
+    "hwy": {
+     "energy_wh_km": 456.60224345951383
+    },
+    "us06": {
+     "energy_wh_km": 544.2203182315209
+    },
+    "nedc": {
+     "energy_wh_km": 580.4161525138394
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 528.121084524718,
+     "hwy": 456.60234376912234,
+     "us06": 544.1241666547566,
+     "nedc": 580.4162772107128
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:pacifica",
+   "field": "cda_m2",
+   "key": "ft2_into_m2",
+   "story": "ft² typed into an m² field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 1960.784983246155
+    },
+    "hwy": {
+     "energy_wh_km": 3416.387748462747
+    },
+    "us06": {
+     "energy_wh_km": 5068.387580135146
+    },
+    "nedc": {
+     "energy_wh_km": 2728.3428501687235
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 1960.6736744749426,
+     "hwy": 3416.5465681961546,
+     "us06": 5010.892891218032,
+     "nedc": 2719.372084299394
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:pacifica",
+   "field": "cda_m2",
+   "key": "m2_into_ft2",
+   "story": "m² typed into a ft² field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 869.743346250371
+    },
+    "hwy": {
+     "energy_wh_km": 427.9112156506212
+    },
+    "us06": {
+     "energy_wh_km": 713.2534177385687
+    },
+    "nedc": {
+     "energy_wh_km": 763.8607502602182
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 869.6075653453108,
+     "hwy": 428.01299596805933,
+     "us06": 713.1387666506175,
+     "nedc": 764.0000365733546
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:pacifica",
+   "field": "crr",
+   "key": "percent",
+   "story": "typed in percent",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 15489.40035603479
+    },
+    "hwy": {
+     "energy_wh_km": 15320.887354088434
+    },
+    "us06": {
+     "energy_wh_km": 15359.283292269474
+    },
+    "nedc": {
+     "energy_wh_km": 15473.381666673267
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 13757.181732045183,
+     "hwy": 9165.285349970927,
+     "us06": 7840.251202534395,
+     "nedc": 11995.311271417362
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:pacifica",
+   "field": "crr",
+   "key": "per_mille",
+   "story": "typed per thousand (kg/t)",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 154191.44707605866
+    },
+    "hwy": {
+     "energy_wh_km": 153403.82776309637
+    },
+    "us06": {
+     "energy_wh_km": 153677.32382587218
+    },
+    "nedc": {
+     "energy_wh_km": 154478.1115667258
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 17774.85284655623,
+     "hwy": 9274.196245801622,
+     "us06": 8453.003651230048,
+     "nedc": 15518.29339748842
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:pacifica",
+   "field": "wheel_radius_m",
+   "key": "diameter",
+   "story": "diameter typed as radius",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 939.7416511197926
+    },
+    "hwy": {
+     "energy_wh_km": 609.8609509536128
+    },
+    "us06": {
+     "energy_wh_km": 978.5276579523126
+    },
+    "nedc": {
+     "energy_wh_km": 908.1875946314198
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 939.6049549349001,
+     "hwy": 609.9694256140128,
+     "us06": 978.5626655054739,
+     "nedc": 908.3083370709768
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:pacifica",
+   "field": "wheel_radius_m",
+   "key": "inch",
+   "story": "inches typed into a metre field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 938.9745896790039
+    },
+    "hwy": {
+     "energy_wh_km": 609.6253530965548
+    },
+    "us06": {
+     "energy_wh_km": 977.4738272317825
+    },
+    "nedc": {
+     "energy_wh_km": 907.6319971095837
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 839.3510812263593,
+     "hwy": 599.2588155635272,
+     "us06": 740.4141446465644,
+     "nedc": 872.0363923728204
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:pacifica",
+   "field": "wheel_radius_m",
+   "key": "mm",
+   "story": "millimetres typed into a metre field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 938.9726083008273
+    },
+    "hwy": {
+     "energy_wh_km": 609.6247478103887
+    },
+    "us06": {
+     "energy_wh_km": 977.4711033118817
+    },
+    "nedc": {
+     "energy_wh_km": 907.6305619513805
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 427.996347891057,
+     "hwy": 213.7568866268106,
+     "us06": 212.06736300482342,
+     "nedc": 416.3412811016548
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:pacifica",
+   "field": "wheel_radius_m",
+   "key": "cm",
+   "story": "centimetres typed into a metre field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 938.9729128166057
+    },
+    "hwy": {
+     "energy_wh_km": 609.6248408362983
+    },
+    "us06": {
+     "energy_wh_km": 977.4715219481056
+    },
+    "nedc": {
+     "energy_wh_km": 907.6307825191055
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 705.8411072116561,
+     "hwy": 498.3842630034491,
+     "us06": 471.24100802881094,
+     "nedc": 704.2269840337001
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:pacifica",
+   "field": "aux_power_w",
+   "key": "kilo_low",
+   "story": "W typed into a kW field (or kW into W)",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 907.1349967261963
+    },
+    "hwy": {
+     "energy_wh_km": 589.9554776742276
+    },
+    "us06": {
+     "energy_wh_km": 963.1984794001938
+    },
+    "nedc": {
+     "energy_wh_km": 868.5303523353269
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 907.0005082733222,
+     "hwy": 590.0601854920934,
+     "us06": 963.249440451354,
+     "nedc": 868.6577712885951
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:pacifica",
+   "field": "aux_power_w",
+   "key": "kilo_high",
+   "story": "kW typed into a W field",
+   "fastsim": {
+    "udds": {
+     "refused": "FASTSim crashed (exit -11)"
+    },
+    "hwy": {
+     "refused": "FASTSim crashed (exit -11)"
+    },
+    "us06": {
+     "refused": "FASTSim crashed (exit -11)"
+    },
+    "nedc": {
+     "refused": "FASTSim crashed (exit -11)"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 76991.67599648659,
+     "hwy": 31556.260239333184,
+     "us06": 32091.272495121513,
+     "nedc": 72572.84722073229
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:pacifica",
+   "field": "aux_power_w",
+   "key": "hp_into_kw",
+   "story": "hp typed into a kW field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 953.9663736075893
+    },
+    "hwy": {
+     "energy_wh_km": 617.7063732628937
+    },
+    "us06": {
+     "energy_wh_km": 988.1445222208876
+    },
+    "nedc": {
+     "energy_wh_km": 924.7568531903061
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 953.8295177535115,
+     "hwy": 617.8149498515345,
+     "us06": 988.1964469530448,
+     "nedc": 924.8759115112582
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:pacifica",
+   "field": "aux_power_w",
+   "key": "kw_into_hp",
+   "story": "kW typed into an hp field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 933.2345802402591
+    },
+    "hwy": {
+     "energy_wh_km": 605.2950890987455
+    },
+    "us06": {
+     "energy_wh_km": 976.9677461998092
+    },
+    "nedc": {
+     "energy_wh_km": 898.7477629364068
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 933.0982894392805,
+     "hwy": 605.4020928490295,
+     "us06": 977.018995086332,
+     "nedc": 898.8654352523164
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:pacifica",
+   "field": "transmission_eff",
+   "key": "percent",
+   "story": "efficiency typed in percent",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 412.06596847179947,
+     "hwy": 167.35509464105806,
+     "us06": 169.27135579938465,
+     "nedc": 388.33970414491193
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:pacifica",
+   "field": "transmission_eff",
+   "key": "applied_twice",
+   "story": "the same efficiency applied twice",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 967.8827229292389
+    },
+    "hwy": {
+     "energy_wh_km": 632.9239352473674
+    },
+    "us06": {
+     "energy_wh_km": 1028.091627836549
+    },
+    "nedc": {
+     "energy_wh_km": 936.4842575502278
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 967.750590114809,
+     "hwy": 633.0401741283215,
+     "us06": 1028.3737182535656,
+     "nedc": 936.612067364956
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:pacifica",
+   "field": "engine_power_w",
+   "key": "kilo_low",
+   "story": "W typed into a kW field (or kW into W)",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 412.06596847179947,
+     "hwy": 167.35509464105806,
+     "us06": 168.07338235966574,
+     "nedc": 388.33970414491193
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:pacifica",
+   "field": "engine_power_w",
+   "key": "kilo_high",
+   "story": "kW typed into a W field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 358456.45512797026
+    },
+    "hwy": {
+     "energy_wh_km": 145500.97957671565
+    },
+    "us06": {
+     "energy_wh_km": 146166.4294559829
+    },
+    "nedc": {
+     "energy_wh_km": 337628.2477853834
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 358256.2107922039,
+     "hwy": 145500.9795767187,
+     "us06": 146125.46947886067,
+     "nedc": 337628.24778538576
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:pacifica",
+   "field": "engine_power_w",
+   "key": "hp_into_kw",
+   "story": "hp typed into a kW field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 1052.893519895745
+    },
+    "hwy": {
+     "energy_wh_km": 672.1563765985194
+    },
+    "us06": {
+     "energy_wh_km": 1005.2645809361353
+    },
+    "nedc": {
+     "energy_wh_km": 1002.8103161910344
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 1052.7243616198339,
+     "hwy": 672.2579918027714,
+     "us06": 1005.1845671636559,
+     "nedc": 1002.9444757845798
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:pacifica",
+   "field": "engine_power_w",
+   "key": "kw_into_hp",
+   "story": "kW typed into an hp field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 889.0818862925189
+    },
+    "hwy": {
+     "energy_wh_km": 578.0958371599799
+    },
+    "us06": {
+     "energy_wh_km": 979.627013928865
+    },
+    "nedc": {
+     "energy_wh_km": 856.7605935248295
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 888.9411626620637,
+     "hwy": 578.2095956718462,
+     "us06": 979.9727689432868,
+     "nedc": 856.870148949244
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:pacifica",
+   "field": "engine_eff_map",
+   "key": "percent",
+   "story": "efficiency typed in percent",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": null,
+     "hwy": null,
+     "us06": null,
+     "nedc": null
+    },
+    [
+     "refused: map efficiencies must lie in (0, 1); only the zero-power point may be 0",
+     "refused: map efficiencies must lie in (0, 1); only the zero-power point may be 0",
+     "refused: map efficiencies must lie in (0, 1); only the zero-power point may be 0",
+     "refused: map efficiencies must lie in (0, 1); only the zero-power point may be 0"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:pacifica",
+   "field": "engine_eff_map",
+   "key": "applied_twice",
+   "story": "the same efficiency applied twice",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 4957.5664781458145
+    },
+    "hwy": {
+     "energy_wh_km": 2377.1452366361764
+    },
+    "us06": {
+     "energy_wh_km": 3635.0519276238642
+    },
+    "nedc": {
+     "energy_wh_km": 4860.817502121974
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 4955.588420251395,
+     "hwy": 2377.360778663778,
+     "us06": 3634.8148051018175,
+     "nedc": 4861.077635232315
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:pacifica",
+   "field": "idle_fuel_w",
+   "key": "kilo_low",
+   "story": "W typed into a kW field (or kW into W)",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 916.6137663040455
+    },
+    "hwy": {
+     "energy_wh_km": 607.6849982125765
+    },
+    "us06": {
+     "energy_wh_km": 974.4003199912618
+    },
+    "nedc": {
+     "energy_wh_km": 890.1764644892436
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 916.5088484452589,
+     "hwy": 607.7946174623215,
+     "us06": 974.46079848008,
+     "nedc": 890.297301915631
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:pacifica",
+   "field": "idle_fuel_w",
+   "key": "kilo_high",
+   "story": "kW typed into a W field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 412296.28932504053
+    },
+    "hwy": {
+     "energy_wh_km": 167355.09464105446
+    },
+    "us06": {
+     "energy_wh_km": 168132.74442729822
+    },
+    "nedc": {
+     "energy_wh_km": 388339.70414490934
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 412065.96847179934,
+     "hwy": 167355.09464105798,
+     "us06": 168073.38235966573,
+     "nedc": 388339.7041449119
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:pacifica",
+   "field": "idle_fuel_w",
+   "key": "hp_into_kw",
+   "story": "hp typed into a kW field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 1009.8099657033215
+    },
+    "hwy": {
+     "energy_wh_km": 618.4046009600644
+    },
+    "us06": {
+     "energy_wh_km": 1001.2354209198695
+    },
+    "nedc": {
+     "energy_wh_km": 966.0266658793741
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 1009.5904922041979,
+     "hwy": 618.5103154945942,
+     "us06": 1001.2654261413423,
+     "nedc": 966.1413827862408
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:pacifica",
+   "field": "idle_fuel_w",
+   "key": "kw_into_hp",
+   "story": "kW typed into an hp field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 916.6137663040455
+    },
+    "hwy": {
+     "energy_wh_km": 607.6849982125765
+    },
+    "us06": {
+     "energy_wh_km": 974.4003199912618
+    },
+    "nedc": {
+     "energy_wh_km": 890.1764644892436
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 916.5088484452589,
+     "hwy": 607.7946174623215,
+     "us06": 974.46079848008,
+     "nedc": 890.297301915631
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "mass_kg",
+   "key": "lb_into_kg",
+   "story": "pounds typed into a kg field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.16745608044300264,
+     "peak_current_a": 166.05560648668728,
+     "rms_current_a": 55.739863345701224,
+     "min_pack_voltage_v": 267.07240204764287,
+     "pack_temp_rise_k": 2.300221709625987,
+     "drive_loss_kwh_per_km": 0.02552799437784064,
+     "pack_resistance_ohm": 0.10051525749683063,
+     "launch_75m_time_s": 5.376249710661375,
+     "launch_75m_speed_ms": 22.524016001506666
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "mass_kg",
+   "key": "kg_into_lb",
+   "story": "kg typed into a lb field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.11504977665350516,
+     "peak_current_a": 53.579404510662215,
+     "rms_current_a": 32.214434227901705,
+     "min_pack_voltage_v": 277.0494734243332,
+     "pack_temp_rise_k": 0.7325840371875643,
+     "drive_loss_kwh_per_km": 0.01921331270113536,
+     "pack_resistance_ohm": 0.08250907960132299,
+     "launch_75m_time_s": 4.484272150228429,
+     "launch_75m_speed_ms": 33.276619405533516
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "mass_kg",
+   "key": "g_into_kg",
+   "story": "grams typed into a kg field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 9858.520118776698,
+     "peak_current_a": 1580.4397710867834,
+     "rms_current_a": 829.25464379787,
+     "min_pack_voltage_v": 100.8,
+     "pack_temp_rise_k": 637.2248155980185,
+     "drive_loss_kwh_per_km": 1387.2258855883126,
+     "pack_resistance_ohm": 0.1095227975582309,
+     "launch_75m_time_s": 7481.94534993534,
+     "launch_75m_speed_ms": 0.01
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "mass_kg",
+   "key": "t_into_kg",
+   "story": "tonnes typed into a kg field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10752258312657768,
+     "peak_current_a": 39.88653971983003,
+     "rms_current_a": 29.26186965316359,
+     "min_pack_voltage_v": 277.85629029170053,
+     "pack_temp_rise_k": 0.6018559333273856,
+     "drive_loss_kwh_per_km": 0.017956271382138476,
+     "pack_resistance_ohm": 0.06852247874531177,
+     "launch_75m_time_s": 2.317762340095197,
+     "launch_75m_speed_ms": 41.93250094118749
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "cda_m2",
+   "key": "ft2_into_m2",
+   "story": "ft² typed into an m² field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 1.0738835396839794,
+     "peak_current_a": 907.911802853437,
+     "rms_current_a": 483.40394994788875,
+     "min_pack_voltage_v": 100.8,
+     "pack_temp_rise_k": 226.30646732372793,
+     "drive_loss_kwh_per_km": 0.1269861981238769,
+     "pack_resistance_ohm": 0.1536608347981425,
+     "launch_75m_time_s": 5.618596306733571,
+     "launch_75m_speed_ms": 19.2009464431533
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "cda_m2",
+   "key": "m2_into_ft2",
+   "story": "m² typed into a ft² field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.04915165628645816,
+     "peak_current_a": 69.60024520707798,
+     "rms_current_a": 18.818654185862112,
+     "min_pack_voltage_v": 278.96898757902204,
+     "pack_temp_rise_k": 0.24578487757901257,
+     "drive_loss_kwh_per_km": 0.008135401129082197,
+     "pack_resistance_ohm": 0.09552289028650478,
+     "launch_75m_time_s": 4.721058788730849,
+     "launch_75m_speed_ms": 29.267281620162336
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "cla_m2",
+   "key": "ft2_into_m2",
+   "story": "ft² typed into an m² field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.15055625523201366,
+     "peak_current_a": 86.14955466742816,
+     "rms_current_a": 44.11958145362949,
+     "min_pack_voltage_v": 272.99971671899,
+     "pack_temp_rise_k": 1.4035459666584984,
+     "drive_loss_kwh_per_km": 0.02478549548727651,
+     "pack_resistance_ohm": 0.09060114330259253,
+     "launch_75m_time_s": 4.490476822648143,
+     "launch_75m_speed_ms": 28.205290068823125
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "cla_m2",
+   "key": "m2_into_ft2",
+   "story": "m² typed into a ft² field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12780701752688411,
+     "peak_current_a": 79.70032975777123,
+     "rms_current_a": 37.99063152378125,
+     "min_pack_voltage_v": 274.5985580082377,
+     "pack_temp_rise_k": 1.0285097700029269,
+     "drive_loss_kwh_per_km": 0.021107009152589857,
+     "pack_resistance_ohm": 0.09234278002083524,
+     "launch_75m_time_s": 4.893007030738857,
+     "launch_75m_speed_ms": 27.58744371521408
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "tire_radius_m",
+   "key": "diameter",
+   "story": "diameter typed as radius",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12802419533258347,
+     "peak_current_a": 81.13136206429459,
+     "rms_current_a": 37.936932239653906,
+     "min_pack_voltage_v": 274.6958447493538,
+     "pack_temp_rise_k": 1.0255104265579575,
+     "drive_loss_kwh_per_km": 0.019879003375852813,
+     "pack_resistance_ohm": 0.09179127163260921,
+     "launch_75m_time_s": 4.829041131581815,
+     "launch_75m_speed_ms": 27.943926490103085
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "tire_radius_m",
+   "key": "inch",
+   "story": "inches typed into a metre field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12970712401004494,
+     "peak_current_a": 82.95474958289859,
+     "rms_current_a": 38.551120932388024,
+     "min_pack_voltage_v": 274.42908625733344,
+     "pack_temp_rise_k": 1.060142753893217,
+     "drive_loss_kwh_per_km": 0.02156193205331429,
+     "pack_resistance_ohm": 0.09208636165320895
+    },
+    [
+     "refused: the acceleration log never reaches 75 m"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "tire_radius_m",
+   "key": "mm",
+   "story": "millimetres typed into a metre field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12982151890085716,
+     "peak_current_a": 83.0115905049079,
+     "rms_current_a": 38.58570764845684,
+     "min_pack_voltage_v": 274.4178498573199,
+     "pack_temp_rise_k": 1.0621120892315048,
+     "drive_loss_kwh_per_km": 0.02167632694412652,
+     "pack_resistance_ohm": 0.0920898204337319,
+     "launch_75m_time_s": 7481.927355023747,
+     "launch_75m_speed_ms": 0.01
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "tire_radius_m",
+   "key": "cm",
+   "story": "centimetres typed into a metre field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.1297796866384651,
+     "peak_current_a": 82.99061701181398,
+     "rms_current_a": 38.57296899004744,
+     "min_pack_voltage_v": 274.42197962705717,
+     "pack_temp_rise_k": 1.0613865363407626,
+     "drive_loss_kwh_per_km": 0.021634494681734458,
+     "pack_resistance_ohm": 0.09208866866562183
+    },
+    [
+     "refused: the acceleration log never reaches 75 m"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "cg_height_m",
+   "key": "diameter",
+   "story": "diameter typed as radius",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "cg_height_m",
+   "key": "inch",
+   "story": "inches typed into a metre field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "cg_height_m",
+   "key": "mm",
+   "story": "millimetres typed into a metre field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "cg_height_m",
+   "key": "cm",
+   "story": "centimetres typed into a metre field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "wheelbase_m",
+   "key": "diameter",
+   "story": "diameter typed as radius",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "wheelbase_m",
+   "key": "inch",
+   "story": "inches typed into a metre field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "wheelbase_m",
+   "key": "mm",
+   "story": "millimetres typed into a metre field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "wheelbase_m",
+   "key": "cm",
+   "story": "centimetres typed into a metre field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "mu",
+   "key": "percent",
+   "story": "typed in percent",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 3.981472582921833,
+     "launch_75m_speed_ms": 28.735564961920154
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "mu",
+   "key": "per_mille",
+   "story": "typed per thousand (kg/t)",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 3.981472582921833,
+     "launch_75m_speed_ms": 28.735564961920154
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "final_drive",
+   "key": "inverse",
+   "story": "ratio entered as its inverse",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.1280359876468601,
+     "peak_current_a": 82.05447071356545,
+     "rms_current_a": 38.01956660069409,
+     "min_pack_voltage_v": 274.6000129196653,
+     "pack_temp_rise_k": 1.030130640967684,
+     "drive_loss_kwh_per_km": 0.01989079569012946,
+     "pack_resistance_ohm": 0.09204896203743333,
+     "launch_75m_time_s": 5.973462645852316,
+     "launch_75m_speed_ms": 22.88566417276161
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "motor_peak_torque_nm",
+   "key": "lbft_into_nm",
+   "story": "lb·ft typed into an N·m field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "motor_peak_torque_nm",
+   "key": "nm_into_lbft",
+   "story": "N·m typed into a lb·ft field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "motor_max_rpm",
+   "key": "rads_into_rpm",
+   "story": "rad/s typed into an rpm field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "pack_power_kw",
+   "key": "kilo_low",
+   "story": "W typed into a kW field (or kW into W)",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "pack_power_kw",
+   "key": "kilo_high",
+   "story": "kW typed into a W field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "pack_power_kw",
+   "key": "hp_into_kw",
+   "story": "hp typed into a kW field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "pack_power_kw",
+   "key": "kw_into_hp",
+   "story": "kW typed into an hp field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "inverter_eff",
+   "key": "percent",
+   "story": "efficiency typed in percent",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.0012982616081240175,
+     "peak_current_a": 0.8006933544989985,
+     "rms_current_a": 0.3759589917980153,
+     "min_pack_voltage_v": 286.01888706038187,
+     "pack_temp_rise_k": 9.718880585296574e-05,
+     "drive_loss_kwh_per_km": -0.10684693034860662,
+     "pack_resistance_ohm": 0.08787157400510646,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "inverter_eff",
+   "key": "applied_twice",
+   "story": "the same efficiency applied twice",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.1321463560961742,
+     "peak_current_a": 81.51610882712005,
+     "rms_current_a": 39.24343660707878,
+     "min_pack_voltage_v": 274.2407719074997,
+     "pack_temp_rise_k": 1.0999501002351053,
+     "drive_loss_kwh_per_km": 0.024001164139443542,
+     "pack_resistance_ohm": 0.09217786149608377,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "driveline_eff",
+   "key": "percent",
+   "story": "efficiency typed in percent",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.0012982616081240175,
+     "peak_current_a": 0.8006933544989985,
+     "rms_current_a": 0.3759589917980153,
+     "min_pack_voltage_v": 286.01888706038187,
+     "pack_temp_rise_k": 9.718880585296574e-05,
+     "drive_loss_kwh_per_km": 0.00021680968855671093,
+     "pack_resistance_ohm": 0.08787157400510646,
+     "launch_75m_time_s": 4.587785293676127,
+     "launch_75m_speed_ms": 34.63855737578326
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "driveline_eff",
+   "key": "applied_twice",
+   "story": "the same efficiency applied twice",
+   "no_change": true
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "cell_v",
+   "key": "cell_into_pack",
+   "story": "a cell's 3.6 V typed where the pack voltage belongs",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "cell_ah",
+   "key": "mah_into_ah",
+   "story": "mAh typed into an Ah field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.21861075623116,
+     "rms_current_a": 38.06823484557585,
+     "min_pack_voltage_v": 278.74430838030986,
+     "pack_temp_rise_k": 1.0291197576459012,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09348397059374336,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae",
+   "field": "cell_ohm",
+   "key": "mohm_into_ohm",
+   "story": "milliohms typed into an ohm field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:zoe",
+   "field": "mass_kg",
+   "key": "lb_for_kg",
+   "story": "the mass from a US scale, in pounds",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 194.37599256712127
+    },
+    "hwy": {
+     "energy_wh_km": 196.99759062311085
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "energy_wh_km": 201.59719183050484
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 194.46744848661854,
+     "hwy": 197.09423270622796,
+     "us06": 279.36961493132037,
+     "nedc": 201.69448390238782
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:leaf",
+   "field": "mass_kg",
+   "key": "lb_for_kg",
+   "story": "the mass from a US scale, in pounds",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 165.04199219752198
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "energy_wh_km": 175.86840222695304
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 165.1073000193995,
+     "hwy": 178.2199354068418,
+     "us06": 253.3467261551605,
+     "nedc": 175.9544650810711
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:model3",
+   "field": "mass_kg",
+   "key": "lb_for_kg",
+   "story": "the mass from a US scale, in pounds",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 158.75556473353498
+    },
+    "hwy": {
+     "energy_wh_km": 148.55548674437478
+    },
+    "us06": {
+     "energy_wh_km": 201.74899241374416
+    },
+    "nedc": {
+     "energy_wh_km": 158.64137518185717
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 158.83410171504943,
+     "hwy": 148.63770404577497,
+     "us06": 201.86570378877553,
+     "nedc": 158.7254606974487
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:fusion",
+   "field": "mass_kg",
+   "key": "lb_for_kg",
+   "story": "the mass from a US scale, in pounds",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 955.0321632142843
+    },
+    "hwy": {
+     "energy_wh_km": 621.866558799962
+    },
+    "us06": {
+     "energy_wh_km": 1143.428698494388
+    },
+    "nedc": {
+     "energy_wh_km": 890.1218048259684
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 955.3073888161143,
+     "hwy": 622.0435276553911,
+     "us06": 1142.5390094610054,
+     "nedc": 890.2719124397984
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:pacifica",
+   "field": "mass_kg",
+   "key": "lb_for_kg",
+   "story": "the mass from a US scale, in pounds",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 1473.2755632091937
+    },
+    "hwy": {
+     "energy_wh_km": 883.2376336579479
+    },
+    "us06": {
+     "energy_wh_km": 1665.9019814876672
+    },
+    "nedc": {
+     "energy_wh_km": 1340.3460516171262
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 1473.2402957066438,
+     "hwy": 883.4749316518125,
+     "us06": 1663.246740418546,
+     "nedc": 1340.582781746606
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fsae",
+   "field": "mass_kg",
+   "key": "lb_for_kg",
+   "story": "the mass from a US scale, in pounds",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.16745608044300264,
+     "peak_current_a": 166.05560648668728,
+     "rms_current_a": 55.739863345701224,
+     "min_pack_voltage_v": 267.07240204764287,
+     "pack_temp_rise_k": 2.300221709625987,
+     "drive_loss_kwh_per_km": 0.02552799437784064,
+     "pack_resistance_ohm": 0.10051525749683063,
+     "launch_75m_time_s": 5.376249710661375,
+     "launch_75m_speed_ms": 22.524016001506666
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:zoe",
+   "field": "mass_kg",
+   "key": "driver_dropped",
+   "story": "the 75 kg driver left out of the mass",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 110.02344307708532
+    },
+    "hwy": {
+     "energy_wh_km": 133.9232032920536
+    },
+    "us06": {
+     "energy_wh_km": 186.6125957211285
+    },
+    "nedc": {
+     "energy_wh_km": 124.97869309054299
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 110.0640667008511,
+     "hwy": 133.9657426214984,
+     "us06": 186.65352022373858,
+     "nedc": 125.02114862745695
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:leaf",
+   "field": "mass_kg",
+   "key": "driver_dropped",
+   "story": "the 75 kg driver left out of the mass",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 97.08703970903086
+    },
+    "hwy": {
+     "energy_wh_km": 125.26822876811335
+    },
+    "us06": {
+     "energy_wh_km": 172.51173527805108
+    },
+    "nedc": {
+     "energy_wh_km": 113.99723552969265
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 97.12365786639783,
+     "hwy": 125.30611832813385,
+     "us06": 172.52869241878153,
+     "nedc": 114.03526039941187
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:model3",
+   "field": "mass_kg",
+   "key": "driver_dropped",
+   "story": "the 75 kg driver left out of the mass",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 88.66877206231096
+    },
+    "hwy": {
+     "energy_wh_km": 96.06585708666361
+    },
+    "us06": {
+     "energy_wh_km": 130.91732262997323
+    },
+    "nedc": {
+     "energy_wh_km": 94.89096002581056
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 88.7038555320225,
+     "hwy": 96.10297047730738,
+     "us06": 130.94424943305182,
+     "nedc": 94.9279184534096
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:fusion",
+   "field": "mass_kg",
+   "key": "driver_dropped",
+   "story": "the 75 kg driver left out of the mass",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 596.9379795236628
+    },
+    "hwy": {
+     "energy_wh_km": 439.80266499655164
+    },
+    "us06": {
+     "energy_wh_km": 670.0314945883713
+    },
+    "nedc": {
+     "energy_wh_km": 589.3966571568577
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 596.9055899484337,
+     "hwy": 439.8775064808163,
+     "us06": 669.981159169931,
+     "nedc": 589.4802780990365
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:pacifica",
+   "field": "mass_kg",
+   "key": "driver_dropped",
+   "story": "the 75 kg driver left out of the mass",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 929.578235753843
+    },
+    "hwy": {
+     "energy_wh_km": 604.3170055990336
+    },
+    "us06": {
+     "energy_wh_km": 965.0772755854099
+    },
+    "nedc": {
+     "energy_wh_km": 899.1969365184007
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 929.4386664291013,
+     "hwy": 604.4219913811728,
+     "us06": 965.0217681519971,
+     "nedc": 899.3144967405631
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fsae",
+   "field": "mass_kg",
+   "key": "driver_dropped",
+   "story": "the 75 kg driver left out of the mass",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12193552625623881,
+     "peak_current_a": 66.78129051226806,
+     "rms_current_a": 35.13078148238538,
+     "min_pack_voltage_v": 275.9003625391624,
+     "pack_temp_rise_k": 0.8752392218329987,
+     "drive_loss_kwh_per_km": 0.020314905302363528,
+     "pack_resistance_ohm": 0.08838307337050767,
+     "launch_75m_time_s": 4.667771837102575,
+     "launch_75m_speed_ms": 30.031251012554645
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:zoe",
+   "field": "cda_m2",
+   "key": "cd_for_cda",
+   "story": "the drag coefficient typed where CdA belongs",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 93.97505608317536
+    },
+    "hwy": {
+     "energy_wh_km": 89.17744327890678
+    },
+    "us06": {
+     "energy_wh_km": 122.44579179787371
+    },
+    "nedc": {
+     "energy_wh_km": 95.40206633172865
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 94.01724448675878,
+     "hwy": 89.22175797681606,
+     "us06": 122.48766117974907,
+     "nedc": 95.44683608515116
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:leaf",
+   "field": "cda_m2",
+   "key": "cd_for_cda",
+   "story": "the drag coefficient typed where CdA belongs",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 79.2011162811547
+    },
+    "hwy": {
+     "energy_wh_km": 77.63021533002741
+    },
+    "us06": {
+     "energy_wh_km": 103.79972544367766
+    },
+    "nedc": {
+     "energy_wh_km": 81.84676280003401
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 79.23924986824889,
+     "hwy": 77.66622390755253,
+     "us06": 103.76937070622287,
+     "nedc": 81.88694301868625
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:model3",
+   "field": "cda_m2",
+   "key": "cd_for_cda",
+   "story": "the drag coefficient typed where CdA belongs",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 80.55524629273367
+    },
+    "hwy": {
+     "energy_wh_km": 71.79646780310014
+    },
+    "us06": {
+     "energy_wh_km": 97.10499054528321
+    },
+    "nedc": {
+     "energy_wh_km": 79.11807345647192
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 80.59154199573071,
+     "hwy": 71.8346946418651,
+     "us06": 97.14050030753563,
+     "nedc": 79.1385074708385
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:fusion",
+   "field": "cda_m2",
+   "key": "cd_for_cda",
+   "story": "the drag coefficient typed where CdA belongs",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 571.5391568939407
+    },
+    "hwy": {
+     "energy_wh_km": 352.9312367519845
+    },
+    "us06": {
+     "energy_wh_km": 547.467220096866
+    },
+    "nedc": {
+     "energy_wh_km": 534.1888660646964
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 571.5082156242496,
+     "hwy": 353.0072767244072,
+     "us06": 547.3688193581884,
+     "nedc": 534.2868490203196
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:pacifica",
+   "field": "cda_m2",
+   "key": "cd_for_cda",
+   "story": "the drag coefficient typed where CdA belongs",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 888.0654469385398
+    },
+    "hwy": {
+     "energy_wh_km": 474.77700646632496
+    },
+    "us06": {
+     "energy_wh_km": 774.1570812728331
+    },
+    "nedc": {
+     "energy_wh_km": 802.20452222049
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 887.927932434718,
+     "hwy": 474.8756079290676,
+     "us06": 774.0552584888321,
+     "nedc": 802.3406025340439
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:zoe",
+   "field": "crr",
+   "key": "crr_percent",
+   "story": "rolling resistance typed in percent",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 4543.58578465723
+    },
+    "hwy": {
+     "energy_wh_km": 4519.638446596781
+    },
+    "us06": {
+     "energy_wh_km": 4529.29517834348
+    },
+    "nedc": {
+     "energy_wh_km": 4537.429969622838
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 4625.4745957089945,
+     "hwy": 4671.017849688175,
+     "us06": 4710.3283706906095,
+     "nedc": 4646.744902123901
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:leaf",
+   "field": "crr",
+   "key": "crr_percent",
+   "story": "rolling resistance typed in percent",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 3842.0994273504957
+    },
+    "hwy": {
+     "energy_wh_km": 3819.6387022703225
+    },
+    "us06": {
+     "energy_wh_km": 3829.8416193677967
+    },
+    "nedc": {
+     "energy_wh_km": 3841.070273862269
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 3952.165154227636,
+     "hwy": 3996.6403374978922,
+     "us06": 4035.2863374105773,
+     "nedc": 3973.30070987126
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:model3",
+   "field": "crr",
+   "key": "crr_percent",
+   "story": "rolling resistance typed in percent",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 3610.5631642455987
+    },
+    "hwy": {
+     "energy_wh_km": 3580.9162091549365
+    },
+    "us06": {
+     "energy_wh_km": 3586.3400936239927
+    },
+    "nedc": {
+     "energy_wh_km": 3602.4139164635612
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 3642.9436314738286,
+     "hwy": 3711.5886293175895,
+     "us06": 3734.6990903037185,
+     "nedc": 3672.87341046008
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:fusion",
+   "field": "crr",
+   "key": "crr_percent",
+   "story": "rolling resistance typed in percent",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 11833.370907915627
+    },
+    "hwy": {
+     "energy_wh_km": 11904.35606930487
+    },
+    "us06": {
+     "energy_wh_km": 11878.79051305735
+    },
+    "nedc": {
+     "energy_wh_km": 11792.815056746202
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 9192.859094827676,
+     "hwy": 5516.790746878075,
+     "us06": 4786.718575324306,
+     "nedc": 7812.573658331818
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:pacifica",
+   "field": "crr",
+   "key": "crr_percent",
+   "story": "rolling resistance typed in percent",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 15489.40035603479
+    },
+    "hwy": {
+     "energy_wh_km": 15320.887354088434
+    },
+    "us06": {
+     "energy_wh_km": 15359.283292269474
+    },
+    "nedc": {
+     "energy_wh_km": 15473.381666673267
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 13757.181732045183,
+     "hwy": 9165.285349970927,
+     "us06": 7840.251202534395,
+     "nedc": 11995.311271417362
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:zoe",
+   "field": "wheel_radius_m",
+   "key": "dia_for_radius",
+   "story": "wheel diameter typed as the radius",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 112.77530458771574
+    },
+    "hwy": {
+     "energy_wh_km": 136.16839569043387
+    },
+    "us06": {
+     "energy_wh_km": 189.45323818589557
+    },
+    "nedc": {
+     "energy_wh_km": 127.58714858610966
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 112.81790697525707,
+     "hwy": 136.21298087749972,
+     "us06": 189.49617754244034,
+     "nedc": 127.63165237554857
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:leaf",
+   "field": "wheel_radius_m",
+   "key": "dia_for_radius",
+   "story": "wheel diameter typed as the radius",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 99.38165104979508
+    },
+    "hwy": {
+     "energy_wh_km": 127.12536926609327
+    },
+    "us06": {
+     "energy_wh_km": 174.77051724403955
+    },
+    "nedc": {
+     "energy_wh_km": 115.9467855961824
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 99.41998414429091,
+     "hwy": 127.16502989533562,
+     "us06": 174.80376633867448,
+     "nedc": 115.98648386195575
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:model3",
+   "field": "wheel_radius_m",
+   "key": "dia_for_radius",
+   "story": "wheel diameter typed as the radius",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 90.87455756694712
+    },
+    "hwy": {
+     "energy_wh_km": 97.7898638478488
+    },
+    "us06": {
+     "energy_wh_km": 133.0284741048745
+    },
+    "nedc": {
+     "energy_wh_km": 96.95411172422165
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 90.91119153830567,
+     "hwy": 97.82857032896193,
+     "us06": 133.06470191040253,
+     "nedc": 96.9927098049311
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:fusion",
+   "field": "wheel_radius_m",
+   "key": "dia_for_radius",
+   "story": "wheel diameter typed as the radius",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 606.3572666371148
+    },
+    "hwy": {
+     "energy_wh_km": 444.9845814691074
+    },
+    "us06": {
+     "energy_wh_km": 682.1149228840542
+    },
+    "nedc": {
+     "energy_wh_km": 597.8281982831745
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 606.3279292213733,
+     "hwy": 445.06323214417904,
+     "us06": 682.1306115730149,
+     "nedc": 597.9151481604038
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:pacifica",
+   "field": "wheel_radius_m",
+   "key": "dia_for_radius",
+   "story": "wheel diameter typed as the radius",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 939.7416511197926
+    },
+    "hwy": {
+     "energy_wh_km": 609.8609509536128
+    },
+    "us06": {
+     "energy_wh_km": 978.5276579523126
+    },
+    "nedc": {
+     "energy_wh_km": 908.1875946314198
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 939.6049549349001,
+     "hwy": 609.9694256140128,
+     "us06": 978.5626655054739,
+     "nedc": 908.3083370709768
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fsae",
+   "field": "tire_radius_m",
+   "key": "dia_for_radius",
+   "story": "wheel diameter typed as the radius",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12802419533258347,
+     "peak_current_a": 81.13136206429459,
+     "rms_current_a": 37.936932239653906,
+     "min_pack_voltage_v": 274.6958447493538,
+     "pack_temp_rise_k": 1.0255104265579575,
+     "drive_loss_kwh_per_km": 0.019879003375852813,
+     "pack_resistance_ohm": 0.09179127163260921,
+     "launch_75m_time_s": 4.829041131581815,
+     "launch_75m_speed_ms": 27.943926490103085
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:zoe",
+   "field": "motor_power_w",
+   "key": "hp_for_kw",
+   "story": "a horsepower rating typed as kW",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 114.75329295929909
+    },
+    "hwy": {
+     "energy_wh_km": 137.7245309450057
+    },
+    "us06": {
+     "energy_wh_km": 191.0007520893857
+    },
+    "nedc": {
+     "energy_wh_km": 129.26634106570336
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 114.79623317517117,
+     "hwy": 137.76927843089382,
+     "us06": 191.04363156860626,
+     "nedc": 129.311104995879
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:leaf",
+   "field": "motor_power_w",
+   "key": "hp_for_kw",
+   "story": "a horsepower rating typed as kW",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 101.14848714649855
+    },
+    "hwy": {
+     "energy_wh_km": 128.32320896166664
+    },
+    "us06": {
+     "energy_wh_km": 176.17237796511625
+    },
+    "nedc": {
+     "energy_wh_km": 117.57565540166514
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 101.18710321407262,
+     "hwy": 128.3632102881844,
+     "us06": 176.19146562073212,
+     "nedc": 117.5995963698758
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:model3",
+   "field": "motor_power_w",
+   "key": "hp_for_kw",
+   "story": "a horsepower rating typed as kW",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 92.74315047094875
+    },
+    "hwy": {
+     "energy_wh_km": 99.23467436844967
+    },
+    "us06": {
+     "energy_wh_km": 135.3576951173014
+    },
+    "nedc": {
+     "energy_wh_km": 98.70324008440198
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 92.77996109160777,
+     "hwy": 99.27366335626294,
+     "us06": 135.39424594932026,
+     "nedc": 98.74208726061771
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:fusion",
+   "field": "engine_power_w",
+   "key": "hp_for_kw",
+   "story": "a horsepower rating typed as kW",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 663.4025337304829
+    },
+    "hwy": {
+     "energy_wh_km": 485.4592017092234
+    },
+    "us06": {
+     "energy_wh_km": 699.5219043267457
+    },
+    "nedc": {
+     "energy_wh_km": 648.9745566765629
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 663.3732147109652,
+     "hwy": 485.53831785022186,
+     "us06": 699.0593679586268,
+     "nedc": 649.0663761460781
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:pacifica",
+   "field": "engine_power_w",
+   "key": "hp_for_kw",
+   "story": "a horsepower rating typed as kW",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 1052.893519895745
+    },
+    "hwy": {
+     "energy_wh_km": 672.1563765985194
+    },
+    "us06": {
+     "energy_wh_km": 1005.2645809361353
+    },
+    "nedc": {
+     "energy_wh_km": 1002.8103161910344
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 1052.7243616198339,
+     "hwy": 672.2579918027714,
+     "us06": 1005.1845671636559,
+     "nedc": 1002.9444757845798
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fsae",
+   "field": "pack_power_kw",
+   "key": "hp_for_kw",
+   "story": "a horsepower rating typed as kW",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:zoe",
+   "field": "aux_power_w",
+   "key": "aux_kilo",
+   "story": "300 W of auxiliaries typed as 0.3 (kW into a W field)",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 105.26085557495244
+    },
+    "hwy": {
+     "energy_wh_km": 133.05416023241807
+    },
+    "us06": {
+     "energy_wh_km": 186.6726828561876
+    },
+    "nedc": {
+     "energy_wh_km": 120.41438378801791
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 105.30341909443298,
+     "hwy": 133.09869791543005,
+     "us06": 186.71555359429428,
+     "nedc": 120.45888855586894
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:leaf",
+   "field": "aux_power_w",
+   "key": "aux_kilo",
+   "story": "300 W of auxiliaries typed as 0.3 (kW into a W field)",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 91.69918439704162
+    },
+    "hwy": {
+     "energy_wh_km": 123.96417443789245
+    },
+    "us06": {
+     "energy_wh_km": 171.7937457185495
+    },
+    "nedc": {
+     "energy_wh_km": 108.62793831370077
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 91.73564870672811,
+     "hwy": 124.00383655495946,
+     "us06": 171.83172489868463,
+     "nedc": 108.66763072324845
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:model3",
+   "field": "aux_power_w",
+   "key": "aux_kilo",
+   "story": "300 W of auxiliaries typed as 0.3 (kW into a W field)",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 83.22237493476452
+    },
+    "hwy": {
+     "energy_wh_km": 94.63249889523107
+    },
+    "us06": {
+     "energy_wh_km": 130.07182543378448
+    },
+    "nedc": {
+     "energy_wh_km": 89.66066788766653
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 83.25897617468955,
+     "hwy": 94.67114246718813,
+     "us06": 130.09292124293316,
+     "nedc": 89.69926028582094
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:fusion",
+   "field": "aux_power_w",
+   "key": "aux_kilo",
+   "story": "300 W of auxiliaries typed as 0.3 (kW into a W field)",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 490.3260930852624
+    },
+    "hwy": {
+     "energy_wh_km": 417.84836399850593
+    },
+    "us06": {
+     "energy_wh_km": 645.5630997045982
+    },
+    "nedc": {
+     "energy_wh_km": 491.69493531071504
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 490.40490564468206,
+     "hwy": 417.92972844287203,
+     "us06": 645.642009242431,
+     "nedc": 491.7870094818607
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:pacifica",
+   "field": "aux_power_w",
+   "key": "aux_kilo",
+   "story": "300 W of auxiliaries typed as 0.3 (kW into a W field)",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 907.1349967261963
+    },
+    "hwy": {
+     "energy_wh_km": 589.9554776742276
+    },
+    "us06": {
+     "energy_wh_km": 963.1984794001938
+    },
+    "nedc": {
+     "energy_wh_km": 868.5303523353269
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 907.0005082733222,
+     "hwy": 590.0601854920934,
+     "us06": 963.249440451354,
+     "nedc": 868.6577712885951
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:zoe",
+   "field": "transmission_eff",
+   "key": "eff_percent",
+   "story": "drive efficiency typed in percent",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": -619.3759344328237,
+     "hwy": -99.55181309713677,
+     "us06": -241.1915490526385,
+     "nedc": -336.813882686956
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:leaf",
+   "field": "transmission_eff",
+   "key": "eff_percent",
+   "story": "drive efficiency typed in percent",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": -514.3134958416857,
+     "hwy": -83.42657360756446,
+     "us06": -195.89512941617647,
+     "nedc": -270.68483871624295
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:model3",
+   "field": "transmission_eff",
+   "key": "eff_percent",
+   "story": "drive efficiency typed in percent",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": -1505.6466249465175,
+     "hwy": -313.17919186355385,
+     "us06": -668.811491754409,
+     "nedc": -792.3525071664579
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:fusion",
+   "field": "transmission_eff",
+   "key": "eff_percent",
+   "story": "drive efficiency typed in percent",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 191.85886318029833,
+     "hwy": 82.78654256839275,
+     "us06": 88.45150294808202,
+     "nedc": 181.24401444795572
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:pacifica",
+   "field": "transmission_eff",
+   "key": "eff_percent",
+   "story": "drive efficiency typed in percent",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 412.06596847179947,
+     "hwy": 167.35509464105806,
+     "us06": 169.27135579938465,
+     "nedc": 388.33970414491193
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fsae",
+   "field": "inverter_eff",
+   "key": "eff_percent",
+   "story": "drive efficiency typed in percent",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.0012982616081240175,
+     "peak_current_a": 0.8006933544989985,
+     "rms_current_a": 0.3759589917980153,
+     "min_pack_voltage_v": 286.01888706038187,
+     "pack_temp_rise_k": 9.718880585296574e-05,
+     "drive_loss_kwh_per_km": -0.10684693034860662,
+     "pack_resistance_ohm": 0.08787157400510646,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:zoe",
+   "field": "transmission_eff",
+   "key": "eff_twice",
+   "story": "the drive efficiency applied twice",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 129.28338106982284
+    },
+    "hwy": {
+     "energy_wh_km": 149.0039112943638
+    },
+    "us06": {
+     "energy_wh_km": 213.11420443918226
+    },
+    "nedc": {
+     "energy_wh_km": 142.95303144295934
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 129.32819587944593,
+     "hwy": 149.05181471067195,
+     "us06": 213.22028811105505,
+     "nedc": 143.00050384537707
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:leaf",
+   "field": "transmission_eff",
+   "key": "eff_twice",
+   "story": "the drive efficiency applied twice",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 103.38267480351101
+    },
+    "hwy": {
+     "energy_wh_km": 130.04077439383659
+    },
+    "us06": {
+     "energy_wh_km": 180.39468348895164
+    },
+    "nedc": {
+     "energy_wh_km": 119.41518167891313
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 103.42137870078152,
+     "hwy": 130.08111692882773,
+     "us06": 180.4799143112611,
+     "nedc": 119.45542821883498
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:model3",
+   "field": "transmission_eff",
+   "key": "eff_twice",
+   "story": "the drive efficiency applied twice",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 94.96516140891552
+    },
+    "hwy": {
+     "energy_wh_km": 100.24798296688006
+    },
+    "us06": {
+     "energy_wh_km": 138.12191584160783
+    },
+    "nedc": {
+     "energy_wh_km": 100.39683005874632
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 94.99907606866638,
+     "hwy": 100.28725117067026,
+     "us06": 138.1535044148976,
+     "nedc": 100.43603709310545
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:fusion",
+   "field": "transmission_eff",
+   "key": "eff_twice",
+   "story": "the drive efficiency applied twice",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 658.4248458849632
+    },
+    "hwy": {
+     "energy_wh_km": 490.6008153477618
+    },
+    "us06": {
+     "energy_wh_km": 775.4525306145055
+    },
+    "nedc": {
+     "energy_wh_km": 651.903868333029
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 658.4040070855431,
+     "hwy": 490.69319280479374,
+     "us06": 776.7064884852543,
+     "nedc": 652.0109932663717
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:pacifica",
+   "field": "transmission_eff",
+   "key": "eff_twice",
+   "story": "the drive efficiency applied twice",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 967.8827229292389
+    },
+    "hwy": {
+     "energy_wh_km": 632.9239352473674
+    },
+    "us06": {
+     "energy_wh_km": 1028.091627836549
+    },
+    "nedc": {
+     "energy_wh_km": 936.4842575502278
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 967.750590114809,
+     "hwy": 633.0401741283215,
+     "us06": 1028.3737182535656,
+     "nedc": 936.612067364956
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fsae",
+   "field": "inverter_eff",
+   "key": "eff_twice",
+   "story": "the drive efficiency applied twice",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.1321463560961742,
+     "peak_current_a": 81.51610882712005,
+     "rms_current_a": 39.24343660707878,
+     "min_pack_voltage_v": 274.2407719074997,
+     "pack_temp_rise_k": 1.0999501002351053,
+     "drive_loss_kwh_per_km": 0.024001164139443542,
+     "pack_resistance_ohm": 0.09217786149608377,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fsae",
+   "field": "motor_peak_torque_nm",
+   "key": "lbft_for_nm",
+   "story": "motor torque from a US datasheet, in lb·ft",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fsae",
+   "field": "final_drive",
+   "key": "ratio_inverted",
+   "story": "gear ratio entered as its inverse",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.1280359876468601,
+     "peak_current_a": 82.05447071356545,
+     "rms_current_a": 38.01956660069409,
+     "min_pack_voltage_v": 274.6000129196653,
+     "pack_temp_rise_k": 1.030130640967684,
+     "drive_loss_kwh_per_km": 0.01989079569012946,
+     "pack_resistance_ohm": 0.09204896203743333,
+     "launch_75m_time_s": 5.973462645852316,
+     "launch_75m_speed_ms": 22.88566417276161
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fsae",
+   "field": "motor_max_rpm",
+   "key": "rpm_for_rads",
+   "story": "motor top speed in rad/s typed into rpm",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fsae",
+   "field": "cell_v",
+   "key": "cell_for_pack_v",
+   "story": "a cell's 3.6 V typed where the pack voltage belongs",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fsae",
+   "field": "cell_ah",
+   "key": "mah_for_ah",
+   "story": "cell capacity in mAh typed into Ah",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.21861075623116,
+     "rms_current_a": 38.06823484557585,
+     "min_pack_voltage_v": 278.74430838030986,
+     "pack_temp_rise_k": 1.0291197576459012,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09348397059374336,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae",
+   "field": "cell_ah",
+   "key": "typo_00_swap",
+   "story": "swap",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:zoe",
+   "field": "crr",
+   "key": "typo_01_drop",
+   "story": "drop",
+   "no_change": true
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:leaf",
+   "field": "transmission_eff",
+   "key": "typo_02_decimal_left",
+   "story": "decimal_left",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 1297.3551502225096
+    },
+    "hwy": {
+     "energy_wh_km": 1114.115605283277
+    },
+    "us06": {
+     "energy_wh_km": 1318.6020410381775
+    },
+    "nedc": {
+     "energy_wh_km": 1138.3627502487543
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 273.53369660207994,
+     "hwy": 260.75350099524843,
+     "us06": 427.52014078858963,
+     "nedc": 277.2106211576433
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:zoe",
+   "field": "aux_power_w",
+   "key": "typo_03_drop",
+   "story": "drop",
+   "no_change": true
+  },
+  {
+   "set": "random",
+   "deck": "fsae",
+   "field": "cg_height_m",
+   "key": "typo_04_swap",
+   "story": "swap",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:leaf",
+   "field": "crr",
+   "key": "typo_05_decimal_left",
+   "story": "decimal_left",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 66.80758981101727
+    },
+    "hwy": {
+     "energy_wh_km": 93.16049913196224
+    },
+    "us06": {
+     "energy_wh_km": 142.141040904693
+    },
+    "nedc": {
+     "energy_wh_km": 81.90029002547512
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 66.81138051056551,
+     "hwy": 93.16446421437688,
+     "us06": 142.12124423005255,
+     "nedc": 81.90431655716782
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae",
+   "field": "cg_height_m",
+   "key": "typo_06_swap",
+   "story": "swap",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:pacifica",
+   "field": "mass_kg",
+   "key": "typo_07_swap",
+   "story": "swap",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 1034.9427535022214
+    },
+    "hwy": {
+     "energy_wh_km": 657.2576170882566
+    },
+    "us06": {
+     "energy_wh_km": 1103.829886390587
+    },
+    "nedc": {
+     "energy_wh_km": 987.6169113547143
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 1034.8247024685427,
+     "hwy": 657.3914693503642,
+     "us06": 1104.4361015768163,
+     "nedc": 987.7650228534606
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:fusion",
+   "field": "wheel_radius_m",
+   "key": "typo_08_decimal_left",
+   "story": "decimal_left",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 1036.7214371867897
+    },
+    "hwy": {
+     "energy_wh_km": 587.749391977952
+    },
+    "us06": {
+     "energy_wh_km": 1274.9298903667757
+    },
+    "nedc": {
+     "energy_wh_km": 894.419970499898
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 278.356009263721,
+     "hwy": 77.46031077647433,
+     "us06": 112.52562158135912,
+     "nedc": 240.10177876014356
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:pacifica",
+   "field": "transmission_eff",
+   "key": "typo_09_drop",
+   "story": "drop",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 969.32637077184
+    },
+    "hwy": {
+     "energy_wh_km": 634.1822721915896
+    },
+    "us06": {
+     "energy_wh_km": 1030.6784233855813
+    },
+    "nedc": {
+     "energy_wh_km": 937.965035366848
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 969.1943759575089,
+     "hwy": 634.2987285939348,
+     "us06": 1030.974558785591,
+     "nedc": 938.0930907881792
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:zoe",
+   "field": "crr",
+   "key": "typo_10_decimal_left",
+   "story": "decimal_left",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 75.8921791042047
+    },
+    "hwy": {
+     "energy_wh_km": 97.0284908880818
+    },
+    "us06": {
+     "energy_wh_km": 152.16700098987243
+    },
+    "nedc": {
+     "energy_wh_km": 88.36552151163785
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 75.89636807465995,
+     "hwy": 97.03292657773447,
+     "us06": 152.17126436926685,
+     "nedc": 88.37004720068917
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:pacifica",
+   "field": "idle_fuel_w",
+   "key": "typo_11_decimal_right",
+   "story": "decimal_right",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 4127.312038040026
+    },
+    "hwy": {
+     "energy_wh_km": 1673.8574752676052
+    },
+    "us06": {
+     "energy_wh_km": 1842.0077028565465
+    },
+    "nedc": {
+     "energy_wh_km": 3892.186622360755
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 4125.010546392939,
+     "hwy": 1673.857773498602,
+     "us06": 1841.4445955197593,
+     "nedc": 3892.193893915982
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae",
+   "field": "driveline_eff",
+   "key": "typo_12_drop",
+   "story": "drop",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae",
+   "field": "cg_height_m",
+   "key": "typo_13_decimal_left",
+   "story": "decimal_left",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:zoe",
+   "field": "transmission_eff",
+   "key": "typo_14_drop",
+   "story": "drop",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 117.35566193531844
+    },
+    "hwy": {
+     "energy_wh_km": 139.53655718192684
+    },
+    "us06": {
+     "energy_wh_km": 195.90319979346904
+    },
+    "nedc": {
+     "energy_wh_km": 131.7699121753101
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 117.39879836502294,
+     "hwy": 139.58194923550076,
+     "us06": 195.94677828529163,
+     "nedc": 131.81516500118778
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:pacifica",
+   "field": "cda_m2",
+   "key": "typo_15_swap",
+   "story": "swap",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 942.0474333051541
+    },
+    "hwy": {
+     "energy_wh_km": 610.5696388789353
+    },
+    "us06": {
+     "energy_wh_km": 981.7089095697758
+    },
+    "nedc": {
+     "energy_wh_km": 909.8576552538489
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 941.9108714264387,
+     "hwy": 610.678292124346,
+     "us06": 981.7607881192598,
+     "nedc": 909.9784929618187
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:pacifica",
+   "field": "wheel_radius_m",
+   "key": "typo_16_decimal_right",
+   "story": "decimal_right",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 939.0033637338131
+    },
+    "hwy": {
+     "energy_wh_km": 609.6341429296392
+    },
+    "us06": {
+     "energy_wh_km": 977.5133845787747
+    },
+    "nedc": {
+     "energy_wh_km": 907.6528390352987
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 938.8665693524493,
+     "hwy": 609.7429953939344,
+     "us06": 961.0715873388463,
+     "nedc": 907.7735423608527
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:zoe",
+   "field": "aux_power_w",
+   "key": "typo_17_swap",
+   "story": "swap",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 111.75452213182183
+    },
+    "hwy": {
+     "energy_wh_km": 135.69000297301469
+    },
+    "us06": {
+     "energy_wh_km": 189.32058064437635
+    },
+    "nedc": {
+     "energy_wh_km": 126.53073412830024
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 111.79708565130235,
+     "hwy": 135.7345406560267,
+     "us06": 189.363451382483,
+     "nedc": 126.57523889615126
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:fusion",
+   "field": "idle_fuel_w",
+   "key": "typo_18_decimal_right",
+   "story": "decimal_right",
+   "no_change": true
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:fusion",
+   "field": "wheel_radius_m",
+   "key": "typo_19_decimal_right",
+   "story": "decimal_right",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 605.4828428949522
+    },
+    "hwy": {
+     "energy_wh_km": 444.7473285838356
+    },
+    "us06": {
+     "energy_wh_km": 680.8832691235884
+    },
+    "nedc": {
+     "energy_wh_km": 597.1809788910606
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 605.4533742973846,
+     "hwy": 444.8258011961499,
+     "us06": 668.1856060520518,
+     "nedc": 597.2679072768437
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae",
+   "field": "tire_radius_m",
+   "key": "typo_20_decimal_right",
+   "story": "decimal_right",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12912127840911458,
+     "peak_current_a": 82.7795615408626,
+     "rms_current_a": 38.378222885095255,
+     "min_pack_voltage_v": 274.4743160532731,
+     "pack_temp_rise_k": 1.0503280315347183,
+     "drive_loss_kwh_per_km": 0.02097608645238393,
+     "pack_resistance_ohm": 0.09208840993659333,
+     "launch_75m_time_s": 9.13860095859101,
+     "launch_75m_speed_ms": 15.201303639558859
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae",
+   "field": "cell_ohm",
+   "key": "typo_21_swap",
+   "story": "swap",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae",
+   "field": "mu",
+   "key": "typo_22_drop",
+   "story": "drop",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.732461020825502,
+     "launch_75m_speed_ms": 27.96988257753614
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae",
+   "field": "wheelbase_m",
+   "key": "typo_23_swap",
+   "story": "swap",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae",
+   "field": "cell_ah",
+   "key": "typo_24_decimal_right",
+   "story": "decimal_right",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.29064452977619,
+     "rms_current_a": 38.10532053932332,
+     "min_pack_voltage_v": 278.4910754231831,
+     "pack_temp_rise_k": 1.0315619119089092,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09327242878583569,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:pacifica",
+   "field": "wheel_radius_m",
+   "key": "typo_25_drop",
+   "story": "drop",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 942.0930651345826
+    },
+    "hwy": {
+     "energy_wh_km": 610.5858607985663
+    },
+    "us06": {
+     "energy_wh_km": 981.7743627962747
+    },
+    "nedc": {
+     "energy_wh_km": 909.8920017374384
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 941.956503992006,
+     "hwy": 610.6945184149812,
+     "us06": 981.8265991351528,
+     "nedc": 910.012838415981
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:leaf",
+   "field": "aux_power_w",
+   "key": "typo_26_decimal_left",
+   "story": "decimal_left",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 92.48413310171814
+    },
+    "hwy": {
+     "energy_wh_km": 124.28279279115138
+    },
+    "us06": {
+     "energy_wh_km": 172.11383664620868
+    },
+    "nedc": {
+     "energy_wh_km": 109.36727736582283
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 92.52059741140462,
+     "hwy": 124.3224549082184,
+     "us06": 172.1518158263438,
+     "nedc": 109.4069697753705
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:leaf",
+   "field": "transmission_eff",
+   "key": "typo_27_decimal_left",
+   "story": "decimal_left",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 1297.3551502225096
+    },
+    "hwy": {
+     "energy_wh_km": 1114.115605283277
+    },
+    "us06": {
+     "energy_wh_km": 1318.6020410381775
+    },
+    "nedc": {
+     "energy_wh_km": 1138.3627502487543
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 273.53369660207994,
+     "hwy": 260.75350099524843,
+     "us06": 427.52014078858963,
+     "nedc": 277.2106211576433
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:leaf",
+   "field": "crr",
+   "key": "typo_28_swap",
+   "story": "swap",
+   "no_change": true
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:pacifica",
+   "field": "cda_m2",
+   "key": "typo_29_decimal_right",
+   "story": "decimal_right",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 1871.333978790704
+    },
+    "hwy": {
+     "energy_wh_km": 3173.4927363314237
+    },
+    "us06": {
+     "energy_wh_km": 4795.430150414684
+    },
+    "nedc": {
+     "energy_wh_km": 2598.34916040397
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 1871.2221878744544,
+     "hwy": 3173.6501198889628,
+     "us06": 4751.895790889711,
+     "nedc": 2593.7787312252026
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:pacifica",
+   "field": "aux_power_w",
+   "key": "typo_30_swap",
+   "story": "swap",
+   "no_change": true
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:pacifica",
+   "field": "crr",
+   "key": "typo_31_swap",
+   "story": "swap",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 916.4037297300537
+    },
+    "hwy": {
+     "energy_wh_km": 581.6686855011144
+    },
+    "us06": {
+     "energy_wh_km": 951.7399877164996
+    },
+    "nedc": {
+     "energy_wh_km": 876.1254131395436
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 916.2414972584356,
+     "hwy": 581.74369059195,
+     "us06": 951.6651880782288,
+     "nedc": 876.2148379335545
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae",
+   "field": "cg_height_m",
+   "key": "typo_32_decimal_right",
+   "story": "decimal_right",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:pacifica",
+   "field": "cda_m2",
+   "key": "typo_33_swap",
+   "story": "swap",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 942.0474333051541
+    },
+    "hwy": {
+     "energy_wh_km": 610.5696388789353
+    },
+    "us06": {
+     "energy_wh_km": 981.7089095697758
+    },
+    "nedc": {
+     "energy_wh_km": 909.8576552538489
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 941.9108714264387,
+     "hwy": 610.678292124346,
+     "us06": 981.7607881192598,
+     "nedc": 909.9784929618187
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae",
+   "field": "cla_m2",
+   "key": "typo_34_drop",
+   "story": "drop",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:zoe",
+   "field": "transmission_eff",
+   "key": "typo_35_decimal_left",
+   "story": "decimal_left",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 1423.2454991751786
+    },
+    "hwy": {
+     "energy_wh_km": 1277.1480166669646
+    },
+    "us06": {
+     "energy_wh_km": 1530.294065914875
+    },
+    "nedc": {
+     "energy_wh_km": 1263.364035213821
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 274.0067771624147,
+     "hwy": 260.181217782842,
+     "us06": 421.85362429332355,
+     "nedc": 277.10602814255856
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae",
+   "field": "motor_peak_torque_nm",
+   "key": "typo_36_drop",
+   "story": "drop",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae",
+   "field": "final_drive",
+   "key": "typo_37_swap",
+   "story": "swap",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12912127840911458,
+     "peak_current_a": 82.7795615408626,
+     "rms_current_a": 38.378222885095255,
+     "min_pack_voltage_v": 274.4743160532731,
+     "pack_temp_rise_k": 1.0503280315347183,
+     "drive_loss_kwh_per_km": 0.02097608645238393,
+     "pack_resistance_ohm": 0.09208840993659458,
+     "launch_75m_time_s": 9.13860095859101,
+     "launch_75m_speed_ms": 15.201303639558859
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae",
+   "field": "mu",
+   "key": "typo_38_decimal_right",
+   "story": "decimal_right",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 3.981472582921833,
+     "launch_75m_speed_ms": 28.735564961920154
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae",
+   "field": "motor_max_rpm",
+   "key": "typo_39_decimal_right",
+   "story": "decimal_right",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae",
+   "field": "wheelbase_m",
+   "key": "typo_40_drop",
+   "story": "drop",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:pacifica",
+   "field": "engine_power_w",
+   "key": "typo_41_decimal_left",
+   "story": "decimal_left",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 802.7646311531264,
+     "hwy": 553.1363519506042,
+     "us06": 598.7826802024106,
+     "nedc": 737.226362167297
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:zoe",
+   "field": "crr",
+   "key": "typo_42_decimal_left",
+   "story": "decimal_left",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 75.8921791042047
+    },
+    "hwy": {
+     "energy_wh_km": 97.0284908880818
+    },
+    "us06": {
+     "energy_wh_km": 152.16700098987243
+    },
+    "nedc": {
+     "energy_wh_km": 88.36552151163785
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 75.89636807465995,
+     "hwy": 97.03292657773447,
+     "us06": 152.17126436926685,
+     "nedc": 88.37004720068917
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:leaf",
+   "field": "transmission_eff",
+   "key": "typo_43_drop",
+   "story": "drop",
+   "no_change": true
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:fusion",
+   "field": "aux_power_w",
+   "key": "typo_44_drop",
+   "story": "drop",
+   "no_change": true
+  },
+  {
+   "set": "random",
+   "deck": "fsae",
+   "field": "driveline_eff",
+   "key": "typo_45_decimal_left",
+   "story": "decimal_left",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.24800596656870258,
+     "peak_current_a": 162.26027749290586,
+     "rms_current_a": 75.53018412500394,
+     "min_pack_voltage_v": 260.82464993113365,
+     "pack_temp_rise_k": 4.485285726058123,
+     "drive_loss_kwh_per_km": 0.03171558265524129,
+     "pack_resistance_ohm": 0.10260984135786726,
+     "launch_75m_time_s": 10.020614362465725,
+     "launch_75m_speed_ms": 12.751500787483613
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:fusion",
+   "field": "transmission_eff",
+   "key": "typo_46_decimal_right",
+   "story": "decimal_right",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 257.1790445137169,
+     "hwy": 142.3950765672152,
+     "us06": 171.56535730346695,
+     "nedc": 244.9799573605888
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:leaf",
+   "field": "cda_m2",
+   "key": "typo_47_decimal_right",
+   "story": "decimal_right",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 391.034174968759
+    },
+    "hwy": {
+     "energy_wh_km": 798.1358694867483
+    },
+    "us06": {
+     "energy_wh_km": 858.7461350571601
+    },
+    "nedc": {
+     "energy_wh_km": 500.65783242494035
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 396.52352518821294,
+     "hwy": 837.6204406341993,
+     "us06": 1241.5146780533053,
+     "nedc": 613.5499625252947
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:pacifica",
+   "field": "crr",
+   "key": "typo_48_swap",
+   "story": "swap",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 941.0272891242982
+    },
+    "hwy": {
+     "energy_wh_km": 609.3910823673925
+    },
+    "us06": {
+     "energy_wh_km": 980.5089597836259
+    },
+    "nedc": {
+     "energy_wh_km": 908.5432728089747
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 940.8899716705962,
+     "hwy": 609.4982637229128,
+     "us06": 980.555448105148,
+     "nedc": 908.6631397907286
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:leaf",
+   "field": "motor_power_w",
+   "key": "typo_49_swap",
+   "story": "swap",
+   "no_change": true
+  },
+  {
+   "set": "random",
+   "deck": "fsae",
+   "field": "cell_ohm",
+   "key": "typo_50_swap",
+   "story": "swap",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:model3",
+   "field": "aux_power_w",
+   "key": "typo_51_decimal_left",
+   "story": "decimal_left",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 84.00732363944104
+    },
+    "hwy": {
+     "energy_wh_km": 94.95111724849
+    },
+    "us06": {
+     "energy_wh_km": 130.39190099059851
+    },
+    "nedc": {
+     "energy_wh_km": 90.40000693978858
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 84.04392487936606,
+     "hwy": 94.98976082044706,
+     "us06": 130.41299679974716,
+     "nedc": 90.43859933794299
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:leaf",
+   "field": "motor_power_w",
+   "key": "typo_52_drop",
+   "story": "drop",
+   "no_change": true
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:zoe",
+   "field": "mass_kg",
+   "key": "typo_53_decimal_left",
+   "story": "decimal_left",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 51.563974571058914
+    },
+    "hwy": {
+     "energy_wh_km": 92.02739857843707
+    },
+    "us06": {
+     "energy_wh_km": 131.1231266863122
+    },
+    "nedc": {
+     "energy_wh_km": 72.46073761238175
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 51.56866314126153,
+     "hwy": 92.03198457715551,
+     "us06": 131.1276184329479,
+     "nedc": 72.4654048521909
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:fusion",
+   "field": "engine_power_w",
+   "key": "typo_54_decimal_right",
+   "story": "decimal_right",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 1204.8157593527114
+    },
+    "hwy": {
+     "energy_wh_km": 986.3837077716597
+    },
+    "us06": {
+     "energy_wh_km": 1277.3245025570789
+    },
+    "nedc": {
+     "energy_wh_km": 1158.5076216237753
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 1204.8663351865594,
+     "hwy": 986.5702217445727,
+     "us06": 1279.8790279011987,
+     "nedc": 1158.7062637269937
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae",
+   "field": "cda_m2",
+   "key": "typo_55_swap",
+   "story": "swap",
+   "no_change": true
+  },
+  {
+   "set": "random",
+   "deck": "fsae",
+   "field": "cell_ah",
+   "key": "typo_56_swap",
+   "story": "swap",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.12953428696369873,
+     "peak_current_a": 79.95478901842687,
+     "rms_current_a": 38.449900361810045,
+     "min_pack_voltage_v": 274.4940179068568,
+     "pack_temp_rise_k": 1.0543955635343423,
+     "drive_loss_kwh_per_km": 0.021389095006968083,
+     "pack_resistance_ohm": 0.09203004575076813,
+     "launch_75m_time_s": 4.8018254408661925,
+     "launch_75m_speed_ms": 27.868355871233536
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:model3",
+   "field": "motor_power_w",
+   "key": "typo_57_decimal_left",
+   "story": "decimal_left",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 82.61418254743698,
+     "hwy": 91.54798336603636,
+     "us06": 143.25279414613408,
+     "nedc": 90.52267069981636
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:fusion",
+   "field": "engine_power_w",
+   "key": "typo_58_decimal_left",
+   "story": "decimal_left",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 451.9309977725197,
+     "hwy": 396.72147135854675,
+     "us06": 369.6469660545005,
+     "nedc": 414.16236671262567
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:zoe",
+   "field": "cda_m2",
+   "key": "typo_59_drop",
+   "story": "drop",
+   "no_change": true
+  }
+ ]
+}

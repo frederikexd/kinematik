@@ -12,12 +12,15 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import gigo_benchmark as gb  # noqa: E402
 
 
-def test_the_seal_holds_the_catalog_the_runner_uses():
-    rec = json.loads(gb.SEAL.read_text())
+@pytest.mark.parametrize("seal, predictions, extra", [(gb.SEAL1, gb.ROUND1_PREDICTIONS, {"suspension/plausibility.py"}),
+                                                     (gb.SEAL, gb.PREDICTIONS, set())])
+def test_each_seal_holds_the_catalog_the_runner_uses(seal, predictions, extra):
+    """Both rounds share the catalog; round 2 adds the plausibility module to the sealed code."""
+    rec = json.loads(seal.read_text())
     assert rec["corruptions"] == json.loads(json.dumps(gb.systematic() + gb.curated(), ensure_ascii=False))
-    assert rec["predictions"] == gb.PREDICTIONS and rec["random"]["n"] == gb.N_RANDOM
+    assert rec["predictions"] == predictions and rec["random"]["n"] == gb.N_RANDOM
     assert rec["gates"]["gate2_rel"] == gb.GATE2_REL and rec["gates"]["harm_rel_fastsim"] == gb.HARM_REL
-    assert set(rec["code_sha256"]) == set(gb.SEALED_CODE) and rec["created_utc"].endswith("Z")
+    assert set(rec["code_sha256"]) | extra == set(gb.SEALED_CODE) and rec["created_utc"].endswith("Z")
 
 
 def test_every_field_meets_every_confusion_of_its_dimension():
@@ -57,3 +60,42 @@ def test_a_curated_error_hits_the_right_input_of_the_formula_student_deck():
     out = gb.corrupt_fsae(inp, c)
     assert inp["ev"]["pack"]["series"] == 1 and out["ev"]["pack"]["cell_v"] == 3.6   # the pack is one lumped cell
     assert json.dumps(inp) != json.dumps(out) and json.dumps(gb._fsae_deck()) == json.dumps(inp)   # NaN-safe
+
+
+def test_the_stored_round_one_run_grades_as_reported():
+    """The run of 6 Nov 2026 (seed: seal commit 4c18a8a): Gate 1 0 of 120 harmful, Gate 2 99 of 99, no false alarm.
+    Re-graded only while the code is still the sealed code."""
+    import hashlib
+    digest, name = (gb.BENCH1 / "MANIFEST.sha256").read_text().split()
+    assert hashlib.sha256((gb.BENCH1 / name).read_bytes()).hexdigest() == digest
+    runs = json.loads(gb.RUNS1.read_text())
+    assert runs["seed_commit"] == "4c18a8ae7579eee7a5eceaf85f99685983c5c46c"
+    rec = json.loads(gb.SEAL1.read_text())
+    if rec["code_sha256"] != gb.code_fingerprint():
+        pytest.skip("the code has moved on from the sealed commit; the stored GRADED.txt is the record")
+    gr = gb.grade(runs)
+    a = gb.summarize(gr)["all"]
+    assert (a["corruptions"], a["harmful"], a["no_change"], a["tool_refused"]) == (265, 120, 16, 31)
+    assert (a["gate1_harmful"], a["gate2_harmful"], a["gate2_applicable"], a["either_harmful"]) == (0, 99, 99, 99)
+    assert gr["false_alarms_gate1"] == [] and gr["false_alarms_gate2"] == []
+    assert len(a["silent_harmful"]) == 21 and all(s.startswith("fsae ") for s in a["silent_harmful"])
+
+
+def test_the_stored_round_two_run_grades_as_reported():
+    """Round 2 (seed: seal commit 383bda9, with suspension/plausibility.py at entry): Gate 1 65 of 119 harmful, 18 of
+    20 on the Formula Student deck; Gate 2 99 of 99; no false alarm. Re-graded only while the code is the sealed code."""
+    import hashlib
+    digest, name = (gb.BENCH / "MANIFEST.sha256").read_text().split()
+    assert hashlib.sha256((gb.BENCH / name).read_bytes()).hexdigest() == digest
+    runs = json.loads(gb.RUNS.read_text())
+    assert runs["seed_commit"] == "383bda9126b0885acfe3e6ad0b8e62b6202740a9"
+    if json.loads(gb.SEAL.read_text())["code_sha256"] != gb.code_fingerprint():
+        pytest.skip("the code has moved on from the sealed commit; the stored GRADED.txt is the record")
+    gr = gb.grade(runs)
+    a = gb.summarize(gr)["all"]
+    assert (a["corruptions"], a["harmful"], a["no_change"], a["tool_refused"]) == (269, 119, 12, 35)
+    assert (a["gate1_harmful"], a["gate2_harmful"], a["gate2_applicable"], a["either_harmful"]) == (65, 99, 99, 117)
+    fs = [r for r in gr["rows"] if not r.get("status") and r["harmful"] and r["deck"] == "fsae"]
+    assert (sum(r["gate1"] for r in fs), len(fs)) == (18, 20)
+    assert gr["false_alarms_gate1"] == [] and gr["false_alarms_gate2"] == []
+    assert sorted(a["silent_harmful"]) == ["fsae inverter_eff typo_15_drop (23%)", "fsae mass_kg driver_dropped (16%)"]

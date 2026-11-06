@@ -1,0 +1,9 @@
+case hock_fs2
+vehicle data Vehicle_data_dwishbone
+event CRG Hockenheim F
+fs_car 1
+speed 1
+pedal 0.1
+run 2026-11-05 21:44:57Z
+wall time 510 s
+MATLAB 26.2.0.3433840 (R2026b) Update 1

@@ -1,0 +1,52 @@
+
+systematic: 160 corruptions, 74 harmful (beyond the fitness bar), 22 refused by FASTSim itself
+  Gate 1, at entry:        0/74 (0%) of the harmful ones
+  Gate 2, second opinion:  61/61 (100%) of the harmful ones on FASTSim decks
+  either gate:             61/74 (82%)
+  left the value unchanged (not counted): 5
+    silent and harmful: fsae mass_kg lb_into_kg (108%)
+    silent and harmful: fsae mass_kg kg_into_lb (33%)
+    silent and harmful: fsae mass_kg g_into_kg (7610642%)
+    silent and harmful: fsae mass_kg t_into_kg (52%)
+    silent and harmful: fsae cda_m2 ft2_into_m2 (1157%)
+    silent and harmful: fsae cda_m2 m2_into_ft2 (62%)
+    silent and harmful: fsae cla_m2 ft2_into_m2 (16%)
+    silent and harmful: fsae tire_radius_m mm (155714%)
+    silent and harmful: fsae mu percent (17%)
+    silent and harmful: fsae mu per_mille (17%)
+    silent and harmful: fsae final_drive inverse (24%)
+    silent and harmful: fsae inverter_eff percent (99%)
+    silent and harmful: fsae driveline_eff percent (99%)
+
+random: 49 corruptions, 19 harmful (beyond the fitness bar), 4 refused by FASTSim itself
+  Gate 1, at entry:        0/19 (0%) of the harmful ones
+  Gate 2, second opinion:  15/15 (100%) of the harmful ones on FASTSim decks
+  either gate:             15/19 (79%)
+  left the value unchanged (not counted): 11
+    silent and harmful: fsae tire_radius_m typo_20_decimal_right (90%)
+    silent and harmful: fsae final_drive typo_37_swap (90%)
+    silent and harmful: fsae mu typo_38_decimal_right (17%)
+    silent and harmful: fsae driveline_eff typo_45_decimal_left (109%)
+
+curated: 56 corruptions, 27 harmful (beyond the fitness bar), 5 refused by FASTSim itself
+  Gate 1, at entry:        0/27 (0%) of the harmful ones
+  Gate 2, second opinion:  23/23 (100%) of the harmful ones on FASTSim decks
+  either gate:             23/27 (85%)
+    silent and harmful: fsae mass_kg lb_for_kg (108%)
+    silent and harmful: fsae mass_kg driver_dropped (16%)
+    silent and harmful: fsae inverter_eff eff_percent (99%)
+    silent and harmful: fsae final_drive ratio_inverted (24%)
+
+all: 265 corruptions, 120 harmful (beyond the fitness bar), 31 refused by FASTSim itself
+  Gate 1, at entry:        0/120 (0%) of the harmful ones
+  Gate 2, second opinion:  99/99 (100%) of the harmful ones on FASTSim decks
+  either gate:             99/120 (82%)
+  left the value unchanged (not counted): 16
+
+false alarms, Gate 1: none
+false alarms, Gate 2: none
+
+sealed predictions:
+  Gate 2 >= 95%: 100% -> held
+  Gate 1 < 30%: 0% -> held
+  false alarms Gate 1 = 0: 0; Gate 2 = 0: 0

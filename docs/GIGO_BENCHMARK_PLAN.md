@@ -1,5 +1,10 @@
 # Garbage-in benchmark
 
+**Round 1 (seal `4c18a8a`): at entry, KinematiK caught 0 of 120 harmful input errors; as a second opinion beside
+FASTSim, 99 of 99. Round 2 (seal `383bda9`, with plausibility checks at entry): 65 of 119 at entry, 18 of 20 on the
+Formula Student deck, 99 of 99 as a second opinion, 117 of 119 by either; no false alarm on any valid car in either
+round.** Details below.
+
 The powertrain benchmark (POWERTRAIN_VALIDATION.md) shows KinematiK computes the right answer from the right inputs.
 KinematiK's pitch is more than that: it should stop wrong inputs from reaching, or quietly coming back from, an
 established tool. This plan tests that claim with the same discipline: the corruptions, the decks and the pass
@@ -117,3 +122,107 @@ name), and false alarms on the clean decks.
   changes its deck found 14 that do not (a zero idle-fuel power scaled, a driveline efficiency of 1 squared, typing
   errors that give the same number, such as two equal digits swapped). The runner now records these as "no change"
   and leaves them out of every count, instead of scoring them as harmless.
+* 6 Nov 2026, 00:04:56 UTC: third seal, **pushed** as commit `abfa38d` and run with that hash as the seed. The run
+  died before writing any result: FASTSim's compiled core crashed outright (a segmentation fault) on one of the
+  corrupted decks, taking the whole benchmark process with it. No result was produced or seen. The runner now runs
+  each FASTSim deck in a process of its own, so a crash is recorded as FASTSim refusing that deck. That changes
+  the sealed runner, so the benchmark is sealed again; the pushed seal is kept as
+  `benchmarks/gigo/PREREGISTRATION.superseded-abfa38d.json`, and the random errors are drawn from the new seal's
+  commit, not from `abfa38d`.
+
+## Result (6 Nov 2026)
+
+Run at 00:12 UTC with the hash of the pushed seal (`4c18a8ae…`) as the seed; graded by the sealed code
+(`benchmarks/gigo/runs.json`, `MANIFEST.sha256`, `GRADED.txt`).
+
+| Set | Errors that changed the deck | Harmful (beyond the fitness bar) | Gate 1, at entry | Gate 2, second opinion | Caught by either |
+|---|---|---|---|---|---|
+| Systematic | 160 | 74 | 0 of 74 | 61 of 61 | 61 of 74 |
+| Random typing errors | 49 | 19 | 0 of 19 | 15 of 15 | 15 of 19 |
+| Curated | 56 | 27 | 0 of 27 | 23 of 23 | 23 of 27 |
+| **All** | **265** | **120** | **0 of 120 (0 %)** | **99 of 99 (100 %)** | **99 of 120 (82 %)** |
+
+No false alarm from either gate on any clean deck (the five FASTSim cars, the seven Simscape round-2 decks and the
+stock Hockenheim deck). All four sealed predictions held. 16 errors left their value unchanged and are not
+counted; FASTSim itself refused 31 corrupted decks (an efficiency typed in percent, a thousandfold power or mass
+slip), which are not counted as harmful.
+
+**What it means.**
+
+* **Second opinion works.** When KinematiK holds the right deck, every harmful error that reached FASTSim was
+  caught, with no false alarm: the 0.04 % agreement on clean decks makes any real error stand out.
+* **Entry checks do not.** KinematiK accepted every harmful wrong value given to it: a mass in pounds or in grams,
+  a wheel radius in millimetres, an efficiency of 93 instead of 0.93, an inverted gear ratio, the driver left out
+  of the mass. It refused 5, all efficiency maps typed in percent (values above 1, which have no meaning);
+  FASTSim refused those 5 too. Two more rows are marked "refused" in `runs.json` but were not KinematiK checking
+  anything: a tire radius in inches or centimetres made KinematiK's own 75 m launch never reach 75 m, silently,
+  and the benchmark's clocking then raised. The sealed grading counts no harm for them because no metric came
+  back; they are silent, harmful errors too (the same radius in millimetres moved the results by over 1,000×), so
+  23, not 21, harmful errors got through on the Formula Student deck.
+* **Every harmful error that got through is on the Formula Student deck** (21 graded, plus the 2 above), where no
+  external tool was rerun, so only Gate 1 could have caught them. That is also the case of a misread datasheet
+  entered in both tools: today nothing in KinematiK catches it.
+
+**Next, as a new sealed round:** plausibility checks at entry (ranges for mass, efficiencies, drag and lift areas,
+rolling resistance, wheel radius, grip and gear ratio, with Formula Student cars inside the ranges), tested on a new
+seed, with the false-alarm set as the guard against checks that would flag a valid car.
+
+## Round 2: plausibility checks at entry (sealed before running)
+
+**What changed in KinematiK.** `suspension/plausibility.py` holds, for each powertrain input, the range any real
+vehicle of its class falls in, why the range is there, and the slip a value outside it usually is. Two classes:
+`GENERIC` (an e-scooter to a 40 t truck; catches thousandfold, percent and length-unit slips) and `FSAE` (a Formula
+Student car, from the rules and the cars in this repository; also catches pounds for kilograms, ft² for m², a
+diameter for a radius and an inverted ratio). A value outside its range raises a `PlausibilityWarning` naming the
+likely slip; a drive or gearbox efficiency above 1 is refused. The checks run where inputs enter: the road-load
+function, the ICE vehicle, gearbox, engine map and fuel function, and the loader of a Formula Student deck exported
+from Simscape.
+
+**What did not change.** The catalog of errors, the decks, the harm bars and the gates. The random typing errors
+are drawn again, from the commit hash of this round's seal, so they are new.
+
+**One fix to the harness.** In round 1 a Formula Student launch that never reached 75 m made the benchmark's own
+clocking raise, and the row was marked "refused" although KinematiK had checked nothing. Now such a launch is a
+result (75 m never reached: infinitely slow, so harmful), not a refusal.
+
+**The honest caveat.** The ranges were written after round 1, by the people who saw which errors got through. Each
+range is set by the vehicles of its class, not by the errors (a Formula Student car's wheel is 10 to 13 inches;
+the rules cap a pack at 600 V and set a 1525 mm minimum wheelbase), and the false-alarm guard is unchanged: every
+existing test and benchmark deck (the FASTSim, GT-SUITE, Argonne, A-FA and Simscape decks) runs with warnings as
+errors, and none raises one. The fresh random set is the part no one has seen.
+
+**Predictions, sealed:** Gate 1 catches between 50 and 90 % of the harmful errors overall, and at least 75 % on the
+Formula Student deck (where no second opinion is possible); Gate 2 at least 95 %; no false alarm from either gate.
+Expected misses, stated now: a factor of 2.2 (pounds) or 1.34 (horsepower) on a road car, whose generic range spans
+a scooter to a truck; the driver left out of the mass (16 %, still a plausible car); torque in lb·ft and motor
+speed in rad/s on the Formula Student car (both still plausible values).
+
+## Result of round 2 (6 Nov 2026)
+
+Run at 00:36 UTC with the hash of the pushed seal (`383bda91…`) as the seed; graded by the sealed code
+(`benchmarks/gigo/round2/runs.json`, `MANIFEST.sha256`, `GRADED.txt`).
+
+| Set | Errors | Harmful | Gate 1, at entry | Gate 2, second opinion | Caught by either |
+|---|---|---|---|---|---|
+| Systematic | 160 | 74 | 45 of 74 | 61 of 61 | 74 of 74 |
+| Random typing errors (new draw) | 53 | 19 | 9 of 19 | 15 of 15 | 18 of 19 |
+| Curated | 56 | 26 | 11 of 26 | 23 of 23 | 25 of 26 |
+| **All** | **269** | **119** | **65 of 119 (55 %)** | **99 of 99 (100 %)** | **117 of 119 (98 %)** |
+
+On the Formula Student deck, where no second opinion is possible, the entry checks caught **18 of 20** harmful
+errors (round 1: 0 of 21). No false alarm on any clean deck. All four sealed predictions held: Gate 1 overall
+55 % (sealed: 50–90 %), Formula Student deck 90 % (sealed: at least 75 %), Gate 2 100 % (at least 95 %), no false
+alarm. Gate 1 also flagged 66 wrong values too small to cross the harm bar.
+
+**What still gets through at entry**, as predicted before the run:
+
+* On road cars, factors their wide range cannot see: a mass in pounds (×2.2 or ÷2.2), a drag area in ft², the drag
+  coefficient typed for CdA, horsepower for kW, an efficiency applied twice. Every one of these was caught by the
+  second opinion.
+* On the Formula Student car, two errors that leave a believable car: the 75 kg driver left out of the mass (16 %
+  off) and an inverter efficiency typed 0.89 instead of 0.98 (a dropped digit, 23 % off). No range can catch these;
+  only a measurement (corner scales, an inverter datasheet) can.
+
+**What it means.** With both gates, KinematiK caught 117 of the 119 harmful input errors in this benchmark, and
+on a Formula Student car, the class it is built for, the entry checks alone catch 9 in 10. The remaining misses
+are values that are wrong but physically plausible; they are listed by name.
