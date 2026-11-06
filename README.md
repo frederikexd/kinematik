@@ -32,6 +32,33 @@ The suspension kinematics solver has been checked against three established tool
 
 These check the kinematics solver, not a built car; what has not been checked yet is listed in [VALIDATION.md](VALIDATION.md).
 
+The EV and combustion powertrain logic has been checked against four independent references
+([details](docs/POWERTRAIN_VALIDATION.md)). The blind rounds were sealed and pushed to GitHub before they ran.
+
+| Checked against | Cases | Result |
+|---|---|---|
+| NREL FASTSim 3.1.0, identical inputs | 5 vehicles × 4 drive cycles, plus a sixth car never used before | 20 of 20; worst energy difference 0.04 % (the sixth car within 0.04 % too) |
+| Five published GT-SUITE studies | BMW i3, a 12 t truck, an e-two-wheeler, two passenger cars | 41 of 44 results within 5 %; the misses traced to the papers' own gaps |
+| MathWorks' Simscape Formula Student model, blind | 7 sealed cases: laps, skidpad, launches | 28 of 39 metrics within 3 %; energy, current, voltage, pack resistance and the 75 m launch 28 of 29 |
+| Measured data | Argonne National Laboratory dyno (BMW i3, Chevrolet Blazer); a Formula Student team's race telemetry | Energy 3.7 % and fuel 3.8 % on average; launch within 1 %; pack voltage sag 3.7 % |
+
+And because a pre-validation tool has to stop wrong inputs before they reach the tools downstream, a sealed
+garbage-in benchmark feeds it realistic input errors (pounds for kilograms, efficiency in percent, inverted ratios,
+random typos) ([details](docs/GIGO_BENCHMARK_PLAN.md)):
+
+| Round | Harmful errors caught at entry | As a second opinion beside FASTSim | False alarms |
+|---|---|---|---|
+| 1, before entry checks | 0 of 120 | 99 of 99 | 0 |
+| 2, plausibility checks added | 65 of 119 (18 of 20 on the Formula Student car) | 99 of 99 | 0 |
+| 3, cars the checks were never written against | **64 of 83 on two Formula Student cars (77 %, 95 % CI 67–85 %)** | 23 of 23 | 0 |
+
+**Check it yourself** (from `fsae_suspension/`):
+
+```bash
+pytest tests/test_fastsim_benchmark.py tests/test_gt_suite_benchmark.py tests/test_powertrain_benchmark.py \
+       tests/test_gigo_benchmark.py tests/test_gigo_round3.py tests/test_plausibility.py
+```
+
 **Check it yourself** (from `fsae_suspension/`, a few minutes on a laptop):
 
 ```bash
@@ -119,6 +146,10 @@ Python 3.11+. The hosted app needs no install.
   on other teams' machines ([VALIDATION.md](VALIDATION.md)), but nothing has been
   compared with an instrumented vehicle, a K&C rig or a wind tunnel. Treat every
   number as a starting point for your own test day.
+- **Powertrain heat and lap time.** Pack and motor heat are over-predicted by 3.5–14 % against Simscape (the safe
+  side for cooling); lap time has not been compared with a real car; a Formula Student engine's fuel map and coolant
+  heat have no open reference. Wrong inputs that still look like a believable car (a driver left out of the mass, an
+  efficiency off by a dropped digit) are not caught by the entry checks.
 - **Synthetic default tyre.** Load your own Magic Formula coefficients for
   absolute grip numbers.
 - **Quasi-static and lumped models.** Lap time, load transfer and the thermal
