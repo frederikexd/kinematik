@@ -1,5 +1,5 @@
 {
- "created_utc": "2026-11-06T00:04:56Z",
+ "created_utc": "2026-11-06T00:09:50Z",
  "plan": "docs/GIGO_BENCHMARK_PLAN.md",
  "gates": {
   "gate1": "KinematiK refuses (ValueError) or warns beyond the clean deck's warnings",
@@ -2080,7 +2080,7 @@
   "gate2_false_alarms": 0
  },
  "code_sha256": {
-  "scripts/gigo_benchmark.py": "3097faa57970e84783c9bcfc3b9aee9b59b11a95929414b0cf230322f5b629a3",
+  "scripts/gigo_benchmark.py": "62d4764bab515d3b98c6c89a8dae2e763d2033994b15b0a77942fd01e2c8da7d",
   "scripts/fastsim_benchmark.py": "9a3784ce53c373a2c02d4e635c17148c90824a92eb0cd80a01bc4f18100aec05",
   "scripts/powertrain_benchmark.py": "35d085d811c75f687e7f5906b7247c31de03a57fd2660c63ccf6d292b2d3774b",
   "suspension/ev_electrical_check.py": "1bfec1f0387b48b7c1177e926e27e33d636d4e474ee899b191396cfe99d66e5c",

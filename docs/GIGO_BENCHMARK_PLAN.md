@@ -117,3 +117,10 @@ name), and false alarms on the clean decks.
   changes its deck found 14 that do not (a zero idle-fuel power scaled, a driveline efficiency of 1 squared, typing
   errors that give the same number, such as two equal digits swapped). The runner now records these as "no change"
   and leaves them out of every count, instead of scoring them as harmless.
+* 6 Nov 2026, 00:04:56 UTC: third seal, **pushed** as commit `abfa38d` and run with that hash as the seed. The run
+  died before writing any result: FASTSim's compiled core crashed outright (a segmentation fault) on one of the
+  corrupted decks, taking the whole benchmark process with it. No result was produced or seen. The runner now runs
+  each FASTSim deck in a process of its own, so a crash is recorded as FASTSim refusing that deck. That changes
+  the sealed runner, so the benchmark is sealed again; the pushed seal is kept as
+  `benchmarks/gigo/PREREGISTRATION.superseded-abfa38d.json`, and the random errors are drawn from the new seal's
+  commit, not from `abfa38d`.

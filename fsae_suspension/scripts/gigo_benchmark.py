@@ -260,7 +260,24 @@ def corrupt_fastsim(d: dict, c: dict) -> dict:
 
 
 def fastsim_run(d: dict, veh: str) -> dict:
-    """FASTSim's energy per km on each cycle, or why it refused."""
+    """FASTSim's energy per km on each cycle, or why it refused, in a process of its own: FASTSim's compiled core
+    can crash outright (a segmentation fault) on a corrupted deck, and that is the tool refusing it, not the end of
+    the benchmark."""
+    import subprocess
+    with tempfile.TemporaryDirectory() as tmp:
+        f = Path(tmp) / "deck.json"
+        f.write_text(json.dumps(d))
+        try:
+            proc = subprocess.run([sys.executable, "-I", str(Path(__file__).resolve()), "_fastsim", veh, str(f)],
+                                  capture_output=True, text=True, timeout=600)
+        except subprocess.TimeoutExpired:
+            return {cyc: {"refused": "FASTSim did not finish in 600 s"} for cyc in fb.CYCLES}
+    if proc.returncode != 0:
+        return {cyc: {"refused": f"FASTSim crashed (exit {proc.returncode})"} for cyc in fb.CYCLES}
+    return json.loads(proc.stdout.strip().splitlines()[-1])
+
+
+def _fastsim_run_here(d: dict, veh: str) -> dict:
     import numpy as np
     import fastsim as fs
     out = {}
@@ -546,6 +563,9 @@ def main(argv=None) -> int:
         return report()
     if argv[:1] == ["report"]:
         return report()
+    if len(argv) == 3 and argv[0] == "_fastsim":          # one deck, in its own process (fastsim_run)
+        print(json.dumps(_fastsim_run_here(json.loads(Path(argv[2]).read_text()), argv[1])))
+        return 0
     print(__doc__)
     return 2
 
