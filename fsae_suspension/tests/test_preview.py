@@ -181,7 +181,12 @@ class _BrowserSt(_FakeSt):
         self.context = _Ctx(cookies or {})
         self.frames = []
 
-    def iframe(self, html, height=None):
+    def iframe(self, html, height="content"):
+        # Streamlit's own rule (StreamlitInvalidHeightError): a positive height in pixels, "stretch" or "content".
+        # A height of 0 was refused in the real app and the failure swallowed, so the preview restarted on every
+        # refresh; the fake enforces the rule so that cannot come back.
+        if not (height in ("stretch", "content") or (isinstance(height, int) and height > 0)):
+            raise ValueError(f"Invalid height value: {height!r}")
         self.frames.append(html)
 
 
@@ -213,3 +218,12 @@ def test_the_gate_still_works_where_cookies_and_scripts_are_unavailable(gate):
     with pytest.raises(_Stop):
         gate(st)
     assert any("Preview" in b for b in st.buttons)
+
+
+def test_a_browser_script_that_cannot_run_is_logged_not_silent(caplog):
+    class _Broken(_FakeSt):
+        def iframe(self, html, height="content"):
+            raise RuntimeError("refused")
+    with caplog.at_level("WARNING"):
+        auth_ui._run_browser_script(_Broken(), "<script></script>")
+    assert "could not run the browser script" in caplog.text and "refused" in caplog.text
