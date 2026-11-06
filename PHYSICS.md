@@ -1400,7 +1400,59 @@ The feasibility gate checks the restrictor diameter against the rule (20.0 mm ga
 the restrictor's power ceiling, endurance fuel against the tank with a 10% reserve, fuel use against the 26 L/100 km
 limit of the 2024 efficiency proposal, the fuel pump at 1.2 × peak demand, injector duty at 85%, top-gear redline
 against the lap's top speed and the cooling loop of §26. An undeclared input is MISSING, never a pass. Brake thermal
-efficiency is one number for the whole map, so fuel is a planning estimate until a BSFC map replaces it.
+efficiency is one number for the whole map unless an efficiency map replaces it (§25.6).
+
+### 25.6 Road Load, Motor Map, Tyres and the Pack along a Lap (`ev_electrical_check.py`, `ice_powertrain.py`, `laptime.py`)
+
+The fuller road load of §25.1, used when the car's data are available (the benchmarks of §32.4 run on it):
+
+```
+tyre load:        F_z = m g + ½ ρ ClA v²                               (downforce loads the tyres)
+rolling (MF 6.1): F_r = F_z,i (QSY1 + QSY3 |v/V₀| + QSY4 (v/V₀)⁴) (F_z,i / F_z0)^(QSY7 − 1),   per tyre, summed
+cornering stiff:  C_α = |PKY1| F_z0 sin(PKY4 atan(F_z,i / (PKY2 F_z0))),                     per tyre, summed
+cornering drag:   F_c = F_y² / C_α,   F_y = m a_lat                     (slip-angle drag: F_y tan α with α = F_y / C_α)
+toe scrub:        F_t = Σ_i C_α,i tan δ_i sin δ_i                       (δ_i: each tyre's toe as the car runs)
+road load:        F = k m a + ½ ρ CdA v² + F_r + F_c + F_t              (k: rotating-inertia factor)
+motor map:        P_shaft = max(F v, 0) / η_gear,   P_pack = P_shaft / η(ω_motor, T_motor)      (bilinear in speed, torque)
+                  ω_motor = v G / r,   T_motor = P_shaft / (ω_motor n_motors)
+```
+
+The coefficients come from a `.tir` file (`TireLosses.from_tir`); a road car without one keeps `C_rr m g`. `laptime`
+divides acceleration and braking force by `k m` (`Powertrain.rot_mass_factor`).
+
+The pack along a lap (`pack_along_lap`), each time step:
+
+```
+V_oc = OCV(SOC)                                 (table, linear)
+R    = R(SOC, T)                                (table, bilinear; or one constant R)
+P    = (V_oc − I R) I   →   I = (V_oc − √(V_oc² − 4 R P)) / (2R)         (clipped at the most the pack can give)
+V    = V_oc − I R,     SOC ← SOC − I dt / (3600 Ah),     T ← T + I² R dt / C
+```
+
+Over longer runs `pack_temperature_along` adds cooling: `C dT/dt = I² R − hA (T − T_amb)`. The combustion side reads an
+efficiency map in place of one BTE (`PowerEfficiencyMap`): `P_fuel = max(P_brake / η(P_brake), P_idle)`, linear in
+brake power and flat beyond the table, the way GT-SUITE and FASTSim read an engine map; `fuel_for_lap` adds an
+auxiliary load to the engine's output on the throttle and burns at least that load's fuel off it.
+
+### 25.7 Plausibility at Entry (`plausibility.py`)
+
+Each powertrain input is compared with the range real vehicles of its class fall in: `GENERIC` (an e-scooter to a
+40 t truck) and `FSAE` (a Formula Student car, from the rules and the cars in the repository). A value outside its
+range raises a `PlausibilityWarning` naming the likely slip; values with no physical meaning are refused (`ValueError`):
+
+```
+refused:        η > 1 or η ≤ 0 (drive, gearbox, brake thermal);   m ≤ 0
+range:          lo ≤ x ≤ hi for the class;   0 allowed for terms a deck switches off (C_rr, CdA, ClA, auxiliaries)
+spec. power:    P_peak / m within 10–2000 W/kg
+curve checks:   |x_declared / x_curve − 1| ≤ 5 %   for motor peak torque, motor top speed and engine redline
+top-gear speed: v = rpm_red / (primary · min(gears) · final) · π/30 · r      FSAE 20–70 m/s, generic 10–150 m/s
+launch:         0.2 ≤ rpm_launch / rpm_red ≤ 1
+```
+
+Each range carries the reason it is where it is and the slip a value outside it usually is (a Formula Student
+wheel of 10 to 13 inches; the rules' 600 V and 1525 mm). In the test suite the warning is an error, so a valid car that
+trips a check fails CI. A value that is wrong but plausible (a driver left out of the mass) passes; §32.4 gives the
+measured catch rate.
 
 ---
 
@@ -1745,6 +1797,21 @@ Every difference that exceeded its limit was traced to a definition, each checke
 - **Scrub over travel.** The comparison found that KinematiK took scrub on z = 0 at every travel. This was corrected to the road plane (§1.5, §32.3), after which it agrees.
 
 Not compared: camber in steer (ARD's definition is unconfirmed), and anti-dive and anti-lift (ARD's brake page was not set to this car's bias and inboard rear brakes).
+
+**Powertrain (`docs/POWERTRAIN_VALIDATION.md`).** The road load, motor map, pack and engine map of §25 against
+four references: NREL FASTSim 3.1.0 with identical inputs (5 vehicles × 4 cycles, 20 of 20, worst energy difference
+0.04 %; a sixth car never used before within 0.04 %); five published GT-SUITE studies (41 of 44 within 5 %); MathWorks'
+Simscape Formula Student model in seven cases sealed before they ran (28 of 39 metrics within 3 %; energy, current,
+voltage, pack resistance and the 75 m launch 28 of 29; pack and motor heat over-predicted by 3.5–14 %); and measured
+data, Argonne National Laboratory's dyno (BMW i3 energy 3.7 % and Chevrolet Blazer fuel 3.8 % on average, i3 launch
+within 1 %) and a Formula Student team's race telemetry (pack voltage sag 3.7 %, I²R loss 4.7 %). The skidpad energy,
+5 % low, was traced in Simscape's energy balance to camber thrust, load transfer and rolling loss at the wheel's spin,
+which §25.6 leaves out.
+
+**Input checks (`docs/GIGO_BENCHMARK_PLAN.md`).** §25.7 measured in three sealed rounds, the random errors seeded by
+each seal's commit hash: at entry 0 of 120 harmful errors before the checks, 65 of 119 with them, and 64 of 83 on two
+Formula Student cars the checks were never written against (77 %, 95 % Wilson interval 67–85 %); as a second opinion
+beside FASTSim, every harmful error; no false alarm in any round.
 
 **ARD lap time.** A load-transfer-balance study in ARD's lap simulator (front share 49, 53 and 57%) is pending. 
 
