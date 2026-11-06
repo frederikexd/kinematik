@@ -6,8 +6,8 @@ authors:
   - family-names: Thio
     given-names: Frederik
 license: AGPL-3.0-only
-version: 1.3.0
-date-released: 2026-10-29
+version: 1.4.0
+date-released: 2026-11-05
 doi: 10.5281/zenodo.23450788
 repository-code: "https://github.com/frederikexd/kinematik"
 url: "https://kinematik-ijzpvutb92x7n3yzo7sdqc.streamlit.app/"
@@ -16,7 +16,9 @@ abstract: >-
   vehicle requirements and synthesises double-wishbone hardpoints to meet them inside absolute packaging,
   structural and steering walls, prices each candidate for build yield, and records every search as a hashed,
   re-runnable manifest. It also covers vehicle dynamics, aerodynamics, brakes, powertrain and energy, thermal,
-  electrical systems, data acquisition and measurement.
+  electrical systems, data acquisition and measurement. The archive holds the full benchmark data (Simscape runs,
+  FASTSim and garbage-in benchmark records), more files than Zenodo's preview can list. Download the ZIP to browse
+  it.
 keywords:
   - Formula SAE
   - Formula Student
