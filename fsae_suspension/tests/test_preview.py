@@ -137,3 +137,79 @@ def test_invited_visitors_are_not_offered_the_preview(gate):
     with pytest.raises(_Stop):
         gate(st)
     assert not any("Preview" in b for b in st.buttons)
+
+
+# ------------------------------------------------------------------ one preview per browser
+def test_the_cookie_carries_the_clock_into_a_new_session():
+    ss = {}
+    assert pv.restore(ss, {pv.COOKIE_KEY: "1000"}, now=1100.0)
+    assert pv.active(ss, 1100.0) and pv.remaining_s(ss, 1100.0) == 200.0      # the same five minutes, not new ones
+    assert pv.expired(ss, 1300.0) and not pv.start(ss, 1400.0)
+    assert not pv.restore(ss, {pv.COOKIE_KEY: "1350"}, now=1400.0)              # a session keeps its own clock
+
+
+@pytest.mark.parametrize("raw", ["garbled", "nan", "inf", "5000"])
+def test_a_tampered_or_future_cookie_counts_as_a_spent_preview(raw):
+    ss = {}
+    assert pv.restore(ss, {pv.COOKIE_KEY: raw}, now=2000.0)
+    assert pv.expired(ss, 2000.0) and not pv.active(ss, 2000.0)
+
+
+@pytest.mark.parametrize("cookies", [{}, None, {pv.COOKIE_KEY: ""}, {pv.COOKIE_KEY: "  "}, {"other": "1"}])
+def test_no_cookie_leaves_the_session_free_to_start(cookies):
+    ss = {}
+    assert not pv.restore(ss, cookies, now=10.0) and not pv.started(ss)
+
+
+def test_the_scripts_write_and_recover_the_browser_marker():
+    js = pv.persist_script(1234.9)
+    assert f'K = "{pv.COOKIE_KEY}", v = "1234"' in js and "localStorage.setItem(K, v)" in js
+    assert f"max-age={pv.COOKIE_MAX_AGE}; path=/; SameSite=Lax" in js and "reload" not in js
+    rec = pv.recover_script()
+    assert "localStorage.getItem(K)" in rec and "location.reload()" in rec
+    assert 'sessionStorage.getItem(K + "_recovered")' in rec      # a blocked cookie cannot loop the page
+
+
+class _Ctx:
+    def __init__(self, cookies):
+        self.cookies = cookies
+
+
+class _BrowserSt(_FakeSt):
+    def __init__(self, ss=None, press=(), cookies=None):
+        super().__init__(ss, press)
+        self.context = _Ctx(cookies or {})
+        self.frames = []
+
+    def iframe(self, html, height=None):
+        self.frames.append(html)
+
+
+def test_a_returning_browser_whose_preview_ran_out_goes_straight_to_sign_up(gate):
+    st = _BrowserSt(cookies={pv.COOKIE_KEY: "1"})                 # a preview that started long ago
+    with pytest.raises(_Stop):
+        gate(st)
+    assert any("Like what you see?" in t for t in st.text)
+    assert not any("Preview" in b for b in st.buttons)
+
+
+def test_starting_writes_the_browser_marker_once_and_a_reload_keeps_the_clock(gate):
+    st = _BrowserSt(press={"_kx_preview_start"})
+    with pytest.raises(_Stop):
+        gate(st)
+    assert len(st.frames) == 1 and "location.reload" in st.frames[0]   # no preview yet: the recovery check only
+    st2 = _BrowserSt(st.session_state)
+    assert gate(st2) is None and len(st2.frames) == 1 and "setItem(K, v)" in st2.frames[0]
+    st3 = _BrowserSt(st.session_state)
+    assert gate(st3) is None and st3.frames == []                      # written once, not every rerun
+    t0 = st.session_state[pv.KEY_START]
+    fresh = _BrowserSt(cookies={pv.COOKIE_KEY: str(int(t0))})          # a reload: a brand-new session, same browser
+    assert gate(fresh) is None and pv.active(fresh.session_state)
+    assert fresh.session_state[pv.KEY_START] == int(t0)
+
+
+def test_the_gate_still_works_where_cookies_and_scripts_are_unavailable(gate):
+    st = _FakeSt()                                                      # no st.context, no st.iframe
+    with pytest.raises(_Stop):
+        gate(st)
+    assert any("Preview" in b for b in st.buttons)

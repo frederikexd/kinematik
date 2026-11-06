@@ -59,9 +59,32 @@ def _restore_session(st, auth: SupabaseAuth) -> Session | None:
         return None
 
 
+_SS_PV_SYNCED = "_kx_preview_synced"   # the start time last written to the browser (or "recover" when none)
+
+
+def _sync_preview_with_browser(st) -> None:
+    """One preview per browser: pick the clock up from the browser's cookie, and write it back whenever it starts
+    or changes (preview.persist_script); with no preview yet, check once whether localStorage remembers one whose
+    cookie was cleared (preview.recover_script). Silently does nothing where cookies or scripts are unavailable."""
+    ss = st.session_state
+    try:
+        _preview.restore(ss, st.context.cookies)
+    except Exception:
+        pass
+    t0 = ss.get(_preview.KEY_START)
+    mark = "recover" if t0 is None else t0
+    if ss.get(_SS_PV_SYNCED) == mark:
+        return
+    ss[_SS_PV_SYNCED] = mark
+    try:
+        st.iframe(_preview.recover_script() if t0 is None else _preview.persist_script(t0), height=0)
+    except Exception:
+        pass
+
+
 def _render_preview_offer(st) -> None:
-    """The way in without an account: five minutes of the full app, nothing saved. Offered once per session and
-    never to someone holding an invite (they should sign up and join their team)."""
+    """The way in without an account: five minutes of the full app, nothing saved. Offered once per browser (see
+    preview.py) and never to someone holding an invite (they should sign up and join their team)."""
     if _preview.started(st.session_state) or st.session_state.get(_SS_JOIN):
         return
     st.markdown("##### New here?")
@@ -860,6 +883,7 @@ def require_workspace(st) -> WorkspaceContext | None:
     # before any tenant data renders. That is the tenant wall.
     session = _restore_session(st, auth)
     if session is None:
+        _sync_preview_with_browser(st)
         # Preview: the full app with an in-memory store (streamlit_app._make_store), no workspace, for
         # preview.PREVIEW_SECONDS; then the sign-up screen until the visitor signs in.
         if _preview.active(st.session_state):

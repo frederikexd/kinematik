@@ -3,6 +3,14 @@
 
 ## Unreleased
 
+**One preview per browser.** The five-minute preview used to be once per browser session, so a reload started a new
+one. Its start time is now kept in the browser (a `kinematik_preview` cookie and the same value in local storage), and
+every new session from that browser picks the same clock back up: a reload or a new tab continues the one five minutes,
+and once they are over the sign-up screen stays. If only the cookie is cleared, local storage puts it back and the page
+reloads once. Only clearing the site's cookies and stored data, or a private window, gives a new preview. No IP address
+or fingerprint is used, so teammates on one network each keep their own. A cookie that is garbled or in the future
+counts as a spent preview. `suspension/preview.py`, `suspension/auth_ui.py`, `tests/test_preview.py`, PRIVACY.md.
+
 
 ## 1.4.0 (2026-11-05)
 
