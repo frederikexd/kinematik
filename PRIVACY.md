@@ -15,6 +15,7 @@ Questions or deletion requests: kinematik.kng1q@8shield.net
 | Project data (hardpoints, settings, results, notes, manifests) and save history (who saved what, and when) | So your work persists and your team can share it | Inside your team's workspace in the Supabase database |
 | Usage events (which tabs and features are used, timings, errors, app version) | To find bugs and see which tools are useful | Supabase database, analytics table |
 | A visitor id | To count unique and returning visitors | A cookie named `kinematik_vid`. If cookies are blocked, a keyed hash (HMAC-SHA256) of your IP address and browser type is used instead. The key is a secret held only on the app's server, so the id cannot be turned back into an IP address; the raw IP address is not stored |
+| When your 5-minute preview started | So each browser gets one preview without an account | A cookie named `kinematik_preview` and the same value in your browser's local storage, both holding only the time the preview started. Clearing this site's cookies and stored data removes it |
 
 An optional name and subteam that you type in yourself may be attached to usage events. Nothing else about you is collected. There is no advertising, no data is sold, and nothing is shared with anyone other than the two hosting providers that run the app (below).
 

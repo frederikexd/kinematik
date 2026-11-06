@@ -12,8 +12,12 @@ What preview may touch: nothing persistent. Its project store is an in-memory ba
 session, so a preview can never read or write a team's workspace, the shared legacy project row, or another
 visitor's preview. Leaving the page discards it.
 
-One preview per browser session: once it has run out, the sign-up screen replaces it until the visitor signs in.
-Opening a fresh session starts a new one; this is a nudge, not a paywall.
+One preview per browser: the moment it starts, its start time is written to the browser twice, a cookie and
+localStorage (COOKIE_KEY), and every later visit from that browser picks the same clock back up (restore): a reload, a
+new tab or a new visit continues the one five minutes, and once they are over the sign-up screen stays. A browser that
+lost its cookie but kept localStorage gets the cookie back and reloads once (recover_script). Only clearing the site's
+cookies AND its stored data, or a private window, starts a new preview. No IP or fingerprint is used: a whole team
+on one network keeps one preview per browser each. This is a nudge, not a paywall.
 
 Pure Python, no Streamlit import: `ss` is any mutable mapping (st.session_state in the app, a dict in tests), and
 `now` is seconds since the epoch (time.time() when omitted).
@@ -21,6 +25,7 @@ Pure Python, no Streamlit import: `ss` is any mutable mapping (st.session_state 
 from __future__ import annotations
 
 import copy
+import math
 import time
 
 PREVIEW_SECONDS = 300            # 5 minutes
@@ -29,6 +34,8 @@ WARN_AT_SECONDS = 60             # one toast when this much is left
 KEY_START = "_kx_preview_started"
 KEY_WARNED = "_kx_preview_warned"
 KEY_BACKEND = "_kx_preview_backend"
+COOKIE_KEY = "kinematik_preview"        # cookie and localStorage key in the browser: the epoch second it started
+COOKIE_MAX_AGE = 63072000               # 2 years, in seconds
 
 
 def _now(now):
@@ -41,6 +48,59 @@ def start(ss, now: float | None = None) -> bool:
         return False
     ss[KEY_START] = _now(now)
     return True
+
+
+def restore(ss, cookies, now: float | None = None) -> bool:
+    """Carry this browser's preview into a new session from its cookie (cookies: the request's cookie mapping).
+    A cookie that is not a number, or lies in the future, counts as a preview already spent. False when there is
+    no cookie or the session already has its clock."""
+    if ss.get(KEY_START) is not None:
+        return False
+    try:
+        raw = (cookies or {}).get(COOKIE_KEY)
+    except Exception:
+        raw = None
+    if raw is None or not str(raw).strip():
+        return False
+    n = _now(now)
+    try:
+        t0 = float(str(raw).strip())
+    except ValueError:
+        t0 = math.nan
+    ss[KEY_START] = t0 if math.isfinite(t0) and t0 <= n else n - PREVIEW_SECONDS
+    return True
+
+
+def persist_script(start: float, max_age: int = COOKIE_MAX_AGE) -> str:
+    """A zero-height snippet that writes the preview's start (epoch seconds) to the parent page's cookie and
+    localStorage, so the next session from this browser restores it. Never reloads."""
+    return f"""<script>(function() {{
+  try {{
+    var w = window.parent || window, K = "{COOKIE_KEY}", v = "{int(start)}";
+    try {{ w.localStorage.setItem(K, v); }} catch (e) {{}}
+    w.document.cookie = K + "=" + v + "; max-age={int(max_age)}; path=/; SameSite=Lax" +
+        (w.location.protocol === "https:" ? "; Secure" : "");
+  }} catch (e) {{}}
+}})();</script>"""
+
+
+def recover_script() -> str:
+    """A zero-height snippet for a session with no preview cookie: if localStorage still remembers a preview (only
+    the cookies were cleared), it puts the cookie back and reloads once, so the server sees the preview as used.
+    A browser that never had a preview has nothing in localStorage and is left alone; sessionStorage guards against
+    a reload loop where cookies are blocked."""
+    return f"""<script>(function() {{
+  try {{
+    var w = window.parent || window, K = "{COOKIE_KEY}", v = null;
+    try {{ v = w.localStorage.getItem(K); }} catch (e) {{}}
+    if (!v || w.document.cookie.indexOf(K + "=") !== -1) return;
+    try {{ if (w.sessionStorage.getItem(K + "_recovered")) return; w.sessionStorage.setItem(K + "_recovered", "1"); }}
+    catch (e) {{ return; }}
+    w.document.cookie = K + "=" + v + "; max-age={COOKIE_MAX_AGE}; path=/; SameSite=Lax" +
+        (w.location.protocol === "https:" ? "; Secure" : "");
+    w.location.reload();
+  }} catch (e) {{}}
+}})();</script>"""
 
 
 def started(ss) -> bool:
