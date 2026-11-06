@@ -53,6 +53,7 @@ random typos) ([details](docs/GIGO_BENCHMARK_PLAN.md)):
 | 3, cars the checks were never written against | **64 of 83 on two Formula Student cars (77 %, 95 % CI 67–85 %)** | 23 of 23 | 0 |
 
 **Check it yourself, a few minutes on your laptop**
+
 EV/ICE powertrain benchmarks:
 
 ```bash
