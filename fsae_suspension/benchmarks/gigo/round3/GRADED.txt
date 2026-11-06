@@ -1,0 +1,51 @@
+
+all: 171 errors, 106 harmful
+  Gate 1, at entry:       72/106 (68%, 95 % CI [59%, 76%])
+  Gate 2, second opinion: 23/23 (100%, 95 % CI [86%, 100%])
+  either: 87/106; also flagged 40 harmless wrong values; FASTSim refused 7; KinematiK crashed 1
+
+formula student: 126 errors, 83 harmful
+  Gate 1, at entry:       64/83 (77%, 95 % CI [67%, 85%])
+  either: 64/83; also flagged 33 harmless wrong values; FASTSim refused 0; KinematiK crashed 1
+
+fsae_ev: 65 errors, 35 harmful
+  Gate 1, at entry:       29/35 (83%, 95 % CI [67%, 92%])
+  either: 29/35; also flagged 25 harmless wrong values; FASTSim refused 0; KinematiK crashed 1
+    silent and harmful: fsae_ev cla_m2 m2_into_ft2 (4%)
+    silent and harmful: fsae_ev driveline_eff applied_twice (6%)
+    silent and harmful: fsae_ev mass_kg driver_dropped (14%)
+    silent and harmful: fsae_ev cla_m2 typo_05_decimal_left (4%)
+    silent and harmful: fsae_ev cell_ohm typo_32_drop (6%)
+    silent and harmful: fsae_ev driveline_eff typo_33_drop (6%)
+
+fsae_ice: 61 errors, 48 harmful
+  Gate 1, at entry:       35/48 (73%, 95 % CI [59%, 83%])
+  either: 35/48; also flagged 8 harmless wrong values; FASTSim refused 0; KinematiK crashed 0
+    silent and harmful: fsae_ice primary inverse (67%)
+    silent and harmful: fsae_ice driveline_eff applied_twice (8%)
+    silent and harmful: fsae_ice launch_rpm rads_into_rpm (12%)
+    silent and harmful: fsae_ice engine_torque lbft_into_nm (4%)
+    silent and harmful: fsae_ice mass_kg driver_dropped (5%)
+    silent and harmful: fsae_ice driveline_eff eff_twice (8%)
+    silent and harmful: fsae_ice engine_torque lbft_for_nm (4%)
+    silent and harmful: fsae_ice primary typo_08_swap (4%)
+    silent and harmful: fsae_ice primary typo_09_decimal_right (inf%)
+    silent and harmful: fsae_ice mu typo_11_swap (16%)
+    silent and harmful: fsae_ice engine_torque typo_26_drop (4%)
+    silent and harmful: fsae_ice primary typo_39_decimal_right (inf%)
+    silent and harmful: fsae_ice launch_rpm typo_55_swap (12%)
+
+fastsim:bolt: 45 errors, 23 harmful
+  Gate 1, at entry:       8/23 (35%, 95 % CI [19%, 55%])
+  Gate 2, second opinion: 23/23 (100%, 95 % CI [86%, 100%])
+  either: 23/23; also flagged 7 harmless wrong values; FASTSim refused 7; KinematiK crashed 0
+
+left unchanged (not counted): 17; not applied: 0
+false alarms, Gate 1: none
+false alarms, Gate 2: none
+
+sealed predictions:
+  Gate 1 on the Formula Student decks >= 75%: 77% -> held
+  Gate 1 overall in [50%, 95%): 68% -> held
+  Gate 2 >= 95%: 100% -> held
+  false alarms Gate 1 = 0: 0; Gate 2 = 0: 0

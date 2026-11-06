@@ -1,0 +1,3908 @@
+{
+ "seed_commit": "8a02c0f01e18fd9c983822477a3eb4f8fcaead13",
+ "run_utc": "2026-11-06T02:14:52Z",
+ "clean": {
+  "fastsim:bolt": {
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 88.23436024492308
+    },
+    "hwy": {
+     "energy_wh_km": 110.99168368589325
+    },
+    "us06": {
+     "energy_wh_km": 148.9005928409676
+    },
+    "nedc": {
+     "energy_wh_km": 101.8435798485657
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 88.26994680879126,
+     "hwy": 111.02788119480232,
+     "us06": 148.9357008894553,
+     "nedc": 101.8801588135647
+    },
+    []
+   ]
+  },
+  "fsae_ev": {
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 4.516121949048026,
+     "launch_75m_speed_ms": 32.049339127792194
+    },
+    []
+   ]
+  },
+  "fsae_ice": {
+   "kinematik": [
+    {
+     "launch_75m_time_s": 4.47699999999983,
+     "fuel_kg_per_km": 0.030284018872502472
+    },
+    []
+   ]
+  }
+ },
+ "rows": [
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "mass_kg",
+   "key": "lb_into_kg",
+   "story": "pounds typed into a kg field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 145.10150051520162
+    },
+    "hwy": {
+     "energy_wh_km": 157.1747610919273
+    },
+    "us06": {
+     "energy_wh_km": 207.11341918810126
+    },
+    "nedc": {
+     "energy_wh_km": 155.0960775219499
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 145.1783024002525,
+     "hwy": 157.25304579061083,
+     "us06": 207.3151897731128,
+     "nedc": 155.1752430945741
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "mass_kg",
+   "key": "kg_into_lb",
+   "story": "kg typed into a lb field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 61.492512048010056
+    },
+    "hwy": {
+     "energy_wh_km": 90.08832101783837
+    },
+    "us06": {
+     "energy_wh_km": 123.63529026103097
+    },
+    "nedc": {
+     "energy_wh_km": 76.93780296199705
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 61.509076279435455,
+     "hwy": 90.10495908077436,
+     "us06": 123.65143717190556,
+     "nedc": 76.95462112483266
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "mass_kg",
+   "key": "g_into_kg",
+   "story": "grams typed into a kg field",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 104509.84785891794,
+     "hwy": 57732.04600019449,
+     "us06": 121086.41061418812,
+     "nedc": 83977.22663062681
+    },
+    [
+     "warned: traction_power_w: mass_kg = 1.626e+06 kg is outside 60–60000 kg (an e-scooter with rider to a 40 t truck with margin); is it grams or tonnes typed into a kg field?",
+     "warned: traction_power_w: specific_power_w_kg = 0.09171 W/kg is outside 10–2000 W/kg (a loaded truck to a hypercar); is it a power or mass unit slip?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "mass_kg",
+   "key": "t_into_kg",
+   "story": "tonnes typed into a kg field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 38.12427740555565
+    },
+    "hwy": {
+     "energy_wh_km": 72.94605131719044
+    },
+    "us06": {
+     "energy_wh_km": 103.95179494232585
+    },
+    "nedc": {
+     "energy_wh_km": 56.245014211789695
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 38.12431668828953,
+     "hwy": 72.94608901948612,
+     "us06": 103.9518316051457,
+     "nedc": 56.245053014260016
+    },
+    [
+     "warned: traction_power_w: mass_kg = 1.626 kg is outside 60–60000 kg (an e-scooter with rider to a 40 t truck with margin); is it grams or tonnes typed into a kg field?",
+     "warned: traction_power_w: specific_power_w_kg = 9.171e+04 W/kg is outside 10–2000 W/kg (a loaded truck to a hypercar); is it a power or mass unit slip?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "cda_m2",
+   "key": "ft2_into_m2",
+   "story": "ft² typed into an m² field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 352.77992856380945
+    },
+    "hwy": {
+     "energy_wh_km": 735.2078186686613
+    },
+    "us06": {
+     "energy_wh_km": 1048.4708389117052
+    },
+    "nedc": {
+     "energy_wh_km": 530.4483877096475
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 352.8157272868576,
+     "hwy": 735.2438723211042,
+     "us06": 1090.7496560666998,
+     "nedc": 543.7533728491169
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "cda_m2",
+   "key": "m2_into_ft2",
+   "story": "m² typed into a ft² field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 63.83480162552976
+    },
+    "hwy": {
+     "energy_wh_km": 52.12985315725123
+    },
+    "us06": {
+     "energy_wh_km": 64.70957715586547
+    },
+    "nedc": {
+     "energy_wh_km": 60.78441623468872
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 63.870044916933125,
+     "hwy": 52.16618568529536,
+     "us06": 64.74406016438591,
+     "nedc": 60.82167353655551
+    },
+    [
+     "warned: traction_power_w: cda_m2 = 0.06881 m² is outside 0.1–12 m² (a streamlined bike to a truck with trailer); is it ft² typed into m², or Cd for CdA?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "crr",
+   "key": "percent",
+   "story": "typed in percent",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 3631.953395292008
+    },
+    "hwy": {
+     "energy_wh_km": 3618.879934054735
+    },
+    "us06": {
+     "energy_wh_km": 3622.4760758511366
+    },
+    "nedc": {
+     "energy_wh_km": 3621.8540351630622
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 3653.4844047626507,
+     "hwy": 3701.1326568031636,
+     "us06": 3731.9314582447073,
+     "nedc": 3673.5632696560206
+    },
+    [
+     "warned: traction_power_w: crr = 0.7767 is outside 0.002–0.05 (a train-like 0.002 to a soft off-road tire); is it rolling resistance typed in percent?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "crr",
+   "key": "per_mille",
+   "story": "typed per thousand (kg/t)",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 36386.4837909996
+    },
+    "hwy": {
+     "energy_wh_km": 36302.279661310546
+    },
+    "us06": {
+     "energy_wh_km": 36316.34559374997
+    },
+    "nedc": {
+     "energy_wh_km": 36382.09510901769
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 36358.23071050647,
+     "hwy": 36392.715061306466,
+     "us06": 36424.6123461794,
+     "nedc": 36376.566139357325
+    },
+    [
+     "warned: traction_power_w: crr = 7.767 is outside 0.002–0.05 (a train-like 0.002 to a soft off-road tire); is it rolling resistance typed in percent?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "wheel_radius_m",
+   "key": "diameter",
+   "story": "diameter typed as radius",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 88.04612312275876
+    },
+    "hwy": {
+     "energy_wh_km": 110.95106971662337
+    },
+    "us06": {
+     "energy_wh_km": 148.72089671684682
+    },
+    "nedc": {
+     "energy_wh_km": 101.71335160753154
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 88.08171675641482,
+     "hwy": 110.98725969477249,
+     "us06": 148.75599964000327,
+     "nedc": 101.74993045949654
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "wheel_radius_m",
+   "key": "inch",
+   "story": "inches typed into a metre field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 87.98348385799281
+    },
+    "hwy": {
+     "energy_wh_km": 110.93750751620709
+    },
+    "us06": {
+     "energy_wh_km": 148.66146383298454
+    },
+    "nedc": {
+     "energy_wh_km": 101.67006258647581
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 88.01907620245642,
+     "hwy": 110.97369705920575,
+     "us06": 148.69661735026952,
+     "nedc": 101.70664365358883
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "wheel_radius_m",
+   "key": "mm",
+   "story": "millimetres typed into a metre field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 87.98332213332552
+    },
+    "hwy": {
+     "energy_wh_km": 110.93747241796511
+    },
+    "us06": {
+     "energy_wh_km": 148.66131167066828
+    },
+    "nedc": {
+     "energy_wh_km": 101.66995066845483
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 88.01891448567258,
+     "hwy": 110.9736619598422,
+     "us06": 148.6964651817811,
+     "nedc": 101.70653174129154
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "wheel_radius_m",
+   "key": "cm",
+   "story": "centimetres typed into a metre field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 87.98334698863283
+    },
+    "hwy": {
+     "energy_wh_km": 110.93747781218906
+    },
+    "us06": {
+     "energy_wh_km": 148.66133505634537
+    },
+    "nedc": {
+     "energy_wh_km": 101.66996786901888
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 88.01893933976831,
+     "hwy": 110.97366735423854,
+     "us06": 148.69648856840675,
+     "nedc": 101.70654894097594
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "aux_power_w",
+   "key": "kilo_low",
+   "story": "W typed into a kW field (or kW into W)",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 80.31351422500546
+    },
+    "hwy": {
+     "energy_wh_km": 107.77653484846222
+    },
+    "us06": {
+     "energy_wh_km": 145.67068611581817
+    },
+    "nedc": {
+     "energy_wh_km": 94.38297668624331
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 80.3491007888737,
+     "hwy": 107.81273235737127,
+     "us06": 145.70579416430587,
+     "nedc": 94.4195556512423
+    },
+    [
+     "warned: traction_power_w: aux_power_w = 0.25 W is outside 5–30000 W (a dashboard to a bus's air conditioning (0 is allowed: no auxiliaries)); is it kW typed into a W field, or W into kW?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "aux_power_w",
+   "key": "kilo_high",
+   "story": "kW typed into a W field",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 8009.1159667263655,
+     "hwy": 3326.1767186258535,
+     "us06": 3378.8424260388874,
+     "nedc": 7562.4833211359755
+    },
+    [
+     "warned: traction_power_w: aux_power_w = 2.5e+05 W is outside 5–30000 W (a dashboard to a bus's air conditioning (0 is allowed: no auxiliaries)); is it kW typed into a W field, or W into kW?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "aux_power_w",
+   "key": "hp_into_kw",
+   "story": "hp typed into a kW field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 90.93823102541587
+    },
+    "hwy": {
+     "energy_wh_km": 112.08921127001808
+    },
+    "us06": {
+     "energy_wh_km": 150.00315819773485
+    },
+    "nedc": {
+     "energy_wh_km": 104.39034150063296
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 90.97381758928405,
+     "hwy": 112.12540877892717,
+     "us06": 150.03826624622252,
+     "nedc": 104.42692046563197
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "aux_power_w",
+   "key": "kw_into_hp",
+   "story": "kW typed into an hp field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 86.21808100934658
+    },
+    "hwy": {
+     "energy_wh_km": 110.17325623207088
+    },
+    "us06": {
+     "energy_wh_km": 148.0784087148791
+    },
+    "nedc": {
+     "energy_wh_km": 99.94445705243496
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 86.25366757321477,
+     "hwy": 110.20945374097997,
+     "us06": 148.11351676336676,
+     "nedc": 99.98103601743398
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "transmission_eff",
+   "key": "percent",
+   "story": "efficiency typed in percent",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": null,
+     "hwy": null,
+     "us06": null,
+     "nedc": null
+    },
+    [
+     "refused: drive and regeneration efficiencies are fractions, at most 1: was one typed in percent?",
+     "refused: drive and regeneration efficiencies are fractions, at most 1: was one typed in percent?",
+     "refused: drive and regeneration efficiencies are fractions, at most 1: was one typed in percent?",
+     "refused: drive and regeneration efficiencies are fractions, at most 1: was one typed in percent?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "transmission_eff",
+   "key": "applied_twice",
+   "story": "the same efficiency applied twice",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 91.85732707480716
+    },
+    "hwy": {
+     "energy_wh_km": 113.55290781564452
+    },
+    "us06": {
+     "energy_wh_km": 153.84520133307493
+    },
+    "nedc": {
+     "energy_wh_km": 105.09295450338064
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 91.89328048732212,
+     "hwy": 113.58969754481954,
+     "us06": 153.88076797738847,
+     "nedc": 105.1300881781693
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "motor_power_w",
+   "key": "kilo_low",
+   "story": "W typed into a kW field (or kW into W)",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 134.71452720145257,
+     "hwy": 119.26905702802675,
+     "us06": 200.35386782273872,
+     "nedc": 132.67654403084504
+    },
+    [
+     "warned: traction_power_w: peak_power_w = 149.1 W is outside 500–1.5e+06 W (an e-bike to a hypercar); is it kW typed into a W field, or W into kW?",
+     "warned: traction_power_w: specific_power_w_kg = 0.09171 W/kg is outside 10–2000 W/kg (a loaded truck to a hypercar); is it a power or mass unit slip?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "motor_power_w",
+   "key": "kilo_high",
+   "story": "kW typed into a W field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 97.77673161746674
+    },
+    "hwy": {
+     "energy_wh_km": 120.42353107064763
+    },
+    "us06": {
+     "energy_wh_km": 170.50645403577084
+    },
+    "nedc": {
+     "energy_wh_km": 111.59903827375027
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 97.81468700776125,
+     "hwy": 120.46349236420853,
+     "us06": 170.54525396918638,
+     "nedc": 111.63846399217178
+    },
+    [
+     "warned: traction_power_w: peak_power_w = 1.491e+08 W is outside 500–1.5e+06 W (an e-bike to a hypercar); is it kW typed into a W field, or W into kW?",
+     "warned: traction_power_w: specific_power_w_kg = 9.171e+04 W/kg is outside 10–2000 W/kg (a loaded truck to a hypercar); is it a power or mass unit slip?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "motor_power_w",
+   "key": "hp_into_kw",
+   "story": "hp typed into a kW field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 89.75079435220604
+    },
+    "hwy": {
+     "energy_wh_km": 112.48875667040714
+    },
+    "us06": {
+     "energy_wh_km": 150.4736572832362
+    },
+    "nedc": {
+     "energy_wh_km": 103.16520885179672
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 89.78669116221973,
+     "hwy": 112.52529578363674,
+     "us06": 150.50895717096427,
+     "nedc": 103.20217349001273
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "motor_power_w",
+   "key": "kw_into_hp",
+   "story": "kW typed into an hp field",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 86.82785523156018
+    },
+    "hwy": {
+     "energy_wh_km": 109.64689501945759
+    },
+    "us06": {
+     "energy_wh_km": 147.66240591542504
+    },
+    "nedc": {
+     "energy_wh_km": 100.60095419717305
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 86.86313999384464,
+     "hwy": 109.68277894038604,
+     "us06": 147.69739588084667,
+     "nedc": 100.63717531271189
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "motor_eff_map",
+   "key": "percent",
+   "story": "efficiency typed in percent",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": null,
+     "hwy": null,
+     "us06": null,
+     "nedc": null
+    },
+    [
+     "refused: drive and regeneration efficiencies are fractions, at most 1: was one typed in percent?",
+     "refused: drive and regeneration efficiencies are fractions, at most 1: was one typed in percent?",
+     "refused: drive and regeneration efficiencies are fractions, at most 1: was one typed in percent?",
+     "refused: drive and regeneration efficiencies are fractions, at most 1: was one typed in percent?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "motor_eff_map",
+   "key": "applied_twice",
+   "story": "the same efficiency applied twice",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 103.74475249992926
+    },
+    "hwy": {
+     "energy_wh_km": 119.69278190471447
+    },
+    "us06": {
+     "energy_wh_km": 161.58703262973685
+    },
+    "nedc": {
+     "energy_wh_km": 114.71202736001185
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 103.78074776279247,
+     "hwy": 119.7295476140146,
+     "us06": 161.62183115883292,
+     "nedc": 114.7497758597218
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "mass_kg",
+   "key": "lb_into_kg",
+   "story": "pounds typed into a kg field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.1381889198479868,
+     "peak_current_a": 67.65247615531395,
+     "rms_current_a": 24.93407949934104,
+     "min_pack_voltage_v": 463.58892090989247,
+     "drive_loss_kwh_per_km": 0.010244635572930498,
+     "pack_resistance_ohm": 0.5973333333333474,
+     "launch_75m_time_s": 5.363069374199099,
+     "launch_75m_speed_ms": 25.927719329484617
+    },
+    [
+     "warned: /tmp/tmp2kpyt02i/inputs.json: mass_kg = 661.4 kg is outside 150–500 kg (the lightest car with driver to the 405 kg Simscape car, with margin); is it pounds typed as kilograms, or the car weighed in tonnes?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "mass_kg",
+   "key": "kg_into_lb",
+   "story": "kg typed into a lb field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.09737925459270873,
+     "peak_current_a": 23.74091966633716,
+     "rms_current_a": 15.333732172140996,
+     "min_pack_voltage_v": 489.81875731930796,
+     "drive_loss_kwh_per_km": 0.007219211039230456,
+     "pack_resistance_ohm": 0.5973333333333386,
+     "launch_75m_time_s": 4.395284685221637,
+     "launch_75m_speed_ms": 35.903204961806395
+    },
+    [
+     "warned: /tmp/tmp2moq6qry/inputs.json: mass_kg = 136.1 kg is outside 150–500 kg (the lightest car with driver to the 405 kg Simscape car, with margin); is it pounds typed as kilograms, or the car weighed in tonnes?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "mass_kg",
+   "key": "g_into_kg",
+   "story": "grams typed into a kg field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 29.417715394147155,
+     "peak_current_a": 421.87499999999994,
+     "rms_current_a": 339.8268817265571,
+     "min_pack_voltage_v": 252.0,
+     "drive_loss_kwh_per_km": 2.1808823307450984,
+     "pack_resistance_ohm": 0.5973333333333255,
+     "launch_75m_time_s": 7497.252040337573,
+     "launch_75m_speed_ms": 0.01
+    },
+    [
+     "warned: /tmp/tmpj0rhn5_p/inputs.json: mass_kg = 3e+05 kg is outside 150–500 kg (the lightest car with driver to the 405 kg Simscape car, with margin); is it pounds typed as kilograms, or the car weighed in tonnes?",
+     "warned: /tmp/tmpj0rhn5_p/inputs.json: specific_power_w_kg = 0.2667 W/kg is outside 10–2000 W/kg (a loaded truck to a hypercar); is it a power or mass unit slip?",
+     "warned: traction_power_w: mass_kg = 3e+05 kg is outside 60–60000 kg (an e-scooter with rider to a 40 t truck with margin); is it grams or tonnes typed into a kg field?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "mass_kg",
+   "key": "t_into_kg",
+   "story": "tonnes typed into a kg field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.09038427666618386,
+     "peak_current_a": 18.90420110002206,
+     "rms_current_a": 13.974238080548417,
+     "min_pack_voltage_v": 492.70789054292015,
+     "drive_loss_kwh_per_km": 0.006700638350647538,
+     "pack_resistance_ohm": 0.5973333333333606,
+     "launch_75m_time_s": 2.295850111911323,
+     "launch_75m_speed_ms": 46.59468504549453
+    },
+    [
+     "warned: /tmp/tmp_k8otwtc/inputs.json: mass_kg = 0.3 kg is outside 150–500 kg (the lightest car with driver to the 405 kg Simscape car, with margin); is it pounds typed as kilograms, or the car weighed in tonnes?",
+     "warned: /tmp/tmp_k8otwtc/inputs.json: specific_power_w_kg = 2.667e+05 W/kg is outside 10–2000 W/kg (a loaded truck to a hypercar); is it a power or mass unit slip?",
+     "warned: traction_power_w: mass_kg = 0.3 kg is outside 60–60000 kg (an e-scooter with rider to a 40 t truck with margin); is it grams or tonnes typed into a kg field?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "cda_m2",
+   "key": "ft2_into_m2",
+   "story": "ft² typed into an m² field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.9867768075338876,
+     "peak_current_a": 332.8867392977419,
+     "rms_current_a": 219.6296869325133,
+     "min_pack_voltage_v": 305.1556543928155,
+     "drive_loss_kwh_per_km": 0.07315469862652473,
+     "pack_resistance_ohm": 0.5973333333333346,
+     "launch_75m_time_s": 5.7993695387855615,
+     "launch_75m_speed_ms": 18.027763558167273
+    },
+    [
+     "warned: /tmp/tmp3g27iwx6/inputs.json: cda_m2 = 11.84 m² is outside 0.4–2.5 m² (a slick car without wings to a full aero package); is it ft² typed into m², or Cd for CdA?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "cda_m2",
+   "key": "m2_into_ft2",
+   "story": "m² typed into a ft² field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.03548812670027688,
+     "peak_current_a": 27.07313288304656,
+     "rms_current_a": 7.390138740858373,
+     "min_pack_voltage_v": 487.8283152911935,
+     "drive_loss_kwh_per_km": 0.002630912272925025,
+     "pack_resistance_ohm": 0.5973333333334249,
+     "launch_75m_time_s": 4.409708718142025,
+     "launch_75m_speed_ms": 34.151538942432396
+    },
+    [
+     "warned: /tmp/tmp8mnxxpme/inputs.json: cda_m2 = 0.1022 m² is outside 0.4–2.5 m² (a slick car without wings to a full aero package); is it ft² typed into m², or Cd for CdA?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "cla_m2",
+   "key": "ft2_into_m2",
+   "story": "ft² typed into an m² field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 4.1153827965402,
+     "launch_75m_speed_ms": 32.72719084365433
+    },
+    [
+     "warned: /tmp/tmpcanjtm8f/inputs.json: cla_m2 = 26.91 m² is outside 0–6 m² (no aero to the largest wing packages); is it ft² typed into m²?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "cla_m2",
+   "key": "m2_into_ft2",
+   "story": "m² typed into a ft² field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 4.6798138184666715,
+     "launch_75m_speed_ms": 30.210035904404997
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "tire_radius_m",
+   "key": "diameter",
+   "story": "diameter typed as radius",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 5.1676463485502,
+     "launch_75m_speed_ms": 27.02313730894071
+    },
+    [
+     "warned: /tmp/tmpiem1j3bd/inputs.json: wheel_radius_m = 0.45 m is outside 0.18–0.3 m (10 in to 13 in wheels with tire); is it the diameter typed as the radius?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "tire_radius_m",
+   "key": "inch",
+   "story": "inches typed into a metre field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": Infinity
+    },
+    [
+     "result: the launch never reached 75 m",
+     "warned: /tmp/tmp8van7fv0/inputs.json: wheel_radius_m = 8.858 m is outside 0.18–0.3 m (10 in to 13 in wheels with tire); is it the diameter typed as the radius?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "tire_radius_m",
+   "key": "mm",
+   "story": "millimetres typed into a metre field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 7497.252123700334,
+     "launch_75m_speed_ms": 0.01
+    },
+    [
+     "warned: /tmp/tmpwafkdbjg/inputs.json: wheel_radius_m = 225 m is outside 0.18–0.3 m (10 in to 13 in wheels with tire); is it the diameter typed as the radius?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "tire_radius_m",
+   "key": "cm",
+   "story": "centimetres typed into a metre field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 7485.877666541567,
+     "launch_75m_speed_ms": 0.01
+    },
+    [
+     "warned: /tmp/tmplqjz2ft_/inputs.json: wheel_radius_m = 22.5 m is outside 0.18–0.3 m (10 in to 13 in wheels with tire); is it the diameter typed as the radius?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "cg_height_m",
+   "key": "diameter",
+   "story": "diameter typed as radius",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 4.516121949048026,
+     "launch_75m_speed_ms": 32.049339127792194
+    },
+    [
+     "warned: /tmp/tmpujh2c3r1/inputs.json: cg_height_m = 0.56 m is outside 0.15–0.5 m (a low car to a tall one); is it mm typed into metres?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "cg_height_m",
+   "key": "inch",
+   "story": "inches typed into a metre field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 4.516121949048026,
+     "launch_75m_speed_ms": 32.049339127792194
+    },
+    [
+     "warned: /tmp/tmpgscdahx9/inputs.json: cg_height_m = 11.02 m is outside 0.15–0.5 m (a low car to a tall one); is it mm typed into metres?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "cg_height_m",
+   "key": "mm",
+   "story": "millimetres typed into a metre field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 4.516121949048026,
+     "launch_75m_speed_ms": 32.049339127792194
+    },
+    [
+     "warned: /tmp/tmp157ansfk/inputs.json: cg_height_m = 280 m is outside 0.15–0.5 m (a low car to a tall one); is it mm typed into metres?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "cg_height_m",
+   "key": "cm",
+   "story": "centimetres typed into a metre field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 4.516121949048026,
+     "launch_75m_speed_ms": 32.049339127792194
+    },
+    [
+     "warned: /tmp/tmp8dx5j553/inputs.json: cg_height_m = 28 m is outside 0.15–0.5 m (a low car to a tall one); is it mm typed into metres?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "wheelbase_m",
+   "key": "diameter",
+   "story": "diameter typed as radius",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 4.516121949048026,
+     "launch_75m_speed_ms": 32.049339127792194
+    },
+    [
+     "warned: /tmp/tmpl3ua67l6/inputs.json: wheelbase_m = 3.1 m is outside 1.525–2.2 m (the rules' 1525 mm minimum to a long car); is it mm typed into metres?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "wheelbase_m",
+   "key": "inch",
+   "story": "inches typed into a metre field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 4.516121949048026,
+     "launch_75m_speed_ms": 32.049339127792194
+    },
+    [
+     "warned: /tmp/tmpk04zfqwb/inputs.json: wheelbase_m = 61.02 m is outside 1.525–2.2 m (the rules' 1525 mm minimum to a long car); is it mm typed into metres?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "wheelbase_m",
+   "key": "mm",
+   "story": "millimetres typed into a metre field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 4.516121949048026,
+     "launch_75m_speed_ms": 32.049339127792194
+    },
+    [
+     "warned: /tmp/tmp6r7566wq/inputs.json: wheelbase_m = 1550 m is outside 1.525–2.2 m (the rules' 1525 mm minimum to a long car); is it mm typed into metres?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "wheelbase_m",
+   "key": "cm",
+   "story": "centimetres typed into a metre field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 4.516121949048026,
+     "launch_75m_speed_ms": 32.049339127792194
+    },
+    [
+     "warned: /tmp/tmp3_zjigxw/inputs.json: wheelbase_m = 155 m is outside 1.525–2.2 m (the rules' 1525 mm minimum to a long car); is it mm typed into metres?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "mu",
+   "key": "percent",
+   "story": "typed in percent",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 3.771595863366614,
+     "launch_75m_speed_ms": 33.669590405977125
+    },
+    [
+     "warned: /tmp/tmpbfrqk214/inputs.json: mu = 140 is outside 0.8–2.5 (a hard compound to a slick with downforce); is it grip typed in percent?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "mu",
+   "key": "per_mille",
+   "story": "typed per thousand (kg/t)",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 3.771595863366614,
+     "launch_75m_speed_ms": 33.669590405977125
+    },
+    [
+     "warned: /tmp/tmpftahbljj/inputs.json: mu = 1400 is outside 0.8–2.5 (a hard compound to a slick with downforce); is it grip typed in percent?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "final_drive",
+   "key": "inverse",
+   "story": "ratio entered as its inverse",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": Infinity
+    },
+    [
+     "result: the launch never reached 75 m",
+     "warned: /tmp/tmpiy2ou6_d/inputs.json: final_drive = 0.1429 is outside 1.5–20 (a direct-ish drive to a hub-motor planetary); is it the ratio entered as its inverse?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "motor_peak_torque_nm",
+   "key": "lbft_into_nm",
+   "story": "lb·ft typed into an N·m field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 4.516121949048026,
+     "launch_75m_speed_ms": 32.049339127792194
+    },
+    [
+     "warned: /tmp/tmplmmlqi2n/inputs.json: motor_peak_torque_nm = 88.51 disagrees with 120 from the curve (-26%): is one of them in another unit?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "motor_peak_torque_nm",
+   "key": "nm_into_lbft",
+   "story": "N·m typed into a lb·ft field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 4.516121949048026,
+     "launch_75m_speed_ms": 32.049339127792194
+    },
+    [
+     "warned: /tmp/tmpilmx673d/inputs.json: motor_peak_torque_nm = 162.7 disagrees with 120 from the curve (+36%): is one of them in another unit?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "motor_max_rpm",
+   "key": "rads_into_rpm",
+   "story": "rad/s typed into an rpm field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 4.516121949048026,
+     "launch_75m_speed_ms": 32.049339127792194
+    },
+    [
+     "warned: /tmp/tmpu34lp90v/inputs.json: motor_max_rpm = 2461 disagrees with 2.35e+04 from the curve (-90%): is one of them in another unit?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "pack_power_kw",
+   "key": "kilo_low",
+   "story": "W typed into a kW field (or kW into W)",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 4.516121949048026,
+     "launch_75m_speed_ms": 32.049339127792194
+    },
+    [
+     "warned: /tmp/tmpep4072xl/inputs.json: peak_power_w = 80 W is outside 5000–200000 W (a small single-cylinder car to the largest four-motor EVs); is it kW typed into a W field, or hp into kW?",
+     "warned: /tmp/tmpep4072xl/inputs.json: specific_power_w_kg = 0.2667 W/kg is outside 10–2000 W/kg (a loaded truck to a hypercar); is it a power or mass unit slip?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "pack_power_kw",
+   "key": "kilo_high",
+   "story": "kW typed into a W field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 4.516121949048026,
+     "launch_75m_speed_ms": 32.049339127792194
+    },
+    [
+     "warned: /tmp/tmp09v76_r6/inputs.json: peak_power_w = 8e+07 W is outside 5000–200000 W (a small single-cylinder car to the largest four-motor EVs); is it kW typed into a W field, or hp into kW?",
+     "warned: /tmp/tmp09v76_r6/inputs.json: specific_power_w_kg = 2.667e+05 W/kg is outside 10–2000 W/kg (a loaded truck to a hypercar); is it a power or mass unit slip?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "pack_power_kw",
+   "key": "hp_into_kw",
+   "story": "hp typed into a kW field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 4.516121949048026,
+     "launch_75m_speed_ms": 32.049339127792194
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "pack_power_kw",
+   "key": "kw_into_hp",
+   "story": "kW typed into an hp field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 4.516121949048026,
+     "launch_75m_speed_ms": 32.049339127792194
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "inverter_eff",
+   "key": "percent",
+   "story": "efficiency typed in percent",
+   "kinematik": [
+    {},
+    [
+     "refused: /tmp/tmpqgly8lb2/inputs.json: drive efficiencies are fractions, at most 1: was one typed in percent?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "inverter_eff",
+   "key": "applied_twice",
+   "story": "the same efficiency applied twice",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.11197942818428697,
+     "peak_current_a": 35.44591281058246,
+     "rms_current_a": 18.386681767548517,
+     "min_pack_voltage_v": 482.8269747478121,
+     "drive_loss_kwh_per_km": 0.011411929906717458,
+     "pack_resistance_ohm": 0.5973333333333058,
+     "launch_75m_time_s": 4.516121949048026,
+     "launch_75m_speed_ms": 32.049339127792194
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "driveline_eff",
+   "key": "percent",
+   "story": "efficiency typed in percent",
+   "kinematik": [
+    {},
+    [
+     "refused: /tmp/tmp0hsnn341/inputs.json: drive efficiencies are fractions, at most 1: was one typed in percent?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "driveline_eff",
+   "key": "applied_twice",
+   "story": "the same efficiency applied twice",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.11433688983027195,
+     "peak_current_a": 36.22715691710452,
+     "rms_current_a": 18.78502286277662,
+     "min_pack_voltage_v": 482.36031160151623,
+     "drive_loss_kwh_per_km": 0.0084763653275672,
+     "pack_resistance_ohm": 0.5973333333333022,
+     "launch_75m_time_s": 4.52465349868293,
+     "launch_75m_speed_ms": 31.6926420556376
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "cell_v",
+   "key": "cell_into_pack",
+   "story": "a cell's 3.6 V typed where the pack voltage belongs",
+   "no_change": true
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "cell_v",
+   "key": "pack_into_cell",
+   "story": "the pack voltage typed as the cell voltage",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 0.23527279802237896,
+     "rms_current_a": 0.1239782274512833,
+     "min_pack_voltage_v": 70559.85946371531,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333328512083,
+     "launch_75m_time_s": 4.516121949048026,
+     "launch_75m_speed_ms": 32.049339127792194
+    },
+    [
+     "warned: /tmp/tmph8hlx2xi/inputs.json: pack_voltage_v = 7.056e+04 V is outside 60–600 V (the rules' 600 V ceiling); is it a cell voltage typed as the pack voltage?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "cell_ah",
+   "key": "mah_into_ah",
+   "story": "mAh typed into an Ah field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 4.516121949048026,
+     "launch_75m_speed_ms": 32.049339127792194
+    },
+    [
+     "warned: /tmp/tmp6w7ke20s/inputs.json: capacity_ah = 1.5e+04 Ah is outside 2–300 Ah (a small sprint pack to the 230 Ah Simscape pack); is it mAh typed into Ah?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "cell_ohm",
+   "key": "mohm_into_ohm",
+   "story": "milliohms typed into an ohm field",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 0.421875,
+     "rms_current_a": 0.3976372741706171,
+     "min_pack_voltage_v": 251.99999999999997,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 597.3333333333449,
+     "launch_75m_time_s": 4.516121949048026,
+     "launch_75m_speed_ms": 32.049339127792194
+    },
+    [
+     "warned: /tmp/tmp77gfwh4b/inputs.json: pack_resistance_ohm = 597.3 Ω is outside 0.0005–5 Ω (a bus pack to a small high-voltage string); is it mΩ typed into Ω?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "crr",
+   "key": "percent",
+   "story": "typed in percent",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 1.4846137822988748,
+     "peak_current_a": 421.87499999999994,
+     "rms_current_a": 364.948043488187,
+     "min_pack_voltage_v": 252.0,
+     "drive_loss_kwh_per_km": 0.11006184275072704,
+     "pack_resistance_ohm": 0.5973333333333379,
+     "launch_75m_time_s": 7501.875000000362,
+     "launch_75m_speed_ms": 0.01
+    },
+    [
+     "warned: /tmp/tmpjygr64uw/inputs.json: crr = 1.5 is outside 0.002–0.05 (a train-like 0.002 to a soft off-road tire); is it rolling resistance typed in percent?",
+     "warned: traction_power_w: crr = 1.5 is outside 0.002–0.05 (a train-like 0.002 to a soft off-road tire); is it rolling resistance typed in percent?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "crr",
+   "key": "per_mille",
+   "story": "typed per thousand (kg/t)",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 14.03191307738293,
+     "peak_current_a": 421.87499999999994,
+     "rms_current_a": 421.87499999999994,
+     "min_pack_voltage_v": 252.0,
+     "drive_loss_kwh_per_km": 1.040255875991783,
+     "pack_resistance_ohm": -0.2986666666666649,
+     "launch_75m_time_s": 7501.875000000362,
+     "launch_75m_speed_ms": 0.01
+    },
+    [
+     "warned: /tmp/tmp104pijhp/inputs.json: crr = 15 is outside 0.002–0.05 (a train-like 0.002 to a soft off-road tire); is it rolling resistance typed in percent?",
+     "warned: traction_power_w: crr = 15 is outside 0.002–0.05 (a train-like 0.002 to a soft off-road tire); is it rolling resistance typed in percent?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "mass_kg",
+   "key": "lb_into_kg",
+   "story": "pounds typed into a kg field",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 5.428000000000147,
+     "fuel_kg_per_km": 0.03833516465568728
+    },
+    [
+     "warned: inputs.json: mass_kg = 661.4 kg is outside 150–500 kg (the lightest car with driver to the 405 kg Simscape car, with margin); is it pounds typed as kilograms, or the car weighed in tonnes?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "mass_kg",
+   "key": "kg_into_lb",
+   "story": "kg typed into a lb field",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 4.663999999999892,
+     "fuel_kg_per_km": 0.026965652899284796
+    },
+    [
+     "warned: inputs.json: mass_kg = 136.1 kg is outside 150–500 kg (the lightest car with driver to the 405 kg Simscape car, with margin); is it pounds typed as kilograms, or the car weighed in tonnes?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "mass_kg",
+   "key": "g_into_kg",
+   "story": "grams typed into a kg field",
+   "kinematik": [
+    {
+     "launch_75m_time_s": Infinity,
+     "fuel_kg_per_km": 0.15231382236384078
+    },
+    [
+     "warned: ICEVehicle: mass_kg = 3e+05 kg is outside 60–60000 kg (an e-scooter with rider to a 40 t truck with margin); is it grams or tonnes typed into a kg field?",
+     "warned: inputs.json (engine): specific_power_w_kg = 0.2035 W/kg is outside 10–2000 W/kg (a loaded truck to a hypercar); is it a power or mass unit slip?",
+     "warned: inputs.json: mass_kg = 3e+05 kg is outside 150–500 kg (the lightest car with driver to the 405 kg Simscape car, with margin); is it pounds typed as kilograms, or the car weighed in tonnes?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "mass_kg",
+   "key": "t_into_kg",
+   "story": "tonnes typed into a kg field",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 19.668000000001054,
+     "fuel_kg_per_km": 0.024540031809549598
+    },
+    [
+     "warned: ICEVehicle: mass_kg = 0.3 kg is outside 60–60000 kg (an e-scooter with rider to a 40 t truck with margin); is it grams or tonnes typed into a kg field?",
+     "warned: inputs.json (engine): specific_power_w_kg = 2.035e+05 W/kg is outside 10–2000 W/kg (a loaded truck to a hypercar); is it a power or mass unit slip?",
+     "warned: inputs.json: mass_kg = 0.3 kg is outside 150–500 kg (the lightest car with driver to the 405 kg Simscape car, with margin); is it pounds typed as kilograms, or the car weighed in tonnes?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "cda_m2",
+   "key": "ft2_into_m2",
+   "story": "ft² typed into an m² field",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 5.552000000000189,
+     "fuel_kg_per_km": 0.20137803838141657
+    },
+    [
+     "warned: inputs.json: cda_m2 = 11.84 m² is outside 0.4–2.5 m² (a slick car without wings to a full aero package); is it ft² typed into m², or Cd for CdA?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "cda_m2",
+   "key": "m2_into_ft2",
+   "story": "m² typed into a ft² field",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 4.383999999999799,
+     "fuel_kg_per_km": 0.011752789117477864
+    },
+    [
+     "warned: inputs.json: cda_m2 = 0.1022 m² is outside 0.4–2.5 m² (a slick car without wings to a full aero package); is it ft² typed into m², or Cd for CdA?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "cla_m2",
+   "key": "ft2_into_m2",
+   "story": "ft² typed into an m² field",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 4.262999999999758,
+     "fuel_kg_per_km": 0.030284018872502472
+    },
+    [
+     "warned: ICEVehicle: cla_m2 = 26.91 m² is outside -2–8 m² (lift to the downforce of a wing car); is it ft² typed into m²?",
+     "warned: inputs.json: cla_m2 = 26.91 m² is outside 0–6 m² (no aero to the largest wing packages); is it ft² typed into m²?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "cla_m2",
+   "key": "m2_into_ft2",
+   "story": "m² typed into a ft² field",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 4.5419999999998515,
+     "fuel_kg_per_km": 0.030284018872502472
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "tire_radius_m",
+   "key": "diameter",
+   "story": "diameter typed as radius",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 4.882999999999965,
+     "fuel_kg_per_km": 0.0294667165689799
+    },
+    [
+     "warned: inputs.json: wheel_radius_m = 0.45 m is outside 0.18–0.3 m (10 in to 13 in wheels with tire); is it the diameter typed as the radius?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "tire_radius_m",
+   "key": "inch",
+   "story": "inches typed into a metre field",
+   "kinematik": [
+    {
+     "launch_75m_time_s": Infinity,
+     "fuel_kg_per_km": 0.005546188958748489
+    },
+    [
+     "warned: Gearbox: wheel_radius_m = 8.858 m is outside 0.1–0.7 m (a scooter wheel to a truck tire); is it mm, cm or inches typed into metres?",
+     "warned: inputs.json: wheel_radius_m = 8.858 m is outside 0.18–0.3 m (10 in to 13 in wheels with tire); is it the diameter typed as the radius?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "tire_radius_m",
+   "key": "mm",
+   "story": "millimetres typed into a metre field",
+   "kinematik": [
+    {
+     "launch_75m_time_s": Infinity,
+     "fuel_kg_per_km": 0.00047860006499446953
+    },
+    [
+     "warned: Gearbox: wheel_radius_m = 225 m is outside 0.1–0.7 m (a scooter wheel to a truck tire); is it mm, cm or inches typed into metres?",
+     "warned: inputs.json: wheel_radius_m = 225 m is outside 0.18–0.3 m (10 in to 13 in wheels with tire); is it the diameter typed as the radius?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "tire_radius_m",
+   "key": "cm",
+   "story": "centimetres typed into a metre field",
+   "kinematik": [
+    {
+     "launch_75m_time_s": Infinity,
+     "fuel_kg_per_km": 0.0023610111023355937
+    },
+    [
+     "warned: Gearbox: wheel_radius_m = 22.5 m is outside 0.1–0.7 m (a scooter wheel to a truck tire); is it mm, cm or inches typed into metres?",
+     "warned: inputs.json: wheel_radius_m = 22.5 m is outside 0.18–0.3 m (10 in to 13 in wheels with tire); is it the diameter typed as the radius?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "cg_height_m",
+   "key": "diameter",
+   "story": "diameter typed as radius",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 4.135999999999716,
+     "fuel_kg_per_km": 0.030284018872502472
+    },
+    [
+     "warned: inputs.json: cg_height_m = 0.56 m is outside 0.15–0.5 m (a low car to a tall one); is it mm typed into metres?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "cg_height_m",
+   "key": "inch",
+   "story": "inches typed into a metre field",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 4.441999999999818,
+     "fuel_kg_per_km": 0.030284018872502472
+    },
+    [
+     "warned: ICEVehicle: cg_height_m = 11.02 m is outside 0.08–2.5 m (a kart to a truck); is it mm typed into metres?",
+     "warned: inputs.json: cg_height_m = 11.02 m is outside 0.15–0.5 m (a low car to a tall one); is it mm typed into metres?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "cg_height_m",
+   "key": "mm",
+   "story": "millimetres typed into a metre field",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 5.247000000000087,
+     "fuel_kg_per_km": 0.030284018872502472
+    },
+    [
+     "warned: ICEVehicle: cg_height_m = 280 m is outside 0.08–2.5 m (a kart to a truck); is it mm typed into metres?",
+     "warned: inputs.json: cg_height_m = 280 m is outside 0.15–0.5 m (a low car to a tall one); is it mm typed into metres?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "cg_height_m",
+   "key": "cm",
+   "story": "centimetres typed into a metre field",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 5.247000000000087,
+     "fuel_kg_per_km": 0.030284018872502472
+    },
+    [
+     "warned: ICEVehicle: cg_height_m = 28 m is outside 0.08–2.5 m (a kart to a truck); is it mm typed into metres?",
+     "warned: inputs.json: cg_height_m = 28 m is outside 0.15–0.5 m (a low car to a tall one); is it mm typed into metres?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "wheelbase_m",
+   "key": "diameter",
+   "story": "diameter typed as radius",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 4.681999999999898,
+     "fuel_kg_per_km": 0.030284018872502472
+    },
+    [
+     "warned: inputs.json: wheelbase_m = 3.1 m is outside 1.525–2.2 m (the rules' 1525 mm minimum to a long car); is it mm typed into metres?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "wheelbase_m",
+   "key": "inch",
+   "story": "inches typed into a metre field",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 4.884999999999966,
+     "fuel_kg_per_km": 0.030284018872502472
+    },
+    [
+     "warned: ICEVehicle: wheelbase_m = 61.02 m is outside 0.5–8 m (a kart to a truck); is it mm typed into metres?",
+     "warned: inputs.json: wheelbase_m = 61.02 m is outside 1.525–2.2 m (the rules' 1525 mm minimum to a long car); is it mm typed into metres?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "wheelbase_m",
+   "key": "mm",
+   "story": "millimetres typed into a metre field",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 4.89599999999997,
+     "fuel_kg_per_km": 0.030284018872502472
+    },
+    [
+     "warned: ICEVehicle: wheelbase_m = 1550 m is outside 0.5–8 m (a kart to a truck); is it mm typed into metres?",
+     "warned: inputs.json: wheelbase_m = 1550 m is outside 1.525–2.2 m (the rules' 1525 mm minimum to a long car); is it mm typed into metres?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "wheelbase_m",
+   "key": "cm",
+   "story": "centimetres typed into a metre field",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 4.891999999999968,
+     "fuel_kg_per_km": 0.030284018872502472
+    },
+    [
+     "warned: ICEVehicle: wheelbase_m = 155 m is outside 0.5–8 m (a kart to a truck); is it mm typed into metres?",
+     "warned: inputs.json: wheelbase_m = 155 m is outside 1.525–2.2 m (the rules' 1525 mm minimum to a long car); is it mm typed into metres?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "mu",
+   "key": "percent",
+   "story": "typed in percent",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 4.11699999999971,
+     "fuel_kg_per_km": 0.030284018872502472
+    },
+    [
+     "warned: ICEVehicle: mu = 140 is outside 0.2–3 (wet ice excluded, to a slick with downforce); is it grip typed in percent?",
+     "warned: inputs.json: mu = 140 is outside 0.8–2.5 (a hard compound to a slick with downforce); is it grip typed in percent?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "mu",
+   "key": "per_mille",
+   "story": "typed per thousand (kg/t)",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 4.11699999999971,
+     "fuel_kg_per_km": 0.030284018872502472
+    },
+    [
+     "warned: ICEVehicle: mu = 1400 is outside 0.2–3 (wet ice excluded, to a slick with downforce); is it grip typed in percent?",
+     "warned: inputs.json: mu = 1400 is outside 0.8–2.5 (a hard compound to a slick with downforce); is it grip typed in percent?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "crr",
+   "key": "percent",
+   "story": "typed in percent",
+   "kinematik": [
+    {
+     "launch_75m_time_s": Infinity,
+     "fuel_kg_per_km": 0.22981705209955072
+    },
+    [
+     "warned: ICEVehicle: crr = 1.5 is outside 0.002–0.05 (a train-like 0.002 to a soft off-road tire); is it rolling resistance typed in percent?",
+     "warned: inputs.json: crr = 1.5 is outside 0.002–0.05 (a train-like 0.002 to a soft off-road tire); is it rolling resistance typed in percent?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "crr",
+   "key": "per_mille",
+   "story": "typed per thousand (kg/t)",
+   "kinematik": [
+    {
+     "launch_75m_time_s": Infinity,
+     "fuel_kg_per_km": 0.2300409562315314
+    },
+    [
+     "warned: ICEVehicle: crr = 15 is outside 0.002–0.05 (a train-like 0.002 to a soft off-road tire); is it rolling resistance typed in percent?",
+     "warned: inputs.json: crr = 15 is outside 0.002–0.05 (a train-like 0.002 to a soft off-road tire); is it rolling resistance typed in percent?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "final_drive",
+   "key": "inverse",
+   "story": "ratio entered as its inverse",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 10.907999999999394,
+     "fuel_kg_per_km": 0.021341277668436222
+    },
+    [
+     "warned: Gearbox: final_drive = 0.3333 is outside 0.8–30 (an overdrive to a hub-motor reduction); is it the ratio entered as its inverse?",
+     "warned: inputs.json (engine): final_drive = 0.3333 is outside 1.5–20 (a direct-ish drive to a hub-motor planetary); is it the ratio entered as its inverse?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "primary",
+   "key": "inverse",
+   "story": "ratio entered as its inverse",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 7.477000000000832,
+     "fuel_kg_per_km": 0.0289696839916593
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "driveline_eff",
+   "key": "percent",
+   "story": "efficiency typed in percent",
+   "kinematik": [
+    {},
+    [
+     "refused: inputs.json: drive efficiencies are fractions, at most 1: was one typed in percent?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "driveline_eff",
+   "key": "applied_twice",
+   "story": "the same efficiency applied twice",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 4.498999999999837,
+     "fuel_kg_per_km": 0.03279573642549159
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "bte",
+   "key": "percent",
+   "story": "efficiency typed in percent",
+   "kinematik": [
+    {},
+    [
+     "refused: inputs.json: drive efficiencies are fractions, at most 1: was one typed in percent?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "bte",
+   "key": "applied_twice",
+   "story": "the same efficiency applied twice",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 4.47699999999983,
+     "fuel_kg_per_km": 0.10019626381284867
+    },
+    [
+     "warned: inputs.json (engine): brake_thermal_eff = 0.09 is outside 0.1–0.5 (engines turn 10 to 50 % of their fuel into work); is it an efficiency typed in percent?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "redline_rpm",
+   "key": "rads_into_rpm",
+   "story": "rad/s typed into an rpm field",
+   "kinematik": [
+    {},
+    [
+     "refused: redline must lie above the first rpm point",
+     "warned: inputs.json (engine): engine_redline_rpm = 1414 rpm is outside 7000–17000 rpm (a large single to a 600 cc four); is it rad/s typed into rpm?",
+     "warned: inputs.json (engine): redline_rpm = 1414 disagrees with 1.35e+04 from the curve (-90%): is one of them in another unit?"
+    ]
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "launch_rpm",
+   "key": "rads_into_rpm",
+   "story": "rad/s typed into an rpm field",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 5.003000000000005,
+     "fuel_kg_per_km": 0.030284018872502472
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "engine_torque",
+   "key": "lbft_into_nm",
+   "story": "lb·ft typed into an N·m field",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 4.6469999999998866,
+     "fuel_kg_per_km": 0.030284018872502472
+    },
+    []
+   ]
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "engine_torque",
+   "key": "nm_into_lbft",
+   "story": "N·m typed into a lb·ft field",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 4.381999999999798,
+     "fuel_kg_per_km": 0.030284018872502472
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:bolt",
+   "field": "mass_kg",
+   "key": "lb_for_kg",
+   "story": "the mass from a US scale, in pounds",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 145.10150051520162
+    },
+    "hwy": {
+     "energy_wh_km": 157.1747610919273
+    },
+    "us06": {
+     "energy_wh_km": 207.11341918810126
+    },
+    "nedc": {
+     "energy_wh_km": 155.0960775219499
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 145.1783024002525,
+     "hwy": 157.25304579061083,
+     "us06": 207.3151897731128,
+     "nedc": 155.1752430945741
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ev",
+   "field": "mass_kg",
+   "key": "lb_for_kg",
+   "story": "the mass from a US scale, in pounds",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.1381889198479868,
+     "peak_current_a": 67.65247615531395,
+     "rms_current_a": 24.93407949934104,
+     "min_pack_voltage_v": 463.58892090989247,
+     "drive_loss_kwh_per_km": 0.010244635572930498,
+     "pack_resistance_ohm": 0.5973333333333474,
+     "launch_75m_time_s": 5.363069374199099,
+     "launch_75m_speed_ms": 25.927719329484617
+    },
+    [
+     "warned: /tmp/tmp1o3durbj/inputs.json: mass_kg = 661.4 kg is outside 150–500 kg (the lightest car with driver to the 405 kg Simscape car, with margin); is it pounds typed as kilograms, or the car weighed in tonnes?"
+    ]
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ice",
+   "field": "mass_kg",
+   "key": "lb_for_kg",
+   "story": "the mass from a US scale, in pounds",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 5.428000000000147,
+     "fuel_kg_per_km": 0.03833516465568728
+    },
+    [
+     "warned: inputs.json: mass_kg = 661.4 kg is outside 150–500 kg (the lightest car with driver to the 405 kg Simscape car, with margin); is it pounds typed as kilograms, or the car weighed in tonnes?"
+    ]
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:bolt",
+   "field": "mass_kg",
+   "key": "driver_dropped",
+   "story": "the 75 kg driver left out of the mass",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 86.01953598976127
+    },
+    "hwy": {
+     "energy_wh_km": 109.22442036262318
+    },
+    "us06": {
+     "energy_wh_km": 146.7398057698419
+    },
+    "nedc": {
+     "energy_wh_km": 99.77105460443784
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 86.05353478232595,
+     "hwy": 109.2589716830123,
+     "us06": 146.77333783864293,
+     "nedc": 99.80597926543177
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ev",
+   "field": "mass_kg",
+   "key": "driver_dropped",
+   "story": "the 75 kg driver left out of the mass",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10316961402522211,
+     "peak_current_a": 29.406678804811527,
+     "rms_current_a": 16.596616411749416,
+     "min_pack_voltage_v": 486.4344105272593,
+     "drive_loss_kwh_per_km": 0.007648479335759837,
+     "pack_resistance_ohm": 0.5973333333333462,
+     "launch_75m_time_s": 4.4716425383469565,
+     "launch_75m_speed_ms": 33.52816402314429
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ice",
+   "field": "mass_kg",
+   "key": "driver_dropped",
+   "story": "the 75 kg driver left out of the mass",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 4.485999999999833,
+     "fuel_kg_per_km": 0.028729356759536015
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:bolt",
+   "field": "cda_m2",
+   "key": "cd_for_cda",
+   "story": "the drag coefficient typed where CdA belongs",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 72.51910339668069
+    },
+    "hwy": {
+     "energy_wh_km": 73.22488040266784
+    },
+    "us06": {
+     "energy_wh_km": 94.51499164127856
+    },
+    "nedc": {
+     "energy_wh_km": 75.57841056414611
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 72.55459369225773,
+     "hwy": 73.26125616759566,
+     "us06": 94.54971211938364,
+     "nedc": 75.6153291274625
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:bolt",
+   "field": "crr",
+   "key": "crr_percent",
+   "story": "rolling resistance typed in percent",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 3631.953395292008
+    },
+    "hwy": {
+     "energy_wh_km": 3618.879934054735
+    },
+    "us06": {
+     "energy_wh_km": 3622.4760758511366
+    },
+    "nedc": {
+     "energy_wh_km": 3621.8540351630622
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 3653.4844047626507,
+     "hwy": 3701.1326568031636,
+     "us06": 3731.9314582447073,
+     "nedc": 3673.5632696560206
+    },
+    [
+     "warned: traction_power_w: crr = 0.7767 is outside 0.002–0.05 (a train-like 0.002 to a soft off-road tire); is it rolling resistance typed in percent?"
+    ]
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ev",
+   "field": "crr",
+   "key": "crr_percent",
+   "story": "rolling resistance typed in percent",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 1.4846137822988748,
+     "peak_current_a": 421.87499999999994,
+     "rms_current_a": 364.948043488187,
+     "min_pack_voltage_v": 252.0,
+     "drive_loss_kwh_per_km": 0.11006184275072704,
+     "pack_resistance_ohm": 0.5973333333333379,
+     "launch_75m_time_s": 7501.875000000362,
+     "launch_75m_speed_ms": 0.01
+    },
+    [
+     "warned: /tmp/tmp797px83c/inputs.json: crr = 1.5 is outside 0.002–0.05 (a train-like 0.002 to a soft off-road tire); is it rolling resistance typed in percent?",
+     "warned: traction_power_w: crr = 1.5 is outside 0.002–0.05 (a train-like 0.002 to a soft off-road tire); is it rolling resistance typed in percent?"
+    ]
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ice",
+   "field": "crr",
+   "key": "crr_percent",
+   "story": "rolling resistance typed in percent",
+   "kinematik": [
+    {
+     "launch_75m_time_s": Infinity,
+     "fuel_kg_per_km": 0.22981705209955072
+    },
+    [
+     "warned: ICEVehicle: crr = 1.5 is outside 0.002–0.05 (a train-like 0.002 to a soft off-road tire); is it rolling resistance typed in percent?",
+     "warned: inputs.json: crr = 1.5 is outside 0.002–0.05 (a train-like 0.002 to a soft off-road tire); is it rolling resistance typed in percent?"
+    ]
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:bolt",
+   "field": "wheel_radius_m",
+   "key": "dia_for_radius",
+   "story": "wheel diameter typed as the radius",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 88.04612312275876
+    },
+    "hwy": {
+     "energy_wh_km": 110.95106971662337
+    },
+    "us06": {
+     "energy_wh_km": 148.72089671684682
+    },
+    "nedc": {
+     "energy_wh_km": 101.71335160753154
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 88.08171675641482,
+     "hwy": 110.98725969477249,
+     "us06": 148.75599964000327,
+     "nedc": 101.74993045949654
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ev",
+   "field": "tire_radius_m",
+   "key": "dia_for_radius",
+   "story": "wheel diameter typed as the radius",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 5.1676463485502,
+     "launch_75m_speed_ms": 27.02313730894071
+    },
+    [
+     "warned: /tmp/tmpehlsn0pn/inputs.json: wheel_radius_m = 0.45 m is outside 0.18–0.3 m (10 in to 13 in wheels with tire); is it the diameter typed as the radius?"
+    ]
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ice",
+   "field": "tire_radius_m",
+   "key": "dia_for_radius",
+   "story": "wheel diameter typed as the radius",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 4.882999999999965,
+     "fuel_kg_per_km": 0.0294667165689799
+    },
+    [
+     "warned: inputs.json: wheel_radius_m = 0.45 m is outside 0.18–0.3 m (10 in to 13 in wheels with tire); is it the diameter typed as the radius?"
+    ]
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:bolt",
+   "field": "motor_power_w",
+   "key": "hp_for_kw",
+   "story": "a horsepower rating typed as kW",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 89.75079435220604
+    },
+    "hwy": {
+     "energy_wh_km": 112.48875667040714
+    },
+    "us06": {
+     "energy_wh_km": 150.4736572832362
+    },
+    "nedc": {
+     "energy_wh_km": 103.16520885179672
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 89.78669116221973,
+     "hwy": 112.52529578363674,
+     "us06": 150.50895717096427,
+     "nedc": 103.20217349001273
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ev",
+   "field": "pack_power_kw",
+   "key": "hp_for_kw",
+   "story": "a horsepower rating typed as kW",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 4.516121949048026,
+     "launch_75m_speed_ms": 32.049339127792194
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:bolt",
+   "field": "aux_power_w",
+   "key": "aux_kilo",
+   "story": "300 W of auxiliaries typed as 0.3 (kW into a W field)",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 80.31351422500546
+    },
+    "hwy": {
+     "energy_wh_km": 107.77653484846222
+    },
+    "us06": {
+     "energy_wh_km": 145.67068611581817
+    },
+    "nedc": {
+     "energy_wh_km": 94.38297668624331
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 80.3491007888737,
+     "hwy": 107.81273235737127,
+     "us06": 145.70579416430587,
+     "nedc": 94.4195556512423
+    },
+    [
+     "warned: traction_power_w: aux_power_w = 0.25 W is outside 5–30000 W (a dashboard to a bus's air conditioning (0 is allowed: no auxiliaries)); is it kW typed into a W field, or W into kW?"
+    ]
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:bolt",
+   "field": "transmission_eff",
+   "key": "eff_percent",
+   "story": "drive efficiency typed in percent",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": null,
+     "hwy": null,
+     "us06": null,
+     "nedc": null
+    },
+    [
+     "refused: drive and regeneration efficiencies are fractions, at most 1: was one typed in percent?",
+     "refused: drive and regeneration efficiencies are fractions, at most 1: was one typed in percent?",
+     "refused: drive and regeneration efficiencies are fractions, at most 1: was one typed in percent?",
+     "refused: drive and regeneration efficiencies are fractions, at most 1: was one typed in percent?"
+    ]
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ev",
+   "field": "inverter_eff",
+   "key": "eff_percent",
+   "story": "drive efficiency typed in percent",
+   "kinematik": [
+    {},
+    [
+     "refused: /tmp/tmpbo4i7yoy/inputs.json: drive efficiencies are fractions, at most 1: was one typed in percent?"
+    ]
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ice",
+   "field": "driveline_eff",
+   "key": "eff_percent",
+   "story": "drive efficiency typed in percent",
+   "kinematik": [
+    {},
+    [
+     "refused: inputs.json: drive efficiencies are fractions, at most 1: was one typed in percent?"
+    ]
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:bolt",
+   "field": "transmission_eff",
+   "key": "eff_twice",
+   "story": "the drive efficiency applied twice",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 91.85732707480716
+    },
+    "hwy": {
+     "energy_wh_km": 113.55290781564452
+    },
+    "us06": {
+     "energy_wh_km": 153.84520133307493
+    },
+    "nedc": {
+     "energy_wh_km": 105.09295450338064
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 91.89328048732212,
+     "hwy": 113.58969754481954,
+     "us06": 153.88076797738847,
+     "nedc": 105.1300881781693
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ev",
+   "field": "inverter_eff",
+   "key": "eff_twice",
+   "story": "the drive efficiency applied twice",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.11197942818428697,
+     "peak_current_a": 35.44591281058246,
+     "rms_current_a": 18.386681767548517,
+     "min_pack_voltage_v": 482.8269747478121,
+     "drive_loss_kwh_per_km": 0.011411929906717458,
+     "pack_resistance_ohm": 0.5973333333333058,
+     "launch_75m_time_s": 4.516121949048026,
+     "launch_75m_speed_ms": 32.049339127792194
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ice",
+   "field": "driveline_eff",
+   "key": "eff_twice",
+   "story": "the drive efficiency applied twice",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 4.498999999999837,
+     "fuel_kg_per_km": 0.03279573642549159
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ev",
+   "field": "motor_peak_torque_nm",
+   "key": "lbft_for_nm",
+   "story": "motor torque from a US datasheet, in lb·ft",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 4.516121949048026,
+     "launch_75m_speed_ms": 32.049339127792194
+    },
+    [
+     "warned: /tmp/tmp6glz20y9/inputs.json: motor_peak_torque_nm = 88.51 disagrees with 120 from the curve (-26%): is one of them in another unit?"
+    ]
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ice",
+   "field": "engine_torque",
+   "key": "lbft_for_nm",
+   "story": "motor torque from a US datasheet, in lb·ft",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 4.6469999999998866,
+     "fuel_kg_per_km": 0.030284018872502472
+    },
+    []
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ev",
+   "field": "final_drive",
+   "key": "ratio_inverted",
+   "story": "gear ratio entered as its inverse",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": Infinity
+    },
+    [
+     "result: the launch never reached 75 m",
+     "warned: /tmp/tmpwxvu68hv/inputs.json: final_drive = 0.1429 is outside 1.5–20 (a direct-ish drive to a hub-motor planetary); is it the ratio entered as its inverse?"
+    ]
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ice",
+   "field": "final_drive",
+   "key": "ratio_inverted",
+   "story": "gear ratio entered as its inverse",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 10.907999999999394,
+     "fuel_kg_per_km": 0.021341277668436222
+    },
+    [
+     "warned: Gearbox: final_drive = 0.3333 is outside 0.8–30 (an overdrive to a hub-motor reduction); is it the ratio entered as its inverse?",
+     "warned: inputs.json (engine): final_drive = 0.3333 is outside 1.5–20 (a direct-ish drive to a hub-motor planetary); is it the ratio entered as its inverse?"
+    ]
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ev",
+   "field": "motor_max_rpm",
+   "key": "rpm_for_rads",
+   "story": "motor top speed in rad/s typed into rpm",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 4.516121949048026,
+     "launch_75m_speed_ms": 32.049339127792194
+    },
+    [
+     "warned: /tmp/tmp92g5ez5z/inputs.json: motor_max_rpm = 2461 disagrees with 2.35e+04 from the curve (-90%): is one of them in another unit?"
+    ]
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ice",
+   "field": "redline_rpm",
+   "key": "rpm_for_rads",
+   "story": "motor top speed in rad/s typed into rpm",
+   "kinematik": [
+    {},
+    [
+     "refused: redline must lie above the first rpm point",
+     "warned: inputs.json (engine): engine_redline_rpm = 1414 rpm is outside 7000–17000 rpm (a large single to a 600 cc four); is it rad/s typed into rpm?",
+     "warned: inputs.json (engine): redline_rpm = 1414 disagrees with 1.35e+04 from the curve (-90%): is one of them in another unit?"
+    ]
+   ]
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ev",
+   "field": "cell_v",
+   "key": "cell_for_pack_v",
+   "story": "a cell's 3.6 V typed where the pack voltage belongs",
+   "no_change": true
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ev",
+   "field": "cell_ah",
+   "key": "mah_for_ah",
+   "story": "cell capacity in mAh typed into Ah",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 4.516121949048026,
+     "launch_75m_speed_ms": 32.049339127792194
+    },
+    [
+     "warned: /tmp/tmp0ba9too9/inputs.json: capacity_ah = 1.5e+04 Ah is outside 2–300 Ah (a small sprint pack to the 230 Ah Simscape pack); is it mAh typed into Ah?"
+    ]
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ice",
+   "field": "cg_height_m",
+   "key": "typo_00_drop",
+   "story": "drop",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 4.11699999999971,
+     "fuel_kg_per_km": 0.030284018872502472
+    },
+    [
+     "warned: inputs.json: cg_height_m = 0.8 m is outside 0.15–0.5 m (a low car to a tall one); is it mm typed into metres?"
+    ]
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:bolt",
+   "field": "mass_kg",
+   "key": "typo_01_drop",
+   "story": "drop",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 221.95263773449278
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "energy_wh_km": 226.8614901549964
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 222.08510159284447,
+     "hwy": 220.80375366831805,
+     "us06": 304.6364038546549,
+     "nedc": 226.99823936742854
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ice",
+   "field": "cla_m2",
+   "key": "typo_02_drop",
+   "story": "drop",
+   "no_change": true
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ice",
+   "field": "cda_m2",
+   "key": "typo_03_swap",
+   "story": "swap",
+   "no_change": true
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ice",
+   "field": "final_drive",
+   "key": "typo_04_drop",
+   "story": "drop",
+   "no_change": true
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ev",
+   "field": "cla_m2",
+   "key": "typo_05_decimal_left",
+   "story": "decimal_left",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 4.678299698578714,
+     "launch_75m_speed_ms": 30.237925385982468
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ice",
+   "field": "cg_height_m",
+   "key": "typo_06_swap",
+   "story": "swap",
+   "no_change": true
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ev",
+   "field": "cda_m2",
+   "key": "typo_07_decimal_left",
+   "story": "decimal_left",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.035977098518360354,
+     "peak_current_a": 27.114667124445987,
+     "rms_current_a": 7.450651178454584,
+     "min_pack_voltage_v": 487.80350550433093,
+     "drive_loss_kwh_per_km": 0.002667162198658643,
+     "pack_resistance_ohm": 0.5973333333334725,
+     "launch_75m_time_s": 4.4105340272721465,
+     "launch_75m_speed_ms": 34.13397307307201
+    },
+    [
+     "warned: /tmp/tmpwijc0jwa/inputs.json: cda_m2 = 0.11 m² is outside 0.4–2.5 m² (a slick car without wings to a full aero package); is it ft² typed into m², or Cd for CdA?"
+    ]
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ice",
+   "field": "primary",
+   "key": "typo_08_swap",
+   "story": "swap",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 4.653999999999889,
+     "fuel_kg_per_km": 0.029655026206131703
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ice",
+   "field": "primary",
+   "key": "typo_09_decimal_right",
+   "story": "decimal_right",
+   "kinematik": [
+    {
+     "launch_75m_time_s": Infinity,
+     "fuel_kg_per_km": 0.0025536381284530308
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ev",
+   "field": "cell_v",
+   "key": "typo_10_drop",
+   "story": "drop",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 20.0487072537102,
+     "rms_current_a": 10.510583869117506,
+     "min_pack_voltage_v": 828.0242388671171,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333167,
+     "launch_75m_time_s": 4.516121949048026,
+     "launch_75m_speed_ms": 32.049339127792194
+    },
+    [
+     "warned: /tmp/tmpjbmlhw1o/inputs.json: pack_voltage_v = 840 V is outside 60–600 V (the rules' 600 V ceiling); is it a cell voltage typed as the pack voltage?"
+    ]
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ice",
+   "field": "mu",
+   "key": "typo_11_swap",
+   "story": "swap",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 5.184000000000066,
+     "fuel_kg_per_km": 0.030284018872502472
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ice",
+   "field": "cg_height_m",
+   "key": "typo_12_drop",
+   "story": "drop",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 4.591999999999868,
+     "fuel_kg_per_km": 0.030284018872502472
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ice",
+   "field": "driveline_eff",
+   "key": "typo_13_decimal_left",
+   "story": "decimal_left",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 11.565999999999029,
+     "fuel_kg_per_km": 0.18764667785508918
+    },
+    [
+     "warned: Gearbox: drivetrain_eff = 0.092 is outside 0.4–1 (a worn chain drive to a direct drive); is it an efficiency typed in percent?",
+     "warned: inputs.json: drivetrain_eff = 0.092 is outside 0.4–1 (a worn chain drive to a direct drive); is it an efficiency typed in percent?"
+    ]
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ice",
+   "field": "cla_m2",
+   "key": "typo_14_drop",
+   "story": "drop",
+   "no_change": true
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ev",
+   "field": "cg_height_m",
+   "key": "typo_15_decimal_right",
+   "story": "decimal_right",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 4.516121949048026,
+     "launch_75m_speed_ms": 32.049339127792194
+    },
+    [
+     "warned: /tmp/tmp3hufjk7f/inputs.json: cg_height_m = 2.8 m is outside 0.15–0.5 m (a low car to a tall one); is it mm typed into metres?"
+    ]
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:bolt",
+   "field": "transmission_eff",
+   "key": "typo_16_drop",
+   "story": "drop",
+   "no_change": true
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:bolt",
+   "field": "crr",
+   "key": "typo_17_drop",
+   "story": "drop",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 88.20200809047145
+    },
+    "hwy": {
+     "energy_wh_km": 110.95877900138068
+    },
+    "us06": {
+     "energy_wh_km": 148.86867571059287
+    },
+    "nedc": {
+     "energy_wh_km": 101.81032541316698
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 88.23756218041481,
+     "hwy": 110.99494060735748,
+     "us06": 148.9037517215642,
+     "nedc": 101.84687107997337
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ev",
+   "field": "mu",
+   "key": "typo_18_drop",
+   "story": "drop",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 3.771595863366614,
+     "launch_75m_speed_ms": 33.669590405977125
+    },
+    [
+     "warned: /tmp/tmpbxp4p2kc/inputs.json: mu = 4 is outside 0.8–2.5 (a hard compound to a slick with downforce); is it grip typed in percent?"
+    ]
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ev",
+   "field": "tire_radius_m",
+   "key": "typo_19_swap",
+   "story": "swap",
+   "no_change": true
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ice",
+   "field": "tire_radius_m",
+   "key": "typo_20_swap",
+   "story": "swap",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 4.494999999999836,
+     "fuel_kg_per_km": 0.030301350526025957
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ev",
+   "field": "tire_radius_m",
+   "key": "typo_21_decimal_right",
+   "story": "decimal_right",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 11.926654679509381,
+     "launch_75m_speed_ms": 11.45170526101769
+    },
+    [
+     "warned: /tmp/tmp0uijz0gl/inputs.json: wheel_radius_m = 2.25 m is outside 0.18–0.3 m (10 in to 13 in wheels with tire); is it the diameter typed as the radius?"
+    ]
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ev",
+   "field": "final_drive",
+   "key": "typo_22_drop",
+   "story": "drop",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 7497.2975914928875,
+     "launch_75m_speed_ms": 0.01
+    },
+    [
+     "warned: /tmp/tmpjgntw90m/inputs.json: final_drive = 0 is outside 1.5–20 (a direct-ish drive to a hub-motor planetary); is it the ratio entered as its inverse?"
+    ]
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:bolt",
+   "field": "mass_kg",
+   "key": "typo_23_decimal_left",
+   "story": "decimal_left",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 43.2304248367843
+    },
+    "hwy": {
+     "energy_wh_km": 76.64430304060852
+    },
+    "us06": {
+     "energy_wh_km": 108.14390637218654
+    },
+    "nedc": {
+     "energy_wh_km": 60.619298035717605
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 43.234250615601084,
+     "hwy": 76.64804618823294,
+     "us06": 108.14753410039546,
+     "nedc": 60.62310109616663
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ev",
+   "field": "motor_max_rpm",
+   "key": "typo_24_decimal_right",
+   "story": "decimal_right",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 4.516121949048026,
+     "launch_75m_speed_ms": 32.049339127792194
+    },
+    [
+     "warned: /tmp/tmpnrrx8nhx/inputs.json: motor_max_rpm = 2.35e+05 disagrees with 2.35e+04 from the curve (+900%): is one of them in another unit?",
+     "warned: /tmp/tmpnrrx8nhx/inputs.json: motor_max_rpm = 2.35e+05 rpm is outside 500–40000 rpm (a hub motor to the fastest traction motors); is it rad/s typed into rpm?"
+    ]
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ice",
+   "field": "mu",
+   "key": "typo_25_swap",
+   "story": "swap",
+   "no_change": true
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ice",
+   "field": "engine_torque",
+   "key": "typo_26_drop",
+   "story": "drop",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 4.636999999999883,
+     "fuel_kg_per_km": 0.03008187309270777
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:bolt",
+   "field": "mass_kg",
+   "key": "typo_27_drop",
+   "story": "drop",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 77.36523309264064
+    },
+    "hwy": {
+     "energy_wh_km": 102.36072342749704
+    },
+    "us06": {
+     "energy_wh_km": 138.3659640044562
+    },
+    "nedc": {
+     "energy_wh_km": 91.67923125305074
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 77.39301891323176,
+     "hwy": 102.38888834747638,
+     "us06": 138.3932299342333,
+     "nedc": 91.70769923992727
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ev",
+   "field": "final_drive",
+   "key": "typo_28_decimal_left",
+   "story": "decimal_left",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 34.3353611086795,
+     "rms_current_a": 17.819895424905486,
+     "min_pack_voltage_v": 483.4903442977488,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 0.5973333333333399,
+     "launch_75m_time_s": 11.926654679509381,
+     "launch_75m_speed_ms": 11.45170526101769
+    },
+    [
+     "warned: /tmp/tmp9i3cmgny/inputs.json: final_drive = 0.7 is outside 1.5–20 (a direct-ish drive to a hub-motor planetary); is it the ratio entered as its inverse?"
+    ]
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:bolt",
+   "field": "aux_power_w",
+   "key": "typo_29_decimal_right",
+   "story": "decimal_right",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 159.59333339733394
+    },
+    "hwy": {
+     "energy_wh_km": 139.95698852761421
+    },
+    "us06": {
+     "energy_wh_km": 177.99885162609763
+    },
+    "nedc": {
+     "energy_wh_km": 169.05622095056924
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 159.62891996120183,
+     "hwy": 139.9931860365235,
+     "us06": 178.0339596745853,
+     "nedc": 169.09279991556843
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ice",
+   "field": "cda_m2",
+   "key": "typo_30_swap",
+   "story": "swap",
+   "no_change": true
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ice",
+   "field": "redline_rpm",
+   "key": "typo_31_decimal_right",
+   "story": "decimal_right",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 4.454999999999822,
+     "fuel_kg_per_km": 0.030323392711347923
+    },
+    [
+     "warned: inputs.json (engine): engine_redline_rpm = 1.35e+05 rpm is outside 7000–17000 rpm (a large single to a 600 cc four); is it rad/s typed into rpm?",
+     "warned: inputs.json (engine): redline_rpm = 1.35e+05 disagrees with 1.35e+04 from the curve (+900%): is one of them in another unit?"
+    ]
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ev",
+   "field": "cell_ohm",
+   "key": "typo_32_drop",
+   "story": "drop",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.10862004533875835,
+     "peak_current_a": 36.36697779164331,
+     "rms_current_a": 18.447509483956928,
+     "min_pack_voltage_v": 456.48048235225275,
+     "drive_loss_kwh_per_km": 0.008052547061188848,
+     "pack_resistance_ohm": 1.3066666666667104,
+     "launch_75m_time_s": 4.516121949048026,
+     "launch_75m_speed_ms": 32.049339127792194
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ev",
+   "field": "driveline_eff",
+   "key": "typo_33_drop",
+   "story": "drop",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.11465449230202272,
+     "peak_current_a": 36.33252886331371,
+     "rms_current_a": 18.838725978446657,
+     "min_pack_voltage_v": 482.2973694256473,
+     "drive_loss_kwh_per_km": 0.008499910786810467,
+     "pack_resistance_ohm": 0.5973333333333491,
+     "launch_75m_time_s": 4.525157418542473,
+     "launch_75m_speed_ms": 31.672913036644232
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ice",
+   "field": "driveline_eff",
+   "key": "typo_34_decimal_left",
+   "story": "decimal_left",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 11.565999999999029,
+     "fuel_kg_per_km": 0.18764667785508918
+    },
+    [
+     "warned: Gearbox: drivetrain_eff = 0.092 is outside 0.4–1 (a worn chain drive to a direct drive); is it an efficiency typed in percent?",
+     "warned: inputs.json: drivetrain_eff = 0.092 is outside 0.4–1 (a worn chain drive to a direct drive); is it an efficiency typed in percent?"
+    ]
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ev",
+   "field": "mass_kg",
+   "key": "typo_35_drop",
+   "story": "drop",
+   "kinematik": [
+    {},
+    [
+     "crashed: ZeroDivisionError",
+     "warned: /tmp/tmp8bonj1wc/inputs.json: mass_kg = 0 kg is outside 150–500 kg (the lightest car with driver to the 405 kg Simscape car, with margin); is it pounds typed as kilograms, or the car weighed in tonnes?",
+     "warned: traction_power_w: mass_kg = 0 kg is outside 60–60000 kg (an e-scooter with rider to a 40 t truck with margin); is it grams or tonnes typed into a kg field?"
+    ]
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ev",
+   "field": "final_drive",
+   "key": "typo_36_swap",
+   "story": "swap",
+   "no_change": true
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:bolt",
+   "field": "aux_power_w",
+   "key": "typo_37_decimal_left",
+   "story": "decimal_left",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 81.09846292968199
+    },
+    "hwy": {
+     "energy_wh_km": 108.09515320172115
+    },
+    "us06": {
+     "energy_wh_km": 145.9907669624546
+    },
+    "nedc": {
+     "energy_wh_km": 95.12231573836534
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 81.13404949355021,
+     "hwy": 108.1313507106302,
+     "us06": 146.0258750109423,
+     "nedc": 95.15889470336434
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ice",
+   "field": "primary",
+   "key": "typo_38_swap",
+   "story": "swap",
+   "no_change": true
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ice",
+   "field": "primary",
+   "key": "typo_39_decimal_right",
+   "story": "decimal_right",
+   "kinematik": [
+    {
+     "launch_75m_time_s": Infinity,
+     "fuel_kg_per_km": 0.0025536381284530308
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ice",
+   "field": "mass_kg",
+   "key": "typo_40_drop",
+   "story": "drop",
+   "kinematik": [
+    {
+     "launch_75m_time_s": Infinity,
+     "fuel_kg_per_km": 0.024534855534063666
+    },
+    [
+     "warned: ICEVehicle: mass_kg = 0 kg is outside 60–60000 kg (an e-scooter with rider to a 40 t truck with margin); is it grams or tonnes typed into a kg field?",
+     "warned: inputs.json: mass_kg = 0 kg is outside 150–500 kg (the lightest car with driver to the 405 kg Simscape car, with margin); is it pounds typed as kilograms, or the car weighed in tonnes?"
+    ]
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:bolt",
+   "field": "wheel_radius_m",
+   "key": "typo_41_swap",
+   "story": "swap",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 88.22094734113247
+    },
+    "hwy": {
+     "energy_wh_km": 110.98879474397229
+    },
+    "us06": {
+     "energy_wh_km": 148.88781876732514
+    },
+    "nedc": {
+     "energy_wh_km": 101.83431286765132
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 88.25653453934942,
+     "hwy": 111.02499215096068,
+     "us06": 148.92292633622245,
+     "nedc": 101.87089229709701
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ev",
+   "field": "driveline_eff",
+   "key": "typo_42_decimal_left",
+   "story": "decimal_left",
+   "kinematik": [
+    {
+     "energy_kwh_per_km": 0.19107824672738205,
+     "peak_current_a": 62.58514237038643,
+     "rms_current_a": 32.03383329946662,
+     "min_pack_voltage_v": 466.6158082907558,
+     "drive_loss_kwh_per_km": 0.0,
+     "pack_resistance_ohm": 0.5973333333333365,
+     "launch_75m_time_s": 11.926654679509381,
+     "launch_75m_speed_ms": 11.45170526101769
+    },
+    [
+     "warned: /tmp/tmp3yc5ws17/inputs.json: drivetrain_eff = 0.095 is outside 0.4–1 (a worn chain drive to a direct drive); is it an efficiency typed in percent?",
+     "warned: traction_power_w: drivetrain_eff = 0.08796 is outside 0.4–1 (a worn chain drive to a direct drive); is it an efficiency typed in percent?"
+    ]
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ev",
+   "field": "driveline_eff",
+   "key": "typo_43_decimal_right",
+   "story": "decimal_right",
+   "kinematik": [
+    {},
+    [
+     "refused: /tmp/tmpf6bbi18v/inputs.json: drive efficiencies are fractions, at most 1: was one typed in percent?"
+    ]
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:bolt",
+   "field": "cda_m2",
+   "key": "typo_44_drop",
+   "story": "drop",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 69.14105659318423
+    },
+    "hwy": {
+     "energy_wh_km": 65.05287357758532
+    },
+    "us06": {
+     "energy_wh_km": 82.89402651170829
+    },
+    "nedc": {
+     "energy_wh_km": 69.85473389146216
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 69.17641446204996,
+     "hwy": 65.08917157300043,
+     "us06": 82.92849775297175,
+     "nedc": 69.89178657572012
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ice",
+   "field": "tire_radius_m",
+   "key": "typo_45_decimal_left",
+   "story": "decimal_left",
+   "kinematik": [
+    {
+     "launch_75m_time_s": Infinity,
+     "fuel_kg_per_km": 0.0025536381284530308
+    },
+    [
+     "warned: Gearbox: wheel_radius_m = 0.0225 m is outside 0.1–0.7 m (a scooter wheel to a truck tire); is it mm, cm or inches typed into metres?",
+     "warned: inputs.json: wheel_radius_m = 0.0225 m is outside 0.18–0.3 m (10 in to 13 in wheels with tire); is it the diameter typed as the radius?"
+    ]
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ev",
+   "field": "cda_m2",
+   "key": "typo_46_swap",
+   "story": "swap",
+   "no_change": true
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:bolt",
+   "field": "wheel_radius_m",
+   "key": "typo_47_decimal_left",
+   "story": "decimal_left",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 113.26516437100497
+    },
+    "hwy": {
+     "energy_wh_km": 118.30465417148609
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "energy_wh_km": 118.22930052583696
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 113.29941252273446,
+     "hwy": 118.33979734899648,
+     "us06": 180.50297967293318,
+     "nedc": 118.26581049992174
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ev",
+   "field": "driveline_eff",
+   "key": "typo_48_decimal_right",
+   "story": "decimal_right",
+   "kinematik": [
+    {},
+    [
+     "refused: /tmp/tmp81_yg1n3/inputs.json: drive efficiencies are fractions, at most 1: was one typed in percent?"
+    ]
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ice",
+   "field": "redline_rpm",
+   "key": "typo_49_swap",
+   "story": "swap",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 4.466999999999826,
+     "fuel_kg_per_km": 0.030284103106131367
+    },
+    [
+     "warned: inputs.json (engine): redline_rpm = 1.53e+04 disagrees with 1.35e+04 from the curve (+13%): is one of them in another unit?"
+    ]
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ice",
+   "field": "engine_torque",
+   "key": "typo_50_decimal_left",
+   "story": "decimal_left",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 11.566999999999029,
+     "fuel_kg_per_km": 0.018672175837294407
+    },
+    [
+     "warned: inputs.json (engine): engine_peak_torque_nm = 5.8 N·m is outside 20–150 N·m (a small single to a turbocharged twin); is it a torque unit slip?"
+    ]
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ev",
+   "field": "crr",
+   "key": "typo_51_drop",
+   "story": "drop",
+   "no_change": true
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ice",
+   "field": "cg_height_m",
+   "key": "typo_52_swap",
+   "story": "swap",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 4.5809999999998645,
+     "fuel_kg_per_km": 0.030284018872502472
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:bolt",
+   "field": "motor_power_w",
+   "key": "typo_53_decimal_right",
+   "story": "decimal_right",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 96.46641062516
+    },
+    "hwy": {
+     "energy_wh_km": 119.19315017765257
+    },
+    "us06": {
+     "energy_wh_km": 165.23983526874474
+    },
+    "nedc": {
+     "energy_wh_km": 110.11531102097518
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 96.50401005881315,
+     "hwy": 119.23253665628083,
+     "us06": 165.27756089848228,
+     "nedc": 110.15422528157139
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:bolt",
+   "field": "mass_kg",
+   "key": "typo_54_decimal_right",
+   "story": "decimal_right",
+   "fastsim": {
+    "udds": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "hwy": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "us06": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    },
+    "nedc": {
+     "refused": "RuntimeError: solver step failed at line [fastsim-core/src/simdrive/mod.rs:325]"
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 562.7334687254064,
+     "hwy": 492.1298790153891,
+     "us06": 886.827495496799,
+     "nedc": 579.9023269484363
+    },
+    [
+     "warned: traction_power_w: specific_power_w_kg = 9.171 W/kg is outside 10–2000 W/kg (a loaded truck to a hypercar); is it a power or mass unit slip?"
+    ]
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ice",
+   "field": "launch_rpm",
+   "key": "typo_55_swap",
+   "story": "swap",
+   "kinematik": [
+    {
+     "launch_75m_time_s": 5.0060000000000064,
+     "fuel_kg_per_km": 0.030284018872502472
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ice",
+   "field": "final_drive",
+   "key": "typo_56_decimal_right",
+   "story": "decimal_right",
+   "kinematik": [
+    {
+     "launch_75m_time_s": Infinity,
+     "fuel_kg_per_km": 0.0025536381284530308
+    },
+    [
+     "warned: inputs.json (engine): final_drive = 30 is outside 1.5–20 (a direct-ish drive to a hub-motor planetary); is it the ratio entered as its inverse?"
+    ]
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ice",
+   "field": "launch_rpm",
+   "key": "typo_57_drop",
+   "story": "drop",
+   "no_change": true
+  },
+  {
+   "set": "random",
+   "deck": "fastsim:bolt",
+   "field": "cda_m2",
+   "key": "typo_58_decimal_right",
+   "story": "decimal_right",
+   "fastsim": {
+    "udds": {
+     "energy_wh_km": 332.0465094551961
+    },
+    "hwy": {
+     "energy_wh_km": 686.141977094609
+    },
+    "us06": {
+     "energy_wh_km": 989.9079562921727
+    },
+    "nedc": {
+     "energy_wh_km": 500.73284577696126
+    }
+   },
+   "kinematik": [
+    {
+     "udds": 332.08232413036353,
+     "hwy": 686.178001013074,
+     "us06": 1015.0089900872457,
+     "nedc": 508.65374996614486
+    },
+    []
+   ]
+  },
+  {
+   "set": "random",
+   "deck": "fsae_ev",
+   "field": "mass_kg",
+   "key": "typo_59_drop",
+   "story": "drop",
+   "no_change": true
+  }
+ ]
+}

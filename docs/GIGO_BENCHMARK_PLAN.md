@@ -2,8 +2,9 @@
 
 **Round 1 (seal `4c18a8a`): at entry, KinematiK caught 0 of 120 harmful input errors; as a second opinion beside
 FASTSim, 99 of 99. Round 2 (seal `383bda9`, with plausibility checks at entry): 65 of 119 at entry, 18 of 20 on the
-Formula Student deck, 99 of 99 as a second opinion, 117 of 119 by either; no false alarm on any valid car in either
-round.** Details below.
+Formula Student deck, 99 of 99 as a second opinion, 117 of 119 by either. Round 3 (seal `8a02c0f`, decks the checks
+were never written against): 64 of 83 at entry on two held-out Formula Student cars (77 %, 95 % CI 67–85 %), 23 of
+23 as a second opinion on a held-out road car; no false alarm on any valid car in any round.** Details below.
 
 The powertrain benchmark (POWERTRAIN_VALIDATION.md) shows KinematiK computes the right answer from the right inputs.
 KinematiK's pitch is more than that: it should stop wrong inputs from reaching, or quietly coming back from, an
@@ -263,3 +264,56 @@ Before the seal, the harness was smoke-tested on four corrupted rows (the Bolt's
 car's torque in lb·ft, redline in rad/s and efficiency in percent) to check that every deck runs end to end. That
 test caught a harness bug: the Bolt was added to the shared vehicle list, and its corrupted FASTSim runs, made in a
 separate process, could not see it. It is now added only where it is used.
+
+## Result of round 3 (6 Nov 2026)
+
+Run at 02:14 UTC with the hash of the pushed seal (`8a02c0f0…`) as the seed; graded by the sealed code
+(`benchmarks/gigo/round3/runs.json`, `MANIFEST.sha256`, `GRADED.txt`). 95 % confidence intervals are Wilson's.
+
+| Held-out deck | Harmful errors | Gate 1, at entry | Gate 2, second opinion |
+|---|---|---|---|
+| Formula Student EV (`fsae_ev`) | 35 | 29 (83 %, CI 67–92 %) | none to compare with |
+| Formula Student combustion car (`fsae_ice`) | 48 | 35 (73 %, CI 59–83 %) | none to compare with |
+| **Both Formula Student decks** | **83** | **64 (77 %, CI 67–85 %)** | |
+| Chevrolet Bolt EV (`fastsim:bolt`) | 23 | 8 (35 %, CI 19–55 %) | **23 (100 %, CI 86–100 %)** |
+| **All** | **106** | **72 (68 %, CI 59–76 %)** | |
+
+No false alarm on any of the three clean decks; all four sealed predictions held (Formula Student at entry 77 %,
+sealed at least 75 %; overall 68 %, sealed 50–95 %; second opinion 100 %, sealed at least 95 %). The checks also
+flagged 40 wrong values too small to cross the harm bar. On the Bolt, entry plus second opinion caught 23 of 23.
+
+**So the entry checks generalize, about as well as on the decks they were written after** (round 2's Formula Student
+deck: 18 of 20; here 64 of 83). The interval is the honest headline: on a Formula Student car KinematiK catches
+roughly two thirds to five sixths of harmful input errors at entry.
+
+**What got through, by name**, and what it shows:
+
+* **The ICE gearbox's primary reduction** is not checked at all: entered as its inverse it moved the result 67 %,
+  and a shifted decimal point made the launch never reach 75 m, silently. Neither range nor cross-check covers it.
+  This is the biggest single gap found, and it was found only because the decks were new.
+* **The ICE launch speed** in rad/s (12 %) is not checked.
+* **Errors that leave a believable car**, as in round 2: the driver left out of the mass, an efficiency applied
+  twice or with a dropped digit, a mistyped grip (16 %), a downforce area or pack resistance typo (4–6 %), an
+  engine curve in lb·ft (4 %).
+* **One crash:** a dropped digit turned the EV's mass into 0. KinematiK warned about it (so it counts as caught) and
+  then divided by it. A mass of 0 should be refused outright.
+
+**Next, as a new sealed round on fresh decks:** check the primary reduction and the launch speed (against the
+engine curve and redline, as the redline is now), refuse a zero or negative mass, and leave the plausible-but-wrong
+class to measurement (corner scales, datasheets), which no range can replace.
+
+## After round 3: three fixes, not yet measured
+
+Made after round 3's result, from the gaps it named; no sealed round has measured them yet, so round 3's numbers
+stay the record until one does.
+
+* **A vehicle mass of zero or less is refused** where a deck enters KinematiK, instead of being warned about and
+  then divided by.
+* **The combustion car's primary reduction is checked** (1 to 4, a direct drive to a motorcycle engine's primary
+  gears), and so is the gearing as a whole: the top-gear speed at redline must lie between 20 and 70 m/s for a
+  Formula Student car (10 to 150 m/s for any car). An inverted or mistyped primary, gear or final drive moves it out.
+* **The launch speed is checked against the redline:** between a fifth of the redline and the redline, which a
+  launch speed typed in rad/s is not.
+
+Every deck in the repository still passes clean. To claim these in numbers, run round 4 on decks the checks have not
+seen, sealed the same way.
