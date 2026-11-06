@@ -52,14 +52,15 @@ random typos) ([details](docs/GIGO_BENCHMARK_PLAN.md)):
 | 2, plausibility checks added | 65 of 119 (18 of 20 on the Formula Student car) | 99 of 99 | 0 |
 | 3, cars the checks were never written against | **64 of 83 on two Formula Student cars (77 %, 95 % CI 67–85 %)** | 23 of 23 | 0 |
 
-**Check it yourself** (from `fsae_suspension/`):
+**Check it yourself, a few minutes on your laptop**
+EV/ICE powertrain benchmarks:
 
 ```bash
 pytest tests/test_fastsim_benchmark.py tests/test_gt_suite_benchmark.py tests/test_powertrain_benchmark.py \
        tests/test_gigo_benchmark.py tests/test_gigo_round3.py tests/test_plausibility.py
 ```
 
-**Check it yourself** (from `fsae_suspension/`, a few minutes on a laptop):
+Suspension benchmarks: 
 
 ```bash
 pytest tests/test_adams_view_benchmark.py tests/test_lotus_benchmark.py tests/test_invariants_property.py
