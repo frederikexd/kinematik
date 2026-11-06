@@ -11,7 +11,7 @@ script and held by a test in CI, from reference files pinned by SHA-256. Misses 
 | Published GT-SUITE models (5 papers) | agreement with the industry-standard tool | tool, published | 41 of 44 within 5 % (misses traced to the papers' own gaps) |
 | MathWorks' Simscape Formula Student car, **blind** | cases KinematiK's code had not seen, sealed on GitHub before the runs | tool, multibody | **28 of 39 within 3 %; 34 of 39 fit for use; no miss on the unsafe side** |
 | Argonne dyno (BMW i3, Chevrolet Blazer); Team A-FA FSK 2023 telemetry | real hardware | **measured** | energy 3.7 %, fuel 3.8 % (means); launch within 1 %; pack sag 3.7 % |
-| Garbage-in benchmark, sealed (GIGO_BENCHMARK_PLAN.md) | whether KinematiK catches wrong inputs | **blind**, seeded by the seal | round 2, with plausibility checks: **at entry 65 of 119 (18 of 20 on the Formula Student car)**, as a second opinion 99 of 99, **117 of 119 by either**; no false alarm. Round 1, before the checks: 0 of 120 at entry |
+| Garbage-in benchmark, sealed (GIGO_BENCHMARK_PLAN.md) | whether KinematiK catches wrong inputs | **blind**, seeded by the seal | round 3, held-out decks: **at entry 64 of 83 on two new Formula Student cars (77 %, 95 % CI 67–85 %)**, second opinion 23 of 23 on a new road car; no false alarm. Round 2: entry 65 of 119 (18 of 20 on the Formula Student car), 117 of 119 by either. Round 1, before the checks: 0 of 120 at entry |
 
 ## The evidence
 

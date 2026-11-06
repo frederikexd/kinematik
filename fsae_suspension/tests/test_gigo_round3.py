@@ -58,3 +58,24 @@ def test_corruptions_on_the_formula_student_decks():
     assert t["_torque_typo"] == {"typo": "drop", "draw": 1}
     assert r3.corrupt_fs(ice, {"field": "final_drive", "how": "inverse"}, "fsae_ice")["ice"]["final_drive"] == \
         pytest.approx(1 / 3.0)
+
+
+def test_the_stored_run_grades_as_reported():
+    """Round 3 (seed: seal commit 8a02c0f): entry 72 of 106 harmful overall, 64 of 83 on the two held-out Formula
+    Student decks; second opinion 23 of 23 on the Bolt; no false alarm. Re-graded only while the code is sealed."""
+    import hashlib
+    digest, name = (r3.BENCH / "MANIFEST.sha256").read_text().split()
+    assert hashlib.sha256((r3.BENCH / name).read_bytes()).hexdigest() == digest
+    runs = json.loads(r3.RUNS.read_text())
+    assert runs["seed_commit"] == "8a02c0f01e18fd9c983822477a3eb4f8fcaead13"
+    if json.loads(r3.SEAL.read_text())["code_sha256"] != r3.code_fingerprint():
+        pytest.skip("the code has moved on from the sealed commit; the stored GRADED.txt is the record")
+    gr = r3.grade(runs)
+    s = r3.summarize(gr)
+    assert (s["all"]["errors"], s["all"]["harmful"], s["all"]["gate1"], s["all"]["gate2"], s["all"]["gate2_n"]) == \
+        (171, 106, 72, 23, 23)
+    assert (s["formula student"]["harmful"], s["formula student"]["gate1"]) == (83, 64)
+    assert (s["fsae_ev"]["gate1"], s["fsae_ev"]["harmful"], s["fsae_ice"]["gate1"], s["fsae_ice"]["harmful"]) == \
+        (29, 35, 35, 48)
+    assert gr["false_alarms_gate1"] == [] and gr["false_alarms_gate2"] == [] and s["no_change"] == 17
+    assert s["all"]["crashed"] == 1
