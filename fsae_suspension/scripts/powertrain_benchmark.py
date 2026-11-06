@@ -441,27 +441,17 @@ def _from(log, t0) -> dict:
     return out
 
 
-def check_deck(inp: dict, vehicle_class: str = "fsae", where: str = "inputs.json") -> list:
-    """The deck's plausibility, where it enters KinematiK (suspension/plausibility.py): a drive efficiency above 1
-    is refused; every value outside the class's range is warned about, with the slip it most likely is. Decks
-    exported from the Simscape Formula Student templates are Formula Student cars."""
+def check_deck(inp: dict, vehicle_class: str = "fsae", where: str = "inputs.json", base=None) -> list:
+    """The deck's plausibility where it enters KinematiK (suspension/plausibility.check_deck), with its motor and
+    engine curves read from base (the deck's folder) when given. Decks exported from the Simscape Formula Student
+    templates, and this benchmark's own deck, are Formula Student cars."""
     from suspension import plausibility
-    veh, ev = inp["vehicle"], inp["ev"]
-    pk = ev.get("pack", {})
-    effs = [ev[k] for k in ("inverter_eff", "motor_eff", "driveline_eff") if ev.get(k) is not None]
-    if any(not 0.0 < e <= 1.0 for e in effs):
-        raise ValueError(f"{where}: drive efficiencies are fractions, at most 1: was one typed in percent?")
-    pack = {}
-    if all(k in pk for k in ("series", "parallel", "cell_v", "cell_ah", "cell_ohm")):
-        pack = {"pack_voltage_v": pk["series"] * pk["cell_v"], "capacity_ah": pk["parallel"] * pk["cell_ah"],
-                "pack_resistance_ohm": pk["series"] * pk["cell_ohm"] / pk["parallel"]}
-    kw = ev.get("pack_power_kw")
-    return plausibility.check({
-        "mass_kg": veh.get("mass_kg"), "cda_m2": veh.get("cda_m2"), "cla_m2": veh.get("cla_m2"), "crr": veh.get("crr"),
-        "wheel_radius_m": veh.get("tire_radius_m"), "mu": veh.get("mu"), "cg_height_m": veh.get("cg_height_m"),
-        "wheelbase_m": veh.get("wheelbase_m"), "final_drive": ev.get("final_drive"),
-        "motor_max_rpm": ev.get("motor_max_rpm"), "motor_peak_torque_nm": ev.get("motor_peak_torque_nm"),
-        "peak_power_w": None if kw is None else kw * 1e3, "drivetrain_eff": effs, **pack}, vehicle_class, where)
+    curves = {}
+    for sec, key, name in (("ev", "motor_curve_csv", "motor_curve"), ("ice", "engine_curve_csv", "engine_curve")):
+        f = (inp.get(sec) or {}).get(key)
+        if base is not None and f and (Path(base) / f).exists():
+            curves[name] = _curve(f, base)
+    return plausibility.check_deck(inp, vehicle_class, where, **curves)
 
 
 def simulink_lap_rows(inputs, lap, override=None, skip_s: float = 0.0) -> dict:
@@ -472,8 +462,8 @@ def simulink_lap_rows(inputs, lap, override=None, skip_s: float = 0.0) -> dict:
     import numpy as np
     from suspension import ev_electrical_check as ec
     inp = json.loads(Path(inputs).read_text())
-    check_deck(inp, where=str(inputs))
     base = Path(inputs).resolve().parent
+    check_deck(inp, where=str(inputs), base=base)
     veh, ev = inp["vehicle"], inp["ev"]
     log = read_motec_csv(lap, override)
     if skip_s:                                          # leave out the event's start-up, on both sides
@@ -656,8 +646,8 @@ def blind_launch_rows(inputs, lap, override=None, pedal=None, torque_per_pedal_n
     prediction, not given the trace. With pedal, each of the n motors is asked for torque_per_pedal_nm x pedal (the
     Simscape controller's gain), so the curve is capped at n x that."""
     inp = json.loads(Path(inputs).read_text())
-    check_deck(inp, where=str(inputs))
     base = Path(inputs).resolve().parent
+    check_deck(inp, where=str(inputs), base=base)
     veh, ev = inp["vehicle"], inp["ev"]
     log = read_motec_csv(lap, override)
     cap = None

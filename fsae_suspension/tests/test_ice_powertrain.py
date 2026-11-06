@@ -88,6 +88,7 @@ def test_gear_ratios_must_fall():
 
 
 # ------------------------------------------------------------------ launch
+@pytest.mark.filterwarnings("ignore::suspension.plausibility.PlausibilityWarning")   # textbook numbers, not a car
 def test_launch_matches_constant_acceleration_with_no_losses():
     eng = ice.EngineMap(rpm=[500.0, 20000.0], torque_nm=[50.0, 50.0], redline_rpm=20000.0, inertia_kgm2=0.0)
     gb = ice.Gearbox(primary=1.0, ratios=(4.0,), final_drive=1.0, efficiency=1.0)

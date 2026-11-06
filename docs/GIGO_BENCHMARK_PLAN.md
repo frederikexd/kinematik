@@ -226,3 +226,40 @@ alarm. Gate 1 also flagged 66 wrong values too small to cross the harm bar.
 **What it means.** With both gates, KinematiK caught 117 of the 119 harmful input errors in this benchmark, and
 on a Formula Student car, the class it is built for, the entry checks alone catch 9 in 10. The remaining misses
 are values that are wrong but physically plausible; they are listed by name.
+
+## Round 3: held-out decks (sealed before running)
+
+**Correction to round 2.** Round 2's plan says every existing test and benchmark deck runs with plausibility warnings
+as errors. It did not: the repository's pytest settings made only deprecation warnings errors, so a plausibility
+warning in a test would have passed unseen. Round 2's own false-alarm count is unaffected (the harness records the
+warnings on every clean deck itself and found none). Checked afterwards with the warning made an error across every
+related test: four tests raised it, all feeding textbook numbers on purpose (grip of 100 for a lossless launch, a
+0.5 W toy engine map, a 0.3 drivetrain efficiency and a 0.5 ratio testing edge cases); no benchmark car (FASTSim,
+GT-SUITE, Argonne, A-FA, Simscape) raised one. The warning is now an error in `pyproject.toml`, and those four tests
+carry a mark saying their numbers are deliberate, so the claim holds from here on.
+
+**Why a third round.** The entry ranges were written after round 1, and rounds 1 and 2 used the same decks. Round 3
+tests the checks on decks they were not written against:
+
+* `fastsim:bolt`: the 2020 Chevrolet Bolt EV bundled with FASTSim 3.1.0, as bundled (its thermal models on), with
+  FASTSim in the loop. On the clean deck KinematiK agrees with FASTSim within 0.04 % on all four cycles, a sixth
+  car for the FASTSim benchmark that was never used to build anything.
+* `fsae_ev` and `fsae_ice`: the Formula Student EV and combustion car of the powertrain benchmark's own deck
+  (`benchmarks/powertrain/inputs.json`, written at the start of the powertrain benchmark, before any of this): a
+  300 kg car with a 140s3p 504 V pack and a 7:1 reduction, and a restricted 600 cc four with six gears. Harm is
+  measured by KinematiK's own Simscape-validated models.
+
+**What KinematiK gained for it, before the seal:** the whole-deck check now covers the combustion section (brake
+thermal efficiency, redline, the engine curve's peak torque and power) and two cross-checks between inputs that must
+agree: the declared motor peak torque and top speed against the motor curve, and the redline against the engine
+curve (within 5 %). These target unit slips on a single field that leave a believable value.
+
+**Reported with 95 % confidence intervals** (Wilson), per deck and overall.
+
+**Predictions, sealed:** Gate 1 catches at least 75 % of the harmful errors on the two Formula Student decks; between
+50 and 95 % overall; Gate 2 (on the Bolt) at least 95 %; no false alarm from either gate.
+
+Before the seal, the harness was smoke-tested on four corrupted rows (the Bolt's mass in pounds; the combustion
+car's torque in lb·ft, redline in rad/s and efficiency in percent) to check that every deck runs end to end. That
+test caught a harness bug: the Bolt was added to the shared vehicle list, and its corrupted FASTSim runs, made in a
+separate process, could not see it. It is now added only where it is used.

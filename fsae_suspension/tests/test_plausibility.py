@@ -245,3 +245,85 @@ def test_lap_and_launch_grading_check_the_deck_first(tmp_path):
         pb.simulink_lap_rows(tmp_path / "inputs.json", run / "simulink_lap.csv")
     with pytest.raises(ValueError, match="drive efficiencies are fractions"):
         pb.blind_launch_rows(tmp_path / "inputs.json", run.parent / "launch_fs2" / "simulink_lap.csv")
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+#  Whole decks: the combustion section and the curve cross-checks
+# ---------------------------------------------------------------------------------------------------------------------
+BENCH_DECK = ROOT / "benchmarks" / "powertrain"
+
+
+def _bench():
+    return json.loads((BENCH_DECK / "inputs.json").read_text())
+
+
+def _curves():
+    return {"motor_curve": pb._curve("motor_curve.csv", BENCH_DECK), "engine_curve": pb._curve("engine_curve.csv", BENCH_DECK)}
+
+
+def test_the_benchmark_deck_with_both_curves_is_plausible():
+    assert _quiet(pl.check_deck, _bench(), **_curves()) == []
+    assert _quiet(pb.check_deck, _bench(), base=BENCH_DECK) == []
+
+
+@pytest.mark.parametrize("bte", [30.0, 0.0])
+def test_a_brake_thermal_efficiency_that_is_not_a_fraction_is_refused(bte):
+    d = _bench()
+    d["ice"]["bte"] = bte
+    with pytest.raises(ValueError, match=r"^x: drive efficiencies are fractions, at most 1: was one typed in percent\?$"):
+        pl.check_deck(d, where="x")
+
+
+@pytest.mark.parametrize("path, value, pattern", [
+    (("ice", "bte"), 0.03, r"^x \(engine\): brake_thermal_eff = 0.03 is outside 0.1–0.5"),
+    (("ice", "final_drive"), 1 / 3, r"^x \(engine\): final_drive = 0.3333 is outside 1.5–20"),
+    (("ice", "driveline_eff"), 0.3, r"^x: drivetrain_eff = 0.3 is outside"),
+    (("ev", "motor_peak_torque_nm"), 88.5, r"^x: motor_peak_torque_nm = 88.5 disagrees with 120 from the curve \(-26%\)"),
+    (("ev", "motor_max_rpm"), 2461.0, r"^x: motor_max_rpm = 2461 disagrees with 2.35e\+04 from the curve")])
+def test_each_deck_check_names_its_input(path, value, pattern):
+    d = _bench()
+    d[path[0]][path[1]] = value
+    with pytest.warns(W, match=pattern):
+        pl.check_deck(d, where="x", **_curves())
+
+
+def test_the_redline_is_checked_against_its_range_and_its_curve():
+    d = _bench()
+    d["ice"]["redline_rpm"] = 1414.0
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        out = pl.check_deck(d, where="x", **_curves())
+    assert [str(x.message) for x in w] == out and len(out) == 2
+    assert out[0].startswith("x (engine): redline_rpm = 1414 disagrees with 1.35e+04 from the curve (-90%)")
+    assert out[1].startswith("x (engine): engine_redline_rpm = 1414 rpm is outside 7000–17000 rpm")
+
+
+def test_the_engine_curve_gives_peak_torque_power_and_specific_power():
+    rpm, tq = _curves()["engine_curve"]
+    d = _bench()
+    with pytest.warns(W):
+        out = pl.check_deck(d, where="x", engine_curve=(rpm, [t * 1000 for t in tq]))
+    names = [m.split(" = ")[0] for m in out]
+    assert names == ["x (engine): engine_peak_torque_nm", "x (engine): peak_power_w", "x (engine): specific_power_w_kg"]
+    d["vehicle"]["mass_kg"] = 0.0
+    with pytest.warns(W):
+        out = pl.check_deck(d, where="x", engine_curve=(rpm, tq))
+    assert not any("specific_power" in m for m in out)
+
+
+def test_curve_agreement_has_a_five_percent_band_and_ignores_what_is_missing():
+    assert pl._agree("a", 104.99, 100.0, "") == [] and pl._agree("a", 95.01, 100.0, "w") == []
+    assert pl._agree("a", 105.1, 100.0, "")[0].startswith("a = 105.1 disagrees with 100 from the curve (+5%)")
+    assert pl._agree("a", 94.9, 100.0, "w")[0].startswith("w: a = 94.9")
+    assert pl._agree("a", None, 100.0, "") == pl._agree("a", 1.0, 0.0, "") == pl._agree("a", math.nan, 1.0, "") == []
+
+
+def test_a_deck_with_only_one_section_or_no_curves_is_checked_as_far_as_it_goes():
+    d = _bench()
+    ev_only = {"vehicle": d["vehicle"], "ev": d["ev"]}
+    ice_only = {"vehicle": d["vehicle"], "ice": d["ice"]}
+    assert _quiet(pl.check_deck, ev_only) == [] and _quiet(pl.check_deck, ice_only) == []
+    ice_only["ice"]["redline_rpm"] = 1414.0
+    with pytest.warns(W, match=r"^inputs.json \(engine\): engine_redline_rpm"):
+        assert len(pl.check_deck(ice_only)) == 1        # no curve, so no disagreement to report
+    assert _quiet(pb.check_deck, _bench(), base=ROOT / "nowhere") == []

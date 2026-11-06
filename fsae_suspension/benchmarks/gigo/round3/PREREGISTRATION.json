@@ -1,0 +1,1080 @@
+{
+ "created_utc": "2026-11-06T01:50:47Z",
+ "plan": "docs/GIGO_BENCHMARK_PLAN.md (round 3)",
+ "decks": [
+  "fastsim:bolt",
+  "fsae_ev",
+  "fsae_ice"
+ ],
+ "deck_files": {
+  "benchmarks/powertrain/inputs.json": "52475122a0bf1e27f2705df6b0e9141d569287ea963c89a3a000367f0e39b2b2",
+  "benchmarks/powertrain/motor_curve.csv": "4fe341e69df994f9bbee1eb23f253303760d8dfbdcdff119a5021918dfc2cbbb",
+  "benchmarks/powertrain/engine_curve.csv": "a15148000deaa51bbd151e6f64869bda63aaa3c16ad5dcb57622a98d59dd25d1"
+ },
+ "fastsim_vehicle": "2020 Chevrolet Bolt EV thrml.yaml",
+ "fastsim_version": "3.1.0",
+ "harm": {
+  "fastsim": 0.05,
+  "fsae_ev": {
+   "energy_kwh_per_km": 0.05,
+   "peak_current_a": 0.1,
+   "rms_current_a": 0.1,
+   "min_pack_voltage_v": 0.03,
+   "launch_75m_time_s": 0.03
+  },
+  "fsae_ice": {
+   "fuel_kg_per_km": 0.05,
+   "launch_75m_time_s": 0.03
+  }
+ },
+ "gate2_rel": 0.01,
+ "random": {
+  "n": 60,
+  "seed": "the commit hash that adds this file, prefixed 'round3:'"
+ },
+ "corruptions": [
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "mass_kg",
+   "key": "lb_into_kg",
+   "story": "pounds typed into a kg field",
+   "how": 2.20462
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "mass_kg",
+   "key": "kg_into_lb",
+   "story": "kg typed into a lb field",
+   "how": 0.45359290943563974
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "mass_kg",
+   "key": "g_into_kg",
+   "story": "grams typed into a kg field",
+   "how": 1000.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "mass_kg",
+   "key": "t_into_kg",
+   "story": "tonnes typed into a kg field",
+   "how": 0.001
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "cda_m2",
+   "key": "ft2_into_m2",
+   "story": "ft² typed into an m² field",
+   "how": 10.7639
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "cda_m2",
+   "key": "m2_into_ft2",
+   "story": "m² typed into a ft² field",
+   "how": 0.09290312990644656
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "crr",
+   "key": "percent",
+   "story": "typed in percent",
+   "how": 100.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "crr",
+   "key": "per_mille",
+   "story": "typed per thousand (kg/t)",
+   "how": 1000.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "wheel_radius_m",
+   "key": "diameter",
+   "story": "diameter typed as radius",
+   "how": 2.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "wheel_radius_m",
+   "key": "inch",
+   "story": "inches typed into a metre field",
+   "how": 39.3701
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "wheel_radius_m",
+   "key": "mm",
+   "story": "millimetres typed into a metre field",
+   "how": 1000.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "wheel_radius_m",
+   "key": "cm",
+   "story": "centimetres typed into a metre field",
+   "how": 100.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "aux_power_w",
+   "key": "kilo_low",
+   "story": "W typed into a kW field (or kW into W)",
+   "how": 0.001
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "aux_power_w",
+   "key": "kilo_high",
+   "story": "kW typed into a W field",
+   "how": 1000.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "aux_power_w",
+   "key": "hp_into_kw",
+   "story": "hp typed into a kW field",
+   "how": 1.34102
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "aux_power_w",
+   "key": "kw_into_hp",
+   "story": "kW typed into an hp field",
+   "how": 0.7457010335416324
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "transmission_eff",
+   "key": "percent",
+   "story": "efficiency typed in percent",
+   "how": 100.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "transmission_eff",
+   "key": "applied_twice",
+   "story": "the same efficiency applied twice",
+   "how": "square"
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "motor_power_w",
+   "key": "kilo_low",
+   "story": "W typed into a kW field (or kW into W)",
+   "how": 0.001
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "motor_power_w",
+   "key": "kilo_high",
+   "story": "kW typed into a W field",
+   "how": 1000.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "motor_power_w",
+   "key": "hp_into_kw",
+   "story": "hp typed into a kW field",
+   "how": 1.34102
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "motor_power_w",
+   "key": "kw_into_hp",
+   "story": "kW typed into an hp field",
+   "how": 0.7457010335416324
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "motor_eff_map",
+   "key": "percent",
+   "story": "efficiency typed in percent",
+   "how": 100.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fastsim:bolt",
+   "field": "motor_eff_map",
+   "key": "applied_twice",
+   "story": "the same efficiency applied twice",
+   "how": "square"
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "mass_kg",
+   "key": "lb_into_kg",
+   "story": "pounds typed into a kg field",
+   "how": 2.20462
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "mass_kg",
+   "key": "kg_into_lb",
+   "story": "kg typed into a lb field",
+   "how": 0.45359290943563974
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "mass_kg",
+   "key": "g_into_kg",
+   "story": "grams typed into a kg field",
+   "how": 1000.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "mass_kg",
+   "key": "t_into_kg",
+   "story": "tonnes typed into a kg field",
+   "how": 0.001
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "cda_m2",
+   "key": "ft2_into_m2",
+   "story": "ft² typed into an m² field",
+   "how": 10.7639
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "cda_m2",
+   "key": "m2_into_ft2",
+   "story": "m² typed into a ft² field",
+   "how": 0.09290312990644656
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "cla_m2",
+   "key": "ft2_into_m2",
+   "story": "ft² typed into an m² field",
+   "how": 10.7639
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "cla_m2",
+   "key": "m2_into_ft2",
+   "story": "m² typed into a ft² field",
+   "how": 0.09290312990644656
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "tire_radius_m",
+   "key": "diameter",
+   "story": "diameter typed as radius",
+   "how": 2.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "tire_radius_m",
+   "key": "inch",
+   "story": "inches typed into a metre field",
+   "how": 39.3701
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "tire_radius_m",
+   "key": "mm",
+   "story": "millimetres typed into a metre field",
+   "how": 1000.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "tire_radius_m",
+   "key": "cm",
+   "story": "centimetres typed into a metre field",
+   "how": 100.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "cg_height_m",
+   "key": "diameter",
+   "story": "diameter typed as radius",
+   "how": 2.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "cg_height_m",
+   "key": "inch",
+   "story": "inches typed into a metre field",
+   "how": 39.3701
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "cg_height_m",
+   "key": "mm",
+   "story": "millimetres typed into a metre field",
+   "how": 1000.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "cg_height_m",
+   "key": "cm",
+   "story": "centimetres typed into a metre field",
+   "how": 100.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "wheelbase_m",
+   "key": "diameter",
+   "story": "diameter typed as radius",
+   "how": 2.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "wheelbase_m",
+   "key": "inch",
+   "story": "inches typed into a metre field",
+   "how": 39.3701
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "wheelbase_m",
+   "key": "mm",
+   "story": "millimetres typed into a metre field",
+   "how": 1000.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "wheelbase_m",
+   "key": "cm",
+   "story": "centimetres typed into a metre field",
+   "how": 100.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "mu",
+   "key": "percent",
+   "story": "typed in percent",
+   "how": 100.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "mu",
+   "key": "per_mille",
+   "story": "typed per thousand (kg/t)",
+   "how": 1000.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "final_drive",
+   "key": "inverse",
+   "story": "ratio entered as its inverse",
+   "how": "inverse"
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "motor_peak_torque_nm",
+   "key": "lbft_into_nm",
+   "story": "lb·ft typed into an N·m field",
+   "how": 0.7375610331754953
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "motor_peak_torque_nm",
+   "key": "nm_into_lbft",
+   "story": "N·m typed into a lb·ft field",
+   "how": 1.35582
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "motor_max_rpm",
+   "key": "rads_into_rpm",
+   "story": "rad/s typed into an rpm field",
+   "how": 0.10471971767564114
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "pack_power_kw",
+   "key": "kilo_low",
+   "story": "W typed into a kW field (or kW into W)",
+   "how": 0.001
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "pack_power_kw",
+   "key": "kilo_high",
+   "story": "kW typed into a W field",
+   "how": 1000.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "pack_power_kw",
+   "key": "hp_into_kw",
+   "story": "hp typed into a kW field",
+   "how": 1.34102
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "pack_power_kw",
+   "key": "kw_into_hp",
+   "story": "kW typed into an hp field",
+   "how": 0.7457010335416324
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "inverter_eff",
+   "key": "percent",
+   "story": "efficiency typed in percent",
+   "how": 100.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "inverter_eff",
+   "key": "applied_twice",
+   "story": "the same efficiency applied twice",
+   "how": "square"
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "driveline_eff",
+   "key": "percent",
+   "story": "efficiency typed in percent",
+   "how": 100.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "driveline_eff",
+   "key": "applied_twice",
+   "story": "the same efficiency applied twice",
+   "how": "square"
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "cell_v",
+   "key": "cell_into_pack",
+   "story": "a cell's 3.6 V typed where the pack voltage belongs",
+   "how": "cell_3v6"
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "cell_v",
+   "key": "pack_into_cell",
+   "story": "the pack voltage typed as the cell voltage",
+   "how": "times_series"
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "cell_ah",
+   "key": "mah_into_ah",
+   "story": "mAh typed into an Ah field",
+   "how": 1000.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "cell_ohm",
+   "key": "mohm_into_ohm",
+   "story": "milliohms typed into an ohm field",
+   "how": 1000.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "crr",
+   "key": "percent",
+   "story": "typed in percent",
+   "how": 100.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ev",
+   "field": "crr",
+   "key": "per_mille",
+   "story": "typed per thousand (kg/t)",
+   "how": 1000.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "mass_kg",
+   "key": "lb_into_kg",
+   "story": "pounds typed into a kg field",
+   "how": 2.20462
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "mass_kg",
+   "key": "kg_into_lb",
+   "story": "kg typed into a lb field",
+   "how": 0.45359290943563974
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "mass_kg",
+   "key": "g_into_kg",
+   "story": "grams typed into a kg field",
+   "how": 1000.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "mass_kg",
+   "key": "t_into_kg",
+   "story": "tonnes typed into a kg field",
+   "how": 0.001
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "cda_m2",
+   "key": "ft2_into_m2",
+   "story": "ft² typed into an m² field",
+   "how": 10.7639
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "cda_m2",
+   "key": "m2_into_ft2",
+   "story": "m² typed into a ft² field",
+   "how": 0.09290312990644656
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "cla_m2",
+   "key": "ft2_into_m2",
+   "story": "ft² typed into an m² field",
+   "how": 10.7639
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "cla_m2",
+   "key": "m2_into_ft2",
+   "story": "m² typed into a ft² field",
+   "how": 0.09290312990644656
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "tire_radius_m",
+   "key": "diameter",
+   "story": "diameter typed as radius",
+   "how": 2.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "tire_radius_m",
+   "key": "inch",
+   "story": "inches typed into a metre field",
+   "how": 39.3701
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "tire_radius_m",
+   "key": "mm",
+   "story": "millimetres typed into a metre field",
+   "how": 1000.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "tire_radius_m",
+   "key": "cm",
+   "story": "centimetres typed into a metre field",
+   "how": 100.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "cg_height_m",
+   "key": "diameter",
+   "story": "diameter typed as radius",
+   "how": 2.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "cg_height_m",
+   "key": "inch",
+   "story": "inches typed into a metre field",
+   "how": 39.3701
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "cg_height_m",
+   "key": "mm",
+   "story": "millimetres typed into a metre field",
+   "how": 1000.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "cg_height_m",
+   "key": "cm",
+   "story": "centimetres typed into a metre field",
+   "how": 100.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "wheelbase_m",
+   "key": "diameter",
+   "story": "diameter typed as radius",
+   "how": 2.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "wheelbase_m",
+   "key": "inch",
+   "story": "inches typed into a metre field",
+   "how": 39.3701
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "wheelbase_m",
+   "key": "mm",
+   "story": "millimetres typed into a metre field",
+   "how": 1000.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "wheelbase_m",
+   "key": "cm",
+   "story": "centimetres typed into a metre field",
+   "how": 100.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "mu",
+   "key": "percent",
+   "story": "typed in percent",
+   "how": 100.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "mu",
+   "key": "per_mille",
+   "story": "typed per thousand (kg/t)",
+   "how": 1000.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "crr",
+   "key": "percent",
+   "story": "typed in percent",
+   "how": 100.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "crr",
+   "key": "per_mille",
+   "story": "typed per thousand (kg/t)",
+   "how": 1000.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "final_drive",
+   "key": "inverse",
+   "story": "ratio entered as its inverse",
+   "how": "inverse"
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "primary",
+   "key": "inverse",
+   "story": "ratio entered as its inverse",
+   "how": "inverse"
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "driveline_eff",
+   "key": "percent",
+   "story": "efficiency typed in percent",
+   "how": 100.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "driveline_eff",
+   "key": "applied_twice",
+   "story": "the same efficiency applied twice",
+   "how": "square"
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "bte",
+   "key": "percent",
+   "story": "efficiency typed in percent",
+   "how": 100.0
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "bte",
+   "key": "applied_twice",
+   "story": "the same efficiency applied twice",
+   "how": "square"
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "redline_rpm",
+   "key": "rads_into_rpm",
+   "story": "rad/s typed into an rpm field",
+   "how": 0.10471971767564114
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "launch_rpm",
+   "key": "rads_into_rpm",
+   "story": "rad/s typed into an rpm field",
+   "how": 0.10471971767564114
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "engine_torque",
+   "key": "lbft_into_nm",
+   "story": "lb·ft typed into an N·m field",
+   "how": 0.7375610331754953
+  },
+  {
+   "set": "systematic",
+   "deck": "fsae_ice",
+   "field": "engine_torque",
+   "key": "nm_into_lbft",
+   "story": "N·m typed into a lb·ft field",
+   "how": 1.35582
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:bolt",
+   "field": "mass_kg",
+   "key": "lb_for_kg",
+   "story": "the mass from a US scale, in pounds",
+   "how": 2.20462
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ev",
+   "field": "mass_kg",
+   "key": "lb_for_kg",
+   "story": "the mass from a US scale, in pounds",
+   "how": 2.20462
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ice",
+   "field": "mass_kg",
+   "key": "lb_for_kg",
+   "story": "the mass from a US scale, in pounds",
+   "how": 2.20462
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:bolt",
+   "field": "mass_kg",
+   "key": "driver_dropped",
+   "story": "the 75 kg driver left out of the mass",
+   "how": "minus_75"
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ev",
+   "field": "mass_kg",
+   "key": "driver_dropped",
+   "story": "the 75 kg driver left out of the mass",
+   "how": "minus_75"
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ice",
+   "field": "mass_kg",
+   "key": "driver_dropped",
+   "story": "the 75 kg driver left out of the mass",
+   "how": "minus_75"
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:bolt",
+   "field": "cda_m2",
+   "key": "cd_for_cda",
+   "story": "the drag coefficient typed where CdA belongs",
+   "how": "cd_for_cda"
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:bolt",
+   "field": "crr",
+   "key": "crr_percent",
+   "story": "rolling resistance typed in percent",
+   "how": 100.0
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ev",
+   "field": "crr",
+   "key": "crr_percent",
+   "story": "rolling resistance typed in percent",
+   "how": 100.0
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ice",
+   "field": "crr",
+   "key": "crr_percent",
+   "story": "rolling resistance typed in percent",
+   "how": 100.0
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:bolt",
+   "field": "wheel_radius_m",
+   "key": "dia_for_radius",
+   "story": "wheel diameter typed as the radius",
+   "how": 2.0
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ev",
+   "field": "tire_radius_m",
+   "key": "dia_for_radius",
+   "story": "wheel diameter typed as the radius",
+   "how": 2.0
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ice",
+   "field": "tire_radius_m",
+   "key": "dia_for_radius",
+   "story": "wheel diameter typed as the radius",
+   "how": 2.0
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:bolt",
+   "field": "motor_power_w",
+   "key": "hp_for_kw",
+   "story": "a horsepower rating typed as kW",
+   "how": 1.34102
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ev",
+   "field": "pack_power_kw",
+   "key": "hp_for_kw",
+   "story": "a horsepower rating typed as kW",
+   "how": 1.34102
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:bolt",
+   "field": "aux_power_w",
+   "key": "aux_kilo",
+   "story": "300 W of auxiliaries typed as 0.3 (kW into a W field)",
+   "how": 0.001
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:bolt",
+   "field": "transmission_eff",
+   "key": "eff_percent",
+   "story": "drive efficiency typed in percent",
+   "how": 100.0
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ev",
+   "field": "inverter_eff",
+   "key": "eff_percent",
+   "story": "drive efficiency typed in percent",
+   "how": 100.0
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ice",
+   "field": "driveline_eff",
+   "key": "eff_percent",
+   "story": "drive efficiency typed in percent",
+   "how": 100.0
+  },
+  {
+   "set": "curated",
+   "deck": "fastsim:bolt",
+   "field": "transmission_eff",
+   "key": "eff_twice",
+   "story": "the drive efficiency applied twice",
+   "how": "square"
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ev",
+   "field": "inverter_eff",
+   "key": "eff_twice",
+   "story": "the drive efficiency applied twice",
+   "how": "square"
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ice",
+   "field": "driveline_eff",
+   "key": "eff_twice",
+   "story": "the drive efficiency applied twice",
+   "how": "square"
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ev",
+   "field": "motor_peak_torque_nm",
+   "key": "lbft_for_nm",
+   "story": "motor torque from a US datasheet, in lb·ft",
+   "how": 0.7375610331754953
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ice",
+   "field": "engine_torque",
+   "key": "lbft_for_nm",
+   "story": "motor torque from a US datasheet, in lb·ft",
+   "how": 0.7375610331754953
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ev",
+   "field": "final_drive",
+   "key": "ratio_inverted",
+   "story": "gear ratio entered as its inverse",
+   "how": "inverse"
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ice",
+   "field": "final_drive",
+   "key": "ratio_inverted",
+   "story": "gear ratio entered as its inverse",
+   "how": "inverse"
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ev",
+   "field": "motor_max_rpm",
+   "key": "rpm_for_rads",
+   "story": "motor top speed in rad/s typed into rpm",
+   "how": 0.10471971767564114
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ice",
+   "field": "redline_rpm",
+   "key": "rpm_for_rads",
+   "story": "motor top speed in rad/s typed into rpm",
+   "how": 0.10471971767564114
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ev",
+   "field": "cell_v",
+   "key": "cell_for_pack_v",
+   "story": "a cell's 3.6 V typed where the pack voltage belongs",
+   "how": "cell_3v6"
+  },
+  {
+   "set": "curated",
+   "deck": "fsae_ev",
+   "field": "cell_ah",
+   "key": "mah_for_ah",
+   "story": "cell capacity in mAh typed into Ah",
+   "how": 1000.0
+  }
+ ],
+ "predictions": {
+  "gate1_fsae_catch_harmful_min": 0.75,
+  "gate1_catch_harmful_min": 0.5,
+  "gate1_catch_harmful_max": 0.95,
+  "gate2_catch_harmful_min": 0.95,
+  "gate1_false_alarms": 0,
+  "gate2_false_alarms": 0
+ },
+ "code_sha256": {
+  "scripts/gigo_benchmark.py": "9d94405e469de4a9d7f4d293815b85922d6054c7b283264aee1129f051ea7240",
+  "scripts/fastsim_benchmark.py": "9a3784ce53c373a2c02d4e635c17148c90824a92eb0cd80a01bc4f18100aec05",
+  "scripts/powertrain_benchmark.py": "b56b14b733526e7678e7118a0f4a22f2fd29728d746e7bcf9f2ee1013be0900b",
+  "suspension/ev_electrical_check.py": "0adb8354763875917f81598e9a82be9dc5ee84e16fc99b4dd9efe53c9ceae34a",
+  "suspension/ice_powertrain.py": "1845d9efef6561271d74a14addab3da9160d80bef9f0961813470935bac8d1f2",
+  "suspension/laptime.py": "114e31522d3687909ae9bcd4bffa4a2d1559bf2149b09da2f380d689a32bcc48",
+  "suspension/_num.py": "20f8263c1cc44c17a2f8d0e09e5838c431d9d88bb1a73728a1e48388e1aeb867",
+  "suspension/plausibility.py": "e3a01444023dd39f14757f6e96cf3736c715e96d8d2a5cec659293a96623af74",
+  "scripts/gigo_round3.py": "a21db8e6b6053b4e18a4ea8d7d8ef7cebf55d84f5eefc26712a6c19dca8527ca"
+ }
+}

@@ -52,6 +52,10 @@ GENERIC = {
     "cg_height_m": (0.08, 2.5, "m", "a kart to a truck", "mm typed into metres"),
     "wheelbase_m": (0.5, 8.0, "m", "a kart to a truck", "mm typed into metres"),
     "specific_power_w_kg": (10.0, 2000.0, "W/kg", "a loaded truck to a hypercar", "a power or mass unit slip"),
+    "brake_thermal_eff": (0.1, 0.5, "", "engines turn 10 to 50 % of their fuel into work",
+                          "an efficiency typed in percent"),
+    "engine_redline_rpm": (1500.0, 22000.0, "rpm", "a truck diesel to a superbike", "rad/s typed into rpm"),
+    "engine_peak_torque_nm": (5.0, 4000.0, "N·m", "a lawnmower to a truck", "a torque unit slip"),
 }
 
 #: A Formula Student car (FS/FSAE rules and the cars in benchmarks/powertrain); missing names fall back to GENERIC.
@@ -69,6 +73,8 @@ FSAE = {
     "capacity_ah": (2.0, 300.0, "Ah", "a small sprint pack to the 230 Ah Simscape pack", "mAh typed into Ah"),
     "cg_height_m": (0.15, 0.5, "m", "a low car to a tall one", "mm typed into metres"),
     "wheelbase_m": (1.525, 2.2, "m", "the rules' 1525 mm minimum to a long car", "mm typed into metres"),
+    "engine_redline_rpm": (7000.0, 17000.0, "rpm", "a large single to a 600 cc four", "rad/s typed into rpm"),
+    "engine_peak_torque_nm": (20.0, 150.0, "N·m", "a small single to a turbocharged twin", "a torque unit slip"),
 }
 
 CLASSES = {None: {}, "generic": {}, "fsae": FSAE}
@@ -108,4 +114,56 @@ def check(values: dict, vehicle_class: str | None = None, where: str = "", warn:
     if warn:
         for m in out:
             warnings.warn(m, PlausibilityWarning, stacklevel=2)
+    return out
+
+
+def _agree(name, declared, implied, where, tol=0.05):
+    if declared is None or not implied or not math.isfinite(declared) or abs(declared / implied - 1.0) <= tol:
+        return []
+    return [f"{where + ': ' if where else ''}{name} = {declared:.4g} disagrees with {implied:.4g} from the curve "
+            f"({declared / implied - 1.0:+.0%}): is one of them in another unit?"]
+
+
+def check_deck(inp: dict, vehicle_class: str = "fsae", where: str = "inputs.json", motor_curve=None,
+               engine_curve=None) -> list[str]:
+    """A whole car deck (the inputs.json of the powertrain benchmark: vehicle, and ev and/or ice sections) where it
+    enters KinematiK. Refused: a drive efficiency, or a brake thermal efficiency, that is not a fraction (0, 1].
+    Warned, one PlausibilityWarning per message: every value outside its class's range, and two inputs that must
+    agree but do not: the declared motor peak torque (N·m) and top speed (rpm) against the motor curve, and the
+    engine's redline (rpm) against its curve (motor_curve, engine_curve: (rpm, torque_nm) sequences, optional)."""
+    veh, ev, ic = inp["vehicle"], inp.get("ev"), inp.get("ice")
+    effs = [sec[k] for sec in (ev, ic) if sec for k in ("inverter_eff", "motor_eff", "driveline_eff")
+            if sec.get(k) is not None]
+    bte = (ic or {}).get("bte")
+    if any(not 0.0 < e <= 1.0 for e in effs) or (bte is not None and not 0.0 < bte <= 1.0):
+        raise ValueError(f"{where}: drive efficiencies are fractions, at most 1: was one typed in percent?")
+    vals = {"mass_kg": veh.get("mass_kg"), "cda_m2": veh.get("cda_m2"), "cla_m2": veh.get("cla_m2"),
+            "crr": veh.get("crr"), "wheel_radius_m": veh.get("tire_radius_m"), "mu": veh.get("mu"),
+            "cg_height_m": veh.get("cg_height_m"), "wheelbase_m": veh.get("wheelbase_m"), "drivetrain_eff": effs}
+    out = []
+    if ev:
+        pk = ev.get("pack", {})
+        if all(k in pk for k in ("series", "parallel", "cell_v", "cell_ah", "cell_ohm")):
+            vals.update(pack_voltage_v=pk["series"] * pk["cell_v"], capacity_ah=pk["parallel"] * pk["cell_ah"],
+                        pack_resistance_ohm=pk["series"] * pk["cell_ohm"] / pk["parallel"])
+        kw = ev.get("pack_power_kw")
+        vals.update(final_drive=ev.get("final_drive"), motor_max_rpm=ev.get("motor_max_rpm"),
+                    motor_peak_torque_nm=ev.get("motor_peak_torque_nm"), peak_power_w=None if kw is None else kw * 1e3)
+        if motor_curve is not None:
+            rpm, tq = motor_curve
+            out += _agree("motor_peak_torque_nm", ev.get("motor_peak_torque_nm"), max(tq), where)
+            out += _agree("motor_max_rpm", ev.get("motor_max_rpm"), max(rpm), where)
+    out = check(vals, vehicle_class, where, warn=False) + out
+    if ic:
+        ivals = {"final_drive": ic.get("final_drive"), "brake_thermal_eff": bte,
+                 "engine_redline_rpm": ic.get("redline_rpm")}
+        if engine_curve is not None:
+            rpm, tq = engine_curve
+            p = max(r * t for r, t in zip(rpm, tq)) * math.pi / 30.0
+            ivals.update(engine_peak_torque_nm=max(tq), peak_power_w=p,
+                         specific_power_w_kg=p / veh["mass_kg"] if veh.get("mass_kg") else None)
+            out += _agree("redline_rpm", ic.get("redline_rpm"), max(rpm), f"{where} (engine)")
+        out += check(ivals, vehicle_class, f"{where} (engine)", warn=False)
+    for m in out:
+        warnings.warn(m, PlausibilityWarning, stacklevel=2)
     return out

@@ -70,6 +70,7 @@ def test_from_excel_cases(tmp_path, monkeypatch):
         ec.load_speed_vs_time(p)
 
 
+@pytest.mark.filterwarnings("ignore::suspension.plausibility.PlausibilityWarning")   # textbook numbers, not a car
 def test_power_helpers():
     res = {}
     v = np.array([0.0, 5.0, 20.0, 35.0])
