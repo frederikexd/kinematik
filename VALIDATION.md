@@ -13,6 +13,11 @@ feature, is in [BENCHMARK.md](BENCHMARK.md).
 | Suspension kinematics | Lotus Suspension Analysis, two published corners | Camber in bump within 0.009°, toe within 0.0003°, camber in roll within 0.008° | `scripts/lotus_benchmark.py`, `tests/test_lotus_benchmark.py` |
 | Suspension kinematics | Applied Racing Dynamics (ARD), front and rear corners | Static caster, KPI, scrub, motion ratio and camber change at ±20 mm agree to ARD's display precision; every larger difference traced to a definition | §32.4 |
 | Suspension kinematics | Independent rigid-body solve (SciPy `fsolve`, no shared code) | Camber and toe within 1e-12° on three corners | `scripts/independent_kinematics.py` |
+| Powertrain, EV and combustion | NREL FASTSim 3.1.0, identical inputs, 5 vehicles × 4 cycles | 20 of 20; worst energy difference 0.04 %; a sixth car never used before within 0.04 % | `scripts/fastsim_benchmark.py`, `tests/test_fastsim_benchmark.py` |
+| Powertrain, EV and combustion | Five published GT-SUITE studies | 41 of 44 results within 5 % (misses traced to the papers' own gaps) | `scripts/gt_suite_benchmark.py`, `tests/test_gt_suite_benchmark.py` |
+| Powertrain, EV | MathWorks' Simscape Formula Student model, 7 cases sealed on GitHub before they ran | 28 of 39 metrics within 3 %; energy, current, voltage, pack resistance and launch 28 of 29; pack and motor heat over-predicted 3.5–14 % | `scripts/powertrain_benchmark.py simulink-blind2`, `tests/test_powertrain_benchmark.py` |
+| Powertrain, EV and combustion | Measured: Argonne National Laboratory dyno (BMW i3, Chevrolet Blazer), a Formula Student team's race telemetry | Energy 3.7 % and fuel 3.8 % on average; launch within 1 %; pack voltage sag 3.7 % | `scripts/gt_suite_benchmark.py`, `tests/test_gt_suite_benchmark.py` |
+| Input checks | Sealed garbage-in benchmark, three rounds, random errors seeded by each seal's commit | At entry: 0 of 120 before the checks; 64 of 83 harmful errors on two held-out Formula Student cars (77 %, 95 % CI 67–85 %); as a second opinion beside FASTSim, every harmful error; no false alarm in any round | `scripts/gigo_benchmark.py`, `scripts/gigo_round3.py`, `tests/test_gigo_round3.py` |
 | Synthesis reproducibility | Re-runs by SIT Formula Racing and Elbee Racing on their own machines | Identical to the recorded outputs: coordinates to 1e-6 mm, fits and yield to 1e-9 | `scripts/verify_run.py` |
 | Published numbers | Recomputed from the manifests | 499 of 499 claims match | `scripts/paper_check.py`, weekly in CI |
 | Final corners | Re-solved from the manifests | Match the recorded outputs | `scripts/verify_run.py`, weekly in CI |
@@ -196,11 +201,14 @@ quote absolute downforce.
 - **Vortex-lattice lift gap.** The 4% gap to an independent lattice above.
 - **Most non-suspension modules** (brakes, accumulator, electronics, structures)
   are checked against closed forms and their own tests, not against another tool.
-- **Powertrain, EV and combustion.** Checked against closed forms only (BENCHMARK.md).
-  The combustion side has no engine model: the torque curve is declared, and fuel
-  rests on one brake thermal efficiency. The comparison against GT-SUITE,
-  Simulink, OptimumLap and PyBaMM is planned in
-  [docs/POWERTRAIN_BENCHMARK_PLAN.md](docs/POWERTRAIN_BENCHMARK_PLAN.md) and not run.
+- **Powertrain, what is still open** (the checks themselves are in the summary above and in
+  [docs/POWERTRAIN_VALIDATION.md](docs/POWERTRAIN_VALIDATION.md)): lap time against a real car; a Formula Student
+  engine's fuel map and ICE coolant heat, which have no open measured reference; pack and motor heat, over-predicted
+  by 3.5–14 % against Simscape; skidpad energy 5 % low (diagnosed: camber thrust, load transfer and rolling loss at
+  the wheel's spin). The combustion torque curve is declared, not modelled.
+- **Wrong inputs that look right.** The entry checks miss a driver left out of the mass or an efficiency off by a
+  dropped digit: values that are wrong but believable. Only a measurement catches those
+  ([docs/GIGO_BENCHMARK_PLAN.md](docs/GIGO_BENCHMARK_PLAN.md)).
 
 ## Peer review
 
