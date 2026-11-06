@@ -16,7 +16,9 @@ abstract: >-
   vehicle requirements and synthesises double-wishbone hardpoints to meet them inside absolute packaging,
   structural and steering walls, prices each candidate for build yield, and records every search as a hashed,
   re-runnable manifest. It also covers vehicle dynamics, aerodynamics, brakes, powertrain and energy, thermal,
-  electrical systems, data acquisition and measurement.
+  electrical systems, data acquisition and measurement. The archive holds the full benchmark data (Simscape runs,
+  FASTSim and garbage-in benchmark records), more files than Zenodo's preview can list. Download the ZIP to browse
+  it.
 keywords:
   - Formula SAE
   - Formula Student
