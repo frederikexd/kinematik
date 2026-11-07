@@ -16,6 +16,22 @@ geometry", "Set roll stiffness from: my spring rates (recommended) / a roll stif
 short help. If the solve fails, the geometry editor appears with the error so a bad point can still be fixed. "Apply
 to sidebar" in Setup Optimiser is now "Apply to the car". No values, defaults or results change. `streamlit_app.py`.
 
+**The sidebar shows what your edits did, with undo.** The "Your car" card only repeated numbers that live in the
+tabs. The sidebar now answers two questions instead:
+- *Are these results about my car?* "2 of 7 inputs are yours" with a progress bar, the next input still on its example
+  value and where to set it, and a "✓ Our CG height is the same" button for when the example value is right.
+- *What did my last edit do?* Every edit becomes an entry: what changed (e.g. "Front spring 35.0 → 45.0 N/mm") and
+  how the roll gradient, front share of load transfer and front roll center moved, with a plain note ("▲ toward
+  understeer"). Slider drags merge into one entry. **↶** undoes an entry: only the inputs it changed go back, so later
+  edits stay. If an edit makes the solve fail, the panel still shows, so its undo can take the bad edit back.
+The bookkeeping is in `suspension/ripple.py` (pure Python, 100% statement and branch coverage in
+`tests/test_ripple.py`). The 💬 Guide bubble also sits higher, clear of Streamlit Community Cloud's "Manage app"
+button, and knows "how do I undo a change?".
+
+**Fixed: switching the starting geometry back did not restore the points.** `apply_preset` copied the hardpoint
+dictionary but not the point lists inside it, so "Example, lower roll center" or "Example, more anti-dive" rewrote
+the stored pickup points, and choosing "Example front corner" again kept them. Each point is now copied first.
+
 **💬 KinematiK Guide: ask a question, get an answer.** A chat bubble (bottom right, on every page from the first)
 opens a small chat. Ask where something is ("where do I change the mass?"), what a term means ("what is bump
 steer?"), what a tab is for, or what to open first, and it answers in chat style, with the live car values filled in,

@@ -348,7 +348,8 @@ FAQ = [
           related=("accuracy", "units")),
     Entry("my_car", "What are my car's current numbers?",
           "Your car right now:\n- 🚗 **Car basics**: {car_basics}\n- 🔩 **Springs & bars**: {springs}\n"
-          "- ✏️ **Suspension geometry**: {geometry}\n\nThe sidebar's **Your car** card always shows these.",
+          "- ✏️ **Suspension geometry**: {geometry}\n\nThe sidebar's **Your car** panel shows how many of them are "
+          "still example values, and what each of your edits did to the car.",
           ("current", "now", "my car", "summary", "values", "numbers", "settings", "status", "inputs"),
           related=("change_mass", "change_springs", "change_geometry")),
     Entry("license", "Is KinematiK free and open source?",
@@ -363,6 +364,13 @@ FAQ = [
           "LinkedIn. Screenshots and the steps to reproduce help a lot.",
           ("bug", "issue", "broken", "feedback", "report", "contact", "suggest", "feature request", "crash", "author"),
           related=("license",)),
+    Entry("undo", "How do I undo a change?",
+          "Every edit you make shows up in the sidebar under **What your changes did**, with what it did to roll "
+          "and load transfer. Press **↶** next to one to undo it: only the inputs that change touched go back, so "
+          "your later edits stay.",
+          ("undo", "revert", "go back", "mistake", "previous", "history", "changes", "what changed", "ripple",
+           "effect", "what did"),
+          related=("my_car", "reset_geometry")),
     Entry("setup", "How do I find a good spring and anti-roll bar setup?",
           "Open 🎛️ **Setup Optimiser**. It searches springs, bars, CG height and weight split for the best balance, "
           "and **Apply to the car** writes the result into 🚗 Car basics and 🔩 Springs, where every tab reads it.",

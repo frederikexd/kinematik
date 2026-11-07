@@ -1557,7 +1557,8 @@ body, p, span, div, label{ font-family:'Archivo',sans-serif; }
 .hint{ color:var(--dim); font-size:.82rem; }
 
 /* --- 💬 KinematiK Guide: the chat bubble, fixed bottom right ------------- */
-.st-key-kk_guide_fab{ position:fixed !important; right:1.4rem; bottom:1.3rem; z-index:999990;
+/* bottom 4.5rem: clear of Streamlit Community Cloud's "Manage app" button in the corner */
+.st-key-kk_guide_fab{ position:fixed !important; right:1.4rem; bottom:4.5rem; z-index:999990;
   width:auto !important; }
 .st-key-kk_guide_fab [data-testid="stPopover"] > div > button,
 .st-key-kk_guide_fab [data-testid="stPopoverButton"]{ border-radius:999px; padding:.55rem 1.1rem;
@@ -1567,13 +1568,27 @@ body, p, span, div, label{ font-family:'Archivo',sans-serif; }
 @keyframes kkblink{ 0%,100%{opacity:.25} 50%{opacity:1} }
 
 /* --- Sidebar: the read-only 'Your car' card ---------------------------- */
-.kk-guide{ background:var(--panel2); border:1px solid var(--line); border-radius:8px;
-  padding:.55rem .7rem; font-size:.82rem; color:var(--dim); line-height:1.45; margin:.3rem 0 .4rem; }
-.kk-guide b{ color:var(--ink); }
-.kk-car-row{ border-top:1px solid var(--line); margin-top:.5rem; padding-top:.45rem; }
-.kk-car-h{ color:var(--ink); font-weight:600; }
-.kk-car-v{ color:var(--ink); }
-.kk-car-w{ font-size:.74rem; }
+.kk-car{ border:1px solid var(--line); border-radius:8px; padding:.65rem .8rem .6rem; margin:.5rem 0 .4rem;
+  background:var(--panel2); }
+.kk-car-eyebrow{ font-family:'JetBrains Mono'; font-size:.66rem; letter-spacing:.2em; color:var(--dim);
+  margin-bottom:.15rem; }
+.kk-car-row{ padding:.32rem 0; border-bottom:1px solid var(--line); }
+.kk-car-row:last-of-type{ border-bottom:0; }
+.kk-car-k{ font-size:.72rem; color:var(--dim); }
+.kk-car-v{ color:var(--ink); font-size:.9rem; font-variant-numeric:tabular-nums; line-height:1.3; }
+.kk-car-foot{ font-size:.72rem; color:var(--dim); line-height:1.35; margin-top:.35rem; }
+.kk-rp-score{ color:var(--ink); font-size:.9rem; margin:.15rem 0 .35rem; }
+.kk-rp-bar{ height:5px; border-radius:3px; background:var(--line); overflow:hidden; }
+.kk-rp-bar > div{ height:100%; background:linear-gradient(90deg,#f5b642,#3fd0c9); }
+.kk-rp-entry{ border-left:2px solid #34507c; padding:.1rem 0 .1rem .55rem; margin:.15rem 0; }
+.kk-rp-undone{ border-left-color:var(--line); opacity:.55; }
+.kk-rp-undone .kk-rp-title{ text-decoration:line-through; }
+.kk-rp-title{ color:var(--ink); font-size:.82rem; line-height:1.3; }
+.kk-rp-more{ color:var(--dim); font-size:.72rem; }
+.kk-rp-when{ color:var(--dim); font-size:.68rem; margin-bottom:.15rem; }
+.kk-rp-m{ color:var(--ink); font-size:.74rem; line-height:1.35; font-variant-numeric:tabular-nums; }
+.kk-rp-same{ color:var(--dim); }
+.kk-rp-arrow{ color:#f5b642; font-size:.68rem; white-space:nowrap; }
 
 /* --- Wind-tunnel module helpers --------------------------------------- */
 .wt-intro{ display:flex; gap:.9rem; align-items:flex-start;
@@ -3503,31 +3518,254 @@ def render_geometry_editor(loc, expanded=False):
                 _render_hp_import_generic(topo)
 
 
-def _render_sidebar_car_card(container, visible_ids):
-    """Read-only 'Your car' card: the current values and which tab edits each."""
-    # The first fill runs before _TAB_META exists, so carry the few names here.
-    names = {"roll": "🎚️ Roll & Load Transfer", "setup": "🎛️ Setup Optimiser",
-             "brakes": "🛑 Brakes", "laptime": "🏁 Track Testing",
-             "weight": "⚖️ Weight & Handover", "kinematics": "📐 Kinematics"}
+# =========================================================================== #
+#  Sidebar: "Your car" progress + the ripple feed (what each edit did)
+# =========================================================================== #
+# Two questions the sidebar answers at a glance:
+#   1. Are these results about MY car? -> "4 of 7 inputs are yours" and the next
+#      input to set (or confirm: the example value can be right).
+#   2. What did my last edit do?       -> every edit becomes an entry: what
+#      changed (before -> after) and three headline results before -> after,
+#      with an undo that puts back only that entry's inputs.
+# KinematiK re-solves the whole car on every edit anyway, so the consequences
+# cost nothing extra to show. The logic is in suspension/ripple.py; this part
+# snapshots the state, renders, and writes undo back to the stored inputs.
+import time as _rp_time  # noqa: E402
+from suspension import ripple as _ripple   # noqa: E402  (stdlib only)
 
-    def _where(group):
+_RIPPLE_DONE = False      # processed and drawn once per run
+
+# vp key -> (label, unit for units_mod or "pct" / "N·m/°" / "", decimals)
+_RP_VP = {
+    "mass": ("Mass", "kg", 0), "cg_height": ("CG height", "mm", 0),
+    "weight_dist_front": ("Front weight", "pct", 0),
+    "spring_rate_front": ("Front spring", "N/mm", 1), "spring_rate_rear": ("Rear spring", "N/mm", 1),
+    "arb_rate_front": ("Front anti-roll bar", "N·m/°", 0), "arb_rate_rear": ("Rear anti-roll bar", "N·m/°", 0),
+    "roll_stiffness_front": ("Front roll stiffness", "N·m/°", 0),
+    "roll_stiffness_rear": ("Rear roll stiffness", "N·m/°", 0),
+}
+# headline results: key -> (label, unit, decimals, tolerance, note when it rises, note when it falls)
+_RP_METRICS = (
+    ("roll_grad", "Roll gradient", "°/g", 2, 0.005, "more roll", "less roll"),
+    ("llt_front", "Front load transfer", "%", 1, 0.05, "toward understeer", "toward oversteer"),
+    ("rc_front", "Front roll center", "mm", 0, 0.05, "higher", "lower"),
+)
+_RP_CONFIRM = {"mass": "mass", "cg": "CG height", "split": "weight split", "springs": "springs",
+               "points": "pickup points", "camber": "camber & toe", "rocker": "rocker"}
+
+
+def _rp_example():
+    d = Hardpoints.default().as_dict()
+    d.setdefault("static_camber", -1.5)
+    d.setdefault("static_toe", 0.0)
+    return _ripple.snapshot(VehicleParams().__dict__.copy(), d, "double_wishbone", "Front (default)")
+
+
+def _rp_snapshot():
+    ss = st.session_state
+    topo = ss.get("topology", "double_wishbone")
+    pts = ss.get("topo_hp", {}).get(topo) if topo != "double_wishbone" else None
+    return _ripple.snapshot(ss.vp, ss.hp, topo, ss.get("kk_preset", "Front (default)"), pts)
+
+
+def _rp_metrics():
+    """Headline results of the car as solved this run (°/g, %, mm); None if the solve did not happen."""
+    try:
+        info = veh.lateral_load_transfer(1.0)[1]
+        tot = info["ltd_front"] + info["ltd_rear"]
+        return {"roll_grad": float(info["roll_angle"]),
+                "llt_front": 100.0 * info["ltd_front"] / tot if tot else float("nan"),
+                "rc_front": float(info["rc_front"])}
+    except Exception:
+        return None
+
+
+def _rp_process():
+    ss = st.session_state
+    cur, m = _rp_snapshot(), _rp_metrics()
+    prev, pm = ss.get("_kk_rp_prev"), ss.get("_kk_rp_prev_m")
+    feed = ss.setdefault("kk_ripple", [])
+    if prev is not None and not ss.pop("_kk_rp_skip", False):
+        ss["_kk_rp_next"] = _ripple.record(feed, _ripple.diff(prev, cur), pm, m, _rp_time.time(),
+                                           ss.get("_kk_rp_next", 1))
+    ss["_kk_rp_prev"], ss["_kk_rp_prev_m"] = cur, m
+    return cur
+
+
+def _rp_undo(eid):
+    ss = st.session_state
+    for e in ss.get("kk_ripple", []):
+        if e.id != eid or e.undone:
+            continue
+        for (kind, key), val in _ripple.undo_targets(e):
+            v = list(val) if isinstance(val, tuple) else val
+            if kind == "vp":
+                if val is None:
+                    ss.vp.pop(key, None)
+                else:
+                    ss.vp[key] = v
+            elif kind == "hp":
+                ss.hp[key] = v
+            elif kind == "ss":
+                ss[key] = v
+            elif kind == "topo":
+                topo, _, name = key.partition("/")
+                ss.setdefault("topo_hp", {}).setdefault(topo, {})[name] = v
+        e.undone = True
+        ss["_kk_rp_skip"] = True          # the undo itself is not a new entry
+        ss.pop("_sweep_cache", None)
+        ss.pop("_sweep_sig", None)
+
+
+def _rp_confirm(key):
+    st.session_state.setdefault("kk_confirmed", set()).add(key)
+
+
+def _rp_val(v, unit, nd):
+    """(number as text, unit label) in the active units."""
+    if unit == "pct":
+        return str(round(float(v) * 100)), "%"
+    if unit == "N·m/°":
+        return _shown(v, "N·m", nd), f"{units_mod.label('N·m')}/°"
+    if unit in ("kg", "mm", "N/mm"):
+        return _shown(v, unit, nd), units_mod.label(unit)
+    return format(float(v), f".{nd}f"), unit
+
+
+def _rp_pair(a, b, unit, nd):
+    (na, u), (nb, _u) = _rp_val(a, unit, nd), _rp_val(b, unit, nd)
+    return f"{na} → {nb} {u}".rstrip()
+
+
+def _rp_describe(changes):
+    """Plain-language lines for one entry's changes (text only, unitless)."""
+    labels = dict(POINTS + ROCKER_POINTS)
+    rocker = {k for k, _ in ROCKER_POINTS}
+    lines = []
+    rk = [c for c in changes if c[0][0] == "hp" and c[0][1] in rocker and (c[1] is None or c[2] is None)]
+    if rk:
+        lines.append("Pushrod & rocker " + ("on" if rk[0][1] is None else "off"))
+    for (kind, key), a, b in changes:
+        if (kind, key) in [c[0] for c in rk]:
+            continue
+        if kind == "vp":
+            if key == "use_spring_rates":
+                lines.append("Roll stiffness from: " + ("spring rates" if b else "a typed value"))
+            elif key in _RP_VP and a is not None and b is not None:
+                lbl, unit, nd = _RP_VP[key]
+                lines.append(f"{lbl} {_rp_pair(a, b, unit, nd)}")
+            else:
+                lines.append(f"{key.replace('_', ' ').capitalize()} {a} → {b}")
+        elif kind == "hp" and key in ("static_camber", "static_toe"):
+            lines.append(f"Static {key[7:]} {_rp_pair(a or 0.0, b or 0.0, '°', 2)}")
+        elif kind == "hp" and key == "pushrod_attach":
+            lines.append(f"Pushrod mounts on {b}")
+        elif kind in ("hp", "topo") and isinstance(a, tuple) and isinstance(b, tuple):
+            name = key.partition("/")[2] if kind == "topo" else key
+            lbl = labels.get(name) or _POINT_LABELS.get(name, name)
+            u = units_mod.label("mm")
+            pd = 2 if units_mod.is_us() else 1
+            ax = ", ".join(f"{'xyz'[i]} {_shown(a[i], 'mm', pd)} → {_shown(b[i], 'mm', pd)}"
+                           for i in range(3) if abs(a[i] - b[i]) > 1e-9)
+            lines.append(f"{lbl}: {ax} {u}")
+        elif kind == "ss" and key == "topology":
+            lines.append(f"Suspension type → {_TOPO_LABELS.get(b, b).replace(' (full editor)', '')}")
+        elif kind == "ss" and key == "kk_preset":
+            lines.append(f"Starting geometry → {_PRESET_LABELS.get(b, b)}")
+    return lines or [f"{len(changes)} inputs changed"]
+
+
+def _rp_ago(t):
+    d = max(0.0, _rp_time.time() - t)
+    if d < 45:
+        return "just now"
+    if d < 3600:
+        return f"{int(d // 60) or 1} min ago"
+    return f"{int(d // 3600)} h ago"
+
+
+def render_sidebar_panel(visible_ids=None) -> None:
+    """The sidebar's 'Your car' progress and the ripple feed. Runs once per run."""
+    global _RIPPLE_DONE
+    if _RIPPLE_DONE:
+        return
+    _RIPPLE_DONE = True
+    import html as _html
+    ss = st.session_state
+    try:
+        cur = _rp_process()
+    except Exception as _e:
+        import logging
+        logging.getLogger(__name__).warning("ripple: %r", _e)
+        cur = _rp_snapshot()
+    names = {"roll": "🎚️ Roll & Load Transfer", "setup": "🎛️ Setup Optimiser", "brakes": "🛑 Brakes",
+             "laptime": "🏁 Track Testing", "weight": "⚖️ Weight & Handover", "kinematics": "📐 Kinematics"}
+
+    def _home(group):
         ids = _INPUT_HOMES[group]
         shown = ids if visible_ids is None else [i for i in ids if i in visible_ids]
-        if shown:
-            return ", ".join(names[i] for i in shown)
-        return f"⋯ Other tools → {names[ids[0]]}"
-    rows = [("🚗 Car basics", _car_basics_summary(), _where("basics")),
-            ("🔩 Springs & bars", _springs_summary(), _where("springs")),
-            ("✏️ Suspension geometry", _geometry_summary(), _where("geometry"))]
-    body = "".join(
-        f'<div class="kk-car-row"><div class="kk-car-h">{h}</div>'
-        f'<div class="kk-car-v">{v}</div>'
-        f'<div class="kk-car-w">Edit in {w}</div></div>' for h, v, w in rows)
-    container.markdown(
-        '<div class="kk-guide"><b>Your car.</b> Every tab reads these. They start '
-        'as an example Formula SAE car: change what you know, in the tab where '
-        'you use it, and it changes everywhere.' + body + '</div>',
-        unsafe_allow_html=True)
+        return names[shown[0]] if shown else f"⋯ Other tools → {names[ids[0]]}"
+    where = {"mass": f"🚗 Car basics in {_home('basics')}", "cg": f"🚗 Car basics in {_home('basics')}",
+             "split": f"🚗 Car basics in {_home('basics')}", "springs": f"🔩 Springs in {_home('springs')}",
+             "points": f"✏️ Edit suspension geometry in {_home('geometry')}",
+             "camber": f"✏️ Edit suspension geometry in {_home('geometry')}",
+             "rocker": f"✏️ Edit suspension geometry → Pushrod & rocker in {_home('geometry')}"}
+    done, total, nxt = _ripple.progress(cur, _rp_example(), [k for k, _ in POINTS], [k for k, _ in ROCKER_POINTS],
+                                        ss.get("kk_confirmed", set()))
+    with _sb_car_card.container():
+        pct = round(100 * done / total)
+        head = (f'<div class="kk-car"><div class="kk-car-eyebrow">YOUR CAR</div>'
+                f'<div class="kk-rp-score"><b>{done} of {total}</b> inputs are yours</div>'
+                f'<div class="kk-rp-bar"><div style="width:{pct}%"></div></div>')
+        if nxt:
+            head += (f'<div class="kk-car-foot">Still the example value: <b>{nxt[1]}</b>. Set it in '
+                     f'{where[nxt[0]]}.</div></div>')
+        else:
+            head += '<div class="kk-car-foot">Every input is yours: the results describe your car.</div></div>'
+        st.markdown(head, unsafe_allow_html=True)
+        if nxt:
+            st.button(f"✓ Our {_RP_CONFIRM[nxt[0]]} is the same", key="kk_rp_confirm",
+                      on_click=_rp_confirm, args=(nxt[0],), type="tertiary",
+                      help="Counts it as yours without changing it.")
+        st.markdown('<div class="kk-car-eyebrow" style="margin-top:.6rem">WHAT YOUR CHANGES DID</div>',
+                    unsafe_allow_html=True)
+        feed = ss.get("kk_ripple", [])
+        if not feed:
+            st.caption("Change any input and this shows what it did to the car, with undo.")
+        for e in feed[:3]:
+            lines = _rp_describe(e.changes)
+            title = _html.escape(lines[0]) + (f" <span class='kk-rp-more'>+{len(lines) - 1} more</span>"
+                                              if len(lines) > 1 else "")
+            rows = []
+            for key, lbl, unit, nd, tol, up, down in _RP_METRICS:
+                a = (e.m_before or {}).get(key)
+                b = (e.m_after or {}).get(key)
+                if b is None:
+                    continue
+                if unit == "mm":
+                    nd = 2 if units_mod.is_us() else nd
+                    fa = _shown(a, "mm", nd) if a is not None else "–"
+                    fb, u = _shown(b, "mm", nd), units_mod.label("mm")
+                else:
+                    fa = format(a, f".{nd}f") if a is not None else "–"
+                    fb, u = format(b, f".{nd}f"), unit
+                if a is None or abs(b - a) <= tol:
+                    continue
+                else:
+                    arrow, note = ("▲", up) if b > a else ("▼", down)
+                    rows.append(f'<div class="kk-rp-m">{lbl} {fa} → <b>{fb}</b> {u} '
+                                f'<span class="kk-rp-arrow">{arrow} {note}</span></div>')
+            if not rows and e.m_after is not None:
+                rows.append('<div class="kk-rp-m kk-rp-same">No change in roll or load transfer</div>')
+            c1, c2 = st.columns([6, 1], vertical_alignment="top")
+            c1.markdown(
+                f'<div class="kk-rp-entry{" kk-rp-undone" if e.undone else ""}">'
+                f'<div class="kk-rp-title">{title}</div>'
+                f'<div class="kk-rp-when">{_rp_ago(e.t)}{" · undone" if e.undone else ""}</div>'
+                + ("" if e.undone else "".join(rows)) + '</div>', unsafe_allow_html=True)
+            if not e.undone:
+                c2.button("↶", key=f"kk_rp_undo_{e.id}", on_click=_rp_undo, args=(e.id,), type="tertiary",
+                          help="Undo this change: only the inputs it changed go back; later edits stay.")
 
 
 # =========================================================================== #
@@ -3689,8 +3927,8 @@ with st.sidebar:
     _U_MASS = units_mod.label("kg")
     _U_RATE = units_mod.label("N/mm")
     _U_TORQ = units_mod.label("N·m")
-    # Filled now with every tab that edits each input, then again once the
-    # member's visible tabs are known (pages that stop early keep the first).
+    # Filled once per run by render_sidebar_panel: "Your car" progress + the
+    # ripple feed (what each edit did, with undo).
     _sb_car_card = st.empty()
 
 # ---- The stored inputs the solve reads ------------------------------------- #
@@ -3709,16 +3947,13 @@ topo_choice = st.session_state.topology
 _is_wishbone = (topo_choice == "double_wishbone")
 preset = st.session_state.kk_preset if _is_wishbone else "Front (default)"
 _topo_coords = None if _is_wishbone else _generic_coords(topo_choice)
-try:
-    _render_sidebar_car_card(_sb_car_card, None)
-except Exception as _e:
-    import logging
-    logging.getLogger(__name__).warning("sidebar car card: %r", _e)
 
 
 # Apply presets (simple variations on the default)
 def apply_preset(name, hp):
-    hp = dict(hp)
+    # copy each point too: dict(hp) alone shared the point lists, so a preset
+    # rewrote the stored points and switching back did not restore them
+    hp = {k: (list(v) if isinstance(v, list) else v) for k, v in hp.items()}
     if name == "Low roll-centre":
         hp["lower_front_inner"][2] = 95
         hp["lower_rear_inner"][2] = 95
@@ -3797,12 +4032,14 @@ try:
         st.error("Solver could not converge at the static ride height for this "
                  "topology. Check the template parameters.")
         render_geometry_editor("rescue", expanded=True)
+        render_sidebar_panel(None)   # its undo can take the bad edit back
         st.stop()
 except Exception as e:
     st.error(f"Solver failed for this geometry: {e}")
     # The editor normally lives in the Kinematics tab, which a stopped page never
     # reaches; show it here so a bad point can be fixed (or reset).
     render_geometry_editor("rescue", expanded=True)
+    render_sidebar_panel(None)   # its undo can take the bad edit back
     st.stop()
 
 if not solve_ok:
@@ -9087,6 +9324,7 @@ if not _has_picked:
     except Exception:
         pass
     try:
+        render_sidebar_panel(None)
         render_guide_chat(None)      # the 💬 Guide is there from the first page
     except Exception:
         pass
@@ -9147,10 +9385,10 @@ _id_to_container = {}
 _visible_ids = list(_primary_ids)          # shown in the category nav
 _hidden_ids = [i for i in _FULL_ORDER if i not in _visible_ids]
 try:
-    _render_sidebar_car_card(_sb_car_card, _visible_ids)
+    render_sidebar_panel(_visible_ids)
 except Exception as _e:
     import logging
-    logging.getLogger(__name__).warning("sidebar car card: %r", _e)
+    logging.getLogger(__name__).warning("sidebar panel: %r", _e)
 
 # One off-screen host for every hidden tab's body. st.container() renders but we
 # never surface it in a tab strip, so the member never sees these tabs while
