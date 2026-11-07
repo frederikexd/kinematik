@@ -131,7 +131,7 @@ That's the kind of answer this is for.
 ## Run it locally
 
 ```bash
-git clone https://github.com/<your-org>/kinematik.git
+git clone https://github.com/<frederikexd>/kinematik.git
 cd kinematik
 pip install -r requirements.txt
 streamlit run fsae_suspension/streamlit_app.py
