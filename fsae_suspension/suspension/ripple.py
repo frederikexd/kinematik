@@ -3,16 +3,13 @@
 #  Created by Frederik Thio. Copyright (c) 2026 Frederik Thio.
 #  Open source. Original author: Frederik Thio, creator of KinematiK.
 # ============================================================================
-"""Ripple: what each edit did to the car, with undo, plus how much of the car is still example values.
+"""Ripple: what each edit did to the car, with undo.
 
 Why: a new member changes a spring rate and has no idea what it did, or whether it broke something two tabs away.
 KinematiK already re-solves the whole car on every edit, so the consequences are known; they just were not shown.
 Ripple compares the car's inputs run to run, and when they change it records one entry: what changed (before ->
 after) and a few headline results before and after. Each entry can be undone on its own: only the inputs that entry
 changed go back, so later edits stay.
-
-It also answers a quieter question: are these results about MY car or the demo car? `progress` counts how many of
-the car's main inputs are still the example values (or confirmed as right), and names the next one to set.
 
 Pure Python, no Streamlit import: the app snapshots its state with `snapshot`, keeps the feed in session state, and
 renders it. Values are stored in SI (mm, kg, N/mm, N·m/°, fraction); the app converts them for display.
@@ -116,41 +113,3 @@ def undo_targets(entry: Entry) -> list:
     point that did not exist before (it appeared with a topology switch) is left alone; switching the topology back
     is enough. Values in SI (mm, kg, N/mm, N·m/°)."""
     return [(p, a) for p, a, _b in entry.changes if not (p[0] == "topo" and a is None)]
-
-
-# ---------------------------------------------------------------------------
-#  How much of the car is still example values
-# ---------------------------------------------------------------------------
-# (key, label, paths that must all differ from the example for the item to count as "yours", or any one of them)
-ITEMS = (
-    ("mass", "Mass", (("vp", "mass"),)),
-    ("cg", "CG height", (("vp", "cg_height"),)),
-    ("split", "Weight split", (("vp", "weight_dist_front"),)),
-    ("springs", "Springs or roll stiffness", (("vp", "use_spring_rates"), ("vp", "spring_rate_front"),
-                                              ("vp", "spring_rate_rear"), ("vp", "roll_stiffness_front"),
-                                              ("vp", "roll_stiffness_rear"), ("vp", "arb_rate_front"),
-                                              ("vp", "arb_rate_rear"))),
-    ("points", "Pickup points", None),           # any wishbone point (or the topology) changed
-    ("camber", "Static camber & toe", (("hp", "static_camber"), ("hp", "static_toe"))),
-    ("rocker", "Pushrod & rocker", None),         # any rocker point changed, or the rocker switched off
-)
-
-
-def progress(cur: dict, example: dict, point_keys, rocker_keys, confirmed=()) -> tuple:
-    """(done, total, next_item) where an item is done when any of its inputs differs from the example car, or the
-    member confirmed the example value is right for their car. next_item is (key, label) of the first item still on
-    the example values, or None. Counts are unitless."""
-    def _changed(paths):
-        return any(not _same(cur.get(p), example.get(p)) for p in paths)
-
-    done, nxt = 0, None
-    for key, label, paths in ITEMS:
-        if key == "points":
-            paths = [("hp", k) for k in point_keys] + [("ss", "topology")]
-        elif key == "rocker":
-            paths = [("hp", k) for k in rocker_keys]
-        if key in confirmed or _changed(paths):
-            done += 1
-        elif nxt is None:
-            nxt = (key, label)
-    return done, len(ITEMS), nxt

@@ -16,6 +16,22 @@ geometry", "Set roll stiffness from: my spring rates (recommended) / a roll stif
 short help. If the solve fails, the geometry editor appears with the error so a bad point can still be fixed. "Apply
 to sidebar" in Setup Optimiser is now "Apply to the car". No values, defaults or results change. `streamlit_app.py`.
 
+**The mission briefing lives in the sidebar, unlocked by your subteam.** Picking a subteam now goes straight into
+the tools; the landing page no longer stops for the briefing questions. Until a subteam is picked, the sidebar shows
+one banner: "🔒 Click your subsystem to get a mission briefing, so you know what you need." Once picked, the banner
+gives way to the questions (what you're here for, your goal, your level, anything specific) and **⚡ Build my
+mission**. With a briefing, the sidebar adds **⬇ Download full briefing (PDF)** (the same document as the page's
+briefing, made once per briefing) and **Change my answers**. The page's 🧭 panel lost its corner "Get my mission
+briefing" button (the sidebar does that now), and its "Retake the questionnaire" is now "Change my answers".
+
+**Your mission briefing, one step at a time, in the sidebar.** The "N of 7 inputs are yours" checklist confused
+people, so the sidebar now carries the mission briefing instead, kept small: the goal, a progress bar, the current
+tool with one plain line on why and where it is (📍 path), the next two tools by name and "+ N more". **✓ Done, next**
+moves on and **↶** goes back; progress resets when the briefing is rebuilt. Without a briefing it shows one line and
+a **🧭 Get my mission** button. The full briefing stays in the page's 🧭 panel. "Recent changes · what they did"
+now appears only after the first edit (an empty box only confused people). The checklist code is removed from
+`suspension/ripple.py`.
+
 **The sidebar shows what your edits did, with undo.** The "Your car" card only repeated numbers that live in the
 tabs. The sidebar now answers two questions instead:
 - *Are these results about my car?* "2 of 7 inputs are yours" with a progress bar, the next input still on its example

@@ -348,8 +348,8 @@ FAQ = [
           related=("accuracy", "units")),
     Entry("my_car", "What are my car's current numbers?",
           "Your car right now:\n- 🚗 **Car basics**: {car_basics}\n- 🔩 **Springs & bars**: {springs}\n"
-          "- ✏️ **Suspension geometry**: {geometry}\n\nThe sidebar's **Your car** panel shows how many of them are "
-          "still example values, and what each of your edits did to the car.",
+          "- ✏️ **Suspension geometry**: {geometry}\n\nThey start as an example Formula SAE car. The sidebar's "
+          "**Recent changes** shows what each of your edits did to the car.",
           ("current", "now", "my car", "summary", "values", "numbers", "settings", "status", "inputs"),
           related=("change_mass", "change_springs", "change_geometry")),
     Entry("license", "Is KinematiK free and open source?",

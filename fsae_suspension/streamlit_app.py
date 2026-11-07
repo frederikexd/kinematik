@@ -1577,7 +1577,17 @@ body, p, span, div, label{ font-family:'Archivo',sans-serif; }
 .kk-car-k{ font-size:.72rem; color:var(--dim); }
 .kk-car-v{ color:var(--ink); font-size:.9rem; font-variant-numeric:tabular-nums; line-height:1.3; }
 .kk-car-foot{ font-size:.72rem; color:var(--dim); line-height:1.35; margin-top:.35rem; }
-.kk-rp-score{ color:var(--ink); font-size:.9rem; margin:.15rem 0 .35rem; }
+.kk-car-head{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:.35rem; }
+.kk-ck-count{ color:var(--ink); font-size:.8rem; font-variant-numeric:tabular-nums; }
+.kk-ms-lock{ border:1px solid #f5b64255; background:rgba(245,182,66,.08); border-radius:8px;
+  padding:.7rem .8rem; color:var(--ink); font-size:.86rem; line-height:1.4; margin:.5rem 0; }
+.kk-ms-goal{ color:var(--ink); font-size:.82rem; line-height:1.3; margin:.1rem 0 .45rem; }
+.kk-ms-step{ color:var(--dim); font-size:.78rem; padding:.12rem 0; }
+.kk-ms-done{ color:#3fd0c9; }
+.kk-ms-now{ border-left:2px solid #f5b642; padding:.25rem 0 .25rem .55rem; margin:.4rem 0 .3rem; }
+.kk-ms-now-t{ color:var(--ink); font-weight:600; font-size:.88rem; }
+.kk-ms-why{ color:var(--dim); font-size:.76rem; line-height:1.35; margin-top:.15rem; }
+.kk-ms-where{ color:var(--dim); font-size:.7rem; margin-top:.2rem; }
 .kk-rp-bar{ height:5px; border-radius:3px; background:var(--line); overflow:hidden; }
 .kk-rp-bar > div{ height:100%; background:linear-gradient(90deg,#f5b642,#3fd0c9); }
 .kk-rp-entry{ border-left:2px solid #34507c; padding:.1rem 0 .1rem .55rem; margin:.15rem 0; }
@@ -3522,9 +3532,9 @@ def render_geometry_editor(loc, expanded=False):
 #  Sidebar: "Your car" progress + the ripple feed (what each edit did)
 # =========================================================================== #
 # Two questions the sidebar answers at a glance:
-#   1. Are these results about MY car? -> "4 of 7 inputs are yours" and the next
-#      input to set (or confirm: the example value can be right).
-#   2. What did my last edit do?       -> every edit becomes an entry: what
+#   1. What should I do now?   -> your mission briefing, one step at a time:
+#      the current tool, one line on why, where it is, and "Done, next".
+#   2. What did my last edit do? -> every edit becomes an entry: what
 #      changed (before -> after) and three headline results before -> after,
 #      with an undo that puts back only that entry's inputs.
 # KinematiK re-solves the whole car on every edit anyway, so the consequences
@@ -3550,15 +3560,6 @@ _RP_METRICS = (
     ("llt_front", "Front load transfer", "%", 1, 0.05, "toward understeer", "toward oversteer"),
     ("rc_front", "Front roll center", "mm", 0, 0.05, "higher", "lower"),
 )
-_RP_CONFIRM = {"mass": "mass", "cg": "CG height", "split": "weight split", "springs": "springs",
-               "points": "pickup points", "camber": "camber & toe", "rocker": "rocker"}
-
-
-def _rp_example():
-    d = Hardpoints.default().as_dict()
-    d.setdefault("static_camber", -1.5)
-    d.setdefault("static_toe", 0.0)
-    return _ripple.snapshot(VehicleParams().__dict__.copy(), d, "double_wishbone", "Front (default)")
 
 
 def _rp_snapshot():
@@ -3615,10 +3616,6 @@ def _rp_undo(eid):
         ss["_kk_rp_skip"] = True          # the undo itself is not a new entry
         ss.pop("_sweep_cache", None)
         ss.pop("_sweep_sig", None)
-
-
-def _rp_confirm(key):
-    st.session_state.setdefault("kk_confirmed", set()).add(key)
 
 
 def _rp_val(v, unit, nd):
@@ -3684,8 +3681,167 @@ def _rp_ago(t):
     return f"{int(d // 3600)} h ago"
 
 
+def _mission_key(bf):
+    return "|".join(bf.get("core_tabs", [])) + "#" + "|".join(bf.get("active_goal_keys", []))
+
+
+def _mission_state():
+    """(steps, done set) for the current briefing; progress resets when the briefing changes."""
+    bf = st.session_state.get("kk_briefing") or {}
+    steps = [tid for _n, tid in _briefing_ordered_tools(bf)] if bf else []
+    k = _mission_key(bf) if bf else ""
+    if st.session_state.get("_kk_mission_key") != k:
+        st.session_state["_kk_mission_key"] = k
+        st.session_state["kk_mission_done"] = []
+    return steps, st.session_state.setdefault("kk_mission_done", [])
+
+
+def _mission_done(tid):
+    done = st.session_state.setdefault("kk_mission_done", [])
+    if tid not in done:
+        done.append(tid)
+
+
+def _mission_back():
+    done = st.session_state.setdefault("kk_mission_done", [])
+    if done:
+        done.pop()
+
+
+def _mission_restart():
+    st.session_state["kk_mission_done"] = []
+
+
+_MS_PROF = [("beginner", "🌱 New to this"), ("intermediate", "🔧 I know my subsystem"),
+            ("advanced", "🏎️ Advanced, just the plan")]
+
+
+def _ms_roles():
+    return [r for r in _normalize_roles(st.session_state.get("kk_roles", st.session_state.get("kk_role", "everyone")))
+            if r != "everyone"]
+
+
+def _mission_build():
+    """Build the briefing from the sidebar's answers (same builder as the page's questionnaire)."""
+    roles = _ms_roles()
+    pu = st.session_state.get("kk_ms_purpose")
+    pu_key = next((k for k, lab, _i, _l in _BRIEF_PURPOSES if lab == pu), _BRIEF_PURPOSES[0][0])
+    labels = st.session_state.get("kk_ms_goals") or []
+    go_keys = [k for k, lab, _i in _brief_goal_options(roles) if lab in labels]
+    pf = st.session_state.get("kk_ms_level")
+    pf_key = next((k for k, lab in _MS_PROF if lab == pf), "intermediate")
+    st.session_state["kk_briefing"] = _build_briefing(
+        roles, pu_key, go_keys, st.session_state.get("kk_ms_note", ""), style="visual", proficiency=pf_key)
+    st.session_state.pop("kk_brief_audio_file", None)
+
+
+def _mission_clear():
+    st.session_state.pop("kk_briefing", None)
+
+
+def _mission_pdf(bf):
+    """The full briefing as PDF bytes, made once per briefing (reportlab is not free on every rerun)."""
+    key = _mission_key(bf) + "#" + bf.get("purpose", "") + "#" + bf.get("proficiency", "")
+    cached = st.session_state.get("_kk_ms_pdf")
+    if cached and cached[0] == key:
+        return cached[1]
+    import os as _os
+    import tempfile as _tf
+    md, _speech = _briefing_to_text(bf)
+    path = _os.path.join(_tf.gettempdir(), f"kinematik_mission_{_os.getpid()}.pdf")
+    project_mod.render_pdf(md, path)
+    with open(path, "rb") as fh:
+        data = fh.read()
+    st.session_state["_kk_ms_pdf"] = (key, data)
+    return data
+
+
+def _render_mission_questions(roles):
+    """The briefing's questions, compact, in the sidebar."""
+    goal_labels = [lab for _k, lab, _i in _brief_goal_options(roles)]
+    if "kk_ms_goals" in st.session_state:          # subteams changed: drop goals that no longer exist
+        st.session_state["kk_ms_goals"] = [g for g in st.session_state["kk_ms_goals"] if g in goal_labels]
+    else:
+        st.session_state["kk_ms_goals"] = goal_labels[:1]
+    st.markdown('<div class="kk-car"><div class="kk-car-eyebrow">🧭 YOUR MISSION</div>'
+                '<div class="kk-ms-why">Tell KinematiK what you need and it lists which tools to open, in what '
+                'order, and why.</div></div>', unsafe_allow_html=True)
+    st.selectbox("What are you here for?", [lab for _k, lab, _i, _l in _BRIEF_PURPOSES], key="kk_ms_purpose")
+    st.multiselect("Your goal", goal_labels, key="kk_ms_goals", placeholder="Pick one or more")
+    st.selectbox("Your level", [lab for _k, lab in _MS_PROF], index=1, key="kk_ms_level")
+    st.text_input("Anything specific? (optional)", key="kk_ms_note",
+                  placeholder="e.g. our rear bump steer is a mess")
+    st.button("⚡ Build my mission", key="kk_ms_build", on_click=_mission_build, type="primary", width="stretch")
+
+
+def _render_sidebar_mission(visible_ids):
+    """The mission briefing as a step tracker: done steps tick off, the current one shows one line on why and where
+    it is, upcoming ones are just names. The full briefing stays in the page's 🧭 panel."""
+    import html as _html
+    roles = _ms_roles()
+    if not roles:
+        # Locked until a subteam is picked: the briefing is built from it.
+        st.markdown('<div class="kk-ms-lock">🔒 <b>Click your subsystem</b> to get a mission briefing, so you '
+                    'know what you need.</div>', unsafe_allow_html=True)
+        return
+    steps, done = _mission_state()
+    if not steps:
+        _render_mission_questions(roles)
+        return
+    bf = st.session_state.get("kk_briefing") or {}
+    goal = "; ".join(lab for _k, lab in bf.get("goals", []))
+    todo = [t for t in steps if t not in done]
+    n_done = len(steps) - len(todo)
+
+    def _name(t):
+        return f"{_TAB_META[t][0]} {_TAB_META[t][1]}" if t in _TAB_META else t
+
+    head = (f'<div class="kk-car"><div class="kk-car-head"><span class="kk-car-eyebrow">🧭 YOUR MISSION</span>'
+            f'<span class="kk-ck-count">{n_done} / {len(steps)}</span></div>'
+            f'<div class="kk-ms-goal">{_html.escape(goal)}</div>'
+            f'<div class="kk-rp-bar"><div style="width:{round(100 * n_done / len(steps))}%"></div></div>')
+    if not todo:
+        st.markdown(head + '<div class="kk-ms-why" style="margin-top:.5rem">✓ Mission complete. Now open ANSYS / '
+                    'ADAMS / MATLAB once, to confirm a design you already trust.</div></div>',
+                    unsafe_allow_html=True)
+        st.button("Start over", key="kk_ms_restart", on_click=_mission_restart, type="tertiary")
+        _render_mission_footer(bf)
+        return
+    cur = todo[0]
+    rows = ""
+    if n_done:
+        rows += f'<div class="kk-ms-step kk-ms-done">✓ {n_done} done</div>'
+    why = _BRIEF_SIMPLE.get(cur) or (_BRIEF_TOOLS.get(cur) or ("",))[0]
+    where = _guide_where(cur, visible_ids)
+    rows += (f'<div class="kk-ms-now"><div class="kk-ms-now-t">Now: {_name(cur)}</div>'
+             + (f'<div class="kk-ms-why">{_html.escape(why)}</div>' if why else "")
+             + (f'<div class="kk-ms-where">📍 {_html.escape(where)}</div>' if where else "") + '</div>')
+    nxt = todo[1:3]
+    for t in nxt:
+        rows += f'<div class="kk-ms-step">○ {_name(t)}</div>'
+    if len(todo) > 3:
+        rows += f'<div class="kk-ms-step">+ {len(todo) - 3} more</div>'
+    st.markdown(head + rows + '</div>', unsafe_allow_html=True)
+    b1, b2 = st.columns([3, 1])
+    b1.button("✓ Done, next", key="kk_ms_next", on_click=_mission_done, args=(cur,), width="stretch")
+    if n_done:
+        b2.button("↶", key="kk_ms_back", on_click=_mission_back, type="tertiary", help="Back one step")
+    _render_mission_footer(bf)
+
+
+def _render_mission_footer(bf):
+    """⬇ the whole briefing as a PDF, and a way to change the answers."""
+    try:
+        st.download_button("⬇ Download full briefing (PDF)", _mission_pdf(bf),
+                           file_name="kinematik_mission_briefing.pdf", mime="application/pdf",
+                           key="kk_ms_pdf", width="stretch")
+    except Exception as _e:
+        st.caption(f"PDF unavailable: {_e}")
+    st.button("Change my answers", key="kk_ms_change", on_click=_mission_clear, type="tertiary")
+
+
 def render_sidebar_panel(visible_ids=None) -> None:
-    """The sidebar's 'Your car' progress and the ripple feed. Runs once per run."""
+    """The sidebar: your mission (one step at a time) and the ripple feed. Runs once per run."""
     global _RIPPLE_DONE
     if _RIPPLE_DONE:
         return
@@ -3693,45 +3849,15 @@ def render_sidebar_panel(visible_ids=None) -> None:
     import html as _html
     ss = st.session_state
     try:
-        cur = _rp_process()
+        _rp_process()
     except Exception as _e:
         import logging
         logging.getLogger(__name__).warning("ripple: %r", _e)
-        cur = _rp_snapshot()
-    names = {"roll": "🎚️ Roll & Load Transfer", "setup": "🎛️ Setup Optimiser", "brakes": "🛑 Brakes",
-             "laptime": "🏁 Track Testing", "weight": "⚖️ Weight & Handover", "kinematics": "📐 Kinematics"}
-
-    def _home(group):
-        ids = _INPUT_HOMES[group]
-        shown = ids if visible_ids is None else [i for i in ids if i in visible_ids]
-        return names[shown[0]] if shown else f"⋯ Other tools → {names[ids[0]]}"
-    where = {"mass": f"🚗 Car basics in {_home('basics')}", "cg": f"🚗 Car basics in {_home('basics')}",
-             "split": f"🚗 Car basics in {_home('basics')}", "springs": f"🔩 Springs in {_home('springs')}",
-             "points": f"✏️ Edit suspension geometry in {_home('geometry')}",
-             "camber": f"✏️ Edit suspension geometry in {_home('geometry')}",
-             "rocker": f"✏️ Edit suspension geometry → Pushrod & rocker in {_home('geometry')}"}
-    done, total, nxt = _ripple.progress(cur, _rp_example(), [k for k, _ in POINTS], [k for k, _ in ROCKER_POINTS],
-                                        ss.get("kk_confirmed", set()))
     with _sb_car_card.container():
-        pct = round(100 * done / total)
-        head = (f'<div class="kk-car"><div class="kk-car-eyebrow">YOUR CAR</div>'
-                f'<div class="kk-rp-score"><b>{done} of {total}</b> inputs are yours</div>'
-                f'<div class="kk-rp-bar"><div style="width:{pct}%"></div></div>')
-        if nxt:
-            head += (f'<div class="kk-car-foot">Still the example value: <b>{nxt[1]}</b>. Set it in '
-                     f'{where[nxt[0]]}.</div></div>')
-        else:
-            head += '<div class="kk-car-foot">Every input is yours: the results describe your car.</div></div>'
-        st.markdown(head, unsafe_allow_html=True)
-        if nxt:
-            st.button(f"✓ Our {_RP_CONFIRM[nxt[0]]} is the same", key="kk_rp_confirm",
-                      on_click=_rp_confirm, args=(nxt[0],), type="tertiary",
-                      help="Counts it as yours without changing it.")
-        st.markdown('<div class="kk-car-eyebrow" style="margin-top:.6rem">WHAT YOUR CHANGES DID</div>',
-                    unsafe_allow_html=True)
-        feed = ss.get("kk_ripple", [])
-        if not feed:
-            st.caption("Change any input and this shows what it did to the car, with undo.")
+        _render_sidebar_mission(visible_ids)
+        if feed := ss.get("kk_ripple", []):     # shown from the first edit on; an empty box only confused people
+            st.markdown('<div class="kk-car-eyebrow" style="margin-top:.7rem">RECENT CHANGES · WHAT THEY DID'
+                        '</div>', unsafe_allow_html=True)
         for e in feed[:3]:
             lines = _rp_describe(e.changes)
             title = _html.escape(lines[0]) + (f" <span class='kk-rp-more'>+{len(lines) - 1} more</span>"
@@ -8720,14 +8846,7 @@ def _render_briefing_panel():
     """Post-entry: the compiled briefing, pinned above the tabs, dismissible."""
     _bf = st.session_state.get("kk_briefing")
     if not _bf:
-        # Skipped or dismissed — keep a one-tap way back, tucked in a corner.
-        _bc = st.columns([1.0, 3.2])[0]
-        if _bc.button("🧭 Get my mission briefing",
-                      help="Answer three one-tap questions and get a personal "
-                           "plan: which tools, in what order, and why."):
-            st.session_state["kk_brief_pending"] = True
-            st.session_state["kk_entered"] = False
-            st.rerun()
+        # No briefing yet: its questions are in the sidebar (🧭 Your mission).
         return
     # The briefing panel always renders COLLAPSED — it's a reference the user
     # opens when they want it, not a wall that reopens itself on every rerun.
@@ -8984,9 +9103,10 @@ def _render_briefing_panel():
             "manufacturing; KinematiK gets you to the right question, they "
             "give you the right answer.")
         _c1, _c2 = st.columns(2)
-        if _c1.button("🔁 Retake the questionnaire", use_container_width=True):
-            st.session_state["kk_brief_pending"] = True
-            st.session_state["kk_entered"] = False
+        if _c1.button("🔁 Change my answers", use_container_width=True,
+                      help="Clears this briefing; the questions reappear in the "
+                           "sidebar under 🧭 Your mission."):
+            st.session_state.pop("kk_briefing", None)
             st.rerun()
         if _c2.button("✕ Dismiss briefing", use_container_width=True):
             st.session_state.pop("kk_briefing", None)
@@ -9022,14 +9142,11 @@ with _pctl:
     _picked_norm = _normalize_roles(_picked)
     if not _show_all and _picked_norm != _roles:
         st.session_state.kk_roles = _picked_norm
-        if _has_picked:
-            st.session_state.kk_entered = True   # a real choice was made
-        else:
-            # LANDING FLOW: don't drop straight into the tabs. Picking a
-            # subteam is question 1 of the mission briefing — reveal the two
-            # remaining one-tap questions below (always skippable) so the
-            # member enters with a personal "use this, here's why" plan.
-            st.session_state.kk_brief_pending = True
+        # A real choice: straight in. The mission briefing's questions now
+        # live in the sidebar (🧭 Your mission), unlocked by this pick, so
+        # nothing stands between picking a subteam and the tools.
+        st.session_state.kk_entered = True
+        st.session_state.kk_brief_pending = False
         _roles = _picked_norm
         st.rerun()
 
@@ -9308,10 +9425,9 @@ if not _has_picked:
             '<div style="font-size:1.05rem;font-weight:600;margin-bottom:.3rem;">'
             '👆 Pick your subteam to begin</div>'
             '<p class="hint" style="line-height:1.5;">Choose the subteam(s) you '
-            'own above, then answer two one-tap questions — what you\'re here '
-            'for and what the goal is — and KinematiK hands you a personal plan: '
-            'which tools, in what order, and why, so ANSYS/MATLAB only ever '
-            '<b>validate</b> your work. You can change this any time, or choose '
+            'own above. That opens your tools and unlocks your mission briefing '
+            'in the sidebar: which tools to use, in what order, and why, so '
+            'ANSYS/MATLAB only ever <b>validate</b> your work. Or choose '
             '<b>Just looking</b> to browse the shared tabs.</p></div>',
             unsafe_allow_html=True)
     # Fill the Design-status board into its reserved top-of-page slot before we

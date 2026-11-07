@@ -1,6 +1,5 @@
-"""Ripple (suspension/ripple.py): what each edit did, with per-entry undo, and how much of the car is still the
-example. These pin the bookkeeping: what counts as a change, when edits merge, what undo writes back, and the
-"N of 7 inputs are yours" count."""
+"""Ripple (suspension/ripple.py): what each edit did, with per-entry undo. These pin the bookkeeping: what counts as
+a change, when edits merge, and what undo writes back."""
 from suspension import ripple as r
 
 VP = {"mass": 280.0, "cg_height": 300.0, "weight_dist_front": 0.47, "use_spring_rates": False,
@@ -9,7 +8,6 @@ VP = {"mass": 280.0, "cg_height": 300.0, "weight_dist_front": 0.47, "use_spring_
       "tire_coeffs": {"a": 1}}
 HP = {"upper_outer": [0.0, 540.0, 300.0], "lower_outer": [0.0, 560.0, 120.0], "pushrod_outer": [1.0, 2.0, 3.0],
       "static_camber": -1.5, "static_toe": 0.0}
-POINTS, ROCKER = ["upper_outer", "lower_outer"], ["pushrod_outer"]
 
 
 def snap(vp=None, hp=None, topo="double_wishbone", preset="Front (default)", pts=None):
@@ -68,14 +66,3 @@ def test_undo_targets_put_back_only_that_entry_and_skip_new_generic_points():
     assert r.undo_targets(e) == [(("vp", "mass"), 280.0), (("hp", "pushrod_outer"), (1.0, 2.0, 3.0)),
                                  (("ss", "topology"), "double_wishbone"),
                                  (("topo", "macpherson_strut/lca"), (0.0, 0.0, 0.0))]
-
-
-def test_progress_counts_inputs_that_are_yours():
-    ex = snap()
-    assert r.progress(ex, ex, POINTS, ROCKER) == (0, 7, ("mass", "Mass"))
-    cur = snap(vp={"mass": 300.0, "use_spring_rates": True}, hp={"static_toe": 0.1, "pushrod_outer": None})
-    done, total, nxt = r.progress(cur, ex, POINTS, ROCKER, confirmed={"cg"})
-    assert (done, total, nxt) == (5, 7, ("split", "Weight split"))      # mass, cg (confirmed), springs, camber, rocker
-    allmine = snap(vp={"mass": 1.0, "cg_height": 1.0, "weight_dist_front": 0.5, "roll_stiffness_rear": 1.0},
-                   hp={"static_camber": -2.0, "pushrod_outer": None}, topo="macpherson_strut")
-    assert r.progress(allmine, ex, POINTS, ROCKER) == (7, 7, None)       # a topology switch counts as points
