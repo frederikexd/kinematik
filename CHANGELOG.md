@@ -3,6 +3,35 @@
 
 ## Unreleased
 
+**The car's inputs now live in the tabs that use them.** New users could not tell what the sidebar wanted: three
+look-alike "⚙️" sections, a jargon banner, and nothing saying what was required. The inputs moved to where they are
+used: ✏️ Edit suspension geometry at the top of 📐 Kinematics; 🔩 Springs & anti-roll bars in Roll & Load Transfer and
+Setup Optimiser; 🚗 Car basics (mass, CG height, weight split) in Roll & Load Transfer, Setup Optimiser, Brakes, Track
+Testing and Weight & Handover. Each section's title shows its current values. There is still one stored value per
+input: every copy is drawn from it and writes back to it, so a change in one tab shows in all of them on the same run,
+and the shown units follow the units switch. The sidebar keeps the units and a read-only "Your car" card with the
+current values and which tab edits each. The geometry editor is a table (point, x, y, z) with tabs for pickup points,
+static camber & toe, pushrod & rocker, and import; plain names replace jargon ("Suspension type", "Starting
+geometry", "Set roll stiffness from: my spring rates (recommended) / a roll stiffness I type in"), and inputs carry
+short help. If the solve fails, the geometry editor appears with the error so a bad point can still be fixed. "Apply
+to sidebar" in Setup Optimiser is now "Apply to the car". No values, defaults or results change. `streamlit_app.py`.
+
+**💬 KinematiK Guide: ask a question, get an answer.** A chat bubble (bottom right, on every page from the first)
+opens a small chat. Ask where something is ("where do I change the mass?"), what a term means ("what is bump
+steer?"), what a tab is for, or what to open first, and it answers in chat style, with the live car values filled in,
+where to find the tab, and follow-up questions to tap. It is not an AI and says so when asked: `suspension/helpdesk.py`
+matches the question against a fixed knowledge base (a hand-written FAQ plus entries made from the mission briefing's
+own per-tab copy and role goals) with rarity-weighted keywords, FSAE synonyms (RC, ARB, KPI, British spellings) and
+typo tolerance, and returns the prewritten answer. When nothing fits, or two answers fit equally, it offers the
+closest questions instead of guessing. Nothing you type leaves the page. `tests/test_helpdesk.py` (100% statement
+and branch coverage) checks 29 real phrasings, the honesty answer, the no-guess behavior, and that every tab and
+follow-up it points to exists in the app.
+
+**Fixed: Reset and Import did not update the point inputs.** Both dropped the inputs' stored values and reran, but the
+browser sent the old values straight back, so the boxes kept showing (and re-applying) the old points. The inputs are
+now drawn from the stored points on every run. Checked in a real browser: an edited point returns to the example on
+Reset, and an imported file replaces an edited point (metric and US units).
+
 **One preview per browser.** The five-minute preview used to be once per browser session, so a reload started a new
 one. Its start time is now kept in the browser (a `kinematik_preview` cookie and the same value in local storage), and
 every new session from that browser picks the same clock back up: a reload or a new tab continues the one five minutes,
