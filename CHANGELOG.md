@@ -3,6 +3,14 @@
 
 ## Unreleased
 
+
+## 1.5.0 (2026-11-06)
+
+**A first visit that tells you what to do.** The car's inputs moved out of the sidebar into the tabs that use them;
+the sidebar now carries your mission briefing (unlocked by picking your subteam, one step at a time, with a PDF
+download) and shows what each of your edits did to the car, with undo; and a 💬 Guide answers "where is…" and "what
+is…" questions from KinematiK's own docs. Details below.
+
 **The car's inputs now live in the tabs that use them.** New users could not tell what the sidebar wanted: three
 look-alike "⚙️" sections, a jargon banner, and nothing saying what was required. The inputs moved to where they are
 used: ✏️ Edit suspension geometry at the top of 📐 Kinematics; 🔩 Springs & anti-roll bars in Roll & Load Transfer and
