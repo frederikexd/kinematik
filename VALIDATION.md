@@ -218,6 +218,6 @@ peer reviewed. The software is archived at Zenodo,
 
 ## How this was built
 
-KinematiK is written by one author. That is why every claim
+The code for KinematiK is written by one author with AI assistance. That is why every claim
 above comes with a script that re-runs it: the checks, not the author, are the
 evidence. If one of them is wrong, open an issue.
