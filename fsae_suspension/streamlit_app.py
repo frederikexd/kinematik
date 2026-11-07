@@ -1556,6 +1556,25 @@ body, p, span, div, label{ font-family:'Archivo',sans-serif; }
 [data-testid="stTabs"] [role="tab"][aria-selected="true"]{ color:var(--ink); background:var(--panel2); border-color:#34507c; font-weight:600;}
 .hint{ color:var(--dim); font-size:.82rem; }
 
+/* --- 💬 KinematiK Guide: the chat bubble, fixed bottom right ------------- */
+.st-key-kk_guide_fab{ position:fixed !important; right:1.4rem; bottom:1.3rem; z-index:999990;
+  width:auto !important; }
+.st-key-kk_guide_fab [data-testid="stPopover"] > div > button,
+.st-key-kk_guide_fab [data-testid="stPopoverButton"]{ border-radius:999px; padding:.55rem 1.1rem;
+  background:#34507c; color:#fff; border:0; box-shadow:0 6px 22px rgba(0,0,0,.4); font-weight:600; }
+[data-testid="stPopoverBody"]{ width:min(440px, 94vw) !important; max-width:94vw; }
+.kk-typing{ letter-spacing:.2em; color:var(--dim); animation:kkblink 1s infinite; }
+@keyframes kkblink{ 0%,100%{opacity:.25} 50%{opacity:1} }
+
+/* --- Sidebar: the read-only 'Your car' card ---------------------------- */
+.kk-guide{ background:var(--panel2); border:1px solid var(--line); border-radius:8px;
+  padding:.55rem .7rem; font-size:.82rem; color:var(--dim); line-height:1.45; margin:.3rem 0 .4rem; }
+.kk-guide b{ color:var(--ink); }
+.kk-car-row{ border-top:1px solid var(--line); margin-top:.5rem; padding-top:.45rem; }
+.kk-car-h{ color:var(--ink); font-weight:600; }
+.kk-car-v{ color:var(--ink); }
+.kk-car-w{ font-size:.74rem; }
+
 /* --- Wind-tunnel module helpers --------------------------------------- */
 .wt-intro{ display:flex; gap:.9rem; align-items:flex-start;
       background:linear-gradient(180deg,var(--panel2),var(--panel));
@@ -2035,56 +2054,6 @@ def mechanism_point_coords(topo_key):
         out[nm] = (p.role, [float(c) for c in np.asarray(p.pos, float).ravel()])
     return out
 
-
-def render_generic_point_editor(topo_key):
-    """Live x/y/z editor for every point of a non-wishbone topology. Stores the
-    edited coordinates in st.session_state['topo_hp'][topo_key]; returns that
-    dict (name -> [x,y,z]). Re-seeds from the template the first time a topology
-    is opened, and offers a reset."""
-    base = mechanism_point_coords(topo_key)
-    store = st.session_state.setdefault("topo_hp", {})
-    if topo_key not in store:
-        store[topo_key] = {nm: list(xyz) for nm, (role, xyz) in base.items()}
-    coords = store[topo_key]
-    # Heal any drift between a saved project and the current template (new/removed
-    # points) so the editor never KeyErrors.
-    for nm, (role, xyz) in base.items():
-        coords.setdefault(nm, list(xyz))
-    for nm in list(coords.keys()):
-        if nm not in base:
-            del coords[nm]
-
-    if st.button("↺ Reset to template", key=f"topo_reset_{topo_key}",
-                 width='stretch'):
-        store[topo_key] = {nm: list(xyz) for nm, (role, xyz) in base.items()}
-        st.rerun()
-
-    # group by role for a readable layout
-    by_role = {"ground": [], "free": [], "carried": []}
-    for nm, (role, _xyz) in base.items():
-        by_role.get(role, by_role["free"]).append(nm)
-    for role in ("ground", "free", "carried"):
-        names = by_role[role]
-        if not names:
-            continue
-        st.markdown(f"###### {_ROLE_HEADERS[role]}")
-        _u_len = units_mod.label("mm")
-        _c_step = 0.1 if units_mod.is_us() else 2.0
-        _c_fmt = "%.2f" if units_mod.is_us() else "%.1f"
-        for nm in names:
-            label = _POINT_LABELS.get(nm, nm)
-            with st.expander(f"{label}  ·  {nm}", expanded=False):
-                v = coords[nm]
-                cols = st.columns(3)
-                nv = []
-                for i, ax in enumerate("xyz"):
-                    _disp = cols[i].number_input(
-                        f"{ax} ({_u_len})",
-                        value=units_mod.from_metric(float(v[i]), "mm"), step=_c_step,
-                        key=f"topo_{topo_key}_{nm}_{ax}", format=_c_fmt)
-                    nv.append(units_mod.to_metric(_disp, "mm"))
-                coords[nm] = nv
-    return coords
 
 
 # --------------------------------------------------------------------------- #
@@ -2925,6 +2894,779 @@ except Exception:
 # --------------------------------------------------------------------------- #
 #  Sidebar — geometry editor
 # --------------------------------------------------------------------------- #
+def _render_hp_import_wishbone():
+    """Import hardpoints (OptimumK / Excel / CSV) into the double-wishbone editor."""
+    st.markdown(
+        '<p class="hint">Bring in the points you already have — an '
+        'OptimumK export or any sheet with a name column and X/Y/Z. '
+        'Every assumption (units, axes, side, origin) is shown below '
+        'for you to confirm before anything is applied.</p>',
+        unsafe_allow_html=True)
+    _hpi_file = st.file_uploader(
+        "Point table (.csv / .xlsx)", type=["csv", "xlsx", "xlsm"],
+        key="_hpi_up")
+    if _hpi_file is not None:
+        try:
+            from suspension import hardpoint_import as _hpi
+            import coordinate_frames as _cf_mod
+            _pts, _hint = _hpi.parse_tabular(
+                _hpi_file.getvalue(), _hpi_file.name)
+            if not _pts:
+                st.warning("No point rows found — the file needs a "
+                           "name column and three coordinate columns.")
+            else:
+                _groups = _hpi.group_corners(_pts)
+                _tags = [t for t in ("FL", "FR", "RL", "RR")
+                         if _hpi.points_for_corner(_groups, t)
+                         and any(p.corner for p in
+                                 _hpi.points_for_corner(_groups, t))]
+                _c1, _c2, _c3 = st.columns(3)
+                _corner = _c1.selectbox(
+                    "Corner to import", _tags or ["(single corner)"],
+                    key="_hpi_corner",
+                    help="The file labels several corners — pick one; "
+                         "KinematiK models a single corner.")                                 if _tags else "(single corner)"
+                _frame = _c2.selectbox(
+                    "File's axis convention",
+                    list(_cf_mod.FRAME_ORDER),
+                    index=list(_cf_mod.FRAME_ORDER).index("iso8855"),
+                    format_func=lambda k: _cf_mod.BUILTIN_FRAMES[k].name,
+                    key="_hpi_frame",
+                    help="What +X/+Y/+Z mean in the FILE. Full "
+                         "descriptions: ✅ Checks → 🧭 Frames & Datums.")
+                _unit_sel = _c3.selectbox(
+                    "Units", ["auto-detect", "mm", "m", "in"],
+                    key="_hpi_unit")
+                _c4, _c5, _c6 = st.columns(3)
+                _topo_opts = ["auto", "double_wishbone",
+                              "macpherson", "multilink", "five_link",
+                              "trailing_arm", "semi_trailing_arm",
+                              "twist_beam"]
+                _topo_label = {
+                    "auto": "Auto (map what's there)",
+                    "double_wishbone": "Double wishbone",
+                    "macpherson": "MacPherson strut",
+                    "multilink": "Multi-link", "five_link": "Five-link",
+                    "trailing_arm": "Trailing arm",
+                    "semi_trailing_arm": "Semi-trailing arm",
+                    "twist_beam": "Twist beam"}
+                _topo_sel = _c4.selectbox(
+                    "Suspension topology", _topo_opts,
+                    format_func=lambda k: _topo_label[k],
+                    key="_hpi_topo",
+                    help="Which architecture these points describe. "
+                         "Sets which hardpoints count as 'core' for "
+                         "the completeness check. Auto maps every "
+                         "recognised point and only flags a missing "
+                         "wheel centre / contact patch.")
+                _mirror_sel = _c5.selectbox(
+                    "Mirror left→right", ["auto", "yes", "no"],
+                    key="_hpi_mirror",
+                    help="KinematiK's editor corner lives at +y.")
+                _reorig = _c6.checkbox(
+                    "Re-origin (x=0 at wheel centre, z=0 at ground)",
+                    value=True, key="_hpi_reorig")
+
+                _work = (_hpi.points_for_corner(_groups, _corner)
+                         if _tags else _pts)
+                _res = _hpi.build_result(
+                    _work, frame_key=_frame,
+                    unit=None if _unit_sel == "auto-detect" else _unit_sel,
+                    header_hint=_hint, corner=_corner if _tags else "",
+                    mirror={"auto": None, "yes": True,
+                            "no": False}[_mirror_sel],
+                    topology=_topo_sel,
+                    reorigin=_reorig)
+
+                st.caption(_res.summary())
+                for _w in _res.warnings:
+                    st.warning(_w)
+                if _res.ambiguous:
+                    st.error("Ambiguous names (left unmapped — "
+                             "rename them in the file or edit "
+                             "manually after import): " + "; ".join(
+                                 f"'{p.name}' → {'/'.join(ks)}"
+                                 for p, ks in _res.ambiguous[:6]))
+                if _res.unmapped:
+                    st.caption("Not recognised (ignored): " + ", ".join(
+                        p.name for p in _res.unmapped[:10]) +
+                        (" …" if len(_res.unmapped) > 10 else ""))
+                if _res.ok:
+                    st.dataframe(
+                        [{"hardpoint": d.key,
+                          "from": d.raw.name,
+                          "x (mm)": round(d.xyz_mm[0], 1),
+                          "y (mm)": round(d.xyz_mm[1], 1),
+                          "z (mm)": round(d.xyz_mm[2], 1)}
+                         for d in _res.details],
+                        hide_index=True, width='stretch')
+                    if st.button(f"✔ Apply {len(_res.mapped)} points "
+                                 f"to the editor", key="_hpi_apply"):
+                        for _k, _xyz in _res.mapped.items():
+                            st.session_state.hp[_k] = list(_xyz)
+                        st.session_state.pop("_sweep_cache", None)
+                        st.session_state.pop("_sweep_sig", None)
+                        st.success(
+                            f"Imported {len(_res.mapped)} hardpoints "
+                            f"({_res.unit}, {_res.frame_key}"
+                            f"{', mirrored' if _res.mirrored else ''}"
+                            f"{', re-origined' if _res.reorigined else ''}) "
+                            f"— log the source in a decision so next "
+                            f"year knows where these came from.")
+                        st.rerun()
+        except Exception as _hpi_e:
+            st.error(f"Import failed: {type(_hpi_e).__name__}: {_hpi_e}")
+
+
+def _render_hp_import_generic(topo_choice):
+    """Import hardpoints into any other topology's editor; points are translated
+    to its native slots by _apply_import_to_topology."""
+    st.markdown(
+        '<p class="hint">Bring in the points you already have — an '
+        'OptimumK export or any sheet with a name column and X/Y/Z. '
+        'Recognised names are matched to this architecture\'s '
+        'points; every assumption (units, axes, side, origin) is '
+        'shown for you to confirm before anything is applied.</p>',
+        unsafe_allow_html=True)
+    _g_file = st.file_uploader(
+        "Point table (.csv / .xlsx)", type=["csv", "xlsx", "xlsm"],
+        key="_hpi_up_generic")
+    if _g_file is not None:
+        try:
+            from suspension import hardpoint_import as _hpi
+            import coordinate_frames as _cf_mod
+            _gpts, _ghint = _hpi.parse_tabular(
+                _g_file.getvalue(), _g_file.name)
+            if not _gpts:
+                st.warning("No point rows found — the file needs a "
+                           "name column and three coordinate columns.")
+            else:
+                _ggroups = _hpi.group_corners(_gpts)
+                _gtags = [t for t in ("FL", "FR", "RL", "RR")
+                          if _hpi.points_for_corner(_ggroups, t)
+                          and any(p.corner for p in
+                                  _hpi.points_for_corner(_ggroups, t))]
+                _gc1, _gc2, _gc3 = st.columns(3)
+                _gcorner = _gc1.selectbox(
+                    "Corner to import", _gtags or ["(single corner)"],
+                    key="_hpi_corner_generic",
+                    help="Pick one corner; KinematiK models a single "
+                         "corner.") if _gtags else "(single corner)"
+                _gframe = _gc2.selectbox(
+                    "File's axis convention",
+                    list(_cf_mod.FRAME_ORDER),
+                    index=list(_cf_mod.FRAME_ORDER).index("iso8855"),
+                    format_func=lambda k: _cf_mod.BUILTIN_FRAMES[k].name,
+                    key="_hpi_frame_generic",
+                    help="What +X/+Y/+Z mean in the FILE.")
+                _gunit = _gc3.selectbox(
+                    "Units", ["auto-detect", "mm", "m", "in"],
+                    key="_hpi_unit_generic")
+                _gc4, _gc5 = st.columns(2)
+                _gmirror = _gc4.selectbox(
+                    "Mirror left→right", ["auto", "yes", "no"],
+                    key="_hpi_mirror_generic",
+                    help="KinematiK's editor corner lives at +y.")
+                _greorig = _gc5.checkbox(
+                    "Re-origin (x=0 at wheel centre, z=0 at ground)",
+                    value=True, key="_hpi_reorig_generic")
+                _gwork = (_hpi.points_for_corner(_ggroups, _gcorner)
+                          if _gtags else _gpts)
+                _gres = _hpi.build_result(
+                    _gwork, frame_key=_gframe,
+                    unit=None if _gunit == "auto-detect" else _gunit,
+                    header_hint=_ghint,
+                    corner=_gcorner if _gtags else "",
+                    mirror={"auto": None, "yes": True,
+                            "no": False}[_gmirror],
+                    topology=topo_choice,
+                    reorigin=_greorig)
+                st.caption(_gres.summary())
+                for _gw in _gres.warnings:
+                    st.warning(_gw)
+                if _gres.ambiguous:
+                    st.error("Ambiguous names (left unmapped): "
+                             + "; ".join(
+                                 f"'{p.name}' → {'/'.join(ks)}"
+                                 for p, ks in _gres.ambiguous[:6]))
+                if _gres.unmapped:
+                    st.caption("Not recognised (ignored): " + ", ".join(
+                        p.name for p in _gres.unmapped[:10]) +
+                        (" …" if len(_gres.unmapped) > 10 else ""))
+                if _gres.ok:
+                    st.dataframe(
+                        [{"hardpoint": d.key, "from": d.raw.name,
+                          "x (mm)": round(d.xyz_mm[0], 1),
+                          "y (mm)": round(d.xyz_mm[1], 1),
+                          "z (mm)": round(d.xyz_mm[2], 1)}
+                         for d in _gres.details],
+                        hide_index=True, width='stretch')
+                    if st.button(f"✔ Apply {len(_gres.mapped)} points "
+                                 f"to the editor",
+                                 key="_hpi_apply_generic"):
+                        _n, _skip = _apply_import_to_topology(
+                            topo_choice, _gres.mapped)
+                        st.session_state.pop("_sweep_cache", None)
+                        st.session_state.pop("_sweep_sig", None)
+                        _msg = (f"Imported {_n} hardpoint"
+                                f"{'s' if _n != 1 else ''} into the "
+                                f"{_TOPO_LABELS.get(topo_choice, topo_choice)} "
+                                f"editor ({_gres.unit}, {_gres.frame_key}"
+                                f"{', mirrored' if _gres.mirrored else ''}"
+                                f"{', re-origined' if _gres.reorigined else ''}).")
+                        if _skip:
+                            _msg += (" Not used by this topology: "
+                                     + ", ".join(_skip[:8])
+                                     + (" …" if len(_skip) > 8 else ""))
+                        st.success(_msg)
+                        st.rerun()
+        except Exception as _ge:
+            st.error(f"Import failed: {type(_ge).__name__}: {_ge}")
+
+
+# =========================================================================== #
+#  The car's inputs, in the tabs that use them
+# =========================================================================== #
+# Mass, CG, weight split, springs and the suspension geometry used to live only in
+# the sidebar, in look-alike sections new members did not know to open. They now
+# sit in the tabs that use them: geometry at the top of Kinematics; springs in
+# Roll & Load Transfer and Setup Optimiser; car basics in Roll, Brakes, Track
+# Testing, Setup Optimiser and Weight & Handover. The sidebar keeps the units and a read-only
+# "Your car" card that says where to edit each one.
+#
+# There is still ONE value per input (st.session_state.vp / .hp / .topo_hp /
+# .topology / .kk_preset). Every copy of an input is drawn from that value on
+# each run and writes back to it in its on_change callback. Streamlit runs
+# callbacks BEFORE the script, so the solve near the top of the file already
+# sees an edit made in a tab far below it, and every other copy shows it on the
+# same run. Unit switches need nothing special: the shown value is converted
+# from the stored SI value on every run.
+
+_TOPO_LABELS = {
+    "double_wishbone": "Double wishbone (full editor)",
+    "macpherson_strut": "MacPherson strut",
+    "multilink": "Multi-link (5-link)",
+    "trailing_arm": "Trailing arm",
+    "semi_trailing_arm": "Semi-trailing arm",
+    "solid_axle": "Solid axle (Panhard)",
+    "twist_beam": "Twist-beam",
+    "truck_steer_linkage": "Heavy-truck steer linkage",
+    "from_links": "Experimental / free-form",
+}
+_topo_keys = list(_TOPO_LABELS.keys())
+
+# Option values are the stored ones (apply_preset matches them); labels are shown.
+_PRESET_LABELS = {"Front (default)": "Example front corner",
+                  "Low roll-centre": "Example, lower roll center",
+                  "High anti-dive": "Example, more anti-dive"}
+
+# Tabs that carry each input group, in the order the sidebar card lists them.
+_INPUT_HOMES = {
+    "basics": ["roll", "setup", "brakes", "laptime", "weight"],
+    "springs": ["roll", "setup"],
+    "geometry": ["kinematics"],
+}
+
+
+def _kk_bind(container, kind, loc, name, label, get, put, *, to_disp=None,
+             from_disp=None, **kw):
+    """One copy of a shared input. `get()` reads the stored value, `put(v)`
+    writes it; to_disp/from_disp convert between stored and shown units. The
+    widget key is per location (`loc`), so the same input can sit in several
+    tabs without clashing."""
+    key = f"_in_{loc}_{name}"
+    v = get()
+    st.session_state[key] = to_disp(v) if to_disp else v
+
+    def _cb():
+        nv = st.session_state.get(key)
+        put(from_disp(nv) if from_disp else nv)
+        st.session_state.pop("_sweep_cache", None)
+        st.session_state.pop("_sweep_sig", None)
+    return getattr(container, kind)(label, key=key, on_change=_cb, **kw)
+
+
+def _vp_put(field, conv=None):
+    def _p(v):
+        st.session_state.vp[field] = conv(v) if conv else v
+    return _p
+
+
+def _hp_put(field):
+    def _p(v):
+        st.session_state.hp[field] = v
+    return _p
+
+
+def _to_si(unit):
+    return lambda d: units_mod.to_metric(float(d), unit)
+
+
+def _from_si(unit):
+    return lambda v: units_mod.from_metric(float(v), unit)
+
+
+def _shown(v, unit, nd=0):
+    """A stored SI value in the active units, as text (an input echo, not a
+    computed result, so it carries no provenance badge)."""
+    return format(units_mod.from_metric(float(v), unit), f".{nd}f")
+
+
+def _car_basics_summary():
+    vp = st.session_state.vp
+    return (f"{_shown(vp['mass'], 'kg')} {units_mod.label('kg')} · CG "
+            f"{_shown(vp['cg_height'], 'mm')} {units_mod.label('mm')} · "
+            f"{round(vp['weight_dist_front'] * 100)} % front")
+
+
+def _springs_summary():
+    vp = st.session_state.vp
+    rate, torq = units_mod.label("N/mm"), units_mod.label("N·m")
+    if vp.get("use_spring_rates", False):
+        return (f"springs {_shown(vp.get('spring_rate_front', 35.0), 'N/mm', 1)} / "
+                f"{_shown(vp.get('spring_rate_rear', 35.0), 'N/mm', 1)} {rate} · bars "
+                f"{_shown(vp.get('arb_rate_front', 0.0), 'N·m')} / "
+                f"{_shown(vp.get('arb_rate_rear', 0.0), 'N·m')} {torq}/°")
+    return (f"roll stiffness {_shown(vp['roll_stiffness_front'], 'N·m')} / "
+            f"{_shown(vp['roll_stiffness_rear'], 'N·m')} {torq}/° (front / rear)")
+
+
+def _geometry_summary():
+    topo = st.session_state.get("topology", "double_wishbone")
+    s = _TOPO_LABELS.get(topo, topo).replace(" (full editor)", "")
+    if topo == "double_wishbone":
+        s += " · " + _PRESET_LABELS.get(
+            st.session_state.get("kk_preset", "Front (default)"), "")
+        if st.session_state.hp.get("pushrod_outer") is not None:
+            s += " · pushrod"
+    return s
+
+
+def render_car_basics(loc):
+    """🚗 Car basics (mass, CG height, weight split): one shared copy."""
+    us = units_mod.is_us()
+    with st.expander(f"🚗 Car basics · {_car_basics_summary()}", expanded=False,
+                     key=f"_x_{loc}_basics"):
+        st.caption("The whole car, shared by every tab: change it here and it "
+                   "changes everywhere.")
+        c1, c2, c3 = st.columns(3)
+        m_lo = int(round(units_mod.from_metric(180, "kg")))
+        m_hi = int(round(units_mod.from_metric(360, "kg")))
+        _kk_bind(c1, "slider", loc, "mass", f"Mass with driver ({units_mod.label('kg')})",
+                 lambda: st.session_state.vp["mass"], _vp_put("mass", _to_si("kg")),
+                 to_disp=lambda v: min(max(int(round(units_mod.from_metric(float(v), "kg"))),
+                                           m_lo), m_hi),
+                 min_value=m_lo, max_value=m_hi,
+                 help="The whole car, ready to race, with the driver in it.")
+        cg_lo = float(round(units_mod.from_metric(200, "mm"), 1))
+        cg_hi = float(round(units_mod.from_metric(400, "mm"), 1))
+        _kk_bind(c2, "slider", loc, "cg", f"CG height ({units_mod.label('mm')})",
+                 lambda: st.session_state.vp["cg_height"], _vp_put("cg_height", _to_si("mm")),
+                 to_disp=lambda v: min(max(float(round(units_mod.from_metric(float(v), "mm"), 1)),
+                                           cg_lo), cg_hi),
+                 min_value=cg_lo, max_value=cg_hi, step=0.1 if us else 1.0,
+                 format="%.1f" if us else "%.0f",
+                 help="Height of the center of gravity above the ground, driver "
+                      "included.")
+        _kk_bind(c3, "slider", loc, "front", "Weight on the front axle (%)",
+                 lambda: st.session_state.vp["weight_dist_front"],
+                 _vp_put("weight_dist_front", lambda d: float(d) / 100),
+                 to_disp=lambda v: min(max(int(round(float(v) * 100)), 40), 60),
+                 min_value=40, max_value=60,
+                 help="Share of the car's weight carried by the front wheels.")
+
+
+def render_springs(loc):
+    """🔩 Springs & anti-roll bars (or a typed roll stiffness): one shared copy."""
+    rate, torq = units_mod.label("N/mm"), units_mod.label("N·m")
+    vp = st.session_state.vp
+    with st.expander(f"🔩 Springs & anti-roll bars · {_springs_summary()}",
+                     expanded=False, key=f"_x_{loc}_springs"):
+        st.caption("Shared by every tab: change it here and it changes everywhere.")
+        use = _kk_bind(
+            st, "radio", loc, "use_springs", "Set roll stiffness from",
+            lambda: bool(st.session_state.vp.get("use_spring_rates", False)),
+            _vp_put("use_spring_rates", bool),
+            options=[True, False], horizontal=True,
+            format_func=lambda b: ("My spring rates (recommended)" if b
+                                   else "A roll stiffness I type in"),
+            help="Spring rates: axle roll stiffness = spring rate × motion ratio² "
+                 "(+ anti-roll bar), using your rocker geometry. This is the "
+                 "physically correct path and what the optimizer uses. Typing a "
+                 "roll stiffness directly is for when you only know the totals.")
+        if use:
+            c = st.columns(4)
+            for col, field, lbl, dflt, unit, step, hlp in (
+                    (c[0], "spring_rate_front", f"Front spring ({rate})", 35.0, "N/mm", 2.5,
+                     "Rate of the coil spring itself, not the wheel rate. The "
+                     "motion ratio turns it into a wheel rate."),
+                    (c[1], "spring_rate_rear", f"Rear spring ({rate})", 35.0, "N/mm", 2.5,
+                     "Rate of the coil spring itself, not the wheel rate."),
+                    (c[2], "arb_rate_front", f"Front anti-roll bar ({torq}/°)", 0.0, "N·m", 10.0,
+                     "Roll stiffness the bar adds to the axle. 0 if there is no bar."),
+                    (c[3], "arb_rate_rear", f"Rear anti-roll bar ({torq}/°)", 0.0, "N·m", 10.0,
+                     "Roll stiffness the bar adds to the axle. 0 if there is no bar.")):
+                _kk_bind(col, "number_input", loc, field, lbl,
+                         lambda field=field, dflt=dflt: st.session_state.vp.get(field, dflt),
+                         _vp_put(field, _to_si(unit)), to_disp=_from_si(unit),
+                         step=units_mod.from_metric(step, unit), help=hlp)
+        else:
+            c = st.columns(2)
+            for col, field, lbl in ((c[0], "roll_stiffness_front", f"Front roll stiffness ({torq}/°)"),
+                                    (c[1], "roll_stiffness_rear", f"Rear roll stiffness ({torq}/°)")):
+                _kk_bind(col, "number_input", loc, field, lbl,
+                         lambda field=field: st.session_state.vp[field],
+                         _vp_put(field, _to_si("N·m")), to_disp=_from_si("N·m"),
+                         step=units_mod.from_metric(10.0, "N·m"))
+    return vp
+
+
+def _generic_coords(topo_key):
+    """name -> [x,y,z] (mm) for a non-wishbone topology: the stored edits in
+    st.session_state['topo_hp'][topo_key], seeded from the template the first
+    time and healed against it (new/removed points), with no widgets."""
+    base = mechanism_point_coords(topo_key)
+    store = st.session_state.setdefault("topo_hp", {})
+    if topo_key not in store:
+        store[topo_key] = {nm: list(xyz) for nm, (role, xyz) in base.items()}
+    coords = store[topo_key]
+    for nm, (role, xyz) in base.items():
+        coords.setdefault(nm, list(xyz))
+    for nm in list(coords.keys()):
+        if nm not in base:
+            del coords[nm]
+    return coords
+
+
+def _reset_wishbone():
+    st.session_state.hp = Hardpoints.default().as_dict()
+    st.session_state.pop("_sweep_cache", None)
+    st.session_state.pop("_sweep_sig", None)
+
+
+def _reset_generic(topo_key):
+    base = mechanism_point_coords(topo_key)
+    st.session_state.setdefault("topo_hp", {})[topo_key] = {
+        nm: list(xyz) for nm, (role, xyz) in base.items()}
+    st.session_state.pop("_sweep_cache", None)
+    st.session_state.pop("_sweep_sig", None)
+
+
+def _set_pushrod(on):
+    hp = st.session_state.hp
+    if on:
+        _def = Hardpoints.default().as_dict()
+        for k, _ in ROCKER_POINTS:
+            if hp.get(k) is None:
+                hp[k] = _def[k]
+    else:
+        # no rocker points -> has_rocker() is False and the direct-acting proxy is used
+        for k, _ in ROCKER_POINTS:
+            hp[k] = None
+
+
+def _point_rows(loc, items, get_pt, set_pt):
+    """A table of points: name, then x / y / z inputs on one row each."""
+    u = units_mod.label("mm")
+    us = units_mod.is_us()
+    widths = [2.2, 1, 1, 1]
+    h = st.columns(widths)
+    h[0].caption("Point")
+    h[1].caption(f"x ({u}), + rearward")
+    h[2].caption(f"y ({u}), + right")
+    h[3].caption(f"z ({u}), + up")
+    for key, label in items:
+        r = st.columns(widths, vertical_alignment="center")
+        r[0].markdown(label)
+        for i, ax in enumerate("xyz"):
+            _kk_bind(r[i + 1], "number_input", loc, f"pt_{key}_{ax}",
+                     f"{label} · {ax} ({u})",
+                     lambda key=key, i=i: get_pt(key)[i],
+                     lambda d, key=key, i=i: set_pt(key, i, d),
+                     to_disp=_from_si("mm"), from_disp=_to_si("mm"),
+                     step=0.1 if us else 2.0, format="%.2f" if us else "%.1f",
+                     label_visibility="collapsed")
+
+
+def _hp_set_point(key, i, v):
+    p = list(st.session_state.hp[key])
+    p[i] = float(v)
+    st.session_state.hp[key] = p
+
+
+def render_geometry_editor(loc, expanded=False):
+    """✏️ Edit suspension geometry: suspension type, starting geometry, every
+    pickup point, static camber/toe, pushrod & rocker, and the importer."""
+    topo = st.session_state.get("topology", "double_wishbone")
+    with st.expander(f"✏️ Edit suspension geometry · {_geometry_summary()}",
+                     expanded=expanded, key=f"_x_{loc}_geom"):
+        st.caption("Shared by every tab. It starts as an example Formula SAE "
+                   "corner; not on suspension? You can leave it as it is.")
+        c1, c2, c3 = st.columns([1.3, 1.3, 1], vertical_alignment="bottom")
+        _kk_bind(c1, "selectbox", loc, "topology", "Suspension type",
+                 lambda: st.session_state.get("topology", "double_wishbone"),
+                 lambda v: st.session_state.__setitem__("topology", v),
+                 options=_topo_keys, format_func=lambda k: _TOPO_LABELS.get(k, k),
+                 help="Double wishbone has the full editor (presets, pushrod & "
+                      "rocker). Every other type is solved by the general "
+                      "multibody engine and feeds the same roll-center, anti-dive "
+                      "and balance results.")
+        if topo == "double_wishbone":
+            _kk_bind(c2, "selectbox", loc, "preset", "Starting geometry",
+                     lambda: st.session_state.get("kk_preset", "Front (default)"),
+                     lambda v: st.session_state.__setitem__("kk_preset", v),
+                     options=list(_PRESET_LABELS),
+                     format_func=lambda k: _PRESET_LABELS[k],
+                     help="The example corner every new session starts from. The "
+                          "two variations move the inboard wishbone pickups on top "
+                          "of your points, to show how roll center and anti-dive "
+                          "respond.")
+            c3.button("↺ Reset every point", key=f"_in_{loc}_reset",
+                      on_click=_reset_wishbone, width='stretch',
+                      help="Puts every point back to the example front corner. "
+                           "Your edits are lost.")
+        else:
+            c2.caption("Solved by the general multibody engine.")
+            c3.button("↺ Reset to template", key=f"_in_{loc}_reset_{topo}",
+                      on_click=_reset_generic, args=(topo,), width='stretch',
+                      help="Puts every point back to this type's template.")
+        st.caption(f"Positions in {units_mod.label('mm')}: x toward the rear, y to "
+                   f"the right, z up.",
+                   help="KinematiK's frame is ISO 4130-style (z up). It is not SAE "
+                        "J670, which has z down. Convert points from any other "
+                        "convention in ✅ Checks → 🧭 Frames & Datums, or let the "
+                        "importer do it.")
+        if topo == "double_wishbone":
+            t_pts, t_cam, t_rock, t_imp = st.tabs(
+                ["Pickup points", "Static camber & toe", "Pushrod & rocker",
+                 "📥 Import"])
+            with t_pts:
+                st.caption("Chassis points sit on the frame; upright points move "
+                           "with the wheel.")
+                _point_rows(loc, POINTS, lambda k: st.session_state.hp[k],
+                            _hp_set_point)
+            with t_cam:
+                a, b, _ = st.columns([1, 1, 2])
+                _kk_bind(a, "number_input", loc, "static_camber", "Static camber (°)",
+                         lambda: float(st.session_state.hp.get("static_camber", -1.5)),
+                         _hp_put("static_camber"), step=0.1, format="%.2f",
+                         help="Negative means the top of the tire leans toward "
+                              "the car.")
+                _kk_bind(b, "number_input", loc, "static_toe", "Static toe (°)",
+                         lambda: float(st.session_state.hp.get("static_toe", 0.0)),
+                         _hp_put("static_toe"), step=0.05, format="%.2f")
+            with t_rock:
+                st.caption("Turn on and enter your rocker to get the real motion "
+                           "ratio. Off, the spring is treated as acting straight at "
+                           "the wheel, an estimate.")
+                on = _kk_bind(
+                    st, "checkbox", loc, "pushrod", "Pushrod-actuated (real motion ratio)",
+                    lambda: st.session_state.hp.get("pushrod_outer") is not None,
+                    _set_pushrod,
+                    help="When on, the motion ratio and wheel rate come from the "
+                         "actual bell-crank geometry. When off, a direct-acting "
+                         "proxy is used and reported spring→wheel rates are only "
+                         "indicative.")
+                if on:
+                    _kk_bind(st, "selectbox", loc, "pushrod_attach", "Pushrod mounts on",
+                             lambda: st.session_state.hp.get("pushrod_attach", "lower"),
+                             _hp_put("pushrod_attach"),
+                             options=["lower", "upper", "upright"],
+                             format_func=lambda k: {"lower": "Lower wishbone",
+                                                    "upper": "Upper wishbone",
+                                                    "upright": "Upright"}[k])
+                    _point_rows(loc, ROCKER_POINTS, lambda k: st.session_state.hp[k],
+                                _hp_set_point)
+            with t_imp:
+                _render_hp_import_wishbone()
+        else:
+            t_pts, t_imp = st.tabs(["Points", "📥 Import"])
+            with t_pts:
+                coords = _generic_coords(topo)
+                base = mechanism_point_coords(topo)
+                by_role = {"ground": [], "free": [], "carried": []}
+                for nm, (role, _xyz) in base.items():
+                    by_role.get(role, by_role["free"]).append(nm)
+
+                def _gset(nm, i, v, topo=topo):
+                    p = list(st.session_state.topo_hp[topo][nm])
+                    p[i] = float(v)
+                    st.session_state.topo_hp[topo][nm] = p
+                for role in ("ground", "free", "carried"):
+                    if by_role[role]:
+                        st.markdown(f"###### {_ROLE_HEADERS[role]}")
+                        _point_rows(f"{loc}_{topo}",
+                                    [(nm, f"{_POINT_LABELS.get(nm, nm)} · {nm}")
+                                     for nm in by_role[role]],
+                                    lambda nm: st.session_state.topo_hp[topo][nm], _gset)
+            with t_imp:
+                _render_hp_import_generic(topo)
+
+
+def _render_sidebar_car_card(container, visible_ids):
+    """Read-only 'Your car' card: the current values and which tab edits each."""
+    # The first fill runs before _TAB_META exists, so carry the few names here.
+    names = {"roll": "🎚️ Roll & Load Transfer", "setup": "🎛️ Setup Optimiser",
+             "brakes": "🛑 Brakes", "laptime": "🏁 Track Testing",
+             "weight": "⚖️ Weight & Handover", "kinematics": "📐 Kinematics"}
+
+    def _where(group):
+        ids = _INPUT_HOMES[group]
+        shown = ids if visible_ids is None else [i for i in ids if i in visible_ids]
+        if shown:
+            return ", ".join(names[i] for i in shown)
+        return f"⋯ Other tools → {names[ids[0]]}"
+    rows = [("🚗 Car basics", _car_basics_summary(), _where("basics")),
+            ("🔩 Springs & bars", _springs_summary(), _where("springs")),
+            ("✏️ Suspension geometry", _geometry_summary(), _where("geometry"))]
+    body = "".join(
+        f'<div class="kk-car-row"><div class="kk-car-h">{h}</div>'
+        f'<div class="kk-car-v">{v}</div>'
+        f'<div class="kk-car-w">Edit in {w}</div></div>' for h, v, w in rows)
+    container.markdown(
+        '<div class="kk-guide"><b>Your car.</b> Every tab reads these. They start '
+        'as an example Formula SAE car: change what you know, in the tab where '
+        'you use it, and it changes everywhere.' + body + '</div>',
+        unsafe_allow_html=True)
+
+
+# =========================================================================== #
+#  💬 KinematiK Guide — the chat bubble (bottom right)
+# =========================================================================== #
+# A chat-style helper for "where is X / what does Y mean / what do I open
+# first?". It is not an AI: suspension/helpdesk.py matches the question against
+# a fixed knowledge base (its FAQ plus entries made here from the mission
+# briefing's own per-tab copy and role goals) and returns the prewritten answer,
+# filled with the live car values. Nothing leaves the page. Answers "type" in a
+# word at a time, once, for the feel of a chat.
+from suspension import helpdesk as _helpdesk   # noqa: E402  (stdlib only)
+
+_GUIDE_DRAWN = False      # drawn once per run (the gate and the page end both call it)
+
+
+@st.cache_resource(show_spinner=False)
+def _guide_engine():
+    return _helpdesk.build_guide(_helpdesk.app_entries(
+        _TAB_META, _BRIEF_SIMPLE, _BRIEF_TOOLS, _ROLE_GOALS, _ROLE_LABELS))
+
+
+def _guide_where(tid, visible_ids):
+    if tid not in _TAB_META:
+        return ""
+    em, label = _TAB_META[tid]
+    path = f"{_CAT_LABEL.get(_ID_CATEGORY.get(tid), '')} → {em} {label}"
+    if visible_ids is not None and tid not in visible_ids:
+        path += " (under ⋯ Other tools for your subteam)"
+    return path
+
+
+def _guide_start_plan():
+    roles = _normalize_roles(st.session_state.get("kk_roles", st.session_state.get("kk_role", "everyone")))
+    teams = [r for r in roles if _ROLE_GOALS.get(r)]
+    basics = ("Check **🚗 Car basics** and **🔩 Springs** (top of 🎚️ Roll & Load Transfer) and the geometry in "
+              "📐 Kinematics: they start as an example car, so change what you know.")
+    if not teams:
+        return ("Start with **Who are you on the team?** at the top of the page: pick your subteam(s) and "
+                "KinematiK shows only the tabs you need. Then:\n1. " + basics + "\n2. Press **🧭 Get my mission "
+                "briefing** for a personal plan: which tools to open, in what order, and why.")
+    lines = []
+    for r in teams:
+        _k, glabel, ids = _ROLE_GOALS[r][0]
+        route = " → ".join(f"{_TAB_META[i][0]} {_TAB_META[i][1]}" for i in ids if i in _TAB_META)
+        lines.append(f"- **{_ROLE_LABELS.get(r, r)}**, {glabel[0].lower() + glabel[1:]}: {route}")
+    return ("A good first route for your subteam:\n" + "\n".join(lines) + "\n\nBefore that: " + basics
+            + "\n\nFor the full plan, press **🧭 Get my mission briefing** at the top of the page.")
+
+
+def _guide_context():
+    ctx = {"start_plan": _guide_start_plan()}
+    for k, fn in (("car_basics", _car_basics_summary), ("springs", _springs_summary),
+                  ("geometry", _geometry_summary)):
+        try:
+            ctx[k] = fn()
+        except Exception:
+            ctx[k] = "see the sidebar's Your car card"
+    return ctx
+
+
+def _guide_md(text):
+    """Markdown-safe: a '$' would start Streamlit's math mode ("$45 ... $" turns into LaTeX)."""
+    return (text or "").replace("$", "\\$")
+
+
+def _guide_push(reply, question=None):
+    log = st.session_state.setdefault("kk_guide_log", [])
+    if question:
+        log.append({"role": "user", "text": question})
+    log.append({"role": "assistant", "text": reply.text, "tabs": list(reply.tabs),
+                "sugg": list(reply.suggestions), "fresh": True})
+    del log[:-40]                       # keep the conversation bounded
+
+
+def _guide_ask():
+    q = (st.session_state.get("kk_guide_in") or "").strip()
+    if q:
+        _guide_push(_guide_engine().reply(q, _guide_context()), q)
+
+
+def _guide_chip(title):
+    _guide_push(_guide_engine().reply_to_title(title, _guide_context()), title)
+
+
+def _guide_clear():
+    st.session_state["kk_guide_log"] = []
+
+
+def render_guide_chat(visible_ids=None) -> None:
+    """The 💬 bubble, fixed bottom right; opens the chat in a popover."""
+    global _GUIDE_DRAWN
+    if _GUIDE_DRAWN:
+        return
+    _GUIDE_DRAWN = True
+    import time as _t
+    eng = _guide_engine()
+    log = st.session_state.setdefault("kk_guide_log", [])
+    with st.container(key="kk_guide_fab"):
+        with st.popover("💬 Ask KinematiK", key="kk_guide_pop",
+                        help="Questions about where things are, what terms mean, or what to open first."):
+            h1, h2 = st.columns([4, 1], vertical_alignment="center")
+            h1.markdown("**🧭 KinematiK Guide**")
+            if log:
+                h2.button("Clear", key="kk_guide_clear", on_click=_guide_clear, type="tertiary")
+            st.caption("Answers come from KinematiK's own docs. Not an AI: nothing you type leaves this page.")
+            msgs = log or [{"role": "assistant", "text": eng.welcome().text, "tabs": [],
+                            "sugg": eng.welcome().suggestions, "fresh": False}]
+            box = st.container(height=380, key="kk_guide_msgs")
+            for m in msgs:
+                with box.chat_message(m["role"], avatar="🧭" if m["role"] == "assistant" else "🙂"):
+                    if m.get("fresh"):
+                        dots = st.empty()
+                        dots.markdown("<span class='kk-typing'>●●●</span>", unsafe_allow_html=True)
+                        _t.sleep(0.35)
+                        dots.empty()
+                        words = list(_helpdesk.stream_words(_guide_md(m["text"])))
+                        delay = min(0.03, 1.2 / max(1, len(words)))
+
+                        def _gen(ws=words, d=delay):
+                            for w in ws:
+                                _t.sleep(d)
+                                yield w
+                        st.write_stream(_gen())
+                        m["fresh"] = False
+                    else:
+                        st.markdown(_guide_md(m["text"]))
+                    for tid in m.get("tabs", [])[:2]:
+                        where = _guide_where(tid, visible_ids)
+                        if where:
+                            st.caption(f"📍 {where}")
+            last = msgs[-1]
+            if last["role"] == "assistant" and last.get("sugg"):
+                for i, s in enumerate(last["sugg"][:4]):
+                    box.button(s, key=f"kk_guide_chip_{len(log)}_{i}", on_click=_guide_chip, args=(s,),
+                              width="stretch")
+            st.chat_input("Ask a question…", key="kk_guide_in", on_submit=_guide_ask, max_chars=300)
+
+
 with st.sidebar:
     st.markdown('<div class="brand"><span class="mark">◢ KinematiK</span></div>',
                 unsafe_allow_html=True)
@@ -2947,448 +3689,31 @@ with st.sidebar:
     _U_MASS = units_mod.label("kg")
     _U_RATE = units_mod.label("N/mm")
     _U_TORQ = units_mod.label("N·m")
+    # Filled now with every tab that edits each input, then again once the
+    # member's visible tabs are known (pages that stop early keep the first).
+    _sb_car_card = st.empty()
 
-    _TOPO_LABELS = {
-        "double_wishbone": "Double wishbone (full editor)",
-        "macpherson_strut": "MacPherson strut",
-        "multilink": "Multi-link (5-link)",
-        "trailing_arm": "Trailing arm",
-        "semi_trailing_arm": "Semi-trailing arm",
-        "solid_axle": "Solid axle (Panhard)",
-        "twist_beam": "Twist-beam",
-        "truck_steer_linkage": "Heavy-truck steer linkage",
-        "from_links": "Experimental / free-form",
-    }
-    _topo_keys = list(_TOPO_LABELS.keys())
-    # Bind the selectbox straight to session_state via `key` and let Streamlit own
-    # the value. The previous pattern (index= read from session_state + a manual
-    # `st.session_state.topology = topo_choice` write, with no key) lagged a run
-    # behind: the widget's own remembered value and the manually-written value
-    # fought each other, so the picked topology never reached the solver or the
-    # 3D model on the run you clicked. Seed the default once, then read the key.
-    # A loaded project stages its topology here (it can't write the widget key
-    # after the widget exists). Apply it before the selectbox is built.
-    _pending_topo = st.session_state.pop("_pending_topology", None)
-    if _pending_topo in _topo_keys:
-        st.session_state.topology = _pending_topo
-    if st.session_state.get("topology") not in _topo_keys:
-        st.session_state.topology = "double_wishbone"
-    topo_choice = st.selectbox(
-        "Suspension topology",
-        _topo_keys,
-        format_func=lambda k: _TOPO_LABELS.get(k, k),
-        key="topology",
-        help="Double-wishbone exposes the full live hardpoint editor. Every other "
-             "architecture is solved by the architecture-agnostic multibody engine "
-             "from a representative parameter set and feeds the same vehicle-level "
-             "balance analysis.")
-    if topo_choice != "double_wishbone":
-        st.caption("Agnostic engine · this topology drives the same RC / anti-dive / "
-                   "balance pipeline as the wishbone path.")
-
-    # For users whose subteam does not edit suspension geometry, fold the
-    # hardpoint editor into a collapsed expander so the sidebar opens calm.
-    # Suspension/Dynamics (and the All-tabs power view) get it open as before.
-    import contextlib as _ctxlib
-    # Open the hardpoint editor for anyone whose blend includes Suspension/
-    # Dynamics, or who has the full all-tabs view on. Read the multi-role
-    # selection (falling back to the legacy single-role key for old sessions).
-    _kk_roles_sb = st.session_state.get("kk_roles",
-                                        st.session_state.get("kk_role", "everyone"))
-    if isinstance(_kk_roles_sb, str):
-        _kk_roles_sb = [_kk_roles_sb]
-    _geom_role = ("suspension" in _kk_roles_sb) or bool(st.session_state.get("kk_show_all", False))
-    with (_ctxlib.nullcontext() if _geom_role
-          else st.expander("Suspension geometry (hardpoint editor)", expanded=False)) as _geom_box:
-        if not _geom_role:
-            st.caption("Not your subteam? You can leave this as-is — the rest of "
-                       "the studio reads it automatically.")
-        # NB: this frame is ISO 4130-STYLE (x-rear, y-right, Z-UP). It was
-        # previously labelled "SAE", but SAE J670 is Z-DOWN — exactly the
-        # mislabel that starts the "wait, what are we defining as x and y"
-        # argument. Convert to/from any convention in ✅ Checks → 🧭 Frames &
-        # Datums.
-        st.markdown(f'<div class="sub" style="color:#8d99a6;font-family:JetBrains Mono;font-size:.7rem;letter-spacing:.18em;margin-bottom:.6rem;">HARDPOINT EDITOR · {_U_LEN} · x-rear y-right z-up (ISO 4130-style · not SAE Z-down) · convert in 🧭 Frames &amp; Datums</div>', unsafe_allow_html=True)
-
-        _is_wishbone = (topo_choice == "double_wishbone")
-
-        # Default the names the solve block expects; the wishbone branch overrides
-        # `preset`, the generic branch produces `_topo_coords`.
-        preset = "Front (default)"
-        _topo_coords = None
-
-        if _is_wishbone:
-            colA, colB = st.columns(2)
-            if colA.button("↺ Reset", width='stretch'):
-                st.session_state.hp = Hardpoints.default().as_dict()
-                st.rerun()
-            preset = colB.selectbox("Preset", ["Front (default)", "Low roll-centre",
-                                               "High anti-dive"], label_visibility="collapsed")
-
-            # ---------------- Import hardpoints (OptimumK / Excel / CSV) ---- #
-            with st.expander("📥 Import hardpoints (OptimumK / Excel / CSV)",
-                             expanded=False):
-                st.markdown(
-                    '<p class="hint">Bring in the points you already have — an '
-                    'OptimumK export or any sheet with a name column and X/Y/Z. '
-                    'Every assumption (units, axes, side, origin) is shown below '
-                    'for you to confirm before anything is applied.</p>',
-                    unsafe_allow_html=True)
-                _hpi_file = st.file_uploader(
-                    "Point table (.csv / .xlsx)", type=["csv", "xlsx", "xlsm"],
-                    key="_hpi_up")
-                if _hpi_file is not None:
-                    try:
-                        from suspension import hardpoint_import as _hpi
-                        import coordinate_frames as _cf_mod
-                        _pts, _hint = _hpi.parse_tabular(
-                            _hpi_file.getvalue(), _hpi_file.name)
-                        if not _pts:
-                            st.warning("No point rows found — the file needs a "
-                                       "name column and three coordinate columns.")
-                        else:
-                            _groups = _hpi.group_corners(_pts)
-                            _tags = [t for t in ("FL", "FR", "RL", "RR")
-                                     if _hpi.points_for_corner(_groups, t)
-                                     and any(p.corner for p in
-                                             _hpi.points_for_corner(_groups, t))]
-                            _c1, _c2, _c3 = st.columns(3)
-                            _corner = _c1.selectbox(
-                                "Corner to import", _tags or ["(single corner)"],
-                                key="_hpi_corner",
-                                help="The file labels several corners — pick one; "
-                                     "KinematiK models a single corner.")                                 if _tags else "(single corner)"
-                            _frame = _c2.selectbox(
-                                "File's axis convention",
-                                list(_cf_mod.FRAME_ORDER),
-                                index=list(_cf_mod.FRAME_ORDER).index("iso8855"),
-                                format_func=lambda k: _cf_mod.BUILTIN_FRAMES[k].name,
-                                key="_hpi_frame",
-                                help="What +X/+Y/+Z mean in the FILE. Full "
-                                     "descriptions: ✅ Checks → 🧭 Frames & Datums.")
-                            _unit_sel = _c3.selectbox(
-                                "Units", ["auto-detect", "mm", "m", "in"],
-                                key="_hpi_unit")
-                            _c4, _c5, _c6 = st.columns(3)
-                            _topo_opts = ["auto", "double_wishbone",
-                                          "macpherson", "multilink", "five_link",
-                                          "trailing_arm", "semi_trailing_arm",
-                                          "twist_beam"]
-                            _topo_label = {
-                                "auto": "Auto (map what's there)",
-                                "double_wishbone": "Double wishbone",
-                                "macpherson": "MacPherson strut",
-                                "multilink": "Multi-link", "five_link": "Five-link",
-                                "trailing_arm": "Trailing arm",
-                                "semi_trailing_arm": "Semi-trailing arm",
-                                "twist_beam": "Twist beam"}
-                            _topo_sel = _c4.selectbox(
-                                "Suspension topology", _topo_opts,
-                                format_func=lambda k: _topo_label[k],
-                                key="_hpi_topo",
-                                help="Which architecture these points describe. "
-                                     "Sets which hardpoints count as 'core' for "
-                                     "the completeness check. Auto maps every "
-                                     "recognised point and only flags a missing "
-                                     "wheel centre / contact patch.")
-                            _mirror_sel = _c5.selectbox(
-                                "Mirror left→right", ["auto", "yes", "no"],
-                                key="_hpi_mirror",
-                                help="KinematiK's editor corner lives at +y.")
-                            _reorig = _c6.checkbox(
-                                "Re-origin (x=0 at wheel centre, z=0 at ground)",
-                                value=True, key="_hpi_reorig")
-
-                            _work = (_hpi.points_for_corner(_groups, _corner)
-                                     if _tags else _pts)
-                            _res = _hpi.build_result(
-                                _work, frame_key=_frame,
-                                unit=None if _unit_sel == "auto-detect" else _unit_sel,
-                                header_hint=_hint, corner=_corner if _tags else "",
-                                mirror={"auto": None, "yes": True,
-                                        "no": False}[_mirror_sel],
-                                topology=_topo_sel,
-                                reorigin=_reorig)
-
-                            st.caption(_res.summary())
-                            for _w in _res.warnings:
-                                st.warning(_w)
-                            if _res.ambiguous:
-                                st.error("Ambiguous names (left unmapped — "
-                                         "rename them in the file or edit "
-                                         "manually after import): " + "; ".join(
-                                             f"'{p.name}' → {'/'.join(ks)}"
-                                             for p, ks in _res.ambiguous[:6]))
-                            if _res.unmapped:
-                                st.caption("Not recognised (ignored): " + ", ".join(
-                                    p.name for p in _res.unmapped[:10]) +
-                                    (" …" if len(_res.unmapped) > 10 else ""))
-                            if _res.ok:
-                                st.dataframe(
-                                    [{"hardpoint": d.key,
-                                      "from": d.raw.name,
-                                      "x (mm)": round(d.xyz_mm[0], 1),
-                                      "y (mm)": round(d.xyz_mm[1], 1),
-                                      "z (mm)": round(d.xyz_mm[2], 1)}
-                                     for d in _res.details],
-                                    hide_index=True, width='stretch')
-                                if st.button(f"✔ Apply {len(_res.mapped)} points "
-                                             f"to the editor", key="_hpi_apply"):
-                                    for _k, _xyz in _res.mapped.items():
-                                        st.session_state.hp[_k] = list(_xyz)
-                                        # widget keys hold stale display values;
-                                        # pop them so the editor re-reads hp
-                                        for _ax in "xyz":
-                                            st.session_state.pop(f"{_k}_{_ax}", None)
-                                    st.session_state.pop("_sweep_cache", None)
-                                    st.session_state.pop("_sweep_sig", None)
-                                    st.success(
-                                        f"Imported {len(_res.mapped)} hardpoints "
-                                        f"({_res.unit}, {_res.frame_key}"
-                                        f"{', mirrored' if _res.mirrored else ''}"
-                                        f"{', re-origined' if _res.reorigined else ''}) "
-                                        f"— log the source in a decision so next "
-                                        f"year knows where these came from.")
-                                    st.rerun()
-                    except Exception as _hpi_e:
-                        st.error(f"Import failed: {type(_hpi_e).__name__}: {_hpi_e}")
-
-            with st.expander("⚙️ Design intent", expanded=False):
-              c1, c2 = st.columns(2)
-              st.session_state.hp["static_camber"] = c1.number_input(
-                  "Static camber °", value=float(st.session_state.hp.get("static_camber", -1.5)),
-                  step=0.1, format="%.2f")
-              st.session_state.hp["static_toe"] = c2.number_input(
-                  "Static toe °", value=float(st.session_state.hp.get("static_toe", 0.0)),
-                  step=0.05, format="%.2f")
-
-            with st.expander("⚙️ Pickup coordinates", expanded=False):
-              _coord_step = 0.1 if _US else 2.0
-              _coord_fmt = "%.2f" if _US else "%.1f"
-              for key, label in POINTS:
-                  with st.expander(label, expanded=False):
-                      v = st.session_state.hp[key]
-                      cols = st.columns(3)
-                      nv = []
-                      for i, ax in enumerate("xyz"):
-                          _disp = cols[i].number_input(
-                              f"{ax} ({_U_LEN})",
-                              value=units_mod.from_metric(float(v[i]), "mm"),
-                              step=_coord_step, key=f"{key}_{ax}",
-                              format=_coord_fmt, label_visibility="visible")
-                          nv.append(units_mod.to_metric(_disp, "mm"))
-                      st.session_state.hp[key] = nv
-
-            with st.expander("⚙️ Pushrod / rocker", expanded=False):
-              rocker_on = st.checkbox(
-                  "Pushrod-actuated (real motion ratio)",
-                  value=bool(st.session_state.hp.get("pushrod_outer") is not None),
-                  help="When on, the motion ratio and wheel rate come from the actual "
-                       "bell-crank geometry. When off, a direct-acting proxy is used and "
-                       "reported spring→wheel rates are only indicative.")
-              if rocker_on:
-                  # Seed rocker points from the default if the project doesn't carry them.
-                  _def = Hardpoints.default().as_dict()
-                  for key, label in ROCKER_POINTS:
-                      if st.session_state.hp.get(key) is None:
-                          st.session_state.hp[key] = _def[key]
-                  attach = st.selectbox(
-                      "Pushrod mounts on", ["lower", "upper", "upright"],
-                      index=["lower", "upper", "upright"].index(
-                          st.session_state.hp.get("pushrod_attach", "lower")))
-                  st.session_state.hp["pushrod_attach"] = attach
-                  for key, label in ROCKER_POINTS:
-                      with st.expander(label, expanded=False):
-                          v = st.session_state.hp[key]
-                          cols = st.columns(3)
-                          nv = []
-                          for i, ax in enumerate("xyz"):
-                              _disp = cols[i].number_input(
-                                  f"{ax} ({_U_LEN})",
-                                  value=units_mod.from_metric(float(v[i]), "mm"),
-                                  step=_coord_step, key=f"{key}_{ax}",
-                                  format="%.2f", label_visibility="visible")
-                              nv.append(units_mod.to_metric(_disp, "mm"))
-                          st.session_state.hp[key] = nv
-              else:
-                  # Clear rocker points so has_rocker() is False and the proxy is used.
-                  for key, _ in ROCKER_POINTS:
-                      st.session_state.hp[key] = None
-        else:
-            # Generic topologies: edit the Mechanism's named points directly. Every
-            # architecture now has a live hardpoint editor, not just the wishbone.
-            st.caption("Live editor for this architecture — move any pickup, free "
-                       "joint, or carrier point; the agnostic engine re-solves the "
-                       "same RC / anti-dive / balance pipeline.")
-            _topo_coords = render_generic_point_editor(topo_choice)
-
-            # ---------------- Import hardpoints (any topology) ------------- #
-            # Same importer as the wishbone path, now available for every
-            # architecture. Points are translated to this topology's native
-            # editor slots by _apply_import_to_topology.
-            with st.expander("📥 Import hardpoints (OptimumK / Excel / CSV)",
-                             expanded=False):
-                st.markdown(
-                    '<p class="hint">Bring in the points you already have — an '
-                    'OptimumK export or any sheet with a name column and X/Y/Z. '
-                    'Recognised names are matched to this architecture\'s '
-                    'points; every assumption (units, axes, side, origin) is '
-                    'shown for you to confirm before anything is applied.</p>',
-                    unsafe_allow_html=True)
-                _g_file = st.file_uploader(
-                    "Point table (.csv / .xlsx)", type=["csv", "xlsx", "xlsm"],
-                    key="_hpi_up_generic")
-                if _g_file is not None:
-                    try:
-                        from suspension import hardpoint_import as _hpi
-                        import coordinate_frames as _cf_mod
-                        _gpts, _ghint = _hpi.parse_tabular(
-                            _g_file.getvalue(), _g_file.name)
-                        if not _gpts:
-                            st.warning("No point rows found — the file needs a "
-                                       "name column and three coordinate columns.")
-                        else:
-                            _ggroups = _hpi.group_corners(_gpts)
-                            _gtags = [t for t in ("FL", "FR", "RL", "RR")
-                                      if _hpi.points_for_corner(_ggroups, t)
-                                      and any(p.corner for p in
-                                              _hpi.points_for_corner(_ggroups, t))]
-                            _gc1, _gc2, _gc3 = st.columns(3)
-                            _gcorner = _gc1.selectbox(
-                                "Corner to import", _gtags or ["(single corner)"],
-                                key="_hpi_corner_generic",
-                                help="Pick one corner; KinematiK models a single "
-                                     "corner.") if _gtags else "(single corner)"
-                            _gframe = _gc2.selectbox(
-                                "File's axis convention",
-                                list(_cf_mod.FRAME_ORDER),
-                                index=list(_cf_mod.FRAME_ORDER).index("iso8855"),
-                                format_func=lambda k: _cf_mod.BUILTIN_FRAMES[k].name,
-                                key="_hpi_frame_generic",
-                                help="What +X/+Y/+Z mean in the FILE.")
-                            _gunit = _gc3.selectbox(
-                                "Units", ["auto-detect", "mm", "m", "in"],
-                                key="_hpi_unit_generic")
-                            _gc4, _gc5 = st.columns(2)
-                            _gmirror = _gc4.selectbox(
-                                "Mirror left→right", ["auto", "yes", "no"],
-                                key="_hpi_mirror_generic",
-                                help="KinematiK's editor corner lives at +y.")
-                            _greorig = _gc5.checkbox(
-                                "Re-origin (x=0 at wheel centre, z=0 at ground)",
-                                value=True, key="_hpi_reorig_generic")
-                            _gwork = (_hpi.points_for_corner(_ggroups, _gcorner)
-                                      if _gtags else _gpts)
-                            _gres = _hpi.build_result(
-                                _gwork, frame_key=_gframe,
-                                unit=None if _gunit == "auto-detect" else _gunit,
-                                header_hint=_ghint,
-                                corner=_gcorner if _gtags else "",
-                                mirror={"auto": None, "yes": True,
-                                        "no": False}[_gmirror],
-                                topology=topo_choice,
-                                reorigin=_greorig)
-                            st.caption(_gres.summary())
-                            for _gw in _gres.warnings:
-                                st.warning(_gw)
-                            if _gres.ambiguous:
-                                st.error("Ambiguous names (left unmapped): "
-                                         + "; ".join(
-                                             f"'{p.name}' → {'/'.join(ks)}"
-                                             for p, ks in _gres.ambiguous[:6]))
-                            if _gres.unmapped:
-                                st.caption("Not recognised (ignored): " + ", ".join(
-                                    p.name for p in _gres.unmapped[:10]) +
-                                    (" …" if len(_gres.unmapped) > 10 else ""))
-                            if _gres.ok:
-                                st.dataframe(
-                                    [{"hardpoint": d.key, "from": d.raw.name,
-                                      "x (mm)": round(d.xyz_mm[0], 1),
-                                      "y (mm)": round(d.xyz_mm[1], 1),
-                                      "z (mm)": round(d.xyz_mm[2], 1)}
-                                     for d in _gres.details],
-                                    hide_index=True, width='stretch')
-                                if st.button(f"✔ Apply {len(_gres.mapped)} points "
-                                             f"to the editor",
-                                             key="_hpi_apply_generic"):
-                                    _n, _skip = _apply_import_to_topology(
-                                        topo_choice, _gres.mapped)
-                                    st.session_state.pop("_sweep_cache", None)
-                                    st.session_state.pop("_sweep_sig", None)
-                                    _msg = (f"Imported {_n} hardpoint"
-                                            f"{'s' if _n != 1 else ''} into the "
-                                            f"{_TOPO_LABELS.get(topo_choice, topo_choice)} "
-                                            f"editor ({_gres.unit}, {_gres.frame_key}"
-                                            f"{', mirrored' if _gres.mirrored else ''}"
-                                            f"{', re-origined' if _gres.reorigined else ''}).")
-                                    if _skip:
-                                        _msg += (" Not used by this topology: "
-                                                 + ", ".join(_skip[:8])
-                                                 + (" …" if len(_skip) > 8 else ""))
-                                    st.success(_msg)
-                                    st.rerun()
-                    except Exception as _ge:
-                        st.error(f"Import failed: {type(_ge).__name__}: {_ge}")
-
-    st.markdown("---")
-    with st.expander("⚙️ Vehicle", expanded=False):
-      vp = st.session_state.vp
-      if _US:
-          _m_lo, _m_hi = units_mod.from_metric(180, "kg"), units_mod.from_metric(360, "kg")
-          _m_disp = st.slider(f"Mass + driver ({_U_MASS})", round(_m_lo), round(_m_hi),
-                              round(units_mod.from_metric(float(vp["mass"]), "kg")))
-          vp["mass"] = units_mod.to_metric(_m_disp, "kg")
-          _cg_lo, _cg_hi = units_mod.from_metric(200, "mm"), units_mod.from_metric(400, "mm")
-          _cg_disp = st.slider(f"CG height ({_U_LEN})", round(_cg_lo, 1), round(_cg_hi, 1),
-                               round(units_mod.from_metric(float(vp["cg_height"]), "mm"), 1))
-          vp["cg_height"] = units_mod.to_metric(_cg_disp, "mm")
-      else:
-          vp["mass"] = uslider(st, "Mass + driver (kg)", 180, 360, int(vp["mass"]), 'kg')
-          vp["cg_height"] = uslider(st, "CG height (mm)", 200, 400, int(vp["cg_height"]), 'mm')
-      vp["weight_dist_front"] = st.slider("Front weight (%)", 40, 60,
-                                          int(vp["weight_dist_front"] * 100)) / 100
-
-    with st.expander("⚙️ Springs & roll stiffness", expanded=False):
-      use_springs = st.checkbox(
-          "Drive roll stiffness from spring rates × motion ratio",
-          value=bool(vp.get("use_spring_rates", False)),
-          help="On: axle roll stiffness = spring rate × MR² (+ ARB), using the live "
-               "rocker geometry. This is the physically correct path and is what the "
-               "optimiser uses. Off: type roll stiffness directly (legacy).")
-      vp["use_spring_rates"] = use_springs
-      if use_springs:
-          s1, s2 = st.columns(2)
-          _sf = s1.number_input(
-              f"Spring F ({_U_RATE})",
-              value=units_mod.from_metric(float(vp.get("spring_rate_front", 35.0)), "N/mm"),
-              step=units_mod.from_metric(2.5, "N/mm"))
-          vp["spring_rate_front"] = units_mod.to_metric(_sf, "N/mm")
-          _sr = s2.number_input(
-              f"Spring R ({_U_RATE})",
-              value=units_mod.from_metric(float(vp.get("spring_rate_rear", 35.0)), "N/mm"),
-              step=units_mod.from_metric(2.5, "N/mm"))
-          vp["spring_rate_rear"] = units_mod.to_metric(_sr, "N/mm")
-          a1, a2 = st.columns(2)
-          _af = a1.number_input(
-              f"ARB F ({_U_TORQ}/°)",
-              value=units_mod.from_metric(float(vp.get("arb_rate_front", 0.0)), "N·m"),
-              step=units_mod.from_metric(10.0, "N·m"))
-          vp["arb_rate_front"] = units_mod.to_metric(_af, "N·m")
-          _ar = a2.number_input(
-              f"ARB R ({_U_TORQ}/°)",
-              value=units_mod.from_metric(float(vp.get("arb_rate_rear", 0.0)), "N·m"),
-              step=units_mod.from_metric(10.0, "N·m"))
-          vp["arb_rate_rear"] = units_mod.to_metric(_ar, "N·m")
-      else:
-          cc1, cc2 = st.columns(2)
-          _rf = cc1.number_input(f"Roll stiff F ({_U_TORQ}/°)",
-                                 value=units_mod.from_metric(float(vp["roll_stiffness_front"]), "N·m"),
-                                 step=units_mod.from_metric(10.0, "N·m"))
-          vp["roll_stiffness_front"] = units_mod.to_metric(_rf, "N·m")
-          _rr = cc2.number_input(f"Roll stiff R ({_U_TORQ}/°)",
-                                 value=units_mod.from_metric(float(vp["roll_stiffness_rear"]), "N·m"),
-                                 step=units_mod.from_metric(10.0, "N·m"))
-          vp["roll_stiffness_rear"] = units_mod.to_metric(_rr, "N·m")
+# ---- The stored inputs the solve reads ------------------------------------- #
+vp = st.session_state.vp
+# A loaded project stages its topology (see the project loader); apply it here.
+_pending_topo = st.session_state.pop("_pending_topology", None)
+if _pending_topo in _topo_keys:
+    st.session_state.topology = _pending_topo
+if st.session_state.get("topology") not in _topo_keys:
+    st.session_state.topology = "double_wishbone"
+if st.session_state.get("kk_preset") not in _PRESET_LABELS:
+    st.session_state.kk_preset = "Front (default)"
+st.session_state.hp.setdefault("static_camber", -1.5)
+st.session_state.hp.setdefault("static_toe", 0.0)
+topo_choice = st.session_state.topology
+_is_wishbone = (topo_choice == "double_wishbone")
+preset = st.session_state.kk_preset if _is_wishbone else "Front (default)"
+_topo_coords = None if _is_wishbone else _generic_coords(topo_choice)
+try:
+    _render_sidebar_car_card(_sb_car_card, None)
+except Exception as _e:
+    import logging
+    logging.getLogger(__name__).warning("sidebar car card: %r", _e)
 
 
 # Apply presets (simple variations on the default)
@@ -3471,9 +3796,13 @@ try:
     if not solve_ok and not kin.static.converged:
         st.error("Solver could not converge at the static ride height for this "
                  "topology. Check the template parameters.")
+        render_geometry_editor("rescue", expanded=True)
         st.stop()
 except Exception as e:
     st.error(f"Solver failed for this geometry: {e}")
+    # The editor normally lives in the Kinematics tab, which a stopped page never
+    # reaches; show it here so a bad point can be fixed (or reset).
+    render_geometry_editor("rescue", expanded=True)
     st.stop()
 
 if not solve_ok:
@@ -8757,6 +9086,10 @@ if not _has_picked:
             _render_status_dashboard(_STATUS_DASHBOARD_SLOT)
     except Exception:
         pass
+    try:
+        render_guide_chat(None)      # the 💬 Guide is there from the first page
+    except Exception:
+        pass
     st.stop()
 
 # --- Mission briefing panel: the compiled questionnaire answer, pinned ------ #
@@ -8813,6 +9146,11 @@ _id_to_container = {}
 # _primary_ids is already the full list, so nothing is hidden.
 _visible_ids = list(_primary_ids)          # shown in the category nav
 _hidden_ids = [i for i in _FULL_ORDER if i not in _visible_ids]
+try:
+    _render_sidebar_car_card(_sb_car_card, _visible_ids)
+except Exception as _e:
+    import logging
+    logging.getLogger(__name__).warning("sidebar car card: %r", _e)
 
 # One off-screen host for every hidden tab's body. st.container() renders but we
 # never surface it in a tab strip, so the member never sees these tabs while
@@ -12005,19 +12343,19 @@ _EXPORT_SOURCE_HINT = {
                   ("Thickness ratio", "thickness_frac")],
     },
     "suspension": {
-        "where": "the sidebar &rarr; Suspension geometry (hardpoint editor)",
+        "where": "📐 Kinematics &rarr; ✏️ Edit suspension geometry",
         "steps": ["<b>There&rsquo;s no button to press.</b> The mount-plate "
                   "section appears on its own the moment the ball joints exist "
                   "&mdash; if this panel is empty, the points below just "
                   "aren&rsquo;t set yet.",
-                  "Open the <b>hardpoint editor</b> in the left sidebar and set "
+                  "Open <b>✏️ Edit suspension geometry</b> (📐 Kinematics) and set "
                   "your <b>upper</b> and <b>lower outer ball joints</b>. The "
                   "app measures the span between them &mdash; that becomes the "
                   "upright mount PCD.",
                   "Add a <b>tie-rod outer</b> point too, if you have one, for a "
                   "3-bolt mount instead of 2.",
                   "The editor is fullest on a <b>double-wishbone</b> topology "
-                  "&mdash; pick that in the sidebar if the ball-joint fields "
+                  "&mdash; pick that as the suspension type if the ball-joint fields "
                   "aren&rsquo;t showing."],
         "needs": [("Upper &amp; lower ball joints set (\u2192 PCD)", "pcd_mm"),
                   ("Mount bolt count", "n_bolts")],
@@ -14203,7 +14541,7 @@ def _render_mesh_dxf_flow_strip(where_label, subsystem_key=None):
         _steps = [
             ("Input", where_label,
              "Set your <b>upper</b> and <b>lower outer ball joints</b> in the "
-             "left sidebar. There&rsquo;s no button to press &mdash; having the "
+             "📐 Kinematics tab. There&rsquo;s no button to press &mdash; having the "
              "points is the input."),
             ("Calculate", "automatic, no tool to run",
              "The app measures the <b>span</b> between the two ball joints and "
@@ -14419,8 +14757,8 @@ def render_suspension_hardpoint_summary(*, key_prefix="susp_hp"):
     <span class="hp-src">{_src_txt} · {_U_LEN}</span>
   </div>
   <div class="hp-note">This architecture exports from a representative mount
-  set. Edit its geometry in the left sidebar under <b>Suspension geometry
-  (hardpoint editor)</b>.</div>
+  set. Edit its geometry under <b>✏️ Edit suspension
+  geometry</b> above.</div>
 </div>
 ''',
             unsafe_allow_html=True)
@@ -14471,18 +14809,17 @@ def render_suspension_hardpoint_summary(*, key_prefix="susp_hp"):
         if is_wb:
             _note = ('<div class="hp-note">Set the <b>upper</b> and <b>lower ball '
                      'joints</b> to define the mount PCD. Edit them in the left '
-                     'sidebar under <b>Suspension geometry (hardpoint editor) → '
-                     'Pickup coordinates</b>.</div>')
+                     '<b>✏️ Edit suspension geometry → Pickup points</b> above.'
+                     '</div>')
         else:
             _note = ('<div class="hp-note">Move the outboard mount points in the '
-                     'left sidebar under <b>Suspension geometry (hardpoint '
-                     'editor)</b> to define the mount PCD for this '
+                     '<b>✏️ Edit suspension geometry</b> above to define the mount PCD for this '
                      'architecture.</div>')
     else:
         _note = ('<div class="hp-note"><span class="hp-here">✓ feeding the '
                  'export</span> &nbsp;These are the numbers the Mesh &amp; DXF '
-                 'exporter reads. Edit any point in the left sidebar under '
-                 '<b>Suspension geometry (hardpoint editor)</b> and this '
+                 'exporter reads. Edit any point under '
+                 '<b>✏️ Edit suspension geometry</b> above and this '
                  'updates live.</div>')
 
     st.markdown(
@@ -16408,6 +16745,8 @@ _U_TRAVEL = units_mod.label("mm")
 
 # ----------------------------- TAB 1 --------------------------------------- #
 with tab1:
+  # The suspension geometry is edited here, at the top of Kinematics.
+  render_geometry_editor("kin")
   # Publish the REAL upright mount section from the live hardpoints so the DXF
   # exporter draws the actual ball-joint span, not a guess. The upper/lower
   # outer ball joints define the upright mounting PCD a member builds to.
@@ -16500,7 +16839,7 @@ with tab1:
         _c.markdown(metric(_k, _v, _u, _cls), unsafe_allow_html=True)
     if not _mr_real:
         st.markdown('<span class="tag warn">motion ratio is a direct-acting '
-                    'proxy — enable “Pushrod-actuated” in the sidebar and enter '
+                    'proxy — enable “Pushrod-actuated” in 📐 Kinematics → ✏️ Edit suspension geometry → Pushrod &amp; rocker and enter '
                     'your rocker geometry for real spring→wheel rates</span>',
                     unsafe_allow_html=True)
     st.write("")
@@ -16548,6 +16887,9 @@ with tab1:
 
 # ----------------------------- TAB 2 --------------------------------------- #
 with tab2:
+  # The car inputs this tab reads, editable here (shared with every tab).
+  render_car_basics("roll")
+  render_springs("roll")
   try:
     render_process_library("suspension", key_prefix="roll_pl")
   except Exception:
@@ -16682,7 +17024,7 @@ def render_grip_balance():
   st.markdown('<p class="hint">Balance index compares how hard each axle is working. '
               'Positive means the front saturates first (push/understeer), negative '
               'means the rear lets go first (oversteer). Shift it with roll-stiffness '
-              'distribution, RC heights, and weight distribution in the sidebar.</p>',
+              'distribution, RC heights, and weight distribution (🚗 Car basics and 🔩 Springs at the top of Roll & Load Transfer).</p>',
               unsafe_allow_html=True)
   st.markdown('<p class="hint" style="border-left:2px solid #5a4317;padding-left:10px;">'
               '<b>Steady-state.</b> Balance is computed at sustained cornering with '
@@ -21561,6 +21903,7 @@ with tab_accum:
 # live car: dynamic load transfer sets the ideal bias and the lock-all-four check;
 # the hydraulic chain sizes the parts and reports the pedal force a driver needs.
 with tab_brake:
+  render_car_basics("brakes")
   try:
     render_process_library("brakes", key_prefix="brake_pl")
   except Exception:
@@ -26898,7 +27241,7 @@ with tab5c:
             st.plotly_chart(gfigF, width='stretch')
 
         st.caption("Members are this architecture's own links (from the topology "
-                   "template). Edit their geometry in the sidebar hardpoint editor; "
+                   "template). Edit their geometry in 📐 Kinematics → ✏️ Edit suspension geometry; "
                    "the same tube material/OD/wall above sets every link's axial "
                    "stiffness. Per-member materials and joint compliance are "
                    "available on the double-wishbone model.")
@@ -27877,6 +28220,7 @@ with tab6:
 
 # ----------------------------- TAB 7 --------------------------------------- #
 with tab7:
+    render_car_basics("weight")
     store = get_store()
 
     # Surface storage problems instead of silently losing data.
@@ -29072,6 +29416,8 @@ with tab9:
 # SETUP OPTIMISER — spend the one tire set wisely. Rank the levers by grip
 # impact and search for the best setup, all on the live tire.
 with tab10:
+  render_car_basics("setup")
+  render_springs("setup")
   try:
     render_process_library("suspension", key_prefix="setup_pl")
   except Exception:
@@ -29154,7 +29500,7 @@ with tab10:
                 f"{recs}</table>", unsafe_allow_html=True)
 
             ac1, ac2 = st.columns([1, 2])
-            if ac1.button("Apply to sidebar", width='stretch'):
+            if ac1.button("Apply to the car", width='stretch'):
                 for k, v in opt["best_params"].items():
                     if k in ("static_camber_front", "static_camber_rear"):
                         continue  # camber is set by geometry; recommend, don't force
@@ -29172,7 +29518,7 @@ with tab10:
                 st.rerun()
             ac2.markdown('<p class="hint">Camber targets are recommendations — set them '
                          'with static camber + camber-gain in your geometry, then check '
-                         'the KINEMATICS tab. Everything else applies to the sidebar '
+                         'the KINEMATICS tab. Everything else applies to 🚗 Car basics and 🔩 Springs above '
                          'directly.</p>', unsafe_allow_html=True)
         else:
             st.markdown('<p class="hint">Your current setup is already at the '
@@ -32521,6 +32867,7 @@ def render_transient():
 #  then Lap Time, GGV and Transient each in their own collapsible window.
 # --------------------------------------------------------------------------- #
 with tab_track:
+  render_car_basics("track")
   st.markdown(
       '<div class="brand"><span class="mark">Track testing</span>'
       '<span class="sub">Lap time · GGV envelope · transient · EV round-trip</span>'
@@ -34212,3 +34559,12 @@ _mem.maybe_collect()
 # window, so `median_run_ms` is the number the member actually waits for rather
 # than a flattering subset of it.
 _perf.end_run(st.session_state)
+
+# The 💬 Guide comes after the timing run on purpose: its only cost on a normal
+# run is drawing a closed bubble, and when it answers, the word-by-word typing
+# is deliberate waiting, which should not count as the app being slow.
+try:
+    render_guide_chat(_visible_ids)
+except Exception as _e:
+    import logging
+    logging.getLogger(__name__).warning("guide chat: %r", _e)
