@@ -505,8 +505,52 @@ def _cells_polygon(pts, h, ss: int = 4, ox: float = 0.0, oy: float = 0.0):
     return I[m], J[m], c[m]
 
 
+def _raster_scan(pts, h, ss: int = 2, ox: float = 0.0, oy: float = 0.0):
+    """Coverage (0-1) of cells of an h grid (centres at (i+0.5+ox)h) by a polygon (even-odd), exact horizontally,
+    ss sample rows per cell vertically. Returns I, J, c."""
+    import numpy as np
+    P=np.asarray(pts,float); x0,y0=P.min(0); x1,y1=P.max(0)
+    i0=int(np.floor(x0/h-ox))-1; i1=int(np.ceil(x1/h-ox))+1
+    j0=int(np.floor(y0/h-oy))-1; j1=int(np.ceil(y1/h-oy))+1
+    nI=i1-i0; nJ=j1-j0
+    cov=np.zeros((nJ,nI))
+    ys=((np.arange(j0,j1)[:,None]+(np.arange(ss)+0.5)[None,:]/ss)+oy)*h     # sample rows (nJ, ss)
+    ys=ys.ravel()
+    ax,ay=P[:,0],P[:,1]; bx,by=np.roll(ax,-1),np.roll(ay,-1)
+    keep=ay!=by; ax,ay,bx,by=ax[keep],ay[keep],bx[keep],by[keep]
+    lo=np.minimum(ay,by); hi=np.maximum(ay,by)
+    # rows each edge crosses
+    r0=np.searchsorted(ys,lo,side='left'); r1=np.searchsorted(ys,hi,side='left')
+    cnt=r1-r0; tot=int(cnt.sum())
+    if tot==0: return np.zeros(0,int),np.zeros(0,int),np.zeros(0)
+    e=np.repeat(np.arange(len(ax)),cnt); r=np.arange(tot)-np.repeat(np.cumsum(cnt)-cnt,cnt)+r0[e]
+    xi=ax[e]+(ys[r]-ay[e])*(bx[e]-ax[e])/(by[e]-ay[e])
+    o=np.lexsort((xi,r)); r,xi=r[o],xi[o]
+    # pair consecutive crossings in each row (even-odd)
+    first=np.r_[True,r[1:]!=r[:-1]]
+    k=np.arange(len(r))-np.maximum.accumulate(np.where(first,np.arange(len(r)),0))
+    a=(k%2==0); sa=np.where(a)[0]; sb=sa+1; sb=sb[sb<len(r)]; sa=sa[:len(sb)]
+    ok=r[sa]==r[sb]; sa,sb=sa[ok],sb[ok]
+    row=r[sa]; xa=xi[sa]/h-ox-i0; xb=xi[sb]/h-ox-i0          # in cell units from i0
+    # add span coverage [xa,xb] into cells of row//ss using a difference array of fractional coverage
+    jr=row//ss
+    acc=np.zeros((nJ,nI+2))
+    fa=np.floor(xa).astype(int); fb=np.floor(xb).astype(int)
+    same=fa==fb
+    np.add.at(acc,(jr[same],fa[same]+1),(xb-xa)[same]); np.add.at(acc,(jr[same],fa[same]+2),-(xb-xa)[same])
+    d=~same
+    # partial first cell, full middle cells, partial last cell
+    np.add.at(acc,(jr[d],fa[d]+1),(fa[d]+1-xa[d])); np.add.at(acc,(jr[d],fa[d]+2),-(fa[d]+1-xa[d]))
+    np.add.at(acc,(jr[d],fa[d]+2),1.0); np.add.at(acc,(jr[d],fb[d]+1),-1.0)
+    np.add.at(acc,(jr[d],fb[d]+1),(xb[d]-fb[d])); np.add.at(acc,(jr[d],fb[d]+2),-(xb[d]-fb[d]))
+    # acc holds, per cell, diff of "per-cell constant" -- partial terms were added as single-cell bumps
+    cov=np.cumsum(acc,axis=1)[:,1:nI+1]/ss
+    J,I=np.nonzero(cov>1e-12)
+    return I+i0, J+j0, np.minimum(cov[J,I],1.0)
+
+
 def copper2d_resistance(board, net: str, pair, copper_oz: float, thickness_mm: float, h: float = 0.0125,
-                        k_term: float = 1e4, SS: int = 4):
+                        k_term: float = 1e4, SS: int = 4, include_zones: bool = False):
     """Pad-to-pad resistance (Ω) of one net by a 2-D solve of its copper (plan addendum 2, as corrected in
     addendum 3). Every copper item of the net is drawn on an h-mm grid per layer from KiCad's own shapes (tracks and
     arcs as capsules, pads from KiCad's polygon, vias as discs). Two neighbouring cells conduct σ t times the copper
@@ -544,6 +588,20 @@ def copper2d_resistance(board, net: str, pair, copper_oz: float, thickness_mm: f
             if v.IsOnLayer(ly):
                 shapes.append((ly, "capsule", (c.x * nm, c.y * nm, c.x * nm, c.y * nm, v.GetWidth() * nm / 2.0),
                                ("via", i)))
+    if include_zones:                  # addendum 4: the pour's copper as KiCad filled it (clearances, spokes)
+        for z in board.Zones():
+            if z.GetNetname() != net or z.GetIsRuleArea():
+                continue
+            for ly in stack:
+                if not z.IsOnLayer(ly):
+                    continue
+                ps = z.GetFilledPolysList(ly)
+                ps = pcbnew.SHAPE_POLY_SET(ps)
+                ps.Fracture(pcbnew.SHAPE_POLY_SET.PM_FAST)
+                for k in range(ps.OutlineCount()):
+                    o = ps.Outline(k)
+                    shapes.append((ly, "scan", ([(o.CPoint(j).x * nm, o.CPoint(j).y * nm)
+                                                  for j in range(o.PointCount())],), None))
     pad_key: dict = {}
     for p in pads:
         key = ("pad", p.GetParent().GetReference(), p.GetNumber(), id(p))
@@ -569,6 +627,7 @@ def copper2d_resistance(board, net: str, pair, copper_oz: float, thickness_mm: f
     half = {False: ([], [], [], []), True: ([], [], [], [])}
     for ly, kind, args, tk in shapes:
         P, Q, c = (_cells_capsule(*args, hh, ss=max(SS // 2, 1)) if kind == "capsule"
+                   else _raster_scan(*args, hh, ss=max(SS // 2, 1)) if kind == "scan"
                    else _cells_polygon(*args, hh, ss=max(SS // 2, 1)))
         for t_ in ((False, True) if tk is not None else (False,)):
             Ls_, Ps_, Qs_, Cs_ = half[t_]
