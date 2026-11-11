@@ -252,6 +252,39 @@ temperature, aero (not used here), setup and driver. This test does not show tha
 wrong. It shows that a public spec sheet is not enough input to rank autocross pace. A team that loads its own
 tire data, aero map and track gives the model what this test withheld. That is the next test (below).
 
+### Other organizers, same cars: FS Czech and FS Italy
+
+Every test above is scored against one organizer: FSG, with one track and one timing system. Teams race the same
+car at other events in the same season. [`other-events/REGISTRATION.md`](../benchmarks/ledger/other-events/REGISTRATION.md)
+fixed this test before any prediction was computed:
+- the team-to-car mapping;
+- calibration factors fitted on the *other* FSG year, so never on the season being predicted, with no team record;
+- the exclusions;
+- the expectation, a skidpad error at or below 5 % at each organizer.
+
+The official results had already been read, so this is a hindcast with a fixed protocol, not a blind test. Full
+tables: [`RESULTS.md`](../benchmarks/ledger/other-events/RESULTS.md).
+
+| Event | Skidpad | Acceleration |
+|---|---|---|
+| FS Czech 2026 (July, before FSG) | 3.6 %, 7 of 10 within 5 %, rank corr. 0.87 | 4.4 %, 8 of 10 |
+| FS Czech 2025 | 4.8 %, 8 of 11 | 11.6 %, 4 of 10 |
+| FS Italy 2026 (September) | 7.7 %, 1 of 3 | 11.7 %, 0 of 4 |
+| FS Italy 2025 | 4.1 %, 1 of 2 | 19.6 %, 1 of 2 |
+| **Pooled, v2** | **4.6 %, 17 of 26** (v1: 9.2 %, 7 of 26) | **9.5 %, 13 of 26** (v1: 10.5 %, 7 of 26) |
+
+- **Skidpad carries over to another organizer.** At FS Czech, the v2 error is 3.6 % and 4.8 %, as registered,
+  with factors fitted on FSG alone. That's the same level as at FSG.
+- **FS Italy is faster than FSG, consistently.** Both events at Varano 2026 come out with a positive bias (+6 % on
+  skidpad, +12 % on acceleration): the cars ran quicker than an FSG-calibrated prediction. Only 3–4 cars were
+  scored, so it's a hint of a track and surface offset, not a finding.
+- **Acceleration stays the weak event.** At FS Czech 2025, every car ran slower than predicted (bias −11.6 %),
+  the opposite of FS Italy. This supports the earlier finding: launch, traction control and conditions move
+  acceleration more than a spec sheet can capture.
+- **Coverage.** Only teams with published FSG car data for that season can be predicted, which limits the sample:
+  26 scored skidpad runs and 26 acceleration runs over four events. FS Austria's result files couldn't be reached,
+  FS Netherlands doesn't link its results, and FS East 2026 was cancelled.
+
 ### Where each open point stands
 
 | Point | Status |
@@ -259,7 +292,7 @@ tire data, aero map and track gives the model what this test withheld. That is t
 | All hindcast | Partly closed. Tests A and B were registered before their data was seen. FSG 2027 is the first truly blind test, and v2 and the challenger are frozen and pushed for it. |
 | Calibration looks like a fudge factor | Closed for skidpad: the factor is stable to ±1.6 % across four years and maps to effective grip. Open for acceleration: its factor moves by year. |
 | Acceleration weak | Open. 7.1 % pooled on unseen years. The registered challenger did not fix it. |
-| Small sample | Reduced: four FSG years, 67 scored skidpad runs and 72 acceleration runs. Still one competition. |
+| Small sample | Reduced: four FSG years plus FS Czech and FS Italy: 93 scored skidpad runs and 98 acceleration runs, three organizers. |
 | Autocross / endurance, real suspension | Autocross from public specs fails against a spec-blind baseline (above). A team's own car is needed, and the blind team test below is ready for it. Not yet run. |
 
 ### Frozen for FSG 2027

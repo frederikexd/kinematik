@@ -20,6 +20,7 @@ number is.
 
 ## How to submit
 
+The quickest way to check the published numbers is the [browser notebook](https://colab.research.google.com/github/frederikexd/kinematik/blob/main/notebooks/reproduce.ipynb).
 Open an issue with the **Challenge the physics** template, or the **I reproduced it / I couldn't** template for a
 reproduction. Include the inputs, KinematiK's result, the result you believe is correct, and why.
 

@@ -200,7 +200,8 @@ rpm and ratio data that contradict the official times. A blind entry, sealed bef
 error from 9.7 % to 3.2 % (18 of 22 within 5 %). Acceleration improves only from 7.7 % to 6.8 %, and fewer cars land
 within 5 %, because the factor did not carry across years. v2 is frozen for the FSG 2027 blind test. Registered before their data was seen, tests on FSG 2023 and 2024 gave the following. Skidpad: 4.8 %
 (17 of 26 within 5 %). Acceleration: 7.1 % (17 of 29). The skidpad factor is stable at 1.12–1.16 across four years.
-Autocross pace from public specs did **not** beat a spec-blind baseline.
+Autocross pace from public specs did **not** beat a spec-blind baseline. The same cars at other organizers (FS Czech, FS Italy;
+registered first, factors from the other FSG year): skidpad 4.6 % (17 of 26 within 5 %), acceleration 9.5 %.
 
 ## Not validated yet
 

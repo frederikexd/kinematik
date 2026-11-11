@@ -52,7 +52,7 @@ random typos) ([details](docs/GIGO_BENCHMARK_PLAN.md)):
 | 2, plausibility checks added | 65 of 119 (18 of 20 on the Formula Student car) | 99 of 99 | 0 |
 | 3, cars the checks were never written against | **64 of 83 on two Formula Student cars (77 %, 95 % CI 67–85 %)** | 23 of 23 | 0 |
 
-**Check it yourself, a few minutes on your laptop**
+**Check it yourself**: [in your browser](https://colab.research.google.com/github/frederikexd/kinematik/blob/main/notebooks/reproduce.ipynb) (Google Colab, nothing to install, about 10 minutes), or in a few minutes on your laptop. Think a result is wrong? [Break it](CHALLENGE.md).
 
 EV/ICE powertrain benchmarks:
 

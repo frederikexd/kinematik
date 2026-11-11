@@ -66,6 +66,21 @@ not tests. How-to in `benchmarks/team-test/README.md`; `suspension/team_test.py`
 `suspension/ledger_v2.py`, `scripts/ledger_v2.py`, `tests/test_ledger_v2.py` (100 % statement and branch coverage).
 
 
+
+**Same cars, other organizers.** Registered before any prediction was computed: the ledger now predicts FS Czech
+2025/2026 and FS Italy 2025/2026 from the same teams' FSG car data, with calibration fitted on the other FSG year.
+Skidpad 4.6 % mean error, 17 of 26 within 5 % (FS Czech 3.6 % and 4.8 %); acceleration 9.5 %, 13 of 26. FS Italy
+runs faster than FSG on both events (3–4 cars). `scripts/ledger_v2.py other-events`, `benchmarks/ledger/other-events/`.
+
+**Reproduce it yourself.** The `reproduce` workflow gains a ledger job. It checks every sealed record and frozen
+calibration (`ledger_v2.py verify-all`), re-runs the registered tests, and fails if any published number changes.
+It is byte-identical on the locked versions. `notebooks/reproduce.ipynb` runs the powertrain and suspension
+benchmarks and the ledger checks in Google Colab, with nothing to install.
+
+**Break it.** `CHALLENGE.md` is a standing challenge. Confirmed breaks, wrong results or claims that don't
+reproduce are credited by name, along with independent reproductions, successful or not. New issue template:
+"I reproduced it / I couldn't".
+
 ## 1.5.0 (2026-11-06)
 
 **A first visit that tells you what to do.** The car's inputs moved out of the sidebar into the tabs that use them;
