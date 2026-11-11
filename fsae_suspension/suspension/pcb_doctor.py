@@ -772,14 +772,14 @@ def _pad_primitives(pd, centre, angle_deg) -> list:
     t = math.radians(angle_deg)
     ct, st = math.cos(t), math.sin(t)
 
-    def tf(u, v):
+    def _tf(u, v):
         return (centre[0] + u * ct + v * st, centre[1] - u * st + v * ct)
 
-    def width(n):
+    def _width(n):
         w = _child(n, "width") or _child(_child(n, "stroke") or [], "width")
         return _floats(w)[0] if w and _floats(w) else 0.0
 
-    def filled(n):
+    def _filled(n):
         f = _child(n, "fill")
         return not f or not _atoms(f) or str(_atoms(f)[0].value) in ("yes", "solid")
 
@@ -787,11 +787,11 @@ def _pad_primitives(pd, centre, angle_deg) -> list:
     for n in pr_[1:]:
         if not isinstance(n, list):
             continue
-        k, w = _name(n), width(n)
+        k, w = _name(n), _width(n)
         try:
             if k == "gr_poly":
-                pts = [tf(*_floats(xy, 2)) for xy in _children(_child(n, "pts") or [], "xy")]
-                if len(pts) >= 3 and filled(n):
+                pts = [_tf(*_floats(xy, 2)) for xy in _children(_child(n, "pts") or [], "xy")]
+                if len(pts) >= 3 and _filled(n):
                     out.append(("poly", pts))
                 if w > 1e-3:
                     out += [("capsule", (*a, *b, w / 2.0)) for a, b in zip(pts, pts[1:] + pts[:1])]
@@ -799,25 +799,25 @@ def _pad_primitives(pd, centre, angle_deg) -> list:
                 a = _floats(_child(n, "start") or _child(n, "center"), 2)
                 b = _floats(_child(n, "end"), 2)
                 if k == "gr_rect":
-                    c = [tf(a[0], a[1]), tf(b[0], a[1]), tf(b[0], b[1]), tf(a[0], b[1])]
-                    if filled(n):
+                    c = [_tf(a[0], a[1]), _tf(b[0], a[1]), _tf(b[0], b[1]), _tf(a[0], b[1])]
+                    if _filled(n):
                         out.append(("poly", c))
                     if w > 1e-3:
                         out += [("capsule", (*p, *q, w / 2.0)) for p, q in zip(c, c[1:] + c[:1])]
                 elif k == "gr_circle":
                     r = math.hypot(b[0] - a[0], b[1] - a[1])
-                    cx, cy = tf(*a)
-                    if filled(n) or w > 2 * r:
+                    cx, cy = _tf(*a)
+                    if _filled(n) or w > 2 * r:
                         out.append(("capsule", (cx, cy, cx, cy, r + w / 2.0)))
                     else:                                           # an outline only: a ring of chords
                         ring = [(cx + r * math.cos(2 * math.pi * i / 48), cy + r * math.sin(2 * math.pi * i / 48))
                                 for i in range(49)]
                         out += [("capsule", (*p, *q, w / 2.0)) for p, q in zip(ring, ring[1:])]
                 elif k == "gr_line":
-                    out.append(("capsule", (*tf(*a), *tf(*b), max(w, 1e-3) / 2.0)))
+                    out.append(("capsule", (*_tf(*a), *_tf(*b), max(w, 1e-3) / 2.0)))
                 else:                                               # gr_arc: start, mid, end (KiCad 6+)
                     m = _floats(_child(n, "mid"), 2)
-                    pts = _arc_points_3pt(tf(*a), tf(*m), tf(*b)) if len(m) == 2 else [tf(*a), tf(*b)]
+                    pts = _arc_points_3pt(_tf(*a), _tf(*m), _tf(*b)) if len(m) == 2 else [_tf(*a), _tf(*b)]
                     out += [("capsule", (*p, *q, max(w, 1e-3) / 2.0)) for p, q in zip(pts, pts[1:])]
         except (TypeError, ValueError, IndexError):
             continue
