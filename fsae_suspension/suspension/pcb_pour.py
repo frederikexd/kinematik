@@ -127,7 +127,7 @@ def _cells_polygon(pts, h):
 
 
 def pour_resistance(board: PcbBoard, nid: int, max_pads: int = 10) -> dict:
-    """Worst pad-to-pad resistance (Ω) among the net's first `max_pads` uniquely named pads, with its pours, by a
+    """Worst pad-to-pad resistance (Ω) among the net's first `max_pads` pads (a name two pads share gets @x,y), with its pours, by a
     sheet solve. Returns {"r_ohm", "pair", "h_mm"} or {"r_ohm": None, "why": ...}."""
     from scipy.sparse import coo_matrix
     from scipy.sparse.csgraph import connected_components
@@ -233,15 +233,16 @@ def pour_resistance(board: PcbBoard, nid: int, max_pads: int = 10) -> dict:
     R, C_, G = R[m], C_[m], G[m]
     M = coo_matrix((np.r_[G, G, -G, -G], (np.r_[R, C_, R, C_], np.r_[R, C_, C_, R])), shape=(n, n)).tocsr()
     names = [f"{fp.ref}.{p.number}" for fp, p in pads]
-    unique = [k for k, nm in enumerate(names) if names.count(nm) == 1]
+    names = [nm if names.count(nm) == 1 else f"{nm}@{p.at[0]:.2f},{p.at[1]:.2f}"   # shared names: told apart by place
+             for nm, (fp, p) in zip(names, pads)]
     pnodes = []
-    for k in unique:                                       # pads whose name is unique, on copper
+    for k in range(len(pads)):                             # pads on copper
         q = next((anchor[(("pad", k), ly)] for ly in layers if (("pad", k), ly) in anchor), None)
         if q is not None:
             pnodes.append((names[k], q))
     pnodes = pnodes[:max_pads]
     if len(pnodes) < 2:
-        return {"r_ohm": None, "why": "fewer than two uniquely named pads on copper", "h_mm": h}
+        return {"r_ohm": None, "why": "fewer than two pads on copper", "h_mm": h}
     _nc, lab = connected_components(M != 0, directed=False)
     comp = lab[pnodes[0][1]]
     if any(lab[q] != comp for _n, q in pnodes):

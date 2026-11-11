@@ -618,9 +618,11 @@ def copper2d_resistance(board, net: str, pair, copper_oz: float, thickness_mm: f
                     shapes.append((ly, "scan", ([(o.CPoint(j).x * nm, o.CPoint(j).y * nm)
                                                   for j in range(o.PointCount())],), None))
     pad_key: dict = {}
+    pad_pos: dict = {}
     for p in pads:
         key = ("pad", p.GetParent().GetReference(), p.GetNumber(), id(p))
         pad_key.setdefault(f"{key[1]}.{key[2]}", []).append(key)
+        pad_pos[key] = (p.GetPosition().x * nm, p.GetPosition().y * nm)
         for ly in stack:
             if not p.IsOnLayer(ly):
                 continue
@@ -630,9 +632,15 @@ def copper2d_resistance(board, net: str, pair, copper_oz: float, thickness_mm: f
                 o = ps.Outline(k)
                 shapes.append((ly, "polygon", ([(o.CPoint(j).x * nm, o.CPoint(j).y * nm)
                                                 for j in range(o.PointCount())],), key))
-    if pair[0] not in pad_key or pair[1] not in pad_key or len(pad_key[pair[0]]) != 1 or len(pad_key[pair[1]]) != 1:
-        return None
-    if not shapes:
+    def resolve(name):                 # "REF.NUM", or "REF.NUM@x,y" where two pads share the name
+        base, _, at = name.partition("@")
+        ks = pad_key.get(base, [])
+        if at:
+            x, y = (float(v) for v in at.split(","))
+            ks = [min(ks, key=lambda k: (pad_pos[k][0] - x) ** 2 + (pad_pos[k][1] - y) ** 2)] if ks else []
+        return ks[0] if len(ks) == 1 else None
+    ka, kb = resolve(pair[0]), resolve(pair[1])
+    if ka is None or kb is None or not shapes:
         return None
 
     # All coverages come from one rasterization on a half-size grid (2 × 2 samples per half cell, the same sample
@@ -729,7 +737,6 @@ def copper2d_resistance(board, net: str, pair, copper_oz: float, thickness_mm: f
     m = (R != Cc) & (G > 0)
     R, Cc, G = R[m], Cc[m], G[m]
     M = coo_matrix((np.r_[G, G, -G, -G], (np.r_[R, Cc, R, Cc], np.r_[R, Cc, Cc, R])), shape=(n, n)).tocsr()
-    ka, kb = pad_key[pair[0]][0], pad_key[pair[1]][0]
     a_idx = next((anchor[(ka, ly)] for ly in stack if (ka, ly) in anchor), None)
     b_idx = next((anchor[(kb, ly)] for ly in stack if (kb, ly) in anchor), None)
     if a_idx is None or b_idx is None:
