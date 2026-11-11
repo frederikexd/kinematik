@@ -27,6 +27,7 @@ from .pcb_doctor import (OZ_TO_UM, RHO_CU_20C, ALPHA_CU, PcbBoard, via_resistanc
 POUR_TEMP_C = 60.0          # the nodal solve's copper temperature (ambient 40 °C + 20 °C), °C
 MAX_CELLS_PER_LAYER = 3_000_000
 _SS = 3                     # samples per cell edge
+PAD_CELL_SHARE = 0.01       # a cell touching a pad's copper joins the pad (0.5 read 0.1-0.8 % higher on the demo pours)
 
 
 def pour_grid_mm(board: PcbBoard, nid: int) -> float:
@@ -149,7 +150,7 @@ def pour_resistance(board: PcbBoard, nid: int, max_pads: int = 10) -> dict:
         for ly in (layers if p.through else [side]):
             if ly in parts:
                 parts[ly].append((I, J, c))
-                m = c >= 0.5
+                m = c >= PAD_CELL_SHARE
                 term.append((ly, I[m], J[m], ("pad", k)))
     vias = board.vias_of(nid)
     for k, v in enumerate(vias):
