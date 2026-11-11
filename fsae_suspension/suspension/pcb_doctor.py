@@ -292,6 +292,7 @@ class PcbZone:
     net: int
     layer: str
     outline: list = field(default_factory=list)     # [(x, y), ...]
+    spoke_mm: float = 0.5                             # thermal relief spoke width, mm (KiCad's thermal_bridge_width)
 
     def contains(self, pt, tol: float = 0.0) -> bool:
         """Ray-cast point-in-polygon, with an optional outward tolerance so a
@@ -719,6 +720,14 @@ def parse_kicad_pcb(text: str) -> PcbBoard:
             zlayers = [str(a.value).strip('"') for a in _atoms(zl)] if zl else []
             zlayers = [l for l in zlayers if l.endswith(".Cu")] or ["F.Cu"]
             filled = _children(node, "filled_polygon")
+            spoke = 0.5
+            fl = _child(node, "fill")
+            tb = _child(fl, "thermal_bridge_width") if fl else None
+            if tb and _atoms(tb):
+                try:
+                    spoke = float(_atoms(tb)[0].value)
+                except (TypeError, ValueError):
+                    pass
             for poly in (filled or _children(node, "polygon")):
                 pts_node = _child(poly, "pts")
                 if not pts_node:
@@ -735,7 +744,7 @@ def parse_kicad_pcb(text: str) -> PcbBoard:
                         players = [nm_]
                 for lay in players:
                     board.zones.append(
-                        PcbZone(net=znid, layer=lay, outline=pts))
+                        PcbZone(net=znid, layer=lay, outline=pts, spoke_mm=spoke))
     return board
 
 

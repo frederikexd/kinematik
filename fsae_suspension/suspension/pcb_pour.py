@@ -12,9 +12,10 @@ by solving the current through the net's copper as a sheet: tracks, pads, via
 rings and the pours KiCad filled (`filled_polygon`, clearances and thermal
 spokes included), each drawn on a square grid per copper layer.
 
-Benchmarked against an independent 2-D solve of KiCad's own shapes
-(docs/ELECTRICAL_BENCHMARK_PLAN.md, addendum 4). It shares the physics with that
-reference, not the geometry reading, the grid or the code.
+Benchmarked against a 2-D solve of KiCad's own shapes (docs/ELECTRICAL_BENCHMARK_PLAN.md, addenda 4 and 6). Since
+round 2 it uses the same numerical method as that reference (links by the copper fraction of the box around each
+cell face, coverage as area fractions, pads and via rings as near-perfect conductors), implemented again here on
+KinematiK's own reading of the file; it shares the method, not the geometry reading or the code.
 """
 from __future__ import annotations
 
@@ -25,17 +26,17 @@ import numpy as np
 from .pcb_doctor import (OZ_TO_UM, RHO_CU_20C, ALPHA_CU, PcbBoard, via_resistance_ohm)
 
 POUR_TEMP_C = 60.0          # the nodal solve's copper temperature (ambient 40 °C + 20 °C), °C
-MAX_CELLS_PER_LAYER = 3_000_000
-_SS = 3                     # samples per cell edge
-PAD_CELL_SHARE = 0.01       # a cell touching a pad's copper joins the pad (0.5 read 0.1-0.8 % higher on the demo pours)
+MAX_CELLS_PER_LAYER = 1_500_000
+_SS = 2                     # samples per half-cell edge (4 × 4 per cell)
+K_TERM = 1e4                # pads and via rings conduct this many times better than the copper (unitless)
 
 
 def pour_grid_mm(board: PcbBoard, nid: int) -> float:
-    """Cell size (mm): at least 6 cells across the narrowest track of the net (0.5 mm assumed for pours' spokes),
-    between 0.025 and 0.1 mm."""
+    """Cell size (mm): at least 12 cells across the narrowest feature that carries current (tracks and the pours'
+    thermal spokes), between 0.0125 and 0.05 mm."""
     ws = [s.width_mm for s in board.segments_of(nid) if s.width_mm > 0]
-    w = min(ws + ([0.5] if any(z.net == nid for z in board.zones) else []) or [0.5])
-    return min(max(w / 6.0, 0.025), 0.1)
+    ws += [z.spoke_mm for z in board.zones if z.net == nid and z.spoke_mm > 0]
+    return min(max(min(ws or [0.5]) / 12.0, 0.0125), 0.05)
 
 
 def _samples(i0, i1, j0, j1, h):
@@ -126,77 +127,104 @@ def _cells_polygon(pts, h):
 
 
 def pour_resistance(board: PcbBoard, nid: int, max_pads: int = 10) -> dict:
-    """Worst pad-to-pad resistance (Ω) among the net's first `max_pads` pads, with its pours, by a sheet solve.
-    Returns {"r_ohm", "pair", "h_mm"} or {"r_ohm": None, "why": ...}."""
+    """Worst pad-to-pad resistance (Ω) among the net's first `max_pads` uniquely named pads, with its pours, by a
+    sheet solve. Returns {"r_ohm", "pair", "h_mm"} or {"r_ohm": None, "why": ...}."""
     from scipy.sparse import coo_matrix
     from scipy.sparse.csgraph import connected_components
     h = pour_grid_mm(board, nid)
+    hh = h / 2.0
     rho = RHO_CU_20C * (1 + ALPHA_CU * (POUR_TEMP_C - 20.0))
     sheet_g = board.copper_oz * OZ_TO_UM * 1e-6 / rho
     layers = list(board.copper_layers) or ["F.Cu", "B.Cu"]
     lidx = {ly: i for i, ly in enumerate(layers)}
-    parts: dict = {ly: [] for ly in layers}
+    off = 1 << 20
+    allp: list = []                                        # half-cell coverage: (layer, P, Q, c, is_terminal)
     for s in board.segments_of(nid):
-        if s.layer in parts:
-            parts[s.layer].append(_cells_track(s, h))
+        if s.layer in lidx:
+            allp.append((s.layer, *_cells_track(s, hh), False))
     for z in board.zones:
-        if z.net == nid and z.layer in parts and len(z.outline) >= 3:
-            parts[z.layer].append(_cells_polygon(z.outline, h))
+        if z.net == nid and z.layer in lidx and len(z.outline) >= 3:
+            allp.append((z.layer, *_cells_polygon(z.outline, hh), False))
     pads = [(fp, p) for fp in board.footprints for p in fp.pads if p.net == nid]
-    term: list = []                                        # (layer, I, J, node key)
+    anchors: list = []                                     # (layer, x, y, terminal key)
     for k, (fp, p) in enumerate(pads):
-        I, J, c = _cells_pad(p, h)
+        I, J, c = _cells_pad(p, hh)
         side = p.layer or ("B.Cu" if fp.layer == "B.Cu" else "F.Cu")
         for ly in (layers if p.through else [side]):
-            if ly in parts:
-                parts[ly].append((I, J, c))
-                m = c >= PAD_CELL_SHARE
-                term.append((ly, I[m], J[m], ("pad", k)))
+            if ly in lidx:
+                allp.append((ly, I, J, c, True))
+                anchors.append((ly, p.at[0] + p.copper_offset[0], p.at[1] + p.copper_offset[1], ("pad", k)))
     vias = board.vias_of(nid)
     for k, v in enumerate(vias):
-        I, J, c = _cells_disc(v.at[0], v.at[1], v.size_mm / 2.0, h)
+        I, J, c = _cells_disc(v.at[0], v.at[1], v.size_mm / 2.0, hh)
         for ly in layers:
-            parts[ly].append((I, J, c))
-            m = c >= 0.5
-            term.append((ly, I[m], J[m], ("via", k, ly)))
-    off = 1 << 20
-    keys, covs = [], []
-    for ly, lst in parts.items():
-        if not lst:
-            continue
-        I = np.concatenate([q[0] for q in lst]).astype(np.int64)
-        J = np.concatenate([q[1] for q in lst]).astype(np.int64)
-        C = np.concatenate([q[2] for q in lst])
-        k_ = (np.int64(lidx[ly]) << 42) | ((I + off) << 21) | (J + off)
-        o = np.lexsort((C, k_))
-        k_, C = k_[o], C[o]
-        last = np.r_[k_[1:] != k_[:-1], True]
-        if last.sum() > MAX_CELLS_PER_LAYER:
-            return {"r_ohm": None, "why": "too large for the sheet solve", "h_mm": h}
-        keys.append(k_[last]); covs.append(np.minimum(C[last], 1.0))
-    if not keys:
+            allp.append((ly, I, J, c, True))
+            anchors.append((ly, v.at[0], v.at[1], ("via", k)))
+    if not allp:
         return {"r_ohm": None, "why": "no copper", "h_mm": h}
-    key, cov = np.concatenate(keys), np.concatenate(covs)
-    o = np.argsort(key); key, cov = key[o], cov[o]
+
+    def union(terms_only):
+        ks, cs = [], []
+        for ly, I, J, c, t in allp:
+            if terms_only and not t:
+                continue
+            ks.append((np.int64(lidx[ly]) << 42) | ((I.astype(np.int64) + off) << 21) | (J.astype(np.int64) + off))
+            cs.append(c)
+        if not ks:
+            return np.zeros(0, np.int64), np.zeros(0)
+        k_, c_ = np.concatenate(ks), np.concatenate(cs)
+        o = np.lexsort((c_, k_))
+        k_, c_ = k_[o], c_[o]
+        last = np.r_[k_[1:] != k_[:-1], True]
+        return k_[last], np.minimum(c_[last], 1.0)
+
+    def gather(k_, c_, fx, fy):
+        """Half cells (key, coverage) into boxes of 2 × 2: cells (fx = fy = 0) or face boxes (shift 1 on an axis)."""
+        L = k_ >> 42
+        P = ((k_ >> 21) & ((1 << 21) - 1)) - off
+        Q = (k_ & ((1 << 21) - 1)) - off
+        I, J = (P - fx) // 2, (Q - fy) // 2
+        kk = (L << 42) | ((I + off) << 21) | (J + off)
+        u, inv = np.unique(kk, return_inverse=True)
+        return u, np.minimum(np.bincount(inv, weights=c_) / 4.0, 1.0)
+
+    Ha, Ht = union(False), union(True)
+    key, _cov = gather(*Ha, 0, 0)
     n = key.size
-    node = np.arange(n)
-    rep: dict = {}
-    for ly, I, J, tk in term:                              # merge each terminal's cells into one node
-        kk = (np.int64(lidx[ly]) << 42) | ((I.astype(np.int64) + off) << 21) | (J.astype(np.int64) + off)
-        pos = np.searchsorted(key, kk)
-        pos = pos[(pos < n) & (key[np.minimum(pos, n - 1)] == kk)]
-        if pos.size:
-            r0 = rep.setdefault(tk, int(pos[0]))
-            node[pos] = r0
+    per_layer = np.bincount((key >> 42).astype(int))
+    if per_layer.max() > MAX_CELLS_PER_LAYER:
+        return {"r_ohm": None, "why": "too large for the sheet solve", "h_mm": h}
+
+    def lookup(keys, k_, c_):
+        if k_.size == 0:
+            return np.zeros(keys.size)
+        pos = np.searchsorted(k_, keys)
+        ok = (pos < k_.size) & (k_[np.minimum(pos, k_.size - 1)] == keys)
+        return np.where(ok, c_[np.minimum(pos, k_.size - 1)], 0.0)
+
     rows, cols, gs = [], [], []
-    for d in ((1 << 21), 1):
-        nk = key + d
+    for fx, fy, step in ((1, 0, np.int64(1) << 21), (0, 1, np.int64(1))):
+        fk, fc = gather(*Ha, fx, fy)
+        tk, tc = gather(*Ht, fx, fy)
+        nk = key + step
         pos = np.searchsorted(key, nk)
         ok = (pos < n) & (key[np.minimum(pos, n - 1)] == nk)
         a, b = np.nonzero(ok)[0], pos[ok]
-        rows.append(node[a]); cols.append(node[b]); gs.append(sheet_g * 0.5 * (cov[a] + cov[b]))
-    for k, v in enumerate(vias):                           # barrels between successive layers
-        ns = [rep[("via", k, ly)] for ly in layers if ("via", k, ly) in rep]
+        g = sheet_g * (lookup(key[a], fk, fc) + K_TERM * lookup(key[a], tk, tc))
+        rows.append(a); cols.append(b); gs.append(g)
+    anchor: dict = {}
+    for ly, x, y, tk in anchors:                           # the cell holding each terminal's centre, per layer
+        ck = (np.int64(lidx[ly]) << 42) | ((np.int64(math.floor(x / h)) + off) << 21) | (np.int64(math.floor(y / h)) + off)
+        i_ = int(np.searchsorted(key, ck))
+        if i_ < n and key[i_] == ck:
+            anchor.setdefault((tk, ly), i_)
+    big = sheet_g * K_TERM * 100.0
+    for k in range(len(pads)):                             # a pad on several layers is one conductor through its hole
+        a_ = [anchor[(("pad", k), ly)] for ly in layers if (("pad", k), ly) in anchor]
+        for x, y in zip(a_, a_[1:]):
+            rows.append(np.array([x])); cols.append(np.array([y])); gs.append(np.array([big]))
+    for k, v in enumerate(vias):                           # via barrels between the layers they reach
+        ns = [anchor[(("via", k), ly)] for ly in layers if (("via", k), ly) in anchor]
         r_seg = via_resistance_ohm(v.drill_mm, board.board_thickness_mm, temp_c=POUR_TEMP_C) / max(len(layers) - 1, 1)
         for x, y in zip(ns, ns[1:]):
             rows.append(np.array([x])); cols.append(np.array([y])); gs.append(np.array([1.0 / r_seg]))
@@ -204,18 +232,24 @@ def pour_resistance(board: PcbBoard, nid: int, max_pads: int = 10) -> dict:
     m = (R != C_) & (G > 0)
     R, C_, G = R[m], C_[m], G[m]
     M = coo_matrix((np.r_[G, G, -G, -G], (np.r_[R, C_, R, C_], np.r_[R, C_, C_, R])), shape=(n, n)).tocsr()
-    pnodes = [(f"{fp.ref}.{p.number}", rep[("pad", k)]) for k, (fp, p) in enumerate(pads) if ("pad", k) in rep]
+    names = [f"{fp.ref}.{p.number}" for fp, p in pads]
+    unique = [k for k, nm in enumerate(names) if names.count(nm) == 1]
+    pnodes = []
+    for k in unique:                                       # pads whose name is unique, on copper
+        q = next((anchor[(("pad", k), ly)] for ly in layers if (("pad", k), ly) in anchor), None)
+        if q is not None:
+            pnodes.append((names[k], q))
     pnodes = pnodes[:max_pads]
     if len(pnodes) < 2:
-        return {"r_ohm": None, "why": "fewer than two pads on copper", "h_mm": h}
+        return {"r_ohm": None, "why": "fewer than two uniquely named pads on copper", "h_mm": h}
     _nc, lab = connected_components(M != 0, directed=False)
     comp = lab[pnodes[0][1]]
     if any(lab[q] != comp for _n, q in pnodes):
         return {"r_ohm": None, "why": "pads not joined by copper", "h_mm": h}
-    keep = np.where((lab == comp) & (node == np.arange(n)))[0]
+    keep = np.where(lab == comp)[0]
 
     def resist_from(g_node):
-        """Effective resistance from one pad to every pad (ground the first, unit current in at each)."""
+        """Effective resistance from one pad to every other (ground it, unit current in at each)."""
         kk = keep[keep != g_node]
         where = np.full(n, -1); where[kk] = np.arange(kk.size)
         A = M[kk][:, kk].tocsr()
@@ -246,7 +280,7 @@ def _solve(A, B):
         Mp = ml.aspreconditioner(cycle="V")
         out = np.zeros_like(B)
         for i in range(B.shape[1]):
-            out[:, i], _info = cg(A, B[:, i], rtol=1e-10, atol=0.0, maxiter=4000, M=Mp)
+            out[:, i], _info = cg(A, B[:, i], rtol=1e-11, atol=0.0, maxiter=6000, M=Mp)
         return out
     except ImportError:
         from scipy.sparse.linalg import spsolve
