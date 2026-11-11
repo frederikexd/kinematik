@@ -3,6 +3,13 @@
 
 ## Unreleased
 
+**Electrical benchmark: native Altium, KiCad 9, pours round 3.**
+- Six boards designed in Altium: 30 of 30 counts equal Altium Designer 26.11.1.
+- Four KiCad 8/9 team boards read exactly as KiCad 9.0.3 reads them.
+- Held-out net resistance on those boards: 70 of 95 within 2 %, all within 10 %. Short pad-to-pad nets miss.
+- The pour estimate now reads KiCad custom pads and KiCad 5 pour strokes. Held out on 19 converged nets: 19 of 19 within 2 %.
+- The KiCad 9 export kit is fixed for KiCad 9's API.
+
 **Prediction ledger: KinematiK against real cars.** KinematiK now predicts official Formula Student skidpad and
 75 m acceleration times from each team's own published car data (formulastudent.de team pages). It seals the
 predictions with a SHA-256 fingerprint of the code that made them, then scores them against the organizers' timing.
