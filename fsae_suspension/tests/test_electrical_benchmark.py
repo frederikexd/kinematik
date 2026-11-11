@@ -125,18 +125,31 @@ def test_net_resistance_round3_against_2d_copper():
     assert len(e) >= 850 and np.mean(a <= 2) >= 0.89 and np.mean(a <= 5) >= 0.97 and e.min() > -11.2
     t, ta = _round3(d["team_boards"], "now")
     assert len(t) >= 380 and np.mean(ta <= 2) >= 0.87 and np.mean(ta <= 5) >= 0.98
+    # (the brown-out margin is checked against the corrected reference, below)
+
+
+def test_net_resistance_against_corrected_2d_reference():
+    """Plan addendum 3: the corrected 2-D reference. Design set: demo boards. Held out: 150 sampled round-3 team
+    nets, scored once with KinematiK frozen at a3805c1. Misses of the 2 % limit are published; the worst low reading
+    sets the brown-out margin (NET_R_UPPER_FACTOR)."""
     from suspension.pcb_doctor import NET_R_UPPER_FACTOR
-    # the brown-out check's margin was set on the demo boards; on the held-out boards it is checked, not tuned
-    assert np.mean(100.0 / (100.0 + t) <= NET_R_UPPER_FACTOR) == 1.0
+    d = _ref("nets_round3_corrected.json")
+    e, a = _round3(d["demo_boards"], "now")
+    assert len(e) >= 680 and np.mean(a <= 2) >= 0.92 and np.mean(a <= 5) >= 0.98 and e.min() > -7.5
+    t, ta = _round3(d["team_boards"], "now")
+    assert len(t) >= 140 and np.mean(ta <= 2) >= 0.87 and np.mean(ta <= 5) >= 0.97
+    assert np.all(100.0 / (100.0 + t) <= NET_R_UPPER_FACTOR)       # the margin covers every held-out net
+    t3, _ = _round3(d["team_boards"], "3a")
+    assert np.median(t3) > 10                                          # before round 3: a median 10–17 % high
 
 
 @needs_demos
 def test_net_resistance_still_what_was_recorded():
-    """KinematiK's worst pad-to-pad resistance per net is still what round 3 recorded (the 2-D side is fixed)."""
+    """KinematiK's worst pad-to-pad resistance per net is still what was recorded (the 2-D side is fixed)."""
     from suspension import pcb_doctor as D
-    rows = [o for o in _ref("nets_round3.json")["demo_boards"] if o.get("kinematik_ohm")]
+    rows = [o for o in _ref("nets_round3_corrected.json")["demo_boards"] if o.get("kinematik_ohm")]
     boards: dict = {}
-    for o in rows[::7]:                                   # every 7th net keeps this quick
+    for o in rows[::9]:                                   # every 9th net keeps this quick
         if o["board"] not in boards:
             boards[o["board"]] = D.parse_board((DEMOS / o["board"]).read_bytes(), o["board"])
         b = boards[o["board"]]

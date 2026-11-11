@@ -20,7 +20,8 @@ KinematiK against the recorded references on every run without needing the tools
 | **B1.** Precharge vs SPICE | 4 circuits, one with the resistor shorted mid-charge | 0.1 % | **Pass, worst 0.001 %** |
 | **B2.** Pack over a lap vs SPICE | 520 points, 70 kW peak, 22.5 kW regen | 0.5 % V, 1 % I, 0.1 pp charge | **Pass: 0.0011 % V, 0.0011 % I, 0.0004 pp** |
 | **B3.** Net resistance on real boards vs SPICE (1-D) | 963 nets | 2 % per net | **Miss.** Round 1: 61.7 % within 2 %, worst −98.5 %. Four flaws fixed; after: 72.5 % within 2 %, 91.8 % within 10 %, worst −24 % (same boards) |
-| **B4.** Net resistance vs a 2-D copper solve, round 3 | 888 demo-board nets; **395 held-out nets on 13 Formula Student team boards** | 2 % per net | **Still misses 2 % on about one net in eight, now within 5 % on 98 %.** Held out: 87.8 % within 2 %, 98.2 % within 5 %, 99.2 % within 10 %, median −0.40 %, worst −11.2 % / +18.0 %. Before: 8.1 % within 2 %, median +14.6 % |
+| **B4.** Net resistance vs a 2-D copper solve, round 3 (as first published) | 888 demo-board nets; 395 held-out nets on 13 FS team boards | 2 % per net | Held out: 87.8 % within 2 %, 98.2 % within 5 %. **Superseded by B5:** the reference read thin diagonal tracks up to 8 % high |
+| **B5.** Net resistance vs the **corrected** 2-D solve | 681 demo-board nets (design); **142 sampled held-out nets on FS team boards** | 2 % per net | **Still misses 2 % on about one net in eight, and errs high when it misses.** Held out: 87.3 % within 2 %, 97.9 % within 5 %, 98.6 % within 10 %, median +0.55 %, **worst low −3.1 %**, worst high +21.2 %. Before round 3: 2.8 % within 2 %, median +16.9 % |
 | **A2.** Board reading vs **Altium Designer 26.11.1** | 3 boards imported into Altium and saved as binary `.PcbDoc`: 9,429 tracks, 180 arcs, 901 vias, 2,763 pads, 346 components, 467 nets | exact counts; length 0.1 % | **Pass after two reader fixes it exposed.** Every count equals Altium's own; net lengths within 0.04 % of KiCad's original. First read: StickHub 289 pads and 90 components (Altium: 278, 94) |
 | **C.** Microstrip impedance vs field solver | 5 single-ended, 6 differential | 5 % / 10 % | **Round 1 miss:** single-ended −8.3 % and −6.4 % at the range ends. Formula replaced. **Round 2, unseen geometries: 10 of 10**, worst 3.4 % |
 | **C2.** Microstrip impedance vs **Altium Designer 26.11.1** | the same 21 cross-sections in Altium's Layer Stack Manager, plus 5 extras | 5 % / 10 % | **21 of 21.** Single-ended worst −1.9 %, differential worst +4.0 %. Altium and atlc agree within 1.6 % on every case |
@@ -138,6 +139,38 @@ saved each as a binary `.PcbDoc`, and read Altium's own counts from Board Inform
   components, 278 pads, 87 vias; video 7,951 tracks; pic_programmer 63 components, 247 pads, 6 vias. Against KiCad's
   original, the only difference is three zero-length tracks on StickHub that Altium's importer drops. The routed
   length of all 467 nets is within 0.04 % of KiCad's.
+
+## B5. Net resistance against the corrected 2-D reference
+
+Plan addendum 3 and its amendments. While looking into the nets that still missed after round 3, refining the grid
+moved the 2-D answer toward KinematiK on StickHub's thin diagonal tracks: the reference itself was off, by up to
+8 % high, from two discretization flaws (links conducted by the smaller cell's coverage; pads snapped to whole
+cells). The corrected solve passes a rotation test (the same pad-track-pad at 0°, 15°, 30° and 45° agrees within
+0.9 % and converges on the exact value) and is solved per net with at least 24 cells across the narrowest track;
+one net in five is also solved at twice the cell size, a median difference of 0.12–0.14 %
+(`benchmarks/electrical/nets_round3_corrected.json`).
+
+**Changes, designed on the demo boards only, then frozen (a3805c1):**
+1. A track end whose copper only touches a pad joins it through that copper, and only if its track doesn't carry on
+   to the pad anyway. Joining every such end at 0 Ω made a second path beside arcs.
+2. A pad is tested across the track's whole width: a track running alongside a pad with its edge on the pad hands
+   its current over there (kit-dev, C205 to U202, read 34 % high).
+3. The brown-out margin is 1.10 (worst low on the demo boards −7.3 %), down from 1.15.
+
+| | Nets | Within 2 % | Within 5 % | Within 10 % | Median | Worst low / high |
+|---|---|---|---|---|---|---|
+| Demo boards (design), before round 3 | 685 | 3.4 % | 16.6 % | 40.4 % | +11.8 % | −21.8 % / +193 % |
+| Demo boards (design), now | 681 | 92.5 % | 99.0 % | 99.7 % | +0.41 % | −7.3 % / +16.5 % |
+| **Team boards (held out), before round 3** | 142 | 2.8 % | 16.2 % | 30.3 % | +16.9 % | −5.1 % / +194 % |
+| **Team boards (held out), now** | **142** | **87.3 %** | **97.9 %** | **98.6 %** | **+0.55 %** | **−3.1 % / +21.2 %** |
+
+With 142 nets the held-out share within 2 % is known to about ±5.5 percentage points. **The 2 % limit is still
+missed on about one net in eight.** The misses are short nets of a few milliohms and they read *high*: the worst
+low reading on the held-out boards is −3.1 %, well inside the brown-out margin, so they can raise a needless
+warning but not hide a brown-out.
+
+**Round 4 did not run.** Its registered repositories held no board KiCad 7 can read (KiCad 8–9 files, or empty
+templates), and only KiCad 7 runs here; recorded in the plan before any held-out result was seen.
 
 ## C. Controlled impedance (atlc field solver)
 
