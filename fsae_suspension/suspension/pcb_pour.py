@@ -163,7 +163,7 @@ def pour_resistance(board: PcbBoard, nid: int, max_pads: int = 10) -> dict:
     if not allp:
         return {"r_ohm": None, "why": "no copper", "h_mm": h}
 
-    def union(terms_only):
+    def _union(terms_only):
         ks, cs = [], []
         for ly, I, J, c, t in allp:
             if terms_only and not t:
@@ -178,7 +178,7 @@ def pour_resistance(board: PcbBoard, nid: int, max_pads: int = 10) -> dict:
         last = np.r_[k_[1:] != k_[:-1], True]
         return k_[last], np.minimum(c_[last], 1.0)
 
-    def gather(k_, c_, fx, fy):
+    def _gather(k_, c_, fx, fy):
         """Half cells (key, coverage) into boxes of 2 × 2: cells (fx = fy = 0) or face boxes (shift 1 on an axis)."""
         L = k_ >> 42
         P = ((k_ >> 21) & ((1 << 21) - 1)) - off
@@ -188,14 +188,14 @@ def pour_resistance(board: PcbBoard, nid: int, max_pads: int = 10) -> dict:
         u, inv = np.unique(kk, return_inverse=True)
         return u, np.minimum(np.bincount(inv, weights=c_) / 4.0, 1.0)
 
-    Ha, Ht = union(False), union(True)
-    key, _cov = gather(*Ha, 0, 0)
+    Ha, Ht = _union(False), _union(True)
+    key, _cov = _gather(*Ha, 0, 0)
     n = key.size
     per_layer = np.bincount((key >> 42).astype(int))
     if per_layer.max() > MAX_CELLS_PER_LAYER:
         return {"r_ohm": None, "why": "too large for the sheet solve", "h_mm": h}
 
-    def lookup(keys, k_, c_):
+    def _lookup(keys, k_, c_):
         if k_.size == 0:
             return np.zeros(keys.size)
         pos = np.searchsorted(k_, keys)
@@ -204,13 +204,13 @@ def pour_resistance(board: PcbBoard, nid: int, max_pads: int = 10) -> dict:
 
     rows, cols, gs = [], [], []
     for fx, fy, step in ((1, 0, np.int64(1) << 21), (0, 1, np.int64(1))):
-        fk, fc = gather(*Ha, fx, fy)
-        tk, tc = gather(*Ht, fx, fy)
+        fk, fc = _gather(*Ha, fx, fy)
+        tk, tc = _gather(*Ht, fx, fy)
         nk = key + step
         pos = np.searchsorted(key, nk)
         ok = (pos < n) & (key[np.minimum(pos, n - 1)] == nk)
         a, b = np.nonzero(ok)[0], pos[ok]
-        g = sheet_g * (lookup(key[a], fk, fc) + K_TERM * lookup(key[a], tk, tc))
+        g = sheet_g * (_lookup(key[a], fk, fc) + K_TERM * _lookup(key[a], tk, tc))
         rows.append(a); cols.append(b); gs.append(g)
     anchor: dict = {}
     for ly, x, y, tk in anchors:                           # the cell holding each terminal's centre, per layer
@@ -248,7 +248,7 @@ def pour_resistance(board: PcbBoard, nid: int, max_pads: int = 10) -> dict:
         return {"r_ohm": None, "why": "pads not joined by copper", "h_mm": h}
     keep = np.where(lab == comp)[0]
 
-    def resist_from(g_node):
+    def _resist_from(g_node):
         """Effective resistance from one pad to every other (ground it, unit current in at each)."""
         kk = keep[keep != g_node]
         where = np.full(n, -1); where[kk] = np.arange(kk.size)
@@ -260,9 +260,9 @@ def pour_resistance(board: PcbBoard, nid: int, max_pads: int = 10) -> dict:
         X = _solve(A, B)
         return {q: float(X[where[q], i]) for i, q in enumerate(targets)}
 
-    r0 = resist_from(pnodes[0][1])                          # double sweep: farthest from the first, then from it
+    r0 = _resist_from(pnodes[0][1])                          # double sweep: farthest from the first, then from it
     far = max(r0, key=r0.get)
-    r1 = resist_from(far)
+    r1 = _resist_from(far)
     best = max(r1.items(), key=lambda t: t[1])
     name = {q: nm for nm, q in pnodes}
     return {"r_ohm": best[1], "pair": (name[far], name[best[0]]), "h_mm": h}
