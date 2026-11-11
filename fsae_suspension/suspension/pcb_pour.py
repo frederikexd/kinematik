@@ -132,19 +132,21 @@ def _cells_polygon(pts, h):
     return _reduce(inside, i0, j0)
 
 
-def pour_resistance(board: PcbBoard, nid: int, max_pads: int = 10) -> dict:
-    """Worst pad-to-pad resistance (Ω) among the net's first `max_pads` pads (a name two pads share gets @x,y), with
-    its pours, by a sheet solve that checks its own grid: it is solved again between the same two pads at half the
+def pour_resistance(board: PcbBoard, nid: int, max_pads: int = 10, pair=None, max_cells=None) -> dict:
+    """Worst pad-to-pad resistance (Ω) among the net's first `max_pads` pads (a name two pads share gets @x,y), or
+    between the two pads named in `pair`, with the net's pours if it has any, by a sheet solve of at most
+    `max_cells` cells per layer (default MAX_CELLS_PER_LAYER) that checks its own grid: it is solved again between the same two pads at half the
     cell size (mm), and at a quarter if those differ by more than GRID_TOL_PCT. Returns {"r_ohm" (the finest solve),
     "pair", "h_mm", "grid_change_pct" (the last change, percent), "converged"} or {"r_ohm": None, "why": ...}.
     `converged` False means the finer grid did not fit in memory or the answer was still moving: an unverified
     estimate, to be read as such."""
-    out = _pour_at(board, nid, pour_grid_mm(board, nid), max_pads)
+    only = frozenset(pair) if pair else None
+    out = _pour_at(board, nid, pour_grid_mm(board, nid), max_pads, only=only, max_cells=max_cells)
     if out.get("r_ohm") is None:
         return out
     out.update(grid_change_pct=None, converged=False)
     for _ in range(2):
-        fine = _pour_at(board, nid, out["h_mm"] / 2.0, max_pads, only=frozenset(out["pair"]))
+        fine = _pour_at(board, nid, out["h_mm"] / 2.0, max_pads, only=frozenset(out["pair"]), max_cells=max_cells)
         if fine.get("r_ohm") is None:                       # too large for memory at this cell size
             break
         change = 100.0 * abs(fine["r_ohm"] - out["r_ohm"]) / fine["r_ohm"]
@@ -154,7 +156,7 @@ def pour_resistance(board: PcbBoard, nid: int, max_pads: int = 10) -> dict:
     return out
 
 
-def _pour_at(board: PcbBoard, nid: int, h: float, max_pads: int = 10, only=None) -> dict:
+def _pour_at(board: PcbBoard, nid: int, h: float, max_pads: int = 10, only=None, max_cells=None) -> dict:
     """One sheet solve at cell size h (mm): the worst pair among the first `max_pads` pads, or the pair named in
     `only`. Returns {"r_ohm", "pair", "h_mm"} or {"r_ohm": None, "why": ...}."""
     from scipy.sparse import coo_matrix
@@ -165,11 +167,15 @@ def _pour_at(board: PcbBoard, nid: int, h: float, max_pads: int = 10, only=None)
     layers = list(board.copper_layers) or ["F.Cu", "B.Cu"]
     lidx = {ly: i for i, ly in enumerate(layers)}
     off = 1 << 20
+    cap = max_cells or MAX_CELLS_PER_LAYER
+    track_mm2 = sum(sg.length_mm * sg.width_mm for sg in board.segments_of(nid))
+    if track_mm2 / (h * h) > cap * max(len(layers), 1):   # the tracks alone are too many cells: refuse before drawing
+        return {"r_ohm": None, "why": "too large for the sheet solve", "h_mm": h}
     for ly in layers:                                      # refuse before drawing anything too large for memory
         area_mm2 = sum(abs(np.dot(np.asarray(z.outline)[:, 0], np.roll(np.asarray(z.outline)[:, 1], 1))
                            - np.dot(np.asarray(z.outline)[:, 1], np.roll(np.asarray(z.outline)[:, 0], 1))) / 2.0
                        for z in board.zones if z.net == nid and z.layer == ly and len(z.outline) >= 3)
-        if area_mm2 / (h * h) > MAX_CELLS_PER_LAYER:
+        if area_mm2 / (h * h) > cap:
             return {"r_ohm": None, "why": "too large for the sheet solve", "h_mm": h}
     allp: list = []                                        # half-cell coverage: (layer, P, Q, c, is_terminal)
     for s in board.segments_of(nid):
@@ -230,7 +236,7 @@ def _pour_at(board: PcbBoard, nid: int, h: float, max_pads: int = 10, only=None)
     key, _cov = _gather(*Ha, 0, 0)
     n = key.size
     per_layer = np.bincount((key >> 42).astype(int))
-    if per_layer.max() > MAX_CELLS_PER_LAYER:
+    if per_layer.max() > cap:
         return {"r_ohm": None, "why": "too large for the sheet solve", "h_mm": h}
 
     def _lookup(keys, k_, c_):

@@ -1097,6 +1097,33 @@ SAFETY_CONTRACT = "false alarms are acceptable; false all-clears are not"
 #  7.3 % above it (1/(1-0.073) = 1.079), rounded up to 1.10.
 NET_R_UPPER_FACTOR = 1.10
 
+#  The 1-D estimate misses by up to 9 % on short pad-to-pad nets (benchmark B6). Where a net is small enough, a 2-D
+#  sheet solve of the same copper between the same two pads replaces it (plan addendum 12). This many cells per layer
+#  keeps one net to a few seconds.
+REFINE_MAX_CELLS = 400_000
+#  The brown-out check holds a converged sheet-solve value to this factor (unitless): the solve's own grid tolerance.
+SHEET_UPPER_FACTOR = 1.02
+
+
+def refined_net_resistance(board: PcbBoard, nid: int, nr: dict = None) -> dict:
+    """The best estimate of a trace-only net's worst pad-to-pad resistance (Ω): the 2-D sheet solve between the 1-D
+    model's worst pair when it converges on its own grid check and fits REFINE_MAX_CELLS, else the 1-D value.
+    Returns {"r_ohm", "pair", "source" ("sheet solve" or "1-D"), "r_1d_ohm", "grid_change_pct"}."""
+    nr = nr if nr is not None else analyze_net(board, nid)
+    r1, pair = nr.get("worst_r_ohm"), nr.get("worst_pair")
+    out = {"r_ohm": r1, "pair": pair, "source": "1-D", "r_1d_ohm": r1, "grid_change_pct": None}
+    if r1 is None or not pair or pair[0] == pair[1] or nid in board.zone_nets:
+        return out
+    try:
+        from . import pcb_pour
+        sh = pcb_pour.pour_resistance(board, nid, pair=tuple(pair), max_cells=REFINE_MAX_CELLS)
+    except (ImportError, MemoryError):                     # no scipy, or no room: the 1-D value stands
+        return out
+    if sh.get("r_ohm") and sh.get("converged"):
+        out.update(r_ohm=sh["r_ohm"], source="sheet solve", grid_change_pct=sh["grid_change_pct"])
+    return out
+
+
 #  The board that comes back from the fab is not the file. Finished copper can
 #  be thinner than ordered (plating and etch tolerance), so the brown-out check
 #  also assumes the copper may be this fraction of its nominal thickness. 0.90
@@ -1999,7 +2026,11 @@ def diagnose(board: PcbBoard, assignments: dict,
         # -- true IR drop → brown-out ------------------------------------------------ #
         volt = float(a.get("voltage_v", rail_v) or rail_v)
         if nr["worst_r_ohm"] is not None and volt <= 60.0:
-            r_up = nr["worst_r_ohm"] * NET_R_UPPER_FACTOR / max(copper_finish, 1e-3)
+            ref_ = refined_net_resistance(board, nid, nr)
+            r_up = nr["worst_r_ohm"] * NET_R_UPPER_FACTOR          # never below the bound the 1-D model gave
+            if ref_["source"] == "sheet solve":
+                r_up = max(r_up, ref_["r_ohm"] * SHEET_UPPER_FACTOR)
+            r_up /= max(copper_finish, 1e-3)
             drop = cur * r_up
             delivered = rail_v - drop
             pr = nr["worst_pair"] or ("?", "?")
@@ -2258,7 +2289,8 @@ def bringup_measurements(board: PcbBoard, nets=None, room_c: float = 22.0,
                          copper_finish: float = COPPER_FINISH_FACTOR) -> list:
     """The bring-up checklist: for each net (default: every net KinematiK can solve), the two pads to measure
     between, the resistance (mΩ) expected at room temperature `room_c` (°C), and the band (mΩ) a good board falls
-    in. Measure with a 4-wire (Kelvin) milliohm meter, probes on the pads, the board unpowered.
+    in. For the nets named in `nets` the expected value is the refined one (`refined_net_resistance`); with no list
+    it is the quick 1-D estimate, so a whole board stays fast. Measure with a 4-wire (Kelvin) milliohm meter, probes on the pads, the board unpowered.
 
     The band combines the model's measured error on held-out boards (2-D reference, docs/ELECTRICAL_BENCHMARK.md
     B5: worst −3.1 % / +21.2 %) with the fab's copper tolerance (±(1 − copper_finish)). Above the band: copper
@@ -2272,7 +2304,8 @@ def bringup_measurements(board: PcbBoard, nets=None, room_c: float = 22.0,
         r = analyze_net(board, nid)
         if r.get("worst_r_ohm") is None:
             continue
-        est = r["worst_r_ohm"] * (1 + _A * (room_c - 20.0)) / (1 + _A * 40.0)    # the solve runs at 60 °C
+        r_best = refined_net_resistance(board, nid, r)["r_ohm"] if nets is not None else r["worst_r_ohm"]
+        est = r_best * (1 + _A * (room_c - 20.0)) / (1 + _A * 40.0)             # the solves run at 60 °C
         rows.append({"net": board.net_name(nid), "pads": r["worst_pair"],
                      "expected_mohm": est * 1e3,
                      "band_mohm": (est / 1.212 / (1 + tol) * 1e3, est / 0.969 / (1 - tol) * 1e3)})

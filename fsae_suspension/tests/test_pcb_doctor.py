@@ -1382,3 +1382,38 @@ class TestEmptyPours(unittest.TestCase):
         self.assertEqual([z.net for z in b.zones if z.net], [1])
         self.assertIn(1, b.zone_nets)
         self.assertTrue(any("saved without being filled" in n for n in b.notes))
+
+
+class TestRefinedNetResistance(unittest.TestCase):
+    """Plan addendum 12: the sheet solve between the 1-D model's worst pair, and what the brown-out check does with it."""
+
+    def _board(self, body):
+        return TestRound3NetResistance._board(body)
+
+    def test_a_plain_track_is_refined_and_agrees_with_rho_l_over_a(self):
+        from suspension.pcb_doctor import refined_net_resistance
+        b = self._board(' (segment (start 0 0) (end 20 0) (width 0.25) (layer "F.Cu") (net 1))\n')
+        r = refined_net_resistance(b, b.net_id("SIG"))
+        self.assertEqual(r["source"], "sheet solve")
+        self.assertAlmostEqual(r["r_ohm"] / TestRound3NetResistance._r(0.25, 19.0), 1.0, delta=0.02)
+        self.assertAlmostEqual(r["r_ohm"] / r["r_1d_ohm"], 1.0, delta=0.04)
+
+    def test_falls_back_to_the_1d_value_when_the_net_is_too_large(self):
+        from suspension import pcb_doctor as D
+        b = self._board(' (segment (start 0 0) (end 20 0) (width 0.25) (layer "F.Cu") (net 1))\n')
+        old = D.REFINE_MAX_CELLS
+        D.REFINE_MAX_CELLS = 100
+        try:
+            r = D.refined_net_resistance(b, b.net_id("SIG"))
+        finally:
+            D.REFINE_MAX_CELLS = old
+        self.assertEqual(r["source"], "1-D")
+        self.assertEqual(r["r_ohm"], r["r_1d_ohm"])
+
+    def test_brownout_bound_is_never_below_the_1d_bound(self):
+        """The check takes the larger of 1-D × 1.10 and sheet × 1.02, so refining can only make it stricter."""
+        from suspension import pcb_doctor as D
+        self.assertGreaterEqual(D.NET_R_UPPER_FACTOR, 1.10)
+        self.assertGreater(D.SHEET_UPPER_FACTOR, 1.0)
+        src = __import__("inspect").getsource(D.diagnose)
+        self.assertIn('r_up = max(r_up, ref_["r_ohm"] * SHEET_UPPER_FACTOR)', src)
