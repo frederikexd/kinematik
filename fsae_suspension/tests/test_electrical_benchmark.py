@@ -226,3 +226,15 @@ def test_trace_heating_against_nbs_measurements():
     r, q = np.array(ratios), np.array(ipc)
     assert r.max() <= 1.05 and 0.86 <= np.median(r) <= 0.92
     assert int(np.sum(q > 1.05)) == 2                                     # plain IPC-2221's misses, on record
+
+
+# --------------------------------------------------------------------------- E. Nets with copper pours ---- #
+def test_pour_estimate_recorded_result():
+    """Plan addendum 4. KinematiK's with-pour estimate (pcb_pour) against the 2-D solve with KiCad's filled zones.
+    Demo pour nets (design) and team-board pour nets (held out, solved once). The held-out result misses the 2 %
+    limit badly; what holds is the direction: it never reads below the reference, so it can't hide a brown-out."""
+    d = _ref("pours.json")
+    for grp, n_min in (("demo_boards", 6), ("team_boards", 17)):
+        rows = [o for o in d[grp] if o.get("copper2d_ohm") and not o.get("excluded")]
+        e = np.array([100.0 * (o["kinematik_ohm"] - o["copper2d_ohm"]) / o["copper2d_ohm"] for o in rows])
+        assert len(e) >= n_min and e.min() > 0.0 and np.all(e < 50.0), grp

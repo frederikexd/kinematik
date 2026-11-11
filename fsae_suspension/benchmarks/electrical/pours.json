@@ -1,0 +1,966 @@
+{
+ "tool": "2-D copper solve with the pour (plan addendum 4): KiCad 7.0.11 filled zones, tracks, pads, vias; cell size narrowest feature / 12 (12.5-50 um); also at twice the cell size",
+ "kinematik": "suspension/pcb_pour.py, frozen at f947524 after design on the demo pour nets",
+ "cap": "1.5 million cells per layer (4 million on the first demo run, which ran out of memory on StickHub GND)",
+ "demo_boards": [
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "GND",
+   "pair": [
+    "Q3.3",
+    "R14.2"
+   ],
+   "kinematik_ohm": 0.034465435087129265,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "copper2d_ohm": 0.03419824899831165,
+   "copper2d_coarse_ohm": 0.03416886293125132
+  },
+  {
+   "board": "custom_pads_test/custom_pads_test.kicad_pcb",
+   "net": "GND",
+   "pair": [
+    "AE1.1",
+    "AE2.1"
+   ],
+   "kinematik_ohm": 0.003697074219931942,
+   "kk_h_mm": 0.06666666666666667,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "excluded": "over the memory cap"
+  },
+  {
+   "board": "ecc83/ecc83-pp.kicad_pcb",
+   "net": "GND",
+   "pair": [
+    "R4.2",
+    "R3.2"
+   ],
+   "kinematik_ohm": 0.006459445068642211,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "copper2d_ohm": 0.006417292501060921,
+   "copper2d_coarse_ohm": 0.006388408417932607
+  },
+  {
+   "board": "ecc83/ecc83-pp_v2.kicad_pcb",
+   "net": "GND",
+   "pair": [
+    "R4.2",
+    "R3.2"
+   ],
+   "kinematik_ohm": 0.014680219455170736,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "copper2d_ohm": 0.014574731241829827,
+   "copper2d_coarse_ohm": 0.014523286324487667
+  },
+  {
+   "board": "flat_hierarchy/flat_hierarchy.kicad_pcb",
+   "net": "GND",
+   "pair": [
+    "C1.2",
+    "P2.19"
+   ],
+   "kinematik_ohm": 0.010818361521478376,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "excluded": "over the memory cap"
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "GND",
+   "pair": [
+    "C2.2",
+    "C6.2"
+   ],
+   "kinematik_ohm": 0.011012541258156034,
+   "kk_h_mm": 0.0635,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002,
+   "excluded": "over the memory cap"
+  },
+  {
+   "board": "pic_programmer/pic_programmer.kicad_pcb",
+   "net": "GND",
+   "pair": [
+    "U6.8",
+    "C1.2"
+   ],
+   "kinematik_ohm": 0.00893450405096186,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "excluded": "over the memory cap"
+  },
+  {
+   "board": "sonde xilinx/sonde xilinx.kicad_pcb",
+   "net": "GND",
+   "pair": [
+    "U2.7",
+    "U2.1"
+   ],
+   "kinematik_ohm": 0.005825129446493712,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "copper2d_ohm": 0.005647147959824881,
+   "copper2d_coarse_ohm": 0.005573593237091034
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "GND",
+   "pair": [
+    "J7.4",
+    "D4.1"
+   ],
+   "kinematik_ohm": 0.002072680256850383,
+   "kk_h_mm": 0.025,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "excluded": "over the memory cap"
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "+5V",
+   "pair": [
+    "J2.1",
+    "J8.1"
+   ],
+   "kinematik_ohm": 0.02574500396348724,
+   "kk_h_mm": 0.03333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "copper2d_ohm": 0.024623069289455072,
+   "copper2d_coarse_ohm": 0.02443704291503934
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "+1V8",
+   "pair": [
+    "U1.28",
+    "C11.1"
+   ],
+   "kinematik_ohm": 0.029418506629546502,
+   "kk_h_mm": 0.025,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "copper2d_ohm": 0.028471506259738617,
+   "copper2d_coarse_ohm": 0.02832113812072535
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "GND",
+   "pair": [
+    "U2.60",
+    "SW1.2"
+   ],
+   "kinematik_ohm": 0.0563135290175604,
+   "kk_h_mm": 0.06666666666666667,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "excluded": "over the memory cap"
+  }
+ ],
+ "team_boards": [
+  {
+   "board": "michaelruppe_FSAE/PDIST/PDIST.kicad_pcb",
+   "net": "Net-(F1-Pad2)",
+   "pair": [
+    "F10.2",
+    "F1.2"
+   ],
+   "kinematik_ohm": 0.004941722538984453,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.042333333333333334,
+   "filled_mm2_max_layer": 2373.1358943934174,
+   "copper2d_ohm": 0.004105503710183958,
+   "copper2d_coarse_ohm": 0.004075024102310192
+  },
+  {
+   "board": "michaelruppe_FSAE/PDIST/PDIST.kicad_pcb",
+   "net": "GND",
+   "pair": [
+    "J10.2",
+    "R1.1"
+   ],
+   "kinematik_ohm": 0.003757353780610217,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.042333333333333334,
+   "filled_mm2_max_layer": 2630.182088083056,
+   "copper2d_ohm": 0.002876899360335221,
+   "copper2d_coarse_ohm": 0.0028612164990163545
+  },
+  {
+   "board": "michaelruppe_FSAE/Precharge/Precharge/Precharge.kicad_pcb",
+   "net": "GLV-",
+   "pair": [
+    "C23.1",
+    "U5.4"
+   ],
+   "kinematik_ohm": 0.0877535042738629,
+   "kk_h_mm": 0.041666666666666664,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.020833333333333332,
+   "filled_mm2_max_layer": 2773.4552243485086,
+   "excluded": "more than 4 million cells per layer"
+  },
+  {
+   "board": "michaelruppe_FSAE/Precharge/Precharge/Precharge.kicad_pcb",
+   "net": "/TS-",
+   "pair": [
+    "J3.1",
+    "R49.1"
+   ],
+   "kinematik_ohm": 0.0009460497811764598,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 1510.8636497313275,
+   "copper2d_ohm": 0.0006451764120099171,
+   "copper2d_coarse_ohm": 0.0006385800518139561
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED.kicad_pcb",
+   "net": "Net-(D1-K)",
+   "pair": [
+    "D1.1",
+    "D1.1"
+   ],
+   "kinematik_ohm": 0.0010975967218918867,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 2.1808655374275,
+   "copper2d_ohm": null,
+   "copper2d_coarse_ohm": null
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED.kicad_pcb",
+   "net": "Net-(D1-A)",
+   "pair": [
+    "R1.1",
+    "J1.1"
+   ],
+   "kinematik_ohm": 0.005988711936814255,
+   "kk_h_mm": 0.03333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.016666666666666666,
+   "filled_mm2_max_layer": 160.16499496619699,
+   "copper2d_ohm": 0.005882892606524778,
+   "copper2d_coarse_ohm": 0.005879861063021838
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED.kicad_pcb",
+   "net": "Net-(D2-K)",
+   "pair": [
+    "D3.2",
+    "D2.1"
+   ],
+   "kinematik_ohm": 0.0019318053149650005,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 4.219871802675,
+   "copper2d_ohm": null,
+   "copper2d_coarse_ohm": null
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED.kicad_pcb",
+   "net": "Net-(D3-K)",
+   "pair": [
+    "D3.1",
+    "D3.1"
+   ],
+   "kinematik_ohm": 0.0009291601990722891,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 1.9905053106544999,
+   "copper2d_ohm": null,
+   "copper2d_coarse_ohm": null
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED.kicad_pcb",
+   "net": "Net-(D4-K)",
+   "pair": [
+    "D4.1",
+    "D4.1"
+   ],
+   "kinematik_ohm": 0.0008766112484154266,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 2.061214874381,
+   "copper2d_ohm": null,
+   "copper2d_coarse_ohm": null
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED.kicad_pcb",
+   "net": "Net-(D5-K)",
+   "pair": [
+    "D5.1",
+    "D5.1"
+   ],
+   "kinematik_ohm": 0.0010569072953316595,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 2.141956739945,
+   "copper2d_ohm": null,
+   "copper2d_coarse_ohm": null
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED.kicad_pcb",
+   "net": "Net-(D6-K)",
+   "pair": [
+    "D7.2",
+    "D6.1"
+   ],
+   "kinematik_ohm": 0.0014656341481068932,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 4.532445987619,
+   "copper2d_ohm": null,
+   "copper2d_coarse_ohm": null
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED.kicad_pcb",
+   "net": "Net-(D7-K)",
+   "pair": [
+    "D7.1",
+    "D7.1"
+   ],
+   "kinematik_ohm": 0.0009075509355957005,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 1.9800279387135,
+   "copper2d_ohm": null,
+   "copper2d_coarse_ohm": null
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED.kicad_pcb",
+   "net": "Net-(D8-K)",
+   "pair": [
+    "D8.1",
+    "D8.1"
+   ],
+   "kinematik_ohm": 0.0010636540265620247,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 1.945923485802,
+   "copper2d_ohm": null,
+   "copper2d_coarse_ohm": null
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED.kicad_pcb",
+   "net": "Net-(D10-A)",
+   "pair": [
+    "D9.1",
+    "D9.1"
+   ],
+   "kinematik_ohm": 0.0010013631527146013,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 2.0428324836905,
+   "copper2d_ohm": null,
+   "copper2d_coarse_ohm": null
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED.kicad_pcb",
+   "net": "Net-(D10-K)",
+   "pair": [
+    "D11.2",
+    "D10.1"
+   ],
+   "kinematik_ohm": 0.002429379768526517,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 4.8900152909334995,
+   "copper2d_ohm": null,
+   "copper2d_coarse_ohm": null
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED.kicad_pcb",
+   "net": "Net-(D11-K)",
+   "pair": [
+    "D11.1",
+    "D11.1"
+   ],
+   "kinematik_ohm": 0.0008472780807304584,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 2.145832384371,
+   "copper2d_ohm": null,
+   "copper2d_coarse_ohm": null
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED.kicad_pcb",
+   "net": "Net-(D12-K)",
+   "pair": [
+    "Q1.3",
+    "D12.1"
+   ],
+   "kinematik_ohm": 0.004957495193461451,
+   "kk_h_mm": 0.041666666666666664,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.020833333333333332,
+   "filled_mm2_max_layer": 4.810701076217,
+   "copper2d_ohm": null,
+   "copper2d_coarse_ohm": null
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED.kicad_pcb",
+   "net": "Net-(D13-K)",
+   "pair": [
+    "D13.1",
+    "Q1.1"
+   ],
+   "kinematik_ohm": 0.004534622456751728,
+   "kk_h_mm": 0.041666666666666664,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.020833333333333332,
+   "filled_mm2_max_layer": 204.8599730397135,
+   "copper2d_ohm": 0.004378169508899773,
+   "copper2d_coarse_ohm": 0.004365003946378428
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED.kicad_pcb",
+   "net": "Net-(D13-A)",
+   "pair": [
+    "J1.2",
+    "D13.2"
+   ],
+   "kinematik_ohm": 0.0036160390535388176,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 22.0025331104695,
+   "copper2d_ohm": 0.0035154302656674294,
+   "copper2d_coarse_ohm": 0.0034859321651150607
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED.kicad_pcb",
+   "net": "Net-(Q1-E)",
+   "pair": [
+    "R2.1",
+    "Q1.2"
+   ],
+   "kinematik_ohm": 0.010858986010255223,
+   "kk_h_mm": 0.041666666666666664,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.020833333333333332,
+   "filled_mm2_max_layer": 22.2406712595475,
+   "copper2d_ohm": 0.010665645782103854,
+   "copper2d_coarse_ohm": 0.010703842499476259
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED_handsolder.kicad_pcb",
+   "net": "Net-(D1-K)",
+   "pair": [
+    "D2.2",
+    "D1.1"
+   ],
+   "kinematik_ohm": 0.0010726386604010376,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 6.133190635654,
+   "copper2d_ohm": null,
+   "copper2d_coarse_ohm": null
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED_handsolder.kicad_pcb",
+   "net": "/Input",
+   "pair": [
+    "J1.2",
+    "R1.1"
+   ],
+   "kinematik_ohm": 0.015470685475997925,
+   "kk_h_mm": 0.041666666666666664,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.020833333333333332,
+   "filled_mm2_max_layer": 20.5134241168415,
+   "copper2d_ohm": 0.01533857249405959,
+   "copper2d_coarse_ohm": 0.015293131986574785
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED_handsolder.kicad_pcb",
+   "net": "Net-(D2-K)",
+   "pair": [
+    "D2.1",
+    "D3.2"
+   ],
+   "kinematik_ohm": 0.0019095937921753247,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 13.3205431004645,
+   "copper2d_ohm": null,
+   "copper2d_coarse_ohm": null
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED_handsolder.kicad_pcb",
+   "net": "Net-(D3-K)",
+   "pair": [
+    "D4.2",
+    "D3.1"
+   ],
+   "kinematik_ohm": 0.0010443220589125253,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 6.1331907062774995,
+   "copper2d_ohm": null,
+   "copper2d_coarse_ohm": null
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED_handsolder.kicad_pcb",
+   "net": "Net-(D4-K)",
+   "pair": [
+    "D5.2",
+    "D4.1"
+   ],
+   "kinematik_ohm": 0.0009597473923969969,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 6.1331907062774995,
+   "copper2d_ohm": null,
+   "copper2d_coarse_ohm": null
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED_handsolder.kicad_pcb",
+   "net": "Net-(D5-K)",
+   "pair": [
+    "D5.1",
+    "D6.2"
+   ],
+   "kinematik_ohm": 0.0010245850052790593,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 6.1331907062774995,
+   "copper2d_ohm": null,
+   "copper2d_coarse_ohm": null
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED_handsolder.kicad_pcb",
+   "net": "Net-(D6-K)",
+   "pair": [
+    "D6.1",
+    "D7.2"
+   ],
+   "kinematik_ohm": 0.0016630284946203234,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 9.681699162149,
+   "copper2d_ohm": null,
+   "copper2d_coarse_ohm": null
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED_handsolder.kicad_pcb",
+   "net": "Net-(D7-K)",
+   "pair": [
+    "D7.1",
+    "D8.2"
+   ],
+   "kinematik_ohm": 0.0010092139504051143,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 6.133190635654,
+   "copper2d_ohm": null,
+   "copper2d_coarse_ohm": null
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED_handsolder.kicad_pcb",
+   "net": "Net-(D8-K)",
+   "pair": [
+    "D9.2",
+    "D8.1"
+   ],
+   "kinematik_ohm": 0.0010712754863300025,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 6.133190635654,
+   "copper2d_ohm": null,
+   "copper2d_coarse_ohm": null
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED_handsolder.kicad_pcb",
+   "net": "Net-(D10-A)",
+   "pair": [
+    "D9.1",
+    "D10.2"
+   ],
+   "kinematik_ohm": 0.0010075577221162523,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 6.133190635654,
+   "copper2d_ohm": null,
+   "copper2d_coarse_ohm": null
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED_handsolder.kicad_pcb",
+   "net": "Net-(D10-K)",
+   "pair": [
+    "D11.2",
+    "D10.1"
+   ],
+   "kinematik_ohm": 0.0023643542232369766,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 13.6021537550755,
+   "copper2d_ohm": null,
+   "copper2d_coarse_ohm": null
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED_handsolder.kicad_pcb",
+   "net": "Net-(D11-K)",
+   "pair": [
+    "D11.1",
+    "D12.2"
+   ],
+   "kinematik_ohm": 0.0009597472441567915,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 6.1331906648064995,
+   "copper2d_ohm": null,
+   "copper2d_coarse_ohm": null
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED_handsolder.kicad_pcb",
+   "net": "/GND",
+   "pair": [
+    "RV1.2",
+    "D13.2"
+   ],
+   "kinematik_ohm": 0.0006158860979423355,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 36.15337204408,
+   "copper2d_ohm": 0.0005937275083540208,
+   "copper2d_coarse_ohm": 0.0005698603107081732
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED_handsolder.kicad_pcb",
+   "net": "/MOUNT",
+   "pair": [
+    "J1.4",
+    "J1.3"
+   ],
+   "kinematik_ohm": 0.0011425985160952502,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 462.7409071911185,
+   "copper2d_ohm": 0.0011389808713725684,
+   "copper2d_coarse_ohm": 0.0011295130534740023
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED_handsolder.kicad_pcb",
+   "net": "/LED-",
+   "pair": [
+    "Q1.3",
+    "D12.1"
+   ],
+   "kinematik_ohm": 0.001043262415838679,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 7.3196165224355,
+   "copper2d_ohm": null,
+   "copper2d_coarse_ohm": null
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED_handsolder.kicad_pcb",
+   "net": "/REG",
+   "pair": [
+    "D13.1",
+    "Q1.1"
+   ],
+   "kinematik_ohm": 0.004022193126489999,
+   "kk_h_mm": 0.041666666666666664,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.020833333333333332,
+   "filled_mm2_max_layer": 401.137685557409,
+   "copper2d_ohm": 0.003919828948608247,
+   "copper2d_coarse_ohm": 0.003906177334640649
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED_handsolder.kicad_pcb",
+   "net": "/TRIM",
+   "pair": [
+    "R2.1",
+    "Q1.2"
+   ],
+   "kinematik_ohm": 0.006863225996651875,
+   "kk_h_mm": 0.041666666666666664,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.020833333333333332,
+   "filled_mm2_max_layer": 26.2043541158835,
+   "copper2d_ohm": 0.006794127383691401,
+   "copper2d_coarse_ohm": 0.006680158812271539
+  },
+  {
+   "board": "sufst_pcb/archive/segment/segment.kicad_pcb",
+   "net": "GND",
+   "pair": [
+    "J3.13",
+    "J5.14"
+   ],
+   "kinematik_ohm": 0.0025114729794851317,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 571.1443194865315,
+   "copper2d_ohm": 0.002497206971042926,
+   "copper2d_coarse_ohm": 0.002477900617444894
+  },
+  {
+   "board": "sufst_pcb/archive/test-rig/test-rig.kicad_pcb",
+   "net": "+12V",
+   "pair": [
+    "SW5.1",
+    "R13.1"
+   ],
+   "kinematik_ohm": 0.02426158143211004,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 6254.1172652575215,
+   "excluded": "more than 4 million cells per layer"
+  },
+  {
+   "board": "sufst_pcb/hv-sense/hv_sense.kicad_pcb",
+   "net": "GND",
+   "pair": [
+    "R5.1",
+    "Q2.2"
+   ],
+   "kinematik_ohm": 0.00568658149857813,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 351.69993234159347,
+   "copper2d_ohm": 0.005410305487741256,
+   "copper2d_coarse_ohm": 0.005151878474497959
+  },
+  {
+   "board": "sufst_pcb/hv-sense/hv_sense.kicad_pcb",
+   "net": "Net-(Q3-D)",
+   "pair": [
+    "Q3.2",
+    "Q3.2"
+   ],
+   "kinematik_ohm": 0.0017134426450210554,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 378.664283180543,
+   "copper2d_ohm": null,
+   "copper2d_coarse_ohm": null
+  },
+  {
+   "board": "sufst_pcb/isolator/CAN_Bridge.kicad_pcb",
+   "net": "+3.3V",
+   "pair": [
+    "J1.1",
+    "C2.1"
+   ],
+   "kinematik_ohm": 0.056326467052846566,
+   "kk_h_mm": 0.049999999999999996,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.024999999999999998,
+   "filled_mm2_max_layer": 83.000417503219,
+   "copper2d_ohm": 0.05512665605295075,
+   "copper2d_coarse_ohm": 0.055436463686268055
+  },
+  {
+   "board": "sufst_pcb/isolator/CAN_Bridge.kicad_pcb",
+   "net": "GND",
+   "pair": [
+    "U5.2",
+    "U5.8"
+   ],
+   "kinematik_ohm": 0.0042669772833477376,
+   "kk_h_mm": 0.049999999999999996,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.024999999999999998,
+   "filled_mm2_max_layer": 2275.9403496118744,
+   "excluded": "more than 4 million cells per layer"
+  },
+  {
+   "board": "sufst_pcb/isolator/CAN_Bridge.kicad_pcb",
+   "net": "GND2",
+   "pair": [
+    "U6.9",
+    "C7.2"
+   ],
+   "kinematik_ohm": 0.005401575785364167,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 409.85175859285897,
+   "copper2d_ohm": 0.005279453711677371,
+   "copper2d_coarse_ohm": 0.005172659859068285
+  },
+  {
+   "board": "sufst_pcb/ss-relay/ss-relay.kicad_pcb",
+   "net": "/COM",
+   "pair": [
+    "Q2.5",
+    "K1.2"
+   ],
+   "kinematik_ohm": 0.0014237685293973829,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 24.3888930677065,
+   "copper2d_ohm": null,
+   "copper2d_coarse_ohm": null
+  },
+  {
+   "board": "sufst_pcb/ss-relay/ss-relay.kicad_pcb",
+   "net": "/N{slash}O",
+   "pair": [
+    "Q1.3",
+    "K1.3"
+   ],
+   "kinematik_ohm": 0.0006396027500642431,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 32.503179009,
+   "copper2d_ohm": null,
+   "copper2d_coarse_ohm": null
+  },
+  {
+   "board": "sufst_pcb/ss-relay/ss-relay.kicad_pcb",
+   "net": "Net-(Q1-D)",
+   "pair": [
+    "Q2.3",
+    "Q1.5"
+   ],
+   "kinematik_ohm": 0.0009408615713295208,
+   "kk_h_mm": 0.08333333333333333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 12.481753472548,
+   "copper2d_ohm": 0.0007802613633557498,
+   "copper2d_coarse_ohm": 0.0007083939932462459
+  },
+  {
+   "board": "sufst_pcb/tem/tem.kicad_pcb",
+   "net": "GND",
+   "pair": [
+    "J17.1",
+    "R31.2"
+   ],
+   "kinematik_ohm": 0.015865486012175384,
+   "kk_h_mm": 0.041666666666666664,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.020833333333333332,
+   "filled_mm2_max_layer": 2169.3988211065516,
+   "excluded": "more than 4 million cells per layer"
+  },
+  {
+   "board": "sufst_pcb/trc/trc.kicad_pcb",
+   "net": "+12V",
+   "pair": [
+    "C6.2",
+    "D3.3"
+   ],
+   "kinematik_ohm": 0.019219272119375783,
+   "kk_h_mm": 0.06666666666666667,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.03333333333333333,
+   "filled_mm2_max_layer": 2027.6963968399295,
+   "excluded": "more than 4 million cells per layer"
+  },
+  {
+   "board": "sufst_pcb/trc/trc.kicad_pcb",
+   "net": "GND",
+   "pair": [
+    "C7.1",
+    "U4.6"
+   ],
+   "kinematik_ohm": 0.007018228509718192,
+   "kk_h_mm": 0.06666666666666667,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "h_mm": 0.03333333333333333,
+   "filled_mm2_max_layer": 2708.7115216170414,
+   "excluded": "more than 4 million cells per layer"
+  }
+ ],
+ "unscored_note": "team rows without copper2d_ohm and not excluded: KinematiK named two pads sharing one designator and number (e.g. D1.1 and D1.1), which the reference cannot tell apart, or the reference found no copper path."
+}

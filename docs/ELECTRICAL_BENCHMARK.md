@@ -26,6 +26,7 @@ KinematiK against the recorded references on every run without needing the tools
 | **C.** Microstrip impedance vs field solver | 5 single-ended, 6 differential | 5 % / 10 % | **Round 1 miss:** single-ended −8.3 % and −6.4 % at the range ends. Formula replaced. **Round 2, unseen geometries: 10 of 10**, worst 3.4 % |
 | **C2.** Microstrip impedance vs **Altium Designer 26.11.1** | the same 21 cross-sections in Altium's Layer Stack Manager, plus 5 extras | 5 % / 10 % | **21 of 21.** Single-ended worst −1.9 %, differential worst +4.0 %. Altium and atlc agree within 1.6 % on every case |
 | **D.** Trace heating vs **NBS 1956 measurements** (the data behind IPC-2221) | 44 reliably read points, 10–100 °C rise (10 more at 4–16 sq mil left out) | KinematiK ≤ 1.05 × measured at every point | **Plain IPC-2221 missed on 2** (wide traces at 10 °C: +5 %, +8 %). KinematiK now uses IPC-2221 × 0.975: **44 of 44**, worst +4.96 %, median 0.89 × measured. Calibrated on these points, so a calibration check, not a validation |
+| **E.** Nets with copper pours: KinematiK's with-pour estimate vs a 2-D solve including KiCad's filled pour | 6 demo pour nets (design); **17 held-out pour nets on FS team boards** | 2 % per net | **Miss.** Held out: 35 % within 2 %, 71 % within 5 %, 76 % within 10 %, median +2.6 %, worst +47 %. **Never below the reference** (worst +0.3 %). Demo: all 6 within 5 % (+0.3 to +3.5 %). Large planes over the memory cap left out |
 
 ## A. Does KinematiK read a board the way KiCad does?
 
@@ -245,6 +246,26 @@ An independent check needs IPC-2152's 2009 measurements, which are not public.
   Inner layers now use the outer-layer rating. NBS measured outer conductors only, so this change rests on those
   sources, not on D.
 
+## E. Nets with copper pours
+
+Plan addendum 4. KinematiK's trace-only resistance gives a pour no resistance, so on a poured net it is an upper
+bound, and the brown-out check keeps using it. `suspension/pcb_pour.py` adds a best estimate *with* the pour: a sheet
+solve of KinematiK's own reading of the file (tracks, pads, vias and the zones' `filled_polygon`) on its own grid.
+The reference is the corrected 2-D solve with KiCad's own filled zones added (`benchmarks/electrical/pours.json`).
+Planes too large for this machine's memory (1.5 million cells per layer) are left out: 6 on the demo boards and 6 on
+the team boards, mostly whole-board ground planes.
+
+- **Demo boards (design), 6 nets:** +0.3 % to +3.5 %, all within 5 %, 4 of 6 within 2 %.
+- **Team boards (held out, solved once), 17 nets: miss.** 6 within 2 % (35 %), 12 within 5 % (71 %), 13 within
+  10 % (76 %), median +2.6 %, worst +47 % (a 0.65 mΩ tractive-system return).
+- **Direction: never low.** On every scored net, demo and held out, the estimate is at or above the reference (worst
+  +0.3 % on the high side). KinematiK's coarse grid (6 cells across the narrowest track) under-resolves thermal
+  spokes and narrow necks in the pour, which can only add resistance.
+- **Not scored:** on 27 held-out nets KinematiK named two pads with the same designator and number (for example a
+  part with two pad 1s), which the reference cannot tell apart, or the reference found no copper path.
+
+So the pour estimate is a conservative indicator, not yet a 2 % tool; the brown-out check doesn't use it.
+
 ## Not covered
 
 - **Trace heating against independent measurements.** D checks KinematiK's formula against the 1956 data it
@@ -253,5 +274,4 @@ An independent check needs IPC-2152's 2009 measurements, which are not public.
   repeat them.
 - **Measurements on a real Formula Student board** (milliohms across a power net, temperature under load) need
   hardware.
-- **Net resistance on pours.** Nets with copper pours are left out of B3 and B4: KinematiK deliberately gives a pour
-  no resistance (connectivity only), so its trace-only number is an upper bound there, not an estimate.
+- **Whole-board ground planes** are too large for the pour reference on this machine (E).
