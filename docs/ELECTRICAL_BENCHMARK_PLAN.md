@@ -248,3 +248,19 @@ reference, and nothing was changed because of them.
 The 4-million-cell cap ran out of memory on this machine (StickHub's GND, killed at 4.4 GB). The cap is
 **1.5 million cells per layer** for every pour net, demo and held out. KinematiK's pour estimate is frozen at
 f947524, after design on the 6 demo pour nets under the cap.
+
+## Addendum 6, pour estimate round 2 (written before any of its held-out nets was solved)
+
+E missed on held-out boards because KinematiK's sheet solve was coarse (6 cells across the narrowest track, links
+by the mean of two cells, pads snapped to cells). Round 2 replaces it with the discretization the corrected
+reference uses (face-box links, area coverage, near-perfect-conductor pads, at least 12 cells across the narrowest
+feature including thermal spokes), implemented again in KinematiK on KinematiK's own reading of the file. It shares
+the physics *and the numerical method* with the reference now, not the geometry reading or the code, so this
+checks KinematiK's reading of the board and its implementation, not the method.
+
+**Pairs.** KinematiK names pads by designator and number; where two pads share both (a part with two pad 1s), it
+now picks only pads whose name is unique, so the reference can tell them apart.
+
+**Held out.** The pour nets on the round-3 team boards that E could not score (27 nets: shared pad names or no
+reference), now solved once after KinematiK's round-2 estimate is frozen. The 17 nets E scored are design data from
+here on. Same limits, same memory cap (1.5 million cells per layer).
