@@ -138,6 +138,12 @@ def pour_resistance(board: PcbBoard, nid: int, max_pads: int = 10) -> dict:
     layers = list(board.copper_layers) or ["F.Cu", "B.Cu"]
     lidx = {ly: i for i, ly in enumerate(layers)}
     off = 1 << 20
+    for ly in layers:                                      # refuse before drawing anything too large for memory
+        area_mm2 = sum(abs(np.dot(np.asarray(z.outline)[:, 0], np.roll(np.asarray(z.outline)[:, 1], 1))
+                           - np.dot(np.asarray(z.outline)[:, 1], np.roll(np.asarray(z.outline)[:, 0], 1))) / 2.0
+                       for z in board.zones if z.net == nid and z.layer == ly and len(z.outline) >= 3)
+        if area_mm2 / (h * h) > MAX_CELLS_PER_LAYER:
+            return {"r_ohm": None, "why": "too large for the sheet solve", "h_mm": h}
     allp: list = []                                        # half-cell coverage: (layer, P, Q, c, is_terminal)
     for s in board.segments_of(nid):
         if s.layer in lidx:
