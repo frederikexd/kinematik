@@ -303,3 +303,28 @@ as not read rather than replaced.
 
 Native Altium came back first: the author's Altium Designer 26.11.1 counts are in
 `benchmarks/electrical/altium/results_native.json`.
+
+## Addendum 8, pour estimate round 3 (written 2026-11-11, before any KiCad 9 pour net was solved by the reference)
+
+**Round 2's held-out result (widened set, addendum 6 amendment), scored once:** 43 nets (42 team, 1 demo), 15 within
+2 %. Every miss is high (worst low −0.01 %). Looking at the misses found two flaws in KinematiK's *reading* of the
+file, not in the solve:
+1. **Custom pads.** KiCad `custom` pads carry their copper as primitives (`gr_poly`, `gr_rect`, `gr_circle`,
+   `gr_line`, `gr_arc`) around a small anchor. KinematiK kept only the anchor (0.1 × 0.1 mm on the SUFST LEDs), so
+   current had to squeeze into a dot: 26 of the 28 misses.
+2. **KiCad 5 pours.** Files older than KiCad 6 (`version` before 20200811) and zones marked
+   `filled_areas_thickness yes` store the pour shrunk by half its minimum width; the copper is that polygon with its
+   outline stroked at `min_thickness`. KinematiK read the bare polygon, 7–9 % too little copper on the
+   michaelruppe boards: the other misses.
+
+**Round 3** reads both (the primitives turned and placed like the pad; the stroke drawn along every filled edge).
+The solve is unchanged. Everything round 2 was scored on is design data from here on.
+
+**Held out:** the pour nets of the four KiCad 8/9 boards of addendum 7, under the same memory cap, solved once by the
+reference from KiCad 9.0.3's export. Each net is scored against **both** round 2 (frozen at eef6107, as addendum 7
+registered) and round 3 (frozen at the commit that implements this addendum, named in the results). Limit 2 %; with
+n nets all within 2 %, the 95 % lower bound on the rate is 0.05^(1/n).
+
+**The export kit** (`export_kicad9.py`) failed on KiCad 9.0.3 before writing anything (vias now take a layer for
+their width; a pad's `GetParent()` returns a container without `GetReference`). It was fixed for both, with no
+change to what it writes, and the fixed kit is the one shipped.
