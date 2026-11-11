@@ -242,3 +242,9 @@ The held-out test is therefore the **round-3 team boards against the corrected r
 KinematiK frozen at commit a3805c1. Every model change since round 3 was designed on the demo boards; the team
 boards' results against the corrected reference have not been looked at. They were seen once against the old
 reference, and nothing was changed because of them.
+
+### Addendum 4, amendment (before any held-out pour net was solved)
+
+The 4-million-cell cap ran out of memory on this machine (StickHub's GND, killed at 4.4 GB). The cap is
+**1.5 million cells per layer** for every pour net, demo and held out. KinematiK's pour estimate is frozen at
+f947524, after design on the 6 demo pour nets under the cap.
