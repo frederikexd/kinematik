@@ -336,3 +336,16 @@ it 0.21 → 0.40 → 0.48 → 0.55 mΩ (cells of 83, 42, 21, 10 µm) on `Net-(D1
 copper at a point. A 2 % comparison against a number that moves 15 % per halving means nothing, so on the held-out
 set a net is **scored only where the reference at twice the cell size agrees with it within 2 %**; the others are
 counted and published as "reference not converged", with both KinematiK numbers next to them.
+
+## Addendum 9, closing the pour gaps (written before any of these solves)
+
+**Unconverged reference nets** (the 10 hand-solder nets and the 24 KiCad 9 nets set aside by addendum 8's
+amendment): each is solved again at half the cell size, and at a quarter where it fits under the memory cap. A net
+counts as converged when its two finest solves agree within 2 %, and it is then scored against the finest. A net
+whose value keeps growing by a similar step at every halving has no finite 2-D answer: current meets copper at a
+point. It is reported as singular, not scored.
+
+**The remaining 20 KiCad 9 pour nets** (stopped by size): every one under the 1.5-million-cell cap is solved by
+KinematiK round 3 (frozen 97dc029) and by the reference, under the same rules. Nets over the cap are not estimated by
+KinematiK either (it returns "too large" and the brown-out check keeps the trace-only upper bound). They are listed,
+since there is no estimate to score.
