@@ -166,3 +166,28 @@ repository that turns out not to belong to a Formula Student or FSAE team is dro
 2. Any change to KinematiK is designed on those boards only, then frozen (commit recorded).
 3. Only then are the round-4 boards downloaded and solved, once. The frozen KinematiK is scored on them and the
    result is published whatever it shows. The limit is unchanged: 2 % per net.
+
+## Addendum 5, trace heating against measurements (written before any point was read off the report)
+
+**Reference.** NBS Report 4283, D. S. Hoynes, *Characterization of Metal-Insulator Laminates* (National Bureau of
+Standards, 1 May 1956), the U.S. government measurements of etched copper conductors from which the MIL-STD-275 and
+IPC-2221 current charts descend. Figures 1–7 plot measured current against conductor cross-section (square mils) for
+temperature rises of 10, 20, 30, 45, 60, 75 and 100 °C, with each sample's points and four curves drawn through
+them: plain etched, coated, dip-soldered, and stripped and tested in free air. The report gives the data only as
+these graphs.
+
+**What is read.** On each figure, the **plain etched** curve (the solid line) is read where it crosses each
+vertical grid line of cross-section (16, 36, 64, 100, 144, 196, 256, 324, 400 sq mil), and where it is drawn. The
+axes are calibrated from the printed grid lines of the scan. The reading is repeated at a second zoom and the two
+readings averaged; their difference is published as the reading uncertainty.
+
+**What is compared.** KinematiK's IPC-2221 ampacity for an external conductor
+(`trace_ampacity_a`: I = 0.048 ΔT^0.44 A^0.725) at the same rise and cross-section, against the NBS current.
+
+**What this can and can't show.** IPC-2221's formula is a fit to charts derived from these measurements, after a
+10 % derating. So this checks how faithfully KinematiK's formula represents the measurements behind it; it is not an
+independent test. An independent one needs IPC-2152's 2009 measurements, which are not public.
+
+**Limits, fixed now.** KinematiK must be **conservative**: its current at most 5 % above the NBS current (the
+allowance for reading error) at every point. Its typical margin is reported as the median ratio, expected near 0.9
+from the derating, with no pass limit on it.
