@@ -1,0 +1,9815 @@
+{
+ "note": "Pad pairs KinematiK names worst on each net it solves (inputs to the SPICE reference).",
+ "pairs": [
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "-VAA",
+   "pair": [
+    "C11.2",
+    "U3.4"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "/12Vext",
+   "pair": [
+    "D1.2",
+    "P2.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "/ampli_ht_horizontal/PIEZO_IN",
+   "pair": [
+    "R24.2",
+    "P6.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "/ampli_ht_horizontal/PIEZO_OUT",
+   "pair": [
+    "R27.1",
+    "P5.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "/ampli_ht_horizontal/S_OUT+",
+   "pair": [
+    "RV2.3",
+    "R28.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "/ampli_ht_horizontal/Vpil_0_3,3V",
+   "pair": [
+    "U4.3",
+    "C6.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "/ampli_ht_vertical/PIEZO_IN",
+   "pair": [
+    "R23.2",
+    "P4.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "/ampli_ht_vertical/PIEZO_OUT",
+   "pair": [
+    "R25.1",
+    "P3.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "/ampli_ht_vertical/S_OUT+",
+   "pair": [
+    "RV1.3",
+    "R26.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "/ampli_ht_vertical/Vpil_0_3,3V",
+   "pair": [
+    "U3.7",
+    "C3.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "HT",
+   "pair": [
+    "D2.2",
+    "P1.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(U3B-+)",
+   "pair": [
+    "R7.1",
+    "U3.5"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(U4B-+)",
+   "pair": [
+    "R17.1",
+    "U4.5"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(C12-Pad1)",
+   "pair": [
+    "R6.2",
+    "C12.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(C14-Pad1)",
+   "pair": [
+    "R16.2",
+    "C14.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(C3-Pad2)",
+   "pair": [
+    "R7.2",
+    "C3.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(U1-CAP+)",
+   "pair": [
+    "C10.1",
+    "U1.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(C5-Pad1)",
+   "pair": [
+    "R10.2",
+    "C5.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(C6-Pad2)",
+   "pair": [
+    "R17.2",
+    "C6.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(U1-CAP-)",
+   "pair": [
+    "C10.2",
+    "U1.4"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(C8-Pad1)",
+   "pair": [
+    "R20.2",
+    "C8.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(D2-K)",
+   "pair": [
+    "D2.1",
+    "D3.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(D3-K)",
+   "pair": [
+    "Q1.2",
+    "R4.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(D4-K)",
+   "pair": [
+    "Q3.2",
+    "Q4.3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(D4-A)",
+   "pair": [
+    "D8.1",
+    "D4.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(R11-Pad1)",
+   "pair": [
+    "RV1.1",
+    "R11.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(R19-Pad2)",
+   "pair": [
+    "R19.2",
+    "U4.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(R21-Pad1)",
+   "pair": [
+    "RV2.1",
+    "R21.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(R9-Pad2)",
+   "pair": [
+    "R9.2",
+    "U3.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(D5-K)",
+   "pair": [
+    "D5.1",
+    "D6.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(D6-K)",
+   "pair": [
+    "Q5.2",
+    "R14.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "VCC",
+   "pair": [
+    "U1.8",
+    "C1.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(D7-K)",
+   "pair": [
+    "Q7.2",
+    "Q8.3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(D7-A)",
+   "pair": [
+    "D7.2",
+    "D9.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(D8-A)",
+   "pair": [
+    "Q1.3",
+    "Q2.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(D9-A)",
+   "pair": [
+    "Q5.3",
+    "Q6.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(Q1-E)",
+   "pair": [
+    "Q1.1",
+    "R3.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(Q2-E)",
+   "pair": [
+    "R26.2",
+    "Q2.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "+12V",
+   "pair": [
+    "C2.1",
+    "U3.8"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(Q3-E)",
+   "pair": [
+    "Q3.1",
+    "R25.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(Q4-E)",
+   "pair": [
+    "R9.1",
+    "Q4.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(Q4-B)",
+   "pair": [
+    "R8.1",
+    "Q4.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(Q5-E)",
+   "pair": [
+    "Q5.1",
+    "R13.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(Q6-E)",
+   "pair": [
+    "Q6.1",
+    "R28.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(Q7-E)",
+   "pair": [
+    "Q7.1",
+    "R27.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(Q8-E)",
+   "pair": [
+    "Q8.1",
+    "R19.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(Q8-B)",
+   "pair": [
+    "Q8.2",
+    "R18.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(U3A--)",
+   "pair": [
+    "RV1.2",
+    "U3.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
+   "net": "Net-(U4A--)",
+   "pair": [
+    "RV2.2",
+    "U4.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "custom_pads_test/custom_pads_test.kicad_pcb",
+   "net": "/PAD2",
+   "pair": [
+    "R2.2",
+    "SW1.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "custom_pads_test/custom_pads_test.kicad_pcb",
+   "net": "/PAD1",
+   "pair": [
+    "R2.1",
+    "SW1.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "ecc83/ecc83-pp.kicad_pcb",
+   "net": "Net-(P3-P1)",
+   "pair": [
+    "P3.1",
+    "U1.6"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "ecc83/ecc83-pp.kicad_pcb",
+   "net": "Net-(P2-P1)",
+   "pair": [
+    "C2.1",
+    "P2.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "ecc83/ecc83-pp.kicad_pcb",
+   "net": "Net-(U1A-K)",
+   "pair": [
+    "C2.2",
+    "U1.8"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "ecc83/ecc83-pp.kicad_pcb",
+   "net": "Net-(P4-PM)",
+   "pair": [
+    "P4.2",
+    "U1.4"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "ecc83/ecc83-pp.kicad_pcb",
+   "net": "Net-(U1A-G)",
+   "pair": [
+    "R1.1",
+    "U1.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "ecc83/ecc83-pp.kicad_pcb",
+   "net": "Net-(U1B-K)",
+   "pair": [
+    "R2.1",
+    "U1.3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "ecc83/ecc83-pp_v2.kicad_pcb",
+   "net": "Net-(P3-P1)",
+   "pair": [
+    "U1.6",
+    "P3.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "ecc83/ecc83-pp_v2.kicad_pcb",
+   "net": "Net-(P2-P1)",
+   "pair": [
+    "R3.1",
+    "C2.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "ecc83/ecc83-pp_v2.kicad_pcb",
+   "net": "Net-(U1A-K)",
+   "pair": [
+    "U1.8",
+    "C2.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "ecc83/ecc83-pp_v2.kicad_pcb",
+   "net": "Net-(P1-PM)",
+   "pair": [
+    "R4.1",
+    "U1.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "ecc83/ecc83-pp_v2.kicad_pcb",
+   "net": "Net-(P4-P1)",
+   "pair": [
+    "U1.5",
+    "P4.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "ecc83/ecc83-pp_v2.kicad_pcb",
+   "net": "Net-(P4-PM)",
+   "pair": [
+    "U1.9",
+    "P4.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "ecc83/ecc83-pp_v2.kicad_pcb",
+   "net": "Net-(U1A-G)",
+   "pair": [
+    "R1.1",
+    "U1.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "ecc83/ecc83-pp_v2.kicad_pcb",
+   "net": "Net-(U1B-K)",
+   "pair": [
+    "R2.1",
+    "U1.3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "flat_hierarchy/flat_hierarchy.kicad_pcb",
+   "net": "Net-(D1-K)",
+   "pair": [
+    "D1.1",
+    "U3.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "flat_hierarchy/flat_hierarchy.kicad_pcb",
+   "net": "Net-(U4-Vc)",
+   "pair": [
+    "R10.1",
+    "U4.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "flat_hierarchy/flat_hierarchy.kicad_pcb",
+   "net": "VPP",
+   "pair": [
+    "C9.1",
+    "R16.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "flat_hierarchy/flat_hierarchy.kicad_pcb",
+   "net": "VCC_PIC",
+   "pair": [
+    "P3.11",
+    "Q3.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "flat_hierarchy/flat_hierarchy.kicad_pcb",
+   "net": "Net-(Q2-B)",
+   "pair": [
+    "C9.2",
+    "R11.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "flat_hierarchy/flat_hierarchy.kicad_pcb",
+   "net": "/pic_programmer/PC-CLOCK-OUT",
+   "pair": [
+    "J1.7",
+    "R6.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "flat_hierarchy/flat_hierarchy.kicad_pcb",
+   "net": "VPP-MCLR",
+   "pair": [
+    "R18.2",
+    "U6.4"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "flat_hierarchy/flat_hierarchy.kicad_pcb",
+   "net": "CLOCK-RB6",
+   "pair": [
+    "P2.27",
+    "R13.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "flat_hierarchy/flat_hierarchy.kicad_pcb",
+   "net": "DATA-RB7",
+   "pair": [
+    "P2.28",
+    "U2.12"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "flat_hierarchy/flat_hierarchy.kicad_pcb",
+   "net": "Net-(D1-A)",
+   "pair": [
+    "D1.2",
+    "P1.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "flat_hierarchy/flat_hierarchy.kicad_pcb",
+   "net": "Net-(D2-A)",
+   "pair": [
+    "D2.2",
+    "U2.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "flat_hierarchy/flat_hierarchy.kicad_pcb",
+   "net": "Net-(C5-Pad1)",
+   "pair": [
+    "C5.1",
+    "R10.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "flat_hierarchy/flat_hierarchy.kicad_pcb",
+   "net": "Net-(D4-A)",
+   "pair": [
+    "R3.2",
+    "U2.5"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "flat_hierarchy/flat_hierarchy.kicad_pcb",
+   "net": "Net-(D6-A)",
+   "pair": [
+    "R5.2",
+    "U2.9"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "flat_hierarchy/flat_hierarchy.kicad_pcb",
+   "net": "Net-(D8-A)",
+   "pair": [
+    "D8.2",
+    "R9.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "flat_hierarchy/flat_hierarchy.kicad_pcb",
+   "net": "Net-(D9-A)",
+   "pair": [
+    "D9.2",
+    "R14.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "flat_hierarchy/flat_hierarchy.kicad_pcb",
+   "net": "Net-(D10-A)",
+   "pair": [
+    "L1.1",
+    "U4.8"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "flat_hierarchy/flat_hierarchy.kicad_pcb",
+   "net": "Net-(D11-K)",
+   "pair": [
+    "D11.1",
+    "Q1.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "flat_hierarchy/flat_hierarchy.kicad_pcb",
+   "net": "Net-(D11-A)",
+   "pair": [
+    "D11.2",
+    "R19.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "flat_hierarchy/flat_hierarchy.kicad_pcb",
+   "net": "Net-(D12-A)",
+   "pair": [
+    "D12.2",
+    "R21.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "flat_hierarchy/flat_hierarchy.kicad_pcb",
+   "net": "Net-(R8-Pad1)",
+   "pair": [
+    "R8.1",
+    "U2.3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "flat_hierarchy/flat_hierarchy.kicad_pcb",
+   "net": "Net-(R12-Pad1)",
+   "pair": [
+    "R12.1",
+    "U2.6"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "flat_hierarchy/flat_hierarchy.kicad_pcb",
+   "net": "Net-(R13-Pad1)",
+   "pair": [
+    "R13.1",
+    "U2.8"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "flat_hierarchy/flat_hierarchy.kicad_pcb",
+   "net": "Net-(R15-Pad1)",
+   "pair": [
+    "R15.1",
+    "RV1.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "flat_hierarchy/flat_hierarchy.kicad_pcb",
+   "net": "Net-(R16-Pad1)",
+   "pair": [
+    "RV1.3",
+    "R16.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "flat_hierarchy/flat_hierarchy.kicad_pcb",
+   "net": "Net-(Q1-B)",
+   "pair": [
+    "Q1.2",
+    "R8.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "flat_hierarchy/flat_hierarchy.kicad_pcb",
+   "net": "Net-(Q2-C)",
+   "pair": [
+    "R9.1",
+    "R17.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "flat_hierarchy/flat_hierarchy.kicad_pcb",
+   "net": "/pic_programmer/VPP_ON",
+   "pair": [
+    "J1.3",
+    "R1.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "flat_hierarchy/flat_hierarchy.kicad_pcb",
+   "net": "/pic_programmer/PC-DATA-OUT",
+   "pair": [
+    "J1.4",
+    "R4.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "flat_hierarchy/flat_hierarchy.kicad_pcb",
+   "net": "/pic_programmer/PC-DATA-IN",
+   "pair": [
+    "J1.8",
+    "U2.11"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "flat_hierarchy/flat_hierarchy.kicad_pcb",
+   "net": "Net-(Q3-B)",
+   "pair": [
+    "R19.2",
+    "R20.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "flat_hierarchy/flat_hierarchy.kicad_pcb",
+   "net": "Net-(U4-FB+)",
+   "pair": [
+    "RV1.2",
+    "U4.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/8MH-OUT",
+   "pair": [
+    "U9.K1",
+    "R2.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/ACK",
+   "pair": [
+    "P1.10",
+    "U9.K13"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/AUTOFD-",
+   "pair": [
+    "P1.14",
+    "U9.C12"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/BIT0",
+   "pair": [
+    "P1.2",
+    "U9.D12"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/BIT1",
+   "pair": [
+    "P1.3",
+    "U9.E13"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/BIT2",
+   "pair": [
+    "P1.4",
+    "U9.F12"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/BIT3",
+   "pair": [
+    "P1.5",
+    "U9.G13"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/BIT4",
+   "pair": [
+    "P1.6",
+    "U9.H13"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/BIT5",
+   "pair": [
+    "P1.7",
+    "U9.H12"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/BIT6",
+   "pair": [
+    "P1.8",
+    "U9.J13"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/BIT7",
+   "pair": [
+    "P1.9",
+    "U9.H11"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/BUST+",
+   "pair": [
+    "P1.11",
+    "U9.J12"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/CLKLCA",
+   "pair": [
+    "U8.16",
+    "U9.L4"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/CS1-",
+   "pair": [
+    "U5.22",
+    "U9.A10"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/D0",
+   "pair": [
+    "U1.18",
+    "U8.21"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/D1",
+   "pair": [
+    "U1.17",
+    "U9.N8"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/D2",
+   "pair": [
+    "U1.16",
+    "U9.N9"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/D3",
+   "pair": [
+    "U1.15",
+    "U9.M9"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/D4",
+   "pair": [
+    "U1.14",
+    "U9.M10"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/D5",
+   "pair": [
+    "U1.13",
+    "U9.N11"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/D6",
+   "pair": [
+    "U1.12",
+    "U9.M11"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/D7",
+   "pair": [
+    "U1.11",
+    "U9.L12"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/DIR",
+   "pair": [
+    "U1.1",
+    "U8.17"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/DONE",
+   "pair": [
+    "U8.20",
+    "U9.L11"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/ENBBUF",
+   "pair": [
+    "U1.19",
+    "U8.22"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/ERROR-",
+   "pair": [
+    "P1.15",
+    "U9.D13"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/INIT-",
+   "pair": [
+    "P1.16",
+    "U9.E12"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/LED1",
+   "pair": [
+    "R4.2",
+    "U9.M3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/LED2",
+   "pair": [
+    "R5.2",
+    "U9.F13"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/MA0",
+   "pair": [
+    "U5.12",
+    "U9.A11"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/MA1",
+   "pair": [
+    "U5.11",
+    "U9.B2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/MA10",
+   "pair": [
+    "U5.23",
+    "U9.C9"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/MA11",
+   "pair": [
+    "U5.25",
+    "U9.D2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/MA12",
+   "pair": [
+    "U5.4",
+    "U9.F3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/MA13",
+   "pair": [
+    "U5.28",
+    "U9.C1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/MA14",
+   "pair": [
+    "U5.3",
+    "U9.D1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/MA15",
+   "pair": [
+    "U5.31",
+    "U9.F1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/MA16",
+   "pair": [
+    "U5.2",
+    "U9.C8"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/MA2",
+   "pair": [
+    "U5.10",
+    "U9.D3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/MA3",
+   "pair": [
+    "U5.9",
+    "U9.C2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/MA4",
+   "pair": [
+    "U5.8",
+    "U9.E1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/MA5",
+   "pair": [
+    "U5.7",
+    "U9.C13"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/MA6",
+   "pair": [
+    "U5.6",
+    "U9.F2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/MA7",
+   "pair": [
+    "U5.5",
+    "U9.B3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/MA8",
+   "pair": [
+    "U5.27",
+    "U9.G1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/MA9",
+   "pair": [
+    "U5.26",
+    "U9.A4"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/MATCHL",
+   "pair": [
+    "U2.19",
+    "U8.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/MD0",
+   "pair": [
+    "U5.13",
+    "U9.C6"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/MD1",
+   "pair": [
+    "U5.14",
+    "U9.A5"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/MD2",
+   "pair": [
+    "U5.15",
+    "U9.B6"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/MD3",
+   "pair": [
+    "U5.17",
+    "U9.A6"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/MD4",
+   "pair": [
+    "U5.18",
+    "U9.A7"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/MD5",
+   "pair": [
+    "U5.19",
+    "U9.A8"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/MD6",
+   "pair": [
+    "U5.20",
+    "U9.A9"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/MD7",
+   "pair": [
+    "U5.21",
+    "U9.B8"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/OE-",
+   "pair": [
+    "U5.24",
+    "U9.B9"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/PC-A0",
+   "pair": [
+    "U9.M6",
+    "BUS1.62"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/PC-A1",
+   "pair": [
+    "U9.N4",
+    "BUS1.61"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/PC-A10",
+   "pair": [
+    "U9.L8",
+    "BUS1.52"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/PC-A11",
+   "pair": [
+    "U2.8",
+    "BUS1.51"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/PC-A2",
+   "pair": [
+    "U9.M5",
+    "BUS1.60"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/PC-A3",
+   "pair": [
+    "U9.K2",
+    "BUS1.59"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/PC-A4",
+   "pair": [
+    "U9.H3",
+    "BUS1.58"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/PC-A5",
+   "pair": [
+    "U9.J2",
+    "BUS1.57"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/PC-A6",
+   "pair": [
+    "U9.J1",
+    "BUS1.56"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/PC-A7",
+   "pair": [
+    "U9.H2",
+    "BUS1.55"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/PC-A8",
+   "pair": [
+    "U9.H1",
+    "BUS1.54"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/PC-A9",
+   "pair": [
+    "U9.N7",
+    "BUS1.53"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/PC-AEN",
+   "pair": [
+    "U2.1",
+    "U9.N10"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/PC-DB0",
+   "pair": [
+    "U1.2",
+    "BUS1.40"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/PC-DB1",
+   "pair": [
+    "U1.3",
+    "BUS1.39"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/PC-DB2",
+   "pair": [
+    "U1.4",
+    "BUS1.38"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/PC-DB3",
+   "pair": [
+    "U1.5",
+    "BUS1.37"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/PC-DB4",
+   "pair": [
+    "U1.6",
+    "BUS1.36"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/PC-DB5",
+   "pair": [
+    "U1.7",
+    "BUS1.35"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/PC-DB6",
+   "pair": [
+    "U1.8",
+    "BUS1.34"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/PC-DB7",
+   "pair": [
+    "U1.9",
+    "BUS1.33"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/PC-IOR",
+   "pair": [
+    "U3.7",
+    "BUS1.14"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/PC-IOW",
+   "pair": [
+    "U3.6",
+    "BUS1.13"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/PC-RD",
+   "pair": [
+    "U3.13",
+    "U9.M8"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/PC-RST",
+   "pair": [
+    "U3.8",
+    "BUS1.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/PC-WR",
+   "pair": [
+    "U3.14",
+    "U9.N6"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/PE+",
+   "pair": [
+    "P1.12",
+    "U9.L13"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/PROG-",
+   "pair": [
+    "U8.19",
+    "U9.M12"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/REF10",
+   "pair": [
+    "JP1.2",
+    "U2.12"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/REF11",
+   "pair": [
+    "JP1.4",
+    "U2.9"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/REF4",
+   "pair": [
+    "JP1.14",
+    "U2.18"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/REF5",
+   "pair": [
+    "JP1.16",
+    "U2.3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/REF6",
+   "pair": [
+    "JP1.10",
+    "U2.16"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/REF7",
+   "pair": [
+    "JP1.6",
+    "U2.14"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/REF8",
+   "pair": [
+    "JP1.12",
+    "U2.5"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/REF9",
+   "pair": [
+    "JP1.8",
+    "U2.7"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/RSTL",
+   "pair": [
+    "U3.12",
+    "U8.11"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/SEL_LPT",
+   "pair": [
+    "U8.18",
+    "U9.L2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/SLCT+",
+   "pair": [
+    "P1.13",
+    "U9.N13"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/SLCTIN-",
+   "pair": [
+    "P1.17",
+    "U9.F11"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/STROBE",
+   "pair": [
+    "P1.1",
+    "U9.A12"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/WR-",
+   "pair": [
+    "U5.29",
+    "U9.A13"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "/WR_REG",
+   "pair": [
+    "U8.13",
+    "U8.15"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "VCC",
+   "pair": [
+    "C4.1",
+    "U5.32"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "Net-(C3-Pad1)",
+   "pair": [
+    "X1.2",
+    "R2.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "Net-(U9-P{slash}A3)",
+   "pair": [
+    "X1.1",
+    "U9.L1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "Net-(D1-A)",
+   "pair": [
+    "R4.1",
+    "D1.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "Net-(D2-A)",
+   "pair": [
+    "R5.1",
+    "D2.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "Net-(U5-CS2)",
+   "pair": [
+    "U5.30",
+    "R3.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "Net-(U3-Y3)",
+   "pair": [
+    "U3.15",
+    "U8.6"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "Net-(U3-Y2)",
+   "pair": [
+    "U3.16",
+    "U8.5"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "Net-(U3-Y1)",
+   "pair": [
+    "U3.17",
+    "U8.4"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "interf_u/interf_u.kicad_pcb",
+   "net": "Net-(U3-Y0)",
+   "pair": [
+    "U3.18",
+    "U8.3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6002
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/ALLPST",
+   "pair": [
+    "ALLPST101.1",
+    "U102.86"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/AN2",
+   "pair": [
+    "MCU_PORT201.14",
+    "U102.45"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/AN3",
+   "pair": [
+    "MCU_PORT201.16",
+    "U102.46"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/AN4",
+   "pair": [
+    "MCU_PORT201.18",
+    "U102.54"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/AN6",
+   "pair": [
+    "MCU_PORT201.22",
+    "U102.52"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/BKPT-",
+   "pair": [
+    "R107.2",
+    "U102.76"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/CLKMOD0",
+   "pair": [
+    "R101.2",
+    "U102.40"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/CLKMOD1",
+   "pair": [
+    "R102.2",
+    "U102.39"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/DDAT0",
+   "pair": [
+    "BDM_PORT101.19",
+    "U102.77"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/DDAT1",
+   "pair": [
+    "BDM_PORT101.18",
+    "U102.78"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/DDAT2",
+   "pair": [
+    "BDM_PORT101.17",
+    "U102.83"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/DDAT3",
+   "pair": [
+    "BDM_PORT101.16",
+    "U102.84"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/DSCLK",
+   "pair": [
+    "R108.2",
+    "U102.85"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/DSI",
+   "pair": [
+    "R109.2",
+    "U102.79"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/DSO",
+   "pair": [
+    "R110.2",
+    "U102.80"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/DTIN1",
+   "pair": [
+    "MCU_PORT201.36",
+    "U102.37"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/GPT1",
+   "pair": [
+    "MCU_PORT201.50",
+    "U102.59"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/GPT3",
+   "pair": [
+    "MCU_PORT201.52",
+    "U102.62"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/IRQ-5",
+   "pair": [
+    "MCU_PORT201.35",
+    "R122.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/IRQ-6",
+   "pair": [
+    "MCU_PORT201.37",
+    "U102.94"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/IRQ-7",
+   "pair": [
+    "D101.2",
+    "MCU_PORT201.39"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/JTAG_EN",
+   "pair": [
+    "R111.2",
+    "U102.26"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/PST0",
+   "pair": [
+    "BDM_PORT101.15",
+    "U102.65"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/PST1",
+   "pair": [
+    "BDM_PORT101.14",
+    "U102.66"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/PST2",
+   "pair": [
+    "BDM_PORT101.13",
+    "U102.69"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/PST3",
+   "pair": [
+    "BDM_PORT101.12",
+    "U102.70"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/QSPI_CS3",
+   "pair": [
+    "MCU_PORT201.29",
+    "U102.12"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/TCLK",
+   "pair": [
+    "CT101.2",
+    "R114.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/VDDPLL",
+   "pair": [
+    "L101.2",
+    "U102.74"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/inout_user/CAN_H",
+   "pair": [
+    "CAN_TERM201.1",
+    "COM_SEL203.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/inout_user/CAN_L",
+   "pair": [
+    "R209.1",
+    "COM_SEL201.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/inout_user/CTS0",
+   "pair": [
+    "U202.8",
+    "UARTCAN201.7"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/inout_user/CTS1",
+   "pair": [
+    "U203.8",
+    "UARTCAN202.7"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(BDM_PORT101-P6)",
+   "pair": [
+    "BDM_PORT101.6",
+    "CT101.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/inout_user/RTS0",
+   "pair": [
+    "U202.7",
+    "UARTCAN201.8"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/inout_user/RTS1",
+   "pair": [
+    "U203.7",
+    "UARTCAN202.8"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/inout_user/RTS2",
+   "pair": [
+    "U204.14",
+    "UARTCAN203.8"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/inout_user/RXD0",
+   "pair": [
+    "U202.13",
+    "UARTCAN201.3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/inout_user/RXD1",
+   "pair": [
+    "U203.13",
+    "UARTCAN202.3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/inout_user/RXD2",
+   "pair": [
+    "COM_SEL202.2",
+    "UARTCAN203.3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/inout_user/RxD_CAN",
+   "pair": [
+    "U205.4",
+    "CAN_EN201.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/inout_user/TXD0",
+   "pair": [
+    "U202.14",
+    "UARTCAN201.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/inout_user/TXD1",
+   "pair": [
+    "U203.14",
+    "UARTCAN202.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/inout_user/TxD_CAN",
+   "pair": [
+    "U205.1",
+    "CAN_EN201.3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/+3,3V_OUT",
+   "pair": [
+    "P303.38",
+    "R302.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/LED_TEST1",
+   "pair": [
+    "R303.1",
+    "U301.28"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/LED_TEST2",
+   "pair": [
+    "R304.1",
+    "U301.27"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/TCK",
+   "pair": [
+    "R301.2",
+    "U301.89"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/TDI",
+   "pair": [
+    "P301.4",
+    "U301.4"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/TDO",
+   "pair": [
+    "P301.6",
+    "U301.104"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/TMS",
+   "pair": [
+    "P301.3",
+    "U301.20"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D0",
+   "pair": [
+    "P303.1",
+    "U301.12"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D1",
+   "pair": [
+    "P303.3",
+    "U301.11"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D10",
+   "pair": [
+    "P303.21",
+    "U301.122"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D11",
+   "pair": [
+    "P303.23",
+    "U301.119"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D12",
+   "pair": [
+    "P303.25",
+    "U301.114"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D13",
+   "pair": [
+    "P303.27",
+    "U301.111"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D14",
+   "pair": [
+    "P303.29",
+    "U301.109"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D15",
+   "pair": [
+    "P303.31",
+    "U301.108"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D16",
+   "pair": [
+    "P303.33",
+    "U301.100"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D17",
+   "pair": [
+    "P303.35",
+    "U301.101"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D18",
+   "pair": [
+    "P303.37",
+    "U301.97"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D19",
+   "pair": [
+    "P303.39",
+    "U301.96"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D2",
+   "pair": [
+    "P303.5",
+    "U301.7"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D20",
+   "pair": [
+    "P303.4",
+    "U301.6"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D21",
+   "pair": [
+    "P303.6",
+    "U301.10"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D22",
+   "pair": [
+    "P303.8",
+    "U301.5"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D23",
+   "pair": [
+    "P303.10",
+    "U301.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D24",
+   "pair": [
+    "P303.12",
+    "U301.142"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D25",
+   "pair": [
+    "P303.14",
+    "U301.139"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D26",
+   "pair": [
+    "P303.16",
+    "U301.137"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D27",
+   "pair": [
+    "P303.18",
+    "U301.134"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D28",
+   "pair": [
+    "P303.20",
+    "U301.132"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D29",
+   "pair": [
+    "P303.22",
+    "U301.117"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D3",
+   "pair": [
+    "P303.7",
+    "U301.8"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D30",
+   "pair": [
+    "P303.24",
+    "U301.118"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D31",
+   "pair": [
+    "P303.26",
+    "U301.116"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D32",
+   "pair": [
+    "P303.28",
+    "U301.98"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D33",
+   "pair": [
+    "P303.30",
+    "U301.112"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D34",
+   "pair": [
+    "P303.32",
+    "U301.113"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D35",
+   "pair": [
+    "P303.34",
+    "U301.107"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D36",
+   "pair": [
+    "P303.36",
+    "U301.99"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D4",
+   "pair": [
+    "P303.9",
+    "U301.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D5",
+   "pair": [
+    "P303.11",
+    "U301.143"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D6",
+   "pair": [
+    "P303.13",
+    "U301.140"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D7",
+   "pair": [
+    "P303.15",
+    "U301.138"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D8",
+   "pair": [
+    "P303.17",
+    "U301.136"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/xilinx/XIL_D9",
+   "pair": [
+    "P303.19",
+    "U301.131"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "GNDA",
+   "pair": [
+    "C109.2",
+    "MCU_PORT201.58"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/AN0",
+   "pair": [
+    "MCU_PORT201.10",
+    "U102.43"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/AN1",
+   "pair": [
+    "MCU_PORT201.12",
+    "U102.44"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/QSPI_CS0",
+   "pair": [
+    "MCU_PORT201.23",
+    "U102.20"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/AN5",
+   "pair": [
+    "MCU_PORT201.20",
+    "U102.53"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/AN7",
+   "pair": [
+    "MCU_PORT201.24",
+    "U102.51"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/IRQ-4",
+   "pair": [
+    "MCU_PORT201.33",
+    "R121.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/DTIN0",
+   "pair": [
+    "MCU_PORT201.34",
+    "U102.36"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/DTIN2",
+   "pair": [
+    "MCU_PORT201.38",
+    "U102.31"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/DTIN3",
+   "pair": [
+    "MCU_PORT201.40",
+    "U102.32"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/GPT0",
+   "pair": [
+    "MCU_PORT201.49",
+    "U102.58"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/GPT2",
+   "pair": [
+    "MCU_PORT201.51",
+    "U102.61"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/VCCA",
+   "pair": [
+    "MCU_PORT201.57",
+    "U102.49"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/IRQ-1",
+   "pair": [
+    "MCU_PORT201.2",
+    "U102.87"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/IRQ-2",
+   "pair": [
+    "MCU_PORT201.8",
+    "U102.88"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/IRQ-3",
+   "pair": [
+    "MCU_PORT201.31",
+    "U301.44"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/XTAL",
+   "pair": [
+    "U102.72",
+    "U301.128"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/RCON-",
+   "pair": [
+    "MCU_PORT201.53",
+    "U102.21"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/RSTO-",
+   "pair": [
+    "MCU_PORT201.4",
+    "U102.97"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/RSTI-",
+   "pair": [
+    "BDM_PORT101.7",
+    "MCU_PORT201.6"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/QSPI_CS1",
+   "pair": [
+    "MCU_PORT201.25",
+    "U301.54"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/URTS1",
+   "pair": [
+    "MCU_PORT201.9",
+    "U102.4"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/UCTS1",
+   "pair": [
+    "MCU_PORT201.11",
+    "U102.98"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/QSPI_CLK",
+   "pair": [
+    "MCU_PORT201.21",
+    "U301.48"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/DSPI_DOUT",
+   "pair": [
+    "MCU_PORT201.17",
+    "U301.47"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/QSPI_DIN",
+   "pair": [
+    "MCU_PORT201.19",
+    "U301.46"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/QSPI_CS2",
+   "pair": [
+    "MCU_PORT201.27",
+    "U301.45"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/URXD1",
+   "pair": [
+    "MCU_PORT201.7",
+    "U102.100"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/UTXD1",
+   "pair": [
+    "MCU_PORT201.5",
+    "U102.99"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/PWM7",
+   "pair": [
+    "MCU_PORT201.32",
+    "U102.63"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/PWM5",
+   "pair": [
+    "MCU_PORT201.30",
+    "U102.60"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/PWM1",
+   "pair": [
+    "MCU_PORT201.13",
+    "U102.38"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/PWM3",
+   "pair": [
+    "MCU_PORT201.15",
+    "U102.33"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/URTS2",
+   "pair": [
+    "MCU_PORT201.46",
+    "UART_EN203.6"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/UTXD2",
+   "pair": [
+    "MCU_PORT201.45",
+    "UART_EN203.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/URXD2",
+   "pair": [
+    "MCU_PORT201.47",
+    "UART_EN203.4"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/UCTS2",
+   "pair": [
+    "MCU_PORT201.48",
+    "UART_EN203.8"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/CANRX",
+   "pair": [
+    "MCU_PORT201.28",
+    "CAN_EN201.4"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/CANTX",
+   "pair": [
+    "MCU_PORT201.26",
+    "CAN_EN201.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/URTS0",
+   "pair": [
+    "MCU_PORT201.42",
+    "UART_EN201.6"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/UTXD0",
+   "pair": [
+    "MCU_PORT201.41",
+    "UART_EN201.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/URXD0",
+   "pair": [
+    "MCU_PORT201.43",
+    "UART_EN201.4"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/UCTS0",
+   "pair": [
+    "MCU_PORT201.44",
+    "UART_EN201.8"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(ABRT_SW101-Pad1)",
+   "pair": [
+    "ABRT_SW101.1",
+    "R104.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(BDM_PORT101-P22)",
+   "pair": [
+    "BDM_PORT101.26",
+    "TA-101.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(C104-Pad1)",
+   "pair": [
+    "R104.2",
+    "U101.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(D102-K)",
+   "pair": [
+    "D102.1",
+    "LV101.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(MCU_PORT201-P1)",
+   "pair": [
+    "C201.2",
+    "MCU_PORT201.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U202-V+)",
+   "pair": [
+    "C204.2",
+    "U202.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U202-C1+)",
+   "pair": [
+    "C205.1",
+    "U202.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U202-C1-)",
+   "pair": [
+    "C205.2",
+    "U202.3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U202-C2+)",
+   "pair": [
+    "C206.1",
+    "U202.4"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U202-C2-)",
+   "pair": [
+    "C206.2",
+    "U202.5"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U202-V-)",
+   "pair": [
+    "C207.1",
+    "U202.6"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U203-V+)",
+   "pair": [
+    "C209.2",
+    "U203.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U203-C1+)",
+   "pair": [
+    "C210.1",
+    "U203.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U203-C1-)",
+   "pair": [
+    "C210.2",
+    "U203.3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U203-C2+)",
+   "pair": [
+    "C211.1",
+    "U203.4"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U203-C2-)",
+   "pair": [
+    "C211.2",
+    "U203.5"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(D201-K)",
+   "pair": [
+    "C213.1",
+    "VR201.5"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U203-V-)",
+   "pair": [
+    "C214.1",
+    "U203.6"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U204-V+)",
+   "pair": [
+    "C217.2",
+    "U204.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U204-C1+)",
+   "pair": [
+    "C218.1",
+    "U204.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U204-C1-)",
+   "pair": [
+    "C218.2",
+    "U204.3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U204-C2+)",
+   "pair": [
+    "C220.1",
+    "U204.4"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U204-C2-)",
+   "pair": [
+    "C220.2",
+    "U204.5"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U204-V-)",
+   "pair": [
+    "C221.1",
+    "U204.6"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(CAN_TERM201-Pad2)",
+   "pair": [
+    "CAN_TERM201.2",
+    "R209.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(COM_SEL201-P3)",
+   "pair": [
+    "U204.7",
+    "COM_SEL201.3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(COM_SEL202-P3)",
+   "pair": [
+    "COM_SEL202.3",
+    "U204.8"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(COM_SEL203-P3)",
+   "pair": [
+    "COM_SEL203.3",
+    "U204.13"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(D101-K)",
+   "pair": [
+    "D101.1",
+    "U101.4"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(D301-A)",
+   "pair": [
+    "D301.2",
+    "R303.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(D302-A)",
+   "pair": [
+    "D302.2",
+    "R304.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(F201-Pad1)",
+   "pair": [
+    "F201.1",
+    "SW_ONOFF201.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(TB201-P1)",
+   "pair": [
+    "SW_ONOFF201.3",
+    "TB201.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(L102-Pad1)",
+   "pair": [
+    "L102.1",
+    "VDDA101.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U201A-E)",
+   "pair": [
+    "R201.2",
+    "U201.13"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(LED201-A)",
+   "pair": [
+    "LED201.2",
+    "R202.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(LED202-A)",
+   "pair": [
+    "LED202.2",
+    "R203.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(LED203-A)",
+   "pair": [
+    "LED203.2",
+    "R204.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(LED204-A)",
+   "pair": [
+    "LED204.2",
+    "R206.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(LED205-A)",
+   "pair": [
+    "LED205.2",
+    "R207.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(LEDABRT101-K)",
+   "pair": [
+    "LEDABRT101.1",
+    "R103.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(LED_RST101-A)",
+   "pair": [
+    "R116.2",
+    "LED_RST101.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(PULUPEN201-Pad8)",
+   "pair": [
+    "PULUPEN201.8",
+    "R214.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(PULUPEN201-Pad6)",
+   "pair": [
+    "PULUPEN201.6",
+    "R213.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(PULUPEN201-Pad4)",
+   "pair": [
+    "PULUPEN201.4",
+    "R212.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(PULUPEN201-Pad2)",
+   "pair": [
+    "PULUPEN201.2",
+    "R211.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U301-P11)",
+   "pair": [
+    "U301.32",
+    "P302.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U301-P4)",
+   "pair": [
+    "U301.31",
+    "P302.4"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(Q101-B)",
+   "pair": [
+    "Q101.2",
+    "R115.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(Q101-C)",
+   "pair": [
+    "Q101.3",
+    "R116.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U102-TEST)",
+   "pair": [
+    "R113.1",
+    "U102.5"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U102-TCLK{slash}PSTCLK{slash}CLKOUT)",
+   "pair": [
+    "R114.1",
+    "U102.64"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U201A-O)",
+   "pair": [
+    "R202.2",
+    "U201.3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U201B-O)",
+   "pair": [
+    "R203.2",
+    "U201.6"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U201D-O)",
+   "pair": [
+    "R204.2",
+    "U201.11"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U202-T2IN)",
+   "pair": [
+    "U202.10",
+    "UART_EN201.5"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U201C-O)",
+   "pair": [
+    "R206.2",
+    "U201.8"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U203-T2IN)",
+   "pair": [
+    "U203.10",
+    "UART_EN202.5"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U205-Rsl)",
+   "pair": [
+    "RS201.1",
+    "U205.8"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U204-T1IN)",
+   "pair": [
+    "U204.11",
+    "UART_EN203.5"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U202-R2OUT)",
+   "pair": [
+    "U202.9",
+    "UART_EN201.7"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U202-T1IN)",
+   "pair": [
+    "U202.11",
+    "UART_EN201.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U202-R1OUT)",
+   "pair": [
+    "U202.12",
+    "UART_EN201.3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U203-R2OUT)",
+   "pair": [
+    "U203.9",
+    "UART_EN202.7"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U203-T1IN)",
+   "pair": [
+    "U203.11",
+    "UART_EN202.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U203-R1OUT)",
+   "pair": [
+    "U203.12",
+    "UART_EN202.3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U204-R2OUT)",
+   "pair": [
+    "U204.9",
+    "UART_EN203.3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U204-T2IN)",
+   "pair": [
+    "U204.10",
+    "UART_EN203.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U204-R1OUT)",
+   "pair": [
+    "U204.12",
+    "UART_EN203.7"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(U205-Vref)",
+   "pair": [
+    "U205.5",
+    "VREF201.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/CLKIN{slash}EXTAL",
+   "pair": [
+    "U102.73",
+    "Y101.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/inout_user/TXD2{slash}CANL",
+   "pair": [
+    "COM_SEL201.2",
+    "UARTCAN203.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "/inout_user/CTS2{slash}CANH",
+   "pair": [
+    "COM_SEL203.2",
+    "UARTCAN203.7"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(UARTCAN201-P6)",
+   "pair": [
+    "UARTCAN201.1",
+    "UARTCAN201.4"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(UARTCAN202-P6)",
+   "pair": [
+    "UARTCAN202.1",
+    "UARTCAN202.4"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+   "net": "Net-(UARTCAN203-P6)",
+   "pair": [
+    "UARTCAN203.1",
+    "UARTCAN203.4"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "pic_programmer/pic_programmer.kicad_pcb",
+   "net": "/PC-CLOCK-OUT",
+   "pair": [
+    "J1.7",
+    "R6.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "pic_programmer/pic_programmer.kicad_pcb",
+   "net": "Net-(C2-Pad1)",
+   "pair": [
+    "U3.1",
+    "D1.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "pic_programmer/pic_programmer.kicad_pcb",
+   "net": "Net-(C4-Pad1)",
+   "pair": [
+    "U4.1",
+    "R10.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "pic_programmer/pic_programmer.kicad_pcb",
+   "net": "Net-(C5-Pad1)",
+   "pair": [
+    "R10.2",
+    "C5.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "pic_programmer/pic_programmer.kicad_pcb",
+   "net": "Net-(C9-Pad2)",
+   "pair": [
+    "C9.2",
+    "R11.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "pic_programmer/pic_programmer.kicad_pcb",
+   "net": "Net-(D11-Pad1)",
+   "pair": [
+    "D11.1",
+    "Q1.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "pic_programmer/pic_programmer.kicad_pcb",
+   "net": "Net-(D11-Pad2)",
+   "pair": [
+    "D11.2",
+    "R19.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "pic_programmer/pic_programmer.kicad_pcb",
+   "net": "Net-(Q1-Pad2)",
+   "pair": [
+    "Q1.2",
+    "R8.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "pic_programmer/pic_programmer.kicad_pcb",
+   "net": "Net-(Q3-Pad2)",
+   "pair": [
+    "R20.2",
+    "R19.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "pic_programmer/pic_programmer.kicad_pcb",
+   "net": "Net-(R12-Pad1)",
+   "pair": [
+    "U2.6",
+    "R12.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "pic_programmer/pic_programmer.kicad_pcb",
+   "net": "Net-(R13-Pad1)",
+   "pair": [
+    "U2.8",
+    "R13.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "pic_programmer/pic_programmer.kicad_pcb",
+   "net": "Net-(R15-Pad1)",
+   "pair": [
+    "R15.1",
+    "RV1.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "pic_programmer/pic_programmer.kicad_pcb",
+   "net": "Net-(R16-Pad1)",
+   "pair": [
+    "R16.1",
+    "RV1.3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "pic_programmer/pic_programmer.kicad_pcb",
+   "net": "Net-(R8-Pad1)",
+   "pair": [
+    "U2.3",
+    "R8.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "pic_programmer/pic_programmer.kicad_pcb",
+   "net": "Net-(RV1-Pad2)",
+   "pair": [
+    "U4.2",
+    "RV1.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "pic_programmer/pic_programmer.kicad_pcb",
+   "net": "VCC",
+   "pair": [
+    "D6.1",
+    "R20.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "pic_programmer/pic_programmer.kicad_pcb",
+   "net": "VPP",
+   "pair": [
+    "Q2.3",
+    "R16.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "pic_programmer/pic_programmer.kicad_pcb",
+   "net": "Net-(D1-Pad2)",
+   "pair": [
+    "P1.2",
+    "D1.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "pic_programmer/pic_programmer.kicad_pcb",
+   "net": "Net-(D4-Pad2)",
+   "pair": [
+    "U2.5",
+    "R3.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "pic_programmer/pic_programmer.kicad_pcb",
+   "net": "Net-(D8-Pad2)",
+   "pair": [
+    "R9.2",
+    "D8.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "pic_programmer/pic_programmer.kicad_pcb",
+   "net": "Net-(D9-Pad2)",
+   "pair": [
+    "R14.2",
+    "D9.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "pic_programmer/pic_programmer.kicad_pcb",
+   "net": "Net-(D12-Pad2)",
+   "pair": [
+    "R21.1",
+    "D12.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "pic_programmer/pic_programmer.kicad_pcb",
+   "net": "/pic_sockets/VCC_PIC",
+   "pair": [
+    "Q3.1",
+    "C7.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "pic_programmer/pic_programmer.kicad_pcb",
+   "net": "/CLOCK-RB6",
+   "pair": [
+    "P2.27",
+    "R13.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "pic_programmer/pic_programmer.kicad_pcb",
+   "net": "/DATA-RB7",
+   "pair": [
+    "P2.28",
+    "U2.12"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "pic_programmer/pic_programmer.kicad_pcb",
+   "net": "Net-(D2-Pad2)",
+   "pair": [
+    "U2.2",
+    "D2.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "pic_programmer/pic_programmer.kicad_pcb",
+   "net": "Net-(D6-Pad2)",
+   "pair": [
+    "U2.9",
+    "D6.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "pic_programmer/pic_programmer.kicad_pcb",
+   "net": "Net-(D10-Pad2)",
+   "pair": [
+    "U4.8",
+    "L1.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "pic_programmer/pic_programmer.kicad_pcb",
+   "net": "/PC-DATA-IN",
+   "pair": [
+    "U2.11",
+    "J1.8"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "pic_programmer/pic_programmer.kicad_pcb",
+   "net": "/PC-DATA-OUT",
+   "pair": [
+    "J1.4",
+    "R4.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "pic_programmer/pic_programmer.kicad_pcb",
+   "net": "/VPP_ON",
+   "pair": [
+    "J1.3",
+    "R1.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "pic_programmer/pic_programmer.kicad_pcb",
+   "net": "Net-(Q2-Pad1)",
+   "pair": [
+    "Q2.1",
+    "R9.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "pic_programmer/pic_programmer.kicad_pcb",
+   "net": "/VPP{slash}MCLR",
+   "pair": [
+    "U6.4",
+    "R18.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "sonde xilinx/sonde xilinx.kicad_pcb",
+   "net": "/CLK-D1",
+   "pair": [
+    "R10.2",
+    "J1.3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "sonde xilinx/sonde xilinx.kicad_pcb",
+   "net": "/CTRL-D3",
+   "pair": [
+    "R8.2",
+    "J1.5"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "sonde xilinx/sonde xilinx.kicad_pcb",
+   "net": "/DONE-SELECT*",
+   "pair": [
+    "R4.2",
+    "J1.13"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "sonde xilinx/sonde xilinx.kicad_pcb",
+   "net": "/PWR_3,3-5V",
+   "pair": [
+    "D2.1",
+    "J2.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "sonde xilinx/sonde xilinx.kicad_pcb",
+   "net": "/TCK-CCLK",
+   "pair": [
+    "R12.1",
+    "J2.4"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "sonde xilinx/sonde xilinx.kicad_pcb",
+   "net": "/TD0-DONE",
+   "pair": [
+    "R14.1",
+    "J2.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "sonde xilinx/sonde xilinx.kicad_pcb",
+   "net": "/TD0-PROG-D4",
+   "pair": [
+    "R6.2",
+    "J1.6"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "sonde xilinx/sonde xilinx.kicad_pcb",
+   "net": "/TDI-DIN",
+   "pair": [
+    "R11.1",
+    "J2.3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "sonde xilinx/sonde xilinx.kicad_pcb",
+   "net": "/TDI-DIN-D0",
+   "pair": [
+    "R7.2",
+    "J1.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "sonde xilinx/sonde xilinx.kicad_pcb",
+   "net": "/TMS-PROG",
+   "pair": [
+    "R13.1",
+    "J2.5"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "sonde xilinx/sonde xilinx.kicad_pcb",
+   "net": "/TMS-PROG-D2",
+   "pair": [
+    "R9.2",
+    "J1.4"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "sonde xilinx/sonde xilinx.kicad_pcb",
+   "net": "/VCC_SENSE-ERROR*",
+   "pair": [
+    "R1.2",
+    "J1.15"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "sonde xilinx/sonde xilinx.kicad_pcb",
+   "net": "VCC",
+   "pair": [
+    "U2.14",
+    "U1.14"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "sonde xilinx/sonde xilinx.kicad_pcb",
+   "net": "Net-(U1B-O)",
+   "pair": [
+    "R11.2",
+    "U1.6"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "sonde xilinx/sonde xilinx.kicad_pcb",
+   "net": "Net-(U1A-O)",
+   "pair": [
+    "R14.2",
+    "U1.3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "sonde xilinx/sonde xilinx.kicad_pcb",
+   "net": "Net-(U1D-O)",
+   "pair": [
+    "R13.2",
+    "U1.11"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "sonde xilinx/sonde xilinx.kicad_pcb",
+   "net": "Net-(U1C-O)",
+   "pair": [
+    "R12.2",
+    "U1.8"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "sonde xilinx/sonde xilinx.kicad_pcb",
+   "net": "Net-(D1-K)",
+   "pair": [
+    "D1.2",
+    "R1.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "sonde xilinx/sonde xilinx.kicad_pcb",
+   "net": "Net-(J1-Pad11)",
+   "pair": [
+    "J1.8",
+    "J1.12"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "sonde xilinx/sonde xilinx.kicad_pcb",
+   "net": "Net-(U2A-O)",
+   "pair": [
+    "R4.1",
+    "U2.3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "sonde xilinx/sonde xilinx.kicad_pcb",
+   "net": "Net-(U1A-E)",
+   "pair": [
+    "R6.1",
+    "U1.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "sonde xilinx/sonde xilinx.kicad_pcb",
+   "net": "Net-(U1B-D)",
+   "pair": [
+    "R7.1",
+    "U1.5"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "sonde xilinx/sonde xilinx.kicad_pcb",
+   "net": "Net-(U1B-E)",
+   "pair": [
+    "R8.1",
+    "U1.13"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "sonde xilinx/sonde xilinx.kicad_pcb",
+   "net": "Net-(U1D-D)",
+   "pair": [
+    "R9.1",
+    "U1.12"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "sonde xilinx/sonde xilinx.kicad_pcb",
+   "net": "Net-(U1C-D)",
+   "pair": [
+    "R10.1",
+    "U1.9"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "Net-(U1-VBUS_SENSE)",
+   "pair": [
+    "C2.1",
+    "U1.41"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "+3.3V",
+   "pair": [
+    "R4.1",
+    "C3.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "Net-(U2-CAP)",
+   "pair": [
+    "U2.7",
+    "C28.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "Net-(D15-1)",
+   "pair": [
+    "D15.RK",
+    "R7.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "Net-(D16-1)",
+   "pair": [
+    "D16.RK",
+    "R8.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "Net-(D17-1)",
+   "pair": [
+    "D17.RK",
+    "R9.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "Net-(D18-1)",
+   "pair": [
+    "D18.RK",
+    "R10.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "Net-(D19-1)",
+   "pair": [
+    "D19.GA",
+    "R11.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "Net-(D20-1)",
+   "pair": [
+    "D20.GA",
+    "R12.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "Net-(D21-1)",
+   "pair": [
+    "D21.GA",
+    "R13.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "Net-(J1-Pin_1)",
+   "pair": [
+    "J1.1",
+    "JP1.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "Net-(U1-EXT_RST#)",
+   "pair": [
+    "U1.40",
+    "R3.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "Net-(U1-TEST3#)",
+   "pair": [
+    "R4.2",
+    "U1.45"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "Net-(U1-TEST1#)",
+   "pair": [
+    "U1.43",
+    "R5.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "Net-(U1-REXT)",
+   "pair": [
+    "R6.1",
+    "U1.27"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "/U1D-",
+   "pair": [
+    "D1.2",
+    "U1.18"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "/U1D+",
+   "pair": [
+    "D2.2",
+    "U1.19"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "/U2D-",
+   "pair": [
+    "D3.2",
+    "U1.16"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "/U2D+",
+   "pair": [
+    "D4.2",
+    "U1.17"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "/U3D-",
+   "pair": [
+    "D5.2",
+    "U1.13"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "/U3D+",
+   "pair": [
+    "D6.2",
+    "U1.14"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "/U4D-",
+   "pair": [
+    "D7.2",
+    "U1.11"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "/U4D+",
+   "pair": [
+    "D8.2",
+    "U1.12"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "/U5D-",
+   "pair": [
+    "D9.2",
+    "U1.32"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "/U5D+",
+   "pair": [
+    "D10.2",
+    "U1.33"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "/U6D-",
+   "pair": [
+    "D11.2",
+    "U1.34"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "/U6D+",
+   "pair": [
+    "D12.2",
+    "U1.35"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "/U7D-",
+   "pair": [
+    "D13.2",
+    "U1.37"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "/U7D+",
+   "pair": [
+    "D14.2",
+    "U1.38"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "/LED1",
+   "pair": [
+    "R7.2",
+    "U1.3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "/D-",
+   "pair": [
+    "J1.2",
+    "U1.29"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "/D+",
+   "pair": [
+    "J1.3",
+    "U1.30"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "/LED2",
+   "pair": [
+    "R8.2",
+    "U1.4"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "/LED3",
+   "pair": [
+    "U1.5",
+    "R9.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "/LED4",
+   "pair": [
+    "R10.2",
+    "U1.7"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "/LED5",
+   "pair": [
+    "R11.2",
+    "U1.48"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "/LED6",
+   "pair": [
+    "R12.2",
+    "U1.47"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "/LED7",
+   "pair": [
+    "R13.2",
+    "U1.46"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "/LC",
+   "pair": [
+    "D19.GK",
+    "D21.RA"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "/XO",
+   "pair": [
+    "Y1.3",
+    "U1.23"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "/XI",
+   "pair": [
+    "Y1.1",
+    "U1.22"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "stickhub/StickHub.kicad_pcb",
+   "net": "VIN",
+   "pair": [
+    "U2.1",
+    "JP1.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_pads_inside_pads/test_pads_inside_pads.kicad_pcb",
+   "net": "/NET1",
+   "pair": [
+    "P3.1",
+    "P4.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_pads_inside_pads/test_pads_inside_pads.kicad_pcb",
+   "net": "/NET2",
+   "pair": [
+    "P1.1",
+    "P2.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "+12V",
+   "pair": [
+    "U6.7",
+    "U3.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "-12V",
+   "pair": [
+    "D4.2",
+    "U6.4"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/CSMEM",
+   "pair": [
+    "U2.39",
+    "U5.20"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/DAT0",
+   "pair": [
+    "U2.69",
+    "U1.12"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/DAT1",
+   "pair": [
+    "U2.66",
+    "U1.11"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/DAT2",
+   "pair": [
+    "U2.70",
+    "U1.3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/DAT3",
+   "pair": [
+    "U2.68",
+    "U1.4"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/DAT4",
+   "pair": [
+    "U2.63",
+    "U1.10"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/DAT5",
+   "pair": [
+    "U2.61",
+    "U1.9"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/DAT6",
+   "pair": [
+    "U2.58",
+    "U1.8"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/DAT7",
+   "pair": [
+    "U2.62",
+    "U1.7"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/DCLK",
+   "pair": [
+    "U2.67",
+    "U1.5"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/LED1",
+   "pair": [
+    "U2.76",
+    "R2.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/LED2",
+   "pair": [
+    "U2.74",
+    "R3.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/MA0",
+   "pair": [
+    "U2.33",
+    "U5.11"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/MA1",
+   "pair": [
+    "U2.32",
+    "U5.12"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/MA2",
+   "pair": [
+    "U2.26",
+    "U5.13"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/MA3",
+   "pair": [
+    "U2.25",
+    "U5.15"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/MA4",
+   "pair": [
+    "U2.24",
+    "U5.16"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/MA5",
+   "pair": [
+    "U2.31",
+    "U5.17"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/MA6",
+   "pair": [
+    "U2.34",
+    "U5.18"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/MA7",
+   "pair": [
+    "U2.36",
+    "U5.19"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/MD0",
+   "pair": [
+    "U2.35",
+    "U5.10"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/MD1",
+   "pair": [
+    "U2.37",
+    "U5.9"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/MD10",
+   "pair": [
+    "U2.41",
+    "U5.21"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/MD11",
+   "pair": [
+    "U2.45",
+    "U5.23"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/MD12",
+   "pair": [
+    "U2.55",
+    "U5.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/MD13",
+   "pair": [
+    "U2.53",
+    "U5.26"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/MD14",
+   "pair": [
+    "U2.56",
+    "K1.3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/MD2",
+   "pair": [
+    "U2.40",
+    "U5.8"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/MD3",
+   "pair": [
+    "U2.44",
+    "U5.7"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/MD4",
+   "pair": [
+    "U2.46",
+    "U5.6"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/MD5",
+   "pair": [
+    "U2.48",
+    "U5.5"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/MD6",
+   "pair": [
+    "U2.50",
+    "U5.4"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/MD7",
+   "pair": [
+    "U2.52",
+    "U5.3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/MD8",
+   "pair": [
+    "U2.51",
+    "U5.25"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/MD9",
+   "pair": [
+    "U2.47",
+    "U5.24"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/OEMEM",
+   "pair": [
+    "U2.43",
+    "U5.22"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/PARBUS0",
+   "pair": [
+    "U2.10",
+    "J1.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/PARBUS1",
+   "pair": [
+    "U2.7",
+    "J1.3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/PARBUS2",
+   "pair": [
+    "U2.5",
+    "J1.4"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/PARBUS3",
+   "pair": [
+    "U2.3",
+    "J1.5"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/PARBUS4",
+   "pair": [
+    "U2.84",
+    "J1.6"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/PARBUS5",
+   "pair": [
+    "U2.83",
+    "J1.7"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/PARBUS6",
+   "pair": [
+    "U2.81",
+    "J1.8"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/PARBUS7",
+   "pair": [
+    "U2.82",
+    "J1.9"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/PAR_AUX0{slash}STROBE*",
+   "pair": [
+    "U2.13",
+    "J1.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/PAR_AUX6{slash}ACK",
+   "pair": [
+    "U2.79",
+    "J1.10"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/PAR_AUX5{slash}BUSY*",
+   "pair": [
+    "U2.80",
+    "J1.11"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/PAR_AUX4{slash}PE",
+   "pair": [
+    "U2.77",
+    "J1.12"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/PAR_AUX3{slash}SELECT*",
+   "pair": [
+    "U2.75",
+    "J1.13"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/PAR_AUX2{slash}AUTOLF*",
+   "pair": [
+    "U2.11",
+    "J1.14"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/PAR_AUX1{slash}ERROR*",
+   "pair": [
+    "U2.9",
+    "J1.15"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/PAR_AUX7{slash}INIT",
+   "pair": [
+    "U2.6",
+    "J1.16"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/PAR_AUX8{slash}SELECT",
+   "pair": [
+    "U2.4",
+    "J1.17"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/PIN_TEST0",
+   "pair": [
+    "U2.1",
+    "P4.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/PIN_TEST1",
+   "pair": [
+    "U2.2",
+    "P4.4"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/XIN{slash}CLK",
+   "pair": [
+    "U2.12",
+    "U4.4"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/SW0",
+   "pair": [
+    "SW1.1",
+    "U2.72"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/SW1",
+   "pair": [
+    "U2.71",
+    "SW2.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/TCK",
+   "pair": [
+    "U2.30",
+    "J2.4"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/TDI",
+   "pair": [
+    "U2.28",
+    "J2.3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/TDO",
+   "pair": [
+    "U2.59",
+    "J2.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/TMS",
+   "pair": [
+    "U2.29",
+    "J2.5"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "Net-(U1-VREF)",
+   "pair": [
+    "U1.1",
+    "C1.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "Net-(U1-VOUT)_1",
+   "pair": [
+    "U1.14",
+    "C2.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "Net-(U1-VOUT)",
+   "pair": [
+    "U1.15",
+    "C14.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "Net-(C14-Pad2)",
+   "pair": [
+    "R8.2",
+    "C14.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "Net-(D2-A)",
+   "pair": [
+    "R2.1",
+    "D2.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "Net-(C2-Pad2)",
+   "pair": [
+    "R9.2",
+    "C2.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "Net-(C4-Pad1)",
+   "pair": [
+    "U4.2",
+    "X1.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "Net-(C5-Pad1)",
+   "pair": [
+    "R1.2",
+    "C5.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "Net-(D3-A)",
+   "pair": [
+    "R3.1",
+    "D3.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "Net-(K1-PM)",
+   "pair": [
+    "K1.2",
+    "U5.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "Net-(P3-P1)",
+   "pair": [
+    "R10.1",
+    "P3.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "Net-(U6-+)",
+   "pair": [
+    "R9.1",
+    "R6.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "Net-(U6-OUT)",
+   "pair": [
+    "R10.2",
+    "R7.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/+12BATT",
+   "pair": [
+    "D1.2",
+    "P2.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/-12BATT",
+   "pair": [
+    "D4.1",
+    "P2.3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "Net-(U6--)",
+   "pair": [
+    "R8.1",
+    "R7.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "test_xil_95108/carte_test.kicad_pcb",
+   "net": "/R{slash}W-A14",
+   "pair": [
+    "U2.54",
+    "U5.27"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "+12V",
+   "pair": [
+    "BUS1.A2",
+    "BUS1.A2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "+3.3V",
+   "pair": [
+    "BUS1.A21",
+    "BUS1.A45"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "+5F",
+   "pair": [
+    "Q2.3",
+    "Q3.3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/ESVIDEO-RVB/OE_RVB-",
+   "pair": [
+    "U8.57",
+    "U9.29"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/ESVIDEO-RVB/REF+",
+   "pair": [
+    "U8.64",
+    "R37.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/ESVIDEO-RVB/VAA",
+   "pair": [
+    "U8.44",
+    "U9.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/EA1",
+   "pair": [
+    "RR2.6",
+    "U11.61"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/EA10",
+   "pair": [
+    "RR6.9",
+    "U11.121"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/EA11",
+   "pair": [
+    "RR6.7",
+    "U11.129"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/EA12",
+   "pair": [
+    "RR6.5",
+    "U11.137"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/EA13",
+   "pair": [
+    "RR6.4",
+    "U11.141"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/EA14",
+   "pair": [
+    "RR4.8",
+    "U11.149"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/EA15",
+   "pair": [
+    "RR4.6",
+    "U11.153"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/EA2",
+   "pair": [
+    "RR3.8",
+    "U11.69"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/EA3",
+   "pair": [
+    "RR3.6",
+    "U11.73"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/EA4",
+   "pair": [
+    "RR3.2",
+    "U11.81"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/EA5",
+   "pair": [
+    "RR4.4",
+    "U11.89"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/EA6",
+   "pair": [
+    "RR4.2",
+    "U11.97"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/EA7",
+   "pair": [
+    "RR5.9",
+    "U11.101"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/EA9",
+   "pair": [
+    "RR5.3",
+    "U11.113"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/EQ0",
+   "pair": [
+    "RR1.2",
+    "U11.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/EQ1",
+   "pair": [
+    "RR1.4",
+    "U11.9"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/EQ2",
+   "pair": [
+    "RR1.6",
+    "U11.17"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/EQ3",
+   "pair": [
+    "RR1.7",
+    "U11.21"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/EQ4",
+   "pair": [
+    "RR1.9",
+    "U11.29"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/EQ5",
+   "pair": [
+    "RR2.4",
+    "U11.33"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/EQ6",
+   "pair": [
+    "RR2.2",
+    "U11.41"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/EQ7",
+   "pair": [
+    "RR2.9",
+    "U11.49"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_AD0",
+   "pair": [
+    "BUS1.A58",
+    "U11.56"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_AD1",
+   "pair": [
+    "BUS1.B58",
+    "U11.55"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_AD10",
+   "pair": [
+    "BUS1.B48",
+    "U11.39"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_AD11",
+   "pair": [
+    "BUS1.A47",
+    "U11.38"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_AD12",
+   "pair": [
+    "BUS1.B47",
+    "U11.36"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_AD13",
+   "pair": [
+    "BUS1.A46",
+    "U11.35"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_AD14",
+   "pair": [
+    "BUS1.B45",
+    "U11.34"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_AD15",
+   "pair": [
+    "BUS1.A44",
+    "U11.32"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_AD16",
+   "pair": [
+    "BUS1.A32",
+    "U11.14"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_AD17",
+   "pair": [
+    "BUS1.B32",
+    "U11.12"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_AD18",
+   "pair": [
+    "BUS1.A31",
+    "U11.8"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_AD19",
+   "pair": [
+    "BUS1.B30",
+    "U11.7"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_AD2",
+   "pair": [
+    "BUS1.A57",
+    "U11.54"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_AD20",
+   "pair": [
+    "BUS1.A29",
+    "U11.6"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_AD21",
+   "pair": [
+    "BUS1.B29",
+    "U11.4"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_AD22",
+   "pair": [
+    "BUS1.A28",
+    "U11.3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_AD23",
+   "pair": [
+    "BUS1.B27",
+    "U11.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_AD24",
+   "pair": [
+    "BUS1.A25",
+    "U11.158"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_AD25",
+   "pair": [
+    "BUS1.B24",
+    "U11.156"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_AD26",
+   "pair": [
+    "BUS1.A23",
+    "U11.155"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_AD27",
+   "pair": [
+    "BUS1.B23",
+    "U11.154"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_AD28",
+   "pair": [
+    "BUS1.A22",
+    "U11.152"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_AD29",
+   "pair": [
+    "BUS1.B21",
+    "U11.148"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_AD3",
+   "pair": [
+    "BUS1.B56",
+    "U11.52"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_AD30",
+   "pair": [
+    "BUS1.A20",
+    "U11.147"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_AD31",
+   "pair": [
+    "BUS1.B20",
+    "U11.146"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_AD4",
+   "pair": [
+    "BUS1.A55",
+    "U11.48"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_AD5",
+   "pair": [
+    "BUS1.B55",
+    "U11.47"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_AD6",
+   "pair": [
+    "BUS1.A54",
+    "U11.46"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_AD7",
+   "pair": [
+    "BUS1.B53",
+    "U11.44"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_AD8",
+   "pair": [
+    "BUS1.B52",
+    "U11.42"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_AD9",
+   "pair": [
+    "BUS1.A49",
+    "U11.40"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "unconnected-(BUS1-TRST#)",
+   "pair": [
+    "BUS1.A1",
+    "BUS1.A1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "unconnected-(BUS1-TMS)",
+   "pair": [
+    "BUS1.A3",
+    "BUS1.A3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(BUS1-TDI)",
+   "pair": [
+    "BUS1.A4",
+    "BUS1.B4"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "unconnected-(BUS1-INTC#)",
+   "pair": [
+    "BUS1.A7",
+    "BUS1.A7"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_CLK",
+   "pair": [
+    "BUS1.B16",
+    "U11.142"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_DEVSEL#",
+   "pair": [
+    "BUS1.B37",
+    "U11.20"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_FRAME#",
+   "pair": [
+    "BUS1.A34",
+    "U11.16"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_GNT#",
+   "pair": [
+    "BUS1.A17",
+    "U11.143"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_IDSEL",
+   "pair": [
+    "BUS1.A26",
+    "U11.160"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_INTA#",
+   "pair": [
+    "BUS1.A6",
+    "U11.58"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_IRDY#",
+   "pair": [
+    "BUS1.B35",
+    "U11.18"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_LOCK#",
+   "pair": [
+    "BUS1.B39",
+    "U11.23"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_PAR",
+   "pair": [
+    "BUS1.A43",
+    "U11.27"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_PERR#",
+   "pair": [
+    "BUS1.B40",
+    "U11.24"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_REQ#",
+   "pair": [
+    "BUS1.B18",
+    "U11.144"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_RST#",
+   "pair": [
+    "BUS1.A15",
+    "U11.139"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_SERR#",
+   "pair": [
+    "BUS1.B42",
+    "U11.26"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_STOP#",
+   "pair": [
+    "BUS1.A38",
+    "U11.22"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_TRDY#",
+   "pair": [
+    "BUS1.A36",
+    "U11.19"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/graphic/14MHZOUT",
+   "pair": [
+    "U7.6",
+    "U24.95"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/graphic/CCLK",
+   "pair": [
+    "P5.2",
+    "U23.77"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/graphic/CLK10MHz",
+   "pair": [
+    "U23.57",
+    "U24.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/graphic/CSIO-",
+   "pair": [
+    "U23.61",
+    "U24.159"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/graphic/DIN",
+   "pair": [
+    "P5.3",
+    "U23.75"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/graphic/DONE",
+   "pair": [
+    "P5.4",
+    "U23.53"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/graphic/HDOUT",
+   "pair": [
+    "U7.1",
+    "U24.7"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/graphic/HDREFOUT",
+   "pair": [
+    "U7.2",
+    "U24.6"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/graphic/IA0",
+   "pair": [
+    "U2.6",
+    "U24.94"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/graphic/IA1",
+   "pair": [
+    "U2.7",
+    "U24.92"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/graphic/IA2",
+   "pair": [
+    "U2.8",
+    "U24.88"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/graphic/IA3",
+   "pair": [
+    "U2.9",
+    "U24.87"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/graphic/IA4",
+   "pair": [
+    "U2.11",
+    "U24.86"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/graphic/IA5",
+   "pair": [
+    "U2.12",
+    "U24.85"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/graphic/IA6",
+   "pair": [
+    "U2.13",
+    "U24.83"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/graphic/IA7",
+   "pair": [
+    "U2.14",
+    "U24.78"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/graphic/IA8",
+   "pair": [
+    "U2.15",
+    "U24.93"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/graphic/IA9",
+   "pair": [
+    "U2.5",
+    "U24.96"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/graphic/ICAS-",
+   "pair": [
+    "U2.17",
+    "U24.104"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/graphic/ID0",
+   "pair": [
+    "U2.1",
+    "U24.102"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/graphic/ID1",
+   "pair": [
+    "U2.2",
+    "U24.99"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/graphic/ID2",
+   "pair": [
+    "U2.18",
+    "U24.105"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/graphic/ID3",
+   "pair": [
+    "U2.19",
+    "U24.106"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/graphic/IOE-",
+   "pair": [
+    "U2.16",
+    "U24.103"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/graphic/IRAS-",
+   "pair": [
+    "U2.4",
+    "U24.97"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/graphic/IWR-",
+   "pair": [
+    "U2.3",
+    "U24.98"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/graphic/LED",
+   "pair": [
+    "D6.2",
+    "U23.81"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/graphic/PROG*",
+   "pair": [
+    "P5.5",
+    "U23.55"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/graphic/RESERV1",
+   "pair": [
+    "U23.59",
+    "U24.44"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/graphic/VOSC",
+   "pair": [
+    "R1.1",
+    "U7.4"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/graphic/XTAL_I",
+   "pair": [
+    "U23.56",
+    "R26.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/graphic/X_DIN",
+   "pair": [
+    "U23.85",
+    "U24.117"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/modul/CHROM",
+   "pair": [
+    "U20.14",
+    "R16.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/modul/CVBS",
+   "pair": [
+    "U20.16",
+    "R18.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/modul/LUM",
+   "pair": [
+    "U20.19",
+    "R17.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/pal-ntsc.sch/C-VIDEO",
+   "pair": [
+    "D3.2",
+    "U10.125"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/pal-ntsc.sch/VAF",
+   "pair": [
+    "L4.2",
+    "U10.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/pal-ntsc.sch/Y-VIDEO",
+   "pair": [
+    "D2.1",
+    "R3.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/pal-ntsc.sch/Y_SYNC",
+   "pair": [
+    "U10.6",
+    "R35.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "unconnected-(BUS1-RESERVED)_2",
+   "pair": [
+    "BUS1.B14",
+    "BUS1.B14"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "unconnected-(BUS1-3.3VAUX)",
+   "pair": [
+    "BUS1.A14",
+    "BUS1.A14"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "unconnected-(BUS1-PME#)",
+   "pair": [
+    "BUS1.A19",
+    "BUS1.A19"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "unconnected-(BUS1-RESERVED)_4",
+   "pair": [
+    "BUS1.B10",
+    "BUS1.B10"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "unconnected-(BUS1-REQ64#)",
+   "pair": [
+    "BUS1.A60",
+    "BUS1.A60"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "unconnected-(BUS1--12V)",
+   "pair": [
+    "BUS1.B1",
+    "BUS1.B1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_C{slash}BE0#",
+   "pair": [
+    "BUS1.A52",
+    "U11.43"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "unconnected-(BUS1-TCK)",
+   "pair": [
+    "BUS1.B2",
+    "BUS1.B2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "unconnected-(BUS1-INTB#)",
+   "pair": [
+    "BUS1.B7",
+    "BUS1.B7"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "unconnected-(BUS1-INTD#)",
+   "pair": [
+    "BUS1.B8",
+    "BUS1.B8"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(BUS1-PRSNT1#)",
+   "pair": [
+    "BUS1.B9",
+    "W5.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "unconnected-(BUS1-RESERVED)_5",
+   "pair": [
+    "BUS1.A11",
+    "BUS1.A11"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(BUS1-PRSNT2#)",
+   "pair": [
+    "BUS1.B11",
+    "W4.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "unconnected-(BUS1-RESERVED)",
+   "pair": [
+    "BUS1.A9",
+    "BUS1.A9"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_C{slash}BE3#",
+   "pair": [
+    "BUS1.B26",
+    "U11.159"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_C{slash}BE2#",
+   "pair": [
+    "BUS1.B33",
+    "U11.15"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/buspci.sch/P_C{slash}BE1#",
+   "pair": [
+    "BUS1.B44",
+    "U11.28"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "unconnected-(BUS1-ACK64#)",
+   "pair": [
+    "BUS1.B60",
+    "BUS1.B60"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(C1-Pad1)",
+   "pair": [
+    "C1.1",
+    "R35.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U10-SYNC_DET)",
+   "pair": [
+    "C1.2",
+    "U10.140"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(C3-Pad1)",
+   "pair": [
+    "C3.1",
+    "R3.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(C4-Pad1)",
+   "pair": [
+    "C4.1",
+    "R2.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U10-VIN_C)",
+   "pair": [
+    "U10.117",
+    "C5.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(C5-Pad2)",
+   "pair": [
+    "C5.2",
+    "R19.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U10-CREF+)",
+   "pair": [
+    "U10.113",
+    "R12.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U10-CLEVEL)",
+   "pair": [
+    "U10.114",
+    "C7.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U10-VIN_Y{slash}COMP.)",
+   "pair": [
+    "U10.4",
+    "C8.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(C8-Pad2)",
+   "pair": [
+    "C8.2",
+    "R20.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U10-N{slash}C)",
+   "pair": [
+    "U10.110",
+    "C16.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U9-VREF)",
+   "pair": [
+    "U9.44",
+    "C32.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U9-IREF)",
+   "pair": [
+    "R8.1",
+    "C34.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U9-COMP)",
+   "pair": [
+    "U9.42",
+    "C35.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U8-CEXT2)",
+   "pair": [
+    "U8.7",
+    "C36.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(C36-Pad2)",
+   "pair": [
+    "C36.2",
+    "C37.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U8-RVID0)",
+   "pair": [
+    "C39.1",
+    "U8.83"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(C39-Pad2)",
+   "pair": [
+    "C39.2",
+    "R24.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U8-GVID0)",
+   "pair": [
+    "C40.1",
+    "U8.79"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(C40-Pad2)",
+   "pair": [
+    "C40.2",
+    "R23.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U8-BVID0)",
+   "pair": [
+    "C41.1",
+    "U8.75"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(C41-Pad2)",
+   "pair": [
+    "C41.2",
+    "R22.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U20-VOFF)",
+   "pair": [
+    "U20.12",
+    "C43.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U20-UOFF)",
+   "pair": [
+    "U20.6",
+    "C44.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U20-FLT)",
+   "pair": [
+    "U20.15",
+    "C45.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(C46-Pad1)",
+   "pair": [
+    "L1.2",
+    "C46.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U20-VREF)",
+   "pair": [
+    "R11.2",
+    "C64.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(C49-Pad1)",
+   "pair": [
+    "R21.1",
+    "R26.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U20-VCC)",
+   "pair": [
+    "U20.8",
+    "C54.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U20-B)",
+   "pair": [
+    "C58.1",
+    "U20.11"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U20-G)",
+   "pair": [
+    "U20.9",
+    "C59.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U20-R)",
+   "pair": [
+    "C60.1",
+    "U20.7"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(C61-Pad1)",
+   "pair": [
+    "C61.1",
+    "R30.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U20-CS)",
+   "pair": [
+    "C61.2",
+    "U20.24"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U10-XTAL1_OUT)",
+   "pair": [
+    "U10.109",
+    "X2.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U10-XTAL1_IN)",
+   "pair": [
+    "U10.108",
+    "X2.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(CV1-Pad1)",
+   "pair": [
+    "CV1.1",
+    "X3.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(D6-A)",
+   "pair": [
+    "D6.1",
+    "R13.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U20-NOTCH)",
+   "pair": [
+    "L1.1",
+    "U20.18"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(L6-Pad1)",
+   "pair": [
+    "L6.1",
+    "R10.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U20-Y+SIN)",
+   "pair": [
+    "L6.2",
+    "R11.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(P4-P1)",
+   "pair": [
+    "P4.1",
+    "U23.25"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U23-SGCK3)",
+   "pair": [
+    "P9.1",
+    "U23.51"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U23-P87)",
+   "pair": [
+    "P10.1",
+    "U23.87"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U23-PGCK4)",
+   "pair": [
+    "P11.1",
+    "U23.82"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(POT1-Pad1)",
+   "pair": [
+    "POT1.1",
+    "R9.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(Q1-E)",
+   "pair": [
+    "Q1.1",
+    "R39.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(Q1-B)",
+   "pair": [
+    "Q1.2",
+    "R16.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(Q2-E)",
+   "pair": [
+    "Q2.1",
+    "R33.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(Q2-B)",
+   "pair": [
+    "Q2.2",
+    "R17.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(Q3-E)",
+   "pair": [
+    "Q3.1",
+    "R34.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(Q3-B)",
+   "pair": [
+    "Q3.2",
+    "R18.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U20-MCTR)",
+   "pair": [
+    "R4.1",
+    "U20.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U11-MODE_16{slash}32)",
+   "pair": [
+    "U11.59",
+    "R5.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U11-FLT#)",
+   "pair": [
+    "U11.138",
+    "R6.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U11-SNV)",
+   "pair": [
+    "U11.135",
+    "R7.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U20-B{slash}ADJ)",
+   "pair": [
+    "U20.21",
+    "R9.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U20-Y+SOUT)",
+   "pair": [
+    "R10.2",
+    "U20.22"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U10-OUT_C)",
+   "pair": [
+    "U10.115",
+    "R19.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U10-R{slash}2)",
+   "pair": [
+    "U10.135",
+    "R27.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U1-SCL)",
+   "pair": [
+    "R28.2",
+    "U11.128"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U1-SDA)",
+   "pair": [
+    "R29.2",
+    "U11.127"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U8-CEXT1)",
+   "pair": [
+    "U8.6",
+    "R36.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U8-RSET)",
+   "pair": [
+    "U8.69",
+    "R38.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U8-BIN)",
+   "pair": [
+    "U8.58",
+    "U8.68"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/GREEN_IN",
+   "pair": [
+    "C3.2",
+    "R45.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/RED_IN",
+   "pair": [
+    "C4.2",
+    "R47.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/RED_OUT",
+   "pair": [
+    "U9.37",
+    "J4.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/GREEN_OUT",
+   "pair": [
+    "U9.38",
+    "C59.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/BLUE_OUT",
+   "pair": [
+    "C60.2",
+    "U9.39"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/C_OUT",
+   "pair": [
+    "J4.8",
+    "R39.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/Y_OUT",
+   "pair": [
+    "J4.9",
+    "R40.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/BLUE_IN",
+   "pair": [
+    "R22.1",
+    "R46.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/CSYNC-OUT",
+   "pair": [
+    "U9.8",
+    "U24.13"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/IRQ_SRL",
+   "pair": [
+    "RR2.7",
+    "U24.134"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/SELECT-",
+   "pair": [
+    "RR3.4",
+    "U23.45"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/modul/CVBSOUT",
+   "pair": [
+    "P8.1",
+    "R41.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/{slash}PCWR",
+   "pair": [
+    "U11.74",
+    "U23.47"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/PTATN-",
+   "pair": [
+    "RR5.2",
+    "U23.18"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/X_IRQ",
+   "pair": [
+    "RR5.4",
+    "U24.11"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/PTADR-",
+   "pair": [
+    "RR5.5",
+    "U23.24"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/RDFIFO-",
+   "pair": [
+    "RR5.7",
+    "U24.16"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/WRFIFDO-",
+   "pair": [
+    "RR5.8",
+    "U24.18"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/PTRDY-",
+   "pair": [
+    "RR6.2",
+    "U23.19"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/ACCES_RAM-",
+   "pair": [
+    "U6.19",
+    "U22.21"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/WRITE_RAM",
+   "pair": [
+    "U6.1",
+    "U24.55"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/CSYNCIN-",
+   "pair": [
+    "U8.8",
+    "U24.54"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/RDCAD-",
+   "pair": [
+    "U8.20",
+    "U23.74"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/WRCAD-",
+   "pair": [
+    "U8.24",
+    "U23.69"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/CLAMP",
+   "pair": [
+    "U8.37",
+    "U24.75"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/CLKCAD",
+   "pair": [
+    "U8.38",
+    "U24.77"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/BLANK-",
+   "pair": [
+    "U22.8",
+    "U24.53"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/CLKCDA",
+   "pair": [
+    "U9.9",
+    "U24.76"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/RDCDA-",
+   "pair": [
+    "U9.22",
+    "U23.72"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/WRCDA-",
+   "pair": [
+    "U9.23",
+    "U23.73"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/OE_PAL-",
+   "pair": [
+    "U9.28",
+    "U10.47"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/VD_PAL-",
+   "pair": [
+    "U10.34",
+    "U24.37"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/HD_PAL-",
+   "pair": [
+    "U10.36",
+    "U24.52"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/BT812_WR-",
+   "pair": [
+    "U10.83",
+    "U23.70"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/BT812_RD-",
+   "pair": [
+    "U10.86",
+    "U23.71"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/SYSRST-",
+   "pair": [
+    "U10.87",
+    "U23.1"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/F_PALIN",
+   "pair": [
+    "U10.104",
+    "U24.43"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/PTNUM1",
+   "pair": [
+    "U11.122",
+    "U23.32"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/PTNUM0",
+   "pair": [
+    "U11.123",
+    "U23.34"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/IRQ-",
+   "pair": [
+    "U11.124",
+    "U24.149"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/BPCLK",
+   "pair": [
+    "U11.140",
+    "U23.30"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/WRFULL",
+   "pair": [
+    "U11.103",
+    "U24.17"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/RDEMPTY",
+   "pair": [
+    "U11.106",
+    "U24.15"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/PTWR",
+   "pair": [
+    "U11.108",
+    "U23.16"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/PTBURST",
+   "pair": [
+    "U23.17",
+    "U24.5"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/RAS5-",
+   "pair": [
+    "U12.34",
+    "U24.66"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/CAS0-",
+   "pair": [
+    "U19.40",
+    "U24.57"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/CAS1-",
+   "pair": [
+    "U19.41",
+    "U24.58"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/CAS2-",
+   "pair": [
+    "U19.42",
+    "U24.59"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/CAS3-",
+   "pair": [
+    "U13.43",
+    "U24.62"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/WRAM-",
+   "pair": [
+    "U13.47",
+    "U24.63"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/RAS7-",
+   "pair": [
+    "U13.34",
+    "U24.64"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/RAS6-",
+   "pair": [
+    "U14.34",
+    "U24.65"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/RAS3-",
+   "pair": [
+    "U15.34",
+    "U24.68"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/RAS4-",
+   "pair": [
+    "U16.34",
+    "U24.67"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/RAS2-",
+   "pair": [
+    "U17.34",
+    "U24.69"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/RAS1-",
+   "pair": [
+    "U18.34",
+    "U24.73"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/RAS0-",
+   "pair": [
+    "U19.34",
+    "U24.74"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/X_PROG-",
+   "pair": [
+    "U22.52",
+    "U23.84"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/X_DATA",
+   "pair": [
+    "U22.72",
+    "U24.118"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/X_CLK",
+   "pair": [
+    "U22.74",
+    "U23.86"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/ACQ_ON",
+   "pair": [
+    "U22.13",
+    "U24.48"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/X_DONE",
+   "pair": [
+    "U22.50",
+    "U23.83"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/{slash}PCRD",
+   "pair": [
+    "U11.72",
+    "U23.46"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/DQ29",
+   "pair": [
+    "U6.7",
+    "U11.25"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/DQ30",
+   "pair": [
+    "U6.8",
+    "U11.13"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/DQ31",
+   "pair": [
+    "U6.9",
+    "U11.5"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/DQ26",
+   "pair": [
+    "U6.4",
+    "U11.53"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/DQ27",
+   "pair": [
+    "U6.5",
+    "U11.45"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/DQ28",
+   "pair": [
+    "U6.6",
+    "U11.37"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/DQ25",
+   "pair": [
+    "U6.3",
+    "U11.65"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/DQ24",
+   "pair": [
+    "U6.2",
+    "U11.77"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/DQ17",
+   "pair": [
+    "RR4.9",
+    "U5.3"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/DQ16",
+   "pair": [
+    "RR4.7",
+    "U5.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/DQ23",
+   "pair": [
+    "RR4.5",
+    "U5.9"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/DQ22",
+   "pair": [
+    "RR4.3",
+    "U5.8"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/DQ21",
+   "pair": [
+    "RR5.6",
+    "U5.7"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/DQ19",
+   "pair": [
+    "RR6.8",
+    "U5.5"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/DQ18",
+   "pair": [
+    "RR6.6",
+    "U5.4"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/DQ20",
+   "pair": [
+    "RR6.3",
+    "U5.6"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/DQ7",
+   "pair": [
+    "RR7.9",
+    "U8.9"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/DQ5",
+   "pair": [
+    "U8.11",
+    "U23.8"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/DQ4",
+   "pair": [
+    "U10.96",
+    "U23.9"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/DQ3",
+   "pair": [
+    "U8.13",
+    "U23.7"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/DQ2",
+   "pair": [
+    "U10.94",
+    "U23.11"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/DQ1",
+   "pair": [
+    "RR7.3",
+    "U10.93"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/DQ0",
+   "pair": [
+    "U10.92",
+    "U23.13"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/DQ8",
+   "pair": [
+    "RR8.9",
+    "U11.86"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/DQ9",
+   "pair": [
+    "U11.84",
+    "U23.96"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/DQ10",
+   "pair": [
+    "RR8.7",
+    "U11.83"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/DQ11",
+   "pair": [
+    "U11.82",
+    "U23.94"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/DQ12",
+   "pair": [
+    "RR8.5",
+    "U11.80"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/DQ13",
+   "pair": [
+    "U11.79",
+    "U23.90"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/DQ14",
+   "pair": [
+    "RR8.3",
+    "U11.78"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/DQ15",
+   "pair": [
+    "U11.76",
+    "U23.89"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVRAM1",
+   "pair": [
+    "U22.19",
+    "U3.17"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVRAM2",
+   "pair": [
+    "U22.20",
+    "U3.16"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVRAM3",
+   "pair": [
+    "U22.18",
+    "U3.15"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVRAM4",
+   "pair": [
+    "U22.28",
+    "U3.14"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVRAM5",
+   "pair": [
+    "U22.29",
+    "U3.13"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVRAM6",
+   "pair": [
+    "U22.31",
+    "U3.12"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVRAM7",
+   "pair": [
+    "U22.32",
+    "U3.11"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVRAM8",
+   "pair": [
+    "U13.49",
+    "U22.33"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVRAM9",
+   "pair": [
+    "U22.34",
+    "U4.17"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVRAM10",
+   "pair": [
+    "U22.35",
+    "U4.16"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVRAM11",
+   "pair": [
+    "U13.55",
+    "U22.36"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVRAM12",
+   "pair": [
+    "U22.39",
+    "U4.14"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVRAM13",
+   "pair": [
+    "U13.61",
+    "U22.40"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVRAM14",
+   "pair": [
+    "U22.41",
+    "U4.12"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVRAM15",
+   "pair": [
+    "U13.65",
+    "U22.42"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVRAM16",
+   "pair": [
+    "U22.43",
+    "U5.18"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVRAM17",
+   "pair": [
+    "U22.44",
+    "U5.17"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVRAM18",
+   "pair": [
+    "U22.45",
+    "U5.16"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVRAM19",
+   "pair": [
+    "U22.46",
+    "U5.15"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVRAM20",
+   "pair": [
+    "U22.47",
+    "U5.14"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVRAM21",
+   "pair": [
+    "U22.48",
+    "U5.13"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVRAM22",
+   "pair": [
+    "U22.53",
+    "U5.12"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVRAM23",
+   "pair": [
+    "U22.54",
+    "U5.11"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVRAM24",
+   "pair": [
+    "U6.18",
+    "U22.55"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVRAM25",
+   "pair": [
+    "U6.17",
+    "U22.56"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVRAM26",
+   "pair": [
+    "U6.16",
+    "U22.57"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVRAM27",
+   "pair": [
+    "U6.15",
+    "U22.58"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVRAM28",
+   "pair": [
+    "U6.14",
+    "U22.59"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVRAM29",
+   "pair": [
+    "U6.13",
+    "U22.60"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVRAM30",
+   "pair": [
+    "U6.12",
+    "U22.61"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVRAM31",
+   "pair": [
+    "U6.11",
+    "U22.62"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/PCA0",
+   "pair": [
+    "U9.24",
+    "U23.65"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/PCA1",
+   "pair": [
+    "U9.25",
+    "U23.64"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/PCA2",
+   "pair": [
+    "U9.26",
+    "U23.63"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVB7",
+   "pair": [
+    "U9.68",
+    "U10.48"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVB6",
+   "pair": [
+    "U9.67",
+    "U10.49"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVB5",
+   "pair": [
+    "U9.66",
+    "U10.50"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVB4",
+   "pair": [
+    "U9.65",
+    "U22.96"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVB3",
+   "pair": [
+    "U9.64",
+    "U22.95"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVB2",
+   "pair": [
+    "U9.63",
+    "U22.94"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVB1",
+   "pair": [
+    "U9.62",
+    "U22.93"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVB0",
+   "pair": [
+    "U9.61",
+    "U22.92"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVG7",
+   "pair": [
+    "U9.60",
+    "U22.81"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVG6",
+   "pair": [
+    "U9.59",
+    "U22.80"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVG5",
+   "pair": [
+    "U9.58",
+    "U22.78"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVG4",
+   "pair": [
+    "U9.57",
+    "U22.71"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVG3",
+   "pair": [
+    "U9.56",
+    "U10.71"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVG2",
+   "pair": [
+    "U9.55",
+    "U10.72"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVG1",
+   "pair": [
+    "U9.54",
+    "U10.73"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVG0",
+   "pair": [
+    "U9.53",
+    "U10.74"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVR7",
+   "pair": [
+    "U9.52",
+    "U10.58"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVR6",
+   "pair": [
+    "U9.51",
+    "U10.59"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVR5",
+   "pair": [
+    "U9.50",
+    "U10.60"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVR4",
+   "pair": [
+    "U9.49",
+    "U10.61"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVR3",
+   "pair": [
+    "U9.48",
+    "U10.62"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVR2",
+   "pair": [
+    "U9.47",
+    "U10.63"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVR1",
+   "pair": [
+    "U9.46",
+    "U10.64"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVR0",
+   "pair": [
+    "U9.45",
+    "U10.65"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVI0",
+   "pair": [
+    "U9.10",
+    "U24.108"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/TVI1",
+   "pair": [
+    "U9.11",
+    "U24.107"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/ADR6",
+   "pair": [
+    "U11.132",
+    "U24.143"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/ADR2",
+   "pair": [
+    "U11.68",
+    "U23.48"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/ADR3",
+   "pair": [
+    "U11.67",
+    "U23.44"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/ADR4",
+   "pair": [
+    "U11.66",
+    "U23.43"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/ADR5",
+   "pair": [
+    "U11.64",
+    "U23.42"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/BE-1",
+   "pair": [
+    "U11.63",
+    "U23.37"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/BE-2",
+   "pair": [
+    "U11.62",
+    "U23.36"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/BE-3",
+   "pair": [
+    "U11.60",
+    "U23.35"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/PTBE-3",
+   "pair": [
+    "U11.120",
+    "U23.23"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/PTBE-2",
+   "pair": [
+    "U23.22",
+    "U24.156"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/PTBE-1",
+   "pair": [
+    "U11.118",
+    "U23.21"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/PTBE-0",
+   "pair": [
+    "U23.20",
+    "U24.158"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/BE-0",
+   "pair": [
+    "U11.87",
+    "U23.38"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/MXA0",
+   "pair": [
+    "U13.12",
+    "U24.128"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/MXA1",
+   "pair": [
+    "U13.13",
+    "U24.127"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/MXA2",
+   "pair": [
+    "U13.14",
+    "U24.126"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/MXA3",
+   "pair": [
+    "U13.15",
+    "U24.125"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/MXA4",
+   "pair": [
+    "U13.16",
+    "U24.124"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/MXA5",
+   "pair": [
+    "U13.17",
+    "U24.123"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/MXA6",
+   "pair": [
+    "U13.18",
+    "U24.116"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/MXA10",
+   "pair": [
+    "U13.19",
+    "U24.109"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/MXA7",
+   "pair": [
+    "U13.28",
+    "U24.115"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/MXA8",
+   "pair": [
+    "U13.31",
+    "U24.114"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "/MXA9",
+   "pair": [
+    "U13.32",
+    "U24.113"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U8-GIN)",
+   "pair": [
+    "U8.60",
+    "U8.70"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U8-RIN)",
+   "pair": [
+    "U8.62",
+    "U8.72"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "Net-(U20-OSC)",
+   "pair": [
+    "U20.23",
+    "X3.2"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "unconnected-(BUS1-RESERVED)_8",
+   "pair": [
+    "BUS1.A40",
+    "BUS1.A40"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  },
+  {
+   "board": "video/video.kicad_pcb",
+   "net": "unconnected-(BUS1-RESERVED)_9",
+   "pair": [
+    "BUS1.A41",
+    "BUS1.A41"
+   ],
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.600198
+  }
+ ]
+}
