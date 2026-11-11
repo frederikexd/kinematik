@@ -291,3 +291,15 @@ every net: tracks, arcs, vias, pad polygons, filled zones). Scored:
 Q23_BRAKE_LIGHT_O1, Analog to CAN Rev2, PMBoard, Triangular_Brakelight). The author reads Altium's own counts
 (Board Information; PCB Filter `IsTrack And OnSignal`, `IsArc And OnSignal`). Limit: KinematiK's counts equal
 Altium's exactly.
+
+### Addendum 7, amendment (written 2026-11-11, before KiCad 9 read any of the four boards)
+
+The author cannot install KiCad 9. The KiCad 8/9 reference therefore becomes **KiCad 9.0.3** (the Ubuntu 25.10
+package, `kicad 9.0.3+dfsg-1`) installed in an isolated Ubuntu 25.10 root inside the benchmark workspace and driven
+by the same unchanged `export_kicad9.py`. Nothing else changes: the four boards, the reading limits, the seed
+20261112, the 100-net sample, the frozen KinematiK commits and the pour rule are as registered above. The
+installed version string is recorded with the results. If KiCad 9.0.3 cannot load a board, that board is reported
+as not read rather than replaced.
+
+Native Altium came back first: the author's Altium Designer 26.11.1 counts are in
+`benchmarks/electrical/altium/results_native.json`.
