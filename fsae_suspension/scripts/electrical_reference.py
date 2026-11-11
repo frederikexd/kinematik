@@ -648,7 +648,16 @@ def copper2d_resistance(board, net: str, pair, copper_oz: float, thickness_mm: f
     Mk = M[keep][:, keep]
     rhs = np.zeros(keep.size)
     rhs[where[a_idx]] = 1.0
-    sol = spsolve(Mk.tocsc(), rhs)
+    if keep.size <= 150_000:
+        sol = spsolve(Mk.tocsc(), rhs)
+    else:                              # a direct solve of a long net's fine grid runs out of memory: AMG-preconditioned CG
+        import pyamg
+        from scipy.sparse.linalg import cg
+        Mk = Mk.tocsr()
+        ml = pyamg.smoothed_aggregation_solver(Mk, symmetry="symmetric", max_coarse=500)
+        sol, info = cg(Mk, rhs, rtol=1e-11, atol=0.0, maxiter=4000, M=ml.aspreconditioner(cycle="V"))
+        if info != 0:
+            return None
     return float(sol[where[a_idx]])
 
 
