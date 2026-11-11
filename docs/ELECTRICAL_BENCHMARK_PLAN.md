@@ -273,3 +273,21 @@ only four demo nets (both ecc83 GNDs, StickHub +5V and +1V8). That adds the 17 t
 the other demo pour nets under the memory cap; round 2 was never run on them. Pads that share a designator and number
 are told apart by position (name@x,y), in KinematiK and in the reference alike, which brings the LED-string nets in.
 Each net is solved once. With n nets all within 2 %, the 95 % lower bound on the rate within 2 % is 0.05^(1/n).
+
+## Addendum 7, KiCad 8/9 and native Altium boards (written before any kit came back)
+
+**KiCad 8/9.** Four Formula Student team boards saved in KiCad 8–9 (round-4 repositories: PUT Motorsport BMS LV,
+BMS HV master and Frontbox; WindingMotor's FSAE MoTeC distribution hub). The author runs `export_kicad9.py` in
+KiCad 9, which writes KiCad's own reading of each board (counts, routed length per net, and the copper shapes of
+every net: tracks, arcs, vias, pad polygons, filled zones). Scored:
+- **Reading (limit A):** KinematiK's counts equal KiCad 9's exactly; per-net routed length within 0.1 %.
+- **Net resistance (B5's method, held out):** 100 nets drawn with `random.Random(20261112)` from the nets KinematiK
+  solves on these boards, solved once by the corrected reference from the export (`copper2d_from_export`), scored
+  against KinematiK frozen at a3805c1. Limit 2 %.
+- **Pours (addendum 6, held out):** every pour net under the memory cap, scored against the round-2 estimate
+  frozen at dcc80ad (shared pad names by position, eef6107 only refuses large planes earlier).
+
+**Native Altium.** Six boards designed in Altium by Queen's Formula SAE (`qfsae/pcb`: PDP_V3, BSPD_002,
+Q23_BRAKE_LIGHT_O1, Analog to CAN Rev2, PMBoard, Triangular_Brakelight). The author reads Altium's own counts
+(Board Information; PCB Filter `IsTrack And OnSignal`, `IsArc And OnSignal`). Limit: KinematiK's counts equal
+Altium's exactly.

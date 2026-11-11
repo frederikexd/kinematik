@@ -574,11 +574,7 @@ def copper2d_resistance(board, net: str, pair, copper_oz: float, thickness_mm: f
     anti-aliased like a track's instead of snapping to whole cells. A through-hole pad joins its layers at no
     resistance; a via joins them through its barrel, split evenly between successive copper layers. 1 A in at the
     centre of pad A, out at the centre of pad B."""
-    import numpy as np
     import pcbnew
-    from scipy.sparse import coo_matrix
-    from scipy.sparse.csgraph import connected_components
-    from scipy.sparse.linalg import spsolve
     rho = RHO_CU_20C * (1 + ALPHA_CU * (NET_TEMP_C - 20.0))
     sheet_g = copper_oz * OZ_TO_UM * 1e-6 / rho            # σ t, siemens per square
     stack = list(board.GetEnabledLayers().CuStack())
@@ -632,6 +628,61 @@ def copper2d_resistance(board, net: str, pair, copper_oz: float, thickness_mm: f
                 o = ps.Outline(k)
                 shapes.append((ly, "polygon", ([(o.CPoint(j).x * nm, o.CPoint(j).y * nm)
                                                 for j in range(o.PointCount())],), key))
+    via_drills = [v.GetDrillValue() * nm for v in vias]
+    return _copper2d_solve(shapes, pad_key, pad_pos, stack, via_drills, pair, copper_oz, thickness_mm, h, k_term, SS)
+
+
+def copper2d_from_export(net: dict, layers: list, pair, copper_oz: float, thickness_mm: float, h: float = 0.0125,
+                         k_term: float = 1e4, SS: int = 4, include_zones: bool = False):
+    """copper2d_resistance (Ω) on one net of the KiCad 8/9 export kit's JSON (its own reading of the board: tracks,
+    arcs, vias, pad polygons, filled zones), for boards KiCad 7 can't open."""
+    stack = list(range(len(layers)))
+    li = {n: i for i, n in enumerate(layers)}
+    shapes: list = []
+    for t in net["tracks"]:
+        if t["layer"] not in li:
+            continue
+        hw = t["width"] / 2.0
+        pts = _arc_pts(tuple(t["start"]), tuple(t["mid"]), tuple(t["end"])) if "mid" in t \
+            else [tuple(t["start"]), tuple(t["end"])]
+        for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+            shapes.append((li[t["layer"]], "capsule", (x0, y0, x1, y1, hw), None))
+    for i, v in enumerate(net["vias"]):
+        for ln in v["layers"]:
+            if ln in li:
+                shapes.append((li[ln], "capsule", (v["at"][0], v["at"][1], v["at"][0], v["at"][1], v["size"] / 2.0),
+                               ("via", i)))
+    if include_zones:
+        for z in net["zones"]:
+            if z["layer"] in li:
+                for poly in z["polys"]:
+                    shapes.append((li[z["layer"]], "scan", ([tuple(q) for q in poly],), None))
+    pad_key: dict = {}
+    pad_pos: dict = {}
+    for k, pd in enumerate(net["pads"]):
+        ref, _, num = pd["name"].partition(".")
+        key = ("pad", ref, num, k)
+        pad_key.setdefault(pd["name"], []).append(key)
+        pad_pos[key] = tuple(pd["at"])
+        for ln, polys in pd["polys"].items():
+            if ln in li:
+                for poly in polys:
+                    shapes.append((li[ln], "polygon", ([tuple(q) for q in poly],), key))
+    return _copper2d_solve(shapes, pad_key, pad_pos, stack, [v["drill"] for v in net["vias"]], pair, copper_oz,
+                           thickness_mm, h, k_term, SS)
+
+
+def _copper2d_solve(shapes, pad_key, pad_pos, stack, via_drills, pair, copper_oz, thickness_mm, h, k_term, SS):
+    """The numerical part of copper2d_resistance, on shapes already collected (from pcbnew, or from the KiCad 8/9
+    export kit's JSON): shapes are (layer index, kind, args, terminal key or None)."""
+    import numpy as np
+    from scipy.sparse import coo_matrix
+    from scipy.sparse.csgraph import connected_components
+    from scipy.sparse.linalg import spsolve
+    rho = RHO_CU_20C * (1 + ALPHA_CU * (NET_TEMP_C - 20.0))
+    sheet_g = copper_oz * OZ_TO_UM * 1e-6 / rho            # σ t, siemens per square
+    off = 1 << 20
+
     def resolve(name):                 # "REF.NUM", or "REF.NUM@x,y" where two pads share the name
         base, _, at = name.partition("@")
         ks = pad_key.get(base, [])
@@ -722,12 +773,11 @@ def copper2d_resistance(board, net: str, pair, copper_oz: float, thickness_mm: f
             a_ = [anchor[(k0, ly)] for ly in stack if (k0, ly) in anchor]
             for x, y in zip(a_, a_[1:]):
                 rows.append(np.array([x])); cols.append(np.array([y])); gs.append(np.array([big]))
-    for i, v in enumerate(vias):                          # via barrels, chained through the layers they touch
+    for i, drill_mm in enumerate(via_drills):             # via barrels, chained through the layers they touch
         lys = [ly for ly in stack if (("via", i), ly) in anchor]
         if len(lys) < 2:
             continue
-        r_full = rho * thickness_mm * 1e-3 / (3.141592653589793 * v.GetDrillValue() * nm * 1e-3
-                                              * VIA_PLATING_MM * 1e-3)
+        r_full = rho * thickness_mm * 1e-3 / (3.141592653589793 * drill_mm * 1e-3 * VIA_PLATING_MM * 1e-3)
         seg = r_full / max(len(stack) - 1, 1)
         for l0, l1 in zip(lys, lys[1:]):
             gap = stack.index(l1) - stack.index(l0)
