@@ -191,3 +191,23 @@ def test_microstrip_impedance_against_altium():
         assert abs(z - c["altium_ohm"]) / c["altium_ohm"] <= lim, c["case"]
         if c["atlc_ohm"]:
             assert abs(c["atlc_ohm"] - c["altium_ohm"]) / c["altium_ohm"] <= 0.02, c["case"]
+
+
+# --------------------------------------------------------------------------- D. Trace heating vs NBS ---- #
+def test_trace_heating_against_nbs_measurements():
+    """Plan addendum 5. KinematiK's IPC-2221 ampacity against the NBS 1956 measured curves it descends from. The
+    registered limit (KinematiK at most 5 % above NBS at every point) is missed at 6 of 54 points; this pins the
+    published result so it can't drift silently."""
+    import numpy as np
+    from suspension.pcb_doctor import trace_ampacity_a, MM2_TO_MIL2
+    d = _ref("nbs_heating.json")["points"]
+    assert len(d) == 54
+    ratios = []
+    for o in d:
+        width_mm = o["area_sqmil"] / MM2_TO_MIL2 / 0.03479            # 1 oz copper, the same area
+        i = trace_ampacity_a(width_mm, o["dT_c"], 1.0, external=True)
+        assert i == pytest.approx(o["i_kinematik_a"], rel=2e-3)
+        ratios.append(i / o["i_read1_a"])
+    r = np.array(ratios)
+    assert 0.88 <= np.median(r) <= 0.94          # the IPC-2221 derating, about 10 %
+    assert int(np.sum(r > 1.05)) == 6 and r.max() < 1.2

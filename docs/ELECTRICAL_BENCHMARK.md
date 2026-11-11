@@ -24,6 +24,7 @@ KinematiK against the recorded references on every run without needing the tools
 | **A2.** Board reading vs **Altium Designer 26.11.1** | 3 boards imported into Altium and saved as binary `.PcbDoc`: 9,429 tracks, 180 arcs, 901 vias, 2,763 pads, 346 components, 467 nets | exact counts; length 0.1 % | **Pass after two reader fixes it exposed.** Every count equals Altium's own; net lengths within 0.04 % of KiCad's original. First read: StickHub 289 pads and 90 components (Altium: 278, 94) |
 | **C.** Microstrip impedance vs field solver | 5 single-ended, 6 differential | 5 % / 10 % | **Round 1 miss:** single-ended −8.3 % and −6.4 % at the range ends. Formula replaced. **Round 2, unseen geometries: 10 of 10**, worst 3.4 % |
 | **C2.** Microstrip impedance vs **Altium Designer 26.11.1** | the same 21 cross-sections in Altium's Layer Stack Manager, plus 5 extras | 5 % / 10 % | **21 of 21.** Single-ended worst −1.9 %, differential worst +4.0 %. Altium and atlc agree within 1.6 % on every case |
+| **D.** Trace heating vs **NBS 1956 measurements** (the data behind IPC-2221) | 54 points read off the report's curves, 10–100 °C rise | KinematiK ≤ 1.05 × measured at every point | **Miss at 6 of 54.** Median 0.91 × measured (the IPC derating). Above the limit: wide conductors at 10 °C (+5 %, +8 %) and the smallest sections, where the curves crowd together (up to +19 %) |
 
 ## A. Does KinematiK read a board the way KiCad does?
 
@@ -171,10 +172,38 @@ as it does against atlc.
 **The reference checked.** Altium and atlc, two independent field solvers, agree within 1.6 % on all 21 cases. Both
 profiles had etch 0 (confirmed by the author afterwards), so Altium's traces are rectangular, as atlc's are.
 
+## D. Trace heating against measurements
+
+The reference is NBS Report 4283 (Hoynes, National Bureau of Standards, 1956): measured current against cross-section
+of etched copper on 1/16 in. laminate, one figure per temperature rise (10, 20, 30, 45, 60, 75, 100 °C). The
+MIL-STD-275 and IPC-2221 charts descend from it. The report gives the data only as graphs, so the plain etched curve
+was read off the scan: grid lines found automatically (both axes are square-root scales), the curve read where it
+crosses each grid line of cross-section, and crossings left out where the four curves crowd together or a letter
+sits on the line (`benchmarks/electrical/nbs_heating.json`). A second pass at another resolution agrees within 0.2 %
+(median) where it found the same line.
+
+**This is not an independent test.** KinematiK's formula (IPC-2221, I = 0.048 ΔT^0.44 A^0.725) is a fit to charts
+derived from these curves, after a 10 % derating. It checks how faithfully the formula represents the measurements
+behind it.
+
+**Miss: 48 of 54 points within the registered limit.** KinematiK's current is a median 0.91 of the measured one, the
+derating as expected, and at most 0.70 (conservative). Six points exceed the limit of 1.05:
+
+- **Wide conductors at a 10 °C rise:** 576 and 676 sq mil (about 10–12 mm of 1 oz copper) read 5 % and 8 % above
+  the measurement. The IPC formula's power law overshoots there.
+- **The smallest sections at 30 and 100 °C:** 4 and 16 sq mil (0.075–0.3 mm of 1 oz copper), up to 19 % above. Here
+  the four NBS curves converge within a few pixels, so the curve read may be a lower one. It can't be resolved from
+  the scan, and is counted as a miss.
+
+An independent check needs IPC-2152's 2009 measurements, which are not public.
+
 ## Not covered
 
-- **Trace heating (IPC-2221)** and **fuse and wire I²t** are standards KinematiK implements directly. A tool that
-  computes the same equations would only repeat them. Measured heating (IPC-2152 test data) would be the
-  meaningful check, and isn't here yet.
+- **Trace heating against independent measurements.** D checks KinematiK's formula against the 1956 data it
+  descends from; IPC-2152's 2009 measurements would be the independent test, and are not public.
+- **Fuse and wire I²t** are standards KinematiK implements directly; a tool computing the same equations would only
+  repeat them.
+- **Measurements on a real Formula Student board** (milliohms across a power net, temperature under load) need
+  hardware.
 - **Net resistance on pours.** Nets with copper pours are left out of B3 and B4: KinematiK deliberately gives a pour
   no resistance (connectivity only), so its trace-only number is an upper bound there, not an estimate.
