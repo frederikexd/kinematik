@@ -264,3 +264,12 @@ now picks only pads whose name is unique, so the reference can tell them apart.
 **Held out.** The pour nets on the round-3 team boards that E could not score (27 nets: shared pad names or no
 reference), now solved once after KinematiK's round-2 estimate is frozen. The 17 nets E scored are design data from
 here on. Same limits, same memory cap (1.5 million cells per layer).
+
+### Addendum 6, amendment (written after 2 held-out nets were scored, before any other round-2 result)
+
+Only 2 of the 27 held-out nets had two uniquely named pads (+0.01 % and +0.54 %), too few to show a rate. The
+held-out set is widened to **every pour net the round-2 estimate has not been scored on**: the round-2 design used
+only four demo nets (both ecc83 GNDs, StickHub +5V and +1V8). That adds the 17 team-board nets round 1 scored and
+the other demo pour nets under the memory cap; round 2 was never run on them. Pads that share a designator and number
+are told apart by position (name@x,y), in KinematiK and in the reference alike, which brings the LED-string nets in.
+Each net is solved once. With n nets all within 2 %, the 95 % lower bound on the rate within 2 % is 0.05^(1/n).
