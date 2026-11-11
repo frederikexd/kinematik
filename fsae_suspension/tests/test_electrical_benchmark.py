@@ -228,6 +228,23 @@ def test_native_altium_board_reading():
             assert got == r["altium"], r["board"]
 
 
+# --------------------------------------------------------------------------- A4 / B6. KiCad 8/9 boards ---- #
+def test_kicad9_boards_read_and_net_resistance():
+    """Four FS boards saved in KiCad 8-9, read by KiCad 9.0.3 (plan addendum 7). Reading: every count exact, length
+    0.1 %. Net resistance (held out, a3805c1): published as a miss at 2 %; pinned at what it scored. The 1.10 margin
+    alone misses the worst net by 0.01 %; the brown-out bound (1.10 / copper finish 0.90) covers every net."""
+    d = json.loads((REF / "kicad9" / "results.json").read_text(encoding="utf-8"))
+    assert d["tool"].startswith("KiCad 9.0.3")
+    for b in d["reading"]["boards"]:
+        assert b["kicad"] == b["kinematik"] and not b["nets_missing"] and b["worst_length_pct"] <= 0.1, b["board"]
+    rows = d["net_resistance"]["nets"]
+    assert len(rows) == 100
+    e = [(o["kk_ohm"] - o["copper2d_ohm"]) / o["copper2d_ohm"] for o in rows if o.get("copper2d_ohm")]
+    assert len(e) == 95 and sum(abs(x) <= 0.02 for x in e) == 70
+    assert all(abs(x) <= 0.10 for x in e) and min(e) * 1.10 > -0.101
+    assert all((1 + x) * 1.10 / 0.90 >= 1.10 for x in e)
+
+
 # --------------------------------------------------------------------------- D. Trace heating vs NBS ---- #
 def test_trace_heating_against_nbs_measurements():
     """Plan addendum 5. KinematiK's ampacity (IPC-2221 × 0.975) against the NBS 1956 measured curves. Points at 4

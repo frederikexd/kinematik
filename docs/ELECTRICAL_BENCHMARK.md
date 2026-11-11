@@ -24,6 +24,8 @@ KinematiK against the recorded references on every run without needing the tools
 | **B5.** Net resistance vs the **corrected** 2-D solve | 681 demo-board nets (design); **142 sampled held-out nets on FS team boards** | 2 % per net | **Still misses 2 % on about one net in eight, and errs high when it misses.** Held out: 87.3 % within 2 %, 97.9 % within 5 %, 98.6 % within 10 %, median +0.55 %, **worst low −3.1 %**, worst high +21.2 %. Before round 3: 2.8 % within 2 %, median +16.9 % |
 | **A2.** Board reading vs **Altium Designer 26.11.1** | 3 boards imported into Altium and saved as binary `.PcbDoc`: 9,429 tracks, 180 arcs, 901 vias, 2,763 pads, 346 components, 467 nets | exact counts; length 0.1 % | **Pass after two reader fixes it exposed.** Every count equals Altium's own; net lengths within 0.04 % of KiCad's original. First read: StickHub 289 pads and 90 components (Altium: 278, 94) |
 | **A3.** Board reading of **native Altium boards** vs Altium Designer 26.11.1 | 6 Formula SAE boards designed in Altium (Queen's FSAE), never converted: 2,226 tracks, 21 arcs, 201 vias, 1,130 pads, 328 components | exact counts | **6 of 6 boards, 30 of 30 counts identical** |
+| **A4.** Board reading of **KiCad 8/9 boards** vs **KiCad 9.0.3** | 4 FS team boards saved in KiCad 8–9 (PUT Motorsport BMS LV, BMS HV master, Frontbox; WindingMotor distribution hub): 6,068 tracks, 50 arcs, 3,398 vias, 2,731 pads, 772 components, 505 routed nets | exact counts; length 0.1 % | **4 of 4 boards, every count identical.** Worst net length 0.015 % |
+| **B6.** Net resistance on **KiCad 8/9 boards** (held out, KinematiK frozen at a3805c1) vs the corrected 2-D solve on KiCad 9.0.3's shapes | 100 nets drawn with seed 20261112; 95 solved by the reference | 2 % per net | **Miss.** 70 of 95 within 2 % (73.7 %), 85 within 5 % (89.5 %), **95 of 95 within 10 %**, median +0.81 %, worst −9.1 % / +6.9 %. Every miss is a short pad-to-pad net (2–9 tracks) |
 | **C.** Microstrip impedance vs field solver | 5 single-ended, 6 differential | 5 % / 10 % | **Round 1 miss:** single-ended −8.3 % and −6.4 % at the range ends. Formula replaced. **Round 2, unseen geometries: 10 of 10**, worst 3.4 % |
 | **C2.** Microstrip impedance vs **Altium Designer 26.11.1** | the same 21 cross-sections in Altium's Layer Stack Manager, plus 5 extras | 5 % / 10 % | **21 of 21.** Single-ended worst −1.9 %, differential worst +4.0 %. Altium and atlc agree within 1.6 % on every case |
 | **D.** Trace heating vs **NBS 1956 measurements** (the data behind IPC-2221) | 44 reliably read points, 10–100 °C rise (10 more at 4–16 sq mil left out) | KinematiK ≤ 1.05 × measured at every point | **Plain IPC-2221 missed on 2** (wide traces at 10 °C: +5 %, +8 %). KinematiK now uses IPC-2221 × 0.975: **44 of 44**, worst +4.96 %, median 0.89 × measured. Calibrated on these points, so a calibration check, not a validation |
@@ -161,6 +163,29 @@ tracks and arcs with the PCB Filter (`IsTrack And OnSignal`, `IsArc And OnSignal
 
 **KinematiK reads every one of the 30 counts exactly as Altium does.** Pads that belong to no component are kept
 under a placeholder that the fix report no longer counts as a component (it had read 76 components on BSPD_002).
+
+## A4 and B6. Boards saved in KiCad 8 and 9
+
+Plan addendum 7 and its amendment. The author could not install KiCad 9, so KiCad 9.0.3 (Ubuntu 25.10's package)
+ran in an isolated Ubuntu 25.10 root in the benchmark workspace, driving the kit's `export_kicad9.py`
+(`benchmarks/electrical/kicad9/`). The kit as first shipped failed on KiCad 9 before writing anything (vias take a
+layer for their width; a pad's parent no longer has `GetReference`); it was fixed without changing what it writes.
+
+- **Reading (A4): pass.** On all four boards every count equals KiCad 9's (tracks, arcs, vias, pads, components)
+  and the routed length of all 505 nets is within 0.015 %.
+- **Net resistance (B6, held out): miss.** 100 nets drawn with `random.Random(20261112)` from the 452 trace-only nets
+  KinematiK solves on these boards, KinematiK frozen at a3805c1, the corrected 2-D solve on KiCad 9's own shapes.
+  The reference returned no value on 5 (four long signal nets on the distribution hub and one high-voltage net on
+  the BMS master); they are counted, not scored. On the other 95: 70 within 2 % (73.7 %), 85 within 5 %, **all 95 within
+  10 %**, median +0.81 %, worst −9.1 % and +6.9 %.
+- **Where it misses.** Every net off by more than 4 % is a short pad-to-pad link of 2–9 tracks (gate resistors,
+  bootstrap capacitors, feedback dividers). On those the copper under and around the pads is most of the resistance,
+  and KinematiK's 1-D model of how current enters a pad is off by a few percent either way. These boards have more of
+  them than the round-3 team boards (87.3 % within 2 % there).
+- **What it means for the checks.** The model's 1.10 margin alone falls short on the worst net by 0.01 %
+  (0.909 × 1.10 = 0.9999). The brown-out check also assumes copper up to 10 % thin (× 1/0.90), so its bound is
+  1.22 × the estimate and covers every net here with 11 % to spare. It is not a 2 % estimator on short
+  pad-dominated nets.
 
 ## B5. Net resistance against the corrected 2-D reference
 
