@@ -965,9 +965,11 @@ def _node_key(layer: str, pt) -> tuple:
     return (layer, round(pt[0], 2), round(pt[1], 2))
 
 
-def _weld_nodes(node_fn, keyed: dict, tol: float = NODE_WELD_MM) -> list:
+def _weld_nodes(node_fn, keyed: dict, tol: float = NODE_WELD_MM, joined: set = frozenset()) -> list:
     """Return zero-ohm edges joining copper nodes that are within `tol` of each
-    other on the same layer.
+    other on the same layer. Pairs in `joined` (the two ends of one track) are
+    left alone: an arc is stored as chords about 47 um long, under `tol`, and
+    welding a chord's own ends shorted the arc out.
 
     A spatial hash keyed on `tol`-sized cells keeps this linear: each node only
     compares against the nine cells around it, so a 51k-segment board costs the
@@ -987,7 +989,7 @@ def _weld_nodes(node_fn, keyed: dict, tol: float = NODE_WELD_MM) -> list:
                         if key == okey:
                             continue
                         pair = (key, okey) if key < okey else (okey, key)
-                        if pair in seen:
+                        if pair in seen or pair in joined:
                             continue
                         if math.hypot(pt[0] - opt[0], pt[1] - opt[1]) <= tol:
                             seen.add(pair)
@@ -1036,14 +1038,37 @@ def analyze_net(board: PcbBoard, nid: int, ambient_c: float = 40.0) -> dict:
     keyed: dict = {}          # node key -> exact point, for welding below
     via_hubs: list = []       # (hub node, via, layers) for annulus attachment
     temp = ambient_c + 20.0
+    #  Track that lies on top of a pad or a via ring carries almost none of the
+    #  current: the far wider pad copper under it does, so the current really
+    #  enters the track at the pad's edge. Counting that stretch as track made
+    #  every short net read high (median +11 % against a 2-D solve of the
+    #  copper on KiCad's demo boards), so only the length outside pads and via
+    #  rings counts.
+    _joined: set = set()      # (node key, node key) of each track's two ends, never welded
+    _pads_net = [(p, p.layer or ("B.Cu" if fp.layer == "B.Cu" else "F.Cu")) for fp, p in pads]
+    #  A track lying wholly inside a wider track of the net (a re-route left on
+    #  top of the old one) adds no copper: counted as a parallel path it halved
+    #  that stretch (StickHub, J1 to JP1: -43 %). It keeps its connectivity but
+    #  carries no current, provided both its ends meet other copper of the net.
+    _ends: dict = {}
+    for s in segs:
+        for e_ in (s.start, s.end):
+            _ends[_node_key(s.layer, e_)] = _ends.get(_node_key(s.layer, e_), 0) + 1
+    _vkeys = {_node_key(ly, v.at) for v in vias for ly in board.copper_layers}
+    _conn_only: list = []
     for s in segs:
         ka, kb = _node_key(s.layer, s.start), _node_key(s.layer, s.end)
         keyed.setdefault(ka, s.start)
         keyed.setdefault(kb, s.end)
+        _joined.add((ka, kb) if ka < kb else (kb, ka))
         a, b = node(ka), node(kb)
+        if _within_wider(s, segs) and all(_ends.get(k, 0) >= 2 or k in _vkeys for k in (ka, kb)):
+            _conn_only.append((a, b, 0.0))
+            continue
+        covered = _covered_fraction(s, _pads_net, vias, segs=segs)
         tr = Trace(name="s", net="s", owner_subsystem="e",
                    width_mm=max(s.width_mm, 1e-4), copper_oz=board.copper_oz,
-                   length_mm=max(s.length_mm, 1e-3),
+                   length_mm=max(s.length_mm * (1.0 - covered), 1e-3),
                    is_external=s.layer in ("F.Cu", "B.Cu"))
         edges.append((a, b, tr.resistance_ohm(temp_c=temp)))
     for v in vias:
@@ -1058,7 +1083,7 @@ def analyze_net(board: PcbBoard, nid: int, ambient_c: float = 40.0) -> dict:
         via_hubs.append((hub, v, set(layers)))
     # Weld coincident-but-not-identical endpoints before the pads are attached,
     # so a pad reaching either side of a joint reaches the whole net.
-    edges.extend(_weld_nodes(node, keyed))
+    edges.extend(_weld_nodes(node, keyed, joined=_joined))
 
     #  A track does not have to hit a via's exact centre to be connected to it.
     #  A via is an annulus of copper, and routers habitually end a track a little
@@ -1104,8 +1129,13 @@ def analyze_net(board: PcbBoard, nid: int, ambient_c: float = 40.0) -> dict:
         for ly in vl_:
             kk_ = _node_key(ly, v_.at)
             half_w[kk_] = max(half_w.get(kk_, 0.0), v_.size_mm / 2.0)
-    for fp, p in pads:
-        key = ("pad", fp.ref, p.number)
+    #  Each pad is its own node, even when a footprint repeats a pad number (a
+    #  tactile switch's two pin-1 legs, a connector's shield tabs). Merging them
+    #  made the part's internal link a 0 Ω copper shortcut: KiCad's coldfire
+    #  demo, D102 to LV101 through RST_SW101's two pin 1s, read 27 % low against
+    #  a 2-D solve. The internal link still counts for connectivity (below).
+    for _pi, (fp, p) in enumerate(pads):
+        key = ("pad", fp.ref, p.number, _pi)
         pn = node(key)
         reach = max(p.size) / 2.0 + 0.06
         pad_layer = p.layer or ("B.Cu" if fp.layer == "B.Cu" else "F.Cu")
@@ -1176,7 +1206,12 @@ def analyze_net(board: PcbBoard, nid: int, ambient_c: float = 40.0) -> dict:
     #  is open; `edges` — untouched here — remains the trace-only mesh the nodal
     #  solve uses, so every resistance the Doctor reports is still an
     #  upper bound on the real thing.
-    conn_edges = list(edges)
+    conn_edges = list(edges) + _conn_only
+    _first_pin: dict = {}
+    for ref, num, pn, _hit in pad_nodes:          # same-numbered pads: joined inside the part
+        _first_pin.setdefault((ref, num), pn)
+        if _first_pin[(ref, num)] != pn:
+            conn_edges.append((_first_pin[(ref, num)], pn, 0.0))
     for zi, z in enumerate(getattr(board, "zones", ()) or ()):
         if z.net != nid or len(z.outline) < 3:
             continue
@@ -1230,13 +1265,42 @@ def analyze_net(board: PcbBoard, nid: int, ambient_c: float = 40.0) -> dict:
             g = 1.0 / max(r, 1e-9)
             L[a, a] += g; L[b, b] += g
             L[a, b] -= g; L[b, a] -= g
+        #  Effective resistance by a grounded solve on each connected piece of the
+        #  trace mesh, not a pseudo-inverse of the whole Laplacian: the mesh mixes
+        #  1e-9 Ω welds with 50 mΩ tracks, and numpy's pinv lost a quarter of the
+        #  answer on such meshes (KiCad's coldfire demo, /PST0: 135 mΩ for a
+        #  plain chain of tracks summing to 180 mΩ; found against a 2-D solve).
+        #  Two pads joined only through a pour have no trace path: that pair is
+        #  skipped, since the trace-only resistance between them is undefined.
         try:
-            Lp = np.linalg.pinv(L)
+            comp = list(range(n))
+            def _root(x):
+                while comp[x] != x:
+                    comp[x] = comp[comp[x]]; x = comp[x]
+                return x
+            for a, b, _ in edges:
+                ra, rb = _root(a), _root(b)
+                if ra != rb:
+                    comp[ra] = rb
             sample = attached[:10]
+            Xs: dict = {}
+            for c in {_root(pn) for _r, _n, pn in sample}:
+                idx = [k for k in range(n) if _root(k) == c]
+                if len(idx) < 2:
+                    continue
+                pos = {k: m for m, k in enumerate(idx)}
+                sub = L[np.ix_(idx, idx)][1:, 1:]          # ground the piece's first node
+                X = np.zeros((len(idx), len(idx)))
+                X[1:, 1:] = np.linalg.solve(sub, np.eye(len(idx) - 1))
+                Xs[c] = (pos, X)
             for i in range(len(sample)):
                 for j in range(i + 1, len(sample)):
                     a, b = sample[i][2], sample[j][2]
-                    r = float(Lp[a, a] + Lp[b, b] - 2 * Lp[a, b])
+                    if _root(a) != _root(b) or _root(a) not in Xs:
+                        continue
+                    pos, X = Xs[_root(a)]
+                    pa, pb = pos[a], pos[b]
+                    r = float(X[pa, pa] + X[pb, pb] - 2 * X[pa, pb])
                     if worst_r is None or r > worst_r:
                         worst_r = r
                         worst_pair = (f"{sample[i][0]}.{sample[i][1]}",
@@ -1426,6 +1490,48 @@ def clearance_required_mm(voltage_v: float) -> float:
         if voltage_v <= vmax:
             return c
     return 2.5 + 0.005 * (voltage_v - 500.0)
+
+
+def _within_wider(seg, segs, samples: int = 24) -> bool:
+    """Does the track lie inside wider tracks of its net on its layer: both ends and at least 90 % of its
+    centreline (sampled) within a wider track's copper?"""
+    wide = [w for w in segs if w is not seg and w.layer == seg.layer and w.width_mm > seg.width_mm + 1e-6]
+    if not wide:
+        return False
+    def _in(pt):
+        return any(_pt_seg_dist(pt, w.start, w.end) <= w.width_mm / 2.0 for w in wide)
+    if not (_in(seg.start) and _in(seg.end)):
+        return False
+    hit = sum(_in((seg.start[0] + (k + 0.5) / samples * (seg.end[0] - seg.start[0]),
+                   seg.start[1] + (k + 0.5) / samples * (seg.end[1] - seg.start[1]))) for k in range(samples))
+    return hit >= 0.9 * samples
+
+
+def _covered_fraction(seg, pads, vias, samples: int = 24, segs=()) -> float:
+    """Fraction (0–1, unitless) of a track's length whose centreline lies on a pad's copper (a pad on the track's
+    layer, or a through-hole pad), inside a via's ring on that layer, or inside a wider track of the same net on
+    that layer (a thin track running into a wide one), sampled at `samples` points. `pads` are (pad, copper
+    layer) pairs, the layer being the pad's own or its footprint's side."""
+    if seg.length_mm <= 0:
+        return 0.0
+    near = [p for p, ly in pads if (p.through or ly == seg.layer)
+            and _pt_seg_dist(p.at, seg.start, seg.end) <= max(p.size) + 0.1]
+    ring = [v for v in vias if _pt_seg_dist(v.at, seg.start, seg.end) <= v.size_mm / 2.0]
+    wide = [w for w in segs if w is not seg and w.layer == seg.layer and w.width_mm > seg.width_mm + 1e-6
+            and min(_pt_seg_dist(w.start, seg.start, seg.end), _pt_seg_dist(w.end, seg.start, seg.end),
+                    _pt_seg_dist(seg.start, w.start, w.end), _pt_seg_dist(seg.end, w.start, w.end))
+            <= w.width_mm / 2.0]
+    if not near and not ring and not wide:
+        return 0.0
+    hit = 0
+    for k in range(samples):
+        f = (k + 0.5) / samples
+        pt = (seg.start[0] + f * (seg.end[0] - seg.start[0]), seg.start[1] + f * (seg.end[1] - seg.start[1]))
+        if any(_pad_overlaps(p, pt, 0.0) for p in near) or \
+                any(math.hypot(pt[0] - v.at[0], pt[1] - v.at[1]) <= v.size_mm / 2.0 for v in ring) or \
+                any(_pt_seg_dist(pt, w.start, w.end) <= w.width_mm / 2.0 for w in wide):
+            hit += 1
+    return hit / samples
 
 
 def _pad_overlaps(pad, pt, margin_mm: float) -> bool:
