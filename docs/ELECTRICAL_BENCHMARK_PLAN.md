@@ -349,3 +349,25 @@ point. It is reported as singular, not scored.
 KinematiK round 3 (frozen 97dc029) and by the reference, under the same rules. Nets over the cap are not estimated by
 KinematiK either (it returns "too large" and the brown-out check keeps the trace-only upper bound). They are listed,
 since there is no estimate to score.
+
+### Addendum 9, first result (the 24 unconverged KiCad 9 nets, refined; the large nets are still running)
+
+At half and a quarter of the cell size, 23 of the 24 references converge. Against them round 3 is within 2 % on 17
+and **low on 6** (−2.2 % to −6.5 %). So over the 42 held-out nets with a converged reference, round 3 scores 36
+within 2 % (86 %), and where it misses it reads low. The cause is plain from the reference's own steps: on these
+nets the answer still rises 2–8 % when the cell is halved, and KinematiK solves at the coarse cell. On the design
+set, 16 of the 26 refined nets (the LED strings) still do not converge at a quarter cell and stay unscored.
+
+## Addendum 10, pour estimate round 4: a grid check inside KinematiK (written before any round-4 number)
+
+Round 4 does what the reference had to do. `pour_resistance` solves at its cell size, then again between the same
+two pads at half the cell, and at a quarter if those two differ by more than 2 %. It returns the finest value, the
+last change in percent (`grid_change_pct`) and `converged` (the last change is within 2 %). When the finer grid does
+not fit the memory cap it returns the coarse value with `converged` false. Nothing else changes.
+
+**Scoring.** The 42 held-out nets above are design data for round 4: its reason for existing came from them. They
+are re-scored and published as such, against each net's finest converged reference. The claim round 4 makes is
+narrower than a rate: *a pour estimate KinematiK marks converged is within 2 % of the reference*, and one it does
+not mark converged is labelled unverified in the result. **Held out for that claim:** the KiCad 9 pour nets still
+running under addendum 9 when this was written (none of their references had been looked at), wherever round 4
+marks its estimate converged and the reference converges too.
