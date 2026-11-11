@@ -655,6 +655,8 @@ def parse_kicad_pcb(text: str) -> PcbBoard:
                         _drill_by_net[str(_atoms(an)[0].value).strip('"')] = _floats(vd)[0]
 
     _unreadable_tracks = 0
+    _unfilled_zones: list = []          # (net id, first and one-past-last index of its outlines in board.zones)
+    _any_fill = False
     for node in root[1:]:
         if not isinstance(node, list):
             continue
@@ -756,6 +758,7 @@ def parse_kicad_pcb(text: str) -> PcbBoard:
             if filled and ((fat and _atoms(fat) and str(_atoms(fat)[0].value) == "yes") or (_legacy_fill and not fat)):
                 mt = _child(node, "min_thickness")
                 stroke = _floats(mt)[0] if mt and _floats(mt) else 0.254
+            _z0 = len(board.zones)
             for poly in (filled or _children(node, "polygon")):
                 pts_node = _child(poly, "pts")
                 if not pts_node:
@@ -773,6 +776,26 @@ def parse_kicad_pcb(text: str) -> PcbBoard:
                 for lay in players:
                     board.zones.append(
                         PcbZone(net=znid, layer=lay, outline=pts, spoke_mm=spoke, stroke_mm=stroke))
+            if filled:
+                _any_fill = True
+            elif znid and not _child(node, "keepout"):       # a keepout or a no-net zone was never going to be copper
+                _unfilled_zones.append((znid, _z0, len(board.zones)))
+    #  A pour with no stored fill. If other pours in the file are filled, KiCad filled this one too and found nothing
+    #  to keep (an island joined to no pad): it is not copper, and reading its outline as copper joined pads and
+    #  lowered resistances that KiCad 9 does not (benchmark addendum 11). If no pour in the file is filled, the
+    #  board was saved without filling: the outlines stand in, and the report says so.
+    if _unfilled_zones and _any_fill:
+        drop = {i for _nid, i0, i1 in _unfilled_zones for i in range(i0, i1)}
+        nets_ = sorted({board.nets.get(nid_, str(nid_)) for nid_, _i0, _i1 in _unfilled_zones})
+        board.zones = [z for i, z in enumerate(board.zones) if i not in drop]
+        board.zone_nets &= {z.net for z in board.zones}      # a net whose only pour is empty is a trace-only net
+        board.notes.append(
+            f"{len(_unfilled_zones)} pour(s) have no filled copper in the file (nets: {', '.join(nets_[:6])}"
+            f"{', ...' if len(nets_) > 6 else ''}). KiCad left them empty, so they are not counted as copper.")
+    elif _unfilled_zones:
+        board.notes.append(
+            "The pours in this file were saved without being filled. Their drawn outlines are used as the copper; "
+            "fill all zones in KiCad (B) and save again for the real shapes.")
     if _unreadable_tracks:
         board.notes.append(
             f"{_unreadable_tracks} track(s) in the file have no usable width, position or net and were left out. "

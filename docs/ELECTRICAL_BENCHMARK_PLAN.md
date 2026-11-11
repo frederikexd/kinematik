@@ -371,3 +371,15 @@ narrower than a rate: *a pour estimate KinematiK marks converged is within 2 % o
 not mark converged is labelled unverified in the result. **Held out for that claim:** the KiCad 9 pour nets still
 running under addendum 9 when this was written (none of their references had been looked at), wherever round 4
 marks its estimate converged and the reference converges too.
+
+## Addendum 11, empty pours (written when round 4's design re-score showed two nets still 5 % low)
+
+Round 4 converged on the two isolated `HV_+5V` nets of the PUT BMS master and still read 5 % below a converged
+reference, so the grid was not the cause. The file holds a pour on each net with no `filled_polygon`: KiCad filled
+it and kept nothing (an island that reaches no pad). KinematiK fell back to the drawn outline and counted it as
+copper. From here on, a pour without a stored fill is not copper when any other pour in the file is filled; when
+no pour in the file is filled, the board was saved unfilled, the outlines stand in and the report says so. Keepouts
+and no-net zones are never copper. This also stops an empty pour from joining pads in the connectivity check.
+
+Those two nets are design data and, with their only pour empty, no longer pour nets. No other KiCad 9 pour net has
+an empty pour (checked from the file, not from results), so the nets still held out for addendum 10 are unaffected.

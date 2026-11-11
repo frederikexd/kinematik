@@ -1356,3 +1356,29 @@ class TestPourGridCheck(unittest.TestCase):
         self.assertFalse(r["converged"])
         self.assertIsNone(r["grid_change_pct"])
         self.assertAlmostEqual(r["h_mm"], h)
+
+
+class TestEmptyPours(unittest.TestCase):
+    """A pour with no stored fill (plan addendum 11)."""
+    HEAD = ('(kicad_pcb (version 20241229) (layers (0 "F.Cu" signal)) (net 0 "") (net 1 "A") (net 2 "B")'
+            ' (footprint "f" (layer "F.Cu") (at 0 0) (property "Reference" "J1")'
+            '  (pad "1" smd rect (at 1 1) (size 1 1) (layers "F.Cu") (net 1 "A"))'
+            '  (pad "2" smd rect (at 8 1) (size 1 1) (layers "F.Cu") (net 1 "A")))')
+    EMPTY = ' (zone (net 1) (net_name "A") (layer "F.Cu") (polygon (pts (xy 0 0) (xy 10 0) (xy 10 2) (xy 0 2))))'
+    FILLED_B = (' (zone (net 2) (net_name "B") (layer "F.Cu") (polygon (pts (xy 0 5) (xy 10 5) (xy 10 7) (xy 0 7)))'
+                ' (filled_polygon (layer "F.Cu") (pts (xy 0 5) (xy 10 5) (xy 10 7) (xy 0 7))))')
+    KEEPOUT = (' (zone (net 0) (net_name "") (layer "F.Cu") (keepout (tracks not_allowed))'
+               ' (polygon (pts (xy 20 0) (xy 30 0) (xy 30 2) (xy 20 2))))')
+
+    def test_empty_pour_in_a_filled_board_is_not_copper(self):
+        b = parse_kicad_pcb(self.HEAD + self.EMPTY + self.FILLED_B + self.KEEPOUT + ")")
+        self.assertEqual([z.net for z in b.zones if z.net], [2])
+        self.assertNotIn(1, b.zone_nets)
+        self.assertEqual(sum("no filled copper" in n for n in b.notes), 1)
+        self.assertIn("nets: A)", " ".join(b.notes))
+
+    def test_board_saved_without_any_fill_keeps_outlines_and_says_so(self):
+        b = parse_kicad_pcb(self.HEAD + self.EMPTY + self.KEEPOUT + ")")
+        self.assertEqual([z.net for z in b.zones if z.net], [1])
+        self.assertIn(1, b.zone_nets)
+        self.assertTrue(any("saved without being filled" in n for n in b.notes))
