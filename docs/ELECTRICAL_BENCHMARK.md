@@ -266,6 +266,23 @@ the team boards, mostly whole-board ground planes.
 
 So the pour estimate is a conservative indicator, not yet a 2 % tool; the brown-out check doesn't use it.
 
+## From the file to the built board
+
+A model that is right about the file can still be wrong about the board: finished copper comes back thinner or
+thicker than ordered, and joints, connectors and crimps add resistance no layout file holds. Two things in KinematiK
+account for this:
+
+- **The brown-out check assumes copper up to 10 % thin** (`COPPER_FINISH_FACTOR`, set your fab's tolerance with
+  `diagnose(copper_finish=...)`), on top of the model's 1.10 margin.
+- **A bring-up measurement plan** (`bringup_measurements`, and a table in the fix report): for each declared power
+  net, the two pads to probe with a 4-wire milliohm meter, the resistance expected at 22 °C and the band a good board
+  falls in (the model's held-out error with the copper tolerance). A reading above the band means thin copper, a
+  cracked joint or a wrong track; the check is re-run with the measured value.
+
+Heating stays an IPC chart for an isolated trace in still air: it does not model neighbouring hot parts, planes
+underneath, airflow or enclosures. Every report says so and asks for the hottest local temperature near the trace as
+the ambient, which keeps the result on the safe side without pretending to model the rest.
+
 ## Not covered
 
 - **Trace heating against independent measurements.** D checks KinematiK's formula against the 1956 data it

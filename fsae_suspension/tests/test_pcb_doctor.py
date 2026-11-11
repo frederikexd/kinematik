@@ -1252,3 +1252,32 @@ class TestRound3NetResistance(unittest.TestCase):
                             ' (layers (0 "F.Cu" signal) (31 "B.Cu" signal)) (net 0 "") (net 1 "SIG")\n'
                             ' (via (at 0 0) (size 0.8) (layers "F.Cu" "B.Cu") (net 1)))')
         self.assertAlmostEqual(b.vias[0].drill_mm, 0.45)
+
+
+class TestBuiltBoardTolerance(unittest.TestCase):
+    """The board from the fab is not the file: thin copper in the brown-out check, a measurement plan for bring-up."""
+
+    def test_measurement_plan_band_brackets_the_estimate(self):
+        b = parse_kicad_pcb(demo_kicad_pcb())
+        from suspension.pcb_doctor import bringup_measurements
+        rows = bringup_measurements(b)
+        self.assertTrue(rows)
+        for r in rows:
+            lo, hi = r["band_mohm"]
+            self.assertLess(lo, r["expected_mohm"])
+            self.assertGreater(hi, r["expected_mohm"])
+
+    def test_thinner_copper_assumption_raises_the_drop(self):
+        b = parse_kicad_pcb(demo_kicad_pcb())
+        asg = auto_assign_net_currents(b, ledger=None)
+        apply_demo_declarations(b, asg)
+
+        def worst(rep):
+            import re as _re
+            vals = [float(m) for f in rep.findings if f.check.startswith("IR drop")
+                    for m in _re.findall(r"drops (\\d+\\.\\d+) V", f.message)]
+            return max(vals) if vals else 0.0
+        nominal = worst(diagnose(b, asg, copper_finish=1.0))
+        thin = worst(diagnose(b, asg, copper_finish=0.8))
+        if nominal:
+            self.assertAlmostEqual(thin / nominal, 1.0 / 0.8, places=2)

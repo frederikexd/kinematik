@@ -980,6 +980,13 @@ SAFETY_CONTRACT = "false alarms are acceptable; false all-clears are not"
 #  7.3 % above it (1/(1-0.073) = 1.079), rounded up to 1.10.
 NET_R_UPPER_FACTOR = 1.10
 
+#  The board that comes back from the fab is not the file. Finished copper can
+#  be thinner than ordered (plating and etch tolerance), so the brown-out check
+#  also assumes the copper may be this fraction of its nominal thickness. 0.90
+#  (10 % thin) is a cautious default, not a standard: set your fab's finished
+#  copper tolerance through diagnose(copper_finish=...).
+COPPER_FINISH_FACTOR = 0.90
+
 
 def _node_key(layer: str, pt) -> tuple:
     return (layer, round(pt[0], 2), round(pt[1], 2))
@@ -1707,7 +1714,8 @@ class DoctorReport:
 def diagnose(board: PcbBoard, assignments: dict,
              rail_v: float = 5.0, brownout_v: float = 4.5,
              ambient_c: float = 40.0, max_temp_c: float = 105.0,
-             fuse_sf: float = 2.0, dT_budget_c: float = 20.0) -> DoctorReport:
+             fuse_sf: float = 2.0, dT_budget_c: float = 20.0,
+             copper_finish: float = COPPER_FINISH_FACTOR) -> DoctorReport:
     """Run every check against the parsed board + the per-net current/voltage
     assignments. Returns findings (plain-language WHY + numeric FIX) and the
     executable width-fix list."""
@@ -1874,7 +1882,7 @@ def diagnose(board: PcbBoard, assignments: dict,
         # -- true IR drop → brown-out ------------------------------------------------ #
         volt = float(a.get("voltage_v", rail_v) or rail_v)
         if nr["worst_r_ohm"] is not None and volt <= 60.0:
-            r_up = nr["worst_r_ohm"] * NET_R_UPPER_FACTOR
+            r_up = nr["worst_r_ohm"] * NET_R_UPPER_FACTOR / max(copper_finish, 1e-3)
             drop = cur * r_up
             delivered = rail_v - drop
             pr = nr["worst_pair"] or ("?", "?")
@@ -1887,7 +1895,8 @@ def diagnose(board: PcbBoard, assignments: dict,
                     message=(f"Nodal analysis of the routed copper on '{name}' "
                              f"gives {nr['worst_r_ohm']*1000:.0f} mΩ between "
                              f"{pr[0]} and {pr[1]}{zone_note}, taken as up to "
-                             f"{r_up*1000:.0f} mΩ with the model's margin. At {cur:g} A that "
+                             f"{r_up*1000:.0f} mΩ with the model's margin and copper up to "
+                             f"{100*(1-copper_finish):.0f} % thin from the fab. At {cur:g} A that "
                              f"drops {drop:.2f} V — the {rail_v:g} V rail arrives "
                              f"at {delivered:.2f} V, below the {brownout_v:g} V "
                              f"brown-out. On track this is the ECU resetting "
@@ -2128,6 +2137,31 @@ def apply_fixes(board: PcbBoard, fixes: list) -> tuple:
     return text, applied
 
 
+def bringup_measurements(board: PcbBoard, nets=None, room_c: float = 22.0,
+                         copper_finish: float = COPPER_FINISH_FACTOR) -> list:
+    """The bring-up checklist: for each net (default: every net KinematiK can solve), the two pads to measure
+    between, the resistance (mΩ) expected at room temperature `room_c` (°C), and the band (mΩ) a good board falls
+    in. Measure with a 4-wire (Kelvin) milliohm meter, probes on the pads, the board unpowered.
+
+    The band combines the model's measured error on held-out boards (2-D reference, docs/ELECTRICAL_BENCHMARK.md
+    B5: worst −3.1 % / +21.2 %) with the fab's copper tolerance (±(1 − copper_finish)). Above the band: copper
+    thinner than assumed, a cracked joint or a wrong track; re-run the brown-out check with the measured value.
+    Below it: thicker copper or a pour or solder the model doesn't count, which is harmless."""
+    from .electronics import ALPHA_CU as _A
+    ids = nets if nets is not None else sorted({s.net for s in board.segments if s.net})
+    tol = 1.0 - copper_finish
+    rows = []
+    for nid in ids:
+        r = analyze_net(board, nid)
+        if r.get("worst_r_ohm") is None:
+            continue
+        est = r["worst_r_ohm"] * (1 + _A * (room_c - 20.0)) / (1 + _A * 40.0)    # the solve runs at 60 °C
+        rows.append({"net": board.net_name(nid), "pads": r["worst_pair"],
+                     "expected_mohm": est * 1e3,
+                     "band_mohm": (est / 1.212 / (1 + tol) * 1e3, est / 0.969 / (1 - tol) * 1e3)})
+    return rows
+
+
 def fix_report_md(board: PcbBoard, report: DoctorReport, applied: list,
                   assignments: dict) -> str:
     """A hand-off document: what was wrong, why it fails in real life, what was
@@ -2166,9 +2200,24 @@ def fix_report_md(board: PcbBoard, report: DoctorReport, applied: list,
         for fx in manual:
             lines.append(f"- `{fx.net}` ({fx.layer}) needs {fx.new_width_mm:g} mm "
                          f"equivalent — {fx.note}")
+    ids = [board.net_id(n) for n in assignments if board.net_id(n)]
+    plan = bringup_measurements(board, ids) if ids else []
+    if plan:
+        lines += ["", "## Bring-up measurements (on the built board)",
+                  "The file is not the board: copper comes back thinner or thicker, joints vary. Before powering "
+                  "the car, measure each declared power net with a 4-wire (Kelvin) milliohm meter, board unpowered, "
+                  "probes on the two pads named. Above the band: thin copper, a cracked joint or a wrong track; "
+                  "re-run the brown-out check with the measured value.", "",
+                  "| Net | Measure between | Expected at 22 °C | Good board |", "|---|---|---|---|"]
+        for r_ in plan:
+            lo, hi = r_["band_mohm"]
+            lines.append(f"| `{r_['net']}` | {r_['pads'][0]} – {r_['pads'][1]} | {r_['expected_mohm']:.1f} mΩ | "
+                         f"{lo:.1f}–{hi:.1f} mΩ |")
     lines += ["", "---",
               "Analytic screening (IPC-2221 heating, Onderdonk fusing, nodal "
-              "IR-drop, B4 clearance). Not a field solver, not a DRC replacement. "
+              "IR-drop, B4 clearance). Heating assumes an isolated trace in still air on a board at the ambient you "
+              "set: enter the hottest local temperature near the trace (enclosure, nearby hot parts), not the "
+              "outside air. Not a field solver, not a DRC replacement. "
               "Validate the patched board in KiCad DRC + your fab's rules before "
               "ordering."]
     return "\n".join(lines)
