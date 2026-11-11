@@ -2171,7 +2171,7 @@ def fix_report_md(board: PcbBoard, report: DoctorReport, applied: list,
     lines = ["# PCB Doctor — fix report", "",
              f"Source board: **{eda}** · "
              f"{len(board.segments)} copper segments · {len(board.vias)} vias · "
-             f"{len(board.footprints)} components", "",
+             f"{sum(1 for f in board.footprints if f.ref != '?')} components", "",
              f"Nets diagnosed: {len(assignments)} · {report.summary()}", ""]
     if board.notes:
         lines += ["## What the import had to assume"]

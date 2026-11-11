@@ -206,6 +206,28 @@ def test_microstrip_impedance_against_altium():
             assert abs(c["atlc_ohm"] - c["altium_ohm"]) / c["altium_ohm"] <= 0.02, c["case"]
 
 
+# --------------------------------------------------------------------------- C3. Native Altium boards ---- #
+def test_native_altium_board_reading():
+    """Six boards designed in Altium (never converted), counted in Altium Designer 26.11.1 by the author and by
+    KinematiK. Limit: every count identical. Set KK_ALTIUM_KIT to the kit folder to re-read the boards here."""
+    import os
+    d = json.loads((REF / "altium" / "results_native.json").read_text(encoding="utf-8"))
+    assert len(d["boards"]) == 6
+    for r in d["boards"]:
+        assert r["altium"] == r["kinematik"], r["board"]
+    kit = os.environ.get("KK_ALTIUM_KIT")
+    if kit:
+        from suspension import pcb_doctor as D
+        for r in d["boards"]:
+            p = Path(kit) / f"{r['board']}.PcbDoc"
+            b = D.parse_board(p.read_bytes(), p.name)
+            got = dict(components=sum(1 for f in b.footprints if f.ref != "?"),
+                       pads=sum(len(f.pads) for f in b.footprints), vias=len(b.vias),
+                       tracks=sum(1 for s in b.segments if not s.from_arc),
+                       arcs=len({s.arc_id for s in b.segments if s.from_arc}))
+            assert got == r["altium"], r["board"]
+
+
 # --------------------------------------------------------------------------- D. Trace heating vs NBS ---- #
 def test_trace_heating_against_nbs_measurements():
     """Plan addendum 5. KinematiK's ampacity (IPC-2221 × 0.975) against the NBS 1956 measured curves. Points at 4
