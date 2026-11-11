@@ -172,3 +172,22 @@ def test_round1_ipc2141_miss_is_on_record():
     ipc = [87.0 / math.sqrt(x["er"] + 1.41) * math.log(5.98 * x["h_mm"] / (0.8 * x["w_mm"] + x["t_mm"])) for x in d]
     errs = [100.0 * (z - x["atlc_z0_ohm"]) / x["atlc_z0_ohm"] for z, x in zip(ipc, d)]
     assert errs[0] < -5 and errs[-1] < -5 and all(abs(e) <= 5 for e in errs[1:-1])
+
+
+# --------------------------------------------------------------------------- C2. Altium's impedance calculator ---- #
+def test_microstrip_impedance_against_altium():
+    """The 21 registered cross-sections (plus 5 extras) in Altium Designer 26.11.1's Layer Stack Manager, run by the
+    author from the kit (benchmarks/electrical/altium/). Limits as C: 5 % single-ended, 10 % differential. Altium and
+    the open field solver atlc are also held to each other, which checks the reference."""
+    from suspension.electronics import DiffPair
+    d = json.loads((REF / "altium" / "results_part2_impedance.json").read_text(encoding="utf-8"))
+    reg = [c for c in d["cases"] if not c["case"].startswith("extra")]
+    assert len(reg) == 21 and d["tool"].startswith("Altium Designer 26")
+    for c in d["cases"]:
+        dp = DiffPair("x", "e", trace_w_mm=c["w_mm"], height_mm=c["h_mm"], eps_r=c["er"],
+                      spacing_mm=c["s_mm"] or 0.2)
+        z = dp.single_ended_z0_ohm() if c["kind"] == "single" else dp.differential_z0_ohm()
+        lim = 0.05 if c["kind"] == "single" else 0.10
+        assert abs(z - c["altium_ohm"]) / c["altium_ohm"] <= lim, c["case"]
+        if c["atlc_ohm"]:
+            assert abs(c["atlc_ohm"] - c["altium_ohm"]) / c["altium_ohm"] <= 0.02, c["case"]

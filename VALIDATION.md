@@ -203,7 +203,8 @@ quote absolute downforce.
 - **Microstrip impedance.** The IPC-2141 formula missed a field solver (atlc) by up to 8.3 %. Hammerstad–Jensen
   replaced it and passed 10 of 10 geometries it had never seen, within 3.4 %.
 - **Altium Designer 26.11.1.** KinematiK reads Altium's own saved boards exactly as Altium counts them, after two reader
-  fixes this check exposed (phantom pads, dropped padless components). Altium's impedance calculator is not run yet.
+  fixes this check exposed (phantom pads, dropped padless components). Its impedance calculator, on the same
+  21 cross-sections as atlc: 21 of 21 within limits, worst 4.0 %; Altium and atlc agree within 1.6 %.
 
 ## Real cars: the prediction ledger
 
