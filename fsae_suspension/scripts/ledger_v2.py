@@ -13,6 +13,8 @@
              --challenger writes CALIBRATION_challenger.json instead: the pre-registered challenger
              (acceleration at the fastest quarter of the field), sealed alongside v2 and decided blind.
   registered run the tests fixed in protocol-v2/REGISTRATION.md (FSG 2023/2024 and autocross pace)
+  verify-all  check every sealed record and frozen calibration in benchmarks/ledger (exit 1 on any failure)
+  other-events  run the test fixed in other-events/REGISTRATION.md (FS Czech and FS Italy, same cars)
   seal       predictions for a specs CSV with a frozen CALIBRATION.json -> SEALED.json
   score      as scripts/ledger.py score, plus the best-lap skidpad channel
 
@@ -216,6 +218,93 @@ def registered(out_dir: Path):
     print("\n".join(lines))
 
 
+OTHER_EVENTS = (("fscz2026", "FS Czech 2026", "2026", "2025"), ("fsita2026", "FS Italy 2026", "2026", "2025"),
+                ("fscz2025", "FS Czech 2025", "2025", "2026"), ("fsita2025", "FS Italy 2025", "2025", "2026"))
+
+
+def other_events(out_dir: Path):
+    """Run the test fixed in other-events/REGISTRATION.md and write RESULTS.md / results.json there."""
+    d = Path(out_dir)
+    reg = (d / "REGISTRATION.md").read_bytes()
+    frozen = json.loads((ROOT / "protocol-v2" / "CALIBRATION.json").read_text(encoding="utf-8"))["calibration"]
+    fits = {}
+    for y in ("2025", "2026"):
+        _specs, phys_y, res = _load(y)
+        fits[y] = V.fit(phys_y, res, f"FSG {y}")
+    out = {"registration_sha256": hashlib.sha256(reg).hexdigest(), "events": {}, "pooled": {}}
+    lines = ["# Results: other organizers, same cars", "",
+             f"Protocol: [`REGISTRATION.md`](REGISTRATION.md), sha256 `{out['registration_sha256']}`. Every number "
+             "below comes from `python fsae_suspension/scripts/ledger_v2.py other-events`.", "",
+             "Headline: v2 with factors fitted on the other FSG year (never on the season being predicted), no team "
+             "record.", "",
+             "| Event | Model | Event type | Cars | Mean abs. error | Median | Bias | Within 5 % | Rank corr. |",
+             "|---|---|---|---|---|---|---|---|---|"]
+    pooled: dict = {}
+    for folder, name, season, train in OTHER_EVENTS:
+        specs = L.load_specs_csv(YEAR_DIR(season) / "specs.csv")
+        res = L.load_results_csv(d / folder / "results.csv")
+        phys = [V.physics(s) for s in specs]
+        models = {f"v2, factors from FSG {train}": [V.predict(p, fits[train], None) for p in phys],
+                  "v1, no calibration": [L.predict(s) | {"car": s.car} for s in specs],
+                  "v2, frozen (FSG 2025 + 2026)": [V.predict(p, frozen, None) for p in phys]}
+        for model, preds in models.items():
+            rec = {"event": name, "kind": "hindcast", "record_sha256": "", "predictions": preds}
+            sc = L.score(rec, res)
+            out["events"].setdefault(name, {})[model] = _clean(sc["summary"])
+            key = "v2 (other FSG year)" if model.startswith("v2, factors") else model
+            for ev in ("skidpad", "accel"):
+                m = sc["summary"][ev]
+                if not m["n"]:
+                    continue
+                rho = "n/a" if math.isnan(m["spearman"]) else format(m["spearman"], ".2f")
+                lines.append(f"| {name} | {model} | {'Skidpad' if ev == 'skidpad' else 'Acceleration'} | "
+                             f"{m['n']} | {m['mae_pct']:.1f} % | {m['median_abs_pct']:.1f} % | "
+                             f"{m['bias_pct']:+.1f} % | {m['within_5pct']} of {m['n']} | {rho} |")
+                pooled.setdefault(key, {}).setdefault(ev, []).extend(
+                    r["error_pct"] for r in sc["rows"] if r["event"] == ev and not r["excluded"])
+    lines += ["", "## Pooled over all four events", "",
+              "| Model | Event type | Cars | Mean abs. error | Bias | Within 5 % |", "|---|---|---|---|---|---|"]
+    for model, evs in pooled.items():
+        for ev, e in evs.items():
+            mae = sum(abs(x) for x in e) / len(e)
+            bias = sum(e) / len(e)
+            n5 = sum(1 for x in e if abs(x) <= 5.0)
+            out["pooled"].setdefault(model, {})[ev] = {"n": len(e), "mae_pct": mae, "bias_pct": bias,
+                                                      "within_5pct": n5}
+            lines.append(f"| {model} | {'Skidpad' if ev == 'skidpad' else 'Acceleration'} | {len(e)} | "
+                         f"{mae:.1f} % | {bias:+.1f} % | {n5} of {len(e)} |")
+    (d / "RESULTS.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    (d / "results.json").write_text(json.dumps(_clean(out), indent=1) + "\n", encoding="utf-8")
+    print("\n".join(lines))
+
+
+def verify_all(root: Path = ROOT) -> int:
+    """Check every sealed record and frozen calibration under benchmarks/ledger: unchanged since sealing, and
+    reproduced by today's code when the code is unchanged. Prints one line each; returns 1 if any fails."""
+    bad = 0
+    for path in sorted(root.rglob("*.json")):
+        try:
+            rec = json.loads(path.read_text(encoding="utf-8"))
+        except ValueError:
+            continue
+        rel = path.relative_to(root.parent.parent)
+        if path.name.startswith("CALIBRATION"):
+            body = {k: v for k, v in rec.items() if k != "sha256"}
+            ok = hashlib.sha256(L._canon(body)).hexdigest() == rec.get("sha256")
+            print(f"{'OK  ' if ok else 'FAIL'} {rel}: frozen calibration {'unchanged' if ok else 'CHANGED'}")
+            bad += not ok
+            continue
+        if "record_sha256" not in rec or "predictions" not in rec:
+            continue
+        v = V.verify(rec) if str(rec.get("protocol_version")) == "2" else L.verify(rec)
+        ok = v["intact"] and (v["reproduced"] or not v["same_code"])
+        note = ("reproduced by today's code" if v["reproduced"] else
+                "code changed since sealing, so not re-run" if not v["same_code"] else "NOT reproduced")
+        print(f"{'OK  ' if ok else 'FAIL'} {rel}: {'intact' if v['intact'] else 'ALTERED'}, {note}")
+        bad += not ok
+    return 1 if bad else 0
+
+
 def freeze(years, out: Path, accel_quantile: float = V.ACCEL_QUANTILE):
     phys, res, latest = [], {}, max(years)
     for y in years:
@@ -243,6 +332,9 @@ def main(argv=None):
     f.add_argument("--out", default=str(ROOT / "protocol-v2" / "CALIBRATION.json"))
     f.add_argument("--challenger", action="store_true",
                    help="freeze the pre-registered challenger (acceleration at the fastest quarter) instead")
+    sub.add_parser("verify-all")
+    o = sub.add_parser("other-events")
+    o.add_argument("--out", default=str(ROOT / "other-events"))
     g = sub.add_parser("registered")
     g.add_argument("--out", default=str(ROOT / "protocol-v2"))
     s = sub.add_parser("seal")
@@ -259,6 +351,10 @@ def main(argv=None):
     a = ap.parse_args(argv)
     if a.cmd == "crossyear":
         crossyear(Path(a.out))
+    elif a.cmd == "verify-all":
+        return verify_all()
+    elif a.cmd == "other-events":
+        other_events(Path(a.out))
     elif a.cmd == "registered":
         registered(Path(a.out))
     elif a.cmd == "freeze":
