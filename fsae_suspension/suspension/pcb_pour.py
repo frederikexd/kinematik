@@ -28,6 +28,7 @@ from .pcb_doctor import (OZ_TO_UM, RHO_CU_20C, ALPHA_CU, PcbBoard, via_resistanc
 POUR_TEMP_C = 60.0          # the nodal solve's copper temperature (ambient 40 °C + 20 °C), °C
 MAX_CELLS_PER_LAYER = 1_500_000
 _SS = 2                     # samples per half-cell edge (4 × 4 per cell)
+GRID_TOL_PCT = 2.0          # two successive cell sizes must agree this closely (percent) to call the estimate converged
 K_TERM = 1e4                # pads and via rings conduct this many times better than the copper (unitless)
 
 
@@ -132,11 +133,32 @@ def _cells_polygon(pts, h):
 
 
 def pour_resistance(board: PcbBoard, nid: int, max_pads: int = 10) -> dict:
-    """Worst pad-to-pad resistance (Ω) among the net's first `max_pads` pads (a name two pads share gets @x,y), with its pours, by a
-    sheet solve. Returns {"r_ohm", "pair", "h_mm"} or {"r_ohm": None, "why": ...}."""
+    """Worst pad-to-pad resistance (Ω) among the net's first `max_pads` pads (a name two pads share gets @x,y), with
+    its pours, by a sheet solve that checks its own grid: it is solved again between the same two pads at half the
+    cell size (mm), and at a quarter if those differ by more than GRID_TOL_PCT. Returns {"r_ohm" (the finest solve),
+    "pair", "h_mm", "grid_change_pct" (the last change, percent), "converged"} or {"r_ohm": None, "why": ...}.
+    `converged` False means the finer grid did not fit in memory or the answer was still moving: an unverified
+    estimate, to be read as such."""
+    out = _pour_at(board, nid, pour_grid_mm(board, nid), max_pads)
+    if out.get("r_ohm") is None:
+        return out
+    out.update(grid_change_pct=None, converged=False)
+    for _ in range(2):
+        fine = _pour_at(board, nid, out["h_mm"] / 2.0, max_pads, only=frozenset(out["pair"]))
+        if fine.get("r_ohm") is None:                       # too large for memory at this cell size
+            break
+        change = 100.0 * abs(fine["r_ohm"] - out["r_ohm"]) / fine["r_ohm"]
+        out.update(r_ohm=fine["r_ohm"], h_mm=fine["h_mm"], grid_change_pct=change, converged=change <= GRID_TOL_PCT)
+        if out["converged"]:
+            break
+    return out
+
+
+def _pour_at(board: PcbBoard, nid: int, h: float, max_pads: int = 10, only=None) -> dict:
+    """One sheet solve at cell size h (mm): the worst pair among the first `max_pads` pads, or the pair named in
+    `only`. Returns {"r_ohm", "pair", "h_mm"} or {"r_ohm": None, "why": ...}."""
     from scipy.sparse import coo_matrix
     from scipy.sparse.csgraph import connected_components
-    h = pour_grid_mm(board, nid)
     hh = h / 2.0
     rho = RHO_CU_20C * (1 + ALPHA_CU * (POUR_TEMP_C - 20.0))
     sheet_g = board.copper_oz * OZ_TO_UM * 1e-6 / rho
@@ -256,7 +278,7 @@ def pour_resistance(board: PcbBoard, nid: int, max_pads: int = 10) -> dict:
         q = next((anchor[(("pad", k), ly)] for ly in layers if (("pad", k), ly) in anchor), None)
         if q is not None:
             pnodes.append((names[k], q))
-    pnodes = pnodes[:max_pads]
+    pnodes = [t for t in pnodes if t[0] in only] if only else pnodes[:max_pads]
     if len(pnodes) < 2:
         return {"r_ohm": None, "why": "fewer than two pads on copper", "h_mm": h}
     _nc, lab = connected_components(M != 0, directed=False)

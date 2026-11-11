@@ -1317,3 +1317,42 @@ class TestPourRound3Reading(unittest.TestCase):
         r_new = P.pour_resistance(new, new.net_id("P"))["r_ohm"]
         # the stroke adds half of 0.254 mm on each side of a 1.746 mm wide strip: about 2.0 / 1.746 wider
         self.assertAlmostEqual(r_new / r_old, 2.0 / 1.746, delta=0.04)
+
+
+class TestPourGridCheck(unittest.TestCase):
+    """Pour estimate round 4 (plan addendum 10): the estimate checks its own grid and says whether it converged."""
+
+    def test_a_plain_strip_converges_and_says_so(self):
+        from suspension import pcb_pour as P
+        fps = ''.join(f'(footprint "m{i}" (layer "F.Cu") (at {x} 0) (property "Reference" "J{i}")'
+                      f' (pad "1" smd rect (at 0 0) (size 0.5 2) (layers "F.Cu") (net 1 "P")))' for i, x in ((1, 0.25), (2, 9.75)))
+        b = parse_kicad_pcb('(kicad_pcb (version 20221018) (layers (0 "F.Cu" signal)) (net 0 "") (net 1 "P") ' + fps +
+                            ' (zone (net 1) (net_name "P") (layer "F.Cu") (fill yes (thermal_bridge_width 0.5))'
+                            ' (filled_polygon (layer "F.Cu") (pts (xy 0 -1) (xy 10 -1) (xy 10 1) (xy 0 1)))))')
+        r = P.pour_resistance(b, b.net_id("P"))
+        self.assertTrue(r["converged"])
+        self.assertLessEqual(r["grid_change_pct"], P.GRID_TOL_PCT)
+        self.assertLess(r["h_mm"], P.pour_grid_mm(b, b.net_id("P")))          # the reported value is the finer solve
+        # 9 mm of 2 mm wide 1 oz copper between the pads at 60 C: rho L / (w t)
+        from suspension.electronics import Trace
+        want = Trace(name="t", net="t", owner_subsystem="e", width_mm=2.0, copper_oz=1.0,
+                     length_mm=9.0).resistance_ohm(temp_c=60.0)
+        self.assertAlmostEqual(r["r_ohm"] / want, 1.0, delta=0.02)
+
+    def test_no_room_for_a_finer_grid_is_reported_as_unverified(self):
+        from suspension import pcb_pour as P
+        fps = ''.join(f'(footprint "m{i}" (layer "F.Cu") (at {x} 0) (property "Reference" "J{i}")'
+                      f' (pad "1" smd rect (at 0 0) (size 0.5 2) (layers "F.Cu") (net 1 "P")))' for i, x in ((1, 0.25), (2, 9.75)))
+        b = parse_kicad_pcb('(kicad_pcb (version 20221018) (layers (0 "F.Cu" signal)) (net 0 "") (net 1 "P") ' + fps +
+                            ' (zone (net 1) (net_name "P") (layer "F.Cu") (fill yes (thermal_bridge_width 0.5))'
+                            ' (filled_polygon (layer "F.Cu") (pts (xy 0 -1) (xy 10 -1) (xy 10 1) (xy 0 1)))))')
+        h = P.pour_grid_mm(b, b.net_id("P"))
+        old = P.MAX_CELLS_PER_LAYER
+        P.MAX_CELLS_PER_LAYER = int(20.0 / (h * h) * 1.5)                      # room for h, not for h / 2
+        try:
+            r = P.pour_resistance(b, b.net_id("P"))
+        finally:
+            P.MAX_CELLS_PER_LAYER = old
+        self.assertFalse(r["converged"])
+        self.assertIsNone(r["grid_change_pct"])
+        self.assertAlmostEqual(r["h_mm"], h)
