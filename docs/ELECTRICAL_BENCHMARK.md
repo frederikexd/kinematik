@@ -21,6 +21,7 @@ KinematiK against the recorded references on every run without needing the tools
 | **B2.** Pack over a lap vs SPICE | 520 points, 70 kW peak, 22.5 kW regen | 0.5 % V, 1 % I, 0.1 pp charge | **Pass: 0.0011 % V, 0.0011 % I, 0.0004 pp** |
 | **B3.** Net resistance on real boards vs SPICE (1-D) | 963 nets | 2 % per net | **Miss.** Round 1: 61.7 % within 2 %, worst −98.5 %. Four flaws fixed; after: 72.5 % within 2 %, 91.8 % within 10 %, worst −24 % (same boards) |
 | **B4.** Net resistance vs a 2-D copper solve, round 3 | 888 demo-board nets; **395 held-out nets on 13 Formula Student team boards** | 2 % per net | **Still misses 2 % on about one net in eight, now within 5 % on 98 %.** Held out: 87.8 % within 2 %, 98.2 % within 5 %, 99.2 % within 10 %, median −0.40 %, worst −11.2 % / +18.0 %. Before: 8.1 % within 2 %, median +14.6 % |
+| **A2.** Board reading vs **Altium Designer 26.11.1** | 3 boards imported into Altium and saved as binary `.PcbDoc`: 9,429 tracks, 180 arcs, 901 vias, 2,763 pads, 346 components, 467 nets | exact counts; length 0.1 % | **Pass after two reader fixes it exposed.** Every count equals Altium's own; net lengths within 0.04 % of KiCad's original. First read: StickHub 289 pads and 90 components (Altium: 278, 94) |
 | **C.** Microstrip impedance vs field solver | 5 single-ended, 6 differential | 5 % / 10 % | **Round 1 miss:** single-ended −8.3 % and −6.4 % at the range ends. Formula replaced. **Round 2, unseen geometries: 10 of 10**, worst 3.4 % |
 
 ## A. Does KinematiK read a board the way KiCad does?
@@ -117,6 +118,25 @@ are now read, turned with the pad, and a via without its own drill takes the net
 KinematiK's pad outline agrees with KiCad's own pad hit test on 99.25 % of 29,214 random points; the rest are custom
 pad shapes (taken as their bounding rectangle) and points on the edge of a circle.
 
+## A2. Does KinematiK read an Altium board the way Altium does?
+
+The author imported pic_programmer, StickHub and video into Altium Designer 26.11.1 with Altium's KiCad Importer,
+saved each as a binary `.PcbDoc`, and read Altium's own counts from Board Information and the PCB Filter
+(`IsTrack And OnSignal`). KinematiK's binary reader then read the saved files
+(`benchmarks/electrical/altium/results_part1.json`).
+
+- **First read: miss.** StickHub came out at 289 pads and 90 components where Altium reports 278 and 94; video at
+  2,450 pads where it has 2,238. Two reader flaws:
+  1. **Phantom pads.** Pad records are found by a byte signature. Bytes inside other records matched it and were
+     read as pads, some with sizes of −2,897 mm. A pad record is now accepted only if its subrecords frame within
+     the stream and it has a real size (0–100 mm), hole (under 20 mm) and position, and scanning resumes after the
+     whole record.
+  2. **Padless components dropped.** Components with no pads (logos) were left out. They are kept.
+- **After the fixes: pass.** Every count KinematiK reads equals Altium's: StickHub 1,108 copper tracks, 94
+  components, 278 pads, 87 vias; video 7,951 tracks; pic_programmer 63 components, 247 pads, 6 vias. Against KiCad's
+  original, the only difference is three zero-length tracks on StickHub that Altium's importer drops. The routed
+  length of all 467 nets is within 0.04 % of KiCad's.
+
 ## C. Controlled impedance (atlc field solver)
 
 **Checking the checker.** atlc solved a centred stripline whose impedance is exact (Cohn): within 0.39 % in air and
@@ -135,8 +155,8 @@ and εr 4.6, h 0.15 mm, w/h 0.3–1.8, plus two differential pairs: **10 of 10 w
 
 ## Not covered
 
-- **Altium** is run by hand from the kit in `benchmarks/electrical/altium/` (board counts and Altium's own field
-  solver on the 21 impedance cross-sections). Results are added here when they come back, whatever they show.
+- **Altium's impedance calculator** (part 2 of the kit, 21 cross-sections in the Layer Stack Manager) has not been
+  run yet. Its result is added here when it comes back, whatever it shows.
 - **Trace heating (IPC-2221)** and **fuse and wire I²t** are standards KinematiK implements directly. A tool that
   computes the same equations would only repeat them. Measured heating (IPC-2152 test data) would be the
   meaningful check, and isn't here yet.

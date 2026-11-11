@@ -202,7 +202,8 @@ quote absolute downforce.
   a 1.15 margin, which covers every held-out net.
 - **Microstrip impedance.** The IPC-2141 formula missed a field solver (atlc) by up to 8.3 %. Hammerstad–Jensen
   replaced it and passed 10 of 10 geometries it had never seen, within 3.4 %.
-- **Altium.** Run by hand from the kit in `benchmarks/electrical/altium/`; results are published when they come back.
+- **Altium Designer 26.11.1.** KinematiK reads Altium's own saved boards exactly as Altium counts them, after two reader
+  fixes this check exposed (phantom pads, dropped padless components). Altium's impedance calculator is not run yet.
 
 ## Real cars: the prediction ledger
 
