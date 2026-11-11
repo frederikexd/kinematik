@@ -32,7 +32,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from suspension import ledger as L  # noqa: E402
 from suspension import ledger_v2 as V  # noqa: E402
 
-ROOT = Path("benchmarks/ledger")
+ROOT = Path(__file__).resolve().parents[2] / "benchmarks" / "ledger"
 YEARS = {"2025": ROOT / "fsg2025", "2026": ROOT / "fsg2026"}
 
 

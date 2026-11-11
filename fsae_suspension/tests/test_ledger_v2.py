@@ -191,3 +191,27 @@ def test_repo_frozen_calibration_and_cross_year_records():
         assert v["intact"]
         if v["same_code"]:
             assert v["reproduced"]
+
+
+def _cli():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("lv2_cli", REPO / "fsae_suspension" / "scripts" / "ledger_v2.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_repo_records_all_verify(capsys):
+    assert _cli().verify_all() == 0
+    out = capsys.readouterr().out
+    assert "FAIL" not in out and out.count("OK") >= 6           # every record was actually found and checked
+
+
+def test_other_events_results_reproduce(tmp_path):
+    import shutil
+    src = REPO / "benchmarks" / "ledger" / "other-events"
+    dst = tmp_path / "other-events"
+    shutil.copytree(src, dst)
+    _cli().other_events(dst)
+    assert json.loads((dst / "results.json").read_text(encoding="utf-8")) == \
+        json.loads((src / "results.json").read_text(encoding="utf-8"))

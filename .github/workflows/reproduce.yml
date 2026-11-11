@@ -1,4 +1,6 @@
 # Reproducibility: the published results, recomputed from the published manifests on the current code.
+#   ledger     every sealed prediction record and frozen calibration is checked (unchanged, and reproduced by
+#              today's code), then the registered real-car tests are re-run and must give byte-identical results
 #   claims     scripts/paper_check.py recomputes every quoted number from the manifests (about 12 min)
 #   manifests  scripts/verify_run.py re-runs the final corners and requires the outputs to match the recorded
 #              ones, every coordinate to 1e-6 mm and every fit and yield to 1e-9 (rear about 4 min, front about 25)
@@ -25,6 +27,8 @@ on:
       - 'requirements.txt'
       - 'requirements-reproduce.lock'
       - '.github/workflows/reproduce.yml'
+      - 'benchmarks/ledger/**'
+      - 'fsae_suspension/scripts/ledger*.py'
 
 jobs:
   claims:
@@ -62,3 +66,26 @@ jobs:
       - name: Re-run ${{ matrix.manifest }} and compare with the recorded outputs
         working-directory: fsae_suspension
         run: python scripts/verify_run.py manifests/${{ matrix.manifest }}.recorded.genesis.json
+
+  ledger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install
+        run: |
+          pip install -r requirements-reproduce.lock pytest
+          pip install --no-deps -e ./fsae_suspension
+      - name: Every sealed record and frozen calibration is intact and reproduces
+        run: python fsae_suspension/scripts/ledger_v2.py verify-all
+      - name: Re-run the registered tests; the published results must not change
+        run: |
+          python fsae_suspension/scripts/ledger_v2.py registered > /dev/null
+          python fsae_suspension/scripts/ledger_v2.py other-events > /dev/null
+          git diff --exit-code -- benchmarks/ledger
+      - name: Ledger and team blind-test tests
+        working-directory: fsae_suspension
+        run: python -m pytest -q tests/test_ledger.py tests/test_ledger_v2.py tests/test_ledger_pace.py tests/test_team_test.py
