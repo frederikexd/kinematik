@@ -197,6 +197,16 @@ derating as expected, and at most 0.70 (conservative). Six points exceed the lim
 
 An independent check needs IPC-2152's 2009 measurements, which are not public.
 
+**Changes made after D.** The aim is as few false alarms as possible without reading optimistic.
+- **Outer layers: unchanged.** A power law refitted to four of the seven figures and tested on the other three did
+  no better. To stay at or below every design point it had to sit about 18 % below the measurements, more
+  conservative than IPC-2221's 9 %. The misses are in two corners, not in the curve's shape.
+- **Inner layers: rated like outer layers.** IPC-2221 halves the current an inner-layer trace may carry. IPC-2152's
+  measurements found buried traces run no hotter, slightly cooler (Brooks, *Trace Currents and Temperatures
+  Revisited*; Adam, SEMI-THERM 2004: about 5 %, not 50 %), so the halving only produced false alarms on inner layers.
+  Inner layers now use the outer-layer rating. NBS measured outer conductors only, so this change rests on those
+  sources, not on D.
+
 ## Not covered
 
 - **Trace heating against independent measurements.** D checks KinematiK's formula against the 1956 data it

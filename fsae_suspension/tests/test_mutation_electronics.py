@@ -31,7 +31,7 @@ def _area_mil2(w, oz):
 
 
 def _rise(I, w, oz, ext=True):
-    k = 0.048 if ext else 0.024
+    k = 0.048                                   # internal layers as external (IPC-2152), not IPC-2221's half
     return min((I / (k * _area_mil2(w, oz) ** 0.725)) ** (1 / 0.44), 1063.0)
 
 

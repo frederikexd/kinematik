@@ -1534,7 +1534,7 @@ P(i fails first) = ∫ φ_i(x) Π_{j≠i} (1 − Φ_j(x)) dx         (trapezoida
 
 ```
 R = ρ_Cu(T) L / A,   ρ_Cu(T) = ρ_20 (1 + α (T − 20))
-IPC-2221:   I = k ΔT^0.44 A^0.725   (A in square mils; k = 0.048 external, 0.024 internal)
+IPC-2221:   I = k ΔT^0.44 A^0.725   (A in square mils; k = 0.048 on every layer: IPC-2221's 0.024 for inner layers is not used, IPC-2152 found buried traces no hotter)
 Onderdonk:  I = A_cmil √( log10( (T_m − T_a)/(234 + T_a) + 1 ) / (33 t) ),   T_m = 1083 °C,   A_cmil = A_sqmil · 4/π
 microstrip: Hammerstad–Jensen with Wheeler's thickness correction (u = w/h, T = t/h):
             Δu1 = (T/π) ln(1 + 4e / (T coth²√(6.517 u))),   u_r = u + ½(1 + sech√(ε_r − 1)) Δu1

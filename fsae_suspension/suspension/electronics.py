@@ -166,7 +166,11 @@ class Trace:
         """
         IPC-2221 trace-heating chart in closed form:
             I = k * dT^0.44 * A_mil2^0.725   ->  dT = (I / (k * A^0.725))^(1/0.44)
-        with k = 0.048 (external) / 0.024 (internal). Returns steady-state rise
+        with k = 0.048 for external and internal layers alike. IPC-2221's 0.024 for
+        internal layers halved their rated current; IPC-2152's 2009 measurements found
+        buried traces run slightly *cooler* than outer ones (Brooks, "Trace Currents and
+        Temperatures Revisited"; Adam, SEMI-THERM 2004: about 5 %, not 50 %), so the halving
+        only raised false alarms on inner layers. Returns steady-state rise
         above ambient in °C for the given DC current. This is the same curve every
         FSAE team reads off the IPC nomograph, evaluated analytically.
 
@@ -180,7 +184,7 @@ class Trace:
         no_load = current_a <= 0.0  # pragma: no mutate
         if no_load or self.area_mil2 <= 0.0:
             return 0.0
-        k = 0.048 if self.is_external else 0.024
+        k = 0.048                               # external and internal: see above
         dT = float((current_a / (k * self.area_mil2 ** 0.725)) ** (1.0 / 0.44))
         # copper melts ~1083 °C; cap reported rise there (chart is invalid above)
         return min(dT, 1063.0)

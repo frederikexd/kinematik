@@ -64,8 +64,8 @@ class TestPrescriber(unittest.TestCase):
         w3 = required_width_mm(5.0, 20.0, 2.0, external=True)
         self.assertGreater(w2, w1)
         self.assertLess(w3, w1)
-        # inner layers need more copper than outer
-        self.assertGreater(required_width_mm(5.0, 20.0, 1.0, external=False), w1)
+        # inner layers rated as outer (IPC-2152 found buried traces no hotter), not IPC-2221's half
+        self.assertAlmostEqual(required_width_mm(5.0, 20.0, 1.0, external=False), w1)
 
     def test_prescription_shape(self):
         p = prescribe_trace(8.0, dT_c=20.0, length_mm=120.0)
