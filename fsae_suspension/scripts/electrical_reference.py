@@ -546,73 +546,75 @@ def copper2d_resistance(board, net: str, pair, copper_oz: float, thickness_mm: f
                         term[(ly, int(a_), int(b_))] = key
     if pair[0] not in pad_key or pair[1] not in pad_key or len(pad_key[pair[0]]) != 1 or len(pad_key[pair[1]]) != 1:
         return None
-    # union of coverage per layer: max over items
-    nodes: dict = {}
-    keys, covs = [], []
-    for ly, parts in cov.items():
-        I = np.concatenate([p_[0] for p_ in parts])
-        J = np.concatenate([p_[1] for p_ in parts])
+    # cells: union of coverage per layer (max over items), as flat arrays
+    Ls, Is, Js, Cs = [], [], [], []
+    for li, (ly, parts) in enumerate(cov.items()):
+        I = np.concatenate([p_[0] for p_ in parts]).astype(np.int64)
+        J = np.concatenate([p_[1] for p_ in parts]).astype(np.int64)
         C = np.concatenate([p_[2] for p_ in parts])
-        order = np.lexsort((C, J, I))
-        I, J, C = I[order], J[order], C[order]
-        last = np.r_[(I[1:] != I[:-1]) | (J[1:] != J[:-1]), True]
-        for a_, b_, q in zip(I[last], J[last], C[last]):
-            nodes[(ly, int(a_), int(b_))] = len(keys)
-            keys.append((ly, int(a_), int(b_)))
-            covs.append(min(float(q), 1.0))
-    # terminals: every cell of one pad (or one via ring on one layer) is one node
-    rep = np.arange(len(keys))
-    tnode: dict = {}
-    for k, idx in nodes.items():
-        t_ = term.get(k)
-        if t_ is not None:
-            rep[idx] = tnode.setdefault(t_, idx)
-    rows, cols, vals = [], [], []
-
-    def link(i, j, g):
-        i, j = rep[i], rep[j]
-        if i != j:
-            rows.extend((i, j, i, j))
-            cols.extend((i, j, j, i))
-            vals.extend((g, g, -g, -g))
-    for (ly, a_, b_), idx in nodes.items():
-        for nb in ((ly, a_ + 1, b_), (ly, a_, b_ + 1)):
-            j = nodes.get(nb)
-            if j is not None:
-                link(idx, j, sheet_g * min(covs[idx], covs[j]))
-    # barrels: vias and plated pads, chained through the copper layers they touch
-    def barrel(nodes_by_layer, drill_mm):
-        r_full = rho * thickness_mm * 1e-3 / (3.141592653589793 * drill_mm * 1e-3 * VIA_PLATING_MM * 1e-3)
-        lys = [ly for ly in stack if ly in nodes_by_layer]
-        if len(lys) < 2:
-            return
-        seg = r_full / (len(stack) - 1)
-        for l0, l1 in zip(lys, lys[1:]):
-            gap = stack.index(l1) - stack.index(l0)
-            link(nodes_by_layer[l0], nodes_by_layer[l1], 1.0 / (seg * gap))
-    for i, v in enumerate(vias):
-        nb = {}
-        for (ly, a_, b_), idx in nodes.items():
-            if term.get((ly, a_, b_)) == ("via", i, ly):
-                nb[ly] = idx
-        barrel(nb, v.GetDrillValue() * nm)
-    n = len(keys)
+        Ls.append(np.full(I.size, ly, np.int64)); Is.append(I); Js.append(J); Cs.append(C)
+    L_, I_, J_, C_ = (np.concatenate(x) for x in (Ls, Is, Js, Cs))
+    off = 1 << 20
+    key = (L_ << 42) | ((I_ + off) << 21) | (J_ + off)
+    order = np.lexsort((C_, key))
+    key, L_, I_, J_, C_ = key[order], L_[order], I_[order], J_[order], C_[order]
+    last = np.r_[key[1:] != key[:-1], True]
+    key, L_, I_, J_, C_ = key[last], L_[last], I_[last], J_[last], np.minimum(C_[last], 1.0)
+    n = key.size
     if n == 0:
         return None
-    G = coo_matrix((vals, (rows, cols)), shape=(n, n)).tocsr()
-    a_idx = rep[next(i for k, i in nodes.items() if term.get(k) == pad_key[pair[0]][0])]
-    b_idx = rep[next(i for k, i in nodes.items() if term.get(k) == pad_key[pair[1]][0])]
-    _nc, lab = connected_components(abs(G) > 0, directed=False)
+    # terminals: every cell of one pad (or of one via ring on one layer) is one node
+    rep = np.arange(n)
+    tid = {}
+    t_keys = np.array([(lyr << 42) | ((a_ + off) << 21) | (b_ + off) for (lyr, a_, b_) in term], np.int64) \
+        if term else np.zeros(0, np.int64)
+    t_vals = list(term.values())
+    if t_keys.size:
+        pos = np.searchsorted(key, t_keys)
+        ok = (pos < n) & (key[np.minimum(pos, n - 1)] == t_keys)
+        for pidx, good, tv in zip(pos, ok, t_vals):
+            if good:
+                rep[pidx] = tid.setdefault(tv, int(pidx))
+    # neighbour links on each layer: (i, j+1) and (i+1, j)
+    rows, cols, gs = [], [], []
+    for di, dj in ((1, 0), (0, 1)):
+        nk = (L_ << 42) | ((I_ + di + off) << 21) | (J_ + dj + off)
+        pos = np.searchsorted(key, nk)
+        ok = (pos < n) & (key[np.minimum(pos, n - 1)] == nk)
+        a_i, b_i = np.nonzero(ok)[0], pos[ok]
+        rows.append(rep[a_i]); cols.append(rep[b_i]); gs.append(sheet_g * np.minimum(C_[a_i], C_[b_i]))
+    # barrels: vias, chained through the copper layers they touch, split evenly between successive layers
+    for i, v in enumerate(vias):
+        nb = {lyr: tid[("via", i, lyr)] for lyr in stack if ("via", i, lyr) in tid}
+        lys = [lyr for lyr in stack if lyr in nb]
+        if len(lys) < 2:
+            continue
+        r_full = rho * thickness_mm * 1e-3 / (3.141592653589793 * v.GetDrillValue() * nm * 1e-3
+                                              * VIA_PLATING_MM * 1e-3)
+        seg = r_full / max(len(stack) - 1, 1)
+        for l0, l1 in zip(lys, lys[1:]):
+            gap = stack.index(l1) - stack.index(l0)
+            rows.append(np.array([nb[l0]])); cols.append(np.array([nb[l1]])); gs.append(np.array([1.0 / (seg * gap)]))
+    R, Cc, G = np.concatenate(rows), np.concatenate(cols), np.concatenate(gs)
+    m = R != Cc
+    R, Cc, G = R[m], Cc[m], G[m]
+    M = coo_matrix((np.r_[G, G, -G, -G], (np.r_[R, Cc, R, Cc], np.r_[R, Cc, Cc, R])), shape=(n, n)).tocsr()
+    a_idx = tid[pad_key[pair[0]][0]] if pad_key[pair[0]][0] in tid else None
+    b_idx = tid[pad_key[pair[1]][0]] if pad_key[pair[1]][0] in tid else None
+    if a_idx is None or b_idx is None:
+        return None
+    _nc, lab = connected_components(M != 0, directed=False)
     if lab[a_idx] != lab[b_idx]:
         return float("inf")
     keep = np.where((lab == lab[a_idx]) & (np.arange(n) == rep))[0]
     keep = keep[keep != b_idx]
-    pos = {k: i for i, k in enumerate(keep)}
-    Gk = G[keep][:, keep]
-    rhs = np.zeros(len(keep))
-    rhs[pos[a_idx]] = 1.0
-    v = spsolve(Gk.tocsc(), rhs)
-    return float(v[pos[a_idx]])
+    where = np.full(n, -1)
+    where[keep] = np.arange(keep.size)
+    Mk = M[keep][:, keep]
+    rhs = np.zeros(keep.size)
+    rhs[where[a_idx]] = 1.0
+    sol = spsolve(Mk.tocsc(), rhs)
+    return float(sol[where[a_idx]])
 
 
 def _arc_pts(p0, pm, p1, n: int = 24):
