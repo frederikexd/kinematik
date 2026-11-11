@@ -125,3 +125,40 @@ geometries as round 1 and 2. The limits are those of A and C. The returned numbe
 3. Any change to KinematiK's net-resistance model is designed and checked on the demo boards only.
 4. Only then is the 2-D reference computed for the 20 team boards, once. Both the round-3a KinematiK and any
    changed version are scored on them (round 3b), and both results are published.
+
+## Addendum 3, before round 4 (written before any round-4 board was downloaded)
+
+**The round-3 reference was biased, and is corrected.** Looking into the nets KinematiK still missed on, StickHub's
+thin (0.15 mm) diagonal tracks read lower than the 2-D solve. Refining the grid moved the 2-D answer toward
+KinematiK (12.5 µm → 3.1 µm: 2.58 → 2.44 mΩ, first-order), so the reference, not KinematiK, was off. Two causes:
+a link between cells conducted by the *smaller* of the two cells' coverage, which narrows every edge that crosses the
+grid at an angle; and a pad was the set of whole cells at least half covered, so its edge snapped to the grid. The
+corrected solve conducts each link by the copper fraction of the cell-sized box centred on the face between the
+cells (area fractions from 4 × 4 samples per cell), and treats pads and via rings as near-perfect conductors
+(10⁴ × copper) over the part of each box they cover, so their edges are anti-aliased like a track's.
+
+Checked before use, on copper with a known answer: two 1 mm pads joined by a 0.15 mm track, 2 mm between the pads,
+turned to 0°, 15°, 30° and 45°. The copper is the same at every angle, so the answer must be too. At 6.25 µm the four
+angles agree within 0.9 % and converge on the 1-D value (track outside the pads) as the grid is refined. The
+reference grid is therefore **6.25 µm**, and every net is also solved at 12.5 µm; the difference is published per
+net as the reference's own uncertainty.
+
+Round 3 is re-scored against the corrected reference, both KinematiK versions, and the round-3 result as first
+published stays in the record next to it.
+
+**Round 4 boards, chosen by rule before download.** Two new web searches ("github formula student team kicad
+hardware repository accumulator BMS PCB kicad_pcb" and "github FSAE racing team kicad PCB designs repository
+electronics"), Formula Student / FSAE team repositories not used in round 3, in order of first appearance:
+kthfspe (KTH Formula Student: KICAD_infrastructure, kicad_infrastructure.new), PUT-Motorsport (the repositories on
+its GitHub page whose names name hardware: PUTM_EV_BMS_LV, PUTM_EV_DASHBOARD, PUTM_EV_BMS,
+PUTM_EV_Data_Acquisition_Cards, PUTM_EV_AMS_MASTER, PUTM_EV_FRONTBOX), moyamartin/bms_hardware, iitmotorsports
+(pdm, pcm, dashboard, Dashboard-2022, IIT-SAE-ECU), win2466/Hardware, WindingMotor/M130-Distribution-HUB. A
+repository that turns out not to belong to a Formula Student or FSAE team is dropped, with the reason. Every
+`.kicad_pcb` in them that KiCad 7 loads is used.
+
+### Round 4 order of work
+
+1. The corrected reference is computed for the demo boards and the round-3 boards.
+2. Any change to KinematiK is designed on those boards only, then frozen (commit recorded).
+3. Only then are the round-4 boards downloaded and solved, once. The frozen KinematiK is scored on them and the
+   result is published whatever it shows. The limit is unchanged: 2 % per net.
