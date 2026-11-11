@@ -960,6 +960,13 @@ NODE_WELD_MM = 0.05
 #: the assertion is not the thing that is wrong.
 SAFETY_CONTRACT = "false alarms are acceptable; false all-clears are not"
 
+#  worst_r_ohm is a best estimate, checked against a 2-D solve of the copper
+#  (docs/ELECTRICAL_BENCHMARK.md, round 3); it can read low as well as high.
+#  The brown-out check must not under-read, so it uses the estimate times this
+#  factor (unitless): on the boards the model was designed on, the 2-D answer
+#  was never more than 11.1 % above it (1/(1-0.111) = 1.125), rounded up to 1.15.
+NET_R_UPPER_FACTOR = 1.15
+
 
 def _node_key(layer: str, pt) -> tuple:
     return (layer, round(pt[0], 2), round(pt[1], 2))
@@ -1523,6 +1530,7 @@ def _covered_fraction(seg, pads, vias, samples: int = 24, segs=()) -> float:
             <= w.width_mm / 2.0]
     if not near and not ring and not wide:
         return 0.0
+    samples = min(max(samples, math.ceil(seg.length_mm / 0.025)), 4000)   # at least one sample per 25 um
     hit = 0
     for k in range(samples):
         f = (k + 0.5) / samples
@@ -1813,7 +1821,8 @@ def diagnose(board: PcbBoard, assignments: dict,
         # -- true IR drop → brown-out ------------------------------------------------ #
         volt = float(a.get("voltage_v", rail_v) or rail_v)
         if nr["worst_r_ohm"] is not None and volt <= 60.0:
-            drop = cur * nr["worst_r_ohm"]
+            r_up = nr["worst_r_ohm"] * NET_R_UPPER_FACTOR
+            drop = cur * r_up
             delivered = rail_v - drop
             pr = nr["worst_pair"] or ("?", "?")
             zone_note = (" (trace-only, pour on this net will lower it — "
@@ -1824,7 +1833,8 @@ def diagnose(board: PcbBoard, assignments: dict,
                     subsystems=["electrics"],
                     message=(f"Nodal analysis of the routed copper on '{name}' "
                              f"gives {nr['worst_r_ohm']*1000:.0f} mΩ between "
-                             f"{pr[0]} and {pr[1]}{zone_note}. At {cur:g} A that "
+                             f"{pr[0]} and {pr[1]}{zone_note}, taken as up to "
+                             f"{r_up*1000:.0f} mΩ with the model's margin. At {cur:g} A that "
                              f"drops {drop:.2f} V — the {rail_v:g} V rail arrives "
                              f"at {delivered:.2f} V, below the {brownout_v:g} V "
                              f"brown-out. On track this is the ECU resetting "
@@ -1837,7 +1847,7 @@ def diagnose(board: PcbBoard, assignments: dict,
                     check=f"IR drop — {name}", severity=Severity.WARN,
                     subsystems=["electrics"],
                     message=(f"'{name}' drops {drop:.2f} V at {cur:g} A over its "
-                             f"real routed mesh ({nr['worst_r_ohm']*1000:.0f} mΩ, "
+                             f"real routed mesh (up to {r_up*1000:.0f} mΩ, "
                              f"{pr[0]}→{pr[1]}){zone_note} — "
                              f"{drop/(rail_v-brownout_v)*100:.0f}% of the brown-out "
                              f"margin gone in copper before any connector or "
