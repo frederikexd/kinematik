@@ -190,10 +190,20 @@ def _floats(node, count=None):
     for c in node[1:]:
         if isinstance(c, Atom):
             try:
-                vals.append(float(c.value))
+                v = float(c.value)
             except ValueError:
-                pass
+                continue
+            if math.isfinite(v):        # "nan", "inf", "1e999": a name or a corrupt value, never a dimension
+                vals.append(v)
     return vals if count is None else (vals + [0.0] * count)[:count]
+
+
+def _positive(raw) -> float:
+    """A width or size (mm) from the file: finite and above zero, else ValueError (the item is then not copper)."""
+    v = float(raw)
+    if not (math.isfinite(v) and v > 0):
+        raise ValueError(f"not a usable dimension: {raw!r}")
+    return v
 
 
 def _atoms(node):
@@ -565,7 +575,7 @@ def parse_kicad_pcb(text: str) -> PcbBoard:
     """Parse a KiCad 5–9 .kicad_pcb file into a PcbBoard. Tolerant: anything
     it does not recognise is skipped, never fatal."""
     root = parse_sexpr(text)
-    if _name(root) not in ("kicad_pcb", "pcb"):
+    if not isinstance(root, list) or _name(root) not in ("kicad_pcb", "pcb"):
         raise ValueError("not a KiCad board file (expected a kicad_pcb node)")
     board = PcbBoard(text=text)
 
@@ -609,7 +619,7 @@ def parse_kicad_pcb(text: str) -> PcbBoard:
         raw = ats[0].value
         try:
             return int(float(raw))
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, OverflowError):
             pass
         name = str(raw).strip().strip('"')
         if not name:
@@ -644,6 +654,7 @@ def parse_kicad_pcb(text: str) -> PcbBoard:
                     if _atoms(an):
                         _drill_by_net[str(_atoms(an)[0].value).strip('"')] = _floats(vd)[0]
 
+    _unreadable_tracks = 0
     for node in root[1:]:
         if not isinstance(node, list):
             continue
@@ -653,7 +664,7 @@ def parse_kicad_pcb(text: str) -> PcbBoard:
             if ats:
                 try:
                     nid = int(float(ats[0].value))
-                except ValueError:
+                except (ValueError, OverflowError):
                     continue
                 board.nets[nid] = ats[1].value if len(ats) > 1 else ""
         elif nm == "segment":
@@ -666,11 +677,12 @@ def parse_kicad_pcb(text: str) -> PcbBoard:
                 seg = PcbSegment(
                     net=_net_ref(nt),
                     layer=_atoms(ly)[0].value if ly and _atoms(ly) else "F.Cu",
-                    width_mm=float(w_atom.value),
+                    width_mm=_positive(w_atom.value),
                     start=tuple(_floats(st_, 2)), end=tuple(_floats(en_, 2)),
                     width_span=(w_atom.start, w_atom.end))
                 board.segments.append(seg)
             except (ValueError, IndexError, AttributeError):
+                _unreadable_tracks += 1
                 continue
         elif nm == "arc":
             # A *routed* arc (KiCad ≥6). `gr_arc` is graphics and is not copper,
@@ -689,9 +701,10 @@ def parse_kicad_pcb(text: str) -> PcbBoard:
                     pts,
                     net=_net_ref(nt),
                     layer=_atoms(ly)[0].value if ly and _atoms(ly) else "F.Cu",
-                    width_mm=float(w_atom.value),
+                    width_mm=_positive(w_atom.value),
                     width_span=(w_atom.start, w_atom.end)))
             except (ValueError, IndexError, AttributeError):
+                _unreadable_tracks += 1
                 continue
         elif nm == "via":
             at, sz, dr, ly, nt = (_child(node, k) for k in
@@ -735,7 +748,7 @@ def parse_kicad_pcb(text: str) -> PcbBoard:
             tb = _child(fl, "thermal_bridge_width") if fl else None
             if tb and _atoms(tb):
                 try:
-                    spoke = float(_atoms(tb)[0].value)
+                    spoke = _positive(_atoms(tb)[0].value)
                 except (TypeError, ValueError):
                     pass
             stroke = 0.0
@@ -760,6 +773,10 @@ def parse_kicad_pcb(text: str) -> PcbBoard:
                 for lay in players:
                     board.zones.append(
                         PcbZone(net=znid, layer=lay, outline=pts, spoke_mm=spoke, stroke_mm=stroke))
+    if _unreadable_tracks:
+        board.notes.append(
+            f"{_unreadable_tracks} track(s) in the file have no usable width, position or net and were left out. "
+            "Nets they belong to may read as open; re-save the board from KiCad and upload it again.")
     return board
 
 
@@ -902,7 +919,7 @@ def _parse_footprint(node, net_ref=None) -> PcbFootprint:
             else:
                 try:
                     pnet = int(float(a2[0].value))
-                except (TypeError, ValueError):
+                except (TypeError, ValueError, OverflowError):
                     pnet = 0
             # v5-9: (net 2 "VCC"); v10: (net "VCC")
             pname = (a2[1].value if len(a2) > 1

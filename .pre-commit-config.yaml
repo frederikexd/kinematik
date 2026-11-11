@@ -1,0 +1,20 @@
+# Run the same lint CI runs, before the commit exists:  pip install pre-commit && pre-commit install
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.8          # the version .github/workflows/lint.yml pins
+    hooks:
+      - id: ruff
+        args: [--config, fsae_suspension/pyproject.toml]
+        files: ^fsae_suspension/
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=5000]
+      - id: detect-private-key
+      - id: end-of-file-fixer
+        files: \.(py|md|yml|yaml|toml)$
