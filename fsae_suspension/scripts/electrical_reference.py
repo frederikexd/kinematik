@@ -447,38 +447,57 @@ def atlc():
     _write("atlc_impedance_round2.json", {"tool": first, **atlc_round2()})
 
 
-def _cells_capsule(ax, ay, bx, by, half_w, h):
+def _cells_capsule(ax, ay, bx, by, half_w, h, ox: float = 0.0, oy: float = 0.0, ss: int = 0):
     """Grid cells (ix, iy) and copper coverage (0–1) of a track: a capsule from (ax, ay) to (bx, by) with
-    half-width half_w (mm), on an h (mm) grid. Coverage comes from the signed distance of each cell centre to the
-    capsule edge, which anti-aliases the edge so a narrow track keeps its true width on the grid."""
+    half-width half_w (mm), on an h (mm) grid whose cell centres sit at ((ix + 0.5 + ox) h, (iy + 0.5 + oy) h).
+    With ss > 0 the coverage is the area fraction from ss × ss samples per cell; with ss = 0 it comes from the
+    signed distance of each cell centre to the capsule edge. A long track is rasterized in pieces along its length
+    (each against the whole capsule), so a diagonal track costs its band of cells, not its bounding box."""
     import numpy as np
-    x0, x1 = min(ax, bx) - half_w - h, max(ax, bx) + half_w + h
-    y0, y1 = min(ay, by) - half_w - h, max(ay, by) + half_w + h
-    ix = np.arange(int(np.floor(x0 / h)), int(np.ceil(x1 / h)) + 1)
-    iy = np.arange(int(np.floor(y0 / h)), int(np.ceil(y1 / h)) + 1)
-    X, Y = np.meshgrid((ix + 0.5) * h, (iy + 0.5) * h, indexing="ij")
     dx, dy = bx - ax, by - ay
+    L = float(np.hypot(dx, dy))
     L2 = dx * dx + dy * dy
-    u = np.clip(((X - ax) * dx + (Y - ay) * dy) / L2, 0.0, 1.0) if L2 > 0 else np.zeros_like(X)
-    d = np.hypot(X - (ax + u * dx), Y - (ay + u * dy))
-    c = np.clip((half_w - d) / h + 0.5, 0.0, 1.0)
-    m = c > 0
-    I, J = np.meshgrid(ix, iy, indexing="ij")
-    return I[m], J[m], c[m]
+    piece = max(0.1, 8 * h)
+    npieces = max(1, int(np.ceil(L / piece)))
+    out_i, out_j, out_c = [], [], []
+    sub = (np.arange(ss) + 0.5) / ss if ss else None
+    for k in range(npieces):
+        f0, f1 = k / npieces, (k + 1) / npieces
+        px0, py0, px1, py1 = ax + f0 * dx, ay + f0 * dy, ax + f1 * dx, ay + f1 * dy
+        x0, x1 = min(px0, px1) - half_w - h, max(px0, px1) + half_w + h
+        y0, y1 = min(py0, py1) - half_w - h, max(py0, py1) + half_w + h
+        ix = np.arange(int(np.floor(x0 / h - ox)), int(np.ceil(x1 / h - ox)) + 1)
+        iy = np.arange(int(np.floor(y0 / h - oy)), int(np.ceil(y1 / h - oy)) + 1)
+        if ss:
+            X, Y = np.meshgrid(((ix[:, None] + sub[None, :]).ravel() + ox) * h,
+                               ((iy[:, None] + sub[None, :]).ravel() + oy) * h, indexing="ij")
+        else:
+            X, Y = np.meshgrid((ix + 0.5 + ox) * h, (iy + 0.5 + oy) * h, indexing="ij")
+        u = np.clip(((X - ax) * dx + (Y - ay) * dy) / L2, 0.0, 1.0) if L2 > 0 else np.zeros_like(X)
+        d = np.hypot(X - (ax + u * dx), Y - (ay + u * dy))
+        if ss:
+            c = (d <= half_w).reshape(len(ix), ss, len(iy), ss).mean(axis=(1, 3))
+        else:
+            c = np.clip((half_w - d) / h + 0.5, 0.0, 1.0)
+        m = c > 0
+        I, J = np.meshgrid(ix, iy, indexing="ij")
+        out_i.append(I[m]); out_j.append(J[m]); out_c.append(c[m])
+    return np.concatenate(out_i), np.concatenate(out_j), np.concatenate(out_c)
 
 
-def _cells_polygon(pts, h, ss: int = 4):
-    """Grid cells and coverage of a polygon (mm points), by supersampling each cell ss × ss."""
+def _cells_polygon(pts, h, ss: int = 4, ox: float = 0.0, oy: float = 0.0):
+    """Grid cells and coverage of a polygon (mm points), by supersampling each cell ss × ss (grid offset as in
+    _cells_capsule)."""
     import numpy as np
     from matplotlib.path import Path as MPath
     pts = np.asarray(pts, float)
     x0, y0 = pts.min(axis=0) - h
     x1, y1 = pts.max(axis=0) + h
-    ix = np.arange(int(np.floor(x0 / h)), int(np.ceil(x1 / h)) + 1)
-    iy = np.arange(int(np.floor(y0 / h)), int(np.ceil(y1 / h)) + 1)
+    ix = np.arange(int(np.floor(x0 / h - ox)), int(np.ceil(x1 / h - ox)) + 1)
+    iy = np.arange(int(np.floor(y0 / h - oy)), int(np.ceil(y1 / h - oy)) + 1)
     sub = (np.arange(ss) + 0.5) / ss
-    X, Y = np.meshgrid(((ix[:, None] + sub[None, :]).ravel()) * h, ((iy[:, None] + sub[None, :]).ravel()) * h,
-                       indexing="ij")
+    X, Y = np.meshgrid(((ix[:, None] + sub[None, :]).ravel() + ox) * h,
+                       ((iy[:, None] + sub[None, :]).ravel() + oy) * h, indexing="ij")
     inside = MPath(pts).contains_points(np.c_[X.ravel(), Y.ravel()]).reshape(X.shape)
     c = inside.reshape(len(ix), ss, len(iy), ss).mean(axis=(1, 3))
     m = c > 0
@@ -486,12 +505,16 @@ def _cells_polygon(pts, h, ss: int = 4):
     return I[m], J[m], c[m]
 
 
-def copper2d_resistance(board, net: str, pair, copper_oz: float, thickness_mm: float, h: float = 0.025):
-    """Pad-to-pad resistance (Ω) of one net by a 2-D solve of its copper (plan addendum 2). Every copper item of
-    the net is drawn on an h-mm grid per layer from KiCad's own shapes (tracks and arcs as capsules, pads from
-    KiCad's polygon, vias as discs); neighbouring cells conduct σ t times the smaller of their copper coverage; each
-    pad is one terminal (all its cells at one voltage); a via or plated pad joins its layers through its barrel,
-    split evenly between successive copper layers. 1 A in at pad A, out at pad B."""
+def copper2d_resistance(board, net: str, pair, copper_oz: float, thickness_mm: float, h: float = 0.0125,
+                        k_term: float = 1e4, SS: int = 4):
+    """Pad-to-pad resistance (Ω) of one net by a 2-D solve of its copper (plan addendum 2, as corrected in
+    addendum 3). Every copper item of the net is drawn on an h-mm grid per layer from KiCad's own shapes (tracks and
+    arcs as capsules, pads from KiCad's polygon, vias as discs). Two neighbouring cells conduct σ t times the copper
+    fraction of the cell-sized box centred on the face between them. Pads and via rings are near-perfect conductors
+    (k_term times the copper's conductance over the part of that box they cover), so a terminal's edge is
+    anti-aliased like a track's instead of snapping to whole cells. A through-hole pad joins its layers at no
+    resistance; a via joins them through its barrel, split evenly between successive copper layers. 1 A in at the
+    centre of pad A, out at the centre of pad B."""
     import numpy as np
     import pcbnew
     from scipy.sparse import coo_matrix
@@ -503,12 +526,9 @@ def copper2d_resistance(board, net: str, pair, copper_oz: float, thickness_mm: f
     tracks = [t for t in board.GetTracks() if t.GetNetname() == net and t.Type() != pcbnew.PCB_VIA_T]
     vias = [t for t in board.GetTracks() if t.GetNetname() == net and t.Type() == pcbnew.PCB_VIA_T]
     pads = [p for p in board.GetPads() if p.GetNetname() == net]
-    cov: dict = {}                     # layer -> list of (I, J, c)
-    term: dict = {}                    # (layer, ix, iy) -> terminal key (pad or via ring)
     nm = 1e-6
-
-    def add(ly, I, J, c):
-        cov.setdefault(ly, []).append((I, J, c))
+    off = 1 << 20
+    shapes: list = []                  # (layer, "capsule"|"polygon", args, terminal key or None)
     for t in tracks:
         ly, hw = t.GetLayer(), t.GetWidth() * nm / 2.0
         if t.Type() == pcbnew.PCB_ARC_T:
@@ -517,17 +537,14 @@ def copper2d_resistance(board, net: str, pair, copper_oz: float, thickness_mm: f
         else:
             pts = [(t.GetStart().x * nm, t.GetStart().y * nm), (t.GetEnd().x * nm, t.GetEnd().y * nm)]
         for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
-            add(ly, *_cells_capsule(x0, y0, x1, y1, hw, h))
+            shapes.append((ly, "capsule", (x0, y0, x1, y1, hw), None))
     for i, v in enumerate(vias):
         c = v.GetPosition()
         for ly in stack:
             if v.IsOnLayer(ly):
-                I, J, cc = _cells_capsule(c.x * nm, c.y * nm, c.x * nm, c.y * nm, v.GetWidth() * nm / 2.0, h)
-                add(ly, I, J, cc)
-                for a_, b_, q in zip(I, J, cc):
-                    if q >= 0.5:
-                        term[(ly, int(a_), int(b_))] = ("via", i, ly)
-    pad_key = {}
+                shapes.append((ly, "capsule", (c.x * nm, c.y * nm, c.x * nm, c.y * nm, v.GetWidth() * nm / 2.0),
+                               ("via", i)))
+    pad_key: dict = {}
     for p in pads:
         key = ("pad", p.GetParent().GetReference(), p.GetNumber(), id(p))
         pad_key.setdefault(f"{key[1]}.{key[2]}", []).append(key)
@@ -538,55 +555,71 @@ def copper2d_resistance(board, net: str, pair, copper_oz: float, thickness_mm: f
             p.TransformShapeToPolygon(ps, ly, 0, 500)
             for k in range(ps.OutlineCount()):
                 o = ps.Outline(k)
-                pts = [(o.CPoint(j).x * nm, o.CPoint(j).y * nm) for j in range(o.PointCount())]
-                I, J, cc = _cells_polygon(pts, h)
-                add(ly, I, J, cc)
-                for a_, b_, q in zip(I, J, cc):
-                    if q >= 0.5:
-                        term[(ly, int(a_), int(b_))] = key
+                shapes.append((ly, "polygon", ([(o.CPoint(j).x * nm, o.CPoint(j).y * nm)
+                                                for j in range(o.PointCount())],), key))
     if pair[0] not in pad_key or pair[1] not in pad_key or len(pad_key[pair[0]]) != 1 or len(pad_key[pair[1]]) != 1:
         return None
-    # cells: union of coverage per layer (max over items), as flat arrays
-    Ls, Is, Js, Cs = [], [], [], []
-    for li, (ly, parts) in enumerate(cov.items()):
-        I = np.concatenate([p_[0] for p_ in parts]).astype(np.int64)
-        J = np.concatenate([p_[1] for p_ in parts]).astype(np.int64)
-        C = np.concatenate([p_[2] for p_ in parts])
-        Ls.append(np.full(I.size, ly, np.int64)); Is.append(I); Js.append(J); Cs.append(C)
-    L_, I_, J_, C_ = (np.concatenate(x) for x in (Ls, Is, Js, Cs))
-    off = 1 << 20
-    key = (L_ << 42) | ((I_ + off) << 21) | (J_ + off)
-    order = np.lexsort((C_, key))
-    key, L_, I_, J_, C_ = key[order], L_[order], I_[order], J_[order], C_[order]
-    last = np.r_[key[1:] != key[:-1], True]
-    key, L_, I_, J_, C_ = key[last], L_[last], I_[last], J_[last], np.minimum(C_[last], 1.0)
-    n = key.size
-    if n == 0:
+    if not shapes:
         return None
-    # terminals: every cell of one pad (or of one via ring on one layer) is one node
-    rep = np.arange(n)
-    tid = {}
-    t_keys = np.array([(lyr << 42) | ((a_ + off) << 21) | (b_ + off) for (lyr, a_, b_) in term], np.int64) \
-        if term else np.zeros(0, np.int64)
-    t_vals = list(term.values())
-    if t_keys.size:
-        pos = np.searchsorted(key, t_keys)
-        ok = (pos < n) & (key[np.minimum(pos, n - 1)] == t_keys)
-        for pidx, good, tv in zip(pos, ok, t_vals):
-            if good:
-                rep[pidx] = tid.setdefault(tv, int(pidx))
-    # neighbour links on each layer: (i, j+1) and (i+1, j)
+
+    def grid(ox, oy, only_terms=False):
+        """Union coverage (largest over items) per cell key on a grid offset by (ox, oy) cells."""
+        ks, cs = [], []
+        for ly, kind, args, tk in shapes:
+            if only_terms and tk is None:
+                continue
+            I, J, c = (_cells_capsule(*args, h, ox=ox, oy=oy, ss=SS) if kind == "capsule"
+                       else _cells_polygon(*args, h, ss=SS, ox=ox, oy=oy))
+            ks.append((np.int64(ly) << 42) | ((I.astype(np.int64) + off) << 21) | (J.astype(np.int64) + off))
+            cs.append(c)
+        if not ks:
+            return np.zeros(0, np.int64), np.zeros(0)
+        k_, c_ = np.concatenate(ks), np.concatenate(cs)
+        o_ = np.lexsort((c_, k_))
+        k_, c_ = k_[o_], c_[o_]
+        last = np.r_[k_[1:] != k_[:-1], True]
+        return k_[last], np.minimum(c_[last], 1.0)
+
+    def lookup(keys, k_, c_):
+        if k_.size == 0:
+            return np.zeros(keys.size)
+        pos = np.searchsorted(k_, keys)
+        ok = (pos < k_.size) & (k_[np.minimum(pos, k_.size - 1)] == keys)
+        return np.where(ok, c_[np.minimum(pos, k_.size - 1)], 0.0)
+
+    key, _C = grid(0.0, 0.0)
+    n = key.size
     rows, cols, gs = [], [], []
     for di, dj in ((1, 0), (0, 1)):
-        nk = (L_ << 42) | ((I_ + di + off) << 21) | (J_ + dj + off)
+        fk, fc = grid(0.5 * di, 0.5 * dj)
+        tk_, tc_ = grid(0.5 * di, 0.5 * dj, only_terms=True)
+        nk = key + (np.int64(di) << 21) + np.int64(dj)
         pos = np.searchsorted(key, nk)
         ok = (pos < n) & (key[np.minimum(pos, n - 1)] == nk)
         a_i, b_i = np.nonzero(ok)[0], pos[ok]
-        rows.append(rep[a_i]); cols.append(rep[b_i]); gs.append(sheet_g * np.minimum(C_[a_i], C_[b_i]))
-    # barrels: vias, chained through the copper layers they touch, split evenly between successive layers
-    for i, v in enumerate(vias):
-        nb = {lyr: tid[("via", i, lyr)] for lyr in stack if ("via", i, lyr) in tid}
-        lys = [lyr for lyr in stack if lyr in nb]
+        g = sheet_g * (lookup(key[a_i], fk, fc) + k_term * lookup(key[a_i], tk_, tc_))
+        rows.append(a_i); cols.append(b_i); gs.append(g)
+    # terminal anchors: the cell nearest each pad's (or via's) centre on each of its layers
+    anchor: dict = {}
+    for ly, kind, args, tk in shapes:
+        if tk is None:
+            continue
+        if kind == "capsule":
+            cx, cy = args[0], args[1]
+        else:
+            pts = np.asarray(args[0]); cx, cy = pts[:, 0].mean(), pts[:, 1].mean()
+        ck = (np.int64(ly) << 42) | ((np.int64(np.floor(cx / h)) + off) << 21) | (np.int64(np.floor(cy / h)) + off)
+        pidx = int(np.searchsorted(key, ck))
+        if pidx < n and key[pidx] == ck:
+            anchor.setdefault((tk, ly), pidx)
+    big = sheet_g * k_term * 100.0
+    for p_keys in pad_key.values():                       # a pad on several layers: one conductor through its hole
+        for k0 in p_keys:
+            a_ = [anchor[(k0, ly)] for ly in stack if (k0, ly) in anchor]
+            for x, y in zip(a_, a_[1:]):
+                rows.append(np.array([x])); cols.append(np.array([y])); gs.append(np.array([big]))
+    for i, v in enumerate(vias):                          # via barrels, chained through the layers they touch
+        lys = [ly for ly in stack if (("via", i), ly) in anchor]
         if len(lys) < 2:
             continue
         r_full = rho * thickness_mm * 1e-3 / (3.141592653589793 * v.GetDrillValue() * nm * 1e-3
@@ -594,19 +627,21 @@ def copper2d_resistance(board, net: str, pair, copper_oz: float, thickness_mm: f
         seg = r_full / max(len(stack) - 1, 1)
         for l0, l1 in zip(lys, lys[1:]):
             gap = stack.index(l1) - stack.index(l0)
-            rows.append(np.array([nb[l0]])); cols.append(np.array([nb[l1]])); gs.append(np.array([1.0 / (seg * gap)]))
+            rows.append(np.array([anchor[(("via", i), l0)]])); cols.append(np.array([anchor[(("via", i), l1)]]))
+            gs.append(np.array([1.0 / (seg * gap)]))
     R, Cc, G = np.concatenate(rows), np.concatenate(cols), np.concatenate(gs)
-    m = R != Cc
+    m = (R != Cc) & (G > 0)
     R, Cc, G = R[m], Cc[m], G[m]
     M = coo_matrix((np.r_[G, G, -G, -G], (np.r_[R, Cc, R, Cc], np.r_[R, Cc, Cc, R])), shape=(n, n)).tocsr()
-    a_idx = tid[pad_key[pair[0]][0]] if pad_key[pair[0]][0] in tid else None
-    b_idx = tid[pad_key[pair[1]][0]] if pad_key[pair[1]][0] in tid else None
+    ka, kb = pad_key[pair[0]][0], pad_key[pair[1]][0]
+    a_idx = next((anchor[(ka, ly)] for ly in stack if (ka, ly) in anchor), None)
+    b_idx = next((anchor[(kb, ly)] for ly in stack if (kb, ly) in anchor), None)
     if a_idx is None or b_idx is None:
         return None
     _nc, lab = connected_components(M != 0, directed=False)
     if lab[a_idx] != lab[b_idx]:
         return float("inf")
-    keep = np.where((lab == lab[a_idx]) & (np.arange(n) == rep))[0]
+    keep = np.where(lab == lab[a_idx])[0]
     keep = keep[keep != b_idx]
     where = np.full(n, -1)
     where[keep] = np.arange(keep.size)

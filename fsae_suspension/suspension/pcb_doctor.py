@@ -1063,12 +1063,15 @@ def analyze_net(board: PcbBoard, nid: int, ambient_c: float = 40.0) -> dict:
             _ends[_node_key(s.layer, e_)] = _ends.get(_node_key(s.layer, e_), 0) + 1
     _vkeys = {_node_key(ly, v.at) for v in vias for ly in board.copper_layers}
     _conn_only: list = []
+    _adj: dict = {}           # node -> nodes one track away
     for s in segs:
         ka, kb = _node_key(s.layer, s.start), _node_key(s.layer, s.end)
         keyed.setdefault(ka, s.start)
         keyed.setdefault(kb, s.end)
         _joined.add((ka, kb) if ka < kb else (kb, ka))
         a, b = node(ka), node(kb)
+        _adj.setdefault(a, set()).add(b)
+        _adj.setdefault(b, set()).add(a)
         if _within_wider(s, segs) and all(_ends.get(k, 0) >= 2 or k in _vkeys for k in (ka, kb)):
             _conn_only.append((a, b, 0.0))
             continue
@@ -1141,12 +1144,16 @@ def analyze_net(board: PcbBoard, nid: int, ambient_c: float = 40.0) -> dict:
     #  made the part's internal link a 0 Ω copper shortcut: KiCad's coldfire
     #  demo, D102 to LV101 through RST_SW101's two pin 1s, read 27 % low against
     #  a 2-D solve. The internal link still counts for connectivity (below).
+    def _r_per_mm(width_mm):
+        return Trace(name="s", net="s", owner_subsystem="e", width_mm=max(width_mm, 1e-4),
+                     copper_oz=board.copper_oz, length_mm=1.0).resistance_ohm(temp_c=temp)
     for _pi, (fp, p) in enumerate(pads):
         key = ("pad", fp.ref, p.number, _pi)
         pn = node(key)
         reach = max(p.size) / 2.0 + 0.06
         pad_layer = p.layer or ("B.Cu" if fp.layer == "B.Cu" else "F.Cu")
         hit = False
+        cand: list = []
         for k, idx in list(nodes.items()):
             if k[0] in ("pad", "zone"):
                 continue
@@ -1158,9 +1165,30 @@ def analyze_net(board: PcbBoard, nid: int, ambient_c: float = 40.0) -> dict:
                 margin = half_w.get(k, 0.0)
             else:
                 continue
-            if _pad_overlaps(p, (k[1], k[2]), margin + 0.01):
-                edges.append((pn, idx, 1e-5))
-                hit = True
+            pt_ = keyed.get(k, (k[1], k[2]))
+            if _pad_overlaps(p, pt_, margin + 0.01):
+                cand.append((idx, pt_, margin, k[0] == "via" or margin <= 0 or _pad_overlaps(p, pt_, 0.0)))
+        #  Copper whose centre is on the pad joins it at 0 Ω. A track end whose
+        #  centre is off the pad but whose copper touches it (KiCad's overlap
+        #  rule) joins through the copper between its centre and the pad edge,
+        #  and only if its track doesn't carry on to the pad anyway (no track
+        #  from it reaches another node that touches this pad). Joining every
+        #  such end at 0 Ω made a second path beside the track: an arc's chord
+        #  ends sit every 40 um, several fall in that band, and the arc read
+        #  low (StickHub, /LED6: -8 % against a 2-D solve).
+        _cidx = {c[0] for c in cand}
+        for idx, pt_, margin, inside in cand:
+            if not inside and _adj.get(idx, set()) & _cidx:
+                continue
+            r_att = 1e-5
+            if not inside:
+                lo, hi = 0.0, margin + 0.01
+                for _ in range(16):
+                    mid = 0.5 * (lo + hi)
+                    lo, hi = (lo, mid) if _pad_overlaps(p, pt_, mid) else (mid, hi)
+                r_att = max(1e-5, hi * _r_per_mm(2.0 * margin))
+            edges.append((pn, idx, r_att))
+            hit = True
         # A pad does not have to land on a trace *endpoint*. Routing very often
         # runs a track straight across a pad and carries on — the pad sits
         # mid-segment, touching real copper, with no node anywhere near it. The
