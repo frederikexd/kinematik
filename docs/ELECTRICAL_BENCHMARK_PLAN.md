@@ -89,3 +89,30 @@ them. Round 2 uses cases neither round has seen, with the same limits (5 % singl
 
 There is no second, unseen set of KiCad boards in this round. The fixed net-resistance results are reported on the
 same demo boards and labelled as not independent.
+
+## Addendum 2, before round 3 (written before any of these boards was downloaded)
+
+Round 2 left three things open: the net-resistance fixes were checked only on the boards that exposed the
+flaws, the reference for net resistance was itself a 1-D model, and Altium was not run.
+
+**Round 3 boards, chosen by rule, not by result.** The Formula Student and FSAE team repositories on GitHub
+returned by two web searches ("github formula student kicad pcb repository BMS OR VCU OR shutdown circuit
+kicad_pcb" and "github FSAE electrical kicad hardware repository team PCBs"), in order of first appearance:
+UCDFS/Circuits, aditeyadc/bspd, sufst/pcb, qfsae/pcb, michaelruppe/FSAE, LSUTigerRacing/Electronics. Every
+`.kicad_pcb` in them that KiCad 7 loads is used; files KiCad 7 can't load (newer formats) are listed and left out.
+
+**Round 3 reference: a 2-D copper solve.** For each net, KiCad's own copper outlines (tracks, arcs, pads, via
+rings, via and pad barrels, from `TransformShapeToPolygon`) are drawn on a grid per copper layer. The steady current
+flow through that sheet (conductance σ t per square, the same ρ and t as before) is solved as a sparse linear
+system. Vias and plated holes join the layers through their barrel resistance. Each pad is one terminal (its whole
+copper area at one voltage, as a soldered lead makes it). 1 A goes in at one pad of KinematiK's worst pair and
+out at the other. The grid is 25 µm. A sample of nets is re-solved at 12.5 µm, and the grid error must be under
+1 %, or the grid is refined. Zones (pours) stay excluded, as before.
+
+Limits are unchanged: net resistance within 2 % per net. Both KinematiK and the round-2 1-D SPICE netlist are
+scored against the 2-D solve, on the demo boards and on the round-3 boards.
+
+**Altium.** Altium can't run here. A kit (`benchmarks/electrical/altium/`) gives the author the exact steps to run
+in Altium Designer: Board Information counts, net lengths and Layer Stack Manager impedances for the same
+geometries as round 1 and 2. The limits are those of A and C. The returned numbers are scored by
+`electrical_reference.py altium`, and the result is published whatever it shows.

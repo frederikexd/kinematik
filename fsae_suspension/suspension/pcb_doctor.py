@@ -256,13 +256,17 @@ class PcbPad:
     # footprint to inherit from. Getting this wrong makes a bottom-side pad
     # invisible to the top-side copper graph and fakes a "copper open".
     layer: str = ""
-    # Drawing-only: the physics never reads these. "round" covers KiCad's
-    # circle/oval and Altium's ROUND; "rect" and "roundrect" as named; "" when
-    # the reader could not tell. The angle is the pad's absolute orientation on
-    # the board in degrees, counter-clockwise as the EDA displays it — without
-    # it a rotated part's pads are drawn across their own traces.
+    # "round" covers KiCad's circle/oval and Altium's ROUND (a circle when the
+    # two sizes are equal, otherwise an oval); "rect" and "roundrect" as named;
+    # "" when the reader could not tell. The angle is the pad's absolute
+    # orientation on the board in degrees, counter-clockwise as the EDA displays
+    # it. Both are used to draw the pad and to decide what copper touches it.
     shape: str = ""
     angle_deg: float = 0.0
+    # Where the copper's centre sits relative to `at` (board frame, mm). KiCad
+    # pads may offset their copper from the drill (a TO-92's staggered legs):
+    # `at` is the hole, the copper is shifted by this much.
+    copper_offset: tuple = (0.0, 0.0)
 
 
 @dataclass
@@ -770,6 +774,15 @@ def _parse_footprint(node, net_ref=None) -> PcbFootprint:
         ay = fy - px * sr + py * cr
         psz = _child(pd, "size")
         size = tuple(_floats(psz, 2)) if psz else (1.0, 1.0)
+        # (drill … (offset dx dy)): the copper sits off the hole, in the pad's
+        # own frame; rotate it by the pad's board orientation like `at` above.
+        off = (0.0, 0.0)
+        pdr = _child(pd, "drill")
+        poff = _child(pdr, "offset") if pdr else None
+        if poff and len(_floats(poff, 2)) == 2:
+            ox, oy = _floats(poff, 2)
+            pr = math.radians(float(pang or 0.0))
+            off = (ox * math.cos(pr) + oy * math.sin(pr), -ox * math.sin(pr) + oy * math.cos(pr))
         pnet, pname = 0, ""
         pnt = _child(pd, "net")
         if pnt and _atoms(pnt):
@@ -789,7 +802,7 @@ def _parse_footprint(node, net_ref=None) -> PcbFootprint:
         fp.pads.append(PcbPad(number=number, net=pnet, net_name=pname,
                               at=(ax, ay), size=size, through=through,
                               layer=pad_layer, shape=shape,
-                              angle_deg=float(pang or 0.0)))
+                              angle_deg=float(pang or 0.0), copper_offset=off))
     return fp
 
 
@@ -1397,14 +1410,15 @@ def _pad_overlaps(pad, pt, margin_mm: float) -> bool:
     """Does a disc of radius margin_mm (mm) at pt touch the pad's copper? The pad is taken in its own frame
     (rotated by its angle in degrees): a circle, a stadium for an oval, otherwise its bounding rectangle."""
     w, h = (float(x) for x in pad.size)
-    dx, dy = pt[0] - pad.at[0], pt[1] - pad.at[1]
+    ox, oy = getattr(pad, "copper_offset", (0.0, 0.0)) or (0.0, 0.0)
+    dx, dy = pt[0] - pad.at[0] - ox, pt[1] - pad.at[1] - oy
     th = math.radians(pad.angle_deg or 0.0)
     lx = dx * math.cos(th) - dy * math.sin(th)
     ly = dx * math.sin(th) + dy * math.cos(th)
     shape = (pad.shape or "").lower()
-    if shape in ("circle", "round"):
+    if shape in ("circle", "round") and abs(w - h) < 1e-9:
         return math.hypot(lx, ly) <= w / 2.0 + margin_mm
-    if shape == "oval":
+    if shape in ("oval", "round"):
         if w >= h:
             seg = (max(abs(lx) - (w - h) / 2.0, 0.0), ly)
             return math.hypot(*seg) <= h / 2.0 + margin_mm
