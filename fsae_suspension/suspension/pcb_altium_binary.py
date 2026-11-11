@@ -294,7 +294,7 @@ def parse_altium_binary(data: bytes) -> PcbBoard:
             net=nid, layer=layer, width_mm=w, start=p1, end=p2))
 
     # ---- arcs (record type 1) ------------------------------------------------ #
-    for c, start, end in _iter_records(stream("Arcs6"), 1):
+    for arc_no, (c, start, end) in enumerate(_iter_records(stream("Arcs6"), 1)):
         if end - start < 45:
             continue
         c.pos = start
@@ -314,7 +314,7 @@ def parse_altium_binary(data: bytes) -> PcbBoard:
         pts = [(px, -py) for px, py in
                _arc_points_center(cx, -cy, r, a0, a1)]
         board.segments.extend(_chord_segments(
-            pts, net=nid, layer=layer, width_mm=w))
+            pts, net=nid, layer=layer, width_mm=w, arc_id=arc_no))
 
     # ---- vias (record type 3) ------------------------------------------------ #
     for c, start, end in _iter_records(stream("Vias6"), 3):

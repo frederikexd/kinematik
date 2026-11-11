@@ -221,6 +221,9 @@ class PcbSegment:
     # token in the file; the patcher de-duplicates on the span so the same
     # token is never rewritten twice.
     from_arc: bool = False
+    # Which arc of the file the chord came from (-1: not an arc). A binary
+    # file has no width token to tell its arcs apart by.
+    arc_id: int = -1
 
     @property
     def length_mm(self) -> float:
