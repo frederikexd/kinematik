@@ -214,3 +214,17 @@ out. **Design boards:** the demo boards. **Held out:** pour nets on the round-3 
 rule, solved once after KinematiK's pour estimate is frozen.
 
 **Limit:** 2 % per net, as for tracks; 5 % and 10 % are reported too.
+
+### Addendum 3, amendment (written before any team-board net was solved with the corrected reference)
+
+The corrected reference takes far longer per net than the old one: about 100 nets an hour on the two cores
+available. So the remaining solves use random samples, drawn now with a fixed seed (`random.Random(20261111)`), not
+every net:
+
+- **Demo boards (design):** the 725 nets already solved when this was written, about three quarters of 1,000. They
+  were solved in board order, so whole boards are in or out; the result says which.
+- **Round-3 team boards (re-score):** 150 nets drawn from the 412.
+- **Round-4 team boards (held out):** 200 nets drawn from all nets KinematiK solves on them.
+
+With 150–200 nets, the share within 2 % is known to about ±3–4 percentage points (95 %). Everything else is
+unchanged.
