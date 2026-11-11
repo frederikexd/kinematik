@@ -140,8 +140,12 @@ cells (area fractions from 4 × 4 samples per cell), and treats pads and via rin
 Checked before use, on copper with a known answer: two 1 mm pads joined by a 0.15 mm track, 2 mm between the pads,
 turned to 0°, 15°, 30° and 45°. The copper is the same at every angle, so the answer must be too. At 6.25 µm the four
 angles agree within 0.9 % and converge on the 1-D value (track outside the pads) as the grid is refined. The
-reference grid is therefore **6.25 µm**, and every net is also solved at 12.5 µm; the difference is published per
-net as the reference's own uncertainty.
+error scales with cell size over track width, so the reference grid is set per net: **at least 24 cells across the
+net's narrowest track**, and never coarser than 12.5 µm (6.25 µm for a 0.15 mm track). One net in five, picked by a
+hash of its name, is also solved at twice the cell size; the difference is published as the reference's own
+uncertainty. (First written as 6.25 µm for every net, with every net also at 12.5 µm; changed before any corrected
+result was scored, because that took over five hours for the demo boards alone. The 106 nets already solved at
+6.25 µm meet the per-net rule and are kept.)
 
 Round 3 is re-scored against the corrected reference, both KinematiK versions, and the round-3 result as first
 published stays in the record next to it.
