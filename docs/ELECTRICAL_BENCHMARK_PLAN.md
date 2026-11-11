@@ -228,3 +228,17 @@ every net:
 
 With 150–200 nets, the share within 2 % is known to about ±3–4 percentage points (95 %). Everything else is
 unchanged.
+
+### Round 4 outcome, and what replaces it (written before any team-board result against the corrected reference)
+
+The round-4 repositories were cloned as registered. Two were dropped as not Formula Student / FSAE (moyamartin's
+BMS is a university project, win2466/Hardware is the Speeduino ECU). Five iitmotorsports and three PUT-Motorsport
+repositories hold no `.kicad_pcb`. Of the seven boards left, the two KiCad 7 opens are empty templates, and the other
+five are KiCad 8–9 files, which KiCad 7 refuses (a newer format; relabelling the version only moves the error to the
+next new token). Only KiCad 7 runs here, and the reference needs KiCad's own reading of the file, so **round 4 has
+no boards** and is recorded as not run.
+
+The held-out test is therefore the **round-3 team boards against the corrected reference**, scored once with
+KinematiK frozen at commit a3805c1. Every model change since round 3 was designed on the demo boards; the team
+boards' results against the corrected reference have not been looked at. They were seen once against the old
+reference, and nothing was changed because of them.
