@@ -323,16 +323,31 @@ def spice_nets(pairs_file: str = "nets_round2.json"):
 RED, GREEN, BLUE, WHITE, FR4 = (255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 255), (0xCC, 0x00, 0xFF)
 
 
+def _write_bmp(path, img) -> None:
+    """24-bit uncompressed BMP of an RGB uint8 array (HxWx3), written directly: KinematiK opens no image library
+    (tests/test_image_safety.py)."""
+    import struct
+    import numpy as np
+    h_, w_ = img.shape[:2]
+    row = (w_ * 3 + 3) & ~3
+    data = bytearray()
+    for y in range(h_ - 1, -1, -1):                               # BMP rows run bottom-up, pixels as BGR
+        line = np.ascontiguousarray(img[y, :, ::-1]).tobytes()
+        data += line + b"\0" * (row - len(line))
+    head = struct.pack("<2sIHHI", b"BM", 54 + len(data), 0, 0, 54)
+    info = struct.pack("<IiiHHIIiiII", 40, w_, h_, 1, 24, 0, len(data), 2835, 2835, 0, 0)
+    Path(path).write_bytes(head + info + bytes(data))
+
+
 def _atlc(img, er: float) -> dict:
     """Run atlc on an RGB image (numpy uint8 HxWx3; red = +1 V, blue = −1 V, green = ground, FR4 colour = the
     dielectric of permittivity er, white = air). Returns the impedances atlc prints (Ω)."""
     import re
     import subprocess
     import tempfile
-    from PIL import Image
     with tempfile.TemporaryDirectory() as d:
         f = Path(d) / "x.bmp"
-        Image.fromarray(img, "RGB").save(f)
+        _write_bmp(f, img)
         res = subprocess.run(["atlc", "-s", "-S", "-d", f"cc00ff={er}", str(f)], capture_output=True, text=True,
                              timeout=3600, cwd=d)
         out = res.stdout + res.stderr
