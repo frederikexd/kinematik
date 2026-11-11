@@ -88,11 +88,11 @@
     "ceiling_c": 105.0,
     "current_a": 2.0,
     "estimate": true,
-    "rise_c": 298.77638098296296,
-    "temp_c": 328.77638098296296,
+    "rise_c": 316.47235018530625,
+    "temp_c": 346.47235018530625,
     "trace": "t0"
    },
-   "message": "Trace 't0' runs to 329 °C at 2.0 A (rise 299 °C over 30 °C ambient), past the 105 °C ceiling — widen it (estimated geometry).",
+   "message": "Trace 't0' runs to 346 °C at 2.0 A (rise 316 °C over 30 °C ambient), past the 105 °C ceiling — widen it (estimated geometry).",
    "severity": "fail",
    "subsystems": [
     "cooling",
@@ -104,9 +104,9 @@
    "detail": {
     "estimate": true,
     "trace": "t0",
-    "vdrop_v": 1.7545097883225238
+    "vdrop_v": 1.8096343189229929
    },
-   "message": "Trace 't0' drops 1755 mV at 2.0 A (> 5 % of a 5.0 V rail) (estimated geometry).",
+   "message": "Trace 't0' drops 1810 mV at 2.0 A (> 5 % of a 5.0 V rail) (estimated geometry).",
    "severity": "warning",
    "subsystems": [
     "cooling",
@@ -151,10 +151,10 @@
     "ceiling_c": 105.0,
     "current_a": 28.0,
     "estimate": true,
-    "temp_c": 90.91554887041107,
+    "temp_c": 94.52346350277989,
     "trace": "t2"
    },
-   "message": "Trace 't2' reaches 91 °C at 28.0 A — within 20 °C of the 105 °C ceiling (estimated geometry).",
+   "message": "Trace 't2' reaches 95 °C at 28.0 A — within 20 °C of the 105 °C ceiling (estimated geometry).",
    "severity": "warning",
    "subsystems": [
     "cooling",
@@ -183,11 +183,12 @@
     "ceiling_c": 105.0,
     "current_a": 30.0,
     "estimate": true,
-    "temp_c": 101.25681337189354,
+    "rise_c": 75.47722186180714,
+    "temp_c": 105.47722186180714,
     "trace": "t3"
    },
-   "message": "Trace 't3' reaches 101 °C at 30.0 A — within 20 °C of the 105 °C ceiling (estimated geometry).",
-   "severity": "warning",
+   "message": "Trace 't3' runs to 105 °C at 30.0 A (rise 75 °C over 30 °C ambient), past the 105 °C ceiling — widen it (estimated geometry).",
+   "severity": "fail",
    "subsystems": [
     "cooling",
     "electrics"
