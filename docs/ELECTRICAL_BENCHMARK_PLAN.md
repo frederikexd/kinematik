@@ -191,3 +191,26 @@ independent test. An independent one needs IPC-2152's 2009 measurements, which a
 **Limits, fixed now.** KinematiK must be **conservative**: its current at most 5 % above the NBS current (the
 allowance for reading error) at every point. Its typical margin is reported as the median ratio, expected near 0.9
 from the derating, with no pass limit on it.
+
+## Addendum 4, nets with copper pours (written before any pour net was solved)
+
+Until now nets with pours were left out: KinematiK gives a pour no resistance (connectivity only), so its trace-only
+number is an upper bound there, not an estimate. The brown-out check keeps that bound. This adds a **best estimate
+with the pour** and benchmarks it.
+
+**Reference.** The corrected 2-D solve (addendum 3) with the pour's copper added: KiCad's own filled zone polygons
+(`ZONE.GetFilledPolysList`, after clearances and thermal reliefs, spokes included) drawn on the same grid as the
+tracks and pads. Pours are wide, so the grid follows the narrowest feature of the net that carries current, tracks
+and thermal spokes alike: at least 12 cells across it, never finer than 12.5 µm or coarser than 50 µm. Every net is
+also solved at twice the cell size and the difference published.
+
+**KinematiK.** A sheet solve of its own reading of the file (its own pad shapes, tracks, vias and the zones'
+`filled_polygon`), on its own grid: at least 6 cells across the narrowest feature, between 25 and 100 µm. It shares
+the physics with the reference (current through copper sheet), not the geometry, the grid or the code.
+
+**Cases.** Every net with a pour on KiCad's demo boards whose filled copper fits the reference's memory (at most
+4 million cells per layer), between the two pads KinematiK's estimate names worst. Larger planes are listed and left
+out. **Design boards:** the demo boards. **Held out:** pour nets on the round-3 and round-4 team boards under the same
+rule, solved once after KinematiK's pour estimate is frozen.
+
+**Limit:** 2 % per net, as for tracks; 5 % and 10 % are reported too.
