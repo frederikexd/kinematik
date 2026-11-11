@@ -383,3 +383,23 @@ and no-net zones are never copper. This also stops an empty pour from joining pa
 
 Those two nets are design data and, with their only pour empty, no longer pour nets. No other KiCad 9 pour net has
 an empty pour (checked from the file, not from results), so the nets still held out for addendum 10 are unaffected.
+
+## Addendum 12, net resistance by the sheet solve (written before any of its numbers)
+
+B6 left the 1-D net model at 70 of 95 within 2 % on the KiCad 8/9 boards, missing on short pad-to-pad nets by up to
+−9.1 %, which is 0.01 % from using up the brown-out check's 1.10 margin. The pour estimate's sheet solve works on
+any net, with or without a pour, and now checks its own grid. So:
+
+- `pcb_pour.pour_resistance(board, nid, pair=...)` solves a named pad pair. `pcb_doctor.refined_net_resistance`
+  takes the 1-D model's worst pair and returns the sheet-solve value between those pads when it converges and the
+  net fits a size limit (`REFINE_MAX_CELLS` per layer, so the app stays responsive), else the 1-D value, and says
+  which.
+- **Brown-out check:** its bound becomes the larger of the 1-D estimate × 1.10 and the converged sheet-solve value
+  × 1.02, over the copper finish. It can only get more conservative than it was.
+- The bring-up table reports the refined value.
+
+**Design check:** the 95 B6 nets (seen). **Held out:** 100 nets drawn with `random.Random(20261113)` from the 352
+trace-only nets of the same four boards that B6 did not sample, each solved once by the reference from KiCad 9.0.3's
+export between the 1-D model's worst pair, scored against the refined value frozen at the commit that implements
+this. Limit 2 %. Both the nets the refinement converges on and the ones it falls back on are scored and reported
+separately; with n converged nets all within 2 %, the 95 % lower bound on that rate is 0.05^(1/n).
