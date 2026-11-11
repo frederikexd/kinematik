@@ -311,11 +311,11 @@ Native Altium came back first: the author's Altium Designer 26.11.1 counts are i
 file, not in the solve:
 1. **Custom pads.** KiCad `custom` pads carry their copper as primitives (`gr_poly`, `gr_rect`, `gr_circle`,
    `gr_line`, `gr_arc`) around a small anchor. KinematiK kept only the anchor (0.1 × 0.1 mm on the SUFST LEDs), so
-   current had to squeeze into a dot: 26 of the 28 misses.
+   current had to squeeze into a dot: 25 of the 28 misses (all on SUFST boards).
 2. **KiCad 5 pours.** Files older than KiCad 6 (`version` before 20200811) and zones marked
    `filled_areas_thickness yes` store the pour shrunk by half its minimum width; the copper is that polygon with its
    outline stroked at `min_thickness`. KinematiK read the bare polygon, 7–9 % too little copper on the
-   michaelruppe boards: the other misses.
+   michaelruppe boards: the other 3 misses.
 
 **Round 3** reads both (the primitives turned and placed like the pad; the stroke drawn along every filled edge).
 The solve is unchanged. Everything round 2 was scored on is design data from here on.
