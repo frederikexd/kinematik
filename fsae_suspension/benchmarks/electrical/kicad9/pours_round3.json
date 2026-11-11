@@ -1,0 +1,694 @@
+{
+ "what": "Pour estimate round 3 (frozen 97dc029), held out on the KiCad 8/9 boards (plan addenda 7 and 8). Reference: corrected 2-D solve with filled zones on KiCad 9.0.3 shapes. Nets run smallest first; the run was stopped after 43 of the 63 pour nets, the rest being the large planes. Round 2 (eef6107) differs from round 3 only on custom pads and KiCad 5 fills; none of these 43 nets has either, so the two estimates are identical here.",
+ "scored_rule": "scored only where the reference at twice the cell size agrees within 2 % (addendum 8 amendment)",
+ "nets": [
+  {
+   "board": "BMS_LV_2022.kicad_pcb",
+   "net": "Net-(C41-Pad2)",
+   "pair": [
+    "Q8.3",
+    "C41.2"
+   ],
+   "h_mm": 0.03175,
+   "filled_mm2_max_layer": 8.411509633995593,
+   "copper2d_ohm": 0.009834849489609271,
+   "copper2d_coarse_ohm": 0.009636803544888328,
+   "s": 0,
+   "kinematik_r3_ohm": 0.009836756516247115,
+   "custom_pads": false,
+   "converged": false
+  },
+  {
+   "board": "BMS_LV_2022.kicad_pcb",
+   "net": "Net-(U1-VDDA{slash}VREF+)",
+   "pair": [
+    "U1.13",
+    "L1.1"
+   ],
+   "h_mm": 0.021166666666666667,
+   "filled_mm2_max_layer": 4.103219064185396,
+   "copper2d_ohm": 0.0014139396417321925,
+   "copper2d_coarse_ohm": 0.0013994989089492658,
+   "s": 0,
+   "kinematik_r3_ohm": 0.0014160312069055442,
+   "custom_pads": false,
+   "converged": true
+  },
+  {
+   "board": "BMS_LV_2022.kicad_pcb",
+   "net": "Net-(U2-BYP)",
+   "pair": [
+    "U2.4",
+    "C44.1"
+   ],
+   "h_mm": 0.03175,
+   "filled_mm2_max_layer": 3.3488307853695005,
+   "copper2d_ohm": 0.0003158551223891488,
+   "copper2d_coarse_ohm": 0.0003013003968773732,
+   "s": 0,
+   "kinematik_r3_ohm": 0.0003158319007883451,
+   "custom_pads": false,
+   "converged": false
+  },
+  {
+   "board": "BMS_LV_2022.kicad_pcb",
+   "net": "Net-(U3-BOOT)",
+   "pair": [
+    "U3.2",
+    "C37.1"
+   ],
+   "h_mm": 0.042333333333333334,
+   "filled_mm2_max_layer": 2.5737437443458475,
+   "copper2d_ohm": 0.0005288550310817928,
+   "copper2d_coarse_ohm": 0.0004553570835039426,
+   "s": 0,
+   "kinematik_r3_ohm": 0.0005285202923944872,
+   "custom_pads": false,
+   "converged": false
+  },
+  {
+   "board": "BMS_LV_2022.kicad_pcb",
+   "net": "Net-(U3-EN)",
+   "pair": [
+    "U3.5",
+    "U3.7"
+   ],
+   "h_mm": 0.03175,
+   "filled_mm2_max_layer": 11.483478705660673,
+   "copper2d_ohm": 0.00212271373220852,
+   "copper2d_coarse_ohm": 0.0021397747300778355,
+   "s": 0,
+   "kinematik_r3_ohm": 0.0021236186278856465,
+   "custom_pads": false,
+   "converged": true
+  },
+  {
+   "board": "BMS_LV_2022.kicad_pcb",
+   "net": "Net-(U3-FB)",
+   "pair": [
+    "R58.2",
+    "R57.2"
+   ],
+   "h_mm": 0.042333333333333334,
+   "filled_mm2_max_layer": 5.917391561786644,
+   "copper2d_ohm": 0.0005299608983893182,
+   "copper2d_coarse_ohm": 0.00048271882459058406,
+   "s": 0,
+   "kinematik_r3_ohm": 0.0005300123832632236,
+   "custom_pads": false,
+   "converged": false
+  },
+  {
+   "board": "BMS_LV_2022.kicad_pcb",
+   "net": "Net-(U3-SW)",
+   "pair": [
+    "L2.1",
+    "U3.1"
+   ],
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 18.26861526747234,
+   "copper2d_ohm": 0.001855728611142646,
+   "copper2d_coarse_ohm": 0.0018442293163643667,
+   "s": 0,
+   "kinematik_r3_ohm": 0.0018558426560358891,
+   "custom_pads": false,
+   "converged": true
+  },
+  {
+   "board": "BMS_LV_2022.kicad_pcb",
+   "net": "Net-(U3-VCC)",
+   "pair": [
+    "U3.3",
+    "C35.2"
+   ],
+   "h_mm": 0.03175,
+   "filled_mm2_max_layer": 2.789061446324922,
+   "copper2d_ohm": 0.0004271754520832333,
+   "copper2d_coarse_ohm": 0.0003918384949109487,
+   "s": 0,
+   "kinematik_r3_ohm": 0.00042718877581665647,
+   "custom_pads": false,
+   "converged": false
+  },
+  {
+   "board": "M130-Distribution-HUB.kicad_pcb",
+   "net": "/A14-AV1_TPS",
+   "pair": [
+    "CN0.14",
+    "SENSORS_CN1.6@107.70,49.20"
+   ],
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 0.6178727173610241,
+   "copper2d_ohm": 0.09159944002005259,
+   "copper2d_coarse_ohm": 0.09386055320119815,
+   "s": 1,
+   "kinematik_r3_ohm": 0.0916001422831757,
+   "custom_pads": false,
+   "converged": false
+  },
+  {
+   "board": "M130-Distribution-HUB.kicad_pcb",
+   "net": "/A15-AV2_MAP",
+   "pair": [
+    "CN0.15",
+    "SENSORS_CN1.3@122.70,49.20"
+   ],
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 0.9268076019288856,
+   "copper2d_ohm": 0.10595102917059458,
+   "copper2d_coarse_ohm": 0.10609479025466047,
+   "s": 1,
+   "kinematik_r3_ohm": 0.10595457766428051,
+   "custom_pads": false,
+   "converged": true
+  },
+  {
+   "board": "M130-Distribution-HUB.kicad_pcb",
+   "net": "/A23-INJ_LS1",
+   "pair": [
+    "D1.2",
+    "CN0.23"
+   ],
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 0.6178732423359179,
+   "copper2d_ohm": 0.2730971462912628,
+   "copper2d_coarse_ohm": 0.2734684886081409,
+   "s": 2,
+   "kinematik_r3_ohm": 0.27310013164950847,
+   "custom_pads": false,
+   "converged": true
+  },
+  {
+   "board": "M130-Distribution-HUB.kicad_pcb",
+   "net": "/A24-INJ_LS2",
+   "pair": [
+    "D2.2",
+    "CN0.24"
+   ],
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 0.6178749313985463,
+   "copper2d_ohm": 0.29959080435362984,
+   "copper2d_coarse_ohm": 0.3012476570317863,
+   "s": 2,
+   "kinematik_r3_ohm": 0.2995860337496306,
+   "custom_pads": false,
+   "converged": true
+  },
+  {
+   "board": "M130-Distribution-HUB.kicad_pcb",
+   "net": "/B02-UDIG2_UPSHIFT",
+   "pair": [
+    "PADDLE_SHIFTER_CN4.6@101.85,142.11",
+    "CN0.36"
+   ],
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 0.3089369473455008,
+   "copper2d_ohm": 0.09243833295200043,
+   "copper2d_coarse_ohm": 0.09250597456100514,
+   "s": 1,
+   "kinematik_r3_ohm": 0.09243435716289491,
+   "custom_pads": false,
+   "converged": true
+  },
+  {
+   "board": "PUTM_EV_BMS_HV_MASTER_2023.kicad_pcb",
+   "net": "/Measurements/Isolated acu measurement/HV_+5V",
+   "pair": [
+    "L8.1",
+    "IC7.13"
+   ],
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 0,
+   "copper2d_ohm": 0.011041401929021732,
+   "copper2d_coarse_ohm": 0.01055005247214777,
+   "s": 0,
+   "kinematik_r3_ohm": 0.010515962124924491,
+   "custom_pads": false,
+   "converged": false
+  },
+  {
+   "board": "PUTM_EV_BMS_HV_MASTER_2023.kicad_pcb",
+   "net": "/Measurements/Isolated car measurement/HV_+5V",
+   "pair": [
+    "L11.1",
+    "IC13.13"
+   ],
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 0,
+   "copper2d_ohm": 0.011049480731934251,
+   "copper2d_coarse_ohm": 0.0107721186500444,
+   "s": 0,
+   "kinematik_r3_ohm": 0.010493266062462342,
+   "custom_pads": false,
+   "converged": false
+  },
+  {
+   "board": "PUTM_EV_BMS_HV_MASTER_2023.kicad_pcb",
+   "net": "/Power/5V_SW",
+   "pair": [
+    "IC2.2",
+    "F4.1"
+   ],
+   "h_mm": 0.05,
+   "filled_mm2_max_layer": 23.063560042297468,
+   "copper2d_ohm": 0.004953045358188877,
+   "copper2d_coarse_ohm": 0.004590010467799644,
+   "s": 0,
+   "kinematik_r3_ohm": 0.004961069716988521,
+   "custom_pads": false,
+   "converged": false
+  },
+  {
+   "board": "PUTM_EV_BMS_HV_MASTER_2023.kicad_pcb",
+   "net": "Net-(D14-K)",
+   "pair": [
+    "D14.1",
+    "FB1.2"
+   ],
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 5.623389987682458,
+   "copper2d_ohm": 0.0006897880790704819,
+   "copper2d_coarse_ohm": 0.0006581870654911314,
+   "s": 0,
+   "kinematik_r3_ohm": 0.000690794719223152,
+   "custom_pads": false,
+   "converged": false
+  },
+  {
+   "board": "PUTM_EV_BMS_HV_MASTER_2023.kicad_pcb",
+   "net": "Net-(IC2-LX)",
+   "pair": [
+    "IC2.11",
+    "L4.1"
+   ],
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 9.899993753613671,
+   "copper2d_ohm": 0.0031824306865984057,
+   "copper2d_coarse_ohm": 0.002977447155568319,
+   "s": 0,
+   "kinematik_r3_ohm": 0.0032071801744696475,
+   "custom_pads": false,
+   "converged": false
+  },
+  {
+   "board": "PUTM_EV_Frontbox_2023.kicad_pcb",
+   "net": "/Power section/+24V_FUSED",
+   "pair": [
+    "L1.1",
+    "F1.2"
+   ],
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 8.210820534266531,
+   "copper2d_ohm": 0.003028848857576429,
+   "copper2d_coarse_ohm": 0.002967331406390298,
+   "s": 0,
+   "kinematik_r3_ohm": 0.003057064244215111,
+   "custom_pads": false,
+   "converged": false
+  },
+  {
+   "board": "M130-Distribution-HUB.kicad_pcb",
+   "net": "/A18-OUT_HB1",
+   "pair": [
+    "PADDLE_SHIFTER_CN4.8@111.85,142.11",
+    "CN0.18"
+   ],
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 28.12634597462602,
+   "copper2d_ohm": 0.01776151707635575,
+   "copper2d_coarse_ohm": 0.017749221920699915,
+   "s": 9,
+   "kinematik_r3_ohm": 0.01776124958407197,
+   "custom_pads": false,
+   "converged": true
+  },
+  {
+   "board": "M130-Distribution-HUB.kicad_pcb",
+   "net": "/A19-INJ_PH1",
+   "pair": [
+    "SENSORS_CN2.8@161.20,57.40",
+    "CN0.19"
+   ],
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 28.487876414554194,
+   "copper2d_ohm": 0.027317904425338643,
+   "copper2d_coarse_ohm": 0.027301768739869014,
+   "s": 8,
+   "kinematik_r3_ohm": 0.02731830391387412,
+   "custom_pads": false,
+   "converged": true
+  },
+  {
+   "board": "PUTM_EV_Frontbox_2023.kicad_pcb",
+   "net": "Net-(IC2-VIN)",
+   "pair": [
+    "R12.2",
+    "TP2.1"
+   ],
+   "h_mm": 0.016666666666666666,
+   "filled_mm2_max_layer": 4.9198660211404786,
+   "copper2d_ohm": 0.008752556821902879,
+   "copper2d_coarse_ohm": 0.008644609439858229,
+   "s": 1,
+   "kinematik_r3_ohm": 0.008752862941598388,
+   "custom_pads": false,
+   "converged": true
+  },
+  {
+   "board": "BMS_LV_2022.kicad_pcb",
+   "net": "VCC",
+   "pair": [
+    "J2.F",
+    "C31.1"
+   ],
+   "h_mm": 0.042333333333333334,
+   "filled_mm2_max_layer": 28.204873804934323,
+   "copper2d_ohm": 0.004407029531188155,
+   "copper2d_coarse_ohm": 0.004353178897709173,
+   "s": 1,
+   "kinematik_r3_ohm": 0.00440722908918526,
+   "custom_pads": false,
+   "converged": true
+  },
+  {
+   "board": "PUTM_EV_Frontbox_2023.kicad_pcb",
+   "net": "+3.3V",
+   "pair": [
+    "C79.1",
+    "R30.1"
+   ],
+   "h_mm": 0.016666666666666666,
+   "filled_mm2_max_layer": 4.930028502363712,
+   "copper2d_ohm": 0.23476855369207644,
+   "copper2d_coarse_ohm": 0.23503953248515316,
+   "s": 94,
+   "kinematik_r3_ohm": 0.23476420018841446,
+   "custom_pads": false,
+   "converged": true
+  },
+  {
+   "board": "BMS_LV_2022.kicad_pcb",
+   "net": "+5V",
+   "pair": [
+    "C43.1",
+    "C39.1"
+   ],
+   "h_mm": 0.03175,
+   "filled_mm2_max_layer": 81.42864259029739,
+   "copper2d_ohm": 0.058875386865282445,
+   "copper2d_coarse_ohm": 0.058826611043841466,
+   "s": 21,
+   "kinematik_r3_ohm": 0.05887384476934913,
+   "custom_pads": false,
+   "converged": true
+  },
+  {
+   "board": "BMS_LV_2022.kicad_pcb",
+   "net": "+5VD",
+   "pair": [
+    "J1.B4",
+    "C34.2"
+   ],
+   "h_mm": 0.021166666666666667,
+   "filled_mm2_max_layer": 10.772701159236021,
+   "copper2d_ohm": 0.05284305172254252,
+   "copper2d_coarse_ohm": 0.052815940122683105,
+   "s": 10,
+   "kinematik_r3_ohm": 0.05284324498900001,
+   "custom_pads": false,
+   "converged": true
+  },
+  {
+   "board": "BMS_LV_2022.kicad_pcb",
+   "net": "/LTC6810/CellBalance3",
+   "pair": [
+    "J11.3",
+    "R30.2"
+   ],
+   "h_mm": 0.03175,
+   "filled_mm2_max_layer": 55.15824312157929,
+   "copper2d_ohm": 0.01144051797285442,
+   "copper2d_coarse_ohm": 0.011357935268582642,
+   "s": 25,
+   "kinematik_r3_ohm": 0.011443198470931296,
+   "custom_pads": false,
+   "converged": true
+  },
+  {
+   "board": "BMS_LV_2022.kicad_pcb",
+   "net": "/V_Out_Pin_1",
+   "pair": [
+    "J2.M",
+    "F3.2"
+   ],
+   "h_mm": 0.042333333333333334,
+   "filled_mm2_max_layer": 75.15986107103527,
+   "copper2d_ohm": 0.0006940836385285617,
+   "copper2d_coarse_ohm": 0.0006896118607325468,
+   "s": 14,
+   "kinematik_r3_ohm": 0.0006943904811353281,
+   "custom_pads": false,
+   "converged": true
+  },
+  {
+   "board": "BMS_LV_2022.kicad_pcb",
+   "net": "/V_Out_Pin_2",
+   "pair": [
+    "J2.C",
+    "F4.2"
+   ],
+   "h_mm": 0.042333333333333334,
+   "filled_mm2_max_layer": 53.11992300231941,
+   "copper2d_ohm": 0.00017621570081332243,
+   "copper2d_coarse_ohm": 0.00017045438418091612,
+   "s": 2,
+   "kinematik_r3_ohm": 0.00017624379906119755,
+   "custom_pads": false,
+   "converged": false
+  },
+  {
+   "board": "BMS_LV_2022.kicad_pcb",
+   "net": "Net-(D10-K)",
+   "pair": [
+    "Q4.3",
+    "R32.1"
+   ],
+   "h_mm": 0.042333333333333334,
+   "filled_mm2_max_layer": 54.82138392853085,
+   "copper2d_ohm": 0.00043523063886269267,
+   "copper2d_coarse_ohm": 0.00040373091455917024,
+   "s": 1,
+   "kinematik_r3_ohm": 0.00043757148299725156,
+   "custom_pads": false,
+   "converged": false
+  },
+  {
+   "board": "BMS_LV_2022.kicad_pcb",
+   "net": "Net-(D12-K)",
+   "pair": [
+    "Q5.3",
+    "R36.1"
+   ],
+   "h_mm": 0.042333333333333334,
+   "filled_mm2_max_layer": 46.26872174302116,
+   "copper2d_ohm": 0.0004964722662389855,
+   "copper2d_coarse_ohm": 0.00045311299116085704,
+   "s": 1,
+   "kinematik_r3_ohm": 0.0004981951186536498,
+   "custom_pads": false,
+   "converged": false
+  },
+  {
+   "board": "BMS_LV_2022.kicad_pcb",
+   "net": "Net-(D14-K)",
+   "pair": [
+    "Q6.3",
+    "R41.1"
+   ],
+   "h_mm": 0.042333333333333334,
+   "filled_mm2_max_layer": 37.431038748589344,
+   "copper2d_ohm": 0.0009523771835743619,
+   "copper2d_coarse_ohm": 0.000902608441858409,
+   "s": 1,
+   "kinematik_r3_ohm": 0.0009584163357669951,
+   "custom_pads": false,
+   "converged": false
+  },
+  {
+   "board": "BMS_LV_2022.kicad_pcb",
+   "net": "Net-(D16-K)",
+   "pair": [
+    "Q7.3",
+    "R46.1"
+   ],
+   "h_mm": 0.042333333333333334,
+   "filled_mm2_max_layer": 38.742980785667896,
+   "copper2d_ohm": 0.00045917343356251673,
+   "copper2d_coarse_ohm": 0.0004220939536634806,
+   "s": 1,
+   "kinematik_r3_ohm": 0.00046209510999593,
+   "custom_pads": false,
+   "converged": false
+  },
+  {
+   "board": "BMS_LV_2022.kicad_pcb",
+   "net": "Net-(D6-K)",
+   "pair": [
+    "Q2.3",
+    "R22.1"
+   ],
+   "h_mm": 0.042333333333333334,
+   "filled_mm2_max_layer": 49.47083581285551,
+   "copper2d_ohm": 0.0007320757457230782,
+   "copper2d_coarse_ohm": 0.0007138273804771511,
+   "s": 1,
+   "kinematik_r3_ohm": 0.0007376664097709598,
+   "custom_pads": false,
+   "converged": false
+  },
+  {
+   "board": "BMS_LV_2022.kicad_pcb",
+   "net": "Net-(F3-Pad1)",
+   "pair": [
+    "F3.1",
+    "U5.3"
+   ],
+   "h_mm": 0.042333333333333334,
+   "filled_mm2_max_layer": 79.08981261739973,
+   "copper2d_ohm": 0.00015711385639987038,
+   "copper2d_coarse_ohm": 0.00014823799431385354,
+   "s": 18,
+   "kinematik_r3_ohm": 0.00015711945710680342,
+   "custom_pads": false,
+   "converged": false
+  },
+  {
+   "board": "PUTM_EV_BMS_HV_MASTER_2023.kicad_pcb",
+   "net": "+12V",
+   "pair": [
+    "J5.14",
+    "D23.1"
+   ],
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 93.40449220780283,
+   "copper2d_ohm": 0.012109108317483354,
+   "copper2d_coarse_ohm": 0.011769423855146583,
+   "s": 1,
+   "kinematik_r3_ohm": 0.012121717255869116,
+   "custom_pads": false,
+   "converged": false
+  },
+  {
+   "board": "PUTM_EV_BMS_HV_MASTER_2023.kicad_pcb",
+   "net": "/Communication/LTC_CHASSIS",
+   "pair": [
+    "J7.5",
+    "C36.2"
+   ],
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 98.52840030472726,
+   "copper2d_ohm": 0.002202827591414545,
+   "copper2d_coarse_ohm": 0.002147645107537692,
+   "s": 1,
+   "kinematik_r3_ohm": 0.002202498135512525,
+   "custom_pads": false,
+   "converged": false
+  },
+  {
+   "board": "PUTM_EV_BMS_HV_MASTER_2023.kicad_pcb",
+   "net": "/Power/12V_SW",
+   "pair": [
+    "C17.2",
+    "L2.1"
+   ],
+   "h_mm": 0.03175,
+   "filled_mm2_max_layer": 45.693888385780156,
+   "copper2d_ohm": 0.005767571967258679,
+   "copper2d_coarse_ohm": 0.005729765715398436,
+   "s": 1,
+   "kinematik_r3_ohm": 0.0057709861013077275,
+   "custom_pads": false,
+   "converged": true
+  },
+  {
+   "board": "PUTM_EV_BMS_HV_MASTER_2023.kicad_pcb",
+   "net": "/Power/12V_VIN",
+   "pair": [
+    "IC1.2",
+    "F2.1"
+   ],
+   "h_mm": 0.05,
+   "filled_mm2_max_layer": 66.4198066748213,
+   "copper2d_ohm": 0.0026272212810538116,
+   "copper2d_coarse_ohm": 0.002520560340806057,
+   "s": 0,
+   "kinematik_r3_ohm": 0.0026294461883464605,
+   "custom_pads": false,
+   "converged": false
+  },
+  {
+   "board": "PUTM_EV_BMS_HV_MASTER_2023.kicad_pcb",
+   "net": "VBUS",
+   "pair": [
+    "D12.1",
+    "D13.1"
+   ],
+   "h_mm": 0.020833333333333332,
+   "filled_mm2_max_layer": 29.669044240785297,
+   "copper2d_ohm": 0.01792237827189387,
+   "copper2d_coarse_ohm": 0.01797909296474733,
+   "s": 1,
+   "kinematik_r3_ohm": 0.017922377521013635,
+   "custom_pads": false,
+   "converged": true
+  },
+  {
+   "board": "PUTM_EV_BMS_HV_MASTER_2023.kicad_pcb",
+   "net": "VDD",
+   "pair": [
+    "J2.19",
+    "D7.1"
+   ],
+   "h_mm": 0.041666666666666664,
+   "filled_mm2_max_layer": 90.83221299154684,
+   "copper2d_ohm": 0.00874795159847393,
+   "copper2d_coarse_ohm": 0.00854231779305532,
+   "s": 1,
+   "kinematik_r3_ohm": 0.00875963096534774,
+   "custom_pads": false,
+   "converged": false
+  },
+  {
+   "board": "PUTM_EV_Frontbox_2023.kicad_pcb",
+   "net": "/Power section/5V_UNFUSED",
+   "pair": [
+    "R14.2",
+    "L2.2"
+   ],
+   "h_mm": 0.016666666666666666,
+   "filled_mm2_max_layer": 10.60885540174786,
+   "copper2d_ohm": 0.020213980214905013,
+   "copper2d_coarse_ohm": 0.02105179450194743,
+   "s": 1,
+   "kinematik_r3_ohm": 0.020214364219543257,
+   "custom_pads": false,
+   "converged": false
+  },
+  {
+   "board": "BMS_LV_2022.kicad_pcb",
+   "net": "/LTC6810/CellBalance4",
+   "pair": [
+    "R35.2",
+    "J11.4"
+   ],
+   "h_mm": 0.03175,
+   "filled_mm2_max_layer": 59.48803903860971,
+   "copper2d_ohm": 0.022718290148654233,
+   "copper2d_coarse_ohm": 0.022630935057905772,
+   "s": 36,
+   "kinematik_r3_ohm": 0.022718281510189977,
+   "custom_pads": false,
+   "converged": true
+  }
+ ]
+}

@@ -29,7 +29,7 @@ KinematiK against the recorded references on every run without needing the tools
 | **C.** Microstrip impedance vs field solver | 5 single-ended, 6 differential | 5 % / 10 % | **Round 1 miss:** single-ended −8.3 % and −6.4 % at the range ends. Formula replaced. **Round 2, unseen geometries: 10 of 10**, worst 3.4 % |
 | **C2.** Microstrip impedance vs **Altium Designer 26.11.1** | the same 21 cross-sections in Altium's Layer Stack Manager, plus 5 extras | 5 % / 10 % | **21 of 21.** Single-ended worst −1.9 %, differential worst +4.0 %. Altium and atlc agree within 1.6 % on every case |
 | **D.** Trace heating vs **NBS 1956 measurements** (the data behind IPC-2221) | 44 reliably read points, 10–100 °C rise (10 more at 4–16 sq mil left out) | KinematiK ≤ 1.05 × measured at every point | **Plain IPC-2221 missed on 2** (wide traces at 10 °C: +5 %, +8 %). KinematiK now uses IPC-2221 × 0.975: **44 of 44**, worst +4.96 %, median 0.89 × measured. Calibrated on these points, so a calibration check, not a validation |
-| **E.** Nets with copper pours: KinematiK's with-pour estimate vs a 2-D solve including KiCad's filled pour | 6 demo pour nets (design); **17 held-out pour nets on FS team boards** | 2 % per net | **Miss.** Held out: 35 % within 2 %, 71 % within 5 %, 76 % within 10 %, median +2.6 %, worst +47 %. **Never below the reference** (worst +0.3 %). Demo: all 6 within 5 % (+0.3 to +3.5 %). Large planes over the memory cap left out |
+| **E.** Nets with copper pours: KinematiK's with-pour estimate vs a 2-D solve including KiCad's filled pour | 6 demo pour nets (design); **17 held-out pour nets on FS team boards** | 2 % per net | **Miss.** Held out: 35 % within 2 %, 71 % within 5 %, 76 % within 10 %, median +2.6 %, worst +47 %. **Never below the reference** (worst +0.3 %). Demo: all 6 within 5 % (+0.3 to +3.5 %). Large planes over the memory cap left out Round 3 (custom pads, KiCad 5 fills), held out on KiCad 9 boards: **19 of 19 converged nets within 2 %**, worst +0.15 % |
 
 ## A. Does KinematiK read a board the way KiCad does?
 
@@ -310,7 +310,23 @@ the team boards, mostly whole-board ground planes.
 - **Not scored:** on 27 held-out nets KinematiK named two pads with the same designator and number (for example a
   part with two pad 1s), which the reference cannot tell apart, or the reference found no copper path.
 
-So the pour estimate is a conservative indicator, not yet a 2 % tool; the brown-out check doesn't use it.
+**Round 2** (addendum 6, the solve redone with the reference's discretization), held out on 43 nets: 15 within 2 %,
+every miss high. The misses came from two reading flaws: KiCad `custom` pads read as their 0.1 mm anchor (25 nets)
+and KiCad 5 pours read without their outline stroke (3 nets).
+
+**Round 3** (addendum 8) reads both. On round 2's misses it now lands within ±0.5 % wherever the reference converges.
+On ten hand-solder LED nets the reference itself keeps moving as the grid is refined (0.21 → 0.55 mΩ), so they can't be
+scored at 2 %.
+
+**Round 3 held out, KiCad 8/9 boards** (`benchmarks/electrical/kicad9/pours_round3.json`): 43 of the 63 pour nets,
+solved smallest first. The run was stopped before the large planes.
+- **19 nets where the reference converges (within 2 % at twice the cell size): 19 of 19 within 2 %**, worst +0.15 %.
+  The 95 % lower bound on the rate is 0.05^(1/19) = 85 %.
+- On all 43, converged or not: 41 within 2 %, 42 within 5 %, worst −5.0 %.
+- None of these nets has a custom pad or a KiCad 5 fill, so round 2 gives the same numbers here.
+
+So the pour estimate is a 2 % tool on the pour nets the reference can resolve. That is shown on 19 held-out nets, not
+yet on whole-board planes. The brown-out check still uses the trace-only upper bound.
 
 ## From the file to the built board
 

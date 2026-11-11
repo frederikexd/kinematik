@@ -277,3 +277,13 @@ def test_pour_estimate_recorded_result():
         rows = [o for o in d[grp] if o.get("copper2d_ohm") and not o.get("excluded")]
         e = np.array([100.0 * (o["kinematik_ohm"] - o["copper2d_ohm"]) / o["copper2d_ohm"] for o in rows])
         assert len(e) >= n_min and e.min() > 0.0 and np.all(e < 50.0), grp
+
+
+def test_pour_round3_held_out_on_kicad9_boards():
+    """Pour estimate round 3, held out on the KiCad 8/9 boards (plan addendum 8): every net the reference resolves
+    (twice the cell size within 2 %) within 2 %."""
+    d = json.loads((REF / "kicad9" / "pours_round3.json").read_text(encoding="utf-8"))
+    sc = [o for o in d["nets"] if o["converged"]]
+    assert len(sc) == 19
+    for o in sc:
+        assert abs(o["kinematik_r3_ohm"] - o["copper2d_ohm"]) / o["copper2d_ohm"] <= 0.02, o["net"]
