@@ -116,3 +116,12 @@ scored against the 2-D solve, on the demo boards and on the round-3 boards.
 in Altium Designer: Board Information counts, net lengths and Layer Stack Manager impedances for the same
 geometries as round 1 and 2. The limits are those of A and C. The returned numbers are scored by
 `electrical_reference.py altium`, and the result is published whatever it shows.
+
+### Round 3 order of work (written before any 2-D result existed)
+
+1. The 2-D reference is computed for the demo boards first, at 12.5 µm (25 µm differed from 12.5 µm by up to 1.5 % on
+   a 10-net sample, so the plan's 1 % rule moved the grid to 12.5 µm).
+2. KinematiK as it stands is scored on the demo boards (round 3a).
+3. Any change to KinematiK's net-resistance model is designed and checked on the demo boards only.
+4. Only then is the 2-D reference computed for the 20 team boards, once. Both the round-3a KinematiK and any
+   changed version are scored on them (round 3b), and both results are published.

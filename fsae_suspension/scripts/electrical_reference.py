@@ -25,11 +25,19 @@ OUT = Path(__file__).resolve().parents[1] / "benchmarks" / "electrical"
 DEMOS = "/usr/share/kicad/demos"
 
 
-def kicad():
+def kicad(root: str = DEMOS, out_name: str = "kicad_boards.json"):
     import pcbnew
     boards = {}
-    for path in sorted(glob.glob(f"{DEMOS}/**/*.kicad_pcb", recursive=True)):
-        b = pcbnew.LoadBoard(path)
+    skipped = {}
+    for path in sorted(glob.glob(f"{root}/**/*.kicad_pcb", recursive=True)):
+        try:
+            b = pcbnew.LoadBoard(path)
+        except Exception as e:                     # a newer file format than this KiCad reads
+            skipped[os.path.relpath(path, root)] = str(e).splitlines()[0][:200]
+            continue
+        if b is None:
+            skipped[os.path.relpath(path, root)] = "KiCad returned no board"
+            continue
         nm = 1e-6
         straight = arcs = 0
         vias = []
@@ -46,12 +54,15 @@ def kicad():
             d = per_net.setdefault(t.GetNetname(), {"length_mm": 0.0, "widths_mm": set()})
             d["length_mm"] += t.GetLength() * nm
             d["widths_mm"].add(round(t.GetWidth() * nm, 4))
-        boards[os.path.relpath(path, DEMOS)] = {
+        boards[os.path.relpath(path, root)] = {
             "straight_tracks": straight, "arc_tracks": arcs, "via_drills_mm": sorted(vias),
             "pads": len(b.GetPads()), "footprints": len(b.GetFootprints()),
             "nets": {k: {"length_mm": round(v["length_mm"], 6), "widths_mm": sorted(v["widths_mm"])}
                      for k, v in sorted(per_net.items())}}
-    _write("kicad_boards.json", {"tool": f"KiCad {pcbnew.Version()} (pcbnew Python API)", "boards": boards})
+    rec = {"tool": f"KiCad {pcbnew.Version()} (pcbnew Python API)", "boards": boards}
+    if skipped:
+        rec["not_loaded"] = skipped
+    _write(out_name, rec)
 
 
 PRECHARGE_CASES = (  # (name, V, R ohm, C F, t_switch s or None)
@@ -436,6 +447,258 @@ def atlc():
     _write("atlc_impedance_round2.json", {"tool": first, **atlc_round2()})
 
 
+def _cells_capsule(ax, ay, bx, by, half_w, h):
+    """Grid cells (ix, iy) and copper coverage (0–1) of a track: a capsule from (ax, ay) to (bx, by) with
+    half-width half_w (mm), on an h (mm) grid. Coverage comes from the signed distance of each cell centre to the
+    capsule edge, which anti-aliases the edge so a narrow track keeps its true width on the grid."""
+    import numpy as np
+    x0, x1 = min(ax, bx) - half_w - h, max(ax, bx) + half_w + h
+    y0, y1 = min(ay, by) - half_w - h, max(ay, by) + half_w + h
+    ix = np.arange(int(np.floor(x0 / h)), int(np.ceil(x1 / h)) + 1)
+    iy = np.arange(int(np.floor(y0 / h)), int(np.ceil(y1 / h)) + 1)
+    X, Y = np.meshgrid((ix + 0.5) * h, (iy + 0.5) * h, indexing="ij")
+    dx, dy = bx - ax, by - ay
+    L2 = dx * dx + dy * dy
+    u = np.clip(((X - ax) * dx + (Y - ay) * dy) / L2, 0.0, 1.0) if L2 > 0 else np.zeros_like(X)
+    d = np.hypot(X - (ax + u * dx), Y - (ay + u * dy))
+    c = np.clip((half_w - d) / h + 0.5, 0.0, 1.0)
+    m = c > 0
+    I, J = np.meshgrid(ix, iy, indexing="ij")
+    return I[m], J[m], c[m]
+
+
+def _cells_polygon(pts, h, ss: int = 4):
+    """Grid cells and coverage of a polygon (mm points), by supersampling each cell ss × ss."""
+    import numpy as np
+    from matplotlib.path import Path as MPath
+    pts = np.asarray(pts, float)
+    x0, y0 = pts.min(axis=0) - h
+    x1, y1 = pts.max(axis=0) + h
+    ix = np.arange(int(np.floor(x0 / h)), int(np.ceil(x1 / h)) + 1)
+    iy = np.arange(int(np.floor(y0 / h)), int(np.ceil(y1 / h)) + 1)
+    sub = (np.arange(ss) + 0.5) / ss
+    X, Y = np.meshgrid(((ix[:, None] + sub[None, :]).ravel()) * h, ((iy[:, None] + sub[None, :]).ravel()) * h,
+                       indexing="ij")
+    inside = MPath(pts).contains_points(np.c_[X.ravel(), Y.ravel()]).reshape(X.shape)
+    c = inside.reshape(len(ix), ss, len(iy), ss).mean(axis=(1, 3))
+    m = c > 0
+    I, J = np.meshgrid(ix, iy, indexing="ij")
+    return I[m], J[m], c[m]
+
+
+def copper2d_resistance(board, net: str, pair, copper_oz: float, thickness_mm: float, h: float = 0.025):
+    """Pad-to-pad resistance (Ω) of one net by a 2-D solve of its copper (plan addendum 2). Every copper item of
+    the net is drawn on an h-mm grid per layer from KiCad's own shapes (tracks and arcs as capsules, pads from
+    KiCad's polygon, vias as discs); neighbouring cells conduct σ t times the smaller of their copper coverage; each
+    pad is one terminal (all its cells at one voltage); a via or plated pad joins its layers through its barrel,
+    split evenly between successive copper layers. 1 A in at pad A, out at pad B."""
+    import numpy as np
+    import pcbnew
+    from scipy.sparse import coo_matrix
+    from scipy.sparse.csgraph import connected_components
+    from scipy.sparse.linalg import spsolve
+    rho = RHO_CU_20C * (1 + ALPHA_CU * (NET_TEMP_C - 20.0))
+    sheet_g = copper_oz * OZ_TO_UM * 1e-6 / rho            # σ t, siemens per square
+    stack = list(board.GetEnabledLayers().CuStack())
+    tracks = [t for t in board.GetTracks() if t.GetNetname() == net and t.Type() != pcbnew.PCB_VIA_T]
+    vias = [t for t in board.GetTracks() if t.GetNetname() == net and t.Type() == pcbnew.PCB_VIA_T]
+    pads = [p for p in board.GetPads() if p.GetNetname() == net]
+    cov: dict = {}                     # layer -> list of (I, J, c)
+    term: dict = {}                    # (layer, ix, iy) -> terminal key (pad or via ring)
+    nm = 1e-6
+
+    def add(ly, I, J, c):
+        cov.setdefault(ly, []).append((I, J, c))
+    for t in tracks:
+        ly, hw = t.GetLayer(), t.GetWidth() * nm / 2.0
+        if t.Type() == pcbnew.PCB_ARC_T:
+            a, m_, b = t.GetStart(), t.GetMid(), t.GetEnd()
+            pts = _arc_pts((a.x * nm, a.y * nm), (m_.x * nm, m_.y * nm), (b.x * nm, b.y * nm))
+        else:
+            pts = [(t.GetStart().x * nm, t.GetStart().y * nm), (t.GetEnd().x * nm, t.GetEnd().y * nm)]
+        for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+            add(ly, *_cells_capsule(x0, y0, x1, y1, hw, h))
+    for i, v in enumerate(vias):
+        c = v.GetPosition()
+        for ly in stack:
+            if v.IsOnLayer(ly):
+                I, J, cc = _cells_capsule(c.x * nm, c.y * nm, c.x * nm, c.y * nm, v.GetWidth() * nm / 2.0, h)
+                add(ly, I, J, cc)
+                for a_, b_, q in zip(I, J, cc):
+                    if q >= 0.5:
+                        term[(ly, int(a_), int(b_))] = ("via", i, ly)
+    pad_key = {}
+    for p in pads:
+        key = ("pad", p.GetParent().GetReference(), p.GetNumber(), id(p))
+        pad_key.setdefault(f"{key[1]}.{key[2]}", []).append(key)
+        for ly in stack:
+            if not p.IsOnLayer(ly):
+                continue
+            ps = pcbnew.SHAPE_POLY_SET()
+            p.TransformShapeToPolygon(ps, ly, 0, 500)
+            for k in range(ps.OutlineCount()):
+                o = ps.Outline(k)
+                pts = [(o.CPoint(j).x * nm, o.CPoint(j).y * nm) for j in range(o.PointCount())]
+                I, J, cc = _cells_polygon(pts, h)
+                add(ly, I, J, cc)
+                for a_, b_, q in zip(I, J, cc):
+                    if q >= 0.5:
+                        term[(ly, int(a_), int(b_))] = key
+    if pair[0] not in pad_key or pair[1] not in pad_key or len(pad_key[pair[0]]) != 1 or len(pad_key[pair[1]]) != 1:
+        return None
+    # union of coverage per layer: max over items
+    nodes: dict = {}
+    keys, covs = [], []
+    for ly, parts in cov.items():
+        I = np.concatenate([p_[0] for p_ in parts])
+        J = np.concatenate([p_[1] for p_ in parts])
+        C = np.concatenate([p_[2] for p_ in parts])
+        order = np.lexsort((C, J, I))
+        I, J, C = I[order], J[order], C[order]
+        last = np.r_[(I[1:] != I[:-1]) | (J[1:] != J[:-1]), True]
+        for a_, b_, q in zip(I[last], J[last], C[last]):
+            nodes[(ly, int(a_), int(b_))] = len(keys)
+            keys.append((ly, int(a_), int(b_)))
+            covs.append(min(float(q), 1.0))
+    # terminals: every cell of one pad (or one via ring on one layer) is one node
+    rep = np.arange(len(keys))
+    tnode: dict = {}
+    for k, idx in nodes.items():
+        t_ = term.get(k)
+        if t_ is not None:
+            rep[idx] = tnode.setdefault(t_, idx)
+    rows, cols, vals = [], [], []
+
+    def link(i, j, g):
+        i, j = rep[i], rep[j]
+        if i != j:
+            rows.extend((i, j, i, j))
+            cols.extend((i, j, j, i))
+            vals.extend((g, g, -g, -g))
+    for (ly, a_, b_), idx in nodes.items():
+        for nb in ((ly, a_ + 1, b_), (ly, a_, b_ + 1)):
+            j = nodes.get(nb)
+            if j is not None:
+                link(idx, j, sheet_g * min(covs[idx], covs[j]))
+    # barrels: vias and plated pads, chained through the copper layers they touch
+    def barrel(nodes_by_layer, drill_mm):
+        r_full = rho * thickness_mm * 1e-3 / (3.141592653589793 * drill_mm * 1e-3 * VIA_PLATING_MM * 1e-3)
+        lys = [ly for ly in stack if ly in nodes_by_layer]
+        if len(lys) < 2:
+            return
+        seg = r_full / (len(stack) - 1)
+        for l0, l1 in zip(lys, lys[1:]):
+            gap = stack.index(l1) - stack.index(l0)
+            link(nodes_by_layer[l0], nodes_by_layer[l1], 1.0 / (seg * gap))
+    for i, v in enumerate(vias):
+        nb = {}
+        for (ly, a_, b_), idx in nodes.items():
+            if term.get((ly, a_, b_)) == ("via", i, ly):
+                nb[ly] = idx
+        barrel(nb, v.GetDrillValue() * nm)
+    n = len(keys)
+    if n == 0:
+        return None
+    G = coo_matrix((vals, (rows, cols)), shape=(n, n)).tocsr()
+    a_idx = rep[next(i for k, i in nodes.items() if term.get(k) == pad_key[pair[0]][0])]
+    b_idx = rep[next(i for k, i in nodes.items() if term.get(k) == pad_key[pair[1]][0])]
+    _nc, lab = connected_components(abs(G) > 0, directed=False)
+    if lab[a_idx] != lab[b_idx]:
+        return float("inf")
+    keep = np.where((lab == lab[a_idx]) & (np.arange(n) == rep))[0]
+    keep = keep[keep != b_idx]
+    pos = {k: i for i, k in enumerate(keep)}
+    Gk = G[keep][:, keep]
+    rhs = np.zeros(len(keep))
+    rhs[pos[a_idx]] = 1.0
+    v = spsolve(Gk.tocsc(), rhs)
+    return float(v[pos[a_idx]])
+
+
+def _arc_pts(p0, pm, p1, n: int = 24):
+    import math
+    (x0, y0), (xm, ym), (x1, y1) = p0, pm, p1
+    d = 2.0 * (x0 * (ym - y1) + xm * (y1 - y0) + x1 * (y0 - ym))
+    if abs(d) < 1e-12:
+        return [p0, p1]
+    ux = ((x0 ** 2 + y0 ** 2) * (ym - y1) + (xm ** 2 + ym ** 2) * (y1 - y0) + (x1 ** 2 + y1 ** 2) * (y0 - ym)) / d
+    uy = ((x0 ** 2 + y0 ** 2) * (x1 - xm) + (xm ** 2 + ym ** 2) * (x0 - x1) + (x1 ** 2 + y1 ** 2) * (xm - x0)) / d
+    r = math.hypot(x0 - ux, y0 - uy)
+    a0, am, a1 = (math.atan2(y - uy, x - ux) for x, y in (p0, pm, p1))
+    sweep = (a1 - a0) % (2 * math.pi)
+    if (am - a0) % (2 * math.pi) > sweep:
+        sweep -= 2 * math.pi
+    return [(ux + r * math.cos(a0 + sweep * k / n), uy + r * math.sin(a0 + sweep * k / n)) for k in range(n + 1)]
+
+
+def altium(folder: str):
+    """Score the Altium kit (benchmarks/electrical/altium/README.md): the impedance table and the boards."""
+    import csv
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    from suspension import pcb_doctor as D
+    from suspension.electronics import DiffPair
+    folder = Path(folder)
+    out = {"impedance": [], "boards": []}
+    atlc_all = (json.loads((OUT / "atlc_impedance.json").read_text())["single_ended"]
+                + json.loads((OUT / "atlc_impedance.json").read_text())["differential"]
+                + json.loads((OUT / "atlc_impedance_round2.json").read_text())["single_ended"]
+                + json.loads((OUT / "atlc_impedance_round2.json").read_text())["differential"])
+    imp = folder / "impedance_template.csv"
+    if imp.exists():
+        for row, ref in zip(csv.DictReader(imp.open(encoding="utf-8")), atlc_all):
+            if not (row.get("altium_impedance_ohm") or "").strip():
+                continue
+            z_alt = float(row["altium_impedance_ohm"])
+            w = float(row["altium_width_mm_if_you_could_only_set_a_target"] or row["w_mm"])
+            dp = DiffPair("x", "e", trace_w_mm=w, height_mm=float(row["h_mm"]), eps_r=float(row["er"]),
+                          spacing_mm=float(row["s_mm"] or 0.2))
+            diff = row["kind"] == "differential"
+            z_kk = dp.differential_z0_ohm() if diff else dp.single_ended_z0_ohm()
+            z_atlc = ref.get("atlc_zdiff_ohm" if diff else "atlc_z0_ohm")
+            lim = 10.0 if diff else 5.0
+            e = 100.0 * (z_kk - z_alt) / z_alt
+            out["impedance"].append({"case": row["case"], "kind": row["kind"], "altium_ohm": z_alt, "kinematik_ohm": z_kk,
+                                     "error_pct": e, "within_limit": abs(e) <= lim,
+                                     "atlc_vs_altium_pct": (100.0 * (z_atlc - z_alt) / z_alt
+                                                            if row["altium_width_mm_if_you_could_only_set_a_target"] == ""
+                                                            else None)})
+    brd = folder / "boards_template.csv"
+    kicad_ref = json.loads((OUT / "kicad_boards.json").read_text())["boards"]
+    if brd.exists():
+        for row in csv.DictReader(brd.open(encoding="utf-8")):
+            if not (row.get("tracks") or "").strip():
+                continue
+            stem = Path(row["board"]).stem
+            for kind in ("binary", "ascii"):
+                f = folder / f"{stem}_{kind}.PcbDoc"
+                if not f.exists():
+                    continue
+                b = D.parse_board(f.read_bytes(), f.name)
+                kk = {"tracks": sum(1 for s_ in b.segments if not s_.from_arc),
+                      "arcs": len({s_.width_span for s_ in b.segments if s_.from_arc}) if kind == "ascii"
+                      else sum(1 for s_ in b.segments if s_.from_arc),
+                      "vias": len(b.vias), "pads": sum(len(fp.pads) for fp in b.footprints),
+                      "components": len(b.footprints)}
+                alt = {k: int(row[k]) for k in kk if (row.get(k) or "").strip()}
+                lengths = {}
+                for s_ in b.segments:
+                    lengths[b.net_name(s_.net)] = lengths.get(b.net_name(s_.net), 0.0) + s_.length_mm
+                ref_nets = kicad_ref.get(row["board"], {}).get("nets", {})
+                common = [n for n in ref_nets if n in lengths]
+                worst = max((abs(lengths[n] - ref_nets[n]["length_mm"]) / max(ref_nets[n]["length_mm"], 1e-9)
+                             for n in common), default=None)
+                out["boards"].append({"board": row["board"], "file": kind, "altium": alt, "kinematik": kk,
+                                      "counts_match": all(kk[k] == v for k, v in alt.items()),
+                                      "nets_compared": len(common), "worst_length_rel": worst})
+    _write("altium_results.json", out)
+    for r in out["impedance"]:
+        print(f"{r['case']:8s} {r['kind']:12s} Altium {r['altium_ohm']:7.2f}  KinematiK {r['kinematik_ohm']:7.2f} "
+              f"{r['error_pct']:+6.2f} %  {'OK' if r['within_limit'] else 'MISS'}")
+    for r in out["boards"]:
+        print(r["board"], r["file"], "counts match" if r["counts_match"] else f"COUNTS DIFFER {r}",
+              f"nets {r['nets_compared']}, worst length {r['worst_length_rel']}")
+
+
 def _write(name, obj):
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / name).write_text(json.dumps(obj, indent=1, sort_keys=True) + "\n", encoding="utf-8")
@@ -444,9 +707,13 @@ def _write(name, obj):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("step", choices=["kicad", "spice", "atlc"])
+    ap.add_argument("step", choices=["kicad", "spice", "atlc", "altium"])
+    ap.add_argument("--dir", help="altium: the folder with the returned kit files")
     a = ap.parse_args(argv)
-    {"kicad": kicad, "spice": spice, "atlc": atlc}[a.step]()
+    if a.step == "altium":
+        altium(a.dir)
+    else:
+        {"kicad": kicad, "spice": spice, "atlc": atlc}[a.step]()
     return 0
 
 

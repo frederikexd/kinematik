@@ -610,6 +610,26 @@ def parse_kicad_pcb(text: str) -> PcbBoard:
             _by_name[name] = nid
         return _by_name[name]
 
+    #  A KiCad 5 via may omit its drill: it then has its net class's via drill,
+    #  else the board default in (setup (via_drill …)). Assuming a fixed 0.3 mm
+    #  instead misread every such via on a real FSAE precharge board (0.4 mm in
+    #  KiCad), found by the electrical benchmark's held-out boards.
+    _drill_default = 0.3
+    _drill_by_net: dict = {}
+    for node in root[1:]:
+        if not isinstance(node, list):
+            continue
+        if _name(node) == "setup":
+            vd = _child(node, "via_drill")
+            if vd and _floats(vd):
+                _drill_default = _floats(vd)[0]
+        elif _name(node) == "net_class":
+            vd = _child(node, "via_drill")
+            if vd and _floats(vd):
+                for an in _children(node, "add_net"):
+                    if _atoms(an):
+                        _drill_by_net[str(_atoms(an)[0].value).strip('"')] = _floats(vd)[0]
+
     for node in root[1:]:
         if not isinstance(node, list):
             continue
@@ -666,11 +686,13 @@ def parse_kicad_pcb(text: str) -> PcbBoard:
                 continue
             try:
                 layers = tuple(a.value for a in _atoms(ly)) if ly else ("F.Cu", "B.Cu")
+                vnet = _net_ref(nt)
                 board.vias.append(PcbVia(
-                    net=_net_ref(nt),
+                    net=vnet,
                     at=tuple(_floats(at, 2)),
                     size_mm=_floats(sz)[0] if sz and _floats(sz) else 0.6,
-                    drill_mm=_floats(dr)[0] if dr and _floats(dr) else 0.3,
+                    drill_mm=(_floats(dr)[0] if dr and _floats(dr) else
+                              _drill_by_net.get(board.nets.get(vnet, ""), _drill_default)),
                     layers=layers or ("F.Cu", "B.Cu")))
             except (ValueError, IndexError):
                 continue

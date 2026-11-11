@@ -1,0 +1,3463 @@
+{
+ "boards": {
+  "michaelruppe_FSAE/AIL/AIL.kicad_pcb": {
+   "arc_tracks": 0,
+   "footprints": 16,
+   "nets": {},
+   "pads": 42,
+   "straight_tracks": 0,
+   "via_drills_mm": []
+  },
+  "michaelruppe_FSAE/CELL-MOUNT/CELL-MOUNT.kicad_pcb": {
+   "arc_tracks": 0,
+   "footprints": 52,
+   "nets": {},
+   "pads": 52,
+   "straight_tracks": 0,
+   "via_drills_mm": []
+  },
+  "michaelruppe_FSAE/PDIST/PDIST.kicad_pcb": {
+   "arc_tracks": 0,
+   "footprints": 48,
+   "nets": {
+    "Net-(D1-Pad1)": {
+     "length_mm": 3.487574,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D1-Pad2)": {
+     "length_mm": 21.460819,
+     "widths_mm": [
+      0.25,
+      2.0
+     ]
+    },
+    "Net-(D10-Pad1)": {
+     "length_mm": 4.255574,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D10-Pad2)": {
+     "length_mm": 21.336819,
+     "widths_mm": [
+      0.25,
+      2.0
+     ]
+    },
+    "Net-(D2-Pad1)": {
+     "length_mm": 3.487574,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D2-Pad2)": {
+     "length_mm": 21.460819,
+     "widths_mm": [
+      0.25,
+      2.0
+     ]
+    },
+    "Net-(D3-Pad1)": {
+     "length_mm": 4.255574,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D3-Pad2)": {
+     "length_mm": 22.186209,
+     "widths_mm": [
+      0.25,
+      2.0
+     ]
+    },
+    "Net-(D4-Pad1)": {
+     "length_mm": 3.239574,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D4-Pad2)": {
+     "length_mm": 21.336819,
+     "widths_mm": [
+      0.25,
+      2.0
+     ]
+    },
+    "Net-(D5-Pad1)": {
+     "length_mm": 4.255574,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D5-Pad2)": {
+     "length_mm": 21.336819,
+     "widths_mm": [
+      0.25,
+      2.0
+     ]
+    },
+    "Net-(D6-Pad1)": {
+     "length_mm": 3.239574,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D6-Pad2)": {
+     "length_mm": 21.336819,
+     "widths_mm": [
+      0.25,
+      2.0
+     ]
+    },
+    "Net-(D7-Pad1)": {
+     "length_mm": 4.255574,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D7-Pad2)": {
+     "length_mm": 21.336819,
+     "widths_mm": [
+      0.25,
+      2.0
+     ]
+    },
+    "Net-(D8-Pad1)": {
+     "length_mm": 4.255574,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D8-Pad2)": {
+     "length_mm": 21.336819,
+     "widths_mm": [
+      0.25,
+      2.0
+     ]
+    },
+    "Net-(D9-Pad1)": {
+     "length_mm": 4.255574,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D9-Pad2)": {
+     "length_mm": 22.186209,
+     "widths_mm": [
+      0.25,
+      2.0
+     ]
+    }
+   },
+   "pads": 124,
+   "straight_tracks": 92,
+   "via_drills_mm": [
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4
+   ]
+  },
+  "michaelruppe_FSAE/Precharge/Precharge/Precharge.kicad_pcb": {
+   "arc_tracks": 0,
+   "footprints": 121,
+   "nets": {
+    "+12P": {
+     "length_mm": 237.674481,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "+12V": {
+     "length_mm": 188.016332,
+     "widths_mm": [
+      0.25,
+      0.5
+     ]
+    },
+    "+3V3": {
+     "length_mm": 88.830493,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "+5V": {
+     "length_mm": 99.406732,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/CANH": {
+     "length_mm": 11.941873,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/CANL": {
+     "length_mm": 18.735986,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/CANRX": {
+     "length_mm": 13.902504,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/CANTX": {
+     "length_mm": 15.802224,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/CFG0": {
+     "length_mm": 12.183444,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/CFG1": {
+     "length_mm": 12.643444,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/CFG2": {
+     "length_mm": 13.103444,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/Faccu": {
+     "length_mm": 31.82847,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/FoutAccu": {
+     "length_mm": 23.125194,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/FoutTS": {
+     "length_mm": 27.214495,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/Fts": {
+     "length_mm": 38.28847,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/PDOC_OK": {
+     "length_mm": 68.305822,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/PRECHG": {
+     "length_mm": 37.085049,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/PRECH_STS": {
+     "length_mm": 6.287006,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/PWR_OK": {
+     "length_mm": 16.951013,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/SHTDN_CTRL": {
+     "length_mm": 38.697825,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/SHTDN_OUT": {
+     "length_mm": 55.134776,
+     "widths_mm": [
+      0.25,
+      0.5
+     ]
+    },
+    "/TS-": {
+     "length_mm": 8.1,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/VinAccu": {
+     "length_mm": 21.688582,
+     "widths_mm": [
+      0.25,
+      0.5
+     ]
+    },
+    "/VinTS": {
+     "length_mm": 48.089412,
+     "widths_mm": [
+      0.25,
+      0.5
+     ]
+    },
+    "GLV+": {
+     "length_mm": 92.401265,
+     "widths_mm": [
+      0.25,
+      0.5
+     ]
+    },
+    "GLV-": {
+     "length_mm": 321.491013,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "GNDS": {
+     "length_mm": 255.659725,
+     "widths_mm": [
+      0.25,
+      0.5
+     ]
+    },
+    "Net-(C10-Pad1)": {
+     "length_mm": 23.235147,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(C10-Pad2)": {
+     "length_mm": 16.811972,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(C13-Pad1)": {
+     "length_mm": 9.933423,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(C14-Pad1)": {
+     "length_mm": 9.226316,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(C15-Pad1)": {
+     "length_mm": 35.992187,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(C16-Pad1)": {
+     "length_mm": 33.288386,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(C17-Pad2)": {
+     "length_mm": 56.61336,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(C19-Pad1)": {
+     "length_mm": 17.876565,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(C20-Pad1)": {
+     "length_mm": 47.462759,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(C21-Pad1)": {
+     "length_mm": 58.285045,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(C9-Pad1)": {
+     "length_mm": 16.268217,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(C9-Pad2)": {
+     "length_mm": 20.210105,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D1-Pad1)": {
+     "length_mm": 3.085855,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D12-Pad2)": {
+     "length_mm": 23.490307,
+     "widths_mm": [
+      0.25,
+      0.5
+     ]
+    },
+    "Net-(D2-Pad1)": {
+     "length_mm": 3.108381,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D2-Pad2)": {
+     "length_mm": 6.297527,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D3-Pad1)": {
+     "length_mm": 3.29282,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D3-Pad2)": {
+     "length_mm": 7.141627,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D4-Pad1)": {
+     "length_mm": 3.239465,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D4-Pad2)": {
+     "length_mm": 7.532157,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D5-Pad1)": {
+     "length_mm": 3.112341,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D5-Pad2)": {
+     "length_mm": 7.765782,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D9-Pad2)": {
+     "length_mm": 28.162333,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(J2-Pad1)": {
+     "length_mm": 47.250105,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(K2-Pad4)": {
+     "length_mm": 14.4,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(Q1-Pad1)": {
+     "length_mm": 6.985391,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(Q2-Pad1)": {
+     "length_mm": 38.640301,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(Q3-Pad1)": {
+     "length_mm": 6.924431,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R10-Pad1)": {
+     "length_mm": 7.562502,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R13-Pad2)": {
+     "length_mm": 3.653457,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R15-Pad2)": {
+     "length_mm": 4.557013,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R17-Pad2)": {
+     "length_mm": 3.653457,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R18-Pad1)": {
+     "length_mm": 3.254551,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R25-Pad1)": {
+     "length_mm": 5.574579,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R28-Pad1)": {
+     "length_mm": 5.387218,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R30-Pad1)": {
+     "length_mm": 28.24472,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R31-Pad2)": {
+     "length_mm": 3.028497,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R32-Pad2)": {
+     "length_mm": 2.2,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R33-Pad2)": {
+     "length_mm": 2.1499,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R34-Pad2)": {
+     "length_mm": 2.966497,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R35-Pad1)": {
+     "length_mm": 3.303493,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R36-Pad2)": {
+     "length_mm": 2.326841,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R37-Pad2)": {
+     "length_mm": 2.901656,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R40-Pad2)": {
+     "length_mm": 2.937514,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R41-Pad2)": {
+     "length_mm": 2.164,
+     "widths_mm": [
+      0.25
+     ]
+    }
+   },
+   "pads": 347,
+   "straight_tracks": 1657,
+   "via_drills_mm": [
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4
+   ]
+  },
+  "michaelruppe_FSAE/TSAL/TSAL-DRV/TSAL-DRV.kicad_pcb": {
+   "arc_tracks": 0,
+   "footprints": 30,
+   "nets": {
+    "Net-(C3-Pad1)": {
+     "length_mm": 8.581208,
+     "widths_mm": [
+      0.25
+     ]
+    }
+   },
+   "pads": 81,
+   "straight_tracks": 6,
+   "via_drills_mm": []
+  },
+  "michaelruppe_FSAE/TSAL/TSAL-HVM/TSAL-HVM.kicad_pcb": {
+   "arc_tracks": 0,
+   "footprints": 45,
+   "nets": {
+    "+12V": {
+     "length_mm": 55.340182,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/+HV": {
+     "length_mm": 17.766826,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/VHI": {
+     "length_mm": 23.993793,
+     "widths_mm": [
+      0.25,
+      0.508
+     ]
+    },
+    "/Vin": {
+     "length_mm": 23.915189,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/Vref": {
+     "length_mm": 14.756314,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "GND": {
+     "length_mm": 164.042969,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "GNDPWR": {
+     "length_mm": 30.394046,
+     "widths_mm": [
+      0.25,
+      0.508
+     ]
+    },
+    "Net-(C1-Pad2)": {
+     "length_mm": 14.059341,
+     "widths_mm": [
+      0.508
+     ]
+    },
+    "Net-(C2-Pad1)": {
+     "length_mm": 5.649631,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(C2-Pad2)": {
+     "length_mm": 5.649631,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(C4-Pad1)": {
+     "length_mm": 21.571575,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(C5-Pad1)": {
+     "length_mm": 19.053362,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D1-Pad2)": {
+     "length_mm": 27.621081,
+     "widths_mm": [
+      0.508
+     ]
+    },
+    "Net-(D3-Pad1)": {
+     "length_mm": 14.891716,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D3-Pad2)": {
+     "length_mm": 14.637364,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D4-Pad1)": {
+     "length_mm": 5.546441,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D4-Pad2)": {
+     "length_mm": 11.539399,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D5-Pad1)": {
+     "length_mm": 3.8285,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(J4-Pad1)": {
+     "length_mm": 8.403954,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(Q1-Pad1)": {
+     "length_mm": 41.665441,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(Q2-Pad3)": {
+     "length_mm": 3.1005,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R1-Pad2)": {
+     "length_mm": 2.613,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R11-Pad1)": {
+     "length_mm": 9.111773,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R13-Pad1)": {
+     "length_mm": 10.040972,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R17-Pad2)": {
+     "length_mm": 2.8305,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R3-Pad2)": {
+     "length_mm": 2.105,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R6-Pad1)": {
+     "length_mm": 4.45971,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(U2-Pad5)": {
+     "length_mm": 4.28042,
+     "widths_mm": [
+      0.25
+     ]
+    }
+   },
+   "pads": 113,
+   "straight_tracks": 187,
+   "via_drills_mm": [
+    0.4,
+    0.4
+   ]
+  },
+  "sufst_pcb/PCB - VOLTAGE TAPS/PCB - VOLTAGE TAPS.kicad_pcb": {
+   "arc_tracks": 0,
+   "footprints": 32,
+   "nets": {
+    "Net-(TP1-Pad1)": {
+     "length_mm": 27.932085,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(TP10-Pad1)": {
+     "length_mm": 246.713665,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(TP11-Pad1)": {
+     "length_mm": 268.73732,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(TP12-Pad1)": {
+     "length_mm": 297.806306,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(TP14-Pad1)": {
+     "length_mm": 37.289697,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(TP15-Pad1)": {
+     "length_mm": 69.609398,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(TP16-Pad1)": {
+     "length_mm": 93.435743,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(TP17-Pad1)": {
+     "length_mm": 119.391378,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(TP18-Pad1)": {
+     "length_mm": 144.528384,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(TP19-Pad1)": {
+     "length_mm": 169.173359,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(TP20-Pad1)": {
+     "length_mm": 195.521024,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(TP21-Pad1)": {
+     "length_mm": 218.955339,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(TP25-Pad1)": {
+     "length_mm": 318.5193,
+     "widths_mm": [
+      0.5
+     ]
+    }
+   },
+   "pads": 55,
+   "straight_tracks": 68,
+   "via_drills_mm": []
+  },
+  "sufst_pcb/ail-LED/ail-LED.kicad_pcb": {
+   "arc_tracks": 0,
+   "footprints": 21,
+   "nets": {
+    "Net-(D1-A)": {
+     "length_mm": 0.0975,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(D12-K)": {
+     "length_mm": 2.603843,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D13-K)": {
+     "length_mm": 1.14,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(Q1-E)": {
+     "length_mm": 2.286427,
+     "widths_mm": [
+      0.25
+     ]
+    }
+   },
+   "pads": 54,
+   "straight_tracks": 8,
+   "via_drills_mm": [
+    0.4,
+    0.4,
+    0.4
+   ]
+  },
+  "sufst_pcb/ail-LED/ail-LED_handsolder.kicad_pcb": {
+   "arc_tracks": 0,
+   "footprints": 20,
+   "nets": {
+    "/Input": {
+     "length_mm": 7.771046,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/REG": {
+     "length_mm": 1.345639,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/TRIM": {
+     "length_mm": 1.56421,
+     "widths_mm": [
+      0.25
+     ]
+    }
+   },
+   "pads": 54,
+   "straight_tracks": 7,
+   "via_drills_mm": [
+    0.4,
+    0.4,
+    0.4
+   ]
+  },
+  "sufst_pcb/archive/loom/Stag 9/Loom.kicad_pcb": {
+   "arc_tracks": 0,
+   "footprints": 0,
+   "nets": {},
+   "pads": 0,
+   "straight_tracks": 0,
+   "via_drills_mm": []
+  },
+  "sufst_pcb/archive/loom/Stag X/Loom/Loom.kicad_pcb": {
+   "arc_tracks": 0,
+   "footprints": 0,
+   "nets": {},
+   "pads": 0,
+   "straight_tracks": 0,
+   "via_drills_mm": []
+  },
+  "sufst_pcb/archive/segment/segment.kicad_pcb": {
+   "arc_tracks": 0,
+   "footprints": 24,
+   "nets": {
+    "/THERM_1": {
+     "length_mm": 68.044679,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/THERM_10": {
+     "length_mm": 38.664423,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/THERM_11": {
+     "length_mm": 37.877417,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/THERM_12": {
+     "length_mm": 35.67031,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/THERM_13": {
+     "length_mm": 15.545942,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/THERM_14": {
+     "length_mm": 21.106602,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/THERM_15": {
+     "length_mm": 30.056349,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/THERM_16": {
+     "length_mm": 37.324116,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/THERM_17": {
+     "length_mm": 44.591883,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/THERM_18": {
+     "length_mm": 55.344931,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/THERM_19": {
+     "length_mm": 62.571277,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/THERM_2": {
+     "length_mm": 67.191125,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/THERM_20": {
+     "length_mm": 47.324116,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/THERM_21": {
+     "length_mm": 54.73833,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/THERM_22": {
+     "length_mm": 62.006097,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/THERM_23": {
+     "length_mm": 72.759145,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/THERM_24": {
+     "length_mm": 83.98097,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/THERM_3": {
+     "length_mm": 62.865642,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/THERM_4": {
+     "length_mm": 62.078636,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/THERM_5": {
+     "length_mm": 61.291631,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/THERM_6": {
+     "length_mm": 45.810349,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/THERM_7": {
+     "length_mm": 44.625425,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/THERM_8": {
+     "length_mm": 43.776912,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/THERM_9": {
+     "length_mm": 39.451428,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/VTAP_IN_1": {
+     "length_mm": 4.040807,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/VTAP_IN_10": {
+     "length_mm": 7.869234,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/VTAP_IN_11": {
+     "length_mm": 21.472788,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/VTAP_IN_12": {
+     "length_mm": 8.101194,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/VTAP_IN_13": {
+     "length_mm": 21.679895,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/VTAP_IN_2": {
+     "length_mm": 17.48696,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/VTAP_IN_3": {
+     "length_mm": 3.833701,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/VTAP_IN_4": {
+     "length_mm": 17.255,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/VTAP_IN_5": {
+     "length_mm": 3.883406,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/VTAP_IN_6": {
+     "length_mm": 17.48696,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/VTAP_IN_7": {
+     "length_mm": 4.06566,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/VTAP_IN_8": {
+     "length_mm": 7.662128,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/VTAP_IN_9": {
+     "length_mm": 21.265681,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/VTAP_OUT_1": {
+     "length_mm": 24.653154,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/VTAP_OUT_10": {
+     "length_mm": 20.203406,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/VTAP_OUT_11": {
+     "length_mm": 6.599853,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/VTAP_OUT_12": {
+     "length_mm": 20.178553,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/VTAP_OUT_13": {
+     "length_mm": 6.80696,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/VTAP_OUT_2": {
+     "length_mm": 11.0496,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/VTAP_OUT_3": {
+     "length_mm": 24.446047,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/VTAP_OUT_4": {
+     "length_mm": 10.817641,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/VTAP_OUT_5": {
+     "length_mm": 24.189234,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/VTAP_OUT_6": {
+     "length_mm": 10.635387,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/VTAP_OUT_7": {
+     "length_mm": 24.006981,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/VTAP_OUT_8": {
+     "length_mm": 20.410513,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/VTAP_OUT_9": {
+     "length_mm": 6.80696,
+     "widths_mm": [
+      0.5
+     ]
+    }
+   },
+   "pads": 146,
+   "straight_tracks": 261,
+   "via_drills_mm": []
+  },
+  "sufst_pcb/archive/telemetry/telemetry.kicad_pcb": {
+   "arc_tracks": 0,
+   "footprints": 52,
+   "nets": {
+    "+12V": {
+     "length_mm": 228.897704,
+     "widths_mm": [
+      0.4,
+      0.5
+     ]
+    },
+    "+3V3": {
+     "length_mm": 63.592117,
+     "widths_mm": [
+      0.25,
+      0.4,
+      0.5
+     ]
+    },
+    "/3V3_LED": {
+     "length_mm": 24.89892,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "/CAN-C Bus Transceiver/CAN_RX": {
+     "length_mm": 15.801529,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/CAN-C Bus Transceiver/CAN_TX": {
+     "length_mm": 14.035455,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/CAN-S Bus Transceiver/CAN_RX": {
+     "length_mm": 10.866264,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/CAN-S Bus Transceiver/CAN_TX": {
+     "length_mm": 15.704346,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/CAN_C+": {
+     "length_mm": 21.736451,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/CAN_C-": {
+     "length_mm": 22.500766,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/CAN_S+": {
+     "length_mm": 37.425563,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/CAN_S-": {
+     "length_mm": 36.575267,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/GPS/GPS_RX": {
+     "length_mm": 12.090962,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/GPS/GPS_TX": {
+     "length_mm": 15.136302,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/SEG0": {
+     "length_mm": 15.69934,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/SEG1": {
+     "length_mm": 12.526953,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/SEG2": {
+     "length_mm": 11.560645,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/SEG3": {
+     "length_mm": 21.508147,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/SEG4": {
+     "length_mm": 45.312352,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/SEG5": {
+     "length_mm": 40.279635,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/SEG6": {
+     "length_mm": 29.43407,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/SEG7": {
+     "length_mm": 23.631045,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/SEG8": {
+     "length_mm": 16.93079,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/SEG9": {
+     "length_mm": 11.447492,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/XBee Module/DIN{slash}`CONFIG{slash}DIO14": {
+     "length_mm": 46.002552,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/XBee Module/DOUT{slash}DIO13": {
+     "length_mm": 34.452915,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/XBee Module/~CTS": {
+     "length_mm": 30.827027,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/XBee Module/~RESET": {
+     "length_mm": 72.182924,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/XBee Module/~RTS": {
+     "length_mm": 21.673175,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/input shift/DIN_1": {
+     "length_mm": 24.28717,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/input shift/DIN_2": {
+     "length_mm": 24.199144,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/input shift/DIN_3": {
+     "length_mm": 23.733286,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/input shift/DIN_4": {
+     "length_mm": 31.204922,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/input shift/DOUT_1": {
+     "length_mm": 32.565654,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/input shift/DOUT_2": {
+     "length_mm": 36.810909,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/input shift/DOUT_3": {
+     "length_mm": 38.168777,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/input shift/DOUT_4": {
+     "length_mm": 47.07442,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/mcu/I2C1_SCL": {
+     "length_mm": 99.705082,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/mcu/I2C1_SDA": {
+     "length_mm": 67.78077,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "GND": {
+     "length_mm": 66.242656,
+     "widths_mm": [
+      0.25,
+      0.4,
+      0.5
+     ]
+    },
+    "Net-(C2-Pad1)": {
+     "length_mm": 5.28,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(C4-Pad1)": {
+     "length_mm": 5.363462,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(C7-Pad2)": {
+     "length_mm": 10.687905,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(D1-Pad1)": {
+     "length_mm": 3.055,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(FB1-Pad2)": {
+     "length_mm": 33.424556,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(R10-Pad1)": {
+     "length_mm": 15.537009,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R10-Pad2)": {
+     "length_mm": 12.389761,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R11-Pad1)": {
+     "length_mm": 15.329902,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R11-Pad2)": {
+     "length_mm": 10.231826,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R12-Pad1)": {
+     "length_mm": 16.382005,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R12-Pad2)": {
+     "length_mm": 7.410648,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R13-Pad1)": {
+     "length_mm": 10.864532,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R13-Pad2)": {
+     "length_mm": 5.482379,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R14-Pad1)": {
+     "length_mm": 22.577453,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "unconnected-(U6-Pad10)": {
+     "length_mm": 0.635,
+     "widths_mm": [
+      0.25
+     ]
+    }
+   },
+   "pads": 287,
+   "straight_tracks": 423,
+   "via_drills_mm": [
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4
+   ]
+  },
+  "sufst_pcb/archive/test-rig/test-rig.kicad_pcb": {
+   "arc_tracks": 0,
+   "footprints": 65,
+   "nets": {
+    "+12V": {
+     "length_mm": 9.420526,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/APPS_1": {
+     "length_mm": 49.536379,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/APPS_2": {
+     "length_mm": 52.784907,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/BMS_DCHG_EN": {
+     "length_mm": 51.089461,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/BMS_LED": {
+     "length_mm": 31.599318,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/BPS": {
+     "length_mm": 97.287951,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/CLOSE_NEG_AIR": {
+     "length_mm": 6.220666,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/CLOSE_PCHG_RLY": {
+     "length_mm": 8.576564,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/CLOSE_POS_AIR": {
+     "length_mm": 7.033017,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/CT": {
+     "length_mm": 99.589145,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/DRS_BTN": {
+     "length_mm": 65.441339,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/DRS_LED": {
+     "length_mm": 52.61501,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/IMD_LED": {
+     "length_mm": 29.886239,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/IMD_OK": {
+     "length_mm": 48.810256,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/INV_FAULT": {
+     "length_mm": 51.075512,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/INV_MAIN_CONTACTOR": {
+     "length_mm": 31.671692,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/INV_PCHG_RLY": {
+     "length_mm": 31.25682,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/R2D_BTN": {
+     "length_mm": 48.533509,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/R2D_LED": {
+     "length_mm": 33.40341,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/SAGL": {
+     "length_mm": 63.97312,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/TS_ENABLED": {
+     "length_mm": 4.905538,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/TS_ON_BTN": {
+     "length_mm": 42.434076,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/TS_ON_LED": {
+     "length_mm": 38.449734,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/TS_READY": {
+     "length_mm": 115.286307,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/VC_LEDS": {
+     "length_mm": 63.715775,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "GND": {
+     "length_mm": 26.295998,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D1-A)": {
+     "length_mm": 2.175,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D10-A)": {
+     "length_mm": 3.589214,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D2-A)": {
+     "length_mm": 2.175,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D3-A)": {
+     "length_mm": 2.175,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D4-A)": {
+     "length_mm": 2.175,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D5-A)": {
+     "length_mm": 3.594214,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D6-A)": {
+     "length_mm": 3.684214,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D7-A)": {
+     "length_mm": 3.684214,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D8-A)": {
+     "length_mm": 3.589214,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(D9-A)": {
+     "length_mm": 3.589214,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R5-Pad1)": {
+     "length_mm": 7.288137,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R6-Pad2)": {
+     "length_mm": 7.255,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R7-Pad1)": {
+     "length_mm": 5.543137,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(R8-Pad2)": {
+     "length_mm": 9.588154,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(RV3-Pad2)": {
+     "length_mm": 40.461782,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(RV4-Pad2)": {
+     "length_mm": 29.964434,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(RV4-Pad5)": {
+     "length_mm": 25.976165,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(U1A-+)": {
+     "length_mm": 11.64053,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(U1A--)": {
+     "length_mm": 18.591728,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(U1B-+)": {
+     "length_mm": 9.466179,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(U1B--)": {
+     "length_mm": 4.378026,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(U1C-+)": {
+     "length_mm": 17.30694,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(U1C--)": {
+     "length_mm": 6.971051,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(U1D-+)": {
+     "length_mm": 5.715,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(U1D--)": {
+     "length_mm": 18.011829,
+     "widths_mm": [
+      0.25
+     ]
+    }
+   },
+   "pads": 235,
+   "straight_tracks": 259,
+   "via_drills_mm": [
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4
+   ]
+  },
+  "sufst_pcb/discharge/Discharge.kicad_pcb": {
+   "arc_tracks": 0,
+   "footprints": 21,
+   "nets": {
+    "/SHUT+": {
+     "length_mm": 13.265782,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/SHUT-": {
+     "length_mm": 13.265782,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(D1-A)": {
+     "length_mm": 17.052545,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(D1-K)": {
+     "length_mm": 3.801777,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(D2-K)": {
+     "length_mm": 12.365559,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(D3-A)": {
+     "length_mm": 70.69527,
+     "widths_mm": [
+      0.5,
+      0.8,
+      1.0
+     ]
+    },
+    "Net-(D3-K)": {
+     "length_mm": 18.851576,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(J2-Pin_1)": {
+     "length_mm": 48.415106,
+     "widths_mm": [
+      0.8,
+      1.0
+     ]
+    },
+    "Net-(J5-Pin_2)": {
+     "length_mm": 17.964436,
+     "widths_mm": [
+      0.8
+     ]
+    },
+    "Net-(Q1-D)": {
+     "length_mm": 9.440889,
+     "widths_mm": [
+      0.8
+     ]
+    }
+   },
+   "pads": 50,
+   "straight_tracks": 72,
+   "via_drills_mm": [
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4
+   ]
+  },
+  "sufst_pcb/hv-sense/hv_sense.kicad_pcb": {
+   "arc_tracks": 0,
+   "footprints": 29,
+   "nets": {
+    "+12V": {
+     "length_mm": 16.187558,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/HV_DETECTED": {
+     "length_mm": 11.680472,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/~{HV_DETECTED}": {
+     "length_mm": 23.558873,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "GND": {
+     "length_mm": 7.372415,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(D5-A1)": {
+     "length_mm": 9.965067,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(D5-A2)": {
+     "length_mm": 11.557716,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(D6-A2)": {
+     "length_mm": 19.349138,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(J1-Pin_1)": {
+     "length_mm": 10.92828,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(Q1-G)": {
+     "length_mm": 14.003507,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(Q3-D)": {
+     "length_mm": 2.56066,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(Q3-S)": {
+     "length_mm": 7.867645,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(R1-Pad2)": {
+     "length_mm": 7.410103,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(R18-Pad1)": {
+     "length_mm": 2.353553,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(R19-Pad2)": {
+     "length_mm": 2.31066,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(R20-Pad1)": {
+     "length_mm": 2.31066,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(R21-Pad2)": {
+     "length_mm": 2.207107,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(R4-Pad2)": {
+     "length_mm": 6.101625,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(U1-K)": {
+     "length_mm": 7.060692,
+     "widths_mm": [
+      0.5
+     ]
+    }
+   },
+   "pads": 71,
+   "straight_tracks": 94,
+   "via_drills_mm": [
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4
+   ]
+  },
+  "sufst_pcb/isolator/CAN_Bridge.kicad_pcb": {
+   "arc_tracks": 0,
+   "footprints": 45,
+   "nets": {
+    "+12V": {
+     "length_mm": 50.230981,
+     "widths_mm": [
+      0.3,
+      0.5,
+      1.0
+     ]
+    },
+    "+3.3V": {
+     "length_mm": 132.428594,
+     "widths_mm": [
+      0.3,
+      0.5,
+      1.0
+     ]
+    },
+    "+3.3VA": {
+     "length_mm": 5.373754,
+     "widths_mm": [
+      0.3,
+      0.5
+     ]
+    },
+    "+5P": {
+     "length_mm": 28.559829,
+     "widths_mm": [
+      0.75
+     ]
+    },
+    "GND": {
+     "length_mm": 35.141776,
+     "widths_mm": [
+      0.3,
+      0.5,
+      1.0
+     ]
+    },
+    "GND2": {
+     "length_mm": 6.167988,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "HV_CANH": {
+     "length_mm": 11.838768,
+     "widths_mm": [
+      0.3
+     ]
+    },
+    "HV_CANL": {
+     "length_mm": 11.563499,
+     "widths_mm": [
+      0.3
+     ]
+    },
+    "LV_CANH": {
+     "length_mm": 9.632023,
+     "widths_mm": [
+      0.3
+     ]
+    },
+    "LV_CANL": {
+     "length_mm": 10.420458,
+     "widths_mm": [
+      0.3
+     ]
+    },
+    "MCU_CAN1_RX": {
+     "length_mm": 5.659605,
+     "widths_mm": [
+      0.3
+     ]
+    },
+    "MCU_CAN1_TX": {
+     "length_mm": 5.771442,
+     "widths_mm": [
+      0.3
+     ]
+    },
+    "MCU_CAN2_RX": {
+     "length_mm": 13.525788,
+     "widths_mm": [
+      0.3
+     ]
+    },
+    "MCU_CAN2_TX": {
+     "length_mm": 17.827891,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "NReset": {
+     "length_mm": 35.926048,
+     "widths_mm": [
+      0.3
+     ]
+    },
+    "Net-(C13-Pad1)": {
+     "length_mm": 4.201777,
+     "widths_mm": [
+      0.3
+     ]
+    },
+    "Net-(C16-Pad1)": {
+     "length_mm": 4.5,
+     "widths_mm": [
+      0.3
+     ]
+    },
+    "Net-(D1-K)": {
+     "length_mm": 2.310355,
+     "widths_mm": [
+      0.3
+     ]
+    },
+    "Net-(J1-Pin_2)": {
+     "length_mm": 5.452716,
+     "widths_mm": [
+      0.3
+     ]
+    },
+    "Net-(J2-Pin_2)": {
+     "length_mm": 4.23832,
+     "widths_mm": [
+      0.3
+     ]
+    },
+    "Net-(U1-BOOT0)": {
+     "length_mm": 13.178312,
+     "widths_mm": [
+      0.3
+     ]
+    },
+    "Net-(U1-PD0)": {
+     "length_mm": 15.440181,
+     "widths_mm": [
+      0.3,
+      0.5
+     ]
+    },
+    "Net-(U1-PD1)": {
+     "length_mm": 10.885366,
+     "widths_mm": [
+      0.3
+     ]
+    },
+    "Net-(U6-+VIN)": {
+     "length_mm": 7.171082,
+     "widths_mm": [
+      1.0
+     ]
+    },
+    "SYS_JTCK-SW": {
+     "length_mm": 10.862733,
+     "widths_mm": [
+      0.3
+     ]
+    },
+    "SYS_JTDI": {
+     "length_mm": 9.381,
+     "widths_mm": [
+      0.3
+     ]
+    },
+    "SYS_JTDO": {
+     "length_mm": 9.386093,
+     "widths_mm": [
+      0.3
+     ]
+    },
+    "SYS_JTMS-SWDIO": {
+     "length_mm": 16.132201,
+     "widths_mm": [
+      0.3
+     ]
+    },
+    "SYS_NJTRST": {
+     "length_mm": 7.498398,
+     "widths_mm": [
+      0.3
+     ]
+    },
+    "USART1_CK": {
+     "length_mm": 7.064392,
+     "widths_mm": [
+      0.3
+     ]
+    },
+    "USART1_RX": {
+     "length_mm": 5.875599,
+     "widths_mm": [
+      0.3
+     ]
+    },
+    "USART1_TX": {
+     "length_mm": 6.219396,
+     "widths_mm": [
+      0.3
+     ]
+    }
+   },
+   "pads": 181,
+   "straight_tracks": 283,
+   "via_drills_mm": [
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4
+   ]
+  },
+  "sufst_pcb/ss-relay/ss-relay.kicad_pcb": {
+   "arc_tracks": 0,
+   "footprints": 7,
+   "nets": {
+    "/COIL1": {
+     "length_mm": 6.393127,
+     "widths_mm": [
+      0.4,
+      1.0
+     ]
+    },
+    "/COIL2": {
+     "length_mm": 6.013127,
+     "widths_mm": [
+      0.4,
+      1.0
+     ]
+    },
+    "/N{slash}C": {
+     "length_mm": 3.302,
+     "widths_mm": [
+      1.0
+     ]
+    },
+    "/N{slash}O": {
+     "length_mm": 3.302,
+     "widths_mm": [
+      1.0
+     ]
+    },
+    "Net-(Q1-G)": {
+     "length_mm": 16.880803,
+     "widths_mm": [
+      0.4
+     ]
+    }
+   },
+   "pads": 28,
+   "straight_tracks": 21,
+   "via_drills_mm": []
+  },
+  "sufst_pcb/tem/tem.kicad_pcb": {
+   "arc_tracks": 0,
+   "footprints": 104,
+   "nets": {
+    "+12V": {
+     "length_mm": 31.716106,
+     "widths_mm": [
+      0.75
+     ]
+    },
+    "+3.3VA": {
+     "length_mm": 533.501236,
+     "widths_mm": [
+      0.75
+     ]
+    },
+    "+3V3": {
+     "length_mm": 92.459622,
+     "widths_mm": [
+      0.5,
+      0.75
+     ]
+    },
+    "/8x Thermistor Bank 1/THERM0": {
+     "length_mm": 131.765864,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/8x Thermistor Bank 1/THERM1": {
+     "length_mm": 130.605399,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/8x Thermistor Bank 1/THERM2": {
+     "length_mm": 108.936055,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/8x Thermistor Bank 1/THERM3": {
+     "length_mm": 105.834557,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/8x Thermistor Bank 1/THERM4": {
+     "length_mm": 86.351067,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/8x Thermistor Bank 1/THERM5": {
+     "length_mm": 89.010865,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/8x Thermistor Bank 1/THERM6": {
+     "length_mm": 36.595204,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/8x Thermistor Bank 1/THERM7": {
+     "length_mm": 48.275248,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/8x Thermistor Bank 2/THERM0": {
+     "length_mm": 44.837961,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/8x Thermistor Bank 2/THERM1": {
+     "length_mm": 62.610003,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/8x Thermistor Bank 2/THERM2": {
+     "length_mm": 65.252045,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/8x Thermistor Bank 2/THERM3": {
+     "length_mm": 78.62509,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/8x Thermistor Bank 2/THERM4": {
+     "length_mm": 92.592956,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/8x Thermistor Bank 2/THERM5": {
+     "length_mm": 94.761937,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/8x Thermistor Bank 3/THERM0": {
+     "length_mm": 45.101677,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/8x Thermistor Bank 3/THERM1": {
+     "length_mm": 45.96503,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/8x Thermistor Bank 3/THERM2": {
+     "length_mm": 82.95861,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/8x Thermistor Bank 3/THERM3": {
+     "length_mm": 96.560701,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/8x Thermistor Bank 3/THERM4": {
+     "length_mm": 105.343748,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/8x Thermistor Bank 3/THERM5": {
+     "length_mm": 119.314571,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/8x Thermistor Bank 3/THERM6": {
+     "length_mm": 130.591804,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/8x Thermistor Bank 3/THERM7": {
+     "length_mm": 141.288327,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/CAN_RX": {
+     "length_mm": 36.700031,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/CAN_TX": {
+     "length_mm": 38.320815,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/ICSPCLK": {
+     "length_mm": 20.892285,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/ICSPDAT": {
+     "length_mm": 20.729037,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/THERM2.6": {
+     "length_mm": 56.062682,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/THERM2.7": {
+     "length_mm": 55.210003,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "/~{MCLR}": {
+     "length_mm": 10.356244,
+     "widths_mm": [
+      0.25,
+      0.5
+     ]
+    },
+    "GND": {
+     "length_mm": 66.349432,
+     "widths_mm": [
+      0.25,
+      0.5,
+      0.75
+     ]
+    },
+    "GNDA": {
+     "length_mm": 621.12952,
+     "widths_mm": [
+      0.75
+     ]
+    },
+    "Net-(C29-Pad1)": {
+     "length_mm": 4.015533,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(F2-Pad2)": {
+     "length_mm": 10.758883,
+     "widths_mm": [
+      0.75
+     ]
+    },
+    "Net-(J14-Pin_1)": {
+     "length_mm": 47.732527,
+     "widths_mm": [
+      0.25,
+      0.5
+     ]
+    },
+    "Net-(J14-Pin_2)": {
+     "length_mm": 44.959577,
+     "widths_mm": [
+      0.25,
+      0.5
+     ]
+    },
+    "Net-(J15-Pin_1)": {
+     "length_mm": 18.124621,
+     "widths_mm": [
+      0.75
+     ]
+    },
+    "Net-(U1-RD2)": {
+     "length_mm": 11.443503,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(U1-RD3)": {
+     "length_mm": 10.940559,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(U1-RD4)": {
+     "length_mm": 4.924264,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(U1-RD5)": {
+     "length_mm": 5.172792,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(U3-VO)": {
+     "length_mm": 30.008459,
+     "widths_mm": [
+      0.75
+     ]
+    }
+   },
+   "pads": 283,
+   "straight_tracks": 756,
+   "via_drills_mm": [
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4
+   ]
+  },
+  "sufst_pcb/trc/trc.kicad_pcb": {
+   "arc_tracks": 0,
+   "footprints": 61,
+   "nets": {
+    "+12V": {
+     "length_mm": 32.817148,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "/CHG_EN_NEG_AIR": {
+     "length_mm": 22.440319,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "/CHG_EN_POS_AIR": {
+     "length_mm": 36.076116,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "/CLOSE_NEG_AIR": {
+     "length_mm": 35.476243,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "/CLOSE_PCHG_RLY": {
+     "length_mm": 81.105413,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "/CLOSE_POS_AIR": {
+     "length_mm": 60.630778,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "/Control Logic/INV_CLOSE_MAIN_CONTACTOR": {
+     "length_mm": 11.423712,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "/Control Logic/INV_CLOSE_PCHG_RLY": {
+     "length_mm": 5.264208,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "/Control Logic/POR": {
+     "length_mm": 13.030782,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "/Control Logic/TS_ENABLED": {
+     "length_mm": 32.220818,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "/Control Logic/TS_ON_INPUT": {
+     "length_mm": 6.127518,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "/Control Logic/TS_READY": {
+     "length_mm": 35.366588,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "/Control Logic/~{CHG_EN_INTERLOCKED}": {
+     "length_mm": 6.877518,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "/Control Logic/~{HIGH_AIR_INTENDED_ON}": {
+     "length_mm": 31.097909,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "/Control Logic/~{LOW_AIR_INTENDED_ON}": {
+     "length_mm": 21.391726,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "/Control Logic/~{PRCHG_INTENDED_ON}": {
+     "length_mm": 20.911893,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "/INV_CLOSE_MAIN_CONTACTOR": {
+     "length_mm": 16.884125,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "/INV_CLOSE_PCHG_RLY": {
+     "length_mm": 25.237678,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "/NEG_AIR": {
+     "length_mm": 51.625234,
+     "widths_mm": [
+      0.4,
+      1.0
+     ]
+    },
+    "/PCHG_RLY+": {
+     "length_mm": 20.646385,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "/PCHG_RLY-": {
+     "length_mm": 13.911375,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "/POS_AIR": {
+     "length_mm": 30.442787,
+     "widths_mm": [
+      1.0
+     ]
+    },
+    "/SHDN_IN": {
+     "length_mm": 55.377551,
+     "widths_mm": [
+      0.4,
+      1.0
+     ]
+    },
+    "/TS_ON_INPUT": {
+     "length_mm": 12.498427,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "/~{CHG_EN_INTERLOCKED}": {
+     "length_mm": 30.355029,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "GND": {
+     "length_mm": 50.510038,
+     "widths_mm": [
+      0.4,
+      0.5
+     ]
+    },
+    "Net-(D1-K)": {
+     "length_mm": 15.9417,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "Net-(D10-A)": {
+     "length_mm": 20.115915,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "Net-(D10-K)": {
+     "length_mm": 10.998838,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "Net-(D2-K)": {
+     "length_mm": 5.51864,
+     "widths_mm": [
+      1.0
+     ]
+    },
+    "Net-(D3-A)": {
+     "length_mm": 11.23262,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "Net-(D4-A)": {
+     "length_mm": 8.3708,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "Net-(D5-A)": {
+     "length_mm": 11.290267,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "Net-(D7-K)": {
+     "length_mm": 27.083661,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "Net-(U4A-C)": {
+     "length_mm": 22.244192,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "Net-(U5-Pad4)": {
+     "length_mm": 1.27,
+     "widths_mm": [
+      0.4
+     ]
+    }
+   },
+   "pads": 207,
+   "straight_tracks": 364,
+   "via_drills_mm": [
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4
+   ]
+  }
+ },
+ "not_loaded": {
+  "LSUTigerRacing_Electronics/BSPD-2026-relayout/BPSD-2025.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "LSUTigerRacing_Electronics/BSPD-2026-relayout/SPICE/BPSD-2025.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "LSUTigerRacing_Electronics/BSPD/BSPD-revamp/BPSD-2025/BPSD-2025.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "LSUTigerRacing_Electronics/BSPD/BSPD-revamp/BPSD-2025/SPICE/BPSD-2025.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "LSUTigerRacing_Electronics/BSPD/BSPD-revamp/BSPD-2025-relayout/BPSD-2025.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "LSUTigerRacing_Electronics/BSPD/BSPD-revamp/BSPD-2025-relayout/SPICE/BPSD-2025.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "LSUTigerRacing_Electronics/BSPD/BSPD.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "LSUTigerRacing_Electronics/Board Templates/JLC/JLC-template.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "LSUTigerRacing_Electronics/BreathOf_fresh_Air/BreathOf_fresh_Air.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "LSUTigerRacing_Electronics/Charging_PCB/Charging_25/ChargingWiringSchematic/CartWiring/Cart_Wiring_Schematic/Cart_Wiring_Schematic.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "LSUTigerRacing_Electronics/Charging_PCB/Charging_25/Charging_PCB.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "LSUTigerRacing_Electronics/Charging_PCB/Charging_25/ESF_Charging/ESF_ChargingShutdownCircuit/ESF_ChargingShutdownCircuit/ESF_ChargingShutdownCircuit.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "LSUTigerRacing_Electronics/Charging_PCB/Charging_25/ESF_Charging/ESF_ChargingTS/ESF_ChargingTS.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "LSUTigerRacing_Electronics/Charging_PCB/Charging_26/ChargingPCB26(THT Testing Only)/ChargingPCB26(THT).kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "LSUTigerRacing_Electronics/Charging_PCB/Charging_26/ChargingPCB26/ChargingPCB26/ChargingPCB26.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "LSUTigerRacing_Electronics/Fault Latch 2/Fault Latch 2.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "LSUTigerRacing_Electronics/IRresistable/IRresistable.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "LSUTigerRacing_Electronics/Offset Board/Offset.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "LSUTigerRacing_Electronics/Power Board/Power Board/Power Board.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "LSUTigerRacing_Electronics/PrechargeDischarge/Discharge26/Discharge26.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "LSUTigerRacing_Electronics/PrechargeDischarge/Precharge26/Precharge.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "LSUTigerRacing_Electronics/Projects/Luka Brekalo/Flashilight/Flashilight.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "LSUTigerRacing_Electronics/RML/RML Quick/RML Quick.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "LSUTigerRacing_Electronics/RML/RML Switching Regulator/RML HVI.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "LSUTigerRacing_Electronics/RML/RML-Yianni-Revamp/RML-Yianni-Revamp.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "LSUTigerRacing_Electronics/RML/RML/RML.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "LSUTigerRacing_Electronics/Safety circuit PCB/Josh_SafetyCircuit/TEST.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "LSUTigerRacing_Electronics/Safety circuit PCB/Old_SafetyCircuit/TEST.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "LSUTigerRacing_Electronics/TS_Schematics/TS_Schematic26/TS_Schematic26.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "LSUTigerRacing_Electronics/TTSI/TTSI.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "LSUTigerRacing_Electronics/VCU/MAIN VCU.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "UCDFS_Circuits/(LVE)Shutdown_KR/(LVE)Shutdown.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "UCDFS_Circuits/APPS_KR/APPS final.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "UCDFS_Circuits/Archive/Battery Temperature Sensor_KR/Battery Temperature Sensor.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "UCDFS_Circuits/BSPD_KR/BSPD KiCAD.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "UCDFS_Circuits/Charger_Shutdown_KR/Charger_Shutdown_KR.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "UCDFS_Circuits/Discharge_KR/Discharge KiCAD.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "UCDFS_Circuits/ENNOID_BMS/Cell Tap Fuse Board 2x/Cell Tap Fuse Board 2x.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "UCDFS_Circuits/ENNOID_BMS/Cell Tap Fuse Board 3x/Cell Tap Fuse Board 3x.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "UCDFS_Circuits/ENNOID_BMS/Master/BMS-Master.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "UCDFS_Circuits/ENNOID_BMS/Slave/LTC6812-15W.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "UCDFS_Circuits/ENNOID_BMS/Wiring/Wiring.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "UCDFS_Circuits/Kicad_Libraries/Eurocircuits_STANDARD_pool_AIMADE_NOTCHECKED/Eurocircuits_STANDARD_pool.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "UCDFS_Circuits/Kieran Care package/(LVE)Shutdown_KR/(LVE)Shutdown.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "UCDFS_Circuits/Kieran Care package/APPS_KR/APPS final.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "UCDFS_Circuits/Kieran Care package/BSPD_KR/BSPD KiCAD.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "UCDFS_Circuits/Kieran Care package/Charger_Shutdown_KR/Charger_Shutdown_KR.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "UCDFS_Circuits/Kieran Care package/Discharge_KR/Discharge KiCAD.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "UCDFS_Circuits/Kieran Care package/ENNOID_BMS - Cell Tap Fuse Board 2x/Cell Tap Fuse Board 2x.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "UCDFS_Circuits/Kieran Care package/ENNOID_BMS - Cell Tap Fuse Board 3x/Cell Tap Fuse Board 3x.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "UCDFS_Circuits/Kieran Care package/ENNOID_BMS - Master/BMS-Master.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "UCDFS_Circuits/Kieran Care package/ENNOID_BMS - Slave/LTC6812-15W.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "UCDFS_Circuits/Kieran Care package/NEW_TSAL_KR/TSAL.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "UCDFS_Circuits/Kieran Care package/PDU_KR/PDU_KR.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "UCDFS_Circuits/Kieran Care package/Pre-charge_KR/Pre-charge KiCAD.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "UCDFS_Circuits/Kieran Care package/Teensy 4.1 Breakout Board/Breakout.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "UCDFS_Circuits/Kieran Care package/Voltage_Measurement_KR/Voltage_Measurement_KR.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "UCDFS_Circuits/NEW_TSAL_KR/TSAL.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "UCDFS_Circuits/PDU_KR/PDU_KR.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "UCDFS_Circuits/Pre-charge_KR/Pre-charge KiCAD.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "UCDFS_Circuits/Teensy 4.1 Breakout Board/Breakout.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "UCDFS_Circuits/Voltage_Measurement_KR/Voltage_Measurement_KR.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "aditeyadc_bspd/BSPD.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "michaelruppe_FSAE/TSALv3/TSALv3.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "sufst_pcb/ail/ail.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "sufst_pcb/archive/debug-board/Sensor Board/Sensor Board.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "sufst_pcb/archive/debug-board/debug-board.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "sufst_pcb/archive/latching/latching.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "sufst_pcb/archive/sensor-board/sensor-board.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "sufst_pcb/archive/sensor-board/strain-gauge-amp-breakout/strain-gauge-amp-breakout.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "sufst_pcb/archive/tsal/tsal.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "sufst_pcb/batak/batak.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "sufst_pcb/bms-interface/bms-interface.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "sufst_pcb/brake-light/brake-light.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "sufst_pcb/bspd/BSPD.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "sufst_pcb/can-repeater/can-repeater.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "sufst_pcb/curr-amp/curr-amp.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "sufst_pcb/dash/Dash-PCB.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "sufst_pcb/debug-board/can-node/can-node.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "sufst_pcb/lvbms-conn/lvbms-connector.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "sufst_pcb/precharge/precharge.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "sufst_pcb/right-sidepanel/right-sidepanel.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "sufst_pcb/rotary-switch/rotary-switch.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "sufst_pcb/segment-switch/segment-switch.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "sufst_pcb/sensor-hub/16Ch-Sensor-Hub.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "sufst_pcb/sensor-hub/8Ch-Sensor-Hub.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "sufst_pcb/tsal-latching-integrated/tsal-latching-integrated.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "sufst_pcb/tsal-led/old/TSAL-LED.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "sufst_pcb/tsal-led/old/TSAL_LED_SUFST.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "sufst_pcb/tsal-led/tsal-led.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running.",
+  "sufst_pcb/vcu/vcu.kicad_pcb": "KiCad was unable to open this file because it was created with a more recent version than the one you are running."
+ },
+ "tool": "KiCad 7.0.11 (pcbnew Python API)"
+}
