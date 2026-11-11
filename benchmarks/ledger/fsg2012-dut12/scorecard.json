@@ -1,0 +1,28 @@
+{
+ "event": "FSG 2012 FSE (TU Delft DUT12)",
+ "kind": "hindcast",
+ "record_sha256": "29ce01a720b02366e6e28ab1c213ae5da5befe49e4a853d8c69778689a936f20",
+ "rows": [
+  {
+   "car": "E1",
+   "team": "Formula Student Team Delft DUT12 (Delft TU)",
+   "event": "accel",
+   "predicted_s": 3.2671,
+   "official_s": 3.454,
+   "error_s": -0.18690000000000007,
+   "error_pct": -5.411117544875507,
+   "excluded": ""
+  }
+ ],
+ "summary": {
+  "accel": {
+   "n": 1,
+   "excluded": 0,
+   "mae_pct": 5.411117544875507,
+   "median_abs_pct": 5.411117544875507,
+   "bias_pct": -5.411117544875507,
+   "within_5pct": 0,
+   "spearman": null
+  }
+ }
+}

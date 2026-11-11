@@ -1,0 +1,26 @@
+event,car,team,year,source_url,wheelbase_mm,track_f_mm,track_r_mm,weight_f_kg,weight_r_kg,tyres,n_motors,power_per_motor_kw,max_rpm,ratio_primary,ratio_secondary
+FSG 2026,31,TUfast Racing Team (München TU),2026,https://www.formulastudent.de/teams/fsc/details/tid/336,1530,1225,1225,114,114,"16x7.5 R10, Hoosier R20",4,35,20000,12.4,NA
+FSG 2026,85,Formula Student Team Delft (Delft TU),2026,https://www.formulastudent.de/teams/fsc/details/tid/285,1530,1250,1250,124,120,Hoosier 43075R20 16.0x7.5-10 R20,4,35,13250,11.84,NA
+FSG 2026,99,Ecurie Aix (Aachen RWTH),2026,https://www.formulastudent.de/teams/fsc/details/tid/258,1580,1250,1250,119,123,Hoosier 16x7.5-10 R20,4,35,20000,12.4,NA
+FSG 2026,63,Revolve NTNU (Trondheim NTNU),2026,https://www.formulastudent.de/teams/fsc/details/tid/611,1530,1220,1220,114,114,Hoosier R20 16.0 x 7.5 - 10,4,35.4,20000,13.38,NA
+FSG 2026,137,Global Formula Racing (Ravensburg DHBW),2026,https://www.formulastudent.de/teams/fsc/details/tid/384,1535,1230,1230,132,143,16.0X7.5-10 Hoosier LC0,4,28,22500,15,NA
+FSG 2026,113,municHMotorsport (München UAS),2026,https://www.formulastudent.de/teams/fsc/details/tid/255,1530,1240,1240,142,163,Hoosier LC0 16x7.5-10,4,35,20000,NA,NA
+FSG 2026,26,Rennteam Uni Stuttgart (Stuttgart U),2026,https://www.formulastudent.de/teams/fsc/details/tid/224,1540,1200,1200,115,118,16.0x7.5-10 Hoosier R20,4,43,21000,11.96,NA
+FSG 2026,76,KA-RaceIng (Karlsruhe IT),2026,https://www.formulastudent.de/teams/fsc/details/tid/254,1530,1220,1220,122,122,Hoosier 16.0x7.5-10 R20,4,29,20000,12.01,NA
+FSG 2026,160,PWR Racing Team (Wrocław TU),2026,https://www.formulastudent.de/teams/fsc/details/tid/1258,1525,1200,1180,137,131,Hoosier 16x7.5-10 R20,4,35.4,20000,12.89,NA
+FSG 2026,154,BCN eMotorsport (Barcelona ETSEIB),2026,https://www.formulastudent.de/teams/fsc/details/tid/365,1530,1225,1175,133,134,16.0x7.5 R10 Hoosier R20,4,35,20000,12,NA
+FSG 2026,78,e-gnition Hamburg (Hamburg TU),2026,https://www.formulastudent.de/teams/fsc/details/tid/414,1530,1230,1230,136,133,"16.0x6.0 R10, Hoosier R20",4,35.4,19000,11.8,NA
+FSG 2026,42,EFORCE Prague Formula (Prague CTU),2026,https://www.formulastudent.de/teams/fsc/details/tid/394,1530,1200,1200,127,117,Hoosier 16.0x7.5-10 R20,4,35,20000,11.47,NA
+FSG 2026,240,University Racing Eindhoven (Eindhoven TU),2026,https://www.formulastudent.de/teams/fsc/details/tid/256,1535,1220,1220,124,136,16.0x7.5-10 R20 Hoosier,4,35.3,20000,12.04,NA
+FSG 2026,313,FaSTTUBe (Berlin TU),2026,https://www.formulastudent.de/teams/fsc/details/tid/230,1535,1200,1200,121,121,Hoosier 16.0x7.5-10 R20,4,34,20000,12.9,NA
+FSG 2026,218,ARUS (Sevilla U),2026,https://www.formulastudent.de/teams/fsc/details/tid/875,1535,1220,1220,149,136,Hoosier 16.0x7.5-7 R20,4,35,20000,16,3
+FSG 2026,146,Squadra Corse PoliTo (Turin PT),2026,https://www.formulastudent.de/teams/fsc/details/tid/444,1530,1202,1202,133,145,Pirelli 185/40 R13 S,4,35,20000,14.69,NA
+FSG 2026,51,UGent Racing (Ghent U),2026,https://www.formulastudent.de/teams/fsc/details/tid/1292,1535,1320,1300,150,148,Hoosier 16.0x7.0-10,2,35,11600,12.83,NA
+FSG 2026,279,Rennschmiede Pforzheim (Pforzheim U),2026,https://www.formulastudent.de/teams/fsc/details/tid/1074,1535,1200,1180,135,140,"7.5x16 R10, Hoosier",4,35,20000,13.4,NA
+FSG 2026,92,Oxford Brookes Racing (Oxford Brookes U),2026,https://www.formulastudent.de/teams/fsc/details/tid/290,1530,1240,1240,129,139,Hoosier R20 16.0x7.5-10,4,12.3,20000,15.55,NA
+FSG 2026,13,Valais Wallis Racing Team (Sion HES),2026,https://www.formulastudent.de/teams/fsc/details/tid/1328,1550,1400,1400,130,120,Hoosier Slick 16.0x7.5-10 R20,4,35,20000,6.3,6.3
+FSG 2026,46,Lund Formula Student (Lund U),2026,https://www.formulastudent.de/teams/fsc/details/tid/1049,1535,1250,1250,119,144,Hoosier 16x7.5-10 R20,4,35,20000,13.48,NA
+FSG 2026,134,Schanzer Racing Electric (Ingolstadt UAS),2026,https://www.formulastudent.de/teams/fsc/details/tid/342,1600,1200,1164,130,148,Goodyear Eagle G19 20.0x7.0-13,4,35,24000,15.5,NA
+FSG 2026,101,HorsePower Hannover (Hannover U),2026,https://www.formulastudent.de/teams/fsc/details/tid/348,1540,1230,1230,110,167,Hoosier 16x7.5 R10 R20/LC0,4,36,20000,12.06,NA
+FSG 2026,227,Bern Racing Team (Bern UAS),2026,https://www.formulastudent.de/teams/fsc/details/tid/664,1528,1260,1260,139,139,Hoosier 16.0x7.5-10 R20,4,35,20000,13.05,NA
+FSG 2026,172,GET racing Dortmund (Dortmund TU),2026,https://www.formulastudent.de/teams/fsc/details/tid/1174,1534,1474,1474,123,144,Hoosier 16x7.5-10 R20,4,35,20000,12.5,NA

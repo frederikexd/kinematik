@@ -1,0 +1,527 @@
+{
+ "event": "FSG 2026",
+ "kind": "hindcast",
+ "record_sha256": "967116a1d86e1a3ea2db5b2ab2ec0a5a7a7bc54ff8dae67e6ce74e6a13ef77ea",
+ "rows": [
+  {
+   "car": "31",
+   "team": "TUfast Racing Team (München TU)",
+   "event": "skidpad",
+   "predicted_s": 4.562,
+   "official_s": 4.678,
+   "error_s": -0.11599999999999966,
+   "error_pct": -2.4796921761436437,
+   "excluded": ""
+  },
+  {
+   "car": "31",
+   "team": "TUfast Racing Team (München TU)",
+   "event": "accel",
+   "predicted_s": 3.3594,
+   "official_s": 3.454,
+   "error_s": -0.09460000000000024,
+   "error_pct": -2.7388535031847203,
+   "excluded": ""
+  },
+  {
+   "car": "85",
+   "team": "Formula Student Team Delft (Delft TU)",
+   "event": "skidpad",
+   "predicted_s": 4.595,
+   "official_s": 4.939,
+   "error_s": -0.3440000000000003,
+   "error_pct": -6.964972666531693,
+   "excluded": ""
+  },
+  {
+   "car": "85",
+   "team": "Formula Student Team Delft (Delft TU)",
+   "event": "accel",
+   "predicted_s": 3.9783,
+   "official_s": 3.405,
+   "error_s": 0.5733000000000001,
+   "error_pct": 16.837004405286347,
+   "excluded": ""
+  },
+  {
+   "car": "99",
+   "team": "Ecurie Aix (Aachen RWTH)",
+   "event": "skidpad",
+   "predicted_s": 4.5872,
+   "official_s": 4.856,
+   "error_s": -0.2687999999999997,
+   "error_pct": -5.535420098846782,
+   "excluded": ""
+  },
+  {
+   "car": "99",
+   "team": "Ecurie Aix (Aachen RWTH)",
+   "event": "accel",
+   "predicted_s": 3.3821,
+   "official_s": 3.369,
+   "error_s": 0.013099999999999667,
+   "error_pct": 0.3888394182249827,
+   "excluded": ""
+  },
+  {
+   "car": "63",
+   "team": "Revolve NTNU (Trondheim NTNU)",
+   "event": "skidpad",
+   "predicted_s": 4.5629,
+   "official_s": 4.824,
+   "error_s": -0.2610999999999999,
+   "error_pct": -5.412520729684907,
+   "excluded": ""
+  },
+  {
+   "car": "63",
+   "team": "Revolve NTNU (Trondheim NTNU)",
+   "event": "accel",
+   "predicted_s": 3.4332,
+   "official_s": 3.539,
+   "error_s": -0.10580000000000034,
+   "error_pct": -2.989545069228605,
+   "excluded": ""
+  },
+  {
+   "car": "137",
+   "team": "Global Formula Racing (Ravensburg DHBW)",
+   "event": "skidpad",
+   "predicted_s": 4.6556,
+   "official_s": 4.843,
+   "error_s": -0.18740000000000023,
+   "error_pct": -3.869502374561227,
+   "excluded": ""
+  },
+  {
+   "car": "137",
+   "team": "Global Formula Racing (Ravensburg DHBW)",
+   "event": "accel",
+   "predicted_s": 3.4962,
+   "official_s": 3.737,
+   "error_s": -0.24080000000000013,
+   "error_pct": -6.443671394166447,
+   "excluded": ""
+  },
+  {
+   "car": "113",
+   "team": "municHMotorsport (München UAS)",
+   "event": "skidpad",
+   "predicted_s": 4.7046,
+   "official_s": 4.995,
+   "error_s": -0.2904,
+   "error_pct": -5.813813813813813,
+   "excluded": ""
+  },
+  {
+   "car": "113",
+   "team": "municHMotorsport (München UAS)",
+   "event": "accel",
+   "predicted_s": 3.5289,
+   "official_s": 3.531,
+   "error_s": -0.0020999999999999908,
+   "error_pct": -0.05947323704333024,
+   "excluded": ""
+  },
+  {
+   "car": "26",
+   "team": "Rennteam Uni Stuttgart (Stuttgart U)",
+   "event": "skidpad",
+   "predicted_s": 4.5768,
+   "official_s": 5.027,
+   "error_s": -0.4501999999999997,
+   "error_pct": -8.955639546449168,
+   "excluded": ""
+  },
+  {
+   "car": "26",
+   "team": "Rennteam Uni Stuttgart (Stuttgart U)",
+   "event": "accel",
+   "predicted_s": 3.3303,
+   "official_s": 3.443,
+   "error_s": -0.11270000000000024,
+   "error_pct": -3.2733081614870825,
+   "excluded": ""
+  },
+  {
+   "car": "76",
+   "team": "KA-RaceIng (Karlsruhe IT)",
+   "event": "skidpad",
+   "predicted_s": 4.5987,
+   "official_s": 5.058,
+   "error_s": -0.4592999999999998,
+   "error_pct": -9.080664294187422,
+   "excluded": ""
+  },
+  {
+   "car": "76",
+   "team": "KA-RaceIng (Karlsruhe IT)",
+   "event": "accel",
+   "predicted_s": 3.3695,
+   "official_s": 3.489,
+   "error_s": -0.11949999999999994,
+   "error_pct": -3.42505015763829,
+   "excluded": ""
+  },
+  {
+   "car": "160",
+   "team": "PWR Racing Team (Wrocław TU)",
+   "event": "skidpad",
+   "predicted_s": 4.655,
+   "official_s": 5.001,
+   "error_s": -0.3460000000000001,
+   "error_pct": -6.918616276744652,
+   "excluded": ""
+  },
+  {
+   "car": "160",
+   "team": "PWR Racing Team (Wrocław TU)",
+   "event": "accel",
+   "predicted_s": 3.4594,
+   "official_s": 3.641,
+   "error_s": -0.18159999999999998,
+   "error_pct": -4.987640758033506,
+   "excluded": ""
+  },
+  {
+   "car": "154",
+   "team": "BCN eMotorsport (Barcelona ETSEIB)",
+   "event": "skidpad",
+   "predicted_s": 4.645,
+   "official_s": 5.05,
+   "error_s": -0.40500000000000025,
+   "error_pct": -8.019801980198025,
+   "excluded": ""
+  },
+  {
+   "car": "154",
+   "team": "BCN eMotorsport (Barcelona ETSEIB)",
+   "event": "accel",
+   "predicted_s": 3.4135,
+   "official_s": 3.524,
+   "error_s": -0.11050000000000004,
+   "error_pct": -3.135641316685586,
+   "excluded": ""
+  },
+  {
+   "car": "78",
+   "team": "e-gnition Hamburg (Hamburg TU)",
+   "event": "skidpad",
+   "predicted_s": 4.6496,
+   "official_s": 5.215,
+   "error_s": -0.5653999999999995,
+   "error_pct": -10.841802492809196,
+   "excluded": ""
+  },
+  {
+   "car": "78",
+   "team": "e-gnition Hamburg (Hamburg TU)",
+   "event": "accel",
+   "predicted_s": 3.4334,
+   "official_s": 3.6,
+   "error_s": -0.1666000000000003,
+   "error_pct": -4.627777777777786,
+   "excluded": ""
+  },
+  {
+   "car": "42",
+   "team": "EFORCE Prague Formula (Prague CTU)",
+   "event": "skidpad",
+   "predicted_s": 4.6067,
+   "official_s": 4.979,
+   "error_s": -0.3723000000000001,
+   "error_pct": -7.4774051014259895,
+   "excluded": ""
+  },
+  {
+   "car": "42",
+   "team": "EFORCE Prague Formula (Prague CTU)",
+   "event": "accel",
+   "predicted_s": 3.3575,
+   "official_s": 3.795,
+   "error_s": -0.4375,
+   "error_pct": -11.52832674571805,
+   "excluded": ""
+  },
+  {
+   "car": "240",
+   "team": "University Racing Eindhoven (Eindhoven TU)",
+   "event": "skidpad",
+   "predicted_s": 4.6274,
+   "official_s": 5.004,
+   "error_s": -0.3765999999999998,
+   "error_pct": -7.525979216626696,
+   "excluded": ""
+  },
+  {
+   "car": "240",
+   "team": "University Racing Eindhoven (Eindhoven TU)",
+   "event": "accel",
+   "predicted_s": 3.4,
+   "official_s": 3.683,
+   "error_s": -0.2829999999999999,
+   "error_pct": -7.683953298941078,
+   "excluded": ""
+  },
+  {
+   "car": "313",
+   "team": "FaSTTUBe (Berlin TU)",
+   "event": "skidpad",
+   "predicted_s": 4.5982,
+   "official_s": 5.302,
+   "error_s": -0.7037999999999993,
+   "error_pct": -13.274236137306666,
+   "excluded": ""
+  },
+  {
+   "car": "313",
+   "team": "FaSTTUBe (Berlin TU)",
+   "event": "accel",
+   "predicted_s": 3.4174,
+   "official_s": 3.539,
+   "error_s": -0.12159999999999993,
+   "error_pct": -3.4359988697372117,
+   "excluded": ""
+  },
+  {
+   "car": "218",
+   "team": "ARUS (Sevilla U)",
+   "event": "skidpad",
+   "predicted_s": 4.6869,
+   "official_s": 5.315,
+   "error_s": -0.6281000000000008,
+   "error_pct": -11.817497648165583,
+   "excluded": ""
+  },
+  {
+   "car": "218",
+   "team": "ARUS (Sevilla U)",
+   "event": "accel",
+   "predicted_s": 3.7728,
+   "official_s": 3.877,
+   "error_s": -0.10419999999999963,
+   "error_pct": -2.6876450864070063,
+   "excluded": ""
+  },
+  {
+   "car": "146",
+   "team": "Squadra Corse PoliTo (Turin PT)",
+   "event": "skidpad",
+   "predicted_s": 4.6669,
+   "official_s": 5.329,
+   "error_s": -0.6620999999999997,
+   "error_pct": -12.42446988177894,
+   "excluded": ""
+  },
+  {
+   "car": "146",
+   "team": "Squadra Corse PoliTo (Turin PT)",
+   "event": "accel",
+   "predicted_s": 3.4522,
+   "official_s": 3.58,
+   "error_s": -0.12780000000000014,
+   "error_pct": -3.5698324022346406,
+   "excluded": ""
+  },
+  {
+   "car": "51",
+   "team": "UGent Racing (Ghent U)",
+   "event": "skidpad",
+   "predicted_s": 4.6863,
+   "official_s": 5.57,
+   "error_s": -0.8837000000000002,
+   "error_pct": -15.86535008976661,
+   "excluded": ""
+  },
+  {
+   "car": "51",
+   "team": "UGent Racing (Ghent U)",
+   "event": "accel",
+   "predicted_s": 5.2574,
+   "official_s": 4.493,
+   "error_s": 0.7643999999999993,
+   "error_pct": 17.013131537947903,
+   "excluded": ""
+  },
+  {
+   "car": "279",
+   "team": "Rennschmiede Pforzheim (Pforzheim U)",
+   "event": "skidpad",
+   "predicted_s": 4.6643,
+   "official_s": 6.246,
+   "error_s": -1.5817000000000005,
+   "error_pct": -25.323406980467503,
+   "excluded": ""
+  },
+  {
+   "car": "279",
+   "team": "Rennschmiede Pforzheim (Pforzheim U)",
+   "event": "accel",
+   "predicted_s": 3.5038,
+   "official_s": 4.063,
+   "error_s": -0.5591999999999997,
+   "error_pct": -13.763229141028791,
+   "excluded": ""
+  },
+  {
+   "car": "92",
+   "team": "Oxford Brookes Racing (Oxford Brookes U)",
+   "event": "skidpad",
+   "predicted_s": 4.6402,
+   "official_s": null,
+   "error_s": null,
+   "error_pct": null,
+   "excluded": "no valid official time"
+  },
+  {
+   "car": "92",
+   "team": "Oxford Brookes Racing (Oxford Brookes U)",
+   "event": "accel",
+   "predicted_s": 3.8457,
+   "official_s": 4.492,
+   "error_s": -0.6463000000000001,
+   "error_pct": -14.387800534283173,
+   "excluded": ""
+  },
+  {
+   "car": "13",
+   "team": "Valais Wallis Racing Team (Sion HES)",
+   "event": "skidpad",
+   "predicted_s": 4.5879,
+   "official_s": 5.85,
+   "error_s": -1.2620999999999993,
+   "error_pct": -21.574358974358965,
+   "excluded": ""
+  },
+  {
+   "car": "13",
+   "team": "Valais Wallis Racing Team (Sion HES)",
+   "event": "accel",
+   "predicted_s": 3.241,
+   "official_s": 3.967,
+   "error_s": -0.726,
+   "error_pct": -18.30098311066297,
+   "excluded": ""
+  },
+  {
+   "car": "46",
+   "team": "Lund Formula Student (Lund U)",
+   "event": "skidpad",
+   "predicted_s": 4.6257,
+   "official_s": 6.777,
+   "error_s": -2.1513,
+   "error_pct": -31.74413457281983,
+   "excluded": "left/right laps 8.247 / 5.306 s differ by more than 10%"
+  },
+  {
+   "car": "46",
+   "team": "Lund Formula Student (Lund U)",
+   "event": "accel",
+   "predicted_s": 3.4879,
+   "official_s": 4.135,
+   "error_s": -0.6471,
+   "error_pct": -15.64933494558646,
+   "excluded": ""
+  },
+  {
+   "car": "134",
+   "team": "Schanzer Racing Electric (Ingolstadt UAS)",
+   "event": "skidpad",
+   "predicted_s": 4.6655,
+   "official_s": 6.738,
+   "error_s": -2.0725000000000007,
+   "error_pct": -30.75838527753043,
+   "excluded": "left/right laps 5.971 / 7.504 s differ by more than 10%"
+  },
+  {
+   "car": "134",
+   "team": "Schanzer Racing Electric (Ingolstadt UAS)",
+   "event": "accel",
+   "predicted_s": 3.4084,
+   "official_s": 4.295,
+   "error_s": -0.8866,
+   "error_pct": -20.64260768335274,
+   "excluded": ""
+  },
+  {
+   "car": "101",
+   "team": "HorsePower Hannover (Hannover U)",
+   "event": "skidpad",
+   "predicted_s": 4.6735,
+   "official_s": 5.259,
+   "error_s": -0.5855000000000006,
+   "error_pct": -11.133295303289609,
+   "excluded": ""
+  },
+  {
+   "car": "101",
+   "team": "HorsePower Hannover (Hannover U)",
+   "event": "accel",
+   "predicted_s": 3.4376,
+   "official_s": 3.758,
+   "error_s": -0.3203999999999998,
+   "error_pct": -8.525811601915906,
+   "excluded": ""
+  },
+  {
+   "car": "227",
+   "team": "Bern Racing Team (Bern UAS)",
+   "event": "skidpad",
+   "predicted_s": 4.6598,
+   "official_s": 4.9,
+   "error_s": -0.24020000000000064,
+   "error_pct": -4.902040816326544,
+   "excluded": ""
+  },
+  {
+   "car": "227",
+   "team": "Bern Racing Team (Bern UAS)",
+   "event": "accel",
+   "predicted_s": 3.481,
+   "official_s": 3.519,
+   "error_s": -0.038000000000000256,
+   "error_pct": -1.0798522307473786,
+   "excluded": ""
+  },
+  {
+   "car": "172",
+   "team": "GET racing Dortmund (Dortmund TU)",
+   "event": "skidpad",
+   "predicted_s": 4.6038,
+   "official_s": 4.963,
+   "error_s": -0.3592000000000004,
+   "error_pct": -7.2375579286721825,
+   "excluded": ""
+  },
+  {
+   "car": "172",
+   "team": "GET racing Dortmund (Dortmund TU)",
+   "event": "accel",
+   "predicted_s": 3.4206,
+   "official_s": 3.65,
+   "error_s": -0.22940000000000005,
+   "error_pct": -6.284931506849317,
+   "excluded": ""
+  }
+ ],
+ "summary": {
+  "skidpad": {
+   "n": 22,
+   "excluded": 3,
+   "mae_pct": 9.656729296734355,
+   "median_abs_pct": 7.77289059841236,
+   "bias_pct": -9.656729296734355,
+   "within_5pct": 3,
+   "spearman": 0.44664031620553357
+  },
+  "accel": {
+   "n": 25,
+   "excluded": 0,
+   "mae_pct": 7.738409755766773,
+   "median_abs_pct": 4.987640758033506,
+   "bias_pct": -4.999291726850034,
+   "within_5pct": 13,
+   "spearman": 0.3208309349596196
+  }
+ }
+}

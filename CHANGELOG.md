@@ -3,6 +3,68 @@
 
 ## Unreleased
 
+**Prediction ledger: KinematiK against real cars.** KinematiK now predicts official Formula Student skidpad and
+75 m acceleration times from each team's own published car data (formulastudent.de team pages). It seals the
+predictions with a SHA-256 fingerprint of the code that made them, then scores them against the organizers' timing.
+Every input is labelled published, rule or assumed. Unknowns use KinematiK's own defaults, the same for every car,
+never tuned to results. A record says whether it is **blind** (sealed before the event) or a **hindcast** (results
+already public). First entries, both hindcasts:
+- FSG 2026, 25 cars. Skidpad: mean absolute error 9.7 %, bias −9.7 % (optimistic), rank correlation 0.45.
+  Acceleration: mean absolute error 7.7 %, median 5.0 %, 13 of 25 within 5 %. Two misses trace to published rpm and
+  ratio data that contradict the official times.
+- TU Delft DUT12 at FSG 2012, the case in Doyle et al. (2019), SAE 2019-01-0163. Predicted 3.267 s against an
+  official 3.454 s (−5.4 %); the paper's simulator gave 3.494 s with the team's own parameter estimates.
+
+The blind entry for FSG 2027 is the next step. `suspension/ledger.py`, `scripts/ledger.py`, `benchmarks/ledger/`,
+`docs/PREDICTION_LEDGER.md`, `tests/test_ledger.py` (100 % statement and branch coverage of the ledger).
+
+**Prediction ledger protocol v2.** It keeps v1's physics and adds five fixed rules, fitted on one competition and
+tested on another:
+- shared time factors, with skidpad grouped by tire compound;
+- published values that contradict themselves set aside;
+- the published compound and metric tire sizes used;
+- a team's previous-year record, shrunk halfway, on skidpad;
+- the skidpad path radius set from the car's own track.
+
+Aero is not used, because teams' aero entries proved unreliable. FSG 2025 was added: 21 cars with official results.
+- Skidpad, fit on 2025 and predict 2026: mean absolute error 9.7 % → 3.2 %, 18 of 22 within 5 %. The reverse
+  direction: 8.7 % → 4.2 %.
+- Acceleration does not carry across years. The factor was 1.106 from 2025 and 1.037 from 2026. The forward error
+  is 7.7 % → 6.8 %, but 6 of 25 cars are within 5 %, against 13 under v1.
+
+A challenger is registered but not adopted: acceleration calibrated to the fastest quarter of the field. Forward, it
+gives 18 of 25 within 5 % (mean error 4.5 %); reverse, it is unchanged at 7 of 18. It was proposed after the 2026
+test had been seen, so v2 keeps the median.
+`benchmarks/ledger/protocol-v2/CALIBRATION.json` (v2) and `CALIBRATION_challenger.json` are both frozen, fitted on
+both years, for the blind FSG 2027 test, which decides between them.
+
+**Registered tests on unseen data.** `protocol-v2/REGISTRATION.md` fixed the calibrations, tests and decision rule
+before any of this data was downloaded. FSG 2023 and 2024 were added: 38 cars, with specs from the team pages and
+official skidpad, acceleration and autocross results. Autocross results were added for 2025 and 2026 too.
+- Frozen v2 on 2023 and 2024: skidpad 4.8 % mean error (17 of 26 within 5 %), acceleration 7.1 % (17 of 29).
+- The registered challenger lost (7.7 %, 14 of 29), so v2 stands.
+- The skidpad factor fitted on each year alone stays within 1.121–1.157 over four years. It maps to effective grip:
+  the model holds 1.69 g, and the official times imply 1.3 g as driven.
+- Autocross relative pace from public specs does not beat a spec-blind baseline (rank correlation −0.59 to 0.72).
+  This is reported as a negative result.
+
+`suspension/ledger_pace.py`, `scripts/ledger_v2.py registered`, `tests/test_ledger_pace.py` (100 % statement and
+branch coverage).
+
+**Blind test on a team's own car.** `scripts/team_test.py` takes a team's car and two or more setups. It seals the
+predictions for skidpad, acceleration, a test-course lap and lateral limit, plus every A vs B difference, before
+the test day. After the test it scores the absolute error and whether each predicted change had the right
+direction and size, with measured ties within the team's stated noise left out. With the car's hardpoints, it also predicts
+camber and toe against wheel travel and scores them in degrees against a tolerance set before the test. That is
+a garage measurement with an angle gauge, with no rig needed. Private tire and hardpoint files are recorded by
+hash only. `team_test.py tolerance` sets the camber and toe pass band before the test. It moves every
+hardpoint at random by the stated measuring error, then combines the result with the angle gauge's accuracy.
+`benchmarks/team-test/RC_LINKAGE.md` runs the suspension test on a physical RC or home-built corner, without a
+team. VALIDATION.md gains an "Independent feedback" section quoting public comments exactly, marked as statements,
+not tests. How-to in `benchmarks/team-test/README.md`; `suspension/team_test.py`, `tests/test_team_test.py`
+(100 % statement and branch coverage).
+`suspension/ledger_v2.py`, `scripts/ledger_v2.py`, `tests/test_ledger_v2.py` (100 % statement and branch coverage).
+
 
 ## 1.5.0 (2026-11-06)
 
