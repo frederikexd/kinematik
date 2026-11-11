@@ -1,0 +1,42 @@
+name: I reproduced it / I couldn't
+description: You ran one of KinematiK's published checks yourself. Report what happened, either way.
+labels: ["reproduction"]
+body:
+  - type: markdown
+    attributes:
+      value: Successful and failed reproductions are both listed in CHALLENGE.md. A failed one is treated as a possible break.
+  - type: input
+    id: what
+    attributes:
+      label: What you ran
+      placeholder: e.g. pytest tests/test_gt_suite_benchmark.py, the reproduce notebook, ledger verify on fsg2026
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Commit or release
+      placeholder: e.g. v1.6.0 or a commit SHA
+    validations:
+      required: true
+  - type: dropdown
+    id: outcome
+    attributes:
+      label: Outcome
+      options:
+        - Reproduced exactly
+        - Reproduced, with small differences (describe below)
+        - Did not reproduce
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output and environment
+      description: Paste the summary lines, your OS and Python version.
+      render: text
+  - type: input
+    id: credit
+    attributes:
+      label: How to credit you in CHALLENGE.md
+      placeholder: Name, team or handle, or "anonymous"

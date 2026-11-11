@@ -173,7 +173,8 @@ case.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Issues and pull requests welcome.
+See [CONTRIBUTING.md](CONTRIBUTING.md). Issues and pull requests welcome. Think a result is wrong?
+[Break it](CHALLENGE.md): confirmed breaks and independent reproductions are credited there by name.
 Deployment and database notes are in [DEPLOY.md](DEPLOY.md); release
 history is in [CHANGELOG.md](CHANGELOG.md).
 
