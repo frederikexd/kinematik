@@ -270,6 +270,9 @@ class PcbPad:
     # pads may offset their copper from the drill (a TO-92's staggered legs):
     # `at` is the hole, the copper is shifted by this much.
     copper_offset: tuple = (0.0, 0.0)
+    # A KiCad `custom` pad's copper beyond its anchor, in board mm:
+    # ("poly", [(x, y), ...]) and ("capsule", (x0, y0, x1, y1, half_width)).
+    primitives: list = field(default_factory=list)
 
 
 @dataclass
@@ -293,6 +296,9 @@ class PcbZone:
     layer: str
     outline: list = field(default_factory=list)     # [(x, y), ...]
     spoke_mm: float = 0.5                             # thermal relief spoke width, mm (KiCad's thermal_bridge_width)
+    # KiCad 5 fills (and `filled_areas_thickness yes`): the copper is the polygon with its outline stroked this
+    # wide (the zone's min_thickness); 0 for KiCad 6+ fills, where the polygon is the copper.
+    stroke_mm: float = 0.0
 
     def contains(self, pt, tol: float = 0.0) -> bool:
         """Ray-cast point-in-polygon, with an optional outward tolerance so a
@@ -620,6 +626,10 @@ def parse_kicad_pcb(text: str) -> PcbBoard:
     #  KiCad), found by the electrical benchmark's held-out boards.
     _drill_default = 0.3
     _drill_by_net: dict = {}
+    #  KiCad before 6 (file version before 20200811) stored a pour shrunk by half its minimum width and stroked the
+    #  outline back on when drawing; reading the bare polygon loses 7-9 % of the copper (benchmark addendum 8).
+    _ver = _child(root, "version")
+    _legacy_fill = bool(_ver and _floats(_ver) and _floats(_ver)[0] < 20200811)
     for node in root[1:]:
         if not isinstance(node, list):
             continue
@@ -728,6 +738,11 @@ def parse_kicad_pcb(text: str) -> PcbBoard:
                     spoke = float(_atoms(tb)[0].value)
                 except (TypeError, ValueError):
                     pass
+            stroke = 0.0
+            fat = _child(node, "filled_areas_thickness")
+            if filled and ((fat and _atoms(fat) and str(_atoms(fat)[0].value) == "yes") or (_legacy_fill and not fat)):
+                mt = _child(node, "min_thickness")
+                stroke = _floats(mt)[0] if mt and _floats(mt) else 0.254
             for poly in (filled or _children(node, "polygon")):
                 pts_node = _child(poly, "pts")
                 if not pts_node:
@@ -744,8 +759,69 @@ def parse_kicad_pcb(text: str) -> PcbBoard:
                         players = [nm_]
                 for lay in players:
                     board.zones.append(
-                        PcbZone(net=znid, layer=lay, outline=pts, spoke_mm=spoke))
+                        PcbZone(net=znid, layer=lay, outline=pts, spoke_mm=spoke, stroke_mm=stroke))
     return board
+
+
+def _pad_primitives(pd, centre, angle_deg) -> list:
+    """A custom pad's copper primitives in board mm. They are written in the pad's own frame (turned by its angle,
+    KiCad's y down), like a pad's drill offset."""
+    pr_ = _child(pd, "primitives")
+    if not pr_:
+        return []
+    t = math.radians(angle_deg)
+    ct, st = math.cos(t), math.sin(t)
+
+    def tf(u, v):
+        return (centre[0] + u * ct + v * st, centre[1] - u * st + v * ct)
+
+    def width(n):
+        w = _child(n, "width") or _child(_child(n, "stroke") or [], "width")
+        return _floats(w)[0] if w and _floats(w) else 0.0
+
+    def filled(n):
+        f = _child(n, "fill")
+        return not f or not _atoms(f) or str(_atoms(f)[0].value) in ("yes", "solid")
+
+    out: list = []
+    for n in pr_[1:]:
+        if not isinstance(n, list):
+            continue
+        k, w = _name(n), width(n)
+        try:
+            if k == "gr_poly":
+                pts = [tf(*_floats(xy, 2)) for xy in _children(_child(n, "pts") or [], "xy")]
+                if len(pts) >= 3 and filled(n):
+                    out.append(("poly", pts))
+                if w > 1e-3:
+                    out += [("capsule", (*a, *b, w / 2.0)) for a, b in zip(pts, pts[1:] + pts[:1])]
+            elif k in ("gr_rect", "gr_circle", "gr_line", "gr_arc"):
+                a = _floats(_child(n, "start") or _child(n, "center"), 2)
+                b = _floats(_child(n, "end"), 2)
+                if k == "gr_rect":
+                    c = [tf(a[0], a[1]), tf(b[0], a[1]), tf(b[0], b[1]), tf(a[0], b[1])]
+                    if filled(n):
+                        out.append(("poly", c))
+                    if w > 1e-3:
+                        out += [("capsule", (*p, *q, w / 2.0)) for p, q in zip(c, c[1:] + c[:1])]
+                elif k == "gr_circle":
+                    r = math.hypot(b[0] - a[0], b[1] - a[1])
+                    cx, cy = tf(*a)
+                    if filled(n) or w > 2 * r:
+                        out.append(("capsule", (cx, cy, cx, cy, r + w / 2.0)))
+                    else:                                           # an outline only: a ring of chords
+                        ring = [(cx + r * math.cos(2 * math.pi * i / 48), cy + r * math.sin(2 * math.pi * i / 48))
+                                for i in range(49)]
+                        out += [("capsule", (*p, *q, w / 2.0)) for p, q in zip(ring, ring[1:])]
+                elif k == "gr_line":
+                    out.append(("capsule", (*tf(*a), *tf(*b), max(w, 1e-3) / 2.0)))
+                else:                                               # gr_arc: start, mid, end (KiCad 6+)
+                    m = _floats(_child(n, "mid"), 2)
+                    pts = _arc_points_3pt(tf(*a), tf(*m), tf(*b)) if len(m) == 2 else [tf(*a), tf(*b)]
+                    out += [("capsule", (*p, *q, max(w, 1e-3) / 2.0)) for p, q in zip(pts, pts[1:])]
+        except (TypeError, ValueError, IndexError):
+            continue
+    return out
 
 
 def _parse_footprint(node, net_ref=None) -> PcbFootprint:
@@ -833,10 +909,11 @@ def _parse_footprint(node, net_ref=None) -> PcbFootprint:
                      else str(a2[0].value).strip().strip('"'))
             if pname.lstrip("-").isdigit():
                 pname = ""
+        prims = _pad_primitives(pd, (ax + off[0], ay + off[1]), float(pang or 0.0)) if "custom" in kinds else []
         fp.pads.append(PcbPad(number=number, net=pnet, net_name=pname,
                               at=(ax, ay), size=size, through=through,
                               layer=pad_layer, shape=shape,
-                              angle_deg=float(pang or 0.0), copper_offset=off))
+                              angle_deg=float(pang or 0.0), copper_offset=off, primitives=prims))
     return fp
 
 

@@ -328,3 +328,11 @@ n nets all within 2 %, the 95 % lower bound on the rate is 0.05^(1/n).
 **The export kit** (`export_kicad9.py`) failed on KiCad 9.0.3 before writing anything (vias now take a layer for
 their width; a pad's `GetParent()` returns a container without `GetReference`). It was fixed for both, with no
 change to what it writes, and the fixed kit is the one shipped.
+
+### Addendum 8, amendment (written before any KiCad 9 pour net was solved by the reference)
+
+On the design set, the reference itself does not converge on the ten hand-solder LED nets: refining the grid moves
+it 0.21 → 0.40 → 0.48 → 0.55 mΩ (cells of 83, 42, 21, 10 µm) on `Net-(D1-K)`, the signature of current meeting
+copper at a point. A 2 % comparison against a number that moves 15 % per halving means nothing, so on the held-out
+set a net is **scored only where the reference at twice the cell size agrees with it within 2 %**; the others are
+counted and published as "reference not converged", with both KinematiK numbers next to them.

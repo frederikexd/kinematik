@@ -55,7 +55,12 @@ def _reduce(inside, i0, j0):
 
 
 def _cells_track(seg, h):
-    (ax, ay), (bx, by), hw = seg.start, seg.end, seg.width_mm / 2.0
+    (ax, ay), (bx, by) = seg.start, seg.end
+    return _cells_capsule(ax, ay, bx, by, seg.width_mm / 2.0, h)
+
+
+def _cells_capsule(ax, ay, bx, by, hw, h):
+    """A line of half width hw with round ends (a track, a custom pad's stroke, a KiCad 5 pour's outline)."""
     i0, i1 = int(math.floor((min(ax, bx) - hw) / h)) - 1, int(math.ceil((max(ax, bx) + hw) / h)) + 1
     j0, j1 = int(math.floor((min(ay, by) - hw) / h)) - 1, int(math.ceil((max(ay, by) + hw) / h)) + 1
     xs, ys = _samples(i0, i1, j0, j1, h)
@@ -151,14 +156,19 @@ def pour_resistance(board: PcbBoard, nid: int, max_pads: int = 10) -> dict:
     for z in board.zones:
         if z.net == nid and z.layer in lidx and len(z.outline) >= 3:
             allp.append((z.layer, *_cells_polygon(z.outline, hh), False))
+            if z.stroke_mm > 0:                            # KiCad 5 fill: the outline is stroked at min_thickness
+                for (ax, ay), (bx, by) in zip(z.outline, z.outline[1:] + z.outline[:1]):
+                    allp.append((z.layer, *_cells_capsule(ax, ay, bx, by, z.stroke_mm / 2.0, hh), False))
     pads = [(fp, p) for fp in board.footprints for p in fp.pads if p.net == nid]
     anchors: list = []                                     # (layer, x, y, terminal key)
     for k, (fp, p) in enumerate(pads):
-        I, J, c = _cells_pad(p, hh)
+        cells = [_cells_pad(p, hh)]
+        for kind, g in p.primitives:                       # a custom pad's copper beyond its anchor
+            cells.append(_cells_polygon(g, hh) if kind == "poly" else _cells_capsule(*g, hh))
         side = p.layer or ("B.Cu" if fp.layer == "B.Cu" else "F.Cu")
         for ly in (layers if p.through else [side]):
             if ly in lidx:
-                allp.append((ly, I, J, c, True))
+                allp += [(ly, I, J, c, True) for I, J, c in cells]
                 anchors.append((ly, p.at[0] + p.copper_offset[0], p.at[1] + p.copper_offset[1], ("pad", k)))
     vias = board.vias_of(nid)
     for k, v in enumerate(vias):

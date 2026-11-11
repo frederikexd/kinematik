@@ -1281,3 +1281,39 @@ class TestBuiltBoardTolerance(unittest.TestCase):
         thin = worst(diagnose(b, asg, copper_finish=0.8))
         if nominal:
             self.assertAlmostEqual(thin / nominal, 1.0 / 0.8, places=2)
+
+
+class TestPourRound3Reading(unittest.TestCase):
+    """Pour estimate round 3 (benchmark plan addendum 8): what KinematiK reads beyond a pad's anchor and a bare fill."""
+
+    def test_custom_pad_primitives_turned_with_the_pad(self):
+        b = parse_kicad_pcb(
+            '(kicad_pcb (version 20221018) (layers (0 "F.Cu" signal)) (net 0 "") (net 1 "K")'
+            ' (footprint "led" (layer "F.Cu") (at 10 10 -90) (fp_text reference "D1" (at 0 0))'
+            '  (pad "1" smd custom (at -0.4 0.5 270) (size 0.1 0.1) (layers "F.Cu") (net 1 "K")'
+            '   (options (clearance outline) (anchor circle))'
+            '   (primitives (gr_poly (pts (xy -0.15 0.25) (xy -0.15 -0.15) (xy 0 -0.15) (xy 0.2 0.05) (xy 0.2 0.25))'
+            '    (width 0.0001) (fill yes))))))')
+        p = b.footprints[0].pads[0]
+        self.assertEqual(p.primitives[0][0], "poly")
+        xs = sorted(round(x, 3) for x, _y in p.primitives[0][1])
+        ys = sorted(round(y, 3) for _x, y in p.primitives[0][1])
+        # KiCad 7's own polygon for this pad spans x 9.85..10.25 (pad at 10.5, 9.6 rotated) — checked in pcbnew
+        self.assertAlmostEqual(xs[-1] - xs[0], 0.4, places=3)
+        self.assertAlmostEqual(ys[-1] - ys[0], 0.35, places=3)
+
+    def test_kicad5_fill_is_stroked_and_lowers_the_pour_resistance(self):
+        from suspension import pcb_pour as P
+        zone = ('(zone (net 1) (net_name "P") (layer "F.Cu") (min_thickness 0.254)'
+                ' (polygon (pts (xy 0 -1) (xy 10 -1) (xy 10 1) (xy 0 1)))'
+                ' (filled_polygon (pts (xy 0.127 -0.873) (xy 9.873 -0.873) (xy 9.873 0.873) (xy 0.127 0.873))))')
+        fps = ''.join(f'(module m{i} (layer F.Cu) (at {x} 0) (fp_text reference J{i} (at 0 0))'
+                      f' (pad 1 smd rect (at 0 0) (size 0.5 1.5) (layers F.Cu) (net 1 P)))' for i, x in ((1, 0.5), (2, 9.5)))
+        txt = lambda v: f'(kicad_pcb (version {v}) (layers (0 F.Cu signal)) (net 0 "") (net 1 P) {fps} {zone})'
+        old, new = parse_kicad_pcb(txt(20171130)), parse_kicad_pcb(txt(20221018))
+        self.assertAlmostEqual(old.zones[0].stroke_mm, 0.254)
+        self.assertEqual(new.zones[0].stroke_mm, 0.0)
+        r_old = P.pour_resistance(old, old.net_id("P"))["r_ohm"]
+        r_new = P.pour_resistance(new, new.net_id("P"))["r_ohm"]
+        # the stroke adds half of 0.254 mm on each side of a 1.746 mm wide strip: about 2.0 / 1.746 wider
+        self.assertAlmostEqual(r_new / r_old, 2.0 / 1.746, delta=0.04)
