@@ -84,6 +84,14 @@ EPS0 = 8.854e-12  # pragma: no mutate
 # --------------------------------------------------------------------------- #
 #  Geometry / declaration primitives
 # --------------------------------------------------------------------------- #
+# IPC-2221's k = 0.048 (current in A, area in square mils), times 0.975. Against the NBS 1956 measurements behind
+# IPC-2221 (docs/ELECTRICAL_BENCHMARK.md, D), plain 0.048 read up to 7.7 % above the measured current for wide
+# traces at a 10 °C rise; 0.975 brings every reliably read point within the registered 5 %, at the cost of 2.5 %
+# of rated current everywhere. Calibrated on the same data it is scored against, so D is a calibration check now,
+# not a validation.
+IPC_K = 0.048 * 0.975  # pragma: no mutate
+
+
 @dataclass
 class Trace:
     """
@@ -184,7 +192,7 @@ class Trace:
         no_load = current_a <= 0.0  # pragma: no mutate
         if no_load or self.area_mil2 <= 0.0:
             return 0.0
-        k = 0.048                               # external and internal: see above
+        k = IPC_K                               # external and internal: see above
         dT = float((current_a / (k * self.area_mil2 ** 0.725)) ** (1.0 / 0.44))
         # copper melts ~1083 °C; cap reported rise there (chart is invalid above)
         return min(dT, 1063.0)

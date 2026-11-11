@@ -100,7 +100,7 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from .interfaces import Finding, Severity
-from .electronics import (OZ_TO_UM, RHO_CU_20C, ALPHA_CU, Trace,
+from .electronics import (OZ_TO_UM, RHO_CU_20C, ALPHA_CU, Trace, IPC_K,
                           min_parallel_distance_mm, parallel_run_length_mm)
 
 MM2_TO_MIL2 = 39.3701 ** 2          # mm² → mil²
@@ -839,7 +839,7 @@ def required_area_mil2(current_a: float, dT_c: float, external: bool) -> float:
     the steady-state rise at `dT_c` for `current_a`."""
     if current_a <= 0 or dT_c <= 0:
         return 0.0
-    k = 0.048       # internal as external: IPC-2152 found buried traces no hotter (see electronics.Trace)
+    k = IPC_K       # internal as external: IPC-2152 found buried traces no hotter (see electronics.Trace)
     return float((current_a / (k * dT_c ** 0.44)) ** (1.0 / 0.725))
 
 
@@ -862,7 +862,7 @@ def trace_ampacity_a(width_mm: float, dT_c: float, copper_oz: float,
     a_mil2 = max(width_mm, 0.0) * t_mm * MM2_TO_MIL2
     if a_mil2 <= 0 or dT_c <= 0:
         return 0.0
-    k = 0.048       # internal as external: IPC-2152 found buried traces no hotter (see electronics.Trace)
+    k = IPC_K       # internal as external: IPC-2152 found buried traces no hotter (see electronics.Trace)
     return k * (dT_c ** 0.44) * (a_mil2 ** 0.725)
 
 

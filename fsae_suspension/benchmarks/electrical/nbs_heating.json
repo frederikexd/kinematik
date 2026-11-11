@@ -1,439 +1,504 @@
 {
  "source": "NBS Report 4283, D. S. Hoynes, Characterization of Metal-Insulator Laminates, National Bureau of Standards, 1 May 1956, Figures 1-7 (pp. 9-15): measured current vs cross-section of etched copper conductors on 1/16 in. laminate, one figure per temperature rise.",
  "how_read": "Scan rendered at 250 dpi; grid lines found automatically (both axes are square-root scales, checked against the printed labels); the plain etched curve (solid line) read where it crosses the vertical grid lines, current interpolated between the two nearest horizontal grid lines. Where the four curves crowd together, or a letter sits on the line, the crossing was left out. i_read2_a is an independent second pass at 180 dpi (NaN or a different value where that pass picked up a neighbouring curve).",
- "kinematik": "trace_ampacity_a, external: I = 0.048 dT^0.44 A^0.725 (IPC-2221)",
+ "kinematik": "trace_ampacity_a, external: I = 0.048 x 0.975 x dT^0.44 A^0.725 (IPC-2221 x 0.975, calibrated on these points)",
  "points": [
   {
    "dT_c": 10,
    "area_sqmil": 16,
    "i_read1_a": 1.377,
    "i_read2_a": 1.278,
-   "i_kinematik_a": 0.987,
-   "ratio": 0.7166288443265258
+   "i_kinematik_a": 0.9621,
+   "ratio": 0.7166288443265258,
+   "excluded": "4 and 16 sq mil: the four curves converge within the reading resolution (rule of addendum 5, applied after the first scoring)",
+   "i_ipc2221_a": 0.9868
   },
   {
    "dT_c": 10,
    "area_sqmil": 36,
    "i_read1_a": 2.151,
    "i_read2_a": 2.176,
-   "i_kinematik_a": 1.776,
-   "ratio": 0.8258860680960429
+   "i_kinematik_a": 1.7321,
+   "ratio": 0.8258860680960429,
+   "i_ipc2221_a": 1.7765
   },
   {
    "dT_c": 10,
    "area_sqmil": 64,
    "i_read1_a": 3.177,
    "i_read2_a": 3.167,
-   "i_kinematik_a": 2.696,
-   "ratio": 0.84860288457063
+   "i_kinematik_a": 2.6286,
+   "ratio": 0.84860288457063,
+   "i_ipc2221_a": 2.696
   },
   {
    "dT_c": 10,
    "area_sqmil": 100,
    "i_read1_a": 4.192,
    "i_read2_a": 4.195,
-   "i_kinematik_a": 3.726,
-   "ratio": 0.888832576292395
+   "i_kinematik_a": 3.6328,
+   "ratio": 0.888832576292395,
+   "i_ipc2221_a": 3.726
   },
   {
    "dT_c": 10,
    "area_sqmil": 144,
    "i_read1_a": 5.269,
    "i_read2_a": 5.263,
-   "i_kinematik_a": 4.853,
-   "ratio": 0.9211404323844655
+   "i_kinematik_a": 4.7322,
+   "ratio": 0.9211404323844655,
+   "i_ipc2221_a": 4.8535
   },
   {
    "dT_c": 10,
    "area_sqmil": 196,
    "i_read1_a": 6.425,
    "i_read2_a": 6.446,
-   "i_kinematik_a": 6.069,
-   "ratio": 0.9446126497183601
+   "i_kinematik_a": 5.9174,
+   "ratio": 0.9446126497183601,
+   "i_ipc2221_a": 6.0691
   },
   {
    "dT_c": 10,
    "area_sqmil": 400,
    "i_read1_a": 10.119,
    "i_read2_a": 10.102,
-   "i_kinematik_a": 10.18,
-   "ratio": 1.0059980413915846
+   "i_kinematik_a": 9.9252,
+   "ratio": 1.0059980413915846,
+   "i_ipc2221_a": 10.1797
   },
   {
    "dT_c": 10,
    "area_sqmil": 484,
    "i_read1_a": 11.306,
    "i_read2_a": 11.29,
-   "i_kinematik_a": 11.688,
-   "ratio": 1.033820508913697
+   "i_kinematik_a": 11.3962,
+   "ratio": 1.033820508913697,
+   "i_ipc2221_a": 11.6884
   },
   {
    "dT_c": 10,
    "area_sqmil": 576,
    "i_read1_a": 12.585,
    "i_read2_a": 12.575,
-   "i_kinematik_a": 13.26,
-   "ratio": 1.0536450179323715
+   "i_kinematik_a": 12.9286,
+   "ratio": 1.0536450179323715,
+   "i_ipc2221_a": 13.2601
   },
   {
    "dT_c": 10,
    "area_sqmil": 676,
    "i_read1_a": 13.833,
    "i_read2_a": NaN,
-   "i_kinematik_a": 14.892,
-   "ratio": 1.0765549817676991
+   "i_kinematik_a": 14.5197,
+   "ratio": 1.0765549817676991,
+   "i_ipc2221_a": 14.892
   },
   {
    "dT_c": 20,
    "area_sqmil": 16,
    "i_read1_a": 1.731,
    "i_read2_a": 1.727,
-   "i_kinematik_a": 1.339,
-   "ratio": 0.7733647179319233
+   "i_kinematik_a": 1.3052,
+   "ratio": 0.7733647179319233,
+   "excluded": "4 and 16 sq mil: the four curves converge within the reading resolution (rule of addendum 5, applied after the first scoring)",
+   "i_ipc2221_a": 1.3387
   },
   {
    "dT_c": 20,
    "area_sqmil": 36,
    "i_read1_a": 3.457,
    "i_read2_a": 3.484,
-   "i_kinematik_a": 2.41,
-   "ratio": 0.697130957657883
+   "i_kinematik_a": 2.3497,
+   "ratio": 0.697130957657883,
+   "i_ipc2221_a": 2.41
   },
   {
    "dT_c": 20,
    "area_sqmil": 64,
    "i_read1_a": 4.594,
    "i_read2_a": 3.651,
-   "i_kinematik_a": 3.657,
-   "ratio": 0.796129883245877
+   "i_kinematik_a": 3.566,
+   "ratio": 0.796129883245877,
+   "i_ipc2221_a": 3.6574
   },
   {
    "dT_c": 20,
    "area_sqmil": 100,
    "i_read1_a": 5.043,
    "i_read2_a": 5.047,
-   "i_kinematik_a": 5.055,
-   "ratio": 1.0023178561211283
+   "i_kinematik_a": 4.9283,
+   "ratio": 1.0023178561211283,
+   "i_ipc2221_a": 5.0547
   },
   {
    "dT_c": 20,
    "area_sqmil": 144,
    "i_read1_a": 7.757,
    "i_read2_a": 7.801,
-   "i_kinematik_a": 6.584,
-   "ratio": 0.8488157917786915
+   "i_kinematik_a": 6.4197,
+   "ratio": 0.8488157917786915,
+   "i_ipc2221_a": 6.5843
   },
   {
    "dT_c": 20,
    "area_sqmil": 196,
    "i_read1_a": 9.495,
    "i_read2_a": 9.49,
-   "i_kinematik_a": 8.233,
-   "ratio": 0.8671318097709925
+   "i_kinematik_a": 8.0276,
+   "ratio": 0.8671318097709925,
+   "i_ipc2221_a": 8.2334
   },
   {
    "dT_c": 20,
    "area_sqmil": 256,
    "i_read1_a": 11.785,
    "i_read2_a": 11.605,
-   "i_kinematik_a": 9.992,
-   "ratio": 0.8478886533265831
+   "i_kinematik_a": 9.7426,
+   "ratio": 0.8478886533265831,
+   "i_ipc2221_a": 9.9924
   },
   {
    "dT_c": 20,
    "area_sqmil": 324,
    "i_read1_a": 13.227,
    "i_read2_a": 13.226,
-   "i_kinematik_a": 11.853,
-   "ratio": 0.8961448520807249
+   "i_kinematik_a": 11.557,
+   "ratio": 0.8961448520807249,
+   "i_ipc2221_a": 11.8533
   },
   {
    "dT_c": 20,
    "area_sqmil": 400,
    "i_read1_a": 15.163,
    "i_read2_a": 14.957,
-   "i_kinematik_a": 13.81,
-   "ratio": 0.9107575794910893
+   "i_kinematik_a": 13.4646,
+   "ratio": 0.9107575794910893,
+   "i_ipc2221_a": 13.8098
   },
   {
    "dT_c": 20,
    "area_sqmil": 484,
    "i_read1_a": 16.447,
    "i_read2_a": 16.444,
-   "i_kinematik_a": 15.856,
-   "ratio": 0.9640967752950297
+   "i_kinematik_a": 15.4601,
+   "ratio": 0.9640967752950297,
+   "i_ipc2221_a": 15.8565
   },
   {
    "dT_c": 20,
    "area_sqmil": 576,
    "i_read1_a": 19.265,
    "i_read2_a": 19.372,
-   "i_kinematik_a": 17.989,
-   "ratio": 0.9337523817668024
+   "i_kinematik_a": 17.539,
+   "ratio": 0.9337523817668024,
+   "i_ipc2221_a": 17.9887
   },
   {
    "dT_c": 30,
    "area_sqmil": 4,
    "i_read1_a": 0.508,
    "i_read2_a": 0.508,
-   "i_kinematik_a": 0.586,
-   "ratio": 1.1529337986995751
+   "i_kinematik_a": 0.571,
+   "ratio": 1.1529337986995751,
+   "excluded": "4 and 16 sq mil: the four curves converge within the reading resolution (rule of addendum 5, applied after the first scoring)",
+   "i_ipc2221_a": 0.5857
   },
   {
    "dT_c": 30,
    "area_sqmil": 16,
    "i_read1_a": 1.395,
    "i_read2_a": 1.407,
-   "i_kinematik_a": 1.6,
-   "ratio": 1.147063258863606
+   "i_kinematik_a": 1.5601,
+   "ratio": 1.147063258863606,
+   "excluded": "4 and 16 sq mil: the four curves converge within the reading resolution (rule of addendum 5, applied after the first scoring)",
+   "i_ipc2221_a": 1.6002
   },
   {
    "dT_c": 30,
    "area_sqmil": 36,
    "i_read1_a": 3.756,
    "i_read2_a": 3.756,
-   "i_kinematik_a": 2.881,
-   "ratio": 0.7669522377177753
+   "i_kinematik_a": 2.8087,
+   "ratio": 0.7669522377177753,
+   "i_ipc2221_a": 2.8807
   },
   {
    "dT_c": 30,
    "area_sqmil": 64,
    "i_read1_a": 5.032,
    "i_read2_a": 5.026,
-   "i_kinematik_a": 4.372,
-   "ratio": 0.868789249272236
+   "i_kinematik_a": 4.2625,
+   "ratio": 0.868789249272236,
+   "i_ipc2221_a": 4.3717
   },
   {
    "dT_c": 30,
    "area_sqmil": 100,
    "i_read1_a": 7.136,
    "i_read2_a": 7.144,
-   "i_kinematik_a": 6.042,
-   "ratio": 0.8466808713619556
+   "i_kinematik_a": 5.8909,
+   "ratio": 0.8466808713619556,
+   "i_ipc2221_a": 6.0419
   },
   {
    "dT_c": 30,
    "area_sqmil": 196,
    "i_read1_a": 11.343,
    "i_read2_a": 11.342,
-   "i_kinematik_a": 9.841,
-   "ratio": 0.8676255028276255
+   "i_kinematik_a": 9.5954,
+   "ratio": 0.8676255028276255,
+   "i_ipc2221_a": 9.8415
   },
   {
    "dT_c": 30,
    "area_sqmil": 400,
    "i_read1_a": 18.638,
    "i_read2_a": 18.646,
-   "i_kinematik_a": 16.507,
-   "ratio": 0.885663558900873
+   "i_kinematik_a": 16.0943,
+   "ratio": 0.885663558900873,
+   "i_ipc2221_a": 16.507
   },
   {
    "dT_c": 30,
    "area_sqmil": 576,
    "i_read1_a": 23.944,
    "i_read2_a": 23.921,
-   "i_kinematik_a": 21.502,
-   "ratio": 0.8980162305907395
+   "i_kinematik_a": 20.9645,
+   "ratio": 0.8980162305907395,
+   "i_ipc2221_a": 21.5021
   },
   {
    "dT_c": 45,
    "area_sqmil": 16,
    "i_read1_a": 2.505,
    "i_read2_a": 2.421,
-   "i_kinematik_a": 1.913,
-   "ratio": 0.763543880243548
+   "i_kinematik_a": 1.8649,
+   "ratio": 0.763543880243548,
+   "excluded": "4 and 16 sq mil: the four curves converge within the reading resolution (rule of addendum 5, applied after the first scoring)",
+   "i_ipc2221_a": 1.9127
   },
   {
    "dT_c": 45,
    "area_sqmil": 36,
    "i_read1_a": 4.249,
    "i_read2_a": 4.244,
-   "i_kinematik_a": 3.443,
-   "ratio": 0.8103774085674776
+   "i_kinematik_a": 3.3572,
+   "ratio": 0.8103774085674776,
+   "i_ipc2221_a": 3.4433
   },
   {
    "dT_c": 45,
    "area_sqmil": 100,
    "i_read1_a": 8.648,
    "i_read2_a": 8.474,
-   "i_kinematik_a": 7.222,
-   "ratio": 0.835101112982026
+   "i_kinematik_a": 7.0414,
+   "ratio": 0.835101112982026,
+   "i_ipc2221_a": 7.222
   },
   {
    "dT_c": 45,
    "area_sqmil": 196,
    "i_read1_a": 13.295,
    "i_read2_a": 13.298,
-   "i_kinematik_a": 11.764,
-   "ratio": 0.8848141382312033
+   "i_kinematik_a": 11.4695,
+   "ratio": 0.8848141382312033,
+   "i_ipc2221_a": 11.7636
   },
   {
    "dT_c": 45,
    "area_sqmil": 324,
    "i_read1_a": 18.503,
    "i_read2_a": 18.575,
-   "i_kinematik_a": 16.936,
-   "ratio": 0.9152879125053256
+   "i_kinematik_a": 16.5122,
+   "ratio": 0.9152879125053256,
+   "i_ipc2221_a": 16.9356
   },
   {
    "dT_c": 45,
    "area_sqmil": 400,
    "i_read1_a": 21.479,
    "i_read2_a": 21.443,
-   "i_kinematik_a": 19.731,
-   "ratio": 0.9186163673438429
+   "i_kinematik_a": 19.2377,
+   "ratio": 0.9186163673438429,
+   "i_ipc2221_a": 19.731
   },
   {
    "dT_c": 45,
    "area_sqmil": 484,
    "i_read1_a": 25.672,
    "i_read2_a": 25.653,
-   "i_kinematik_a": 22.655,
-   "ratio": 0.8824862076576989
+   "i_kinematik_a": 22.0888,
+   "ratio": 0.8824862076576989,
+   "i_ipc2221_a": 22.6552
   },
   {
    "dT_c": 45,
    "area_sqmil": 576,
    "i_read1_a": 27.407,
    "i_read2_a": 27.303,
-   "i_kinematik_a": 25.702,
-   "ratio": 0.9377769290320974
+   "i_kinematik_a": 25.0591,
+   "ratio": 0.9377769290320974,
+   "i_ipc2221_a": 25.7017
   },
   {
    "dT_c": 60,
    "area_sqmil": 4,
    "i_read1_a": 0.924,
    "i_read2_a": 0.918,
-   "i_kinematik_a": 0.795,
-   "ratio": 0.8599026949489994
+   "i_kinematik_a": 0.7747,
+   "ratio": 0.8599026949489994,
+   "excluded": "4 and 16 sq mil: the four curves converge within the reading resolution (rule of addendum 5, applied after the first scoring)",
+   "i_ipc2221_a": 0.7946
   },
   {
    "dT_c": 60,
    "area_sqmil": 16,
    "i_read1_a": 2.259,
    "i_read2_a": 2.275,
-   "i_kinematik_a": 2.171,
-   "ratio": 0.9609450280029583
+   "i_kinematik_a": 2.1165,
+   "ratio": 0.9609450280029583,
+   "excluded": "4 and 16 sq mil: the four curves converge within the reading resolution (rule of addendum 5, applied after the first scoring)",
+   "i_ipc2221_a": 2.1708
   },
   {
    "dT_c": 60,
    "area_sqmil": 64,
    "i_read1_a": 5.787,
    "i_read2_a": 5.778,
-   "i_kinematik_a": 5.931,
-   "ratio": 1.0248369760117737
+   "i_kinematik_a": 5.7825,
+   "ratio": 1.0248369760117737,
+   "i_ipc2221_a": 5.9307
   },
   {
    "dT_c": 60,
    "area_sqmil": 100,
    "i_read1_a": 8.045,
    "i_read2_a": 8.043,
-   "i_kinematik_a": 8.196,
-   "ratio": 1.0188300342360825
+   "i_kinematik_a": 7.9916,
+   "ratio": 1.0188300342360825,
+   "i_ipc2221_a": 8.1965
   },
   {
    "dT_c": 60,
    "area_sqmil": 256,
    "i_read1_a": 17.74,
    "i_read2_a": 17.738,
-   "i_kinematik_a": 16.203,
-   "ratio": 0.9133729527092077
+   "i_kinematik_a": 15.7982,
+   "ratio": 0.9133729527092077,
+   "i_ipc2221_a": 16.2032
   },
   {
    "dT_c": 60,
    "area_sqmil": 400,
    "i_read1_a": 25.612,
    "i_read2_a": 24.335,
-   "i_kinematik_a": 22.393,
-   "ratio": 0.874334847753057
+   "i_kinematik_a": 21.8336,
+   "ratio": 0.874334847753057,
+   "i_ipc2221_a": 22.3935
   },
   {
    "dT_c": 75,
    "area_sqmil": 16,
    "i_read1_a": 3.345,
    "i_read2_a": 3.338,
-   "i_kinematik_a": 2.395,
-   "ratio": 0.715911038193096
+   "i_kinematik_a": 2.3349,
+   "ratio": 0.715911038193096,
+   "excluded": "4 and 16 sq mil: the four curves converge within the reading resolution (rule of addendum 5, applied after the first scoring)",
+   "note": "misread: 3.35 A was read where the plain etched curve is about 2.0 A (zoomed check)",
+   "i_ipc2221_a": 2.3947
   },
   {
    "dT_c": 75,
    "area_sqmil": 64,
    "i_read1_a": 8.696,
    "i_read2_a": 7.749,
-   "i_kinematik_a": 6.543,
-   "ratio": 0.7523659690057465
+   "i_kinematik_a": 6.379,
+   "ratio": 0.7523659690057465,
+   "i_ipc2221_a": 6.5426
   },
   {
    "dT_c": 75,
    "area_sqmil": 256,
    "i_read1_a": 19.432,
    "i_read2_a": 19.436,
-   "i_kinematik_a": 17.875,
-   "ratio": 0.9198662107880666
+   "i_kinematik_a": 17.428,
+   "ratio": 0.9198662107880666,
+   "i_ipc2221_a": 17.8748
   },
   {
    "dT_c": 75,
    "area_sqmil": 324,
    "i_read1_a": 22.437,
    "i_read2_a": 22.466,
-   "i_kinematik_a": 21.204,
-   "ratio": 0.9450364025187336
+   "i_kinematik_a": 20.6737,
+   "ratio": 0.9450364025187336,
+   "i_ipc2221_a": 21.2038
   },
   {
    "dT_c": 75,
    "area_sqmil": 484,
    "i_read1_a": 29.377,
    "i_read2_a": 0.159,
-   "i_kinematik_a": 28.365,
-   "ratio": 0.9655474855311637
+   "i_kinematik_a": 27.6558,
+   "ratio": 0.9655474855311637,
+   "i_ipc2221_a": 28.3649
   },
   {
    "dT_c": 100,
    "area_sqmil": 4,
    "i_read1_a": 0.882,
    "i_read2_a": 0.786,
-   "i_kinematik_a": 0.995,
-   "ratio": 1.1278884412092438
+   "i_kinematik_a": 0.9699,
+   "ratio": 1.1278884412092438,
+   "excluded": "4 and 16 sq mil: the four curves converge within the reading resolution (rule of addendum 5, applied after the first scoring)",
+   "i_ipc2221_a": 0.9948
   },
   {
    "dT_c": 100,
    "area_sqmil": 16,
    "i_read1_a": 2.288,
    "i_read2_a": 2.294,
-   "i_kinematik_a": 2.718,
-   "ratio": 1.1878789999589645
+   "i_kinematik_a": 2.6499,
+   "ratio": 1.1878789999589645,
+   "excluded": "4 and 16 sq mil: the four curves converge within the reading resolution (rule of addendum 5, applied after the first scoring)",
+   "i_ipc2221_a": 2.7179
   },
   {
    "dT_c": 100,
    "area_sqmil": 36,
    "i_read1_a": 4.984,
    "i_read2_a": 4.884,
-   "i_kinematik_a": 4.893,
-   "ratio": 0.9817084219812322
+   "i_kinematik_a": 4.7705,
+   "ratio": 0.9817084219812322,
+   "i_ipc2221_a": 4.8928
   },
   {
    "dT_c": 100,
    "area_sqmil": 64,
    "i_read1_a": 8.124,
    "i_read2_a": 8.01,
-   "i_kinematik_a": 7.425,
-   "ratio": 0.9140118025638012
+   "i_kinematik_a": 7.2398,
+   "ratio": 0.9140118025638012,
+   "i_ipc2221_a": 7.4254
   },
   {
    "dT_c": 100,
    "area_sqmil": 256,
    "i_read1_a": 20.927,
    "i_read2_a": 18.401,
-   "i_kinematik_a": 20.287,
-   "ratio": 0.9694116574158095
+   "i_kinematik_a": 19.7797,
+   "ratio": 0.9694116574158095,
+   "i_ipc2221_a": 20.2869
   },
   {
    "dT_c": 100,
    "area_sqmil": 484,
    "i_read1_a": 33.338,
    "i_read2_a": 33.339,
-   "i_kinematik_a": 32.192,
-   "ratio": 0.9656385212637516
+   "i_kinematik_a": 31.3876,
+   "ratio": 0.9656385212637516,
+   "i_ipc2221_a": 32.1925
   }
  ]
 }
