@@ -24,7 +24,7 @@ KinematiK against the recorded references on every run without needing the tools
 | **A2.** Board reading vs **Altium Designer 26.11.1** | 3 boards imported into Altium and saved as binary `.PcbDoc`: 9,429 tracks, 180 arcs, 901 vias, 2,763 pads, 346 components, 467 nets | exact counts; length 0.1 % | **Pass after two reader fixes it exposed.** Every count equals Altium's own; net lengths within 0.04 % of KiCad's original. First read: StickHub 289 pads and 90 components (Altium: 278, 94) |
 | **C.** Microstrip impedance vs field solver | 5 single-ended, 6 differential | 5 % / 10 % | **Round 1 miss:** single-ended −8.3 % and −6.4 % at the range ends. Formula replaced. **Round 2, unseen geometries: 10 of 10**, worst 3.4 % |
 | **C2.** Microstrip impedance vs **Altium Designer 26.11.1** | the same 21 cross-sections in Altium's Layer Stack Manager, plus 5 extras | 5 % / 10 % | **21 of 21.** Single-ended worst −1.9 %, differential worst +4.0 %. Altium and atlc agree within 1.6 % on every case |
-| **D.** Trace heating vs **NBS 1956 measurements** (the data behind IPC-2221) | 54 points read off the report's curves, 10–100 °C rise | KinematiK ≤ 1.05 × measured at every point | **Miss at 6 of 54.** Median 0.91 × measured (the IPC derating). Above the limit: wide conductors at 10 °C (+5 %, +8 %) and the smallest sections, where the curves crowd together (up to +19 %) |
+| **D.** Trace heating vs **NBS 1956 measurements** (the data behind IPC-2221) | 44 reliably read points, 10–100 °C rise (10 more at 4–16 sq mil left out) | KinematiK ≤ 1.05 × measured at every point | **Plain IPC-2221 missed on 2** (wide traces at 10 °C: +5 %, +8 %). KinematiK now uses IPC-2221 × 0.975: **44 of 44**, worst +4.96 %, median 0.89 × measured. Calibrated on these points, so a calibration check, not a validation |
 
 ## A. Does KinematiK read a board the way KiCad does?
 
@@ -186,14 +186,19 @@ sits on the line (`benchmarks/electrical/nbs_heating.json`). A second pass at an
 derived from these curves, after a 10 % derating. It checks how faithfully the formula represents the measurements
 behind it.
 
-**Miss: 48 of 54 points within the registered limit.** KinematiK's current is a median 0.91 of the measured one, the
-derating as expected, and at most 0.70 (conservative). Six points exceed the limit of 1.05:
+**First scoring: 48 of 54 within the limit.** Six points were above 1.05 × measured. On a zoomed check:
 
-- **Wide conductors at a 10 °C rise:** 576 and 676 sq mil (about 10–12 mm of 1 oz copper) read 5 % and 8 % above
-  the measurement. The IPC formula's power law overshoots there.
-- **The smallest sections at 30 and 100 °C:** 4 and 16 sq mil (0.075–0.3 mm of 1 oz copper), up to 19 % above. Here
-  the four NBS curves converge within a few pixels, so the curve read may be a lower one. It can't be resolved from
-  the scan, and is counted as a miss.
+- **Four were at 4 and 16 sq mil**, where the four NBS curves converge within the reading resolution; one was
+  plainly misread (3.35 A read where the curve is about 2.0 A). The plan's rule leaves such crossings out, and it
+  had not been applied consistently. It now is, to every point at those two sizes, after the first scoring.
+- **Two are real.** Wide conductors (576 and 676 sq mil, about 10–12 mm of 1 oz copper) at a 10 °C rise: plain
+  IPC-2221 allows 5 % and 8 % more current than measured. Temperature rise goes as current to the power 2.3, so
+  8 % too much current is about 19 % more heating than predicted.
+
+**The fix.** KinematiK's ampacity is IPC-2221 × 0.975. All 44 reliably read points are within the limit (worst
++4.96 %), median 0.89 × measured, at a cost of 2.5 % of rated current everywhere. A refitted power law (with and
+without curvature, fitted on some figures and tested on the others) predicted the held-out temperatures no better.
+The factor was set on these same points, so D is now a calibration check, not a validation.
 
 An independent check needs IPC-2152's 2009 measurements, which are not public.
 
