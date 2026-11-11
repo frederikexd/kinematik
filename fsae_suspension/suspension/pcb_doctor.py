@@ -1037,17 +1037,38 @@ def analyze_net(board: PcbBoard, nid: int, ambient_c: float = 40.0) -> dict:
     #  the via's own copper radius overlaps it. That radius is a fact from the
     #  file, not a tolerance to tune, so this cannot quietly weld a real gap —
     #  a track ending a via-radius away is touching the via.
+    #
+    #  The touching track joins the via's own node ON ITS LAYER, never the hub:
+    #  the hub is the middle of the barrel, and joining a layer's copper straight
+    #  to it shorted out the barrel resistance on every via (found by the SPICE
+    #  benchmark: a top pad and a bottom pad on one via read 0.04 mΩ, not ~1 mΩ).
     for hub, v, vlayers in via_hubs:
         reach_v = max(v.size_mm, v.drill_mm) / 2.0 + NODE_WELD_MM
         for k, idx in list(nodes.items()):
             if k[0] in ("via", "pad", "zone") or k[0] not in vlayers:
                 continue
             if math.hypot(k[1] - v.at[0], k[2] - v.at[1]) <= reach_v:
-                edges.append((hub, idx, 1e-5))
+                own = node(_node_key(k[0], v.at))
+                if own != idx:
+                    edges.append((own, idx, 1e-5))
 
-    # pads: connect to any node on the pad's copper within its own footprint
+    # pads: connect to copper that overlaps the pad's own shape. A node is a
+    # track end or a via's landing on one layer; its copper is a disc (half the
+    # track width, or the via's ring), and it touches the pad where that disc
+    # overlaps the pad outline: KiCad's own connectivity rule. An SMD pad joins
+    # a via on its own layer, so a top pad and a bottom pad on one via still
+    # pass through the barrel; only a through-hole pad joins the via's hub.
     pad_nodes = []
     node_pts = {idx: key for key, idx in nodes.items()}
+    half_w: dict = {}
+    for s_ in segs:
+        for e_ in (s_.start, s_.end):
+            kk_ = _node_key(s_.layer, e_)
+            half_w[kk_] = max(half_w.get(kk_, 0.0), s_.width_mm / 2.0)
+    for _hub, v_, vl_ in via_hubs:
+        for ly in vl_:
+            kk_ = _node_key(ly, v_.at)
+            half_w[kk_] = max(half_w.get(kk_, 0.0), v_.size_mm / 2.0)
     for fp, p in pads:
         key = ("pad", fp.ref, p.number)
         pn = node(key)
@@ -1055,15 +1076,19 @@ def analyze_net(board: PcbBoard, nid: int, ambient_c: float = 40.0) -> dict:
         pad_layer = p.layer or ("B.Cu" if fp.layer == "B.Cu" else "F.Cu")
         hit = False
         for k, idx in list(nodes.items()):
-            if k[0] in ("pad",):
+            if k[0] in ("pad", "zone"):
                 continue
-            lx, ly_ = k[1], k[2]
-            if math.hypot(lx - p.at[0], ly_ - p.at[1]) <= reach:
-                # via hubs and through-hole barrels join every layer; an SMD pad
-                # only touches copper on its own side of the board.
-                if k[0] == "via" or p.through or k[0] == pad_layer:
-                    edges.append((pn, idx, 1e-5))
-                    hit = True
+            if k[0] == "via":
+                if not p.through:
+                    continue
+                margin = 0.0
+            elif p.through or k[0] == pad_layer:
+                margin = half_w.get(k, 0.0)
+            else:
+                continue
+            if _pad_overlaps(p, (k[1], k[2]), margin + 0.01):
+                edges.append((pn, idx, 1e-5))
+                hit = True
         # A pad does not have to land on a trace *endpoint*. Routing very often
         # runs a track straight across a pad and carries on — the pad sits
         # mid-segment, touching real copper, with no node anywhere near it. The
@@ -1091,9 +1116,16 @@ def analyze_net(board: PcbBoard, nid: int, ambient_c: float = 40.0) -> dict:
     # not by copper — join them with a nominal 10 mΩ so the net isn't declared
     # open and the IR-drop mesh sees the series element the current really
     # flows through.
+    #  Only a two-terminal part is bridged this way. Two pins of an IC or a
+    #  connector on one net are joined by the board's copper, not through the
+    #  part: bridging them hid a 16 mm track loop behind a 10 mΩ link and
+    #  under-read its resistance by 80 % (KiCad's video demo, U8 pins 60 and 70,
+    #  in the SPICE benchmark).
+    _two_pad = {fp_.ref for fp_ in board.footprints if len(fp_.pads) == 2}
     _by_fp = {}
     for ref, num, pn, hit in pad_nodes:
-        _by_fp.setdefault(ref, []).append(pn)
+        if ref in _two_pad:
+            _by_fp.setdefault(ref, []).append(pn)
     for _pns in _by_fp.values():
         for _a, _b in zip(_pns, _pns[1:]):
             edges.append((_a, _b, 0.010))
@@ -1359,6 +1391,30 @@ def clearance_required_mm(voltage_v: float) -> float:
         if voltage_v <= vmax:
             return c
     return 2.5 + 0.005 * (voltage_v - 500.0)
+
+
+def _pad_overlaps(pad, pt, margin_mm: float) -> bool:
+    """Does a disc of radius margin_mm (mm) at pt touch the pad's copper? The pad is taken in its own frame
+    (rotated by its angle in degrees): a circle, a stadium for an oval, otherwise its bounding rectangle."""
+    w, h = (float(x) for x in pad.size)
+    dx, dy = pt[0] - pad.at[0], pt[1] - pad.at[1]
+    th = math.radians(pad.angle_deg or 0.0)
+    lx = dx * math.cos(th) - dy * math.sin(th)
+    ly = dx * math.sin(th) + dy * math.cos(th)
+    shape = (pad.shape or "").lower()
+    if shape in ("circle", "round"):
+        return math.hypot(lx, ly) <= w / 2.0 + margin_mm
+    if shape == "oval":
+        if w >= h:
+            seg = (max(abs(lx) - (w - h) / 2.0, 0.0), ly)
+            return math.hypot(*seg) <= h / 2.0 + margin_mm
+        seg = (lx, max(abs(ly) - (h - w) / 2.0, 0.0))
+        return math.hypot(*seg) <= w / 2.0 + margin_mm
+    # a rectangle; a roundrect's corners are rounded (KiCad's default radius, a quarter of the shorter side)
+    rad = 0.25 * min(w, h) if shape == "roundrect" else 0.0
+    ex = max(abs(lx) - (w / 2.0 - rad), 0.0)
+    ey = max(abs(ly) - (h / 2.0 - rad), 0.0)
+    return math.hypot(ex, ey) <= rad + margin_mm
 
 
 def _pt_seg_dist(p, a, b) -> float:

@@ -1,0 +1,136 @@
+{
+ "differential": [
+  {
+   "atlc_zdiff_ohm": 119.572,
+   "atlc_zeven_ohm": 114.603,
+   "atlc_zodd_ohm": 59.786,
+   "er": 4.3,
+   "h_mm": 0.2,
+   "s_mm": 0.1,
+   "s_over_h": 0.5,
+   "t_mm": 0.035,
+   "w_mm": 0.1,
+   "w_over_h": 0.5
+  },
+  {
+   "atlc_zdiff_ohm": 144.067,
+   "atlc_zeven_ohm": 104.253,
+   "atlc_zodd_ohm": 72.033,
+   "er": 4.3,
+   "h_mm": 0.2,
+   "s_mm": 0.2,
+   "s_over_h": 1.0,
+   "t_mm": 0.035,
+   "w_mm": 0.1,
+   "w_over_h": 0.5
+  },
+  {
+   "atlc_zdiff_ohm": 163.264,
+   "atlc_zeven_ohm": 95.357,
+   "atlc_zodd_ohm": 81.632,
+   "er": 4.3,
+   "h_mm": 0.2,
+   "s_mm": 0.4,
+   "s_over_h": 2.0,
+   "t_mm": 0.035,
+   "w_mm": 0.1,
+   "w_over_h": 0.5
+  },
+  {
+   "atlc_zdiff_ohm": 95.381,
+   "atlc_zeven_ohm": 84.121,
+   "atlc_zodd_ohm": 47.69,
+   "er": 4.3,
+   "h_mm": 0.2,
+   "s_mm": 0.1,
+   "s_over_h": 0.5,
+   "t_mm": 0.035,
+   "w_mm": 0.2,
+   "w_over_h": 1.0
+  },
+  {
+   "atlc_zdiff_ohm": 111.978,
+   "atlc_zeven_ohm": 78.146,
+   "atlc_zodd_ohm": 55.989,
+   "er": 4.3,
+   "h_mm": 0.2,
+   "s_mm": 0.2,
+   "s_over_h": 1.0,
+   "t_mm": 0.035,
+   "w_mm": 0.2,
+   "w_over_h": 1.0
+  },
+  {
+   "atlc_zdiff_ohm": 124.983,
+   "atlc_zeven_ohm": 72.55,
+   "atlc_zodd_ohm": 62.491,
+   "er": 4.3,
+   "h_mm": 0.2,
+   "s_mm": 0.4,
+   "s_over_h": 2.0,
+   "t_mm": 0.035,
+   "w_mm": 0.2,
+   "w_over_h": 1.0
+  }
+ ],
+ "pixel_mm": 0.005,
+ "single_ended": [
+  {
+   "atlc_z0_ohm": 114.519,
+   "er": 4.3,
+   "h_mm": 0.2,
+   "t_mm": 0.035,
+   "w_mm": 0.04,
+   "w_over_h": 0.2
+  },
+  {
+   "atlc_z0_ohm": 88.549,
+   "er": 4.3,
+   "h_mm": 0.2,
+   "t_mm": 0.035,
+   "w_mm": 0.1,
+   "w_over_h": 0.5
+  },
+  {
+   "atlc_z0_ohm": 67.602,
+   "er": 4.3,
+   "h_mm": 0.2,
+   "t_mm": 0.035,
+   "w_mm": 0.2,
+   "w_over_h": 1.0
+  },
+  {
+   "atlc_z0_ohm": 55.474,
+   "er": 4.3,
+   "h_mm": 0.2,
+   "t_mm": 0.035,
+   "w_mm": 0.3,
+   "w_over_h": 1.5
+  },
+  {
+   "atlc_z0_ohm": 47.266,
+   "er": 4.3,
+   "h_mm": 0.2,
+   "t_mm": 0.035,
+   "w_mm": 0.4,
+   "w_over_h": 2.0
+  }
+ ],
+ "stripline_checks": [
+  {
+   "atlc_ohm": 100.115,
+   "er": 1.0,
+   "error_pct": -0.38504582104379986,
+   "exact_ohm": 100.50197866893105,
+   "w_over_b": 0.5
+  },
+  {
+   "atlc_ohm": 48.28,
+   "er": 4.3,
+   "error_pct": -0.3845096585986697,
+   "exact_ohm": 48.46635782701587,
+   "w_over_b": 0.5
+  }
+ ],
+ "tool": "atlc 4.6.1"
+}

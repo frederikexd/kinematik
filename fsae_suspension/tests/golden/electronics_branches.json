@@ -6,9 +6,9 @@
     "estimate": true,
     "pair": "can",
     "target_ohm": 120.0,
-    "z_diff_ohm": 107.85844226162155
+    "z_diff_ohm": 109.28690717974553
    },
-   "message": "Pair 'can' estimates 108 Ω differential, within 15 % of the 120 Ω target (analytic estimate, not field-solved).",
+   "message": "Pair 'can' estimates 109 Ω differential, within 15 % of the 120 Ω target (analytic estimate, not field-solved).",
    "severity": "ok",
    "subsystems": [
     "electrics"

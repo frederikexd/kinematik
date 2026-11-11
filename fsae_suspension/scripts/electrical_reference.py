@@ -304,6 +304,105 @@ def spice_nets():
     return out
 
 
+RED, GREEN, BLUE, WHITE, FR4 = (255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 255), (0xCC, 0x00, 0xFF)
+
+
+def _atlc(img, er: float) -> dict:
+    """Run atlc on an RGB image (numpy uint8 HxWx3; red = +1 V, blue = −1 V, green = ground, FR4 colour = the
+    dielectric of permittivity er, white = air). Returns the impedances atlc prints (Ω)."""
+    import re
+    import subprocess
+    import tempfile
+    from PIL import Image
+    with tempfile.TemporaryDirectory() as d:
+        f = Path(d) / "x.bmp"
+        Image.fromarray(img, "RGB").save(f)
+        res = subprocess.run(["atlc", "-s", "-S", "-d", f"cc00ff={er}", str(f)], capture_output=True, text=True,
+                             timeout=3600, cwd=d)
+        out = res.stdout + res.stderr
+    vals = {k: float(v) for k, v in re.findall(r"(Zo|Zodd|Zeven|Zdiff|Zcomm|Er)\s*=\s*([-\d.eE+]+)", out)}
+    if not vals:
+        raise RuntimeError(out[-2000:])
+    return vals
+
+
+def _box(h_px: int, w_px: int, fill=WHITE):
+    import numpy as np
+    img = np.zeros((h_px, w_px, 3), np.uint8)
+    img[:] = fill
+    img[0, :] = img[-1, :] = img[:, 0] = img[:, -1] = GREEN       # grounded enclosure
+    return img
+
+
+def stripline_check(er: float, b_px: int = 320, w_px: int = 160):
+    """Centred zero-thickness stripline (1 px thick), plates b apart, side walls 5 b away: atlc against Cohn's
+    exact Z0 = (30 π / √εr) K(k) / K(k'), k = sech(π w / 2 b)."""
+    import math
+    from scipy.special import ellipk
+    W = 2 * 5 * b_px + w_px
+    img = _box(b_px + 2, W, FR4 if er != 1.0 else WHITE)
+    mid = 1 + b_px // 2
+    x0 = (W - w_px) // 2
+    img[mid, x0:x0 + w_px] = RED
+    z = _atlc(img, er)["Zo"]
+    k = 1.0 / math.cosh(math.pi * w_px / (2.0 * b_px))
+    exact = 30.0 * math.pi / math.sqrt(er) * ellipk(k * k) / ellipk(1.0 - k * k)
+    return {"er": er, "w_over_b": w_px / b_px, "atlc_ohm": z, "exact_ohm": exact,
+            "error_pct": 100.0 * (z - exact) / exact}
+
+
+PX_MM, H_MM, T_PX, ER = 0.005, 0.2, 7, 4.3            # 5 µm pixels: h = 40 px, 35 µm copper = 7 px
+SE_W_OVER_H = (0.2, 0.5, 1.0, 1.5, 2.0)
+DIFF_CASES = tuple((w, s_) for w in (0.5, 1.0) for s_ in (0.5, 1.0, 2.0))   # (w/h, s/h)
+
+
+def _microstrip(w_px: int, s_px: int | None = None):
+    """Microstrip cross-section: ground plane, an FR-4 slab h thick, one trace (or an edge-coupled pair s apart) on
+    top, air above; grounded enclosure 15 h away on every side."""
+    h_px = round(H_MM / PX_MM)
+    margin = 15 * h_px
+    span = w_px if s_px is None else 2 * w_px + s_px
+    W = 2 * margin + span
+    H = 2 + h_px + T_PX + margin
+    img = _box(H, W)
+    ground = H - 2                                     # last row inside the green border is the plane
+    img[ground, :] = GREEN
+    img[ground - h_px:ground, 1:-1] = FR4
+    top = ground - h_px - T_PX
+    x0 = margin
+    img[top:top + T_PX, x0:x0 + w_px] = RED
+    if s_px is not None:
+        x1 = x0 + w_px + s_px
+        img[top:top + T_PX, x1:x1 + w_px] = BLUE
+    return img
+
+
+def atlc_impedance():
+    h_px = round(H_MM / PX_MM)
+    se = []
+    for r in SE_W_OVER_H:
+        w = round(r * h_px)
+        z = _atlc(_microstrip(w), ER)
+        se.append({"w_over_h": r, "w_mm": w * PX_MM, "h_mm": H_MM, "t_mm": T_PX * PX_MM, "er": ER, "atlc_z0_ohm": z["Zo"]})
+    diff = []
+    for r, q in DIFF_CASES:
+        w, sp = round(r * h_px), round(q * h_px)
+        z = _atlc(_microstrip(w, sp), ER)
+        diff.append({"w_over_h": r, "s_over_h": q, "w_mm": w * PX_MM, "s_mm": sp * PX_MM, "h_mm": H_MM,
+                     "t_mm": T_PX * PX_MM, "er": ER, "atlc_zdiff_ohm": z.get("Zdiff"), "atlc_zodd_ohm": z.get("Zodd"),
+                     "atlc_zeven_ohm": z.get("Zeven")})
+    checks = [stripline_check(1.0), stripline_check(ER)]
+    return {"stripline_checks": [{k: float(v) for k, v in c.items()} for c in checks], "single_ended": se,
+            "differential": diff, "pixel_mm": PX_MM}
+
+
+def atlc():
+    import subprocess
+    ver = subprocess.run(["atlc"], capture_output=True, text=True)
+    first = (ver.stdout + ver.stderr).strip().splitlines()[0].split(":")[0]
+    _write("atlc_impedance.json", {"tool": first, **atlc_impedance()})
+
+
 def _write(name, obj):
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / name).write_text(json.dumps(obj, indent=1, sort_keys=True) + "\n", encoding="utf-8")
@@ -314,7 +413,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("step", choices=["kicad", "spice", "atlc"])
     a = ap.parse_args(argv)
-    {"kicad": kicad, "spice": spice}[a.step]()
+    {"kicad": kicad, "spice": spice, "atlc": atlc}[a.step]()
     return 0
 
 

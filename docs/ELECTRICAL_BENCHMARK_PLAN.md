@@ -75,3 +75,17 @@ Every reference number goes into `fsae_suspension/benchmarks/electrical/` with t
 `tests/test_electrical_benchmark.py` re-check KinematiK against those recorded numbers on every run, so CI does
 not need KiCad, ngspice or atlc installed. `scripts/electrical_reference.py` regenerates the references wherever
 the tools are installed.
+
+## Addendum, before round 2 (written after round 1, before any round-2 run)
+
+Round 1 missed two limits: single-ended impedance at w/h 0.2 and 2.0, and net resistance on the demo boards.
+KinematiK was changed: Hammerstad–Jensen replaces IPC-2141 for microstrip Z0, and four connectivity flaws in
+`pcb_doctor.analyze_net` were fixed. Those changes were made looking at round-1 cases, so round 1 can't judge
+them. Round 2 uses cases neither round has seen, with the same limits (5 % single-ended, 10 % differential):
+
+- εr 3.66 (Rogers RO4350B) and εr 4.6 (high-Tg FR-4), h = 0.15 mm, 35 µm copper,
+  w/h ∈ {0.3, 0.8, 1.3, 1.8}: 8 single-ended cases.
+- εr 4.6, h = 0.15 mm, (w/h, s/h) ∈ {(0.75, 0.75), (1.25, 1.5)}: 2 differential cases.
+
+There is no second, unseen set of KiCad boards in this round. The fixed net-resistance results are reported on the
+same demo boards and labelled as not independent.

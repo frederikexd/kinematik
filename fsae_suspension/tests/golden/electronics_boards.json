@@ -85,9 +85,9 @@
     "estimate": true,
     "pair": "unrouted",
     "target_ohm": 120.0,
-    "z_diff_ohm": 107.85844226162155
+    "z_diff_ohm": 109.28690717974553
    },
-   "message": "Pair 'unrouted' estimates 108 Ω differential, within 15 % of the 120 Ω target (analytic estimate, not field-solved).",
+   "message": "Pair 'unrouted' estimates 109 Ω differential, within 15 % of the 120 Ω target (analytic estimate, not field-solved).",
    "severity": "ok",
    "subsystems": [
     "electrics"
@@ -108,9 +108,9 @@
     "estimate": true,
     "pair": "can",
     "target_ohm": 40.0,
-    "z_diff_ohm": 107.85844226162155
+    "z_diff_ohm": 109.28690717974553
    },
-   "message": "Pair 'can' estimates 108 Ω differential vs a 40 Ω target (170 % off) (analytic estimate, not field-solved) — retune width/spacing or confirm on a field solver.",
+   "message": "Pair 'can' estimates 109 Ω differential vs a 40 Ω target (173 % off) (analytic estimate, not field-solved) — retune width/spacing or confirm on a field solver.",
    "severity": "warning",
    "subsystems": [
     "electrics"
@@ -222,9 +222,9 @@
     "estimate": true,
     "pair": "unrouted",
     "target_ohm": 120.0,
-    "z_diff_ohm": 107.85844226162155
+    "z_diff_ohm": 109.28690717974553
    },
-   "message": "Pair 'unrouted' estimates 108 Ω differential, within 15 % of the 120 Ω target (analytic estimate, not field-solved).",
+   "message": "Pair 'unrouted' estimates 109 Ω differential, within 15 % of the 120 Ω target (analytic estimate, not field-solved).",
    "severity": "ok",
    "subsystems": [
     "electrics"
@@ -245,9 +245,9 @@
     "estimate": true,
     "pair": "can",
     "target_ohm": 40.0,
-    "z_diff_ohm": 107.85844226162155
+    "z_diff_ohm": 109.28690717974553
    },
-   "message": "Pair 'can' estimates 108 Ω differential vs a 40 Ω target (170 % off) (analytic estimate, not field-solved) — retune width/spacing or confirm on a field solver.",
+   "message": "Pair 'can' estimates 109 Ω differential vs a 40 Ω target (173 % off) (analytic estimate, not field-solved) — retune width/spacing or confirm on a field solver.",
    "severity": "warning",
    "subsystems": [
     "electrics"
@@ -371,9 +371,9 @@
     "estimate": true,
     "pair": "unrouted",
     "target_ohm": 120.0,
-    "z_diff_ohm": 107.85844226162155
+    "z_diff_ohm": 109.28690717974553
    },
-   "message": "Pair 'unrouted' estimates 108 Ω differential, within 15 % of the 120 Ω target (analytic estimate, not field-solved).",
+   "message": "Pair 'unrouted' estimates 109 Ω differential, within 15 % of the 120 Ω target (analytic estimate, not field-solved).",
    "severity": "ok",
    "subsystems": [
     "electrics"
@@ -394,9 +394,9 @@
     "estimate": true,
     "pair": "can",
     "target_ohm": 40.0,
-    "z_diff_ohm": 107.85844226162155
+    "z_diff_ohm": 109.28690717974553
    },
-   "message": "Pair 'can' estimates 108 Ω differential vs a 40 Ω target (170 % off) (analytic estimate, not field-solved) — retune width/spacing or confirm on a field solver.",
+   "message": "Pair 'can' estimates 109 Ω differential vs a 40 Ω target (173 % off) (analytic estimate, not field-solved) — retune width/spacing or confirm on a field solver.",
    "severity": "warning",
    "subsystems": [
     "electrics"
@@ -511,8 +511,8 @@
   }
  ],
  "z0": [
-  109.68370324537858,
-  171.38116591439248,
-  66.07261324386377
+  117.36699566087051,
+  "NaN",
+  66.9476714042505
  ]
 }
