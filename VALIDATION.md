@@ -195,11 +195,15 @@ quote absolute downforce.
 - **KiCad 7.** The PCB Doctor reads all 14 of KiCad's demo boards exactly as KiCad's own reader does.
 - **SPICE (ngspice).** Precharge and the pack along a lap match within 0.001 %.
 - **Net resistance on real boards.** It missed the 2 % limit against SPICE. Four connectivity flaws, all reading
-  low, were fixed. Round 3 then used a 2-D solve of the copper as the reference. Five more causes were found and
-  fixed on KiCad's demo boards, and the model was frozen. Then it was checked once on 395 held-out nets from Formula
-  Student team boards: 87.8 % within 2 %, 98.2 % within 5 %, 99.2 % within 10 %, median −0.4 % (before: 8.1 %
-  within 2 %, median +14.6 %). That still misses the 2 % limit on about one net in eight. The brown-out check adds
-  a 1.15 margin, which covers every held-out net.
+  low, were fixed. Rounds 3 and 3b used a 2-D solve of the copper as the reference, corrected once when it proved
+  to read thin diagonal tracks high. On 142 held-out nets from Formula Student team boards: 87.3 % within 2 %,
+  97.9 % within 5 %, worst low −3.1 % (before: 2.8 % within 2 %). Still short of 2 % on about one net in eight,
+  reading high. The brown-out check adds a 1.10 margin, which covers every held-out net.
+- **Nets with copper pours.** A with-pour estimate, held out on 17 team-board nets: 35 % within 2 %, 71 % within 5 %,
+  never below the reference. A conservative indicator; the brown-out check keeps the trace-only bound.
+- **Trace heating.** Against the 1956 NBS measurements behind IPC-2221: plain IPC-2221 read up to 8 % optimistic on
+  wide traces at a 10 °C rise; KinematiK now uses IPC-2221 × 0.975 (44 of 44 points within 5 %, calibrated on them),
+  and rates inner layers like outer ones (IPC-2152).
 - **Microstrip impedance.** The IPC-2141 formula missed a field solver (atlc) by up to 8.3 %. Hammerstad–Jensen
   replaced it and passed 10 of 10 geometries it had never seen, within 3.4 %.
 - **Altium Designer 26.11.1.** KinematiK reads Altium's own saved boards exactly as Altium counts them, after two reader

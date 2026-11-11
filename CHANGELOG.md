@@ -103,6 +103,15 @@ reproduce are credited by name, along with independent reproductions, successful
   −0.4 %, worst −11.2 % / +18.0 %. The brown-out check now uses 1.15 × the resistance.
   `benchmarks/electrical/nets_round3.json`.
 - Pads with copper offset from the drill are read, and vias without a drill take the net-class or board default.
+- The 2-D reference was corrected (it read thin diagonal tracks up to 8 % high). Against it, on 142 held-out team
+  nets: 87.3 % within 2 %, 97.9 % within 5 %, worst low −3.1 %. Fixes: near-pad track ends no longer short arcs; a
+  pad is touched across the track's whole width. Brown-out margin 1.10.
+- Altium Designer 26.11.1: the binary reader read phantom pads and dropped padless components (both fixed); counts
+  now equal Altium's. Altium's impedance calculator: 21 of 21 within limits.
+- Trace heating checked against NBS Report 4283 (1956): ampacity is now IPC-2221 × 0.975, and inner layers are rated
+  like outer layers (IPC-2152).
+- `suspension/pcb_pour.py`: a with-pour resistance estimate (informational; conservative on held-out boards).
+- The reference script writes atlc's BMP itself (no Pillow import).
 - atlc field solver: the IPC-2141 microstrip formula missed by up to 8.3 %. It is replaced by Hammerstad–Jensen
   (what KiCad's calculator uses), which passed 10 of 10 unseen geometries within 3.4 %.
 `scripts/electrical_reference.py`, `benchmarks/electrical/`, `tests/test_electrical_benchmark.py`.
