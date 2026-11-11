@@ -966,9 +966,10 @@ SAFETY_CONTRACT = "false alarms are acceptable; false all-clears are not"
 #  worst_r_ohm is a best estimate, checked against a 2-D solve of the copper
 #  (docs/ELECTRICAL_BENCHMARK.md, round 3); it can read low as well as high.
 #  The brown-out check must not under-read, so it uses the estimate times this
-#  factor (unitless): on the boards the model was designed on, the 2-D answer
-#  was never more than 11.1 % above it (1/(1-0.111) = 1.125), rounded up to 1.15.
-NET_R_UPPER_FACTOR = 1.15
+#  factor (unitless): on the boards the model was designed on, against the
+#  corrected 2-D reference (addendum 3), the 2-D answer was never more than
+#  7.3 % above it (1/(1-0.073) = 1.079), rounded up to 1.10.
+NET_R_UPPER_FACTOR = 1.10
 
 
 def _node_key(layer: str, pt) -> tuple:
@@ -1563,12 +1564,24 @@ def _covered_fraction(seg, pads, vias, samples: int = 24, segs=()) -> float:
         return 0.0
     samples = min(max(samples, math.ceil(seg.length_mm / 0.025)), 4000)   # at least one sample per 25 um
     hit = 0
+    #  A pad is tested across the track's whole width, not only at its centreline: a track running alongside a pad
+    #  with its edge on the pad's copper hands its current to the pad there (kit-dev demo, C205 to U202: the track's
+    #  edge overlaps U202's pad for 0.5 mm, and the centreline rule read it 34 % high against the 2-D solve). For a
+    #  track entering a pad end-on, the cross-section first touches the pad where the centreline does, as before.
+    #  Crediting only the share of the cross-section on the pad, or only its inner half, did worse on the demo
+    #  boards (83 % and 92 % of nets within 2 %, against 93 %).
+    ux, uy = seg.end[0] - seg.start[0], seg.end[1] - seg.start[1]
+    ln = math.hypot(ux, uy) or 1.0
+    nx, ny = -uy / ln * seg.width_mm / 2.0, ux / ln * seg.width_mm / 2.0
+    across = (-1.0, -0.5, 0.0, 0.5, 1.0)
     for k in range(samples):
         f = (k + 0.5) / samples
-        pt = (seg.start[0] + f * (seg.end[0] - seg.start[0]), seg.start[1] + f * (seg.end[1] - seg.start[1]))
-        if any(_pad_overlaps(p, pt, 0.0) for p in near) or \
-                any(math.hypot(pt[0] - v.at[0], pt[1] - v.at[1]) <= v.size_mm / 2.0 for v in ring) or \
+        pt = (seg.start[0] + f * ux, seg.start[1] + f * uy)
+        if any(math.hypot(pt[0] - v.at[0], pt[1] - v.at[1]) <= v.size_mm / 2.0 for v in ring) or \
                 any(_pt_seg_dist(pt, w.start, w.end) <= w.width_mm / 2.0 for w in wide):
+            hit += 1
+            continue
+        if near and any(_pad_overlaps(p, (pt[0] + a_ * nx, pt[1] + a_ * ny), 0.0) for p in near for a_ in across):
             hit += 1
     return hit / samples
 
