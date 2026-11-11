@@ -562,23 +562,45 @@ def copper2d_resistance(board, net: str, pair, copper_oz: float, thickness_mm: f
     if not shapes:
         return None
 
-    def grid(ox, oy, only_terms=False):
-        """Union coverage (largest over items) per cell key on a grid offset by (ox, oy) cells."""
-        ks, cs = [], []
-        for ly, kind, args, tk in shapes:
-            if only_terms and tk is None:
-                continue
-            I, J, c = (_cells_capsule(*args, h, ox=ox, oy=oy, ss=SS) if kind == "capsule"
-                       else _cells_polygon(*args, h, ss=SS, ox=ox, oy=oy))
-            ks.append((np.int64(ly) << 42) | ((I.astype(np.int64) + off) << 21) | (J.astype(np.int64) + off))
-            cs.append(c)
-        if not ks:
+    # All coverages come from one rasterization on a half-size grid (2 × 2 samples per half cell, the same sample
+    # density as 4 × 4 per cell): a cell is the mean of its 2 × 2 half cells, and the box around the face between
+    # two cells is the mean of the 2 × 2 half cells straddling it.
+    hh = h / 2.0
+    half = {False: ([], [], [], []), True: ([], [], [], [])}
+    for ly, kind, args, tk in shapes:
+        P, Q, c = (_cells_capsule(*args, hh, ss=max(SS // 2, 1)) if kind == "capsule"
+                   else _cells_polygon(*args, hh, ss=max(SS // 2, 1)))
+        for t_ in ((False, True) if tk is not None else (False,)):
+            Ls_, Ps_, Qs_, Cs_ = half[t_]
+            Ls_.append(np.full(P.size, ly, np.int64)); Ps_.append(P.astype(np.int64)); Qs_.append(Q.astype(np.int64))
+            Cs_.append(c)
+
+    def union(t_):
+        Ls_, Ps_, Qs_, Cs_ = half[t_]
+        if not Ls_:
+            return (np.zeros(0, np.int64),) * 3 + (np.zeros(0),)
+        L0, P0, Q0, C0 = (np.concatenate(x) for x in (Ls_, Ps_, Qs_, Cs_))
+        k0 = (L0 << 42) | ((P0 + off) << 21) | (Q0 + off)
+        o_ = np.lexsort((C0, k0))
+        k0, L0, P0, Q0, C0 = k0[o_], L0[o_], P0[o_], Q0[o_], C0[o_]
+        last = np.r_[k0[1:] != k0[:-1], True]
+        return L0[last], P0[last], Q0[last], np.minimum(C0[last], 1.0)
+
+    def gather(Lh, Ph, Qh, Ch, fi, fj):
+        """Sum of half-cell coverage / 4 into cells keyed by (layer, fi(P), fj(Q))."""
+        if Lh.size == 0:
             return np.zeros(0, np.int64), np.zeros(0)
-        k_, c_ = np.concatenate(ks), np.concatenate(cs)
-        o_ = np.lexsort((c_, k_))
-        k_, c_ = k_[o_], c_[o_]
-        last = np.r_[k_[1:] != k_[:-1], True]
-        return k_[last], np.minimum(c_[last], 1.0)
+        k_ = (Lh << 42) | ((fi(Ph) + off) << 21) | (fj(Qh) + off)
+        u_, inv = np.unique(k_, return_inverse=True)
+        return u_, np.minimum(np.bincount(inv, weights=Ch) / 4.0, 1.0)
+
+    cell_ = lambda v: v // 2                # half cells 2i, 2i+1 -> cell i
+    face_ = lambda v: (v - 1) // 2          # half cells 2i+1, 2i+2 -> face after cell i
+    Ha, Ht = union(False), union(True)
+
+    def grid(ox, oy, only_terms=False):
+        H_ = Ht if only_terms else Ha
+        return gather(*H_, face_ if ox else cell_, face_ if oy else cell_)
 
     def lookup(keys, k_, c_):
         if k_.size == 0:
