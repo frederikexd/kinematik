@@ -23,6 +23,7 @@ KinematiK against the recorded references on every run without needing the tools
 | **B4.** Net resistance vs a 2-D copper solve, round 3 (as first published) | 888 demo-board nets; 395 held-out nets on 13 FS team boards | 2 % per net | Held out: 87.8 % within 2 %, 98.2 % within 5 %. **Superseded by B5:** the reference read thin diagonal tracks up to 8 % high |
 | **B5.** Net resistance vs the **corrected** 2-D solve | 681 demo-board nets (design); **142 sampled held-out nets on FS team boards** | 2 % per net | **Still misses 2 % on about one net in eight, and errs high when it misses.** Held out: 87.3 % within 2 %, 97.9 % within 5 %, 98.6 % within 10 %, median +0.55 %, **worst low −3.1 %**, worst high +21.2 %. Before round 3: 2.8 % within 2 %, median +16.9 % |
 | **A2.** Board reading vs **Altium Designer 26.11.1** | 3 boards imported into Altium and saved as binary `.PcbDoc`: 9,429 tracks, 180 arcs, 901 vias, 2,763 pads, 346 components, 467 nets | exact counts; length 0.1 % | **Pass after two reader fixes it exposed.** Every count equals Altium's own; net lengths within 0.04 % of KiCad's original. First read: StickHub 289 pads and 90 components (Altium: 278, 94) |
+| **A3.** Board reading of **native Altium boards** vs Altium Designer 26.11.1 | 6 Formula SAE boards designed in Altium (Queen's FSAE), never converted: 2,226 tracks, 21 arcs, 201 vias, 1,130 pads, 328 components | exact counts | **6 of 6 boards, 30 of 30 counts identical** |
 | **C.** Microstrip impedance vs field solver | 5 single-ended, 6 differential | 5 % / 10 % | **Round 1 miss:** single-ended −8.3 % and −6.4 % at the range ends. Formula replaced. **Round 2, unseen geometries: 10 of 10**, worst 3.4 % |
 | **C2.** Microstrip impedance vs **Altium Designer 26.11.1** | the same 21 cross-sections in Altium's Layer Stack Manager, plus 5 extras | 5 % / 10 % | **21 of 21.** Single-ended worst −1.9 %, differential worst +4.0 %. Altium and atlc agree within 1.6 % on every case |
 | **D.** Trace heating vs **NBS 1956 measurements** (the data behind IPC-2221) | 44 reliably read points, 10–100 °C rise (10 more at 4–16 sq mil left out) | KinematiK ≤ 1.05 × measured at every point | **Plain IPC-2221 missed on 2** (wide traces at 10 °C: +5 %, +8 %). KinematiK now uses IPC-2221 × 0.975: **44 of 44**, worst +4.96 %, median 0.89 × measured. Calibrated on these points, so a calibration check, not a validation |
@@ -140,6 +141,26 @@ saved each as a binary `.PcbDoc`, and read Altium's own counts from Board Inform
   components, 278 pads, 87 vias; video 7,951 tracks; pic_programmer 63 components, 247 pads, 6 vias. Against KiCad's
   original, the only difference is three zero-length tracks on StickHub that Altium's importer drops. The routed
   length of all 467 nets is within 0.04 % of KiCad's.
+
+## A3. Boards designed in Altium
+
+A2's boards started in KiCad. Plan addendum 7 adds six boards Queen's Formula SAE designed in Altium (`qfsae/pcb`:
+PDP_V3, BSPD_002, Q23_BRAKE_LIGHT_O1, Analog to CAN Rev2, PMBoard, Triangular_Brakelight), never converted. The
+author opened each in Altium Designer 26.11.1 and read components, pads and vias from Board Information and copper
+tracks and arcs with the PCB Filter (`IsTrack And OnSignal`, `IsArc And OnSignal`)
+(`benchmarks/electrical/altium/results_native.json`).
+
+| Board | Components | Pads | Vias | Tracks | Arcs |
+|---|---|---|---|---|---|
+| PDP_V3 | 52 | 329 | 53 | 501 | 0 |
+| BSPD_002 | 75 | 242 | 39 | 824 | 1 |
+| BRAKE_LIGHT_O1 | 73 | 147 | 21 | 160 | 0 |
+| Analog to CAN Rev2 | 29 | 116 | 23 | 218 | 0 |
+| PMBoard | 76 | 250 | 65 | 386 | 0 |
+| Triangular_Brakelight | 23 | 46 | 0 | 137 | 20 |
+
+**KinematiK reads every one of the 30 counts exactly as Altium does.** Pads that belong to no component are kept
+under a placeholder that the fix report no longer counts as a component (it had read 76 components on BSPD_002).
 
 ## B5. Net resistance against the corrected 2-D reference
 
