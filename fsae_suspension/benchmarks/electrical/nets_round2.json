@@ -1,6 +1,7 @@
 {
- "note": "Pad pairs KinematiK names worst on each net it solves (inputs to the SPICE reference).",
- "pairs": [
+ "round": 2,
+ "note": "KinematiK after the fixes, same demo boards (not independent of the fixes).",
+ "nets": [
   {
    "board": "complex_hierarchy/complex_hierarchy.kicad_pcb",
    "net": "-VAA",
@@ -8,6 +9,8 @@
     "C11.2",
     "U3.4"
    ],
+   "kinematik_ohm": 0.09990242123603821,
+   "spice_ohm": 0.1043779,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -18,6 +21,8 @@
     "D1.2",
     "P2.1"
    ],
+   "kinematik_ohm": 0.007189748145862892,
+   "spice_ohm": 0.007169818,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -28,6 +33,8 @@
     "R24.2",
     "P6.1"
    ],
+   "kinematik_ohm": 0.013761422004763876,
+   "spice_ohm": 0.01374142,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -38,6 +45,8 @@
     "R27.1",
     "P5.1"
    ],
+   "kinematik_ohm": 0.02439207554788501,
+   "spice_ohm": 0.02437208,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -48,6 +57,8 @@
     "RV2.3",
     "R28.1"
    ],
+   "kinematik_ohm": 0.10570253997868634,
+   "spice_ohm": 0.1053193,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -58,6 +69,8 @@
     "U4.3",
     "C6.1"
    ],
+   "kinematik_ohm": 0.029244000963246843,
+   "spice_ohm": 0.02922412,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -68,6 +81,8 @@
     "R23.2",
     "P4.1"
    ],
+   "kinematik_ohm": 0.015149171148564629,
+   "spice_ohm": 0.01512917,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -78,6 +93,8 @@
     "R25.1",
     "P3.1"
    ],
+   "kinematik_ohm": 0.023360180419159014,
+   "spice_ohm": 0.02334018,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -88,6 +105,8 @@
     "RV1.3",
     "R26.1"
    ],
+   "kinematik_ohm": 0.08862103521823883,
+   "spice_ohm": 0.1036853,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -98,6 +117,8 @@
     "U3.7",
     "C3.1"
    ],
+   "kinematik_ohm": 0.03534758971636952,
+   "spice_ohm": 0.03532759,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -108,6 +129,8 @@
     "D2.2",
     "P1.1"
    ],
+   "kinematik_ohm": 0.16173094546957145,
+   "spice_ohm": 0.1548771,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -118,6 +141,8 @@
     "R7.1",
     "U3.5"
    ],
+   "kinematik_ohm": 0.010835110005804378,
+   "spice_ohm": 0.01081511,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -128,6 +153,8 @@
     "R17.1",
     "U4.5"
    ],
+   "kinematik_ohm": 0.020526582936961482,
+   "spice_ohm": 0.02048682,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -138,6 +165,8 @@
     "R6.2",
     "C12.1"
    ],
+   "kinematik_ohm": 0.016934598082847037,
+   "spice_ohm": 0.0169147,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -148,6 +177,8 @@
     "R16.2",
     "C14.1"
    ],
+   "kinematik_ohm": 0.017121829238075852,
+   "spice_ohm": 0.01710183,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -158,6 +189,8 @@
     "R7.2",
     "C3.2"
    ],
+   "kinematik_ohm": 0.017379011123488365,
+   "spice_ohm": 0.01735901,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -168,6 +201,8 @@
     "C10.1",
     "U1.2"
    ],
+   "kinematik_ohm": 0.02319169039604632,
+   "spice_ohm": 0.02317169,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -178,6 +213,8 @@
     "R10.2",
     "C5.1"
    ],
+   "kinematik_ohm": 0.005003544197730267,
+   "spice_ohm": 0.004983546,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -188,6 +225,8 @@
     "R17.2",
     "C6.2"
    ],
+   "kinematik_ohm": 0.008571645430584671,
+   "spice_ohm": 0.008551647,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -198,6 +237,8 @@
     "C10.2",
     "U1.4"
    ],
+   "kinematik_ohm": 0.007812083534737035,
+   "spice_ohm": 0.007792086,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -208,6 +249,8 @@
     "R20.2",
     "C8.1"
    ],
+   "kinematik_ohm": 0.006952079064832075,
+   "spice_ohm": 0.006932081,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -218,6 +261,8 @@
     "D2.1",
     "D3.2"
    ],
+   "kinematik_ohm": 0.012615761076356657,
+   "spice_ohm": 0.01241375,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -228,6 +273,8 @@
     "Q1.2",
     "R4.1"
    ],
+   "kinematik_ohm": 0.018761244332891888,
+   "spice_ohm": 0.01874215,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -238,6 +285,8 @@
     "Q3.2",
     "Q4.3"
    ],
+   "kinematik_ohm": 0.030123708669141193,
+   "spice_ohm": 0.03008475,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -248,6 +297,8 @@
     "D8.1",
     "D4.2"
    ],
+   "kinematik_ohm": 0.012231934479889253,
+   "spice_ohm": 0.01221194,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -258,6 +309,8 @@
     "RV1.1",
     "R11.1"
    ],
+   "kinematik_ohm": 0.014761108922078946,
+   "spice_ohm": 0.01474111,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -268,6 +321,8 @@
     "R19.2",
     "U4.1"
    ],
+   "kinematik_ohm": 0.019511105116920377,
+   "spice_ohm": 0.01949117,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -278,6 +333,8 @@
     "RV2.1",
     "R21.1"
    ],
+   "kinematik_ohm": 0.013219638537641978,
+   "spice_ohm": 0.01319964,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -288,6 +345,8 @@
     "R9.2",
     "U3.1"
    ],
+   "kinematik_ohm": 0.03164121551354475,
+   "spice_ohm": 0.03162128,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -298,6 +357,8 @@
     "D5.1",
     "D6.2"
    ],
+   "kinematik_ohm": 0.004572513995942891,
+   "spice_ohm": 0.004552516,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -308,6 +369,8 @@
     "Q5.2",
     "R14.1"
    ],
+   "kinematik_ohm": 0.031796346165499596,
+   "spice_ohm": 0.03141867,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -318,6 +381,8 @@
     "U1.8",
     "C1.1"
    ],
+   "kinematik_ohm": 0.03013431425770626,
+   "spice_ohm": 0.03011432,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -328,6 +393,8 @@
     "Q7.2",
     "Q8.3"
    ],
+   "kinematik_ohm": 0.0303678230060558,
+   "spice_ohm": 0.03034795,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -338,6 +405,8 @@
     "D7.2",
     "D9.1"
    ],
+   "kinematik_ohm": 0.012231934479888755,
+   "spice_ohm": 0.01221194,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -348,6 +417,8 @@
     "Q1.3",
     "Q2.2"
    ],
+   "kinematik_ohm": 0.024990363580034966,
+   "spice_ohm": 0.02497049,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -358,6 +429,8 @@
     "Q5.3",
     "Q6.2"
    ],
+   "kinematik_ohm": 0.0317792292160633,
+   "spice_ohm": 0.03165908,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -368,6 +441,8 @@
     "Q1.1",
     "R3.2"
    ],
+   "kinematik_ohm": 0.018569407072366595,
+   "spice_ohm": 0.01854959,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -378,6 +453,8 @@
     "R26.2",
     "Q2.1"
    ],
+   "kinematik_ohm": 0.04552795937990807,
+   "spice_ohm": 0.04550796,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -388,6 +465,8 @@
     "C2.1",
     "U3.8"
    ],
+   "kinematik_ohm": 0.09407222270965576,
+   "spice_ohm": 0.08754687,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -398,6 +477,8 @@
     "Q3.1",
     "R25.2"
    ],
+   "kinematik_ohm": 0.023581840961656098,
+   "spice_ohm": 0.02337333,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -408,6 +489,8 @@
     "R9.1",
     "Q4.1"
    ],
+   "kinematik_ohm": 0.011632276483951652,
+   "spice_ohm": 0.01161245,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -418,6 +501,8 @@
     "R8.1",
     "Q4.2"
    ],
+   "kinematik_ohm": 0.011876927505288858,
+   "spice_ohm": 0.01185693,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -428,6 +513,8 @@
     "Q5.1",
     "R13.2"
    ],
+   "kinematik_ohm": 0.01664754225726289,
+   "spice_ohm": 0.01637013,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -438,6 +525,8 @@
     "Q6.1",
     "R28.2"
    ],
+   "kinematik_ohm": 0.04534696418174004,
+   "spice_ohm": 0.04294737,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -448,6 +537,8 @@
     "Q7.1",
     "R27.2"
    ],
+   "kinematik_ohm": 0.025732866802863567,
+   "spice_ohm": 0.0256932,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -458,6 +549,8 @@
     "Q8.1",
     "R19.1"
    ],
+   "kinematik_ohm": 0.029248278150045482,
+   "spice_ohm": 0.02922828,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -468,6 +561,8 @@
     "Q8.2",
     "R18.1"
    ],
+   "kinematik_ohm": 0.01358908244325463,
+   "spice_ohm": 0.01356908,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -478,6 +573,8 @@
     "RV1.2",
     "U3.2"
    ],
+   "kinematik_ohm": 0.022283754487894467,
+   "spice_ohm": 0.02226376,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -488,6 +585,8 @@
     "RV2.2",
     "U4.2"
    ],
+   "kinematik_ohm": 0.027383015413902118,
+   "spice_ohm": 0.02736302,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -498,6 +597,8 @@
     "R2.2",
     "SW1.2"
    ],
+   "kinematik_ohm": 0.0419105416866803,
+   "spice_ohm": 0.04189054,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -508,6 +609,8 @@
     "R2.1",
     "SW1.1"
    ],
+   "kinematik_ohm": 0.0861552353656656,
+   "spice_ohm": 0.08613529,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -518,6 +621,8 @@
     "P3.1",
     "U1.6"
    ],
+   "kinematik_ohm": 0.01814917257735722,
+   "spice_ohm": 0.01800058,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -528,6 +633,8 @@
     "C2.1",
     "P2.1"
    ],
+   "kinematik_ohm": 0.013616176211679223,
+   "spice_ohm": 0.01357887,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -538,6 +645,32 @@
     "C2.2",
     "U1.8"
    ],
+   "kinematik_ohm": 0.00774768764701087,
+   "spice_ohm": 0.007728412,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "ecc83/ecc83-pp.kicad_pcb",
+   "net": "Net-(P1-PM)",
+   "pair": [
+    "R4.1",
+    "P1.2"
+   ],
+   "kinematik_ohm": 0.01905526129275628,
+   "spice_ohm": 0.01903526,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "ecc83/ecc83-pp.kicad_pcb",
+   "net": "Net-(P4-P1)",
+   "pair": [
+    "P4.1",
+    "U1.9"
+   ],
+   "kinematik_ohm": 0.008108173426945609,
+   "spice_ohm": 0.007680171,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -548,6 +681,8 @@
     "P4.2",
     "U1.4"
    ],
+   "kinematik_ohm": 0.02000600179743888,
+   "spice_ohm": 0.019986,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -555,9 +690,11 @@
    "board": "ecc83/ecc83-pp.kicad_pcb",
    "net": "Net-(U1A-G)",
    "pair": [
-    "R1.1",
-    "U1.1"
+    "U1.1",
+    "U1.7"
    ],
+   "kinematik_ohm": 0.048735672255199224,
+   "spice_ohm": 0.04860551,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -568,6 +705,8 @@
     "R2.1",
     "U1.3"
    ],
+   "kinematik_ohm": 0.011896693707626962,
+   "spice_ohm": 0.0118767,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -578,6 +717,8 @@
     "U1.6",
     "P3.1"
    ],
+   "kinematik_ohm": 0.016189942657745045,
+   "spice_ohm": 0.01617006,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -588,6 +729,8 @@
     "R3.1",
     "C2.1"
    ],
+   "kinematik_ohm": 0.008901841210921505,
+   "spice_ohm": 0.008882069,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -598,6 +741,8 @@
     "U1.8",
     "C2.2"
    ],
+   "kinematik_ohm": 0.0185420969844433,
+   "spice_ohm": 0.01864956,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -608,6 +753,8 @@
     "R4.1",
     "U1.2"
    ],
+   "kinematik_ohm": 0.009487688976941149,
+   "spice_ohm": 0.009467691,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -618,6 +765,8 @@
     "U1.5",
     "P4.1"
    ],
+   "kinematik_ohm": 0.018883815983588025,
+   "spice_ohm": 0.01777594,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -628,6 +777,8 @@
     "U1.9",
     "P4.2"
    ],
+   "kinematik_ohm": 0.010531626104653278,
+   "spice_ohm": 0.01051163,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -635,9 +786,11 @@
    "board": "ecc83/ecc83-pp_v2.kicad_pcb",
    "net": "Net-(U1A-G)",
    "pair": [
-    "R1.1",
-    "U1.1"
+    "U1.1",
+    "U1.7"
    ],
+   "kinematik_ohm": 0.052568338642249635,
+   "spice_ohm": 0.05158388,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -648,6 +801,8 @@
     "R2.1",
     "U1.3"
    ],
+   "kinematik_ohm": 0.006783606106642125,
+   "spice_ohm": 0.0067647,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -658,6 +813,8 @@
     "D1.1",
     "U3.1"
    ],
+   "kinematik_ohm": 0.017963432452315194,
+   "spice_ohm": 0.01774075,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -668,6 +825,20 @@
     "R10.1",
     "U4.1"
    ],
+   "kinematik_ohm": 0.014274787247184284,
+   "spice_ohm": 0.01425479,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6
+  },
+  {
+   "board": "flat_hierarchy/flat_hierarchy.kicad_pcb",
+   "net": "VCC",
+   "pair": [
+    "D6.1",
+    "U1.8"
+   ],
+   "kinematik_ohm": 0.08167671039700508,
+   "spice_ohm": 0.0732875,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -678,6 +849,8 @@
     "C9.1",
     "R16.2"
    ],
+   "kinematik_ohm": 0.030830888846554633,
+   "spice_ohm": 0.03077318,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -688,6 +861,8 @@
     "P3.11",
     "Q3.1"
    ],
+   "kinematik_ohm": 0.1378406658768654,
+   "spice_ohm": 0.1403405,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -698,6 +873,8 @@
     "C9.2",
     "R11.2"
    ],
+   "kinematik_ohm": 0.01890605459342408,
+   "spice_ohm": 0.01838092,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -708,6 +885,8 @@
     "J1.7",
     "R6.1"
    ],
+   "kinematik_ohm": 0.02040372751365925,
+   "spice_ohm": 0.02038373,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -718,6 +897,8 @@
     "R18.2",
     "U6.4"
    ],
+   "kinematik_ohm": 0.17836883664131165,
+   "spice_ohm": 0.1881003,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -728,6 +909,8 @@
     "P2.27",
     "R13.2"
    ],
+   "kinematik_ohm": 0.14239735156297684,
+   "spice_ohm": 0.1383376,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -738,6 +921,8 @@
     "P2.28",
     "U2.12"
    ],
+   "kinematik_ohm": 0.1482267677783966,
+   "spice_ohm": 0.1625755,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -748,6 +933,8 @@
     "D1.2",
     "P1.2"
    ],
+   "kinematik_ohm": 0.009778610433955812,
+   "spice_ohm": 0.009758612,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -758,6 +945,8 @@
     "D2.2",
     "U2.2"
    ],
+   "kinematik_ohm": 0.04008054832019507,
+   "spice_ohm": 0.0400412,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -768,6 +957,8 @@
     "C5.1",
     "R10.2"
    ],
+   "kinematik_ohm": 0.005081156643027671,
+   "spice_ohm": 0.005061159,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -778,6 +969,8 @@
     "R3.2",
     "U2.5"
    ],
+   "kinematik_ohm": 0.0390645929447259,
+   "spice_ohm": 0.03889222,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -788,6 +981,8 @@
     "R5.2",
     "U2.9"
    ],
+   "kinematik_ohm": 0.036616662220123844,
+   "spice_ohm": 0.03659675,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -798,6 +993,8 @@
     "D8.2",
     "R9.2"
    ],
+   "kinematik_ohm": 0.004032956781609167,
+   "spice_ohm": 0.004012959,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -808,6 +1005,8 @@
     "D9.2",
     "R14.2"
    ],
+   "kinematik_ohm": 0.004032956781609167,
+   "spice_ohm": 0.004012959,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -818,6 +1017,8 @@
     "L1.1",
     "U4.8"
    ],
+   "kinematik_ohm": 0.010813952045325089,
+   "spice_ohm": 0.01079395,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -828,6 +1029,8 @@
     "D11.1",
     "Q1.1"
    ],
+   "kinematik_ohm": 0.01729986965192453,
+   "spice_ohm": 0.01727987,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -838,6 +1041,8 @@
     "D11.2",
     "R19.1"
    ],
+   "kinematik_ohm": 0.004843696482433344,
+   "spice_ohm": 0.004823698,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -848,6 +1053,8 @@
     "D12.2",
     "R21.2"
    ],
+   "kinematik_ohm": 0.0070710488023207965,
+   "spice_ohm": 0.007051051,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -858,6 +1065,8 @@
     "R8.1",
     "U2.3"
    ],
+   "kinematik_ohm": 0.04689406343495961,
+   "spice_ohm": 0.04687407,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -868,6 +1077,8 @@
     "R12.1",
     "U2.6"
    ],
+   "kinematik_ohm": 0.006800909541526134,
+   "spice_ohm": 0.006780997,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -878,6 +1089,8 @@
     "R13.1",
     "U2.8"
    ],
+   "kinematik_ohm": 0.01385053021413887,
+   "spice_ohm": 0.01383053,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -888,6 +1101,8 @@
     "R15.1",
     "RV1.1"
    ],
+   "kinematik_ohm": 0.015481671812190682,
+   "spice_ohm": 0.01546167,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -898,6 +1113,8 @@
     "RV1.3",
     "R16.1"
    ],
+   "kinematik_ohm": 0.014670763556756667,
+   "spice_ohm": 0.01465093,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -908,6 +1125,8 @@
     "Q1.2",
     "R8.2"
    ],
+   "kinematik_ohm": 0.025186682273594538,
+   "spice_ohm": 0.02516668,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -918,6 +1137,8 @@
     "R9.1",
     "R17.1"
    ],
+   "kinematik_ohm": 0.029636941879849974,
+   "spice_ohm": 0.02959695,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -928,6 +1149,8 @@
     "J1.3",
     "R1.1"
    ],
+   "kinematik_ohm": 0.008045913563217813,
+   "spice_ohm": 0.008025916,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -938,6 +1161,8 @@
     "J1.4",
     "R4.1"
    ],
+   "kinematik_ohm": 0.008283098974175476,
+   "spice_ohm": 0.008263375,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -948,6 +1173,8 @@
     "J1.8",
     "U2.11"
    ],
+   "kinematik_ohm": 0.039945285343550616,
+   "spice_ohm": 0.03978876,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -958,6 +1185,8 @@
     "R19.2",
     "R20.2"
    ],
+   "kinematik_ohm": 0.02110639306144798,
+   "spice_ohm": 0.02100549,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -968,6 +1197,8 @@
     "RV1.2",
     "U4.2"
    ],
+   "kinematik_ohm": 0.029437099215791317,
+   "spice_ohm": 0.0294171,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -978,6 +1209,8 @@
     "U9.K1",
     "R2.1"
    ],
+   "kinematik_ohm": 0.020951807774565095,
+   "spice_ohm": 0.02093181,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -988,6 +1221,8 @@
     "P1.10",
     "U9.K13"
    ],
+   "kinematik_ohm": 0.015832692996767983,
+   "spice_ohm": 0.01564408,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -998,6 +1233,8 @@
     "P1.14",
     "U9.C12"
    ],
+   "kinematik_ohm": 0.020732357177557205,
+   "spice_ohm": 0.02071236,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1008,6 +1245,8 @@
     "P1.2",
     "U9.D12"
    ],
+   "kinematik_ohm": 0.016591591190250374,
+   "spice_ohm": 0.01657187,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1018,6 +1257,8 @@
     "P1.3",
     "U9.E13"
    ],
+   "kinematik_ohm": 0.01182262388979137,
+   "spice_ohm": 0.01180282,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1028,6 +1269,8 @@
     "P1.4",
     "U9.F12"
    ],
+   "kinematik_ohm": 0.016172823785001414,
+   "spice_ohm": 0.01615283,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1038,6 +1281,8 @@
     "P1.5",
     "U9.G13"
    ],
+   "kinematik_ohm": 0.01224747556239553,
+   "spice_ohm": 0.01222748,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1048,6 +1293,8 @@
     "P1.6",
     "U9.H13"
    ],
+   "kinematik_ohm": 0.01238101366318858,
+   "spice_ohm": 0.01236155,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1058,6 +1305,8 @@
     "P1.7",
     "U9.H12"
    ],
+   "kinematik_ohm": 0.01729028336427127,
+   "spice_ohm": 0.01727029,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1068,6 +1317,8 @@
     "P1.8",
     "U9.J13"
    ],
+   "kinematik_ohm": 0.013917770837698365,
+   "spice_ohm": 0.01389805,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1078,6 +1329,8 @@
     "P1.9",
     "U9.H11"
    ],
+   "kinematik_ohm": 0.03247713968657076,
+   "spice_ohm": 0.03245729,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1088,6 +1341,8 @@
     "P1.11",
     "U9.J12"
    ],
+   "kinematik_ohm": 0.023311239054698008,
+   "spice_ohm": 0.02329152,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1098,6 +1353,8 @@
     "U8.16",
     "U9.L4"
    ],
+   "kinematik_ohm": 0.021824745224842387,
+   "spice_ohm": 0.02180482,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1108,6 +1365,8 @@
     "U5.22",
     "U9.A10"
    ],
+   "kinematik_ohm": 0.08570167943150157,
+   "spice_ohm": 0.08568168,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1118,6 +1377,8 @@
     "U1.18",
     "U8.21"
    ],
+   "kinematik_ohm": 0.06110834724661505,
+   "spice_ohm": 0.05983472,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1128,6 +1389,8 @@
     "U1.17",
     "U9.N8"
    ],
+   "kinematik_ohm": 0.026708568895995217,
+   "spice_ohm": 0.02668857,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1138,6 +1401,8 @@
     "U1.16",
     "U9.N9"
    ],
+   "kinematik_ohm": 0.026010156658945245,
+   "spice_ohm": 0.02599016,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1148,6 +1413,8 @@
     "U1.15",
     "U9.M9"
    ],
+   "kinematik_ohm": 0.029382389248534,
+   "spice_ohm": 0.02936239,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1158,6 +1425,8 @@
     "U1.14",
     "U9.M10"
    ],
+   "kinematik_ohm": 0.029382389248546782,
+   "spice_ohm": 0.02936239,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1168,6 +1437,8 @@
     "U1.13",
     "U9.N11"
    ],
+   "kinematik_ohm": 0.026010156658940776,
+   "spice_ohm": 0.02599016,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1178,6 +1449,8 @@
     "U1.12",
     "U9.M11"
    ],
+   "kinematik_ohm": 0.030779213722614465,
+   "spice_ohm": 0.03075922,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1188,6 +1461,8 @@
     "U1.11",
     "U9.L12"
    ],
+   "kinematik_ohm": 0.03415144631219948,
+   "spice_ohm": 0.03413145,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1198,6 +1473,8 @@
     "U1.1",
     "U8.17"
    ],
+   "kinematik_ohm": 0.04056470010612236,
+   "spice_ohm": 0.0405447,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1208,6 +1485,8 @@
     "U8.20",
     "U9.L11"
    ],
+   "kinematik_ohm": 0.06137623304333811,
+   "spice_ohm": 0.06135623,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1218,6 +1497,8 @@
     "U1.19",
     "U8.22"
    ],
+   "kinematik_ohm": 0.05027227745853825,
+   "spice_ohm": 0.05025228,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1228,6 +1509,8 @@
     "P1.15",
     "U9.D13"
    ],
+   "kinematik_ohm": 0.016102982561298874,
+   "spice_ohm": 0.01608298,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1238,6 +1521,8 @@
     "P1.16",
     "U9.E12"
    ],
+   "kinematik_ohm": 0.01954391279407749,
+   "spice_ohm": 0.01952506,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1248,6 +1533,8 @@
     "R4.2",
     "U9.M3"
    ],
+   "kinematik_ohm": 0.08612474023348195,
+   "spice_ohm": 0.08610474,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1258,6 +1545,8 @@
     "R5.2",
     "U9.F13"
    ],
+   "kinematik_ohm": 0.05495896727958121,
+   "spice_ohm": 0.05493897,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1268,6 +1557,8 @@
     "U5.12",
     "U9.A11"
    ],
+   "kinematik_ohm": 0.11335699260347878,
+   "spice_ohm": 0.113337,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1278,6 +1569,8 @@
     "U5.11",
     "U9.B2"
    ],
+   "kinematik_ohm": 0.05773611465708923,
+   "spice_ohm": 0.05771612,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1288,6 +1581,8 @@
     "U5.23",
     "U9.C9"
    ],
+   "kinematik_ohm": 0.09649582965492381,
+   "spice_ohm": 0.09647583,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1298,6 +1593,8 @@
     "U5.25",
     "U9.D2"
    ],
+   "kinematik_ohm": 0.06992708935463517,
+   "spice_ohm": 0.06990709,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1308,6 +1605,8 @@
     "U5.4",
     "U9.F3"
    ],
+   "kinematik_ohm": 0.07432894556656262,
+   "spice_ohm": 0.07430895,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1318,6 +1617,8 @@
     "U5.28",
     "U9.C1"
    ],
+   "kinematik_ohm": 0.07459727760497495,
+   "spice_ohm": 0.07457728,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1328,6 +1629,8 @@
     "U5.3",
     "U9.D1"
    ],
+   "kinematik_ohm": 0.0681630640287553,
+   "spice_ohm": 0.06814307,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1338,6 +1641,8 @@
     "U5.31",
     "U9.F1"
    ],
+   "kinematik_ohm": 0.09433682111360576,
+   "spice_ohm": 0.09431682,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1348,6 +1653,8 @@
     "U5.2",
     "U9.C8"
    ],
+   "kinematik_ohm": 0.16969724256863264,
+   "spice_ohm": 0.1696772,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1358,6 +1665,8 @@
     "U5.10",
     "U9.D3"
    ],
+   "kinematik_ohm": 0.05269872555492982,
+   "spice_ohm": 0.05267873,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1368,6 +1677,8 @@
     "U5.9",
     "U9.C2"
    ],
+   "kinematik_ohm": 0.05773611465704927,
+   "spice_ohm": 0.05771612,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1378,6 +1689,8 @@
     "U5.8",
     "U9.E1"
    ],
+   "kinematik_ohm": 0.05269872555492751,
+   "spice_ohm": 0.05267873,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1388,6 +1701,8 @@
     "U5.7",
     "U9.C13"
    ],
+   "kinematik_ohm": 0.12923045149299772,
+   "spice_ohm": 0.1292105,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1398,6 +1713,8 @@
     "U5.6",
     "U9.F2"
    ],
+   "kinematik_ohm": 0.0651999518555694,
+   "spice_ohm": 0.06517995,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1408,6 +1725,8 @@
     "U5.5",
     "U9.B3"
    ],
+   "kinematik_ohm": 0.12248598631378463,
+   "spice_ohm": 0.122466,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1418,6 +1737,8 @@
     "U5.27",
     "U9.G1"
    ],
+   "kinematik_ohm": 0.08570167943148062,
+   "spice_ohm": 0.08568168,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1428,6 +1749,8 @@
     "U5.26",
     "U9.A4"
    ],
+   "kinematik_ohm": 0.07221274907311191,
+   "spice_ohm": 0.07219275,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1438,6 +1761,8 @@
     "U2.19",
     "U8.2"
    ],
+   "kinematik_ohm": 0.040691351283221135,
+   "spice_ohm": 0.04067135,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1448,6 +1773,8 @@
     "U5.13",
     "U9.C6"
    ],
+   "kinematik_ohm": 0.06110834724664191,
+   "spice_ohm": 0.06108835,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1458,6 +1785,8 @@
     "U5.14",
     "U9.A5"
    ],
+   "kinematik_ohm": 0.060120643188848216,
+   "spice_ohm": 0.06010064,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1468,6 +1797,8 @@
     "U5.15",
     "U9.B6"
    ],
+   "kinematik_ohm": 0.09353271748164733,
+   "spice_ohm": 0.09351272,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1478,6 +1809,8 @@
     "U5.17",
     "U9.A6"
    ],
+   "kinematik_ohm": 0.049594825003829,
+   "spice_ohm": 0.04957483,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1488,6 +1821,8 @@
     "U5.18",
     "U9.A7"
    ],
+   "kinematik_ohm": 0.09748353371281793,
+   "spice_ohm": 0.09746353,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1498,6 +1833,8 @@
     "U5.19",
     "U9.A8"
    ],
+   "kinematik_ohm": 0.0941113011232709,
+   "spice_ohm": 0.0940913,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1508,6 +1845,8 @@
     "U5.20",
     "U9.A9"
    ],
+   "kinematik_ohm": 0.08399460335450987,
+   "spice_ohm": 0.0839746,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1518,6 +1857,8 @@
     "U5.21",
     "U9.B8"
    ],
+   "kinematik_ohm": 0.07459727760500898,
+   "spice_ohm": 0.07457728,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1528,6 +1869,8 @@
     "U5.24",
     "U9.B9"
    ],
+   "kinematik_ohm": 0.12684592296117997,
+   "spice_ohm": 0.1268259,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1538,6 +1881,8 @@
     "U9.M6",
     "BUS1.62"
    ],
+   "kinematik_ohm": 0.16965918242931366,
+   "spice_ohm": 0.159114,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1548,6 +1893,8 @@
     "U9.N4",
     "BUS1.61"
    ],
+   "kinematik_ohm": 0.12990790394765228,
+   "spice_ohm": 0.1298879,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1558,6 +1905,8 @@
     "U9.L8",
     "BUS1.52"
    ],
+   "kinematik_ohm": 0.1149961313941415,
+   "spice_ohm": 0.114797,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1568,6 +1917,8 @@
     "U2.8",
     "BUS1.51"
    ],
+   "kinematik_ohm": 0.028373725408497127,
+   "spice_ohm": 0.02835373,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1578,6 +1929,8 @@
     "U9.M5",
     "BUS1.60"
    ],
+   "kinematik_ohm": 0.13710242963392333,
+   "spice_ohm": 0.1370625,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1588,6 +1941,8 @@
     "U9.K2",
     "BUS1.59"
    ],
+   "kinematik_ohm": 0.12456026324297437,
+   "spice_ohm": 0.1245403,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1598,6 +1953,8 @@
     "U9.H3",
     "BUS1.58"
    ],
+   "kinematik_ohm": 0.143268393580225,
+   "spice_ohm": 0.1430786,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1608,6 +1965,8 @@
     "U9.J2",
     "BUS1.57"
    ],
+   "kinematik_ohm": 0.14335306247623508,
+   "spice_ohm": 0.1433131,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1618,6 +1977,8 @@
     "U9.J1",
     "BUS1.56"
    ],
+   "kinematik_ohm": 0.11793544360091537,
+   "spice_ohm": 0.1179155,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1628,6 +1989,8 @@
     "U9.H2",
     "BUS1.55"
    ],
+   "kinematik_ohm": 0.12096633434575696,
+   "spice_ohm": 0.1209464,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1638,6 +2001,8 @@
     "U9.H1",
     "BUS1.54"
    ],
+   "kinematik_ohm": 0.1477639369478546,
+   "spice_ohm": 0.1477439,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1648,6 +2013,8 @@
     "U9.N7",
     "BUS1.53"
    ],
+   "kinematik_ohm": 0.12317398190498352,
+   "spice_ohm": 0.1080938,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1658,6 +2025,8 @@
     "U2.1",
     "U9.N10"
    ],
+   "kinematik_ohm": 0.13629925451163508,
+   "spice_ohm": 0.1362793,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1668,6 +2037,8 @@
     "U1.2",
     "BUS1.40"
    ],
+   "kinematik_ohm": 0.021360928190897722,
+   "spice_ohm": 0.02134093,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1678,6 +2049,8 @@
     "U1.3",
     "BUS1.39"
    ],
+   "kinematik_ohm": 0.02136092819090138,
+   "spice_ohm": 0.02134093,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1688,6 +2061,8 @@
     "U1.4",
     "BUS1.38"
    ],
+   "kinematik_ohm": 0.01630255961507761,
+   "spice_ohm": 0.01628258,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1698,6 +2073,8 @@
     "U1.5",
     "BUS1.37"
    ],
+   "kinematik_ohm": 0.016302559615079683,
+   "spice_ohm": 0.01628258,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1708,6 +2085,8 @@
     "U1.6",
     "BUS1.36"
    ],
+   "kinematik_ohm": 0.02136092819089963,
+   "spice_ohm": 0.02134093,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1718,6 +2097,8 @@
     "U1.7",
     "BUS1.35"
    ],
+   "kinematik_ohm": 0.021360928190900224,
+   "spice_ohm": 0.02134093,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1728,6 +2109,8 @@
     "U1.8",
     "BUS1.34"
    ],
+   "kinematik_ohm": 0.02136092819089868,
+   "spice_ohm": 0.02134093,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1738,6 +2121,8 @@
     "U1.9",
     "BUS1.33"
    ],
+   "kinematik_ohm": 0.018277967730582285,
+   "spice_ohm": 0.01825799,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1748,6 +2133,8 @@
     "U3.7",
     "BUS1.14"
    ],
+   "kinematik_ohm": 0.020641556171579,
+   "spice_ohm": 0.02062156,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1758,6 +2145,8 @@
     "U3.6",
     "BUS1.13"
    ],
+   "kinematik_ohm": 0.027386021350758658,
+   "spice_ohm": 0.02736602,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1768,6 +2157,8 @@
     "U3.13",
     "U9.M8"
    ],
+   "kinematik_ohm": 0.05938045753551241,
+   "spice_ohm": 0.05934046,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1778,6 +2169,8 @@
     "U3.8",
     "BUS1.2"
    ],
+   "kinematik_ohm": 0.05031419702315726,
+   "spice_ohm": 0.0502942,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1788,6 +2181,8 @@
     "U3.14",
     "U9.N6"
    ],
+   "kinematik_ohm": 0.05073135168857958,
+   "spice_ohm": 0.04997352,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1798,6 +2193,8 @@
     "P1.12",
     "U9.L13"
    ],
+   "kinematik_ohm": 0.018280117883821792,
+   "spice_ohm": 0.01826012,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1808,6 +2205,8 @@
     "U8.19",
     "U9.M12"
    ],
+   "kinematik_ohm": 0.06211701108669241,
+   "spice_ohm": 0.06209701,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1818,6 +2217,8 @@
     "JP1.2",
     "U2.12"
    ],
+   "kinematik_ohm": 0.011822814063554796,
+   "spice_ohm": 0.01180282,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1828,6 +2229,8 @@
     "JP1.4",
     "U2.9"
    ],
+   "kinematik_ohm": 0.02333633630640313,
+   "spice_ohm": 0.02331634,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1838,6 +2241,8 @@
     "JP1.14",
     "U2.18"
    ],
+   "kinematik_ohm": 0.011822814063557348,
+   "spice_ohm": 0.01180282,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1848,6 +2253,8 @@
     "JP1.16",
     "U2.3"
    ],
+   "kinematik_ohm": 0.023336336306407465,
+   "spice_ohm": 0.02331634,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1858,6 +2265,8 @@
     "JP1.10",
     "U2.16"
    ],
+   "kinematik_ohm": 0.011822814063554796,
+   "spice_ohm": 0.01180282,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1868,6 +2277,8 @@
     "JP1.6",
     "U2.14"
    ],
+   "kinematik_ohm": 0.011822814063554796,
+   "spice_ohm": 0.01180282,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1878,6 +2289,8 @@
     "JP1.12",
     "U2.5"
    ],
+   "kinematik_ohm": 0.023336336306401098,
+   "spice_ohm": 0.02331634,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1888,6 +2301,8 @@
     "JP1.8",
     "U2.7"
    ],
+   "kinematik_ohm": 0.023336336306410868,
+   "spice_ohm": 0.02331634,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1898,6 +2313,8 @@
     "U3.12",
     "U8.11"
    ],
+   "kinematik_ohm": 0.009847405948052121,
+   "spice_ohm": 0.009827408,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1908,6 +2325,8 @@
     "U8.18",
     "U9.L2"
    ],
+   "kinematik_ohm": 0.024817892393030498,
+   "spice_ohm": 0.02479789,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1918,6 +2337,8 @@
     "P1.13",
     "U9.N13"
    ],
+   "kinematik_ohm": 0.01601275729580893,
+   "spice_ohm": 0.01599329,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1928,6 +2349,8 @@
     "P1.17",
     "U9.F11"
    ],
+   "kinematik_ohm": 0.03421963938108781,
+   "spice_ohm": 0.03383481,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1938,6 +2361,8 @@
     "P1.1",
     "U9.A12"
    ],
+   "kinematik_ohm": 0.01798869560130944,
+   "spice_ohm": 0.0179687,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1948,6 +2373,8 @@
     "U5.29",
     "U9.A13"
    ],
+   "kinematik_ohm": 0.15719601626804142,
+   "spice_ohm": 0.157176,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1958,6 +2385,8 @@
     "U8.13",
     "U8.15"
    ],
+   "kinematik_ohm": 0.009642845739886503,
+   "spice_ohm": 0.009622848,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1968,6 +2397,8 @@
     "C4.1",
     "U5.32"
    ],
+   "kinematik_ohm": 0.23251615837216377,
+   "spice_ohm": 0.2156506,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1978,6 +2409,8 @@
     "X1.2",
     "R2.2"
    ],
+   "kinematik_ohm": 0.020662515953855917,
+   "spice_ohm": 0.02064252,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1988,6 +2421,8 @@
     "X1.1",
     "U9.L1"
    ],
+   "kinematik_ohm": 0.04089591149136085,
+   "spice_ohm": 0.04087591,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -1998,6 +2433,8 @@
     "R4.1",
     "D1.2"
    ],
+   "kinematik_ohm": 0.011533522242845491,
+   "spice_ohm": 0.01151352,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -2008,6 +2445,8 @@
     "R5.1",
     "D2.2"
    ],
+   "kinematik_ohm": 0.007910095203669493,
+   "spice_ohm": 0.00789035,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -2018,6 +2457,8 @@
     "U5.30",
     "R3.1"
    ],
+   "kinematik_ohm": 0.005078348884381108,
+   "spice_ohm": 0.005058351,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -2028,6 +2469,8 @@
     "U3.15",
     "U8.6"
    ],
+   "kinematik_ohm": 0.005078348884380945,
+   "spice_ohm": 0.005058351,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -2038,6 +2481,8 @@
     "U3.16",
     "U8.5"
    ],
+   "kinematik_ohm": 0.005078348884380945,
+   "spice_ohm": 0.005058351,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -2048,6 +2493,8 @@
     "U3.17",
     "U8.4"
    ],
+   "kinematik_ohm": 0.005078348884380945,
+   "spice_ohm": 0.005058351,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -2058,6 +2505,8 @@
     "U3.18",
     "U8.3"
    ],
+   "kinematik_ohm": 0.005078348884380945,
+   "spice_ohm": 0.005058351,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6002
   },
@@ -2068,6 +2517,8 @@
     "ALLPST101.1",
     "U102.86"
    ],
+   "kinematik_ohm": 0.020084865804955235,
+   "spice_ohm": 0.02006487,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2078,6 +2529,8 @@
     "MCU_PORT201.14",
     "U102.45"
    ],
+   "kinematik_ohm": 0.1455000936985016,
+   "spice_ohm": 0.189371,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2088,6 +2541,8 @@
     "MCU_PORT201.16",
     "U102.46"
    ],
+   "kinematik_ohm": 0.18383686244487762,
+   "spice_ohm": 0.2236705,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2098,6 +2553,8 @@
     "MCU_PORT201.18",
     "U102.54"
    ],
+   "kinematik_ohm": 0.1364814168832018,
+   "spice_ohm": 0.1354885,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2108,6 +2565,8 @@
     "MCU_PORT201.22",
     "U102.52"
    ],
+   "kinematik_ohm": 0.11838035595017238,
+   "spice_ohm": 0.1183607,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2118,6 +2577,8 @@
     "R107.2",
     "U102.76"
    ],
+   "kinematik_ohm": 0.16210875660181046,
+   "spice_ohm": 0.1947034,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2128,6 +2589,8 @@
     "R101.2",
     "U102.40"
    ],
+   "kinematik_ohm": 0.05860408144048415,
+   "spice_ohm": 0.05858408,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2138,6 +2601,8 @@
     "R102.2",
     "U102.39"
    ],
+   "kinematik_ohm": 0.05943214321158323,
+   "spice_ohm": 0.05883918,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2148,6 +2613,8 @@
     "BDM_PORT101.19",
     "U102.77"
    ],
+   "kinematik_ohm": 0.18763065338134766,
+   "spice_ohm": 0.220023,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2158,6 +2625,8 @@
     "BDM_PORT101.18",
     "U102.78"
    ],
+   "kinematik_ohm": 0.16508275270462036,
+   "spice_ohm": 0.2120599,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2168,6 +2637,8 @@
     "BDM_PORT101.17",
     "U102.83"
    ],
+   "kinematik_ohm": 0.16887912154197693,
+   "spice_ohm": 0.2083914,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2178,6 +2649,8 @@
     "BDM_PORT101.16",
     "U102.84"
    ],
+   "kinematik_ohm": 0.17640277743339539,
+   "spice_ohm": 0.210013,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2188,6 +2661,8 @@
     "R108.2",
     "U102.85"
    ],
+   "kinematik_ohm": 0.2192404866218567,
+   "spice_ohm": 0.1736648,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2198,6 +2673,8 @@
     "R109.2",
     "U102.79"
    ],
+   "kinematik_ohm": 0.17374809818240328,
+   "spice_ohm": 0.1737081,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2208,6 +2685,8 @@
     "R110.2",
     "U102.80"
    ],
+   "kinematik_ohm": 0.15182535350322723,
+   "spice_ohm": 0.1947486,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2218,6 +2697,8 @@
     "MCU_PORT201.36",
     "U102.37"
    ],
+   "kinematik_ohm": 0.2449546754360199,
+   "spice_ohm": 0.2701685,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2228,6 +2709,8 @@
     "MCU_PORT201.50",
     "U102.59"
    ],
+   "kinematik_ohm": 0.12308447933210903,
+   "spice_ohm": 0.1230645,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2238,6 +2721,8 @@
     "MCU_PORT201.52",
     "U102.62"
    ],
+   "kinematik_ohm": 0.130616321706872,
+   "spice_ohm": 0.1305963,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2248,6 +2733,8 @@
     "MCU_PORT201.35",
     "R122.1"
    ],
+   "kinematik_ohm": 0.1615786850452423,
+   "spice_ohm": 0.1729724,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2258,6 +2745,8 @@
     "MCU_PORT201.37",
     "U102.94"
    ],
+   "kinematik_ohm": 0.13750877976417542,
+   "spice_ohm": 0.139956,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2268,6 +2757,8 @@
     "D101.2",
     "MCU_PORT201.39"
    ],
+   "kinematik_ohm": 0.14375834167003632,
+   "spice_ohm": 0.1383662,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2278,6 +2769,8 @@
     "R111.2",
     "U102.26"
    ],
+   "kinematik_ohm": 0.042673113191375116,
+   "spice_ohm": 0.04159243,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2288,6 +2781,8 @@
     "BDM_PORT101.15",
     "U102.65"
    ],
+   "kinematik_ohm": 0.14065686393405485,
+   "spice_ohm": 0.1855433,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2298,6 +2793,8 @@
     "BDM_PORT101.14",
     "U102.66"
    ],
+   "kinematik_ohm": 0.16855824013114043,
+   "spice_ohm": 0.1682842,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2308,6 +2805,8 @@
     "BDM_PORT101.13",
     "U102.69"
    ],
+   "kinematik_ohm": 0.17939345410627247,
+   "spice_ohm": 0.1793735,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2318,6 +2817,8 @@
     "BDM_PORT101.12",
     "U102.70"
    ],
+   "kinematik_ohm": 0.16154059767723083,
+   "spice_ohm": 0.2013225,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2328,6 +2829,8 @@
     "MCU_PORT201.29",
     "U102.12"
    ],
+   "kinematik_ohm": 0.14467547833919525,
+   "spice_ohm": 0.1587808,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2338,6 +2841,8 @@
     "CT101.2",
     "R114.2"
    ],
+   "kinematik_ohm": 0.10939031094312668,
+   "spice_ohm": 0.1032592,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2348,6 +2853,8 @@
     "L101.2",
     "U102.74"
    ],
+   "kinematik_ohm": 0.02505366253645699,
+   "spice_ohm": 0.02460901,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2358,6 +2865,8 @@
     "CAN_TERM201.1",
     "COM_SEL203.1"
    ],
+   "kinematik_ohm": 0.04300554237660964,
+   "spice_ohm": 0.04296574,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2368,6 +2877,8 @@
     "R209.1",
     "COM_SEL201.1"
    ],
+   "kinematik_ohm": 0.022605859841193746,
+   "spice_ohm": 0.02244442,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2378,6 +2889,8 @@
     "U202.8",
     "UARTCAN201.7"
    ],
+   "kinematik_ohm": 0.06543459075876053,
+   "spice_ohm": 0.06541459,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2388,6 +2901,8 @@
     "U203.8",
     "UARTCAN202.7"
    ],
+   "kinematik_ohm": 0.04735468294682556,
+   "spice_ohm": 0.04733495,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2398,6 +2913,8 @@
     "BDM_PORT101.6",
     "CT101.1"
    ],
+   "kinematik_ohm": 0.08617484044789532,
+   "spice_ohm": 0.0861549,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2408,6 +2925,8 @@
     "U202.7",
     "UARTCAN201.8"
    ],
+   "kinematik_ohm": 0.08104391021565077,
+   "spice_ohm": 0.0804835,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2418,6 +2937,8 @@
     "U203.7",
     "UARTCAN202.8"
    ],
+   "kinematik_ohm": 0.06329439913103455,
+   "spice_ohm": 0.06273404,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2428,6 +2949,8 @@
     "U204.14",
     "UARTCAN203.8"
    ],
+   "kinematik_ohm": 0.03809927778681185,
+   "spice_ohm": 0.03802446,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2438,6 +2961,8 @@
     "U202.13",
     "UARTCAN201.3"
    ],
+   "kinematik_ohm": 0.02942426342962135,
+   "spice_ohm": 0.02940427,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2448,6 +2973,8 @@
     "U203.13",
     "UARTCAN202.3"
    ],
+   "kinematik_ohm": 0.024210793585209806,
+   "spice_ohm": 0.02419092,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2458,6 +2985,8 @@
     "COM_SEL202.2",
     "UARTCAN203.3"
    ],
+   "kinematik_ohm": 0.03560794755381903,
+   "spice_ohm": 0.03558795,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2468,6 +2997,8 @@
     "U205.4",
     "CAN_EN201.2"
    ],
+   "kinematik_ohm": 0.021877066422697735,
+   "spice_ohm": 0.02440533,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2478,6 +3009,8 @@
     "U202.14",
     "UARTCAN201.2"
    ],
+   "kinematik_ohm": 0.02620590745317708,
+   "spice_ohm": 0.02618591,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2488,6 +3021,8 @@
     "U203.14",
     "UARTCAN202.2"
    ],
+   "kinematik_ohm": 0.01562481294979539,
+   "spice_ohm": 0.01560489,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2498,6 +3033,8 @@
     "U205.1",
     "CAN_EN201.3"
    ],
+   "kinematik_ohm": 0.013114454173155599,
+   "spice_ohm": 0.01309446,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2508,6 +3045,8 @@
     "P303.38",
     "R302.2"
    ],
+   "kinematik_ohm": 0.01959298781283714,
+   "spice_ohm": 0.01957299,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2518,6 +3057,8 @@
     "R303.1",
     "U301.28"
    ],
+   "kinematik_ohm": 0.0648162053660005,
+   "spice_ohm": 0.06453259,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2528,6 +3069,8 @@
     "R304.1",
     "U301.27"
    ],
+   "kinematik_ohm": 0.05472704181271067,
+   "spice_ohm": 0.05470704,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2538,6 +3081,8 @@
     "R301.2",
     "U301.89"
    ],
+   "kinematik_ohm": 0.14731734327345103,
+   "spice_ohm": 0.1469665,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2548,6 +3093,8 @@
     "P301.4",
     "U301.4"
    ],
+   "kinematik_ohm": 0.13086149092628774,
+   "spice_ohm": 0.1307012,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2558,6 +3105,8 @@
     "P301.6",
     "U301.104"
    ],
+   "kinematik_ohm": 0.15869107512332645,
+   "spice_ohm": 0.1586711,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2568,6 +3117,8 @@
     "P301.3",
     "U301.20"
    ],
+   "kinematik_ohm": 0.10708745664123648,
+   "spice_ohm": 0.1070675,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2578,6 +3129,8 @@
     "P303.1",
     "U301.12"
    ],
+   "kinematik_ohm": 0.05266130564031092,
+   "spice_ohm": 0.05264131,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2588,6 +3141,8 @@
     "P303.3",
     "U301.11"
    ],
+   "kinematik_ohm": 0.049027764791549036,
+   "spice_ohm": 0.04900777,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2598,6 +3153,8 @@
     "P303.21",
     "U301.122"
    ],
+   "kinematik_ohm": 0.02042864662883814,
+   "spice_ohm": 0.02040875,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2608,6 +3165,8 @@
     "P303.23",
     "U301.119"
    ],
+   "kinematik_ohm": 0.023061724679884668,
+   "spice_ohm": 0.02288333,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2618,6 +3177,8 @@
     "P303.25",
     "U301.114"
    ],
+   "kinematik_ohm": 0.022370307970657963,
+   "spice_ohm": 0.02235031,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2628,6 +3189,8 @@
     "P303.27",
     "U301.111"
    ],
+   "kinematik_ohm": 0.026042583865152562,
+   "spice_ohm": 0.02602259,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2638,6 +3201,8 @@
     "P303.29",
     "U301.109"
    ],
+   "kinematik_ohm": 0.02478052860069404,
+   "spice_ohm": 0.02476053,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2648,6 +3213,8 @@
     "P303.31",
     "U301.108"
    ],
+   "kinematik_ohm": 0.029485184009985604,
+   "spice_ohm": 0.02946523,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2658,6 +3225,8 @@
     "P303.33",
     "U301.100"
    ],
+   "kinematik_ohm": 0.04291446192507058,
+   "spice_ohm": 0.04289446,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2668,6 +3237,8 @@
     "P303.35",
     "U301.101"
    ],
+   "kinematik_ohm": 0.054123764767982294,
+   "spice_ohm": 0.05410377,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2678,6 +3249,8 @@
     "P303.37",
     "U301.97"
    ],
+   "kinematik_ohm": 0.054958310197067275,
+   "spice_ohm": 0.05493831,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2688,6 +3261,8 @@
     "P303.39",
     "U301.96"
    ],
+   "kinematik_ohm": 0.05943139949497838,
+   "spice_ohm": 0.0594114,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2698,6 +3273,8 @@
     "P303.5",
     "U301.7"
    ],
+   "kinematik_ohm": 0.04318544405742751,
+   "spice_ohm": 0.04316545,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2708,6 +3285,8 @@
     "P303.4",
     "U301.6"
    ],
+   "kinematik_ohm": 0.06864890304440534,
+   "spice_ohm": 0.06811409,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2718,6 +3297,8 @@
     "P303.6",
     "U301.10"
    ],
+   "kinematik_ohm": 0.053489747942877496,
+   "spice_ohm": 0.05346975,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2728,6 +3309,8 @@
     "P303.8",
     "U301.5"
    ],
+   "kinematik_ohm": 0.04349852294195072,
+   "spice_ohm": 0.04347852,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2738,6 +3321,8 @@
     "P303.10",
     "U301.1"
    ],
+   "kinematik_ohm": 0.03346853454377032,
+   "spice_ohm": 0.03344854,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2748,6 +3333,8 @@
     "P303.12",
     "U301.142"
    ],
+   "kinematik_ohm": 0.029076690031413218,
+   "spice_ohm": 0.02905669,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2758,6 +3345,8 @@
     "P303.14",
     "U301.139"
    ],
+   "kinematik_ohm": 0.02810310337296045,
+   "spice_ohm": 0.02808311,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2768,6 +3357,8 @@
     "P303.16",
     "U301.137"
    ],
+   "kinematik_ohm": 0.02934976921608029,
+   "spice_ohm": 0.02932977,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2778,6 +3369,8 @@
     "P303.18",
     "U301.134"
    ],
+   "kinematik_ohm": 0.028954732364501863,
+   "spice_ohm": 0.02893473,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2788,6 +3381,8 @@
     "P303.20",
     "U301.132"
    ],
+   "kinematik_ohm": 0.032802539350853484,
+   "spice_ohm": 0.03278261,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2798,6 +3393,8 @@
     "P303.22",
     "U301.117"
    ],
+   "kinematik_ohm": 0.029138429673150334,
+   "spice_ohm": 0.02868874,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2808,6 +3405,8 @@
     "P303.7",
     "U301.8"
    ],
+   "kinematik_ohm": 0.043347632419853094,
+   "spice_ohm": 0.04235121,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2818,6 +3417,8 @@
     "P303.24",
     "U301.118"
    ],
+   "kinematik_ohm": 0.029109427896949952,
+   "spice_ohm": 0.02711918,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2828,6 +3429,8 @@
     "P303.26",
     "U301.116"
    ],
+   "kinematik_ohm": 0.029041071007307392,
+   "spice_ohm": 0.02902107,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2838,6 +3441,8 @@
     "P303.28",
     "U301.98"
    ],
+   "kinematik_ohm": 0.05651452771080298,
+   "spice_ohm": 0.05649453,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2848,6 +3453,8 @@
     "P303.30",
     "U301.112"
    ],
+   "kinematik_ohm": 0.03733320780459972,
+   "spice_ohm": 0.03731321,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2858,6 +3465,8 @@
     "P303.32",
     "U301.113"
    ],
+   "kinematik_ohm": 0.043527923683368316,
+   "spice_ohm": 0.04351292,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2868,6 +3477,8 @@
     "P303.34",
     "U301.107"
    ],
+   "kinematik_ohm": 0.041207945230330834,
+   "spice_ohm": 0.04118795,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2878,6 +3489,8 @@
     "P303.36",
     "U301.99"
    ],
+   "kinematik_ohm": 0.052445349672239905,
+   "spice_ohm": 0.05242535,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2888,6 +3501,8 @@
     "P303.9",
     "U301.2"
    ],
+   "kinematik_ohm": 0.028190909251870743,
+   "spice_ohm": 0.02817096,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2898,6 +3513,8 @@
     "P303.11",
     "U301.143"
    ],
+   "kinematik_ohm": 0.02288084731593147,
+   "spice_ohm": 0.02286085,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2908,6 +3525,8 @@
     "P303.13",
     "U301.140"
    ],
+   "kinematik_ohm": 0.021907260657501586,
+   "spice_ohm": 0.02188726,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2918,6 +3537,8 @@
     "P303.15",
     "U301.138"
    ],
+   "kinematik_ohm": 0.01956878620616804,
+   "spice_ohm": 0.01954883,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2928,6 +3549,8 @@
     "P303.17",
     "U301.136"
    ],
+   "kinematik_ohm": 0.02315392650059776,
+   "spice_ohm": 0.02313393,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2938,6 +3561,8 @@
     "P303.19",
     "U301.131"
    ],
+   "kinematik_ohm": 0.023189545524707172,
+   "spice_ohm": 0.02316955,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2948,6 +3573,8 @@
     "C109.2",
     "MCU_PORT201.58"
    ],
+   "kinematik_ohm": 0.07614448666572571,
+   "spice_ohm": 0.07381772,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2958,6 +3585,8 @@
     "MCU_PORT201.10",
     "U102.43"
    ],
+   "kinematik_ohm": 0.1637249141270366,
+   "spice_ohm": 0.1632995,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2968,6 +3597,8 @@
     "MCU_PORT201.12",
     "U102.44"
    ],
+   "kinematik_ohm": 0.1564453433665785,
+   "spice_ohm": 0.1564253,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2978,6 +3609,8 @@
     "MCU_PORT201.23",
     "U102.20"
    ],
+   "kinematik_ohm": 0.17449910193681717,
+   "spice_ohm": 0.1964595,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2988,6 +3621,8 @@
     "MCU_PORT201.20",
     "U102.53"
    ],
+   "kinematik_ohm": 0.1295102343879631,
+   "spice_ohm": 0.1292265,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -2998,6 +3633,8 @@
     "MCU_PORT201.24",
     "U102.51"
    ],
+   "kinematik_ohm": 0.11754479831399203,
+   "spice_ohm": 0.1175248,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3008,6 +3645,8 @@
     "MCU_PORT201.33",
     "R121.1"
    ],
+   "kinematik_ohm": 0.14226603880524635,
+   "spice_ohm": 0.149553,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3018,6 +3657,8 @@
     "MCU_PORT201.34",
     "U102.36"
    ],
+   "kinematik_ohm": 0.2782108336687088,
+   "spice_ohm": 0.2758849,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3028,6 +3669,8 @@
     "MCU_PORT201.38",
     "U102.31"
    ],
+   "kinematik_ohm": 0.25135132670402527,
+   "spice_ohm": 0.2480988,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3038,6 +3681,8 @@
     "MCU_PORT201.40",
     "U102.32"
    ],
+   "kinematik_ohm": 0.248830184340477,
+   "spice_ohm": 0.2462542,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3048,6 +3693,8 @@
     "MCU_PORT201.49",
     "U102.58"
    ],
+   "kinematik_ohm": 0.10335490107536316,
+   "spice_ohm": 0.1148631,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3058,6 +3705,8 @@
     "MCU_PORT201.51",
     "U102.61"
    ],
+   "kinematik_ohm": 0.11638951823346297,
+   "spice_ohm": 0.1163695,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3068,6 +3717,8 @@
     "MCU_PORT201.57",
     "U102.49"
    ],
+   "kinematik_ohm": 0.07035649567842484,
+   "spice_ohm": 0.07156236,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3078,6 +3729,8 @@
     "MCU_PORT201.2",
     "U102.87"
    ],
+   "kinematik_ohm": 0.26168814301490784,
+   "spice_ohm": 0.2581363,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3088,6 +3741,8 @@
     "MCU_PORT201.8",
     "U102.88"
    ],
+   "kinematik_ohm": 0.2426198050379753,
+   "spice_ohm": 0.2280437,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3098,6 +3753,8 @@
     "MCU_PORT201.31",
     "U301.44"
    ],
+   "kinematik_ohm": 0.26141496002674103,
+   "spice_ohm": 0.2452254,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3108,6 +3765,8 @@
     "U102.72",
     "U301.128"
    ],
+   "kinematik_ohm": 0.2440516789611138,
+   "spice_ohm": 0.227514,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3118,6 +3777,8 @@
     "MCU_PORT201.53",
     "U102.21"
    ],
+   "kinematik_ohm": 0.19719943404197693,
+   "spice_ohm": 0.2268271,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3128,6 +3789,8 @@
     "MCU_PORT201.4",
     "U102.97"
    ],
+   "kinematik_ohm": 0.21154987066984177,
+   "spice_ohm": 0.22596,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3138,6 +3801,8 @@
     "BDM_PORT101.7",
     "MCU_PORT201.6"
    ],
+   "kinematik_ohm": 0.41688475012779236,
+   "spice_ohm": 0.4164255,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3148,6 +3813,8 @@
     "MCU_PORT201.25",
     "U301.54"
    ],
+   "kinematik_ohm": 0.2822536751627922,
+   "spice_ohm": 0.3109724,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3158,6 +3825,8 @@
     "MCU_PORT201.9",
     "U102.4"
    ],
+   "kinematik_ohm": 0.2867717668414116,
+   "spice_ohm": 0.2743061,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3168,6 +3837,8 @@
     "MCU_PORT201.11",
     "U102.98"
    ],
+   "kinematik_ohm": 0.28290367126464844,
+   "spice_ohm": 0.2636679,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3178,6 +3849,8 @@
     "MCU_PORT201.21",
     "U301.48"
    ],
+   "kinematik_ohm": 0.2622668457670443,
+   "spice_ohm": 0.2810557,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3188,6 +3861,8 @@
     "MCU_PORT201.17",
     "U301.47"
    ],
+   "kinematik_ohm": 0.2471163645386696,
+   "spice_ohm": 0.2663919,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3198,6 +3873,8 @@
     "MCU_PORT201.19",
     "U301.46"
    ],
+   "kinematik_ohm": 0.25938880443573,
+   "spice_ohm": 0.2509636,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3208,6 +3885,8 @@
     "MCU_PORT201.27",
     "U301.45"
    ],
+   "kinematik_ohm": 0.2293853701939952,
+   "spice_ohm": 0.2550916,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3218,6 +3897,8 @@
     "MCU_PORT201.7",
     "U102.100"
    ],
+   "kinematik_ohm": 0.23708834499120712,
+   "spice_ohm": 0.2632968,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3228,6 +3909,8 @@
     "MCU_PORT201.5",
     "U102.99"
    ],
+   "kinematik_ohm": 0.22779978811740875,
+   "spice_ohm": 0.2724851,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3238,6 +3921,8 @@
     "MCU_PORT201.32",
     "U102.63"
    ],
+   "kinematik_ohm": 0.08744266868607348,
+   "spice_ohm": 0.08742267,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3248,6 +3933,8 @@
     "MCU_PORT201.30",
     "U102.60"
    ],
+   "kinematik_ohm": 0.09723841919038027,
+   "spice_ohm": 0.09721842,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3258,6 +3945,8 @@
     "MCU_PORT201.13",
     "U102.38"
    ],
+   "kinematik_ohm": 0.17135392129421234,
+   "spice_ohm": 0.1999077,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3268,6 +3957,8 @@
     "MCU_PORT201.15",
     "U102.33"
    ],
+   "kinematik_ohm": 0.15026018023490906,
+   "spice_ohm": 0.18365,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3278,6 +3969,8 @@
     "MCU_PORT201.46",
     "UART_EN203.6"
    ],
+   "kinematik_ohm": 0.1626310795545578,
+   "spice_ohm": 0.1647316,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3288,6 +3981,8 @@
     "MCU_PORT201.45",
     "UART_EN203.2"
    ],
+   "kinematik_ohm": 0.15611650049686432,
+   "spice_ohm": 0.1686012,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3298,6 +3993,8 @@
     "MCU_PORT201.47",
     "UART_EN203.4"
    ],
+   "kinematik_ohm": 0.16887697577476501,
+   "spice_ohm": 0.1821934,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3308,6 +4005,8 @@
     "MCU_PORT201.48",
     "UART_EN203.8"
    ],
+   "kinematik_ohm": 0.16329938173294067,
+   "spice_ohm": 0.1849849,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3318,6 +4017,8 @@
     "MCU_PORT201.28",
     "CAN_EN201.4"
    ],
+   "kinematik_ohm": 0.22801807522773743,
+   "spice_ohm": 0.2331659,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3328,6 +4029,8 @@
     "MCU_PORT201.26",
     "CAN_EN201.1"
    ],
+   "kinematik_ohm": 0.23399250209331512,
+   "spice_ohm": 0.2381858,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3338,6 +4041,8 @@
     "MCU_PORT201.42",
     "UART_EN201.6"
    ],
+   "kinematik_ohm": 0.348774679005146,
+   "spice_ohm": 0.3482521,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3348,6 +4053,8 @@
     "MCU_PORT201.41",
     "UART_EN201.2"
    ],
+   "kinematik_ohm": 0.31374727497859567,
+   "spice_ohm": 0.3125203,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3358,6 +4065,8 @@
     "MCU_PORT201.43",
     "UART_EN201.4"
    ],
+   "kinematik_ohm": 0.31383355675461644,
+   "spice_ohm": 0.3226801,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3368,6 +4077,8 @@
     "MCU_PORT201.44",
     "UART_EN201.8"
    ],
+   "kinematik_ohm": 0.3248124268184256,
+   "spice_ohm": 0.3312651,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3378,6 +4089,8 @@
     "ABRT_SW101.1",
     "R104.1"
    ],
+   "kinematik_ohm": 0.022008225260264917,
+   "spice_ohm": 0.02065649,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3388,6 +4101,8 @@
     "BDM_PORT101.26",
     "TA-101.1"
    ],
+   "kinematik_ohm": 0.008007501898864657,
+   "spice_ohm": 0.007987504,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3398,6 +4113,8 @@
     "R104.2",
     "U101.2"
    ],
+   "kinematik_ohm": 0.011745885085255257,
+   "spice_ohm": 0.01170761,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3408,6 +4125,8 @@
     "D102.1",
     "LV101.1"
    ],
+   "kinematik_ohm": 0.030779824622085637,
+   "spice_ohm": 0.03073984,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3418,6 +4137,8 @@
     "C201.2",
     "MCU_PORT201.1"
    ],
+   "kinematik_ohm": 0.02461801770310622,
+   "spice_ohm": 0.02457818,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3428,6 +4149,8 @@
     "C204.2",
     "U202.2"
    ],
+   "kinematik_ohm": 0.015574688429460234,
+   "spice_ohm": 0.01555473,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3438,6 +4161,8 @@
     "C205.1",
     "U202.1"
    ],
+   "kinematik_ohm": 0.0034764213884640256,
+   "spice_ohm": 0.00345654,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3448,6 +4173,8 @@
     "C205.2",
     "U202.3"
    ],
+   "kinematik_ohm": 0.004158386249884193,
+   "spice_ohm": 0.004138479,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3458,6 +4185,8 @@
     "C206.1",
     "U202.4"
    ],
+   "kinematik_ohm": 0.003981655038319081,
+   "spice_ohm": 0.003962375,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3468,6 +4197,8 @@
     "C206.2",
     "U202.5"
    ],
+   "kinematik_ohm": 0.004450805837878219,
+   "spice_ohm": 0.004430808,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3478,6 +4209,8 @@
     "C207.1",
     "U202.6"
    ],
+   "kinematik_ohm": 0.00942301792941569,
+   "spice_ohm": 0.009403978,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3488,6 +4221,8 @@
     "C209.2",
     "U203.2"
    ],
+   "kinematik_ohm": 0.012531036298707957,
+   "spice_ohm": 0.01251104,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3498,6 +4233,8 @@
     "C210.1",
     "U203.1"
    ],
+   "kinematik_ohm": 0.004962426562730438,
+   "spice_ohm": 0.004942429,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3508,6 +4245,8 @@
     "C210.2",
     "U203.3"
    ],
+   "kinematik_ohm": 0.0057797343084923705,
+   "spice_ohm": 0.005759958,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3518,6 +4257,8 @@
     "C211.1",
     "U203.4"
    ],
+   "kinematik_ohm": 0.003459032263390986,
+   "spice_ohm": 0.003439679,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3528,6 +4269,8 @@
     "C211.2",
     "U203.5"
    ],
+   "kinematik_ohm": 0.0042934867856782065,
+   "spice_ohm": 0.004273602,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3535,9 +4278,11 @@
    "board": "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
    "net": "Net-(D201-K)",
    "pair": [
-    "C213.1",
+    "D201.1",
     "VR201.5"
    ],
+   "kinematik_ohm": 0.0268041210740654,
+   "spice_ohm": 0.02618032,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3548,6 +4293,8 @@
     "C214.1",
     "U203.6"
    ],
+   "kinematik_ohm": 0.010046766696017857,
+   "spice_ohm": 0.01002677,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3558,6 +4305,8 @@
     "C217.2",
     "U204.2"
    ],
+   "kinematik_ohm": 0.013422147565929608,
+   "spice_ohm": 0.01340215,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3568,6 +4317,8 @@
     "C218.1",
     "U204.1"
    ],
+   "kinematik_ohm": 0.003746236112515987,
+   "spice_ohm": 0.003726319,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3578,6 +4329,8 @@
     "C218.2",
     "U204.3"
    ],
+   "kinematik_ohm": 0.005779734308492112,
+   "spice_ohm": 0.005759958,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3588,6 +4341,8 @@
     "C220.1",
     "U204.4"
    ],
+   "kinematik_ohm": 0.0046458130152715795,
+   "spice_ohm": 0.004490692,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3598,6 +4353,8 @@
     "C220.2",
     "U204.5"
    ],
+   "kinematik_ohm": 0.003720241659563743,
+   "spice_ohm": 0.003700323,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3608,6 +4365,8 @@
     "C221.1",
     "U204.6"
    ],
+   "kinematik_ohm": 0.009842019734061444,
+   "spice_ohm": 0.009822022,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3618,6 +4377,8 @@
     "CAN_TERM201.2",
     "R209.2"
    ],
+   "kinematik_ohm": 0.013799197521981008,
+   "spice_ohm": 0.01377949,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3628,6 +4389,8 @@
     "U204.7",
     "COM_SEL201.3"
    ],
+   "kinematik_ohm": 0.04231136892868648,
+   "spice_ohm": 0.04083093,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3638,6 +4401,8 @@
     "COM_SEL202.3",
     "U204.8"
    ],
+   "kinematik_ohm": 0.02846242748321593,
+   "spice_ohm": 0.02844243,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3648,6 +4413,8 @@
     "COM_SEL203.3",
     "U204.13"
    ],
+   "kinematik_ohm": 0.027807714639599676,
+   "spice_ohm": 0.02778772,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3658,6 +4425,8 @@
     "D101.1",
     "U101.4"
    ],
+   "kinematik_ohm": 0.01970269749159225,
+   "spice_ohm": 0.0196827,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3668,6 +4437,8 @@
     "D301.2",
     "R303.2"
    ],
+   "kinematik_ohm": 0.007042674367817088,
+   "spice_ohm": 0.007022676,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3678,6 +4449,8 @@
     "D302.2",
     "R304.2"
    ],
+   "kinematik_ohm": 0.007042674367817088,
+   "spice_ohm": 0.007022676,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3688,6 +4461,8 @@
     "F201.1",
     "SW_ONOFF201.2"
    ],
+   "kinematik_ohm": 0.01837805553861338,
+   "spice_ohm": 0.01835806,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3698,6 +4473,8 @@
     "SW_ONOFF201.3",
     "TB201.1"
    ],
+   "kinematik_ohm": 0.012152667106759793,
+   "spice_ohm": 0.01193011,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3708,6 +4485,8 @@
     "L102.1",
     "VDDA101.2"
    ],
+   "kinematik_ohm": 0.012768136774489776,
+   "spice_ohm": 0.01274814,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3716,8 +4495,10 @@
    "net": "Net-(U201A-E)",
    "pair": [
     "R201.2",
-    "U201.13"
+    "U201.10"
    ],
+   "kinematik_ohm": 0.03218892216682434,
+   "spice_ohm": 0.02961951,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3728,6 +4509,8 @@
     "LED201.2",
     "R202.1"
    ],
+   "kinematik_ohm": 0.002970703515888942,
+   "spice_ohm": 0.002950706,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3738,6 +4521,8 @@
     "LED202.2",
     "R203.1"
    ],
+   "kinematik_ohm": 0.002970703515888942,
+   "spice_ohm": 0.002950706,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3748,6 +4533,8 @@
     "LED203.2",
     "R204.1"
    ],
+   "kinematik_ohm": 0.002970703515888942,
+   "spice_ohm": 0.002950706,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3758,6 +4545,8 @@
     "LED204.2",
     "R206.1"
    ],
+   "kinematik_ohm": 0.002801704968646088,
+   "spice_ohm": 0.002782094,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3768,6 +4557,8 @@
     "LED205.2",
     "R207.1"
    ],
+   "kinematik_ohm": 0.0031391528425206796,
+   "spice_ohm": 0.003119317,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3778,6 +4569,8 @@
     "LEDABRT101.1",
     "R103.1"
    ],
+   "kinematik_ohm": 0.003139315145368592,
+   "spice_ohm": 0.003119317,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3788,6 +4581,8 @@
     "R116.2",
     "LED_RST101.2"
    ],
+   "kinematik_ohm": 0.003950990765741382,
+   "spice_ohm": 0.003930993,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3798,6 +4593,8 @@
     "PULUPEN201.8",
     "R214.2"
    ],
+   "kinematik_ohm": 0.005162267781357082,
+   "spice_ohm": 0.005142656,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3808,6 +4605,8 @@
     "PULUPEN201.6",
     "R213.2"
    ],
+   "kinematik_ohm": 0.005162267781357082,
+   "spice_ohm": 0.005142656,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3818,6 +4617,8 @@
     "PULUPEN201.4",
     "R212.2"
    ],
+   "kinematik_ohm": 0.005561515143431199,
+   "spice_ohm": 0.005541704,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3828,6 +4629,8 @@
     "PULUPEN201.2",
     "R211.2"
    ],
+   "kinematik_ohm": 0.004223893994299482,
+   "spice_ohm": 0.004204052,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3838,6 +4641,8 @@
     "U301.32",
     "P302.2"
    ],
+   "kinematik_ohm": 0.04980956322121875,
+   "spice_ohm": 0.04979456,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3848,6 +4653,8 @@
     "U301.31",
     "P302.4"
    ],
+   "kinematik_ohm": 0.029448188401323815,
+   "spice_ohm": 0.02942819,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3858,6 +4665,8 @@
     "Q101.2",
     "R115.2"
    ],
+   "kinematik_ohm": 0.0029817092016535722,
+   "spice_ohm": 0.002961946,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3868,6 +4677,8 @@
     "Q101.3",
     "R116.1"
    ],
+   "kinematik_ohm": 0.00634276772301924,
+   "spice_ohm": 0.006323635,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3878,6 +4689,8 @@
     "R113.1",
     "U102.5"
    ],
+   "kinematik_ohm": 0.01822547846036896,
+   "spice_ohm": 0.01780019,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3888,6 +4701,8 @@
     "R114.1",
     "U102.64"
    ],
+   "kinematik_ohm": 0.008246760218527938,
+   "spice_ohm": 0.007813545,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3898,6 +4713,8 @@
     "R202.2",
     "U201.3"
    ],
+   "kinematik_ohm": 0.005367796413142771,
+   "spice_ohm": 0.005347798,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3908,6 +4725,8 @@
     "R203.2",
     "U201.6"
    ],
+   "kinematik_ohm": 0.004878326341357604,
+   "spice_ohm": 0.004858328,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3918,6 +4737,8 @@
     "R204.2",
     "U201.11"
    ],
+   "kinematik_ohm": 0.02043370129100803,
+   "spice_ohm": 0.0204137,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3928,6 +4749,8 @@
     "U202.10",
     "UART_EN201.5"
    ],
+   "kinematik_ohm": 0.01370751089481916,
+   "spice_ohm": 0.01368751,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3938,6 +4761,8 @@
     "R206.2",
     "U201.8"
    ],
+   "kinematik_ohm": 0.019026629582397515,
+   "spice_ohm": 0.01900766,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3948,6 +4773,8 @@
     "U203.10",
     "UART_EN202.5"
    ],
+   "kinematik_ohm": 0.010508667443958484,
+   "spice_ohm": 0.01046942,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3958,6 +4785,8 @@
     "RS201.1",
     "U205.8"
    ],
+   "kinematik_ohm": 0.008782846416251308,
+   "spice_ohm": 0.008380852,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3968,6 +4797,8 @@
     "U204.11",
     "UART_EN203.5"
    ],
+   "kinematik_ohm": 0.03664431845610591,
+   "spice_ohm": 0.03660456,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3978,6 +4809,8 @@
     "U202.9",
     "UART_EN201.7"
    ],
+   "kinematik_ohm": 0.01224961899025043,
+   "spice_ohm": 0.01222997,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3988,6 +4821,8 @@
     "U202.11",
     "UART_EN201.1"
    ],
+   "kinematik_ohm": 0.0212992458593578,
+   "spice_ohm": 0.02127925,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -3998,6 +4833,8 @@
     "U202.12",
     "UART_EN201.3"
    ],
+   "kinematik_ohm": 0.013311743960495854,
+   "spice_ohm": 0.01329175,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4008,6 +4845,8 @@
     "U203.9",
     "UART_EN202.7"
    ],
+   "kinematik_ohm": 0.010810757368917082,
+   "spice_ohm": 0.01079115,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4018,6 +4857,8 @@
     "U203.11",
     "UART_EN202.1"
    ],
+   "kinematik_ohm": 0.02129924585936021,
+   "spice_ohm": 0.02127925,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4028,6 +4869,8 @@
     "U203.12",
     "UART_EN202.3"
    ],
+   "kinematik_ohm": 0.013311743960493129,
+   "spice_ohm": 0.01329175,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4038,6 +4881,8 @@
     "U204.9",
     "UART_EN203.3"
    ],
+   "kinematik_ohm": 0.019793151991470116,
+   "spice_ohm": 0.0197732,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4048,6 +4893,8 @@
     "U204.10",
     "UART_EN203.1"
    ],
+   "kinematik_ohm": 0.023658619291204948,
+   "spice_ohm": 0.02363862,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4058,6 +4905,8 @@
     "U204.12",
     "UART_EN203.7"
    ],
+   "kinematik_ohm": 0.046213194405225096,
+   "spice_ohm": 0.04619324,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4068,6 +4917,8 @@
     "U205.5",
     "VREF201.1"
    ],
+   "kinematik_ohm": 0.027368682026445483,
+   "spice_ohm": 0.02720294,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4078,6 +4929,8 @@
     "U102.73",
     "Y101.1"
    ],
+   "kinematik_ohm": 0.05186663568019867,
+   "spice_ohm": 0.04757976,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4088,6 +4941,8 @@
     "COM_SEL201.2",
     "UARTCAN203.2"
    ],
+   "kinematik_ohm": 0.039377233129202126,
+   "spice_ohm": 0.03935723,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4098,6 +4953,8 @@
     "COM_SEL203.2",
     "UARTCAN203.7"
    ],
+   "kinematik_ohm": 0.04252321136085853,
+   "spice_ohm": 0.04216784,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4108,6 +4965,8 @@
     "UARTCAN201.1",
     "UARTCAN201.4"
    ],
+   "kinematik_ohm": 0.016113641827969448,
+   "spice_ohm": 0.01609374,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4118,6 +4977,8 @@
     "UARTCAN202.1",
     "UARTCAN202.4"
    ],
+   "kinematik_ohm": 0.016523359722137143,
+   "spice_ohm": 0.01650336,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4128,6 +4989,8 @@
     "UARTCAN203.1",
     "UARTCAN203.4"
    ],
+   "kinematik_ohm": 0.02201198705675516,
+   "spice_ohm": 0.02199199,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4138,6 +5001,8 @@
     "J1.7",
     "R6.1"
    ],
+   "kinematik_ohm": 0.025210015155781827,
+   "spice_ohm": 0.02487888,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4148,6 +5013,8 @@
     "U3.1",
     "D1.1"
    ],
+   "kinematik_ohm": 0.04132765397125933,
+   "spice_ohm": 0.04114361,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4158,6 +5025,8 @@
     "U4.1",
     "R10.1"
    ],
+   "kinematik_ohm": 0.013728319097563729,
+   "spice_ohm": 0.01370832,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4168,6 +5037,8 @@
     "R10.2",
     "C5.1"
    ],
+   "kinematik_ohm": 0.006447668936644809,
+   "spice_ohm": 0.006427671,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4178,6 +5049,8 @@
     "C9.2",
     "R11.2"
    ],
+   "kinematik_ohm": 0.02427283029488128,
+   "spice_ohm": 0.02423332,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4188,6 +5061,8 @@
     "D11.1",
     "Q1.1"
    ],
+   "kinematik_ohm": 0.02040330950829202,
+   "spice_ohm": 0.02038331,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4198,6 +5073,8 @@
     "D11.2",
     "R19.1"
    ],
+   "kinematik_ohm": 0.006146094532690707,
+   "spice_ohm": 0.006126097,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4208,6 +5085,8 @@
     "Q1.2",
     "R8.2"
    ],
+   "kinematik_ohm": 0.03132857119627562,
+   "spice_ohm": 0.03130857,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4218,6 +5097,8 @@
     "R20.2",
     "R19.2"
    ],
+   "kinematik_ohm": 0.02603211647231306,
+   "spice_ohm": 0.02601225,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4228,6 +5109,8 @@
     "U2.6",
     "R12.1"
    ],
+   "kinematik_ohm": 0.008631796240210553,
+   "spice_ohm": 0.008611866,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4238,6 +5121,8 @@
     "U2.8",
     "R13.1"
    ],
+   "kinematik_ohm": 0.01758477337195788,
+   "spice_ohm": 0.01756478,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4248,6 +5133,8 @@
     "R15.1",
     "RV1.1"
    ],
+   "kinematik_ohm": 0.01965632320147296,
+   "spice_ohm": 0.01963633,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4258,6 +5145,8 @@
     "R16.1",
     "RV1.3"
    ],
+   "kinematik_ohm": 0.017351364713399375,
+   "spice_ohm": 0.0173315,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4268,6 +5157,8 @@
     "U2.3",
     "R8.1"
    ],
+   "kinematik_ohm": 0.06314642018481376,
+   "spice_ohm": 0.06312642,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4278,6 +5169,8 @@
     "U4.2",
     "RV1.2"
    ],
+   "kinematik_ohm": 0.0373797160040499,
+   "spice_ohm": 0.03735972,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4288,6 +5181,8 @@
     "D6.1",
     "R20.1"
    ],
+   "kinematik_ohm": 0.0721062608063221,
+   "spice_ohm": 0.06572834,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4298,6 +5193,8 @@
     "Q2.3",
     "R16.2"
    ],
+   "kinematik_ohm": 0.03558850538740805,
+   "spice_ohm": 0.03527626,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4308,6 +5205,8 @@
     "P1.2",
     "D1.2"
    ],
+   "kinematik_ohm": 0.015440930089675082,
+   "spice_ohm": 0.01542093,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4318,6 +5217,8 @@
     "U2.5",
     "R3.2"
    ],
+   "kinematik_ohm": 0.04803720415081836,
+   "spice_ohm": 0.04787431,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4328,6 +5229,8 @@
     "R9.2",
     "D8.2"
    ],
+   "kinematik_ohm": 0.005116455112643928,
+   "spice_ohm": 0.005096457,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4338,6 +5241,8 @@
     "R14.2",
     "D9.2"
    ],
+   "kinematik_ohm": 0.005116455112643928,
+   "spice_ohm": 0.005096457,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4348,6 +5253,8 @@
     "R21.1",
     "D12.2"
    ],
+   "kinematik_ohm": 0.007227342262105153,
+   "spice_ohm": 0.007207478,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4355,9 +5262,11 @@
    "board": "pic_programmer/pic_programmer.kicad_pcb",
    "net": "/pic_sockets/VCC_PIC",
    "pair": [
-    "Q3.1",
-    "C7.1"
+    "P3.11",
+    "Q3.1"
    ],
+   "kinematik_ohm": 0.1795932171453387,
+   "spice_ohm": 0.1929815,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4368,6 +5277,8 @@
     "P2.27",
     "R13.2"
    ],
+   "kinematik_ohm": 0.16694121062755585,
+   "spice_ohm": 0.1728191,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4378,6 +5289,8 @@
     "P2.28",
     "U2.12"
    ],
+   "kinematik_ohm": 0.2058502733707428,
+   "spice_ohm": 0.2022355,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4388,6 +5301,8 @@
     "U2.2",
     "D2.2"
    ],
+   "kinematik_ohm": 0.04488140903675106,
+   "spice_ohm": 0.04486154,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4398,6 +5313,8 @@
     "U2.9",
     "D6.2"
    ],
+   "kinematik_ohm": 0.0515973929314799,
+   "spice_ohm": 0.05157762,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4408,6 +5325,8 @@
     "U4.8",
     "L1.1"
    ],
+   "kinematik_ohm": 0.013728319097562666,
+   "spice_ohm": 0.01370832,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4418,6 +5337,8 @@
     "U2.11",
     "J1.8"
    ],
+   "kinematik_ohm": 0.051005214018249576,
+   "spice_ohm": 0.05059937,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4428,6 +5349,8 @@
     "J1.4",
     "R4.1"
    ],
+   "kinematik_ohm": 0.009936444304099568,
+   "spice_ohm": 0.009916446,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4438,6 +5361,8 @@
     "J1.3",
     "R1.1"
    ],
+   "kinematik_ohm": 0.009764899238167778,
+   "spice_ohm": 0.009579029,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4448,6 +5373,8 @@
     "Q2.1",
     "R9.1"
    ],
+   "kinematik_ohm": 0.03443748247272495,
+   "spice_ohm": 0.03439761,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4458,6 +5385,8 @@
     "U6.4",
     "R18.2"
    ],
+   "kinematik_ohm": 0.26954640448093414,
+   "spice_ohm": 0.2396154,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4468,6 +5397,8 @@
     "R10.2",
     "J1.3"
    ],
+   "kinematik_ohm": 0.004594403179665972,
+   "spice_ohm": 0.004574714,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4478,6 +5409,8 @@
     "R8.2",
     "J1.5"
    ],
+   "kinematik_ohm": 0.00784893373767172,
+   "spice_ohm": 0.007714541,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4488,6 +5421,8 @@
     "R4.2",
     "J1.13"
    ],
+   "kinematik_ohm": 0.005875431100239137,
+   "spice_ohm": 0.005855601,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4498,6 +5433,8 @@
     "D2.1",
     "J2.1"
    ],
+   "kinematik_ohm": 0.015805442818629098,
+   "spice_ohm": 0.01570757,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4508,6 +5445,8 @@
     "R12.1",
     "J2.4"
    ],
+   "kinematik_ohm": 0.022052279937247093,
+   "spice_ohm": 0.02201336,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4518,6 +5457,8 @@
     "R14.1",
     "J2.2"
    ],
+   "kinematik_ohm": 0.01840202536716567,
+   "spice_ohm": 0.01838231,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4528,6 +5469,8 @@
     "R6.2",
     "J1.6"
    ],
+   "kinematik_ohm": 0.013748857734249817,
+   "spice_ohm": 0.01372891,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4538,6 +5481,8 @@
     "R11.1",
     "J2.3"
    ],
+   "kinematik_ohm": 0.021723958033591,
+   "spice_ohm": 0.02170396,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4548,6 +5493,8 @@
     "R7.2",
     "J1.2"
    ],
+   "kinematik_ohm": 0.03200685262243627,
+   "spice_ohm": 0.03198702,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4558,6 +5505,8 @@
     "R13.1",
     "J2.5"
    ],
+   "kinematik_ohm": 0.025947210188798933,
+   "spice_ohm": 0.02592795,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4568,6 +5517,8 @@
     "R9.2",
     "J1.4"
    ],
+   "kinematik_ohm": 0.005226804946749377,
+   "spice_ohm": 0.005044862,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4578,6 +5529,8 @@
     "R1.2",
     "J1.15"
    ],
+   "kinematik_ohm": 0.0060532006984481655,
+   "spice_ohm": 0.006033371,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4588,6 +5541,8 @@
     "U2.14",
     "U1.14"
    ],
+   "kinematik_ohm": 0.02310331893357727,
+   "spice_ohm": 0.02203016,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4598,6 +5553,8 @@
     "R11.2",
     "U1.6"
    ],
+   "kinematik_ohm": 0.03645976627807519,
+   "spice_ohm": 0.03586649,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4608,6 +5565,8 @@
     "R14.2",
     "U1.3"
    ],
+   "kinematik_ohm": 0.06849904358386993,
+   "spice_ohm": 0.06898534,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4618,6 +5577,8 @@
     "R13.2",
     "U1.11"
    ],
+   "kinematik_ohm": 0.05707179289990896,
+   "spice_ohm": 0.0564786,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4628,6 +5589,8 @@
     "R12.2",
     "U1.8"
    ],
+   "kinematik_ohm": 0.025202322687977,
+   "spice_ohm": 0.02516274,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4638,16 +5601,8 @@
     "D1.2",
     "R1.1"
    ],
-   "copper_oz": 1.0,
-   "board_thickness_mm": 1.6
-  },
-  {
-   "board": "sonde xilinx/sonde xilinx.kicad_pcb",
-   "net": "Net-(J1-Pad11)",
-   "pair": [
-    "J1.8",
-    "J1.12"
-   ],
+   "kinematik_ohm": 0.004843567737400525,
+   "spice_ohm": 0.004823698,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4658,6 +5613,8 @@
     "R4.1",
     "U2.3"
    ],
+   "kinematik_ohm": 0.029741312387767185,
+   "spice_ohm": 0.02972131,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4668,6 +5625,8 @@
     "R6.1",
     "U1.1"
    ],
+   "kinematik_ohm": 0.003934511840376865,
+   "spice_ohm": 0.0039146,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4678,6 +5637,8 @@
     "R7.1",
     "U1.5"
    ],
+   "kinematik_ohm": 0.004606236321839345,
+   "spice_ohm": 0.004586238,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4688,6 +5649,8 @@
     "R8.1",
     "U1.13"
    ],
+   "kinematik_ohm": 0.020867331078079497,
+   "spice_ohm": 0.02084742,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4698,6 +5661,8 @@
     "R9.1",
     "U1.12"
    ],
+   "kinematik_ohm": 0.016831699640341053,
+   "spice_ohm": 0.01664955,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4708,6 +5673,8 @@
     "R10.1",
     "U1.9"
    ],
+   "kinematik_ohm": 0.03171577942333908,
+   "spice_ohm": 0.03169589,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4718,6 +5685,8 @@
     "C2.1",
     "U1.41"
    ],
+   "kinematik_ohm": 0.012878316132628242,
+   "spice_ohm": 0.01547341,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4728,6 +5697,8 @@
     "R4.1",
     "C3.1"
    ],
+   "kinematik_ohm": 0.05054676887311871,
+   "spice_ohm": 0.0460118,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4738,6 +5709,8 @@
     "U2.7",
     "C28.1"
    ],
+   "kinematik_ohm": 0.0036630310179316243,
+   "spice_ohm": 0.00323202,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4748,6 +5721,8 @@
     "D15.RK",
     "R7.1"
    ],
+   "kinematik_ohm": 0.05176504215251043,
+   "spice_ohm": 0.04782771,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4758,6 +5733,8 @@
     "D16.RK",
     "R8.1"
    ],
+   "kinematik_ohm": 0.0566976467071072,
+   "spice_ohm": 0.0499401,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4768,6 +5745,8 @@
     "D17.RK",
     "R9.1"
    ],
+   "kinematik_ohm": 0.060567697897567996,
+   "spice_ohm": 0.05682213,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4778,6 +5757,8 @@
     "D18.RK",
     "R10.1"
    ],
+   "kinematik_ohm": 0.0695158274993446,
+   "spice_ohm": 0.06403826,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4788,6 +5769,8 @@
     "D19.GA",
     "R11.1"
    ],
+   "kinematik_ohm": 0.03518765090575471,
+   "spice_ohm": 0.03562053,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4798,6 +5781,8 @@
     "D20.GA",
     "R12.1"
    ],
+   "kinematik_ohm": 0.0474106565116017,
+   "spice_ohm": 0.04572021,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4808,6 +5793,8 @@
     "D21.GA",
     "R13.1"
    ],
+   "kinematik_ohm": 0.05766007464080758,
+   "spice_ohm": 0.05441213,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4818,6 +5805,8 @@
     "J1.1",
     "JP1.1"
    ],
+   "kinematik_ohm": 0.008348440774796824,
+   "spice_ohm": 0.00731342,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4828,6 +5817,8 @@
     "U1.40",
     "R3.2"
    ],
+   "kinematik_ohm": 0.004844599781911952,
+   "spice_ohm": 0.005725287,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4838,6 +5829,8 @@
     "R4.2",
     "U1.45"
    ],
+   "kinematik_ohm": 0.005486634683095822,
+   "spice_ohm": 0.005466771,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4848,6 +5841,8 @@
     "U1.43",
     "R5.2"
    ],
+   "kinematik_ohm": 0.004872723533885485,
+   "spice_ohm": 0.005753391,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4858,6 +5853,8 @@
     "R6.1",
     "U1.27"
    ],
+   "kinematik_ohm": 0.003022352448119974,
+   "spice_ohm": 0.00300268,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4868,6 +5865,8 @@
     "D1.2",
     "U1.18"
    ],
+   "kinematik_ohm": 0.03542499107788899,
+   "spice_ohm": 0.0323259,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4878,6 +5877,8 @@
     "D2.2",
     "U1.19"
    ],
+   "kinematik_ohm": 0.024989380551232898,
+   "spice_ohm": 0.02478651,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4888,6 +5889,8 @@
     "D3.2",
     "U1.16"
    ],
+   "kinematik_ohm": 0.016861240514209785,
+   "spice_ohm": 0.02034907,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4898,6 +5901,8 @@
     "D4.2",
     "U1.17"
    ],
+   "kinematik_ohm": 0.02369014617488574,
+   "spice_ohm": 0.02514854,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4908,6 +5913,8 @@
     "D5.2",
     "U1.13"
    ],
+   "kinematik_ohm": 0.048545437529355695,
+   "spice_ohm": 0.04670923,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4918,6 +5925,8 @@
     "D6.2",
     "U1.14"
    ],
+   "kinematik_ohm": 0.05181885013007559,
+   "spice_ohm": 0.0540035,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4928,6 +5937,8 @@
     "D7.2",
     "U1.11"
    ],
+   "kinematik_ohm": 0.07129986571681002,
+   "spice_ohm": 0.07492277,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4938,6 +5949,8 @@
     "D8.2",
     "U1.12"
    ],
+   "kinematik_ohm": 0.07420840700660847,
+   "spice_ohm": 0.0720521,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4948,6 +5961,8 @@
     "D9.2",
     "U1.32"
    ],
+   "kinematik_ohm": 0.029907963759342238,
+   "spice_ohm": 0.02890926,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4958,6 +5973,8 @@
     "D10.2",
     "U1.33"
    ],
+   "kinematik_ohm": 0.033422041086851095,
+   "spice_ohm": 0.03500263,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4968,6 +5985,8 @@
     "D11.2",
     "U1.34"
    ],
+   "kinematik_ohm": 0.06323445568068564,
+   "spice_ohm": 0.0582865,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4978,6 +5997,8 @@
     "D12.2",
     "U1.35"
    ],
+   "kinematik_ohm": 0.049747164483051165,
+   "spice_ohm": 0.04975013,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4988,6 +6009,8 @@
     "D13.2",
     "U1.37"
    ],
+   "kinematik_ohm": 0.044116123362528015,
+   "spice_ohm": 0.04302692,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -4998,6 +6021,8 @@
     "D14.2",
     "U1.38"
    ],
+   "kinematik_ohm": 0.03848688989546645,
+   "spice_ohm": 0.04419986,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5008,6 +6033,8 @@
     "R7.2",
     "U1.3"
    ],
+   "kinematik_ohm": 0.004542576767415019,
+   "spice_ohm": 0.005434693,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5018,6 +6045,8 @@
     "J1.2",
     "U1.29"
    ],
+   "kinematik_ohm": 0.05031811448543522,
+   "spice_ohm": 0.05390937,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5028,6 +6057,8 @@
     "J1.3",
     "U1.30"
    ],
+   "kinematik_ohm": 0.04527103314512715,
+   "spice_ohm": 0.04292026,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5038,6 +6069,8 @@
     "R8.2",
     "U1.4"
    ],
+   "kinematik_ohm": 0.003197887459294658,
+   "spice_ohm": 0.004083501,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5048,6 +6081,8 @@
     "U1.5",
     "R9.2"
    ],
+   "kinematik_ohm": 0.006556343761305631,
+   "spice_ohm": 0.006538841,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5058,6 +6093,8 @@
     "R10.2",
     "U1.7"
    ],
+   "kinematik_ohm": 0.006509898335526523,
+   "spice_ohm": 0.006490141,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5068,6 +6105,8 @@
     "R11.2",
     "U1.48"
    ],
+   "kinematik_ohm": 0.0047922814368406876,
+   "spice_ohm": 0.004777324,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5078,6 +6117,8 @@
     "R12.2",
     "U1.47"
    ],
+   "kinematik_ohm": 0.003042782758576553,
+   "spice_ohm": 0.003780795,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5088,6 +6129,8 @@
     "R13.2",
     "U1.46"
    ],
+   "kinematik_ohm": 0.004872723533378882,
+   "spice_ohm": 0.005753307,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5098,6 +6141,8 @@
     "D19.GK",
     "D21.RA"
    ],
+   "kinematik_ohm": 0.02427475229319498,
+   "spice_ohm": 0.0276317,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5108,6 +6153,8 @@
     "Y1.3",
     "U1.23"
    ],
+   "kinematik_ohm": 0.01596433115597384,
+   "spice_ohm": 0.01594898,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5118,6 +6165,8 @@
     "Y1.1",
     "U1.22"
    ],
+   "kinematik_ohm": 0.0078624787658682,
+   "spice_ohm": 0.007845607,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5126,8 +6175,10 @@
    "net": "VIN",
    "pair": [
     "U2.1",
-    "JP1.2"
+    "U2.2"
    ],
+   "kinematik_ohm": 0.00674054972203862,
+   "spice_ohm": 0.006277116,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5138,6 +6189,8 @@
     "P3.1",
     "P4.1"
    ],
+   "kinematik_ohm": 0.05627305488504271,
+   "spice_ohm": 0.05625306,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5148,6 +6201,8 @@
     "P1.1",
     "P2.1"
    ],
+   "kinematik_ohm": 0.03256809938403107,
+   "spice_ohm": 0.03254817,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5158,6 +6213,8 @@
     "U6.7",
     "U3.1"
    ],
+   "kinematik_ohm": 0.11773799359798431,
+   "spice_ohm": 0.09765949,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5168,6 +6225,8 @@
     "D4.2",
     "U6.4"
    ],
+   "kinematik_ohm": 0.07224938306347496,
+   "spice_ohm": 0.07221,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5178,6 +6237,8 @@
     "U2.39",
     "U5.20"
    ],
+   "kinematik_ohm": 0.03444072826776842,
+   "spice_ohm": 0.03442074,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5188,6 +6249,8 @@
     "U2.69",
     "U1.12"
    ],
+   "kinematik_ohm": 0.026913129104160036,
+   "spice_ohm": 0.02689313,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5198,6 +6261,8 @@
     "U2.66",
     "U1.11"
    ],
+   "kinematik_ohm": 0.020662515953856795,
+   "spice_ohm": 0.02064252,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5208,6 +6273,8 @@
     "U2.70",
     "U1.3"
    ],
+   "kinematik_ohm": 0.009148993711010946,
+   "spice_ohm": 0.009128996,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5218,6 +6285,8 @@
     "U2.68",
     "U1.4"
    ],
+   "kinematik_ohm": 0.009148993711011497,
+   "spice_ohm": 0.009128996,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5228,6 +6297,8 @@
     "U2.63",
     "U1.10"
    ],
+   "kinematik_ohm": 0.024034748543442636,
+   "spice_ohm": 0.02401475,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5238,6 +6309,8 @@
     "U2.61",
     "U1.9"
    ],
+   "kinematik_ohm": 0.02403474854344377,
+   "spice_ohm": 0.02401475,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5248,6 +6321,8 @@
     "U2.58",
     "U1.8"
    ],
+   "kinematik_ohm": 0.0076074408284218745,
+   "spice_ohm": 0.00877979,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5258,6 +6333,8 @@
     "U2.62",
     "U1.7"
    ],
+   "kinematik_ohm": 0.009148993711010266,
+   "spice_ohm": 0.009128996,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5268,6 +6345,8 @@
     "U2.67",
     "U1.5"
    ],
+   "kinematik_ohm": 0.012231875867237469,
+   "spice_ohm": 0.01221194,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5278,6 +6357,8 @@
     "U2.76",
     "R2.2"
    ],
+   "kinematik_ohm": 0.02333633630640166,
+   "spice_ohm": 0.02331634,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5288,6 +6369,8 @@
     "U2.74",
     "R3.2"
    ],
+   "kinematik_ohm": 0.018820773788836218,
+   "spice_ohm": 0.01880078,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5298,6 +6381,8 @@
     "U2.33",
     "U5.11"
    ],
+   "kinematik_ohm": 0.02432404036415343,
+   "spice_ohm": 0.02430404,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5308,6 +6393,8 @@
     "U2.32",
     "U5.12"
    ],
+   "kinematik_ohm": 0.02769627295373958,
+   "spice_ohm": 0.02767627,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5318,6 +6405,8 @@
     "U2.26",
     "U5.13"
    ],
+   "kinematik_ohm": 0.041727807960230234,
+   "spice_ohm": 0.04162248,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5328,6 +6417,8 @@
     "U2.25",
     "U5.15"
    ],
+   "kinematik_ohm": 0.08216982587190867,
+   "spice_ohm": 0.08214983,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5338,6 +6429,8 @@
     "U2.24",
     "U5.16"
    ],
+   "kinematik_ohm": 0.07211800586377555,
+   "spice_ohm": 0.07209801,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5348,6 +6441,8 @@
     "U2.31",
     "U5.17"
    ],
+   "kinematik_ohm": 0.042582017921026144,
+   "spice_ohm": 0.04256203,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5358,6 +6453,8 @@
     "U2.34",
     "U5.18"
    ],
+   "kinematik_ohm": 0.03920978533144383,
+   "spice_ohm": 0.0391898,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5368,6 +6465,8 @@
     "U2.36",
     "U5.19"
    ],
+   "kinematik_ohm": 0.039209785331451974,
+   "spice_ohm": 0.0391898,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5378,6 +6477,8 @@
     "U2.35",
     "U5.10"
    ],
+   "kinematik_ohm": 0.02432404036415913,
+   "spice_ohm": 0.02430404,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5388,6 +6489,8 @@
     "U2.37",
     "U5.9"
    ],
+   "kinematik_ohm": 0.024324040364154448,
+   "spice_ohm": 0.02430404,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5398,6 +6501,8 @@
     "U2.41",
     "U5.21"
    ],
+   "kinematik_ohm": 0.03444072826777759,
+   "spice_ohm": 0.03442074,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5408,6 +6513,8 @@
     "U2.45",
     "U5.23"
    ],
+   "kinematik_ohm": 0.034440728267775104,
+   "spice_ohm": 0.03442074,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5418,6 +6525,8 @@
     "U2.55",
     "U5.2"
    ],
+   "kinematik_ohm": 0.02909309742782834,
+   "spice_ohm": 0.0290731,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5428,6 +6537,8 @@
     "U2.53",
     "U5.26"
    ],
+   "kinematik_ohm": 0.035837552741855516,
+   "spice_ohm": 0.03581756,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5438,6 +6549,8 @@
     "U2.56",
     "K1.3"
    ],
+   "kinematik_ohm": 0.03226076980923009,
+   "spice_ohm": 0.03224077,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5448,6 +6561,8 @@
     "U2.40",
     "U5.8"
    ],
+   "kinematik_ohm": 0.027696272953737798,
+   "spice_ohm": 0.02767627,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5458,6 +6573,8 @@
     "U2.44",
     "U5.7"
    ],
+   "kinematik_ohm": 0.027696272953737798,
+   "spice_ohm": 0.02767627,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5468,6 +6585,8 @@
     "U2.46",
     "U5.6"
    ],
+   "kinematik_ohm": 0.027696272953748574,
+   "spice_ohm": 0.02767627,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5478,6 +6597,8 @@
     "U2.48",
     "U5.5"
    ],
+   "kinematik_ohm": 0.027696272953741927,
+   "spice_ohm": 0.02767627,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5488,6 +6609,8 @@
     "U2.50",
     "U5.4"
    ],
+   "kinematik_ohm": 0.027696272953737798,
+   "spice_ohm": 0.02767627,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5498,6 +6621,8 @@
     "U2.52",
     "U5.3"
    ],
+   "kinematik_ohm": 0.029093097427824222,
+   "spice_ohm": 0.0290731,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5508,6 +6633,8 @@
     "U2.51",
     "U5.25"
    ],
+   "kinematik_ohm": 0.035837552741853455,
+   "spice_ohm": 0.03581756,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5518,6 +6645,8 @@
     "U2.47",
     "U5.24"
    ],
+   "kinematik_ohm": 0.03444072826776977,
+   "spice_ohm": 0.03442074,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5528,6 +6657,8 @@
     "U2.43",
     "U5.22"
    ],
+   "kinematik_ohm": 0.03444072826776407,
+   "spice_ohm": 0.03442074,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5538,6 +6669,8 @@
     "U2.10",
     "J1.2"
    ],
+   "kinematik_ohm": 0.02965182721745893,
+   "spice_ohm": 0.02963183,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5548,6 +6681,8 @@
     "U2.7",
     "J1.3"
    ],
+   "kinematik_ohm": 0.026069791019780054,
+   "spice_ohm": 0.02605007,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5558,6 +6693,8 @@
     "U2.5",
     "J1.4"
    ],
+   "kinematik_ohm": 0.026070070956749167,
+   "spice_ohm": 0.02605007,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5568,6 +6705,8 @@
     "U2.3",
     "J1.5"
    ],
+   "kinematik_ohm": 0.025930388509350415,
+   "spice_ohm": 0.02591039,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5578,6 +6717,8 @@
     "U2.84",
     "J1.6"
    ],
+   "kinematik_ohm": 0.033043062063218415,
+   "spice_ohm": 0.03285445,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5588,6 +6729,8 @@
     "U2.83",
     "J1.7"
    ],
+   "kinematik_ohm": 0.027117689312323067,
+   "spice_ohm": 0.02709769,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5598,6 +6741,8 @@
     "U2.81",
     "J1.8"
    ],
+   "kinematik_ohm": 0.02587749360815247,
+   "spice_ohm": 0.02535166,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5608,6 +6753,8 @@
     "U2.82",
     "J1.9"
    ],
+   "kinematik_ohm": 0.028912502938782145,
+   "spice_ohm": 0.02872389,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5618,6 +6765,8 @@
     "U2.13",
     "J1.1"
    ],
+   "kinematik_ohm": 0.02979150966486407,
+   "spice_ohm": 0.02977151,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5628,6 +6777,8 @@
     "U2.79",
     "J1.10"
    ],
+   "kinematik_ohm": 0.024300074645021607,
+   "spice_ohm": 0.02428008,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5638,6 +6789,8 @@
     "U2.80",
     "J1.11"
    ],
+   "kinematik_ohm": 0.02818516151967694,
+   "spice_ohm": 0.02816516,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5648,6 +6801,8 @@
     "U2.77",
     "J1.12"
    ],
+   "kinematik_ohm": 0.024952611377497623,
+   "spice_ohm": 0.02493261,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5658,6 +6813,8 @@
     "U2.75",
     "J1.13"
    ],
+   "kinematik_ohm": 0.025021922411197148,
+   "spice_ohm": 0.02500245,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5668,6 +6825,8 @@
     "U2.11",
     "J1.14"
    ],
+   "kinematik_ohm": 0.029497765338586696,
+   "spice_ohm": 0.0290731,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5678,6 +6837,8 @@
     "U2.9",
     "J1.15"
    ],
+   "kinematik_ohm": 0.02892547849093671,
+   "spice_ohm": 0.02890548,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5688,6 +6849,8 @@
     "U2.6",
     "J1.16"
    ],
+   "kinematik_ohm": 0.03341629192071165,
+   "spice_ohm": 0.03291967,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5698,6 +6861,8 @@
     "U2.4",
     "J1.17"
    ],
+   "kinematik_ohm": 0.03344310714927016,
+   "spice_ohm": 0.03342311,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5708,6 +6873,8 @@
     "U2.1",
     "P4.2"
    ],
+   "kinematik_ohm": 0.00879978759248905,
+   "spice_ohm": 0.00877979,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5718,6 +6885,8 @@
     "U2.2",
     "P4.4"
    ],
+   "kinematik_ohm": 0.012870432419118703,
+   "spice_ohm": 0.01285043,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5728,6 +6897,8 @@
     "U2.12",
     "U4.4"
    ],
+   "kinematik_ohm": 0.05171102149716526,
+   "spice_ohm": 0.05169102,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5738,6 +6909,8 @@
     "SW1.1",
     "U2.72"
    ],
+   "kinematik_ohm": 0.08650915081858598,
+   "spice_ohm": 0.08623097,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5748,6 +6921,8 @@
     "U2.71",
     "SW2.1"
    ],
+   "kinematik_ohm": 0.09952280363518912,
+   "spice_ohm": 0.09900603,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5758,6 +6933,8 @@
     "U2.30",
     "J2.4"
    ],
+   "kinematik_ohm": 0.04272386289370604,
+   "spice_ohm": 0.04246368,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5768,6 +6945,8 @@
     "U2.28",
     "J2.3"
    ],
+   "kinematik_ohm": 0.049965516155572536,
+   "spice_ohm": 0.04982629,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5778,6 +6957,8 @@
     "U2.59",
     "J2.2"
    ],
+   "kinematik_ohm": 0.2221718430519104,
+   "spice_ohm": 0.2198836,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5788,6 +6969,8 @@
     "U2.29",
     "J2.5"
    ],
+   "kinematik_ohm": 0.04655402202703099,
+   "spice_ohm": 0.04653402,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5798,6 +6981,8 @@
     "U1.1",
     "C1.1"
    ],
+   "kinematik_ohm": 0.004572513995943154,
+   "spice_ohm": 0.004552516,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5808,6 +6993,8 @@
     "U1.14",
     "C2.1"
    ],
+   "kinematik_ohm": 0.005308433762971316,
+   "spice_ohm": 0.005288506,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5818,6 +7005,8 @@
     "U1.15",
     "C14.1"
    ],
+   "kinematik_ohm": 0.017935227250225918,
+   "spice_ohm": 0.01763576,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5828,6 +7017,8 @@
     "R8.2",
     "C14.2"
    ],
+   "kinematik_ohm": 0.012684153498906621,
+   "spice_ohm": 0.01266454,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5838,6 +7029,8 @@
     "R2.1",
     "D2.2"
    ],
+   "kinematik_ohm": 0.012231934479889243,
+   "spice_ohm": 0.01221194,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5848,6 +7041,8 @@
     "R9.2",
     "C2.2"
    ],
+   "kinematik_ohm": 0.016030255338533226,
+   "spice_ohm": 0.01601026,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5858,6 +7053,8 @@
     "U4.2",
     "X1.2"
    ],
+   "kinematik_ohm": 0.02706503145989478,
+   "spice_ohm": 0.02702579,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5868,6 +7065,8 @@
     "R1.2",
     "C5.1"
    ],
+   "kinematik_ohm": 0.044496862770398646,
+   "spice_ohm": 0.04445767,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5878,6 +7077,8 @@
     "R3.1",
     "D3.2"
    ],
+   "kinematik_ohm": 0.012725786508765682,
+   "spice_ohm": 0.01270579,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5888,6 +7089,8 @@
     "K1.2",
     "U5.1"
    ],
+   "kinematik_ohm": 0.008450581473969874,
+   "spice_ohm": 0.008430583,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5898,6 +7101,8 @@
     "R10.1",
     "P3.1"
    ],
+   "kinematik_ohm": 0.020055854725971864,
+   "spice_ohm": 0.01955895,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5908,6 +7113,8 @@
     "R9.1",
     "R6.1"
    ],
+   "kinematik_ohm": 0.04124383670053629,
+   "spice_ohm": 0.04122384,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5918,6 +7125,8 @@
     "R10.2",
     "R7.1"
    ],
+   "kinematik_ohm": 0.10429050716895935,
+   "spice_ohm": 0.104251,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5928,6 +7137,8 @@
     "D1.2",
     "P2.1"
    ],
+   "kinematik_ohm": 0.01372050929666451,
+   "spice_ohm": 0.01370051,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5938,6 +7149,8 @@
     "D4.1",
     "P2.3"
    ],
+   "kinematik_ohm": 0.009308903395259992,
+   "spice_ohm": 0.009289095,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5948,6 +7161,8 @@
     "R8.1",
     "R7.2"
    ],
+   "kinematik_ohm": 0.046762973660997624,
+   "spice_ohm": 0.04644566,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
   },
@@ -5958,18 +7173,10 @@
     "U2.54",
     "U5.27"
    ],
+   "kinematik_ohm": 0.039209785331448276,
+   "spice_ohm": 0.0391898,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.6
-  },
-  {
-   "board": "video/video.kicad_pcb",
-   "net": "+12V",
-   "pair": [
-    "BUS1.A2",
-    "BUS1.A2"
-   ],
-   "copper_oz": 1.0,
-   "board_thickness_mm": 1.600198
   },
   {
    "board": "video/video.kicad_pcb",
@@ -5978,6 +7185,8 @@
     "BUS1.A21",
     "BUS1.A45"
    ],
+   "kinematik_ohm": 0.12365405261516571,
+   "spice_ohm": 0.1141369,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -5988,6 +7197,8 @@
     "Q2.3",
     "Q3.3"
    ],
+   "kinematik_ohm": 0.1074163168668747,
+   "spice_ohm": 0.1059639,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -5998,6 +7209,8 @@
     "U8.57",
     "U9.29"
    ],
+   "kinematik_ohm": 0.1954963882054646,
+   "spice_ohm": 0.1954764,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6005,9 +7218,11 @@
    "board": "video/video.kicad_pcb",
    "net": "/ESVIDEO-RVB/REF+",
    "pair": [
-    "U8.64",
+    "U8.66",
     "R37.2"
    ],
+   "kinematik_ohm": 0.08692167699337006,
+   "spice_ohm": 0.09079905,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6015,9 +7230,11 @@
    "board": "video/video.kicad_pcb",
    "net": "/ESVIDEO-RVB/VAA",
    "pair": [
-    "U8.44",
+    "U8.43",
     "U9.1"
    ],
+   "kinematik_ohm": 0.2587309144437313,
+   "spice_ohm": 0.2629891,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6028,6 +7245,8 @@
     "RR2.6",
     "U11.61"
    ],
+   "kinematik_ohm": 0.06703578186794025,
+   "spice_ohm": 0.06701578,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6038,6 +7257,8 @@
     "RR6.9",
     "U11.121"
    ],
+   "kinematik_ohm": 0.09705436231953063,
+   "spice_ohm": 0.09677076,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6048,6 +7269,8 @@
     "RR6.7",
     "U11.129"
    ],
+   "kinematik_ohm": 0.10431006171324081,
+   "spice_ohm": 0.1040267,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6058,6 +7281,8 @@
     "RR6.5",
     "U11.137"
    ],
+   "kinematik_ohm": 0.11779374260380171,
+   "spice_ohm": 0.116248,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6068,6 +7293,8 @@
     "RR6.4",
     "U11.141"
    ],
+   "kinematik_ohm": 0.10141461330220822,
+   "spice_ohm": 0.1013946,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6078,6 +7305,8 @@
     "RR4.8",
     "U11.149"
    ],
+   "kinematik_ohm": 0.10602633602225656,
+   "spice_ohm": 0.1060063,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6088,6 +7317,8 @@
     "RR4.6",
     "U11.153"
    ],
+   "kinematik_ohm": 0.10463822733026829,
+   "spice_ohm": 0.1044539,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6098,6 +7329,8 @@
     "RR3.8",
     "U11.69"
    ],
+   "kinematik_ohm": 0.05828996912421195,
+   "spice_ohm": 0.05826997,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6108,6 +7341,8 @@
     "RR3.6",
     "U11.73"
    ],
+   "kinematik_ohm": 0.07939405542536436,
+   "spice_ohm": 0.07885924,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6118,6 +7353,8 @@
     "RR3.2",
     "U11.81"
    ],
+   "kinematik_ohm": 0.13239053743282647,
+   "spice_ohm": 0.1323705,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6128,6 +7365,8 @@
     "RR4.4",
     "U11.89"
    ],
+   "kinematik_ohm": 0.21568114497751087,
+   "spice_ohm": 0.215525,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6138,6 +7377,8 @@
     "RR4.2",
     "U11.97"
    ],
+   "kinematik_ohm": 0.2158289012042221,
+   "spice_ohm": 0.2156728,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6148,6 +7389,8 @@
     "RR5.9",
     "U11.101"
    ],
+   "kinematik_ohm": 0.15176449797671474,
+   "spice_ohm": 0.151476,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6158,6 +7401,8 @@
     "RR5.3",
     "U11.113"
    ],
+   "kinematik_ohm": 0.18192693009074223,
+   "spice_ohm": 0.1819069,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6168,6 +7413,8 @@
     "RR1.2",
     "U11.1"
    ],
+   "kinematik_ohm": 0.17737242115221846,
+   "spice_ohm": 0.1757071,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6178,6 +7425,8 @@
     "RR1.4",
     "U11.9"
    ],
+   "kinematik_ohm": 0.152341459102798,
+   "spice_ohm": 0.1520577,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6188,6 +7437,8 @@
     "RR1.6",
     "U11.17"
    ],
+   "kinematik_ohm": 0.12080644488596742,
+   "spice_ohm": 0.1206221,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6198,6 +7449,8 @@
     "RR1.7",
     "U11.21"
    ],
+   "kinematik_ohm": 0.10321873017601074,
+   "spice_ohm": 0.1030573,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6208,6 +7461,8 @@
     "RR1.9",
     "U11.29"
    ],
+   "kinematik_ohm": 0.06791407502175344,
+   "spice_ohm": 0.06789912,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6218,6 +7473,8 @@
     "RR2.4",
     "U11.33"
    ],
+   "kinematik_ohm": 0.10786633696746994,
+   "spice_ohm": 0.1062858,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6228,6 +7485,8 @@
     "RR2.2",
     "U11.41"
    ],
+   "kinematik_ohm": 0.10321400892433699,
+   "spice_ohm": 0.1015487,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6238,6 +7497,8 @@
     "RR2.9",
     "U11.49"
    ],
+   "kinematik_ohm": 0.04745013932469171,
+   "spice_ohm": 0.0471761,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6248,6 +7509,8 @@
     "BUS1.A58",
     "U11.56"
    ],
+   "kinematik_ohm": 0.09664049853281767,
+   "spice_ohm": 0.09662052,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6258,6 +7521,8 @@
     "BUS1.B58",
     "U11.55"
    ],
+   "kinematik_ohm": 0.09123648970015354,
+   "spice_ohm": 0.09121651,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6268,6 +7533,8 @@
     "BUS1.B48",
     "U11.39"
    ],
+   "kinematik_ohm": 0.040205777146972335,
+   "spice_ohm": 0.04018579,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6278,6 +7545,8 @@
     "BUS1.A47",
     "U11.38"
    ],
+   "kinematik_ohm": 0.04038710843698634,
+   "spice_ohm": 0.04010352,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6288,6 +7557,8 @@
     "BUS1.B47",
     "U11.36"
    ],
+   "kinematik_ohm": 0.04098987059726034,
+   "spice_ohm": 0.04096989,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6298,6 +7569,8 @@
     "BUS1.A46",
     "U11.35"
    ],
+   "kinematik_ohm": 0.0411412148814545,
+   "spice_ohm": 0.04085745,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6308,6 +7581,8 @@
     "BUS1.B45",
     "U11.34"
    ],
+   "kinematik_ohm": 0.04008514738538542,
+   "spice_ohm": 0.04006516,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6318,6 +7593,8 @@
     "BUS1.A44",
     "U11.32"
    ],
+   "kinematik_ohm": 0.04038735378909854,
+   "spice_ohm": 0.04010352,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6328,6 +7605,8 @@
     "BUS1.A32",
     "U11.14"
    ],
+   "kinematik_ohm": 0.04285045634042392,
+   "spice_ohm": 0.04283047,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6338,6 +7617,8 @@
     "BUS1.B32",
     "U11.12"
    ],
+   "kinematik_ohm": 0.04029624946818182,
+   "spice_ohm": 0.04027626,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6348,6 +7629,8 @@
     "BUS1.A31",
     "U11.8"
    ],
+   "kinematik_ohm": 0.0419155756881572,
+   "spice_ohm": 0.04189559,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6358,6 +7641,8 @@
     "BUS1.B30",
     "U11.7"
    ],
+   "kinematik_ohm": 0.04017561970661871,
+   "spice_ohm": 0.04015563,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6368,6 +7653,8 @@
     "BUS1.A57",
     "U11.54"
    ],
+   "kinematik_ohm": 0.08976261121363965,
+   "spice_ohm": 0.08974263,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6378,6 +7665,8 @@
     "BUS1.A29",
     "U11.6"
    ],
+   "kinematik_ohm": 0.041141044446853875,
+   "spice_ohm": 0.04085745,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6388,6 +7677,8 @@
     "BUS1.B29",
     "U11.4"
    ],
+   "kinematik_ohm": 0.03948199857746483,
+   "spice_ohm": 0.03946201,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6398,6 +7689,8 @@
     "BUS1.A28",
     "U11.3"
    ],
+   "kinematik_ohm": 0.041282270436876524,
+   "spice_ohm": 0.04100824,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6408,6 +7701,8 @@
     "BUS1.B27",
     "U11.2"
    ],
+   "kinematik_ohm": 0.04011530482580528,
+   "spice_ohm": 0.04009532,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6418,6 +7713,8 @@
     "BUS1.A25",
     "U11.158"
    ],
+   "kinematik_ohm": 0.06183831841629338,
+   "spice_ohm": 0.06181833,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6428,6 +7725,8 @@
     "BUS1.B24",
     "U11.156"
    ],
+   "kinematik_ohm": 0.06406613291296033,
+   "spice_ohm": 0.06404615,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6438,6 +7737,8 @@
     "BUS1.A23",
     "U11.155"
    ],
+   "kinematik_ohm": 0.06757236622385222,
+   "spice_ohm": 0.06755238,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6448,6 +7749,8 @@
     "BUS1.B23",
     "U11.154"
    ],
+   "kinematik_ohm": 0.07052395928996498,
+   "spice_ohm": 0.07050397,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6458,6 +7761,8 @@
     "BUS1.A22",
     "U11.152"
    ],
+   "kinematik_ohm": 0.07478412861077677,
+   "spice_ohm": 0.07476414,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6468,6 +7773,8 @@
     "BUS1.B21",
     "U11.148"
    ],
+   "kinematik_ohm": 0.08289677811699811,
+   "spice_ohm": 0.08287679,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6478,6 +7785,8 @@
     "BUS1.B56",
     "U11.52"
    ],
+   "kinematik_ohm": 0.08369299546889966,
+   "spice_ohm": 0.08367301,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6488,6 +7797,8 @@
     "BUS1.A20",
     "U11.147"
    ],
+   "kinematik_ohm": 0.08676275748940146,
+   "spice_ohm": 0.08674277,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6498,6 +7809,8 @@
     "BUS1.B20",
     "U11.146"
    ],
+   "kinematik_ohm": 0.09125238001566258,
+   "spice_ohm": 0.09123239,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6508,6 +7821,8 @@
     "BUS1.A55",
     "U11.48"
    ],
+   "kinematik_ohm": 0.07740479494966332,
+   "spice_ohm": 0.07738481,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6518,6 +7833,8 @@
     "BUS1.B55",
     "U11.47"
    ],
+   "kinematik_ohm": 0.07200078611719292,
+   "spice_ohm": 0.0719808,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6528,6 +7845,8 @@
     "BUS1.A54",
     "U11.46"
    ],
+   "kinematik_ohm": 0.0708586394747687,
+   "spice_ohm": 0.07032383,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6538,6 +7857,8 @@
     "BUS1.B53",
     "U11.44"
    ],
+   "kinematik_ohm": 0.06596516390567568,
+   "spice_ohm": 0.06594518,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6548,6 +7869,8 @@
     "BUS1.B52",
     "U11.42"
    ],
+   "kinematik_ohm": 0.05688149699097915,
+   "spice_ohm": 0.05686151,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6558,26 +7881,8 @@
     "BUS1.A49",
     "U11.40"
    ],
-   "copper_oz": 1.0,
-   "board_thickness_mm": 1.600198
-  },
-  {
-   "board": "video/video.kicad_pcb",
-   "net": "unconnected-(BUS1-TRST#)",
-   "pair": [
-    "BUS1.A1",
-    "BUS1.A1"
-   ],
-   "copper_oz": 1.0,
-   "board_thickness_mm": 1.600198
-  },
-  {
-   "board": "video/video.kicad_pcb",
-   "net": "unconnected-(BUS1-TMS)",
-   "pair": [
-    "BUS1.A3",
-    "BUS1.A3"
-   ],
+   "kinematik_ohm": 0.04194573312853944,
+   "spice_ohm": 0.04192575,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6588,16 +7893,8 @@
     "BUS1.A4",
     "BUS1.B4"
    ],
-   "copper_oz": 1.0,
-   "board_thickness_mm": 1.600198
-  },
-  {
-   "board": "video/video.kicad_pcb",
-   "net": "unconnected-(BUS1-INTC#)",
-   "pair": [
-    "BUS1.A7",
-    "BUS1.A7"
-   ],
+   "kinematik_ohm": 0.032342947010324516,
+   "spice_ohm": 0.03232298,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6608,6 +7905,8 @@
     "BUS1.B16",
     "U11.142"
    ],
+   "kinematik_ohm": 0.18410309725445106,
+   "spice_ohm": 0.1840831,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6618,6 +7917,8 @@
     "BUS1.B37",
     "U11.20"
    ],
+   "kinematik_ohm": 0.03954231345828131,
+   "spice_ohm": 0.03952233,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6628,6 +7929,8 @@
     "BUS1.A34",
     "U11.16"
    ],
+   "kinematik_ohm": 0.04230762241330603,
+   "spice_ohm": 0.04228764,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6638,6 +7941,8 @@
     "BUS1.A17",
     "U11.143"
    ],
+   "kinematik_ohm": 0.10032687136900724,
+   "spice_ohm": 0.1003069,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6648,6 +7953,8 @@
     "BUS1.A26",
     "U11.160"
    ],
+   "kinematik_ohm": 0.04875029391303707,
+   "spice_ohm": 0.04873031,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6658,6 +7965,8 @@
     "BUS1.A6",
     "U11.58"
    ],
+   "kinematik_ohm": 0.20101014714458962,
+   "spice_ohm": 0.2009902,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6668,6 +7977,8 @@
     "BUS1.B35",
     "U11.18"
    ],
+   "kinematik_ohm": 0.04041687922974732,
+   "spice_ohm": 0.04039689,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6678,6 +7989,8 @@
     "BUS1.B39",
     "U11.23"
    ],
+   "kinematik_ohm": 0.04035656434894497,
+   "spice_ohm": 0.04033658,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6688,6 +8001,8 @@
     "BUS1.A43",
     "U11.27"
    ],
+   "kinematik_ohm": 0.04294092866160771,
+   "spice_ohm": 0.04292094,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6698,6 +8013,8 @@
     "BUS1.B40",
     "U11.24"
    ],
+   "kinematik_ohm": 0.03972325810066615,
+   "spice_ohm": 0.03970327,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6708,6 +8025,8 @@
     "BUS1.B18",
     "U11.144"
    ],
+   "kinematik_ohm": 0.09501119163432753,
+   "spice_ohm": 0.09499121,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6718,6 +8037,8 @@
     "BUS1.A15",
     "U11.139"
    ],
+   "kinematik_ohm": 0.14587425628301692,
+   "spice_ohm": 0.1458543,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6728,6 +8049,8 @@
     "BUS1.B42",
     "U11.26"
    ],
+   "kinematik_ohm": 0.041170815239630246,
+   "spice_ohm": 0.04115083,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6738,6 +8061,8 @@
     "BUS1.A38",
     "U11.22"
    ],
+   "kinematik_ohm": 0.04239809473447648,
+   "spice_ohm": 0.04237811,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6748,6 +8073,8 @@
     "BUS1.A36",
     "U11.19"
    ],
+   "kinematik_ohm": 0.04279014145962203,
+   "spice_ohm": 0.04277016,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6758,6 +8085,8 @@
     "U7.6",
     "U24.95"
    ],
+   "kinematik_ohm": 0.08941942131728195,
+   "spice_ohm": 0.08939942,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6768,6 +8097,8 @@
     "P5.2",
     "U23.77"
    ],
+   "kinematik_ohm": 0.053600044389715586,
+   "spice_ohm": 0.05358005,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6778,6 +8109,8 @@
     "U23.57",
     "U24.2"
    ],
+   "kinematik_ohm": 0.18772532045841217,
+   "spice_ohm": 0.1870814,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6788,6 +8121,8 @@
     "U23.61",
     "U24.159"
    ],
+   "kinematik_ohm": 0.1269138753414154,
+   "spice_ohm": 0.1263596,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6798,6 +8133,8 @@
     "P5.3",
     "U23.75"
    ],
+   "kinematik_ohm": 0.050825191031228685,
+   "spice_ohm": 0.05080519,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6808,6 +8145,8 @@
     "P5.4",
     "U23.53"
    ],
+   "kinematik_ohm": 0.07876691232428928,
+   "spice_ohm": 0.07874691,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6818,6 +8157,8 @@
     "U7.1",
     "U24.7"
    ],
+   "kinematik_ohm": 0.1410530227259763,
+   "spice_ohm": 0.1403912,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6828,6 +8169,8 @@
     "U7.2",
     "U24.6"
    ],
+   "kinematik_ohm": 0.11887991428375244,
+   "spice_ohm": 0.1350933,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6838,6 +8181,8 @@
     "U2.6",
     "U24.94"
    ],
+   "kinematik_ohm": 0.014108532418340997,
+   "spice_ohm": 0.01408865,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6848,6 +8193,8 @@
     "U2.7",
     "U24.92"
    ],
+   "kinematik_ohm": 0.014444057070595522,
+   "spice_ohm": 0.01442406,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6858,6 +8205,8 @@
     "U2.8",
     "U24.88"
    ],
+   "kinematik_ohm": 0.013690121060709354,
+   "spice_ohm": 0.01367012,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6868,6 +8217,8 @@
     "U2.9",
     "U24.87"
    ],
+   "kinematik_ohm": 0.013599648739521134,
+   "spice_ohm": 0.01357965,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6878,6 +8229,8 @@
     "U2.11",
     "U24.86"
    ],
+   "kinematik_ohm": 0.016994913479224633,
+   "spice_ohm": 0.01656954,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6888,6 +8241,8 @@
     "U2.12",
     "U24.85"
    ],
+   "kinematik_ohm": 0.019327266877173316,
+   "spice_ohm": 0.01930727,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6898,6 +8253,8 @@
     "U2.13",
     "U24.83"
    ],
+   "kinematik_ohm": 0.017819801940324086,
+   "spice_ohm": 0.0177998,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6908,6 +8265,8 @@
     "U2.14",
     "U24.78"
    ],
+   "kinematik_ohm": 0.03981549855264192,
+   "spice_ohm": 0.0397955,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6918,6 +8277,8 @@
     "U2.15",
     "U24.93"
    ],
+   "kinematik_ohm": 0.055579177692321666,
+   "spice_ohm": 0.05555922,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6928,6 +8289,8 @@
     "U2.5",
     "U24.96"
    ],
+   "kinematik_ohm": 0.013236424609106966,
+   "spice_ohm": 0.01321651,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6938,6 +8301,8 @@
     "U2.17",
     "U24.104"
    ],
+   "kinematik_ohm": 0.07599069050644773,
+   "spice_ohm": 0.07597074,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6948,6 +8313,8 @@
     "U2.1",
     "U24.102"
    ],
+   "kinematik_ohm": 0.013421570494850873,
+   "spice_ohm": 0.01288675,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6958,6 +8325,8 @@
     "U2.2",
     "U24.99"
    ],
+   "kinematik_ohm": 0.01308850486070816,
+   "spice_ohm": 0.01306859,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6968,6 +8337,8 @@
     "U2.18",
     "U24.105"
    ],
+   "kinematik_ohm": 0.0771445513363469,
+   "spice_ohm": 0.07712455,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6978,6 +8349,8 @@
     "U2.19",
     "U24.106"
    ],
+   "kinematik_ohm": 0.07647489341805713,
+   "spice_ohm": 0.07645489,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6988,6 +8361,8 @@
     "U2.16",
     "U24.103"
    ],
+   "kinematik_ohm": 0.07778372658171016,
+   "spice_ohm": 0.07724896,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -6998,6 +8373,8 @@
     "U2.4",
     "U24.97"
    ],
+   "kinematik_ohm": 0.013881281719176894,
+   "spice_ohm": 0.01386128,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7008,6 +8385,8 @@
     "U2.3",
     "U24.98"
    ],
+   "kinematik_ohm": 0.012334568195911867,
+   "spice_ohm": 0.01231465,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7018,6 +8397,8 @@
     "D6.2",
     "U23.81"
    ],
+   "kinematik_ohm": 0.013916209477756073,
+   "spice_ohm": 0.0138963,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7028,6 +8409,8 @@
     "P5.5",
     "U23.55"
    ],
+   "kinematik_ohm": 0.07731615444162962,
+   "spice_ohm": 0.07727616,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7038,16 +8421,8 @@
     "U23.59",
     "U24.44"
    ],
-   "copper_oz": 1.0,
-   "board_thickness_mm": 1.600198
-  },
-  {
-   "board": "video/video.kicad_pcb",
-   "net": "/graphic/VOSC",
-   "pair": [
-    "R1.1",
-    "U7.4"
-   ],
+   "kinematik_ohm": 0.27593766897916794,
+   "spice_ohm": 0.2419936,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7058,6 +8433,8 @@
     "U23.56",
     "R26.1"
    ],
+   "kinematik_ohm": 0.06927814515287577,
+   "spice_ohm": 0.06923822,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7068,6 +8445,8 @@
     "U23.85",
     "U24.117"
    ],
+   "kinematik_ohm": 0.14760639881425114,
+   "spice_ohm": 0.1474542,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7078,6 +8457,8 @@
     "U20.14",
     "R16.2"
    ],
+   "kinematik_ohm": 0.15623027086257935,
+   "spice_ohm": 0.159506,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7088,6 +8469,8 @@
     "U20.16",
     "R18.2"
    ],
+   "kinematik_ohm": 0.03560854955995181,
+   "spice_ohm": 0.03558855,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7098,6 +8481,8 @@
     "U20.19",
     "R17.2"
    ],
+   "kinematik_ohm": 0.17343496042855502,
+   "spice_ohm": 0.173415,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7108,6 +8493,8 @@
     "D3.2",
     "U10.125"
    ],
+   "kinematik_ohm": 0.051266200771635254,
+   "spice_ohm": 0.05122637,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7116,8 +8503,10 @@
    "net": "/pal-ntsc.sch/VAF",
    "pair": [
     "L4.2",
-    "U10.1"
+    "U10.78"
    ],
+   "kinematik_ohm": 0.25314898551482656,
+   "spice_ohm": 0.2580831,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7128,6 +8517,8 @@
     "D2.1",
     "R3.1"
    ],
+   "kinematik_ohm": 0.15171301364898682,
+   "spice_ohm": 0.1605315,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7138,66 +8529,8 @@
     "U10.6",
     "R35.2"
    ],
-   "copper_oz": 1.0,
-   "board_thickness_mm": 1.600198
-  },
-  {
-   "board": "video/video.kicad_pcb",
-   "net": "unconnected-(BUS1-RESERVED)_2",
-   "pair": [
-    "BUS1.B14",
-    "BUS1.B14"
-   ],
-   "copper_oz": 1.0,
-   "board_thickness_mm": 1.600198
-  },
-  {
-   "board": "video/video.kicad_pcb",
-   "net": "unconnected-(BUS1-3.3VAUX)",
-   "pair": [
-    "BUS1.A14",
-    "BUS1.A14"
-   ],
-   "copper_oz": 1.0,
-   "board_thickness_mm": 1.600198
-  },
-  {
-   "board": "video/video.kicad_pcb",
-   "net": "unconnected-(BUS1-PME#)",
-   "pair": [
-    "BUS1.A19",
-    "BUS1.A19"
-   ],
-   "copper_oz": 1.0,
-   "board_thickness_mm": 1.600198
-  },
-  {
-   "board": "video/video.kicad_pcb",
-   "net": "unconnected-(BUS1-RESERVED)_4",
-   "pair": [
-    "BUS1.B10",
-    "BUS1.B10"
-   ],
-   "copper_oz": 1.0,
-   "board_thickness_mm": 1.600198
-  },
-  {
-   "board": "video/video.kicad_pcb",
-   "net": "unconnected-(BUS1-REQ64#)",
-   "pair": [
-    "BUS1.A60",
-    "BUS1.A60"
-   ],
-   "copper_oz": 1.0,
-   "board_thickness_mm": 1.600198
-  },
-  {
-   "board": "video/video.kicad_pcb",
-   "net": "unconnected-(BUS1--12V)",
-   "pair": [
-    "BUS1.B1",
-    "BUS1.B1"
-   ],
+   "kinematik_ohm": 0.032475118524572556,
+   "spice_ohm": 0.03245512,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7208,36 +8541,8 @@
     "BUS1.A52",
     "U11.43"
    ],
-   "copper_oz": 1.0,
-   "board_thickness_mm": 1.600198
-  },
-  {
-   "board": "video/video.kicad_pcb",
-   "net": "unconnected-(BUS1-TCK)",
-   "pair": [
-    "BUS1.B2",
-    "BUS1.B2"
-   ],
-   "copper_oz": 1.0,
-   "board_thickness_mm": 1.600198
-  },
-  {
-   "board": "video/video.kicad_pcb",
-   "net": "unconnected-(BUS1-INTB#)",
-   "pair": [
-    "BUS1.B7",
-    "BUS1.B7"
-   ],
-   "copper_oz": 1.0,
-   "board_thickness_mm": 1.600198
-  },
-  {
-   "board": "video/video.kicad_pcb",
-   "net": "unconnected-(BUS1-INTD#)",
-   "pair": [
-    "BUS1.B8",
-    "BUS1.B8"
-   ],
+   "kinematik_ohm": 0.0673453738258791,
+   "spice_ohm": 0.06732539,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7248,16 +8553,8 @@
     "BUS1.B9",
     "W5.2"
    ],
-   "copper_oz": 1.0,
-   "board_thickness_mm": 1.600198
-  },
-  {
-   "board": "video/video.kicad_pcb",
-   "net": "unconnected-(BUS1-RESERVED)_5",
-   "pair": [
-    "BUS1.A11",
-    "BUS1.A11"
-   ],
+   "kinematik_ohm": 0.06835905325145399,
+   "spice_ohm": 0.06833907,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7268,16 +8565,8 @@
     "BUS1.B11",
     "W4.2"
    ],
-   "copper_oz": 1.0,
-   "board_thickness_mm": 1.600198
-  },
-  {
-   "board": "video/video.kicad_pcb",
-   "net": "unconnected-(BUS1-RESERVED)",
-   "pair": [
-    "BUS1.A9",
-    "BUS1.A9"
-   ],
+   "kinematik_ohm": 0.03902320730162618,
+   "spice_ohm": 0.03900322,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7288,6 +8577,8 @@
     "BUS1.B26",
     "U11.159"
    ],
+   "kinematik_ohm": 0.05822546245232081,
+   "spice_ohm": 0.05820548,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7298,6 +8589,8 @@
     "BUS1.B33",
     "U11.15"
    ],
+   "kinematik_ohm": 0.041110500358860005,
+   "spice_ohm": 0.04109052,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7308,16 +8601,8 @@
     "BUS1.B44",
     "U11.28"
    ],
-   "copper_oz": 1.0,
-   "board_thickness_mm": 1.600198
-  },
-  {
-   "board": "video/video.kicad_pcb",
-   "net": "unconnected-(BUS1-ACK64#)",
-   "pair": [
-    "BUS1.B60",
-    "BUS1.B60"
-   ],
+   "kinematik_ohm": 0.042648529818999914,
+   "spice_ohm": 0.04262854,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7328,6 +8613,8 @@
     "C1.1",
     "R35.1"
    ],
+   "kinematik_ohm": 0.01699860870886942,
+   "spice_ohm": 0.01679136,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7338,6 +8625,8 @@
     "C1.2",
     "U10.140"
    ],
+   "kinematik_ohm": 0.07957396793334558,
+   "spice_ohm": 0.07953501,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7348,6 +8637,8 @@
     "C3.1",
     "R3.2"
    ],
+   "kinematik_ohm": 0.0010360995373607123,
+   "spice_ohm": 0.0008713263,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7358,6 +8649,8 @@
     "C4.1",
     "R2.2"
    ],
+   "kinematik_ohm": 0.012375539362340888,
+   "spice_ohm": 0.01235568,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7368,6 +8661,8 @@
     "U10.117",
     "C5.1"
    ],
+   "kinematik_ohm": 0.01247707881753286,
+   "spice_ohm": 0.0108966,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7378,6 +8673,8 @@
     "C5.2",
     "R19.1"
    ],
+   "kinematik_ohm": 0.008028715177011255,
+   "spice_ohm": 0.008008717,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7388,6 +8685,8 @@
     "U10.113",
     "R12.1"
    ],
+   "kinematik_ohm": 0.08304121345281601,
+   "spice_ohm": 0.08450438,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7398,6 +8697,8 @@
     "U10.114",
     "C7.1"
    ],
+   "kinematik_ohm": 0.03883423632567675,
+   "spice_ohm": 0.03855048,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7408,6 +8709,8 @@
     "U10.4",
     "C8.1"
    ],
+   "kinematik_ohm": 0.019756541252019533,
+   "spice_ohm": 0.01973654,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7418,6 +8721,8 @@
     "C8.2",
     "R20.1"
    ],
+   "kinematik_ohm": 0.02464929433893582,
+   "spice_ohm": 0.0246293,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7428,6 +8733,8 @@
     "U10.110",
     "C16.1"
    ],
+   "kinematik_ohm": 0.027475285893738967,
+   "spice_ohm": 0.0254579,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7438,6 +8745,8 @@
     "U9.44",
     "C32.2"
    ],
+   "kinematik_ohm": 0.017233011853335763,
+   "spice_ohm": 0.01721301,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7448,6 +8757,8 @@
     "R8.1",
     "C34.2"
    ],
+   "kinematik_ohm": 0.05304983324565507,
+   "spice_ohm": 0.05301037,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7458,6 +8769,8 @@
     "U9.42",
     "C35.2"
    ],
+   "kinematik_ohm": 0.027232676772557172,
+   "spice_ohm": 0.02719268,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7468,6 +8781,8 @@
     "U8.7",
     "C36.1"
    ],
+   "kinematik_ohm": 0.060128082567967964,
+   "spice_ohm": 0.06010808,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7478,6 +8793,8 @@
     "C36.2",
     "C37.2"
    ],
+   "kinematik_ohm": 0.014245867006892388,
+   "spice_ohm": 0.01420587,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7488,6 +8805,8 @@
     "C39.1",
     "U8.83"
    ],
+   "kinematik_ohm": 0.07103304173641306,
+   "spice_ohm": 0.07062669,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7498,6 +8817,8 @@
     "C39.2",
     "R24.2"
    ],
+   "kinematik_ohm": 0.008392657764886789,
+   "spice_ohm": 0.00837275,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7508,6 +8829,8 @@
     "C40.1",
     "U8.79"
    ],
+   "kinematik_ohm": 0.015246907233837714,
+   "spice_ohm": 0.01522691,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7518,6 +8841,8 @@
     "C40.2",
     "R23.2"
    ],
+   "kinematik_ohm": 0.009120722780978339,
+   "spice_ohm": 0.009100815,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7528,6 +8853,8 @@
     "C41.1",
     "U8.75"
    ],
+   "kinematik_ohm": 0.019916871734344435,
+   "spice_ohm": 0.01989687,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7538,6 +8865,8 @@
     "C41.2",
     "R22.2"
    ],
+   "kinematik_ohm": 0.006208552636781396,
+   "spice_ohm": 0.006188555,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7548,6 +8877,8 @@
     "U20.12",
     "C43.1"
    ],
+   "kinematik_ohm": 0.01907623175119146,
+   "spice_ohm": 0.0190563,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7558,6 +8889,8 @@
     "U20.6",
     "C44.1"
    ],
+   "kinematik_ohm": 0.005945235425049879,
+   "spice_ohm": 0.005877316,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7568,6 +8901,8 @@
     "U20.15",
     "C45.1"
    ],
+   "kinematik_ohm": 0.01786993796022428,
+   "spice_ohm": 0.01785,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7578,6 +8913,8 @@
     "L1.2",
     "C46.1"
    ],
+   "kinematik_ohm": 0.032290418812754546,
+   "spice_ohm": 0.03213433,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7588,6 +8925,8 @@
     "R11.2",
     "C64.1"
    ],
+   "kinematik_ohm": 0.03844636484055735,
+   "spice_ohm": 0.03787612,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7598,6 +8937,8 @@
     "R21.1",
     "R26.2"
    ],
+   "kinematik_ohm": 0.05254154061988917,
+   "spice_ohm": 0.05218776,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7608,6 +8949,8 @@
     "U20.8",
     "C54.1"
    ],
+   "kinematik_ohm": 0.09909471580611663,
+   "spice_ohm": 0.09907472,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7618,6 +8961,8 @@
     "C58.1",
     "U20.11"
    ],
+   "kinematik_ohm": 0.010576942733333709,
+   "spice_ohm": 0.01055694,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7628,6 +8973,8 @@
     "U20.9",
     "C59.1"
    ],
+   "kinematik_ohm": 0.024401154791908033,
+   "spice_ohm": 0.02438116,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7638,6 +8985,8 @@
     "C60.1",
     "U20.7"
    ],
+   "kinematik_ohm": 0.03897846672129689,
+   "spice_ohm": 0.03895847,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7648,6 +8997,8 @@
     "C61.1",
     "R30.1"
    ],
+   "kinematik_ohm": 0.03806102145997931,
+   "spice_ohm": 0.03785489,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7658,6 +9009,8 @@
     "C61.2",
     "U20.24"
    ],
+   "kinematik_ohm": 0.0705950033341366,
+   "spice_ohm": 0.070575,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7668,6 +9021,8 @@
     "U10.109",
     "X2.1"
    ],
+   "kinematik_ohm": 0.06688820560013463,
+   "spice_ohm": 0.06686825,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7678,6 +9033,8 @@
     "U10.108",
     "X2.2"
    ],
+   "kinematik_ohm": 0.09230270236730576,
+   "spice_ohm": 0.0773477,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7688,6 +9045,8 @@
     "CV1.1",
     "X3.1"
    ],
+   "kinematik_ohm": 0.02871611003154724,
+   "spice_ohm": 0.02869611,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7698,6 +9057,8 @@
     "D6.1",
     "R13.2"
    ],
+   "kinematik_ohm": 0.00581488942463952,
+   "spice_ohm": 0.005799891,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7708,6 +9069,8 @@
     "L1.1",
     "U20.18"
    ],
+   "kinematik_ohm": 0.08802020747136996,
+   "spice_ohm": 0.08635493,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7718,6 +9081,8 @@
     "L6.1",
     "R10.1"
    ],
+   "kinematik_ohm": 0.06459241054545677,
+   "spice_ohm": 0.06145101,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7728,6 +9093,8 @@
     "L6.2",
     "R11.1"
    ],
+   "kinematik_ohm": 0.1500130295753479,
+   "spice_ohm": 0.1588839,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7738,6 +9105,8 @@
     "P4.1",
     "U23.25"
    ],
+   "kinematik_ohm": 0.08621586859226227,
+   "spice_ohm": 0.09170891,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7748,6 +9117,8 @@
     "P9.1",
     "U23.51"
    ],
+   "kinematik_ohm": 0.014810068224183768,
+   "spice_ohm": 0.01479007,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7758,6 +9129,8 @@
     "P10.1",
     "U23.87"
    ],
+   "kinematik_ohm": 0.11337855210404846,
+   "spice_ohm": 0.1133586,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7768,6 +9141,8 @@
     "P11.1",
     "U23.82"
    ],
+   "kinematik_ohm": 0.06062088033258729,
+   "spice_ohm": 0.06060088,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7778,6 +9153,8 @@
     "POT1.1",
     "R9.1"
    ],
+   "kinematik_ohm": 0.083591370404748,
+   "spice_ohm": 0.08357143,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7788,6 +9165,8 @@
     "Q1.1",
     "R39.2"
    ],
+   "kinematik_ohm": 0.027357284818943898,
+   "spice_ohm": 0.0273176,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7798,6 +9177,8 @@
     "Q1.2",
     "R16.1"
    ],
+   "kinematik_ohm": 0.015699268839767012,
+   "spice_ohm": 0.01567927,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7808,6 +9189,8 @@
     "Q2.1",
     "R33.1"
    ],
+   "kinematik_ohm": 0.021408156643826608,
+   "spice_ohm": 0.02074672,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7818,6 +9201,8 @@
     "Q2.2",
     "R17.1"
    ],
+   "kinematik_ohm": 0.026068837260831604,
+   "spice_ohm": 0.02604884,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7828,6 +9213,8 @@
     "Q3.1",
     "R34.1"
    ],
+   "kinematik_ohm": 0.020405820450577834,
+   "spice_ohm": 0.02038582,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7838,6 +9225,8 @@
     "Q3.2",
     "R18.1"
    ],
+   "kinematik_ohm": 0.046392199607336856,
+   "spice_ohm": 0.0463722,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7848,6 +9237,8 @@
     "R4.1",
     "U20.2"
    ],
+   "kinematik_ohm": 0.07250349497227236,
+   "spice_ohm": 0.0724835,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7858,6 +9249,8 @@
     "U11.59",
     "R5.1"
    ],
+   "kinematik_ohm": 0.02473875570448059,
+   "spice_ohm": 0.02469899,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7868,6 +9261,8 @@
     "U11.138",
     "R6.1"
    ],
+   "kinematik_ohm": 0.03951050177932261,
+   "spice_ohm": 0.03935441,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7878,6 +9273,8 @@
     "U11.135",
     "R7.1"
    ],
+   "kinematik_ohm": 0.03173075485956957,
+   "spice_ohm": 0.03171576,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7888,6 +9285,8 @@
     "U20.21",
     "R9.2"
    ],
+   "kinematik_ohm": 0.023283186273980266,
+   "spice_ohm": 0.02326319,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7898,6 +9297,8 @@
     "R10.2",
     "U20.22"
    ],
+   "kinematik_ohm": 0.009120717430337447,
+   "spice_ohm": 0.009100815,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7908,6 +9309,8 @@
     "U10.115",
     "R19.2"
    ],
+   "kinematik_ohm": 0.014166776076414828,
+   "spice_ohm": 0.01414722,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7918,6 +9321,8 @@
     "U10.135",
     "R27.1"
    ],
+   "kinematik_ohm": 0.03559258237896956,
+   "spice_ohm": 0.03492167,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7928,6 +9333,8 @@
     "R28.2",
     "U11.128"
    ],
+   "kinematik_ohm": 0.05300338708269013,
+   "spice_ohm": 0.05244862,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7938,6 +9345,8 @@
     "R29.2",
     "U11.127"
    ],
+   "kinematik_ohm": 0.049599604405719665,
+   "spice_ohm": 0.04957961,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7948,6 +9357,8 @@
     "U8.6",
     "R36.2"
    ],
+   "kinematik_ohm": 0.019962524384778513,
+   "spice_ohm": 0.01960714,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7958,6 +9369,8 @@
     "U8.69",
     "R38.1"
    ],
+   "kinematik_ohm": 0.011305007749428442,
+   "spice_ohm": 0.01128501,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7968,6 +9381,8 @@
     "U8.58",
     "U8.68"
    ],
+   "kinematik_ohm": 0.037026308876461266,
+   "spice_ohm": 0.0370064,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7978,6 +9393,8 @@
     "C3.2",
     "R45.1"
    ],
+   "kinematik_ohm": 1.3134799934923649,
+   "spice_ohm": 1.211441,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7988,6 +9405,8 @@
     "C4.2",
     "R47.1"
    ],
+   "kinematik_ohm": 1.2712577804923058,
+   "spice_ohm": 1.158329,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -7998,6 +9417,8 @@
     "U9.37",
     "J4.1"
    ],
+   "kinematik_ohm": 0.9674702359980074,
+   "spice_ohm": 0.8491118,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8008,6 +9429,8 @@
     "U9.38",
     "C59.2"
    ],
+   "kinematik_ohm": 0.9161407500505447,
+   "spice_ohm": 0.9878352,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8018,6 +9441,8 @@
     "C60.2",
     "U9.39"
    ],
+   "kinematik_ohm": 1.0118443965911865,
+   "spice_ohm": 1.073789,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8028,6 +9453,8 @@
     "J4.8",
     "R39.1"
    ],
+   "kinematik_ohm": 0.015246811963026217,
+   "spice_ohm": 0.01522691,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8038,6 +9465,8 @@
     "J4.9",
     "R40.2"
    ],
+   "kinematik_ohm": 0.01694215356588459,
+   "spice_ohm": 0.01692216,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8048,6 +9477,8 @@
     "R22.1",
     "R46.1"
    ],
+   "kinematik_ohm": 0.8727068293624143,
+   "spice_ohm": 0.8035043,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8058,6 +9489,8 @@
     "U9.8",
     "U24.13"
    ],
+   "kinematik_ohm": 1.1406411525435942,
+   "spice_ohm": 1.168956,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8068,6 +9501,8 @@
     "RR2.7",
     "U24.134"
    ],
+   "kinematik_ohm": 0.3309074193239212,
+   "spice_ohm": 0.3015893,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8078,6 +9513,8 @@
     "RR3.4",
     "U23.45"
    ],
+   "kinematik_ohm": 0.3447853997349739,
+   "spice_ohm": 0.3168348,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8088,6 +9525,8 @@
     "P8.1",
     "R41.1"
    ],
+   "kinematik_ohm": 0.060137105815175576,
+   "spice_ohm": 0.06011711,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8098,6 +9537,8 @@
     "U11.74",
     "U23.47"
    ],
+   "kinematik_ohm": 0.4344763606786728,
+   "spice_ohm": 0.3967505,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8108,6 +9549,8 @@
     "RR5.2",
     "U23.18"
    ],
+   "kinematik_ohm": 0.313874289393425,
+   "spice_ohm": 0.3165049,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8118,6 +9561,8 @@
     "RR5.4",
     "U24.11"
    ],
+   "kinematik_ohm": 0.19613227248191833,
+   "spice_ohm": 0.2072111,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8128,6 +9573,8 @@
     "RR5.5",
     "U23.24"
    ],
+   "kinematik_ohm": 0.13126805424690247,
+   "spice_ohm": 0.1407286,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8138,6 +9585,8 @@
     "RR5.7",
     "U24.16"
    ],
+   "kinematik_ohm": 0.19125791944946186,
+   "spice_ohm": 0.1912379,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8148,6 +9597,8 @@
     "RR5.8",
     "U24.18"
    ],
+   "kinematik_ohm": 0.18708082142279026,
+   "spice_ohm": 0.1870608,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8158,6 +9609,8 @@
     "RR6.2",
     "U23.19"
    ],
+   "kinematik_ohm": 0.2846742287138113,
+   "spice_ohm": 0.3034156,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8168,6 +9621,8 @@
     "U6.19",
     "U22.21"
    ],
+   "kinematik_ohm": 0.7174318470060825,
+   "spice_ohm": 0.694145,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8178,6 +9633,8 @@
     "U6.1",
     "U24.55"
    ],
+   "kinematik_ohm": 0.23506531864404678,
+   "spice_ohm": 0.2132236,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8188,6 +9645,8 @@
     "U8.8",
     "U24.54"
    ],
+   "kinematik_ohm": 0.5073300749063492,
+   "spice_ohm": 0.5779823,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8198,6 +9657,8 @@
     "U8.20",
     "U23.74"
    ],
+   "kinematik_ohm": 0.7287347912738369,
+   "spice_ohm": 0.790084,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8208,6 +9669,8 @@
     "U8.24",
     "U23.69"
    ],
+   "kinematik_ohm": 0.7159147135757848,
+   "spice_ohm": 0.7778962,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8218,6 +9681,8 @@
     "U8.37",
     "U24.75"
    ],
+   "kinematik_ohm": 0.6820154935121536,
+   "spice_ohm": 0.6652691,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8228,6 +9693,8 @@
     "U8.38",
     "U24.77"
    ],
+   "kinematik_ohm": 0.6509503708566626,
+   "spice_ohm": 0.6345971,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8238,6 +9705,8 @@
     "U22.8",
     "U24.53"
    ],
+   "kinematik_ohm": 0.7020141556859016,
+   "spice_ohm": 0.7398081,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8248,6 +9717,8 @@
     "U9.9",
     "U24.76"
    ],
+   "kinematik_ohm": 0.7048609703779221,
+   "spice_ohm": 0.6754476,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8258,6 +9729,8 @@
     "U9.22",
     "U23.72"
    ],
+   "kinematik_ohm": 0.7045774228636219,
+   "spice_ohm": 0.7872776,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8268,6 +9741,8 @@
     "U9.23",
     "U23.73"
    ],
+   "kinematik_ohm": 0.7769284956157207,
+   "spice_ohm": 0.8029494,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8276,8 +9751,10 @@
    "net": "/OE_PAL-",
    "pair": [
     "U9.28",
-    "U10.47"
+    "U10.46"
    ],
+   "kinematik_ohm": 0.23551372438669205,
+   "spice_ohm": 0.2196884,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8288,6 +9765,8 @@
     "U10.34",
     "U24.37"
    ],
+   "kinematik_ohm": 0.6569665521383286,
+   "spice_ohm": 0.6530501,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8298,6 +9777,8 @@
     "U10.36",
     "U24.52"
    ],
+   "kinematik_ohm": 0.5945846910508408,
+   "spice_ohm": 0.6106562,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8308,6 +9789,8 @@
     "U10.83",
     "U23.70"
    ],
+   "kinematik_ohm": 0.8648923230666696,
+   "spice_ohm": 0.8082155,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8318,6 +9801,8 @@
     "U10.86",
     "U23.71"
    ],
+   "kinematik_ohm": 0.7157968370020171,
+   "spice_ohm": 0.8498794,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8328,6 +9813,8 @@
     "U10.87",
     "U23.1"
    ],
+   "kinematik_ohm": 1.052228420972824,
+   "spice_ohm": 0.9986166,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8338,6 +9825,8 @@
     "U10.104",
     "U24.43"
    ],
+   "kinematik_ohm": 0.6813579201698303,
+   "spice_ohm": 0.7217234,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8348,6 +9837,8 @@
     "U11.122",
     "U23.32"
    ],
+   "kinematik_ohm": 0.102735236287117,
+   "spice_ohm": 0.1108352,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8358,6 +9849,8 @@
     "U11.123",
     "U23.34"
    ],
+   "kinematik_ohm": 0.12128384411334991,
+   "spice_ohm": 0.1092704,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8368,6 +9861,8 @@
     "U11.124",
     "U24.149"
    ],
+   "kinematik_ohm": 0.0959675175664707,
+   "spice_ohm": 0.09594752,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8378,6 +9873,8 @@
     "U11.140",
     "U23.30"
    ],
+   "kinematik_ohm": 0.17285687749783296,
+   "spice_ohm": 0.1728369,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8388,6 +9885,8 @@
     "U11.103",
     "U24.17"
    ],
+   "kinematik_ohm": 0.029708274589136448,
+   "spice_ohm": 0.02968828,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8398,6 +9897,8 @@
     "U11.106",
     "U24.15"
    ],
+   "kinematik_ohm": 0.028924181138855296,
+   "spice_ohm": 0.02890418,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8408,6 +9909,8 @@
     "U11.108",
     "U23.16"
    ],
+   "kinematik_ohm": 0.17549610137939453,
+   "spice_ohm": 0.1508911,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8418,6 +9921,8 @@
     "U23.17",
     "U24.5"
    ],
+   "kinematik_ohm": 0.1454901928296166,
+   "spice_ohm": 0.1454702,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8428,6 +9933,8 @@
     "U12.34",
     "U24.66"
    ],
+   "kinematik_ohm": 0.30042533520855386,
+   "spice_ohm": 0.3000413,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8438,6 +9945,8 @@
     "U19.40",
     "U24.57"
    ],
+   "kinematik_ohm": 0.3197219669818878,
+   "spice_ohm": 0.3400227,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8448,6 +9957,8 @@
     "U19.41",
     "U24.58"
    ],
+   "kinematik_ohm": 0.3507519066333771,
+   "spice_ohm": 0.3874188,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8458,6 +9969,8 @@
     "U19.42",
     "U24.59"
    ],
+   "kinematik_ohm": 0.4240162670612335,
+   "spice_ohm": 0.3813808,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8468,6 +9981,8 @@
     "U13.43",
     "U24.62"
    ],
+   "kinematik_ohm": 0.2880091965198517,
+   "spice_ohm": 0.3336328,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8478,6 +9993,8 @@
     "U13.47",
     "U24.63"
    ],
+   "kinematik_ohm": 0.3215020149946213,
+   "spice_ohm": 0.2970109,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8488,6 +10005,8 @@
     "U13.34",
     "U24.64"
    ],
+   "kinematik_ohm": 0.3666267916560173,
+   "spice_ohm": 0.3737559,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8498,6 +10017,8 @@
     "U14.34",
     "U24.65"
    ],
+   "kinematik_ohm": 0.32458674534359366,
+   "spice_ohm": 0.3229215,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8508,6 +10029,8 @@
     "U15.34",
     "U24.68"
    ],
+   "kinematik_ohm": 0.2403925582766533,
+   "spice_ohm": 0.2748082,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8518,6 +10041,8 @@
     "U16.34",
     "U24.67"
    ],
+   "kinematik_ohm": 0.30328626185655594,
+   "spice_ohm": 0.2817205,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8528,6 +10053,8 @@
     "U17.34",
     "U24.69"
    ],
+   "kinematik_ohm": 0.2491656936907941,
+   "spice_ohm": 0.2475004,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8538,6 +10065,8 @@
     "U18.34",
     "U24.73"
    ],
+   "kinematik_ohm": 0.2556922021203718,
+   "spice_ohm": 0.2718296,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8548,6 +10077,8 @@
     "U19.34",
     "U24.74"
    ],
+   "kinematik_ohm": 0.27859673768601084,
+   "spice_ohm": 0.278557,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8558,6 +10089,8 @@
     "U22.52",
     "U23.84"
    ],
+   "kinematik_ohm": 0.7194201213815177,
+   "spice_ohm": 0.7334173,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8568,6 +10101,8 @@
     "U22.72",
     "U24.118"
    ],
+   "kinematik_ohm": 0.4833436757326126,
+   "spice_ohm": 0.5708255,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8578,6 +10113,8 @@
     "U22.74",
     "U23.86"
    ],
+   "kinematik_ohm": 0.6390244290232658,
+   "spice_ohm": 0.7193223,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8588,6 +10125,8 @@
     "U22.13",
     "U24.48"
    ],
+   "kinematik_ohm": 0.5036606341600418,
+   "spice_ohm": 0.5516301,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8598,6 +10137,8 @@
     "U22.50",
     "U23.83"
    ],
+   "kinematik_ohm": 0.7231595069169998,
+   "spice_ohm": 0.6393825,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8608,6 +10149,8 @@
     "U11.72",
     "U23.46"
    ],
+   "kinematik_ohm": 0.4121351093053818,
+   "spice_ohm": 0.3686239,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8618,6 +10161,8 @@
     "U6.7",
     "U11.25"
    ],
+   "kinematik_ohm": 0.15602771151479147,
+   "spice_ohm": 0.1558358,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8628,6 +10173,8 @@
     "U6.8",
     "U11.13"
    ],
+   "kinematik_ohm": 0.17863435195104183,
+   "spice_ohm": 0.1805147,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8638,6 +10185,8 @@
     "U6.9",
     "U11.5"
    ],
+   "kinematik_ohm": 0.1995497421795911,
+   "spice_ohm": 0.1992463,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8648,6 +10197,8 @@
     "U6.4",
     "U11.53"
    ],
+   "kinematik_ohm": 0.12860801079942516,
+   "spice_ohm": 0.1267962,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8658,6 +10209,8 @@
     "U6.5",
     "U11.45"
    ],
+   "kinematik_ohm": 0.12537194114253097,
+   "spice_ohm": 0.1250683,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8668,6 +10221,8 @@
     "U6.6",
     "U11.37"
    ],
+   "kinematik_ohm": 0.1371984257844653,
+   "spice_ohm": 0.1371584,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8678,6 +10233,8 @@
     "U6.3",
     "U11.65"
    ],
+   "kinematik_ohm": 0.11868393135695104,
+   "spice_ohm": 0.1181491,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8688,6 +10245,8 @@
     "U6.2",
     "U11.77"
    ],
+   "kinematik_ohm": 0.14186881837752202,
+   "spice_ohm": 0.1418288,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8698,6 +10257,8 @@
     "RR4.9",
     "U5.3"
    ],
+   "kinematik_ohm": 0.2141091674566269,
+   "spice_ohm": 0.2030971,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8708,6 +10269,8 @@
     "RR4.7",
     "U5.2"
    ],
+   "kinematik_ohm": 0.26871834695339203,
+   "spice_ohm": 0.2360832,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8718,6 +10281,8 @@
     "RR4.5",
     "U5.9"
    ],
+   "kinematik_ohm": 0.23636066174185544,
+   "spice_ohm": 0.2534777,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8728,6 +10293,8 @@
     "RR4.3",
     "U5.8"
    ],
+   "kinematik_ohm": 0.293718121945858,
+   "spice_ohm": 0.291939,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8738,6 +10305,8 @@
     "RR5.6",
     "U5.7"
    ],
+   "kinematik_ohm": 0.22528990358114243,
+   "spice_ohm": 0.2249542,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8748,6 +10317,8 @@
     "RR6.8",
     "U5.5"
    ],
+   "kinematik_ohm": 0.20956005325751903,
+   "spice_ohm": 0.2010165,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8758,6 +10329,8 @@
     "RR6.6",
     "U5.4"
    ],
+   "kinematik_ohm": 0.22943684458732605,
+   "spice_ohm": 0.2122703,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8768,6 +10341,8 @@
     "RR6.3",
     "U5.6"
    ],
+   "kinematik_ohm": 0.26316430419683456,
+   "spice_ohm": 0.2606131,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8778,6 +10353,8 @@
     "RR7.9",
     "U8.9"
    ],
+   "kinematik_ohm": 0.9416475977945993,
+   "spice_ohm": 0.8998073,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8788,6 +10365,8 @@
     "U8.11",
     "U23.8"
    ],
+   "kinematik_ohm": 1.0180756710469723,
+   "spice_ohm": 0.866902,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8798,6 +10377,8 @@
     "U10.96",
     "U23.9"
    ],
+   "kinematik_ohm": 0.9611876598537492,
+   "spice_ohm": 0.8790302,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8808,6 +10389,8 @@
     "U8.13",
     "U23.7"
    ],
+   "kinematik_ohm": 0.9311569333076477,
+   "spice_ohm": 0.8670126,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8818,6 +10401,8 @@
     "U10.94",
     "U23.11"
    ],
+   "kinematik_ohm": 0.866199679672718,
+   "spice_ohm": 0.8133389,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8828,6 +10413,8 @@
     "RR7.3",
     "U10.93"
    ],
+   "kinematik_ohm": 0.8736205995082855,
+   "spice_ohm": 0.8089882,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8838,6 +10425,8 @@
     "U10.92",
     "U23.13"
    ],
+   "kinematik_ohm": 0.8316124230623245,
+   "spice_ohm": 0.791968,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8848,6 +10437,8 @@
     "RR8.9",
     "U11.86"
    ],
+   "kinematik_ohm": 0.2818329259753227,
+   "spice_ohm": 0.2558666,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8858,6 +10449,8 @@
     "U11.84",
     "U23.96"
    ],
+   "kinematik_ohm": 0.259005568921566,
+   "spice_ohm": 0.2369967,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8868,6 +10461,8 @@
     "RR8.7",
     "U11.83"
    ],
+   "kinematik_ohm": 0.28534170985221863,
+   "spice_ohm": 0.2539453,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8878,6 +10473,8 @@
     "U11.82",
     "U23.94"
    ],
+   "kinematik_ohm": 0.2675458639860153,
+   "spice_ohm": 0.2449408,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8888,6 +10485,8 @@
     "RR8.5",
     "U11.80"
    ],
+   "kinematik_ohm": 0.3021945282816887,
+   "spice_ohm": 0.2673176,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8898,6 +10497,8 @@
     "U11.79",
     "U23.90"
    ],
+   "kinematik_ohm": 0.31747959554195404,
+   "spice_ohm": 0.299019,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8908,6 +10509,8 @@
     "RR8.3",
     "U11.78"
    ],
+   "kinematik_ohm": 0.3513637036085129,
+   "spice_ohm": 0.3220606,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8918,6 +10521,8 @@
     "U11.76",
     "U23.89"
    ],
+   "kinematik_ohm": 0.32992129027843475,
+   "spice_ohm": 0.3161754,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8928,6 +10533,8 @@
     "U22.19",
     "U3.17"
    ],
+   "kinematik_ohm": 0.5248316153883934,
+   "spice_ohm": 0.5249459,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8938,6 +10545,8 @@
     "U22.20",
     "U3.16"
    ],
+   "kinematik_ohm": 0.5093697234988213,
+   "spice_ohm": 0.5234267,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8948,6 +10557,8 @@
     "U22.18",
     "U3.15"
    ],
+   "kinematik_ohm": 0.4963753632018779,
+   "spice_ohm": 0.5091307,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8958,6 +10569,8 @@
     "U22.28",
     "U3.14"
    ],
+   "kinematik_ohm": 0.47224992513656616,
+   "spice_ohm": 0.4584369,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8968,6 +10581,8 @@
     "U22.29",
     "U3.13"
    ],
+   "kinematik_ohm": 0.47128093987703323,
+   "spice_ohm": 0.4616415,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8978,6 +10593,8 @@
     "U22.31",
     "U3.12"
    ],
+   "kinematik_ohm": 0.46759530901908875,
+   "spice_ohm": 0.4560946,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8988,6 +10605,8 @@
     "U22.32",
     "U3.11"
    ],
+   "kinematik_ohm": 0.45950550585985184,
+   "spice_ohm": 0.4589552,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -8998,6 +10617,8 @@
     "U13.49",
     "U22.33"
    ],
+   "kinematik_ohm": 0.4159742519259453,
+   "spice_ohm": 0.4002685,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9008,6 +10629,8 @@
     "U22.34",
     "U4.17"
    ],
+   "kinematik_ohm": 0.46867702901363373,
+   "spice_ohm": 0.4282763,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9018,6 +10641,8 @@
     "U22.35",
     "U4.16"
    ],
+   "kinematik_ohm": 0.49216631054878235,
+   "spice_ohm": 0.4213712,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9028,6 +10653,8 @@
     "U13.55",
     "U22.36"
    ],
+   "kinematik_ohm": 0.434159936825381,
+   "spice_ohm": 0.4261696,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9038,6 +10665,8 @@
     "U22.39",
     "U4.14"
    ],
+   "kinematik_ohm": 0.4772918075323105,
+   "spice_ohm": 0.4006068,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9048,6 +10677,8 @@
     "U13.61",
     "U22.40"
    ],
+   "kinematik_ohm": 0.47086168080568314,
+   "spice_ohm": 0.4460708,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9058,6 +10689,8 @@
     "U22.41",
     "U4.12"
    ],
+   "kinematik_ohm": 0.48122550239895645,
+   "spice_ohm": 0.3951114,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9068,6 +10701,8 @@
     "U13.65",
     "U22.42"
    ],
+   "kinematik_ohm": 0.4916781187057495,
+   "spice_ohm": 0.4540346,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9078,6 +10713,8 @@
     "U22.43",
     "U5.18"
    ],
+   "kinematik_ohm": 0.5497219935059547,
+   "spice_ohm": 0.5278062,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9088,6 +10725,8 @@
     "U22.44",
     "U5.17"
    ],
+   "kinematik_ohm": 0.5736231505870819,
+   "spice_ohm": 0.53973,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9098,6 +10737,8 @@
     "U22.45",
     "U5.16"
    ],
+   "kinematik_ohm": 0.5245307311415672,
+   "spice_ohm": 0.5166022,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9108,6 +10749,8 @@
     "U22.46",
     "U5.15"
    ],
+   "kinematik_ohm": 0.5440206676721573,
+   "spice_ohm": 0.5234628,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9118,6 +10761,8 @@
     "U22.47",
     "U5.14"
    ],
+   "kinematik_ohm": 0.5100702941417694,
+   "spice_ohm": 0.5045052,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9128,6 +10773,8 @@
     "U22.48",
     "U5.13"
    ],
+   "kinematik_ohm": 0.48844149708747864,
+   "spice_ohm": 0.4866201,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9138,6 +10785,8 @@
     "U22.53",
     "U5.12"
    ],
+   "kinematik_ohm": 0.4980660527944565,
+   "spice_ohm": 0.4939183,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9148,6 +10797,8 @@
     "U22.54",
     "U5.11"
    ],
+   "kinematik_ohm": 0.47290968894958496,
+   "spice_ohm": 0.4888899,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9158,6 +10809,8 @@
     "U6.18",
     "U22.55"
    ],
+   "kinematik_ohm": 0.4586651474237442,
+   "spice_ohm": 0.4466433,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9168,6 +10821,8 @@
     "U6.17",
     "U22.56"
    ],
+   "kinematik_ohm": 0.48514822125434875,
+   "spice_ohm": 0.4586283,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9178,6 +10833,8 @@
     "U6.16",
     "U22.57"
    ],
+   "kinematik_ohm": 0.4877631217241287,
+   "spice_ohm": 0.4720717,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9188,6 +10845,8 @@
     "U6.15",
     "U22.58"
    ],
+   "kinematik_ohm": 0.49086136370897293,
+   "spice_ohm": 0.4819265,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9198,6 +10857,8 @@
     "U6.14",
     "U22.59"
    ],
+   "kinematik_ohm": 0.49696967750787735,
+   "spice_ohm": 0.4823962,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9208,6 +10869,8 @@
     "U6.13",
     "U22.60"
    ],
+   "kinematik_ohm": 0.5249901115894318,
+   "spice_ohm": 0.4883568,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9218,6 +10881,8 @@
     "U6.12",
     "U22.61"
    ],
+   "kinematik_ohm": 0.556543093174696,
+   "spice_ohm": 0.5191559,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9228,6 +10893,8 @@
     "U6.11",
     "U22.62"
    ],
+   "kinematik_ohm": 0.5603362396359444,
+   "spice_ohm": 0.5326482,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9238,6 +10905,8 @@
     "U9.24",
     "U23.65"
    ],
+   "kinematik_ohm": 1.005570475012064,
+   "spice_ohm": 0.9258373,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9248,6 +10917,8 @@
     "U9.25",
     "U23.64"
    ],
+   "kinematik_ohm": 1.0003385245800018,
+   "spice_ohm": 0.9015815,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9258,6 +10929,8 @@
     "U9.26",
     "U23.63"
    ],
+   "kinematik_ohm": 0.7890635170042515,
+   "spice_ohm": 0.8059603,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9268,6 +10941,8 @@
     "U9.68",
     "U10.48"
    ],
+   "kinematik_ohm": 0.2784394435584545,
+   "spice_ohm": 0.2731626,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9278,6 +10953,8 @@
     "U9.67",
     "U10.49"
    ],
+   "kinematik_ohm": 0.25337662547826767,
+   "spice_ohm": 0.2524703,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9288,6 +10965,8 @@
     "U9.66",
     "U10.50"
    ],
+   "kinematik_ohm": 0.22701592515750235,
+   "spice_ohm": 0.2638691,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9298,6 +10977,8 @@
     "U9.65",
     "U22.96"
    ],
+   "kinematik_ohm": 0.24155206233263016,
+   "spice_ohm": 0.2351072,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9308,6 +10989,8 @@
     "U9.64",
     "U22.95"
    ],
+   "kinematik_ohm": 0.23293332383036613,
+   "spice_ohm": 0.2509721,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9318,6 +11001,8 @@
     "U9.63",
     "U22.94"
    ],
+   "kinematik_ohm": 0.17909631798102055,
+   "spice_ohm": 0.2122528,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9328,6 +11013,8 @@
     "U9.62",
     "U22.93"
    ],
+   "kinematik_ohm": 0.17694847285747528,
+   "spice_ohm": 0.2122874,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9338,6 +11025,8 @@
     "U9.61",
     "U22.92"
    ],
+   "kinematik_ohm": 0.1927897334098816,
+   "spice_ohm": 0.2102791,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9348,6 +11037,8 @@
     "U9.60",
     "U22.81"
    ],
+   "kinematik_ohm": 0.1925107017159462,
+   "spice_ohm": 0.1882809,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9358,6 +11049,8 @@
     "U9.59",
     "U22.80"
    ],
+   "kinematik_ohm": 0.1902018077671528,
+   "spice_ohm": 0.1892281,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9368,6 +11061,8 @@
     "U9.58",
     "U22.78"
    ],
+   "kinematik_ohm": 0.1879662238061428,
+   "spice_ohm": 0.1935624,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9378,6 +11073,8 @@
     "U9.57",
     "U22.71"
    ],
+   "kinematik_ohm": 0.19694341719150543,
+   "spice_ohm": 0.2051855,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9388,6 +11085,8 @@
     "U9.56",
     "U10.71"
    ],
+   "kinematik_ohm": 0.23627154529094696,
+   "spice_ohm": 0.2421294,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9398,6 +11097,8 @@
     "U9.55",
     "U10.72"
    ],
+   "kinematik_ohm": 0.23395640403032303,
+   "spice_ohm": 0.2380663,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9408,6 +11109,8 @@
     "U9.54",
     "U10.73"
    ],
+   "kinematik_ohm": 0.22144821286201477,
+   "spice_ohm": 0.2558942,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9418,6 +11121,8 @@
     "U9.53",
     "U10.74"
    ],
+   "kinematik_ohm": 0.249443918466568,
+   "spice_ohm": 0.266855,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9428,6 +11133,8 @@
     "U9.52",
     "U10.58"
    ],
+   "kinematik_ohm": 0.28527272967312456,
+   "spice_ohm": 0.3160942,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9438,6 +11145,8 @@
     "U9.51",
     "U10.59"
    ],
+   "kinematik_ohm": 0.29980565342611953,
+   "spice_ohm": 0.3411012,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9448,6 +11157,8 @@
     "U9.50",
     "U10.60"
    ],
+   "kinematik_ohm": 0.3062269949268739,
+   "spice_ohm": 0.3301048,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9458,6 +11169,8 @@
     "U9.49",
     "U10.61"
    ],
+   "kinematik_ohm": 0.3296850086999257,
+   "spice_ohm": 0.3469521,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9468,6 +11181,8 @@
     "U9.48",
     "U10.62"
    ],
+   "kinematik_ohm": 0.34988541462826106,
+   "spice_ohm": 0.3657541,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9478,6 +11193,8 @@
     "U9.47",
     "U10.63"
    ],
+   "kinematik_ohm": 0.39268694325710385,
+   "spice_ohm": 0.3994522,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9488,6 +11205,8 @@
     "U9.46",
     "U10.64"
    ],
+   "kinematik_ohm": 0.3393586575984955,
+   "spice_ohm": 0.3597371,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9498,6 +11217,8 @@
     "U9.45",
     "U10.65"
    ],
+   "kinematik_ohm": 0.36024758219718933,
+   "spice_ohm": 0.3830835,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9508,6 +11229,8 @@
     "U9.10",
     "U24.108"
    ],
+   "kinematik_ohm": 0.6335474923253059,
+   "spice_ohm": 0.7179805,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9518,6 +11241,8 @@
     "U9.11",
     "U24.107"
    ],
+   "kinematik_ohm": 0.6372528706560843,
+   "spice_ohm": 0.6521552,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9528,6 +11253,8 @@
     "U11.132",
     "U24.143"
    ],
+   "kinematik_ohm": 0.14207658753912256,
+   "spice_ohm": 0.1499723,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9538,6 +11265,8 @@
     "U11.68",
     "U23.48"
    ],
+   "kinematik_ohm": 0.2224673479795456,
+   "spice_ohm": 0.2450844,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9548,6 +11277,8 @@
     "U11.67",
     "U23.44"
    ],
+   "kinematik_ohm": 0.2222905457019806,
+   "spice_ohm": 0.2319454,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9558,6 +11289,8 @@
     "U11.66",
     "U23.43"
    ],
+   "kinematik_ohm": 0.2194807529449463,
+   "spice_ohm": 0.2323946,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9568,6 +11301,8 @@
     "U11.64",
     "U23.42"
    ],
+   "kinematik_ohm": 0.2087698131799698,
+   "spice_ohm": 0.2360172,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9578,6 +11313,8 @@
     "U11.63",
     "U23.37"
    ],
+   "kinematik_ohm": 0.2568102031946182,
+   "spice_ohm": 0.273934,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9588,6 +11325,8 @@
     "U11.62",
     "U23.36"
    ],
+   "kinematik_ohm": 0.24126799404621124,
+   "spice_ohm": 0.2768655,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9598,6 +11337,8 @@
     "U11.60",
     "U23.35"
    ],
+   "kinematik_ohm": 0.24342676997184753,
+   "spice_ohm": 0.2758021,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9608,6 +11349,8 @@
     "U11.120",
     "U23.23"
    ],
+   "kinematik_ohm": 0.10607712715864182,
+   "spice_ohm": 0.09690478,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9618,6 +11361,8 @@
     "U23.22",
     "U24.156"
    ],
+   "kinematik_ohm": 0.11534884572029114,
+   "spice_ohm": 0.1248358,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9628,6 +11373,8 @@
     "U11.118",
     "U23.21"
    ],
+   "kinematik_ohm": 0.12088550627231598,
+   "spice_ohm": 0.1164609,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9638,6 +11385,8 @@
     "U23.20",
     "U24.158"
    ],
+   "kinematik_ohm": 0.14730927348136902,
+   "spice_ohm": 0.1373496,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9648,6 +11397,8 @@
     "U11.87",
     "U23.38"
    ],
+   "kinematik_ohm": 0.2831766605377197,
+   "spice_ohm": 0.3079676,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9658,6 +11409,8 @@
     "U13.12",
     "U24.128"
    ],
+   "kinematik_ohm": 0.5797356888651848,
+   "spice_ohm": 0.6531652,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9668,6 +11421,8 @@
     "U13.13",
     "U24.127"
    ],
+   "kinematik_ohm": 0.6995215315782843,
+   "spice_ohm": 0.6540144,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9678,6 +11433,8 @@
     "U13.14",
     "U24.126"
    ],
+   "kinematik_ohm": 0.6730033606290817,
+   "spice_ohm": 0.6431462,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9688,6 +11445,8 @@
     "U13.15",
     "U24.125"
    ],
+   "kinematik_ohm": 0.48204831033945084,
+   "spice_ohm": 0.5486034,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9698,6 +11457,8 @@
     "U13.16",
     "U24.124"
    ],
+   "kinematik_ohm": 0.5662450417876244,
+   "spice_ohm": 0.5267353,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9708,6 +11469,8 @@
     "U13.17",
     "U24.123"
    ],
+   "kinematik_ohm": 0.6792735308408737,
+   "spice_ohm": 0.6498939,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9718,6 +11481,8 @@
     "U13.18",
     "U24.116"
    ],
+   "kinematik_ohm": 0.6334960162639618,
+   "spice_ohm": 0.5948578,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9728,6 +11493,8 @@
     "U13.19",
     "U24.109"
    ],
+   "kinematik_ohm": 0.5930754244327545,
+   "spice_ohm": 0.5447524,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9738,6 +11505,8 @@
     "U13.28",
     "U24.115"
    ],
+   "kinematik_ohm": 0.588214710354805,
+   "spice_ohm": 0.5467031,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9748,6 +11517,8 @@
     "U13.31",
     "U24.114"
    ],
+   "kinematik_ohm": 0.5370326936244965,
+   "spice_ohm": 0.5072514,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9758,6 +11529,8 @@
     "U13.32",
     "U24.113"
    ],
+   "kinematik_ohm": 0.5422348976135254,
+   "spice_ohm": 0.4894745,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9768,6 +11541,8 @@
     "U8.60",
     "U8.70"
    ],
+   "kinematik_ohm": 0.04503511478951271,
+   "spice_ohm": 0.04501512,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9778,6 +11553,8 @@
     "U8.62",
     "U8.72"
    ],
+   "kinematik_ohm": 0.04157135716878939,
+   "spice_ohm": 0.04155145,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   },
@@ -9788,26 +11565,8 @@
     "U20.23",
     "X3.2"
    ],
-   "copper_oz": 1.0,
-   "board_thickness_mm": 1.600198
-  },
-  {
-   "board": "video/video.kicad_pcb",
-   "net": "unconnected-(BUS1-RESERVED)_8",
-   "pair": [
-    "BUS1.A40",
-    "BUS1.A40"
-   ],
-   "copper_oz": 1.0,
-   "board_thickness_mm": 1.600198
-  },
-  {
-   "board": "video/video.kicad_pcb",
-   "net": "unconnected-(BUS1-RESERVED)_9",
-   "pair": [
-    "BUS1.A41",
-    "BUS1.A41"
-   ],
+   "kinematik_ohm": 0.028831441999414568,
+   "spice_ohm": 0.02881144,
    "copper_oz": 1.0,
    "board_thickness_mm": 1.600198
   }

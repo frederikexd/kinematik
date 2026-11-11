@@ -273,7 +273,7 @@ class DiffPair:
             du1 = tn / math.pi * math.log(1.0 + 4.0 * math.e / (tn * coth2))
         ur = u + 0.5 * (1.0 + 1.0 / math.cosh(math.sqrt(max(er - 1.0, 0.0)))) * du1
 
-        def z01(x):
+        def _z01(x):
             f = 6.0 + (2.0 * math.pi - 6.0) * math.exp(-((30.666 / x) ** 0.7528))
             return eta0 / (2.0 * math.pi) * math.log(f / x + math.sqrt(1.0 + 4.0 / x ** 2))
 
@@ -281,7 +281,7 @@ class DiffPair:
              + math.log(1.0 + (ur / 18.1) ** 3) / 18.7)
         b = 0.564 * ((er - 0.9) / (er + 3.0)) ** 0.053
         e_eff = (er + 1.0) / 2.0 + (er - 1.0) / 2.0 * (1.0 + 10.0 / ur) ** (-a * b)
-        return float(z01(ur) / math.sqrt(e_eff))
+        return float(_z01(ur) / math.sqrt(e_eff))
 
     def differential_z0_ohm(self) -> float:
         """

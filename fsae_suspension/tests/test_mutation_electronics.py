@@ -149,6 +149,8 @@ def test_diffpair_defaults_and_nan_guards():
         assert math.isnan(flat.differential_z0_ohm())
     small_h = DiffPair("p", "e", height_mm=0.5, trace_w_mm=0.3)
     assert np.isfinite(small_h.differential_z0_ohm())
+    low_er = DiffPair("p", "e", eps_r=1.5)                      # the thickness correction's εr term below 2
+    assert low_er.single_ended_z0_ohm() == pytest.approx(_z0(0.2, 0.2, 0.2, er=1.5), rel=1e-12)
     bare = DiffPair("p", "e", copper_oz=0.0)                    # zero-thickness copper: no Wheeler correction
     assert bare.single_ended_z0_ohm() > dp.single_ended_z0_ohm()
     assert DiffPair("p", "e", copper_oz=0.0, eps_r=1.0).single_ended_z0_ohm() == pytest.approx(126.5, abs=0.5)

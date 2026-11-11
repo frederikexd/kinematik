@@ -81,6 +81,22 @@ benchmarks and the ledger checks in Google Colab, with nothing to install.
 reproduce are credited by name, along with independent reproductions, successful or not. New issue template:
 "I reproduced it / I couldn't".
 
+
+**Electrical benchmark: KiCad, SPICE and a field solver.** The limits were set before the runs
+(`docs/ELECTRICAL_BENCHMARK_PLAN.md`; results in `docs/ELECTRICAL_BENCHMARK.md`).
+- KiCad 7: the PCB Doctor reads all 14 KiCad demo boards exactly as KiCad does.
+- ngspice: precharge and the pack along a lap match within 0.001 %.
+- Net resistance on real boards against SPICE missed the 2 % limit and read low by up to 98.5 %. Four flaws were
+  fixed:
+  - the 10 mΩ component-body bridge now applies only to two-terminal parts;
+  - a surface pad now joins a via on its own layer;
+  - a track ending on a via no longer bypasses the barrel resistance;
+  - a pad now catches only copper that overlaps its real outline, not a circle of half its longest side.
+  The result is 72.5 % of nets within 2 % and 91.8 % within 10 %, still short of the limit.
+- atlc field solver: the IPC-2141 microstrip formula missed by up to 8.3 %. It is replaced by Hammerstad–Jensen
+  (what KiCad's calculator uses), which passed 10 of 10 unseen geometries within 3.4 %.
+`scripts/electrical_reference.py`, `benchmarks/electrical/`, `tests/test_electrical_benchmark.py`.
+
 ## 1.5.0 (2026-11-06)
 
 **A first visit that tells you what to do.** The car's inputs moved out of the sidebar into the tabs that use them;

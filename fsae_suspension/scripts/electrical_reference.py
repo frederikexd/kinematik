@@ -7,7 +7,8 @@
 """Regenerate the electrical benchmark references (docs/ELECTRICAL_BENCHMARK_PLAN.md) with the reference tools.
 
   kicad     KiCad's own reader (pcbnew Python API) on KiCad's demo boards  -> kicad_boards.json
-  spice     ngspice: precharge, pack along a lap, net resistance             -> spice_*.json
+  spice     ngspice: precharge, pack along a lap; net resistance for the pairs in nets_round2.json
+                                                                          -> spice_*.json, nets_round2.json
   atlc      atlc field solver: microstrip and differential impedance         -> atlc_impedance.json
 
 Needs KiCad 7 (python3-pcbnew), ngspice and atlc installed; the `kicad` step must run under the Python that ships
@@ -188,7 +189,10 @@ def spice():
     except ImportError:
         print("pcbnew not importable here: run again under KiCad's Python for the net-resistance reference")
         return
-    _write("spice_nets.json", {"tool": tool, "temp_c": NET_TEMP_C, "nets": spice_nets()})
+    rec = json.loads((OUT / "nets_round2.json").read_text(encoding="utf-8"))
+    rec["nets"] = spice_nets()
+    rec["spice_tool"], rec["temp_c"] = tool, NET_TEMP_C
+    _write("nets_round2.json", rec)
 
 
 RHO_CU_20C, ALPHA_CU, OZ_TO_UM, VIA_PLATING_MM, NET_TEMP_C = 1.724e-8, 3.93e-3, 34.8, 0.025, 60.0
@@ -282,9 +286,10 @@ def _net_netlist(board, net: str, pair, copper_oz: float, thickness_mm: float):
     return net_txt, a, b
 
 
-def spice_nets():
+def spice_nets(pairs_file: str = "nets_round2.json"):
+    """SPICE resistance for every (board, net, pad pair) listed in pairs_file (KinematiK's worst pair per net)."""
     import pcbnew
-    pairs = json.loads((OUT / "net_pairs.json").read_text(encoding="utf-8"))["pairs"]
+    pairs = json.loads((OUT / pairs_file).read_text(encoding="utf-8"))["nets"]
     boards: dict = {}
     out = []
     for q in pairs:
@@ -396,11 +401,39 @@ def atlc_impedance():
             "differential": diff, "pixel_mm": PX_MM}
 
 
+ROUND2_SE = tuple((er, r) for er in (3.66, 4.6) for r in (0.3, 0.8, 1.3, 1.8))
+ROUND2_DIFF = ((4.6, 0.75, 0.75), (4.6, 1.25, 1.5))
+ROUND2_H_MM = 0.15
+
+
+def atlc_round2():
+    """Round 2: geometries registered after round 1 and never used to choose a formula (plan addendum)."""
+    global H_MM
+    keep, H_MM = H_MM, ROUND2_H_MM
+    try:
+        h_px = round(H_MM / PX_MM)
+        se = []
+        for er, r in ROUND2_SE:
+            w = round(r * h_px)
+            se.append({"er": er, "w_over_h": r, "w_mm": w * PX_MM, "h_mm": H_MM, "t_mm": T_PX * PX_MM,
+                       "atlc_z0_ohm": _atlc(_microstrip(w), er)["Zo"]})
+        diff = []
+        for er, r, q in ROUND2_DIFF:
+            w, sp = round(r * h_px), round(q * h_px)
+            z = _atlc(_microstrip(w, sp), er)
+            diff.append({"er": er, "w_over_h": r, "s_over_h": q, "w_mm": w * PX_MM, "s_mm": sp * PX_MM, "h_mm": H_MM,
+                         "t_mm": T_PX * PX_MM, "atlc_zdiff_ohm": z.get("Zdiff")})
+        return {"single_ended": se, "differential": diff, "pixel_mm": PX_MM}
+    finally:
+        H_MM = keep
+
+
 def atlc():
     import subprocess
     ver = subprocess.run(["atlc"], capture_output=True, text=True)
     first = (ver.stdout + ver.stderr).strip().splitlines()[0].split(":")[0]
     _write("atlc_impedance.json", {"tool": first, **atlc_impedance()})
+    _write("atlc_impedance_round2.json", {"tool": first, **atlc_round2()})
 
 
 def _write(name, obj):

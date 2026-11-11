@@ -1536,11 +1536,14 @@ P(i fails first) = ∫ φ_i(x) Π_{j≠i} (1 − Φ_j(x)) dx         (trapezoida
 R = ρ_Cu(T) L / A,   ρ_Cu(T) = ρ_20 (1 + α (T − 20))
 IPC-2221:   I = k ΔT^0.44 A^0.725   (A in square mils; k = 0.048 external, 0.024 internal)
 Onderdonk:  I = A_cmil √( log10( (T_m − T_a)/(234 + T_a) + 1 ) / (33 t) ),   T_m = 1083 °C,   A_cmil = A_sqmil · 4/π
-microstrip: Z0 = 87/√(ε_r + 1.41) · ln( 5.98 h / (0.8 w + t) )
+microstrip: Hammerstad–Jensen with Wheeler's thickness correction (u = w/h, T = t/h):
+            Δu1 = (T/π) ln(1 + 4e / (T coth²√(6.517 u))),   u_r = u + ½(1 + sech√(ε_r − 1)) Δu1
+            Z01(u) = (η0/2π) ln( f(u)/u + √(1 + 4/u²) ),   f(u) = 6 + (2π − 6) e^(−(30.666/u)^0.7528)
+            ε_e = (ε_r + 1)/2 + (ε_r − 1)/2 (1 + 10/u_r)^(−ab),   Z0 = Z01(u_r)/√ε_e
 diff pair:  Z_diff ≈ 2 Z0 (1 − 0.48 e^(−0.96 s/h))
 ```
 
-plus a geometric crosstalk budget against switching aggressors. `pcb_doctor` applies the same checks to imported KiCad and Altium boards.
+plus a geometric crosstalk budget against switching aggressors. `pcb_doctor` applies the same checks to imported KiCad and Altium boards. Its net resistance is a nodal solve of the trace and via-barrel resistances. A pad joins copper that overlaps its own outline (circle, oval, or rounded rectangle, rotated). A surface pad or a track joins a via on its own layer, so the barrel stays in the path. Only a two-terminal part bridges its own pads (10 mΩ).
 
 ### 27.5 Harness (`harness.py`)
 

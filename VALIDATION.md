@@ -188,6 +188,19 @@ reproduce and have been replaced with the measured values. Both solvers are
 inviscid: no separation, stall or profile drag. Compare designs with them; do not
 quote absolute downforce.
 
+## Electrical: KiCad, SPICE and a field solver
+
+[docs/ELECTRICAL_BENCHMARK.md](docs/ELECTRICAL_BENCHMARK.md) gives the cases and limits, all set before the runs.
+
+- **KiCad 7.** The PCB Doctor reads all 14 of KiCad's demo boards exactly as KiCad's own reader does.
+- **SPICE (ngspice).** Precharge and the pack along a lap match within 0.001 %.
+- **Net resistance on real boards.** It missed the 2 % limit against SPICE. Four connectivity flaws, all reading
+  low, were fixed. It is now within 2 % on 72.5 % of nets and within 10 % on 91.8 %. The rest is the difference
+  between two 1-D models of 2-D copper, and no 2-D reference exists here.
+- **Microstrip impedance.** The IPC-2141 formula missed a field solver (atlc) by up to 8.3 %. Hammerstad–Jensen
+  replaced it and passed 10 of 10 geometries it had never seen, within 3.4 %.
+- **Altium.** Its own reader is not benchmarked, because Altium can't run here.
+
 ## Real cars: the prediction ledger
 
 KinematiK predicts official Formula Student skidpad and acceleration times from each team's published car data,
