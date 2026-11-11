@@ -146,13 +146,13 @@ That's the kind of answer this is for.
 ## Run it locally
 
 ```bash
-git clone https://github.com/<frederikexd>/kinematik.git
+git clone https://github.com/frederikexd/kinematik.git
 cd kinematik
 pip install -r requirements.txt
 streamlit run fsae_suspension/streamlit_app.py
 ```
 
-Python 3.11+. The hosted app needs no install.
+Python 3.12 or newer. The hosted app needs no install.
 
 ---
 
