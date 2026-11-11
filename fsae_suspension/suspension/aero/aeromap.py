@@ -24,6 +24,7 @@ feed the lap sim without KinematiK ever running CFD. That is the "B" path.
 from __future__ import annotations
 
 import csv
+import math
 import io
 from dataclasses import dataclass
 
@@ -221,22 +222,40 @@ class AeroMap:
     def from_csv(cls, text: str, reference_area_m2=_REF_AREA_M2, reference_length_m=_REF_LENGTH_M,
                  provenance: CFDProvenance | None = None) -> AeroMap:
         m = cls(reference_area_m2, reference_length_m, provenance)
-        rdr = csv.DictReader(io.StringIO(text))
-        for row in rdr:
-            def fnum(k):
-                v = (row.get(k) or "").strip()
-                return float(v) if v not in ("", None) else None
+
+        def num(row, line, key, default=None):
+            """A finite number from one cell, or `default` when the cell is empty. Anything else is refused with
+            its row and column: an aero map with a nan or inf point poisons every interpolation that touches it."""
+            raw = (row.get(key) or "").strip()
+            if raw == "":
+                return default
+            try:
+                v = float(raw)
+            except ValueError:
+                raise ValueError(f"aero map CSV row {line}, column {key}: {raw!r} is not a number") from None
+            if not math.isfinite(v):
+                raise ValueError(f"aero map CSV row {line}, column {key}: {raw!r} is not a finite number")
+            return v
+
+        try:
+            rows = list(csv.DictReader(io.StringIO(text)))
+        except csv.Error as exc:
+            raise ValueError(f"aero map file is not a readable CSV ({exc})") from exc
+        for line, row in enumerate(rows, start=2):                # row 1 is the header
             att = Attitude(
-                float(row.get("roll_deg") or 0),
-                float(row.get("pitch_deg") or 0),
-                float(row.get("yaw_deg") or 0),
-                float(row.get("ride_height_mm") or 30),
-                float(row.get("speed_ms") or 20),
+                num(row, line, "roll_deg", 0.0),
+                num(row, line, "pitch_deg", 0.0),
+                num(row, line, "yaw_deg", 0.0),
+                num(row, line, "ride_height_mm", 30.0),
+                num(row, line, "speed_ms", 20.0),
             )
+            if att.speed_ms <= 0:
+                raise ValueError(f"aero map CSV row {line}, column speed_ms: {att.speed_ms:g} m/s is not a speed "
+                                 "a coefficient can be referred to")
             conv = (row.get("converged") or "1").strip().lower() in ("1", "true", "yes")
             res = CoeffResult(
-                attitude=att, c_lift=fnum("c_lift"), c_drag=fnum("c_drag"),
-                c_side=fnum("c_side"), aero_balance_front=fnum("aero_balance_front"),
+                attitude=att, c_lift=num(row, line, "c_lift"), c_drag=num(row, line, "c_drag"),
+                c_side=num(row, line, "c_side"), aero_balance_front=num(row, line, "aero_balance_front"),
                 converged=conv, provenance=provenance,
             )
             m.add(res)

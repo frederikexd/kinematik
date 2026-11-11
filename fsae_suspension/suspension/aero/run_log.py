@@ -978,7 +978,7 @@ def _coerce_number(value) -> float | None:
     if isinstance(value, bool):
         return None
     if isinstance(value, (int, float)):
-        return None if (isinstance(value, float) and math.isnan(value)) else float(value)
+        return float(value) if math.isfinite(value) else None     # nan and inf are "no value", not a measurement
     text = str(value).strip()
     if not text or text.lower() in {"-", "--", "n/a", "na", "none", "nan", "?", "tbd"}:
         return None
@@ -996,6 +996,8 @@ def _coerce_number(value) -> float | None:
     try:
         num = float(text)
     except ValueError:
+        return None
+    if not math.isfinite(num):                                 # "1e999" overflows to inf: no value
         return None
     return num / 100.0 if percent else num
 
