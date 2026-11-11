@@ -168,9 +168,8 @@ displayed in full.
 three differential pairs entered on the wrong profile) are within 1.9 %. KinematiK reads slightly low throughout,
 as it does against atlc.
 
-**The reference checked.** Altium and atlc, two independent field solvers, agree within 1.6 % on all 21 cases. The
-profile's etch was left at Altium's default and not recorded; the agreement with atlc's rectangular traces suggests
-it had no material effect.
+**The reference checked.** Altium and atlc, two independent field solvers, agree within 1.6 % on all 21 cases. Both
+profiles had etch 0 (confirmed by the author afterwards), so Altium's traces are rectangular, as atlc's are.
 
 ## Not covered
 

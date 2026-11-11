@@ -1,6 +1,6 @@
 {
  "tool": "Altium Designer 26.11.1, Layer Stack Manager impedance calculator",
- "setup": "2 copper layers 0.035 mm, one FR-4 dielectric of the case h and Dk, solder masks removed, roughness: flat conductors, microstrip on F.Cu referenced to B.Cu. Values read from the impedance column, or from the deviation column against the profile target (50 ohm single-ended, 100 ohm differential) where the impedance column was truncated: Z = target x (1 + deviation), the sign from the leading digit shown.",
+ "setup": "2 copper layers 0.035 mm, one FR-4 dielectric of the case h and Dk, solder masks removed, roughness: flat conductors, microstrip on F.Cu referenced to B.Cu, etch 0 on both profiles (rectangular traces; confirmed by the author). Values read from the impedance column, or from the deviation column against the profile target (50 ohm single-ended, 100 ohm differential) where the impedance column was truncated: Z = target x (1 + deviation), the sign from the leading digit shown.",
  "cases": [
   {
    "case": "R1-SE1",
