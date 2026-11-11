@@ -93,6 +93,16 @@ reproduce are credited by name, along with independent reproductions, successful
   - a track ending on a via no longer bypasses the barrel resistance;
   - a pad now catches only copper that overlaps its real outline, not a circle of half its longest side.
   The result is 72.5 % of nets within 2 % and 91.8 % within 10 %, still short of the limit.
+- Round 3, net resistance against a 2-D solve of the copper. Before, KinematiK read a median 10.7 % high. Fixed on
+  KiCad's demo boards only:
+  - track on pads, via rings and wider track no longer counts as track;
+  - an exact grounded solve replaces numpy's pseudo-inverse, which lost up to 25 % on long nets;
+  - arc chords are no longer welded shut;
+  - same-numbered pads are separate copper.
+  Then it was checked once on 395 held-out nets from team boards: 87.8 % within 2 %, 98.2 % within 5 %, median
+  −0.4 %, worst −11.2 % / +18.0 %. The brown-out check now uses 1.15 × the resistance.
+  `benchmarks/electrical/nets_round3.json`.
+- Pads with copper offset from the drill are read, and vias without a drill take the net-class or board default.
 - atlc field solver: the IPC-2141 microstrip formula missed by up to 8.3 %. It is replaced by Hammerstad–Jensen
   (what KiCad's calculator uses), which passed 10 of 10 unseen geometries within 3.4 %.
 `scripts/electrical_reference.py`, `benchmarks/electrical/`, `tests/test_electrical_benchmark.py`.

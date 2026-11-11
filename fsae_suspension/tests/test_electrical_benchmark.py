@@ -108,11 +108,33 @@ def test_net_resistance_recorded_rounds():
     assert np.mean(a2 <= 2) >= 0.72 and np.mean(a2 <= 10) >= 0.91 and e2.min() > -25
 
 
+def _round3(rows, ver):
+    k, c = ("kinematik_3a_ohm", "copper2d_3a_ohm") if ver == "3a" else ("kinematik_ohm", "copper2d_ohm")
+    e = np.array([100.0 * (o[k] - o[c]) / o[c] for o in rows if o.get(k) and o.get(c) and 0 < o[c] < 1e6])
+    return e, np.abs(e)
+
+
+def test_net_resistance_round3_against_2d_copper():
+    """Round 3 (plan addendum 2): a 2-D solve of the copper is the reference. Before the changes KinematiK read high
+    (median +10.7 % on the demo boards); after, on the demo boards the changes were designed on and on 20 team boards
+    held out until the model was frozen."""
+    d = _ref("nets_round3.json")
+    e3a, _ = _round3(d["demo_boards"], "3a")
+    assert len(e3a) >= 850 and np.median(e3a) > 8
+    e, a = _round3(d["demo_boards"], "now")
+    assert len(e) >= 850 and np.mean(a <= 2) >= 0.89 and np.mean(a <= 5) >= 0.97 and e.min() > -11.2
+    t, ta = _round3(d["team_boards"], "now")
+    assert len(t) >= 380 and np.mean(ta <= 2) >= 0.87 and np.mean(ta <= 5) >= 0.98
+    from suspension.pcb_doctor import NET_R_UPPER_FACTOR
+    # the brown-out check's margin was set on the demo boards; on the held-out boards it is checked, not tuned
+    assert np.mean(100.0 / (100.0 + t) <= NET_R_UPPER_FACTOR) == 1.0
+
+
 @needs_demos
 def test_net_resistance_still_what_was_recorded():
-    """KinematiK's worst pad-to-pad resistance per net is still what round 2 recorded (the SPICE side is fixed)."""
+    """KinematiK's worst pad-to-pad resistance per net is still what round 3 recorded (the 2-D side is fixed)."""
     from suspension import pcb_doctor as D
-    rows = _ref("nets_round2.json")["nets"]
+    rows = [o for o in _ref("nets_round3.json")["demo_boards"] if o.get("kinematik_ohm")]
     boards: dict = {}
     for o in rows[::7]:                                   # every 7th net keeps this quick
         if o["board"] not in boards:
@@ -120,6 +142,7 @@ def test_net_resistance_still_what_was_recorded():
         b = boards[o["board"]]
         r = D.analyze_net(b, b.net_id(o["net"]))
         assert r["worst_r_ohm"] == pytest.approx(o["kinematik_ohm"], rel=1e-9), o["net"]
+        assert list(r["worst_pair"]) == o["pair"], o["net"]
 
 
 # --------------------------------------------------------------------------- C. Field solver: impedance ---- #

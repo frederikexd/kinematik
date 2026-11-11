@@ -195,11 +195,14 @@ quote absolute downforce.
 - **KiCad 7.** The PCB Doctor reads all 14 of KiCad's demo boards exactly as KiCad's own reader does.
 - **SPICE (ngspice).** Precharge and the pack along a lap match within 0.001 %.
 - **Net resistance on real boards.** It missed the 2 % limit against SPICE. Four connectivity flaws, all reading
-  low, were fixed. It is now within 2 % on 72.5 % of nets and within 10 % on 91.8 %. The rest is the difference
-  between two 1-D models of 2-D copper, and no 2-D reference exists here.
+  low, were fixed. Round 3 then used a 2-D solve of the copper as the reference. Five more causes were found and
+  fixed on KiCad's demo boards, and the model was frozen. Then it was checked once on 395 held-out nets from Formula
+  Student team boards: 87.8 % within 2 %, 98.2 % within 5 %, 99.2 % within 10 %, median −0.4 % (before: 8.1 %
+  within 2 %, median +14.6 %). That still misses the 2 % limit on about one net in eight. The brown-out check adds
+  a 1.15 margin, which covers every held-out net.
 - **Microstrip impedance.** The IPC-2141 formula missed a field solver (atlc) by up to 8.3 %. Hammerstad–Jensen
   replaced it and passed 10 of 10 geometries it had never seen, within 3.4 %.
-- **Altium.** Its own reader is not benchmarked, because Altium can't run here.
+- **Altium.** Run by hand from the kit in `benchmarks/electrical/altium/`; results are published when they come back.
 
 ## Real cars: the prediction ledger
 

@@ -61,6 +61,7 @@ Altium's impedance calculator, which can't run here). Limits were set before eac
 | KiCad 7's own reader | KiCad's 14 demo boards: about 15,000 tracks, 1,260 vias, 4,869 pads | Exact on every count, net width and pad position; net lengths within 0.009 mm |
 | SPICE: precharge and the pack over a lap | 4 precharge circuits; a 520-point lap with regen | Within 0.001 % and 0.0011 % |
 | SPICE: net resistance on real boards | 963 nets | **Missed the 2 % limit.** Four connectivity flaws found and fixed; now 72.5 % within 2 %, 91.8 % within 10 % (same boards) |
+| 2-D copper solve: net resistance, held-out team boards | 395 nets, 13 boards | **Still misses 2 % on 12 %.** 87.8 % within 2 %, 98.2 % within 5 %, 99.2 % within 10 %, median −0.4 % (was 8.1 % within 2 %, median +14.6 %) |
 | atlc field solver: microstrip impedance | 11 cases, then 10 unseen | IPC-2141 missed by up to 8.3 %; replaced by Hammerstad–Jensen, 10 of 10 unseen within 3.4 % |
 
 **Check it yourself**: [in your browser](https://colab.research.google.com/github/frederikexd/kinematik/blob/main/notebooks/reproduce.ipynb) (Google Colab, nothing to install, about 10 minutes), or in a few minutes on your laptop. Think a result is wrong? [Break it](CHALLENGE.md).
