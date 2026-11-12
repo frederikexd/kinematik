@@ -316,8 +316,9 @@ An independent check needs IPC-2152's 2009 measurements, which are not public.
 
 ## E. Nets with copper pours
 
-Plan addendum 4. KinematiK's trace-only resistance gives a pour no resistance, so on a poured net it is an upper
-bound, and the brown-out check keeps using it. `suspension/pcb_pour.py` adds a best estimate *with* the pour: a sheet
+Plan addendum 4. KinematiK's 1-D model does not mesh a pour, so on a poured net it covers only the pads its tracks
+join. (This section first called that an upper bound. It is not: see "What the brown-out check does on a pour net"
+below.) `suspension/pcb_pour.py` adds an estimate *with* the pour: a sheet
 solve of KinematiK's own reading of the file (tracks, pads, vias and the zones' `filled_polygon`) on its own grid.
 The reference is the corrected 2-D solve with KiCad's own filled zones added (`benchmarks/electrical/pours.json`).
 Planes too large for this machine's memory (1.5 million cells per layer) are left out: 6 on the demo boards and 6 on

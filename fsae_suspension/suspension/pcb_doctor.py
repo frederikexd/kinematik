@@ -82,8 +82,10 @@ PCB Doctor does four things, all analytic, all dependency-free beyond numpy:
      plus the via count for every layer transition.
 
 Honesty rules the rest of KinematiK keeps, kept here:
-  * Copper pours (zones) are not meshed — nets with pours get *conservative*
-    trace-only resistance labelled as such, and are never declared "open".
+  * Copper pours (zones) are not in the 1-D mesh. A net with a pour is never declared "open", and its voltage
+    drop is checked through the pour by a 2-D sheet solve (pcb_pour) where the net is small enough; where it is
+    not, the report says the drop through the pour was not checked. The 1-D figure on such a net covers only the
+    pads its tracks join, which is NOT an upper bound for a pad fed through the pour.
   * Anything needing a field solver (eye diagrams, true coupled noise volts)
     is reported as *not computed*, never invented.
   * Currents come from the integration ledger where a name match exists; every
@@ -1193,8 +1195,8 @@ def analyze_net(board: PcbBoard, nid: int, ambient_c: float = 40.0) -> dict:
     """Build the resistor mesh of a net's real copper (segments + via barrels),
     then report: bottleneck segment, per-layer routed length, connectivity of
     the pads, and worst pad-to-pad effective resistance (nodal analysis).
-    Zones are NOT meshed: resistance is trace-only (conservative) and nets with
-    pours are never declared open."""
+    Zones are NOT meshed here: the resistance (Ω) covers the pads joined by tracks only, and nets with pours are
+    never declared open. For a pad fed through a pour see `pour_net_resistance`."""
     segs = board.segments_of(nid)
     vias = board.vias_of(nid)
     pads = board.pads_of(nid)
