@@ -2665,6 +2665,7 @@ def save_store(store):
 #  runs exactly as before in local single-user mode — no gate, no regression.
 # --------------------------------------------------------------------------- #
 from suspension import auth_ui as _auth_ui   # light import: stdlib + lazy supabase
+from suspension._num import json_finite as _json_finite   # noqa: E402  uploaded JSON: NaN / Infinity refused
 
 # --------------------------------------------------------------------------- #
 #  LOGIN GATE — DISABLED for now.
@@ -4467,7 +4468,7 @@ def render_migration_surfaces():
                         value=False, key="_mig_restore_inc_ledger")
                 if _up is not None:
                     try:
-                        apply_project_bundle(json.load(_up),
+                        apply_project_bundle(_json_finite(_up),
                                              include_shared_ledger=_inc_led)
                         st.success("Backup restored — geometry, vehicle, "
                                    "ledger, handover, and pedal inputs are "
@@ -27732,7 +27733,7 @@ with tab5c:
     if flex_up is not None:
         try:
             import json as _json
-            _d = _json.load(flex_up)
+            _d = _json_finite(flex_up)
             flex_body = load_flex_body(_d)
             names = list(flex_body.names)
             st.success(f"Loaded flex body with interface nodes: {', '.join(names)}")
@@ -29385,7 +29386,7 @@ with tab9:
         if up is not None:
             try:
                 import json as _json
-                d = _json.load(up)
+                d = _json_finite(up)
                 new_coeffs = d["coeffs"]
                 new_fnom = float(d.get("FNOMIN", 1100.0))
                 # validate it builds
@@ -33445,7 +33446,7 @@ with sc3:
             value=False, key="_load_inc_ledger")
     if loaded is not None:
         try:
-            _bundle = json.load(loaded)
+            _bundle = _json_finite(loaded)
             if isinstance(_bundle, dict) and "inputs_sha256" in _bundle and "targets" in _bundle \
                     and "volume" in _bundle:
                 # an InverseGenesis manifest, not a project file: say so instead of "loading" it silently

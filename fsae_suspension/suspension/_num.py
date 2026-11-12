@@ -6,6 +6,8 @@
 """The one place an input becomes a float array, for every module that needs it."""
 from __future__ import annotations
 
+import json
+
 import numpy as np
 
 
@@ -57,6 +59,19 @@ def all_finite(obj) -> bool:
     if hasattr(obj, "__dict__"):
         return all(all_finite(v) for v in vars(obj).values())
     return True
+
+
+def json_finite(source):
+    """Parsed JSON from text, bytes or an open file, refusing the tokens NaN, Infinity and -Infinity with
+    ValueError. Python's reader accepts them; a file that holds one is not data a model can use (unitless: the
+    values are passed through untouched)."""
+    def _refuse(token):
+        raise ValueError(f"the file holds {token}, which is not a finite number")
+
+    text = source.read() if hasattr(source, "read") else source
+    if isinstance(text, (bytes, bytearray)):
+        text = bytes(text).decode("utf-8-sig")
+    return json.loads(text, parse_constant=_refuse)
 
 
 def vec(v) -> np.ndarray:

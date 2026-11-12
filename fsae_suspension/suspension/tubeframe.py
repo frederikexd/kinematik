@@ -362,6 +362,8 @@ class FrameGraph:
         g = FrameGraph(size_table=st or None)
         for nd in d.get("nodes", []):
             n = FrameNode.from_dict(nd)
+            if len(n.xyz_mm) != 3 or not all(math.isfinite(float(v)) for v in n.xyz_mm):
+                raise ValueError(f"node {n.nid!r}: its position must be three finite numbers (mm)")
             g.nodes[n.nid] = n
         for td in d.get("tubes", []):
             g.tubes.append(FrameTube.from_dict(td))

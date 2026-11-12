@@ -442,3 +442,23 @@ def test_damaged_mesh_file_is_a_value_error(tmp_path):
     for scale in (0.0, -1.0, float("nan"), float("inf"), 1e308):
         with pytest.raises(ValueError):
             chassis.load_part_mesh(str(stl), unit_scale=scale)
+
+
+def test_json_finite_reads_text_bytes_and_files_and_refuses_nan_tokens():
+    assert _num.json_finite('{"a": [1, 2.5, "NaN"]}') == {"a": [1, 2.5, "NaN"]}      # the word in a string is fine
+    assert _num.json_finite(b'\xef\xbb\xbf{"a": 1}') == {"a": 1}                     # bytes, with a byte-order mark
+    assert _num.json_finite(io.StringIO("[1, 2]")) == [1, 2]
+    assert _num.json_finite(io.BytesIO(b"[3]")) == [3]
+    for token in ("NaN", "Infinity", "-Infinity"):
+        with pytest.raises(ValueError, match=f"the file holds {token}, which is not a finite number"):
+            _num.json_finite(f'{{"hardpoints": {{"x": {token}}}}}')
+    with pytest.raises(ValueError):
+        _num.json_finite("{not json")
+
+
+def test_frame_from_dict_refuses_a_non_finite_node():
+    good = {"nodes": [{"nid": "a", "xyz_mm": [0, 0, 0]}, {"nid": "b", "xyz_mm": [1, 2, 3]}], "tubes": []}
+    assert sorted(FrameGraph.from_dict(good).nodes) == ["a", "b"]
+    bad = {"nodes": [{"nid": "a", "xyz_mm": [0, float("nan"), 0]}], "tubes": []}
+    with pytest.raises(ValueError, match="node 'a': its position must be three finite numbers"):
+        FrameGraph.from_dict(bad)
