@@ -2877,6 +2877,7 @@ def demo_kicad_pcb() -> str:
 _LAYER_COLORS = {"F.Cu": "#d94f4f", "B.Cu": "#4a7bd9", "In1.Cu": "#3fae7a",
                  "In2.Cu": "#c9a03a", "In3.Cu": "#9a6ad1", "In4.Cu": "#48b8b8"}
 _FIX_GLOW = "#ffffff"          # the halo on copper a pending fix will widen
+_MANUAL_GLOW = "#f2b134"       # the dashed outline on copper that needs widening the fixed file does not have
 _TH_PAD_FILL = "#d7b46a"       # plated through-hole pads: both sides at once
 _VIEW_BG = "#0e1419"
 
@@ -2914,11 +2915,13 @@ def _view_bbox(board: PcbBoard, layers, pads):
 
 
 def board_svg(board: PcbBoard, report=None, show_layers=None,
-              width_px: int = 760, height_px: int = 440) -> str:
+              width_px: int = 760, height_px: int = 440, applied=None) -> str:
     """Inline SVG of the parsed copper: segments per layer, the real pads of
     every footprint (so each trace can be seen landing on its pin), vias and
     component refs. When the report carries fixes, the segments they touch
-    glow and the rest of the copper dims."""
+    glow and the rest of the copper dims. With ``applied`` (the segment indices the verified fix actually wrote),
+    only those glow; a fix that was withdrawn or left for a human is outlined in amber instead, so the picture
+    never promises a widening the downloaded file does not have."""
     from html import escape as _esc
     layers = list(show_layers or board.copper_layers)
     lset = set(layers)
@@ -2943,6 +2946,7 @@ def board_svg(board: PcbBoard, report=None, show_layers=None,
     if report is not None:
         for fx in report.fixes:
             fixes_by_seg.setdefault(fx.seg_index, fx)
+    written = None if applied is None else {i for i in applied if i in fixes_by_seg}
     dim = bool(fixes_by_seg)
     parts = [f'<svg viewBox="0 0 {width_px} {height_px}" '
              f'xmlns="http://www.w3.org/2000/svg" '
@@ -2960,7 +2964,14 @@ def board_svg(board: PcbBoard, report=None, show_layers=None,
         fx = fixes_by_seg.get(i)
         line = (f'x1="{ax:.1f}" y1="{ay:.1f}" x2="{bx:.1f}" y2="{by:.1f}" '
                 f'stroke-linecap="round"')
-        if fx is not None:
+        if fx is not None and written is not None and i not in written:
+            tip = _esc(f"{fx.net} on {fx.layer}: needs {fx.new_width_mm:g} mm, not widened in the fixed file"
+                       + (f" ({fx.note})" if fx.note else ""))
+            glow.append(f'<g><title>{tip}</title>'
+                        f'<line {line} stroke="{_MANUAL_GLOW}" stroke-width="{sw + 5:.1f}" '
+                        f'stroke-dasharray="4 3" opacity="0.8"/>'
+                        f'<line {line} stroke="{col}" stroke-width="{sw:.1f}"/></g>')
+        elif fx is not None:
             tip = _esc(f"{fx.net} on {fx.layer}: {fx.old_width_mm:g} → "
                        f"{fx.new_width_mm:g} mm"
                        + ("" if fx.auto else " (prescription — not auto)"))
@@ -3057,6 +3068,7 @@ def board_svg(board: PcbBoard, report=None, show_layers=None,
                             return True
         return False
 
+    label_boxes = []
     for fp in board.footprints:
         fpads = [p for p in fp.pads if p.through or _pad_layer(fp, p) in lset]
         tw, th = 6.6 * len(fp.ref or "?") + 2, 10.0
@@ -3073,17 +3085,30 @@ def board_svg(board: PcbBoard, report=None, show_layers=None,
                          f'stroke-width="1" rx="1.5"/>')
             px0, py0, px1, py1 = fx_ - 3, fy_ - 3, fx_ + 3, fy_ + 3
         ymid = (py0 + py1) / 2.0
-        # (left, baseline) candidates: above, right, left, below
-        cands = [(px0, py0 - 4), (px1 + 4, ymid + th / 2 - 1),
-                 (px0 - 4 - tw, ymid + th / 2 - 1), (px0, py1 + th + 3)]
-        lx, ly = cands[0]
-        for cx_, cy_ in cands:
-            bx0, by0, bx1, by1 = cx_, cy_ - th + 1, cx_ + tw, cy_ + 1
-            if bx0 < 0 or bx1 > width_px or by0 < top - 14 or by1 > height_px - bottom + 8:
-                continue
-            if not _hits(bx0, by0, bx1, by1):
-                lx, ly = cx_, cy_
-                break
+        # (left, baseline) candidates: above, right, left, below, then the same a step and two further out
+        cands = []
+        for d in (0.0, 11.0, 22.0, 33.0, 44.0):
+            for sx in (0.0, -tw / 2, tw / 2):
+                cands += [(px0 + sx, py0 - 4 - d), (px0 + sx, py1 + th + 3 + d)]
+            cands += [(px1 + 4 + d, ymid + th / 2 - 1), (px0 - 4 - tw - d, ymid + th / 2 - 1)]
+
+        def _free_of_labels(bx0, by0, bx1, by1):
+            return all(b[2] < bx0 or b[0] > bx1 or b[3] < by0 or b[1] > by1 for b in label_boxes)
+
+        def _in_frame(bx0, by0, bx1, by1):
+            return not (bx0 < 0 or bx1 > width_px or by0 < top - 14 or by1 > height_px - bottom + 8)
+
+        boxes = [(c, (c[0], c[1] - th + 1, c[0] + tw, c[1] + 1)) for c in cands]
+        boxes = [(c, b) for c, b in boxes if _in_frame(*b)] or [(cands[0], (cands[0][0], cands[0][1] - th + 1,
+                                                                           cands[0][0] + tw, cands[0][1] + 1))]
+        #  first a spot clear of copper and of every label already placed; then one clear of labels only (the
+        #  outline keeps it legible over copper); two labels are never drawn on top of each other if any spot is free
+        pick = (next((c for c, b in boxes if _free_of_labels(*b) and not _hits(*b)), None)
+                or next((c for c, b in boxes if _free_of_labels(*b)), None)
+                or min(boxes, key=lambda cb: sum(not (q[2] < cb[1][0] or q[0] > cb[1][2] or q[3] < cb[1][1]
+                                                      or q[1] > cb[1][3]) for q in label_boxes))[0])
+        lx, ly = pick
+        label_boxes.append((lx - 1, ly - th, lx + tw + 1, ly + 2))
         #  Two passes (outline, then fill) rather than `paint-order`, which
         #  some SVG renderers ignore and then paint the outline over the text.
         #  The outline keeps a label legible even where no free spot existed.
@@ -3102,12 +3127,25 @@ def board_svg(board: PcbBoard, report=None, show_layers=None,
                      f'fill="#8d99a6" font-size="10">'
                      f'{_esc(board.native_layer(ly))}</text>')
         lx += 30 + 6 * len(board.native_layer(ly))
-    if dim:
+    if dim and written is None:
         parts.append(f'<line x1="{lx}" y1="14" x2="{lx + 16}" y2="14" '
                      f'stroke="{_FIX_GLOW}" stroke-width="7" opacity="0.5"/>'
                      f'<text x="{lx + 21}" y="18" fill="#e8edf2" '
                      f'font-size="10">glow = segment a fix will widen '
                      f'({len(fixes_by_seg)})</text>')
+    elif dim:
+        n_man = len(fixes_by_seg) - len(written)
+        if written:
+            parts.append(f'<line x1="{lx}" y1="14" x2="{lx + 16}" y2="14" '
+                         f'stroke="{_FIX_GLOW}" stroke-width="7" opacity="0.5"/>'
+                         f'<text x="{lx + 21}" y="18" fill="#e8edf2" '
+                         f'font-size="10">glow = widened in the fixed file ({len(written)})</text>')
+            lx += 175 + 6 * len(str(len(written)))
+        if n_man:
+            parts.append(f'<line x1="{lx}" y1="14" x2="{lx + 16}" y2="14" '
+                         f'stroke="{_MANUAL_GLOW}" stroke-width="5" stroke-dasharray="4 3"/>'
+                         f'<text x="{lx + 21}" y="18" fill="#e8edf2" '
+                         f'font-size="10">amber = needs a manual fix ({n_man})</text>')
 
     # ---- scale bar ---------------------------------------------------------- #
     bar_mm = next((b for b in (100, 50, 20, 10, 5, 2, 1, 0.5)

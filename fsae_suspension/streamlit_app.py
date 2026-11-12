@@ -1461,10 +1461,10 @@ def _cached_diagnose(_board, fp: str, _assign, knobs: tuple):
 
 
 @st.cache_data(show_spinner=False, ttl=600, max_entries=4)
-def _cached_board_svg(_board, _report, fp: str, layers: tuple):
+def _cached_board_svg(_board, _report, fp: str, layers: tuple, applied: tuple = ()):
     from suspension import pcb_doctor as _pdr
     return _pdr.board_svg(_board, report=_report,
-                          show_layers=list(layers) or None)
+                          show_layers=list(layers) or None, applied=applied)
 
 
 def _pcb_fingerprint(board, assign=None, extra=()) -> str:
@@ -26198,26 +26198,9 @@ def render_pcb_doctor():
                 f'<span style="font-size:.92rem">{f.message}</span></div>',
                 unsafe_allow_html=True)
 
-    # ---------------- board viewer — failing copper glows red ------------------ #
-    with st.expander("🗺️ Board viewer (copper by layer, every pad drawn — "
-                     "segments the fix will widen glow white)", expanded=False):
-        show = st.multiselect("Layers", pboard.copper_layers,
-                              default=pboard.copper_layers, key="pdr_layers")
-        _shown = [s_ for s_ in pboard.segments
-                  if not show or s_.layer in show]
-        if len(_shown) > _PCB_SVG_MAX_SEGMENTS:
-            st.info(
-                f"This board has {len(_shown):,} copper segments on the "
-                f"selected layers — too many to draw inline without hanging "
-                f"the browser (the limit is {_PCB_SVG_MAX_SEGMENTS:,}). Pick "
-                f"fewer layers to see them, or work from the findings and the "
-                f"fix report above, which cover the whole board either way.")
-        else:
-            st.markdown(
-                _cached_board_svg(pboard, rep, _fp, tuple(show or ())),
-                unsafe_allow_html=True)
-
     # ---------------- re-trace the existing board ------------------------------ #
+    #  The segments the verified fix actually writes; the board viewer below glows only these.
+    _applied_segs = ()
     auto_n = sum(1 for fx in rep.fixes if fx.auto)
     manual_n = len(rep.fixes) - auto_n
     with st.expander(f"🔧 Re-trace this board — {auto_n} width fix(es) ready, "
@@ -26274,6 +26257,7 @@ def render_pcb_doctor():
                     max_temp_c=float(board_ctx.max_trace_temp_c),
                     fuse_sf=float(board_ctx.fuse_safety_factor))
                 patched, applied = _fixed["text"], _fixed["applied"]
+                _applied_segs = tuple(sorted(_a.seg_index for _a in applied if not isinstance(_a, pdr_mod.ViaFix)))
                 if patched is None:
                     raise ValueError("no widening could be applied without making something else worse")
                 c2 = _fixed["report"].counts()
@@ -26305,6 +26289,7 @@ def render_pcb_doctor():
                 st.warning("Patched file failed to re-parse — not offered for "
                            "download. Please report this board.")
                 patched = None
+                _applied_segs = ()
             if patched:
                 # Hand the file back with the extension it arrived with, so it
                 # re-opens by double-click in the EDA that made it.
@@ -26331,6 +26316,25 @@ def render_pcb_doctor():
                 data=pdr_mod.fix_report_md(pboard, rep, [], assign),
                 file_name="pcb_doctor_prescriptions.md",
                 mime="text/markdown", key="pdr_dl_rx")
+
+    # ---------------- board viewer — failing copper glows red ------------------ #
+    with st.expander("🗺️ Board viewer (copper by layer, every pad drawn — "
+                     "segments the fixed file widens glow white)", expanded=False):
+        show = st.multiselect("Layers", pboard.copper_layers,
+                              default=pboard.copper_layers, key="pdr_layers")
+        _shown = [s_ for s_ in pboard.segments
+                  if not show or s_.layer in show]
+        if len(_shown) > _PCB_SVG_MAX_SEGMENTS:
+            st.info(
+                f"This board has {len(_shown):,} copper segments on the "
+                f"selected layers — too many to draw inline without hanging "
+                f"the browser (the limit is {_PCB_SVG_MAX_SEGMENTS:,}). Pick "
+                f"fewer layers to see them, or work from the findings and the "
+                f"fix report above, which cover the whole board either way.")
+        else:
+            st.markdown(
+                _cached_board_svg(pboard, rep, _fp, tuple(show or ()), _applied_segs),
+                unsafe_allow_html=True)
 
     _render_trace_prescriber(pdr_mod, board_ctx)
 
