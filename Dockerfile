@@ -9,7 +9,7 @@
 #   docker run --rm -p 8501:8501 kinematik                 # the app, single-user
 #   docker run --rm kinematik pytest fsae_suspension/tests -q -p no:cacheprovider \
 #       --ignore=fsae_suspension/tests/test_voice_memo.py  # the suite CI runs
-FROM python:3.12-slim
+FROM python:3.15-slim
 
 # system libraries from fsae_suspension/packages.txt (mesh rendering, xlsx recalc)
 RUN apt-get update \
