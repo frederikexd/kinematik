@@ -728,6 +728,9 @@ def fuel_map_from_csv(text: str, displacement_cc: float, lhv_mj_kg: float) -> Fu
     line = fit_willans(tq, rpm, fuel, displacement_cc, lhv_mj_kg, source="dyno fuel map")
     model = line.fuel_power_w(p_kw[ok] * 1e3, rpm[ok], displacement_cc) / (lhv_mj_kg * 1e3)
     rms = float(np.sqrt(np.mean((model / fuel[ok] - 1.0) ** 2)))
+    if not math.isfinite(rms):                                   # pragma: no mutate
+        raise ValueError("the fuel map could not be fitted: check for a fuel or power value that is zero, "
+                         "negative or far out of range")
     w = []
     if not 0.25 <= line.eta_indicated <= 0.50:
         w.append(f"indicated efficiency {line.eta_indicated:.2f} is outside 0.25-0.50, typical of spark-ignition "

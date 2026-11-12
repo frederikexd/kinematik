@@ -215,3 +215,43 @@ def test_manifest_with_nan_or_infinity_is_refused():
 def test_manifest_that_is_not_one_is_a_value_error(text, why):
     with pytest.raises(ValueError, match=why):
         genesis_repro.GenesisManifest.from_json(text)
+
+
+# --- chassis frame CSVs (the frame that goes on to FEA) ------------------------------------------------------- #
+from suspension.tubeframe import FrameGraph  # noqa: E402
+
+NODES = "id,x,y,z\na,0,0,0\nb,500,0,0\nc,0,400,300\n"
+TUBES = "name,a,b,class,size\nt1,a,b,side_impact,A\nt2,b,c,non_structural,C\n"
+
+
+def test_frame_csv_reads_a_clean_pair():
+    g = FrameGraph.from_csv(NODES, TUBES)
+    assert sorted(g.nodes) == ["a", "b", "c"] and len(g.tubes) == 2
+
+
+@pytest.mark.parametrize("bad", ["nan", "inf", "-inf", "1e999"])
+@pytest.mark.parametrize("axis", ["x", "y", "z"])
+def test_frame_node_that_is_not_at_a_finite_position_is_refused(bad, axis):
+    row = {"x": "500", "y": "0", "z": "0"}
+    row[axis] = bad
+    with pytest.raises(ValueError, match="nodes CSV row 3: node 'b': its position must be three finite numbers"):
+        FrameGraph.from_csv(f"id,x,y,z\na,0,0,0\nb,{row['x']},{row['y']},{row['z']}\n", "name,a,b\n")
+
+
+@pytest.mark.parametrize("nodes,tubes,why", [
+    ("id,x,y\na,0,0\n", TUBES, "nodes CSV row 2: no value for z"),
+    ("id,x,y,z\na,0,0,0\nb,5,,0\n", TUBES, "nodes CSV row 3: no value for y"),
+    ("id,x,y,z\na,0,zero,0\n", TUBES, "nodes CSV row 2: could not convert"),
+    (NODES, "name,a\nt1,a\n", "tubes CSV row 2: no value for b"),
+    (NODES, "name,a,b\nt1,a,zz\n", "tubes CSV row 2: tube 't1': unknown node"),
+    (NODES, "name,a,b\nt1,a,a\n", "tubes CSV row 2: tube 't1': both ends on node 'a'"),
+    (NODES, "name,a,b\nt1,a," + "9" * 200_000 + "\n", "tubes file is not a readable CSV"),
+])
+def test_frame_csv_refuses_with_the_row_and_the_reason(nodes, tubes, why):
+    with pytest.raises(ValueError, match=why):
+        FrameGraph.from_csv(nodes, tubes)
+
+
+def test_add_node_refuses_a_non_finite_position_on_every_path():
+    with pytest.raises(ValueError, match="three finite numbers"):
+        FrameGraph().add_node("n", (0.0, float("nan"), 0.0))
