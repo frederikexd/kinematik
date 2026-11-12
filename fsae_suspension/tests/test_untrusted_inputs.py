@@ -321,10 +321,8 @@ def test_track_from_path_refuses_a_bad_coordinate(bad):
 
 
 def test_track_from_path_refuses_short_mismatched_or_bad_step():
-    with pytest.raises(ValueError, match="needs at least 3"):
-        laptime.track_from_path([0, 1], [0, 1])
-    with pytest.raises(ValueError, match="same length, got 6 and 5"):
-        laptime.track_from_path(XS, YS[:5])
+    assert laptime.track_from_path([0, 1], [0, 1]).segments == []     # too short is an empty track, as before
+    assert laptime.track_from_path(XS, YS[:5]).segments == []          # ragged: empty track, as before
     for ds in (0.0, -1.0, float("nan"), float("inf")):
         with pytest.raises(ValueError, match="track step ds"):
             laptime.track_from_path(XS, YS, ds=ds)
@@ -376,7 +374,7 @@ def test_lap_check_from_a_speed_trace_refuses_bad_samples():
     t, v = list(range(10)), [30.0] * 10
     assert ev_electrical_check.check_lap_from_speed_csv(v, t, p) is not None
     cases = [(v[:5] + [float("nan")] + v[6:], t, "speed trace speed"), (v, t[:5] + [float("inf")] + t[6:], "speed trace time"),
-             (v[:2], t[:2], "needs at least 3"), (v, t[:9], "one speed per time, got 10 and 9"),
+             ([], [], "needs at least 1"), (v, t[:9], "one speed per time, got 10 and 9"),
              (v, [0, 1, 2, 2, 4, 5, 6, 7, 8, 9], "time must rise"), (v, list(range(9, -1, -1)), "time must rise"),
              (v[:5] + [1001.0] + v[6:], t, "above 1000 mph")]
     for vv, tt, why in cases:

@@ -794,8 +794,8 @@ def check_lap_from_speed_csv(
     Converts speed to m/s, integrates to get distance, then delegates to
     `check_lap_electrical`.
     """
-    t = _finite("speed trace time (s)", time_s, 3)
-    v_mph = _finite("speed trace speed (mph)", speed_mph, 3)
+    t = _finite("speed trace time (s)", time_s, 1)
+    v_mph = _finite("speed trace speed (mph)", speed_mph, 1)
     if t.size != v_mph.size:
         raise ValueError(f"the speed trace needs one speed per time, got {v_mph.size} and {t.size}")
     if np.any(np.diff(t) <= 0):

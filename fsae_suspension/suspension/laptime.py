@@ -771,9 +771,15 @@ def track_from_path(x, y, name: str = "Imported path", ds: float = 1.0,
     Units: metres. If you have lat/long, project to a local metric frame first
     (see `latlon_to_xy`).
     """
-    x, y = _finite("track x (m)", x, 3, _MAX_COORD_M), _finite("track y (m)", y, 3, _MAX_COORD_M)
-    if x.size != y.size:
-        raise ValueError(f"track x and y must be the same length, got {x.size} and {y.size}")
+    #  A path too short, ragged or not numeric gives an empty track, as it always has. A value that IS a number
+    #  but not a finite one (nan, inf, a unit mistake beyond 1,000 km) is refused: it would silently bend the track.
+    try:
+        _xa, _ya = np.asarray(x, float).ravel(), np.asarray(y, float).ravel()
+    except (TypeError, ValueError):
+        _xa = _ya = None
+    if _xa is not None and _xa.size == _ya.size:
+        _finite("track x (m)", _xa, 0, _MAX_COORD_M)
+        _finite("track y (m)", _ya, 0, _MAX_COORD_M)
     ds = _finite_scalar("track step ds (m)", ds, positive=True)
     try:
         x = _vec(x).ravel()
@@ -823,8 +829,8 @@ def cones_to_centerline(left_x, left_y, right_x, right_y):
     Rows may differ in length; the shorter is interpolated onto the longer's
     arc-length parameterisation so midpoints pair up sensibly. Returns (x, y).
     """
-    left_x, left_y = (_finite(f"left cone {a} (m)", v, 2, _MAX_COORD_M) for a, v in (("x", left_x), ("y", left_y)))
-    right_x, right_y = (_finite(f"right cone {a} (m)", v, 2, _MAX_COORD_M) for a, v in (("x", right_x), ("y", right_y)))
+    left_x, left_y = (_finite(f"left cone {a} (m)", v, 0, _MAX_COORD_M) for a, v in (("x", left_x), ("y", left_y)))
+    right_x, right_y = (_finite(f"right cone {a} (m)", v, 0, _MAX_COORD_M) for a, v in (("x", right_x), ("y", right_y)))
     if left_x.size != left_y.size or right_x.size != right_y.size:
         raise ValueError("each cone row needs as many x as y values")
     lx = _vec(left_x); ly = _vec(left_y)
@@ -855,7 +861,7 @@ def latlon_to_xy(lat, lon):
     fraction of a percent over an FSAE-sized site (a few hundred metres), which is
     far below the curvature smoothing noise. Returns (x_east_m, y_north_m).
     """
-    lat, lon = _finite("latitude", lat), _finite("longitude", lon)
+    lat, lon = _finite("latitude", lat, 0), _finite("longitude", lon, 0)
     if lat.size != lon.size:
         raise ValueError(f"latitude and longitude must be the same length, got {lat.size} and {lon.size}")
     if np.any(np.abs(lat) > 90.0) or np.any(np.abs(lon) > 180.0):
@@ -950,7 +956,7 @@ def compare_line_vs_centerline(veh, x, y, track_width_m: float = 3.0,
     track width reads out directly in seconds. Returns a dict with both tracks,
     both LapResults, and the time gained. Never raises.
     """
-    x, y = _finite("track x (m)", x, 3, _MAX_COORD_M), _finite("track y (m)", y, 3, _MAX_COORD_M)
+    x, y = _finite("track x (m)", x, 0, _MAX_COORD_M), _finite("track y (m)", y, 0, _MAX_COORD_M)
     track_width_m = _finite_scalar("track width (m)", track_width_m, positive=True)
     pt = pt or Powertrain()
     base_track = track_from_path(x, y, name="Centreline", ds=ds)
