@@ -474,3 +474,66 @@ def test_a_lumped_pack_heats_by_i2r_and_cools_to_ambient():
             ec.pack_temperature_along(bad_i, bad_t, r_pack_ohm=0.1, heat_capacity_j_k=1e4, temp0_k=300.0)
         assert str(err.value) == "one current per time point"
     ec.pack_temperature_along(i, t, r_pack_ohm=0.1, heat_capacity_j_k=1e-6, temp0_k=300.0, cooling_w_k=0.0)
+
+
+# ---- untrusted inputs: each guard fires at its exact boundary and says exactly what is wrong ----
+def _says(exc_info, text):
+    assert str(exc_info.value) == text
+
+
+def test_tir_tire_count_boundaries_and_message():
+    assert ec.TireLosses.from_tir("", n_tires=1).n_tires == 1
+    assert ec.TireLosses.from_tir("", n_tires=2).n_tires == 2
+    for bad in (0, True, 2.0):
+        with pytest.raises(ValueError) as e:
+            ec.TireLosses.from_tir("", n_tires=bad)
+        _says(e, f"n_tires must be a whole number of tires, got {bad!r}")
+
+
+def test_tir_value_out_of_float_range_is_refused():
+    with pytest.raises(ValueError) as e:
+        ec.TireLosses.from_tir("FNOMIN = 1e999\n")
+    _says(e, ".tir FNOMIN: inf is not a finite number")
+
+
+_P = ec.ElecParams()
+_T = [0.0, 1.0, 2.0]
+_V = [10.0, 20.0, 30.0]
+
+
+def test_speed_trace_guards_say_exactly_what_is_wrong():
+    cases = [
+        (([10.0, 20.0], _T), {}, "the speed trace needs one speed per time, got 2 and 3"),
+        ((_V, [0.0, 1.0, 1.0]), {}, "speed trace time must rise from one sample to the next"),
+        ((_V, [0.0, 2.0, 1.0]), {}, "speed trace time must rise from one sample to the next"),
+        ((_V, [0.0, float("nan"), 2.0]), {}, "speed trace time (s): 1 of 3 value(s) are not finite numbers (nan or inf)"),
+        (([10.0, float("inf"), 30.0], _T), {}, "speed trace speed (mph): 1 of 3 value(s) are not finite numbers (nan or inf)"),
+        (([10.0, 1000.5, 30.0], _T), {}, "a speed above 1000 mph in the trace: check the column and its unit"),
+        ((_V, _T), {"vehicle_mass_kg": 0.0}, "vehicle mass (kg): must be above zero, got 0"),
+        ((_V, _T), {"drivetrain_eff": float("nan")}, "drivetrain efficiency: nan is not a finite number"),
+        ((_V, _T), {"drag_cda": float("nan")}, "drag CdA (m²): nan is not a finite number"),
+        ((_V, _T), {"crr": float("inf")}, "rolling resistance: inf is not a finite number"),
+    ]
+    for (speed, time), kw, msg in cases:
+        with pytest.raises(ValueError) as e:
+            ec.check_lap_from_speed_csv(speed, time, _P, **kw)
+        _says(e, msg)
+
+
+def test_speed_trace_edges_that_are_accepted():
+    assert ec.check_lap_from_speed_csv([10.0, 1000.0, 30.0], _T, _P) is not None     # exactly 1000 mph passes
+    one = ec.check_lap_from_speed_csv([10.0], [0.0], _P)                            # one sample is too little data,
+    assert not one.ok                                                               # reported, not refused
+
+
+def test_a_non_finite_electrical_result_is_refused(monkeypatch):
+    good = ec.check_lap_from_speed_csv(_V, _T, _P)
+    bad = ec.check_lap_from_speed_csv(_V, _T, _P)
+    bad.energy_used_kwh = float("nan")
+    monkeypatch.setattr(ec, "check_lap_electrical", lambda *a, **k: bad)
+    with pytest.raises(ValueError) as e:
+        ec.check_lap_from_speed_csv(_V, _T, _P)
+    _says(e, "the electrical check gave a result that is not a finite number: one of the pack, motor "
+             "or vehicle parameters is nan, infinite or far out of range")
+    monkeypatch.setattr(ec, "check_lap_electrical", lambda *a, **k: good)
+    assert ec.check_lap_from_speed_csv(_V, _T, _P) is good

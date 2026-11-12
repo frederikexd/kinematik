@@ -227,3 +227,27 @@ def test_the_wide_sweep_finds_a_peak_inside_it_with_camber():
     assert s.mu_peak(1100.0, g) == float(np.max(f30) / 1100.0)
     assert s.mu_peak(0.5, g) == float(np.max(np.abs(s.fy(a30, 0.5, g))) / 0.5) or s.mu_peak(0.5, g) == float(
         np.max(np.abs(s.fy(np.radians(np.linspace(-15, 15, 121)), 0.5, g))) / 0.5)
+
+
+# ---- coefficient and nominal-load guards: exact boundary and exact words ----
+_REQ = {"PCY1": 1.3, "PDY1": 1.0, "PDY2": -0.1, "PEY1": -0.5, "PKY1": -20.0, "PKY2": 1.5}
+
+
+def _says(exc_info, text):
+    assert str(exc_info.value) == text
+
+
+def test_non_finite_coefficients_are_named_in_order():
+    with pytest.raises(ValueError) as e:
+        tm.PacejkaLateral({**_REQ, "PKY1": float("nan"), "PCY1": float("inf"), "PDY2": 7})
+    _says(e, "Tire coefficients must be finite numbers; not finite: ['PCY1', 'PKY1']")
+    tm.PacejkaLateral({**_REQ, "PDY2": 0, "FLAG": True, "NOTE": "text"})      # ints, bools and text pass
+
+
+def test_nominal_load_must_be_a_finite_number_above_zero():
+    for bad in (0.0, -1.0, float("nan"), float("inf"), "900"):
+        with pytest.raises(ValueError) as e:
+            tm.PacejkaLateral(dict(_REQ), FNOMIN=bad)
+        _says(e, f"FNOMIN (nominal load, N) must be a finite number above zero, got {bad!r}")
+    assert tm.PacejkaLateral(dict(_REQ), FNOMIN=1e-6).FNOMIN == 1e-6
+    assert tm.PacejkaLateral(dict(_REQ), FNOMIN=900).FNOMIN == 900

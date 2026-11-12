@@ -1069,3 +1069,35 @@ def test_fuel_for_a_lap_with_auxiliary_load(aux):
     with pytest.raises(ValueError) as err:
         ice.fuel_for_lap(lap, e, g, veh, aux_power_w=-1.0)
     assert str(err.value) == "auxiliary power cannot be negative"
+
+
+# ---- dyno and fuel-map readers: each guard, its exact boundary, its exact words ----
+def _says(exc_info, text):
+    assert str(exc_info.value) == text
+
+
+def test_dyno_file_guards():
+    head, data, rpm, tq = ice._read_dyno_csv("rpm,torque_nm\n6000,60")          # one row of numbers is enough
+    assert head == ["rpm", "torque_nm"] and list(rpm) == [6000.0] and list(tq) == [60.0]
+    assert list(ice._read_dyno_csv("rpm,torque_nm\n0,60")[2]) == [0.0]           # zero rpm is a speed
+    cases = {
+        "rpm,torque_nm": "a dyno file needs a header row and at least one row of numbers",
+        "rpm,torque_nm\n6000,60\n7000\n8000,55": "dyno file row 3 has fewer values than the header has columns (2)",
+        "rpm,torque_nm\n6000": "dyno file row 2 has fewer values than the header has columns (2)",
+        "rpm,torque_nm\n6000,nan": "the dyno file holds a value that is not a finite number (nan, inf or an overflow)",
+        "rpm,torque_nm\n6000,1e999": "the dyno file holds a value that is not a finite number (nan, inf or an overflow)",
+        "speed,torque_nm\n6000,60": "no rpm column found (headers: rpm plus torque_nm, lbft, power_kw or hp)",
+        "rpm,torque_nm\n6000,60\n-1,50": "an rpm in a dyno file cannot be negative",
+    }
+    for text, msg in cases.items():
+        with pytest.raises(ValueError) as e:
+            ice._read_dyno_csv(text)
+        _says(e, msg)
+
+
+def test_a_fuel_map_that_cannot_be_fitted_says_why():
+    wl = ice.WillansLine(0.36, 150.0, 15.0)
+    with pytest.raises(ValueError) as e:
+        ice.fuel_map_from_csv(_sweep(wl) + "\n7000,50,1e-300", 599.0, 43.0)
+    _says(e, "the fuel map could not be fitted: check for a fuel or power value that is zero, negative or far out of "
+             "range")

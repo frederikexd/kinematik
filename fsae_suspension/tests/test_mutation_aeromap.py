@@ -183,3 +183,49 @@ def test_characterized_maps():
     res["csv_empty"] = [len(empty), empty.provenance is PROV, empty.reference_length_m]
     res["csv_prov"] = AeroMap.from_csv(text, provenance=PROV).provenance is PROV
     check("aeromap_maps", res)
+
+
+# ---- CSV import guards: exact row and column, exact words, exact boundaries ----
+_HDR = "roll_deg,pitch_deg,yaw_deg,ride_height_mm,speed_ms,c_lift,c_drag,c_side,aero_balance_front,converged\n"
+
+
+def _says(exc_info, text):
+    assert str(exc_info.value) == text
+
+
+def test_empty_cells_take_the_defaults_and_cells_are_trimmed():
+    m = AeroMap.from_csv(_HDR + ",,,,, -1.5 ,0.5,,,1\n")
+    (r,) = m._points.values()
+    a = r.attitude
+    assert (a.roll_deg, a.pitch_deg, a.yaw_deg, a.ride_height_mm, a.speed_ms) == (0.0, 0.0, 0.0, 30.0, 20.0)
+    assert (r.c_lift, r.c_drag, r.c_side, r.aero_balance_front) == (-1.5, 0.5, None, None)
+
+
+def test_a_bad_cell_is_named_by_row_and_column():
+    with pytest.raises(ValueError) as e:
+        AeroMap.from_csv(_HDR + "0,0,0,30,20,-1,0.5,,,1\n0,1,0,30,20,abc,0.5,,,1\n")
+    _says(e, "aero map CSV row 3, column c_lift: 'abc' is not a number")
+    with pytest.raises(ValueError) as e:
+        AeroMap.from_csv(_HDR + "0,0,0,30,20,-1,inf,,,1\n")
+    _says(e, "aero map CSV row 2, column c_drag: 'inf' is not a finite number")
+    with pytest.raises(ValueError) as e:
+        AeroMap.from_csv(_HDR + "nan,0,0,30,20,-1,0.5,,,1\n")
+    _says(e, "aero map CSV row 2, column roll_deg: 'nan' is not a finite number")
+
+
+def test_speed_must_be_above_zero():
+    with pytest.raises(ValueError) as e:
+        AeroMap.from_csv(_HDR + "0,0,0,30,0,-1,0.5,,,1\n")
+    _says(e, "aero map CSV row 2, column speed_ms: 0 m/s is not a speed a coefficient can be referred to")
+    with pytest.raises(ValueError) as e:
+        AeroMap.from_csv(_HDR + "0,0,0,30,-2.5,-1,0.5,,,1\n")
+    _says(e, "aero map CSV row 2, column speed_ms: -2.5 m/s is not a speed a coefficient can be referred to")
+    (r,) = AeroMap.from_csv(_HDR + "0,0,0,30,0.5,-1,0.5,,,1\n")._points.values()
+    assert r.attitude.speed_ms == 0.5
+
+
+def test_a_file_that_is_not_csv_is_a_value_error():
+    with pytest.raises(ValueError) as e:
+        AeroMap.from_csv(_HDR + "0,0,0,30,20," + "9" * 200_000 + ",0.5,,,1\n")
+    assert str(e.value).startswith("aero map file is not a readable CSV (field larger than field limit")
+    assert str(e.value).endswith(")")

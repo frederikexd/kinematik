@@ -123,3 +123,62 @@ def test_the_fit_statistics_on_noisy_data_and_the_defaults(capsys):
     edge = tf.fit_mf52_lateral(np.append(SA, 0.05), np.append(FZ, 50.5), np.append(FY, 40.0), fnomin=900.0)
     assert edge["n"] == len(SA) + 1
     assert tf.fit_from_ttc_channels({"SA": np.degrees(SA), "FZ": FZ, "FY": FY}, fnomin=777.0)["FNOMIN"] == 777.0
+
+
+# ---- the channel wrapper's guards: exact boundary and exact words ----
+_SA = np.linspace(-12, 12, 60)
+_CH = {"SA": _SA, "FZ": np.full(60, 1000.0), "FY": -1500 * np.tanh(_SA / 4)}
+
+
+def _says(exc_info, text):
+    assert str(exc_info.value) == text
+
+
+def test_channels_need_eight_finite_samples_each():
+    with pytest.raises(ValueError) as e:
+        tf.fit_from_ttc_channels({k: v[:7] for k, v in _CH.items()})
+    _says(e, "tire data channel FY: needs at least 8 value(s), got 7")
+    with pytest.raises(ValueError) as e:                         # eight pass the channel check; the fit wants ~50
+        tf.fit_from_ttc_channels({k: v[:8] for k, v in _CH.items()})
+    _says(e, "Only 8 usable points — need at least ~50 spanning a range of slip and load to fit a Magic Formula.")
+    with pytest.raises(ValueError) as e:
+        tf.fit_from_ttc_channels({**_CH, "FZ": np.where(_SA == _SA[3], np.inf, _CH["FZ"])})
+    _says(e, "tire data channel FZ: 1 of 60 value(s) are not finite numbers (nan or inf)")
+
+
+def test_channels_must_have_one_length():
+    with pytest.raises(ValueError) as e:
+        tf.fit_from_ttc_channels({**_CH, "FZ": _CH["FZ"][:59]})
+    _says(e, "tire data channels must be the same length, got {'FY': 60, 'FZ': 59, 'SA': 60}")
+    with pytest.raises(ValueError) as e:
+        tf.fit_from_ttc_channels({**_CH, "IA": np.zeros(30)})
+    _says(e, "tire data channels must be the same length, got {'FY': 60, 'FZ': 60, 'SA': 60, 'IA': 30}")
+    assert tf.fit_from_ttc_channels({**_CH, "IA": np.zeros(60)})["n"] == 60
+
+
+def test_a_fit_that_is_not_finite_is_refused():
+    with pytest.raises(ValueError) as e:                         # constant force: finite rmse, no r2
+        tf.fit_from_ttc_channels({**_CH, "FY": np.full(60, 25.0)})
+    _says(e, "the tire fit did not converge to finite numbers: the data may be constant, far out of range, or in the "
+             "wrong units")
+
+
+def test_too_little_spread_for_the_fit_is_a_value_error(monkeypatch):
+    def _short(*a, **k):
+        raise IndexError("index 0 is out of bounds")
+    monkeypatch.setattr(tf, "fit_mf52_lateral", _short)
+    with pytest.raises(ValueError) as e:
+        tf.fit_from_ttc_channels(_CH)
+    _says(e, "the tire data does not cover enough loads and slip angles to fit a lateral model")
+
+
+def test_every_channel_is_checked_by_name():
+    with pytest.raises(ValueError) as e:
+        tf.fit_from_ttc_channels({**_CH, "SA": np.where(_SA == _SA[5], np.nan, _SA)})
+    _says(e, "tire data channel SA: 1 of 60 value(s) are not finite numbers (nan or inf)")
+    with pytest.raises(ValueError) as e:
+        tf.fit_from_ttc_channels({**_CH, "IA": np.full(60, np.inf)})
+    _says(e, "tire data channel IA: 60 of 60 value(s) are not finite numbers (nan or inf)")
+    with pytest.raises(ValueError) as e:
+        tf.fit_from_ttc_channels({**_CH, "SA": _SA[:50]})
+    _says(e, "tire data channels must be the same length, got {'FY': 60, 'FZ': 60, 'SA': 50}")
