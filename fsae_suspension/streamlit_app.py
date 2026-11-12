@@ -1803,11 +1803,36 @@ AMBER, CYAN, RED, DIM = "#ffb02e", "#37e0d0", "#ff5a52", "#8d99a6"
 # --------------------------------------------------------------------------- #
 #  State
 # --------------------------------------------------------------------------- #
+def _vehicle_with_defaults(saved) -> dict:
+    """A saved workspace's vehicle block over the defaults: a field the save left out, blank (None) or
+    non-numeric where a number belongs takes the default, so one empty field never breaks every page."""
+    import math as _m
+    vp = VehicleParams().__dict__.copy()
+    if not isinstance(saved, dict):
+        return vp
+    for k, v in saved.items():
+        d = vp.get(k)
+        if v is None:
+            continue
+        if isinstance(d, (int, float)) and not isinstance(d, bool):
+            try:
+                if isinstance(v, bool) or not _m.isfinite(float(v)):
+                    continue
+            except (TypeError, ValueError):
+                continue
+        vp[k] = v
+    return vp
+
+
 def init_state():
     if "hp" not in st.session_state:
         st.session_state.hp = Hardpoints.default().as_dict()
     if "vp" not in st.session_state:
         st.session_state.vp = VehicleParams().__dict__.copy()
+    else:
+        _fixed_vp = _vehicle_with_defaults(st.session_state.vp)
+        if _fixed_vp != st.session_state.vp:          # a blank or non-numeric field from an old save
+            st.session_state.vp = _fixed_vp
     # Tire model: start on the generic default so grip/balance run on a real Magic
     # Formula from the first load. Replaced by a TTC-fitted tire when one is loaded.
     if "tire_coeffs" not in st.session_state:
@@ -2602,7 +2627,7 @@ def apply_project_bundle(data: dict, include_shared_ledger: bool = True) -> None
         # before the widget on the forced rerun.
         st.session_state["_pending_topology"] = data["topology"]
     if "vehicle" in data:
-        st.session_state.vp = data["vehicle"]
+        st.session_state.vp = _vehicle_with_defaults(data["vehicle"])
     if isinstance(data.get("integration_document"), dict):
         # The comprehensive committed-feature document travels with the
         # project so a loaded backup carries the same combined deliverable.
@@ -3266,14 +3291,17 @@ def _from_si(unit):
 def _shown(v, unit, nd=0):
     """A stored SI value in the active units, as text (an input echo, not a
     computed result, so it carries no provenance badge)."""
-    return format(units_mod.from_metric(float(v), unit), f".{nd}f")
+    try:
+        return format(units_mod.from_metric(float(v), unit), f".{nd}f")
+    except (TypeError, ValueError):
+        return "—"                      # a blank field shows as blank, never as a crash
 
 
 def _car_basics_summary():
     vp = st.session_state.vp
     return (f"{_shown(vp['mass'], 'kg')} {units_mod.label('kg')} · CG "
             f"{_shown(vp['cg_height'], 'mm')} {units_mod.label('mm')} · "
-            f"{round(vp['weight_dist_front'] * 100)} % front")
+            f"{_shown(vp['weight_dist_front'] * 100 if isinstance(vp.get('weight_dist_front'), (int, float)) else None, '')} % front")
 
 
 def _springs_summary():
