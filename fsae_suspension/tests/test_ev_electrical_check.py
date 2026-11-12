@@ -247,3 +247,35 @@ def test_the_speed_trace_must_exist_and_have_two_points(tmp_path):
         ec.load_speed_vs_time(str(tmp_path / "i.xlsx"))
     with pytest.raises(ValueError, match="Could not open"):
         ec.load_speed_vs_time(str(tmp_path / "nope.xlsx"))
+
+
+# ---- untrusted speed traces and .tir files are refused with a reason, never computed into nonsense ----
+@pytest.mark.parametrize("n", [0, -1, 2.5, True, "4"])
+def test_tir_refuses_a_tire_count_that_is_not_a_whole_number(n):
+    with pytest.raises(ValueError, match="n_tires"):
+        ec.TireLosses.from_tir("FNOMIN = 1000\n", n_tires=n)
+
+
+def test_speed_trace_needs_one_speed_per_time():
+    with pytest.raises(ValueError, match="one speed per time"):
+        ec.check_lap_from_speed_csv([10.0, 20.0, 30.0], [0.0, 1.0], P)
+
+
+@pytest.mark.parametrize("t", [[0.0, 1.0, 1.0], [0.0, 2.0, 1.0]])
+def test_speed_trace_time_must_rise(t):
+    with pytest.raises(ValueError, match="must rise"):
+        ec.check_lap_from_speed_csv([10.0, 20.0, 30.0], t, P)
+
+
+def test_speed_trace_in_the_wrong_unit_is_refused():
+    with pytest.raises(ValueError, match="1000 mph"):
+        ec.check_lap_from_speed_csv([10.0, 2000.0, 30.0], [0.0, 1.0, 2.0], P)
+
+
+def test_a_non_finite_result_is_refused(monkeypatch):
+    t = np.linspace(0.0, 20.0, 21)
+    bad = ec.check_lap_from_speed_csv(np.full_like(t, 30.0), t, P)
+    bad.energy_used_kwh = float("nan")
+    monkeypatch.setattr(ec, "check_lap_electrical", lambda *a, **k: bad)
+    with pytest.raises(ValueError, match="not a finite number"):
+        ec.check_lap_from_speed_csv(np.full_like(t, 30.0), t, P)
