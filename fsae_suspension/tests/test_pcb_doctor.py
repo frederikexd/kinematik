@@ -1561,3 +1561,22 @@ class TestVerifiedFix(unittest.TestCase):
         self.assertIsNone(out["text"])                           # nothing safe to hand back
         self.assertTrue(all(not fx.auto for fx in rep0.fixes if fx.net == "FAN_PWR"))
         self.assertTrue(any("withdrawn" in fx.note for fx in rep0.fixes))
+
+
+class TestFixHonoursBoardRules(unittest.TestCase):
+    def test_net_class_clearance_wider_than_the_default_is_kept(self):
+        from suspension.pcb_doctor import TraceFix, apply_fixes, widening_conflict
+        txt = ('(kicad_pcb (version 20211014) (layers (0 "F.Cu" signal)) (net 0 "") (net 1 "A") (net 2 "B")'
+               ' (net_class Default "" (clearance 0.5) (add_net A) (add_net B))'
+               ' (segment (start 0 0) (end 30 0) (width 0.2) (layer "F.Cu") (net 1))'
+               ' (segment (start 0 1.0) (end 30 1.0) (width 0.2) (layer "F.Cu") (net 2)))')
+        b = parse_kicad_pcb(txt)
+        self.assertEqual(b.clearance_mm, {1: 0.5, 2: 0.5})
+        #  0.8 mm leaves 0.5 mm... to 0.1 mm half-width: gap 1.0 - 0.4 - 0.1 = 0.5, allowed; 1.0 mm leaves 0.4, refused
+        self.assertIsNone(widening_conflict(b, 0, 0.8))
+        clash = widening_conflict(b, 0, 1.0)
+        self.assertEqual((clash[0], round(clash[1], 3), clash[2]), ("B", 0.4, 0.5))
+        fx = TraceFix(net="A", nid=1, seg_index=0, old_width_mm=0.2, new_width_mm=1.0, layer="F.Cu")
+        _, applied = apply_fixes(b, [fx])
+        self.assertEqual(applied, [])
+        self.assertIn("needs 0.5 mm", fx.note)

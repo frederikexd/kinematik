@@ -638,6 +638,7 @@ def parse_kicad_pcb(text: str) -> PcbBoard:
     #  KiCad), found by the electrical benchmark's held-out boards.
     _drill_default = 0.3
     _drill_by_net: dict = {}
+    _clear_by_name: dict = {}
     #  KiCad before 6 (file version before 20200811) stored a pour shrunk by half its minimum width and stroked the
     #  outline back on when drawing; reading the bare polygon loses 7-9 % of the copper (benchmark addendum 8).
     _ver = _child(root, "version")
@@ -655,6 +656,11 @@ def parse_kicad_pcb(text: str) -> PcbBoard:
                 for an in _children(node, "add_net"):
                     if _atoms(an):
                         _drill_by_net[str(_atoms(an)[0].value).strip('"')] = _floats(vd)[0]
+            cl = _child(node, "clearance")              # the class's copper clearance (mm), KiCad 5-7 boards
+            if cl and _floats(cl) and math.isfinite(_floats(cl)[0]):
+                for an in _children(node, "add_net"):
+                    if _atoms(an):
+                        _clear_by_name[str(_atoms(an)[0].value).strip('"')] = _floats(cl)[0]
 
     _unreadable_tracks = 0
     _unfilled_zones: list = []          # (net id, first and one-past-last index of its outlines in board.zones)
@@ -798,6 +804,7 @@ def parse_kicad_pcb(text: str) -> PcbBoard:
         board.notes.append(
             "The pours in this file were saved without being filled. Their drawn outlines are used as the copper; "
             "fill all zones in KiCad (B) and save again for the real shapes.")
+    board.clearance_mm = {nid: _clear_by_name[nm] for nid, nm in board.nets.items() if nm in _clear_by_name}
     if _unreadable_tracks:
         board.notes.append(
             f"{_unreadable_tracks} track(s) in the file have no usable width, position or net and were left out. "
@@ -2329,7 +2336,9 @@ def widening_conflict(board: PcbBoard, seg_index: int, new_width_mm: float,
         """Clearance (mm) between this segment's net and `other_net`: the LV default, or IPC-2221 B4 when either
         carries more than 60 V."""
         v = max(abs(volts.get(sg.net, 0.0)), abs(volts.get(other_net, 0.0)))
-        return max(min_clear_mm, clearance_required_mm(v)) if v > 60.0 else min_clear_mm
+        rules = getattr(board, "clearance_mm", {}) or {}
+        lv = max(min_clear_mm, rules.get(sg.net, 0.0), rules.get(other_net, 0.0))   # the board's own net-class rule
+        return max(lv, clearance_required_mm(v)) if v > 60.0 else lv
 
     for o in board.segments:
         if o.net == sg.net or o.layer != sg.layer:
