@@ -23,10 +23,14 @@ KinematiK against the recorded references on every run without needing the tools
 | **B4.** Net resistance vs a 2-D copper solve, round 3 (as first published) | 888 demo-board nets; 395 held-out nets on 13 FS team boards | 2 % per net | Held out: 87.8 % within 2 %, 98.2 % within 5 %. **Superseded by B5:** the reference read thin diagonal tracks up to 8 % high |
 | **B5.** Net resistance vs the **corrected** 2-D solve | 681 demo-board nets (design); **142 sampled held-out nets on FS team boards** | 2 % per net | **Still misses 2 % on about one net in eight, and errs high when it misses.** Held out: 87.3 % within 2 %, 97.9 % within 5 %, 98.6 % within 10 %, median +0.55 %, **worst low −3.1 %**, worst high +21.2 %. Before round 3: 2.8 % within 2 %, median +16.9 % |
 | **A2.** Board reading vs **Altium Designer 26.11.1** | 3 boards imported into Altium and saved as binary `.PcbDoc`: 9,429 tracks, 180 arcs, 901 vias, 2,763 pads, 346 components, 467 nets | exact counts; length 0.1 % | **Pass after two reader fixes it exposed.** Every count equals Altium's own; net lengths within 0.04 % of KiCad's original. First read: StickHub 289 pads and 90 components (Altium: 278, 94) |
+| **A3.** Board reading of **native Altium boards** vs Altium Designer 26.11.1 | 6 Formula SAE boards designed in Altium (Queen's FSAE), never converted: 2,226 tracks, 21 arcs, 201 vias, 1,130 pads, 328 components | exact counts | **6 of 6 boards, 30 of 30 counts identical** |
+| **A4.** Board reading of **KiCad 8/9 boards** vs **KiCad 9.0.3** | 4 FS team boards saved in KiCad 8–9 (PUT Motorsport BMS LV, BMS HV master, Frontbox; WindingMotor distribution hub): 6,068 tracks, 50 arcs, 3,398 vias, 2,731 pads, 772 components, 505 routed nets | exact counts; length 0.1 % | **4 of 4 boards, every count identical.** Worst net length 0.015 % |
+| **B6.** Net resistance on **KiCad 8/9 boards** (held out, KinematiK frozen at a3805c1) vs the corrected 2-D solve on KiCad 9.0.3's shapes | 100 nets drawn with seed 20261112; 95 solved by the reference | 2 % per net | **Miss.** 70 of 95 within 2 % (73.7 %), 85 within 5 % (89.5 %), **95 of 95 within 10 %**, median +0.81 %, worst −9.1 % / +6.9 %. Every miss is a short pad-to-pad net (2–9 tracks) |
+| **B7.** Net resistance by the **sheet solve** between the 1-D worst pair (held out, frozen 96ca8c4) | 100 KiCad 8/9 nets B6 never sampled, seed 20261113 | 2 % per net | **92 of 92 refined nets within 2 %**, worst −1.3 % / +1.2 %; rate ≥ 96.8 % at 95 % confidence. 8 nets with repeated pad names unscored |
 | **C.** Microstrip impedance vs field solver | 5 single-ended, 6 differential | 5 % / 10 % | **Round 1 miss:** single-ended −8.3 % and −6.4 % at the range ends. Formula replaced. **Round 2, unseen geometries: 10 of 10**, worst 3.4 % |
 | **C2.** Microstrip impedance vs **Altium Designer 26.11.1** | the same 21 cross-sections in Altium's Layer Stack Manager, plus 5 extras | 5 % / 10 % | **21 of 21.** Single-ended worst −1.9 %, differential worst +4.0 %. Altium and atlc agree within 1.6 % on every case |
 | **D.** Trace heating vs **NBS 1956 measurements** (the data behind IPC-2221) | 44 reliably read points, 10–100 °C rise (10 more at 4–16 sq mil left out) | KinematiK ≤ 1.05 × measured at every point | **Plain IPC-2221 missed on 2** (wide traces at 10 °C: +5 %, +8 %). KinematiK now uses IPC-2221 × 0.975: **44 of 44**, worst +4.96 %, median 0.89 × measured. Calibrated on these points, so a calibration check, not a validation |
-| **E.** Nets with copper pours: KinematiK's with-pour estimate vs a 2-D solve including KiCad's filled pour | 6 demo pour nets (design); **17 held-out pour nets on FS team boards** | 2 % per net | **Miss.** Held out: 35 % within 2 %, 71 % within 5 %, 76 % within 10 %, median +2.6 %, worst +47 %. **Never below the reference** (worst +0.3 %). Demo: all 6 within 5 % (+0.3 to +3.5 %). Large planes over the memory cap left out |
+| **E.** Nets with copper pours: KinematiK's with-pour estimate vs a 2-D solve of KiCad's filled copper | Round 1: 17 held-out nets. Rounds 3–4: 54 pour nets of the KiCad 8/9 boards | 2 % per net | Round 1 **miss** (35 %). Round 3 held out: **44 of 50 within 2 %, the 6 misses low** (grid, empty pours). Round 4 (grid check) held out: 5 of 5 converged nets within 2 %. Large planes not estimated |
 
 ## A. Does KinematiK read a board the way KiCad does?
 
@@ -141,6 +145,70 @@ saved each as a binary `.PcbDoc`, and read Altium's own counts from Board Inform
   original, the only difference is three zero-length tracks on StickHub that Altium's importer drops. The routed
   length of all 467 nets is within 0.04 % of KiCad's.
 
+## A3. Boards designed in Altium
+
+A2's boards started in KiCad. Plan addendum 7 adds six boards Queen's Formula SAE designed in Altium (`qfsae/pcb`:
+PDP_V3, BSPD_002, Q23_BRAKE_LIGHT_O1, Analog to CAN Rev2, PMBoard, Triangular_Brakelight), never converted. The
+author opened each in Altium Designer 26.11.1 and read components, pads and vias from Board Information and copper
+tracks and arcs with the PCB Filter (`IsTrack And OnSignal`, `IsArc And OnSignal`)
+(`benchmarks/electrical/altium/results_native.json`).
+
+| Board | Components | Pads | Vias | Tracks | Arcs |
+|---|---|---|---|---|---|
+| PDP_V3 | 52 | 329 | 53 | 501 | 0 |
+| BSPD_002 | 75 | 242 | 39 | 824 | 1 |
+| BRAKE_LIGHT_O1 | 73 | 147 | 21 | 160 | 0 |
+| Analog to CAN Rev2 | 29 | 116 | 23 | 218 | 0 |
+| PMBoard | 76 | 250 | 65 | 386 | 0 |
+| Triangular_Brakelight | 23 | 46 | 0 | 137 | 20 |
+
+**KinematiK reads every one of the 30 counts exactly as Altium does.** Pads that belong to no component are kept
+under a placeholder that the fix report no longer counts as a component (it had read 76 components on BSPD_002).
+
+## A4 and B6. Boards saved in KiCad 8 and 9
+
+Plan addendum 7 and its amendment. The author could not install KiCad 9, so KiCad 9.0.3 (Ubuntu 25.10's package)
+ran in an isolated Ubuntu 25.10 root in the benchmark workspace, driving the kit's `export_kicad9.py`
+(`benchmarks/electrical/kicad9/`). The kit as first shipped failed on KiCad 9 before writing anything (vias take a
+layer for their width; a pad's parent no longer has `GetReference`); it was fixed without changing what it writes.
+
+- **Reading (A4): pass.** On all four boards every count equals KiCad 9's (tracks, arcs, vias, pads, components)
+  and the routed length of all 505 nets is within 0.015 %.
+- **Net resistance (B6, held out): miss.** 100 nets drawn with `random.Random(20261112)` from the 452 trace-only nets
+  KinematiK solves on these boards, KinematiK frozen at a3805c1, the corrected 2-D solve on KiCad 9's own shapes.
+  The reference returned no value on 5 (four long signal nets on the distribution hub and one high-voltage net on
+  the BMS master); they are counted, not scored. On the other 95: 70 within 2 % (73.7 %), 85 within 5 %, **all 95 within
+  10 %**, median +0.81 %, worst −9.1 % and +6.9 %.
+- **Where it misses.** Every net off by more than 4 % is a short pad-to-pad link of 2–9 tracks (gate resistors,
+  bootstrap capacitors, feedback dividers). On those the copper under and around the pads is most of the resistance,
+  and KinematiK's 1-D model of how current enters a pad is off by a few percent either way. These boards have more of
+  them than the round-3 team boards (87.3 % within 2 % there).
+- **What it means for the checks.** The model's 1.10 margin alone falls short on the worst net by 0.01 %
+  (0.909 × 1.10 = 0.9999). The brown-out check also assumes copper up to 10 % thin (× 1/0.90), so its bound is
+  1.22 × the estimate and covers every net here with 11 % to spare. It is not a 2 % estimator on short
+  pad-dominated nets.
+
+## B7. Net resistance by the sheet solve (the fix for B6)
+
+Plan addendum 12, registered before any number. The pour estimate's 2-D sheet solve works on any net and checks its
+own grid, so `pcb_doctor.refined_net_resistance` runs it between the 1-D model's worst pair and uses the result when
+it converges; otherwise the 1-D value stands, and the result says which was used.
+
+- **Design check** (the 95 B6 nets): 93 refined, 93 within 2 %.
+- **Held out** (`benchmarks/electrical/kicad9/net_resistance_refined.json`): 100 nets drawn with
+  `random.Random(20261113)` from the 352 trace-only nets B6 never sampled, each solved once by the reference from
+  KiCad 9.0.3's shapes. **92 refined, 92 of 92 within 2 %**, worst −1.28 % / +1.23 %, median 0.00 %. The 95 % lower
+  bound on the rate is 0.05^(1/92) = 96.8 %. On the same 92 nets the 1-D model alone scores 68 within 2 %, worst
+  +30.6 %.
+- **The other 8** are connector nets on the distribution hub whose pad names repeat. The refinement declines a pair
+  it cannot name uniquely, and the reference returns no value for them either, so they are unscored and keep the
+  1-D value with its margin.
+- **As shipped** the refinement is limited to 150,000 cells so one net takes at most a few seconds (4.6 s worst
+  here, 100 s for all 100). Under that limit 78 of the 92 refine, all 78 within 2 %; the 14 larger ones keep the 1-D
+  value (13 within 2 %, worst +2.2 %).
+- **Brown-out check:** its bound is now the larger of 1-D × 1.10 and sheet solve × 1.02, over the copper finish. It
+  cannot be less conservative than before.
+
 ## B5. Net resistance against the corrected 2-D reference
 
 Plan addendum 3 and its amendments. While looking into the nets that still missed after round 3, refining the grid
@@ -248,8 +316,9 @@ An independent check needs IPC-2152's 2009 measurements, which are not public.
 
 ## E. Nets with copper pours
 
-Plan addendum 4. KinematiK's trace-only resistance gives a pour no resistance, so on a poured net it is an upper
-bound, and the brown-out check keeps using it. `suspension/pcb_pour.py` adds a best estimate *with* the pour: a sheet
+Plan addendum 4. KinematiK's 1-D model does not mesh a pour, so on a poured net it covers only the pads its tracks
+join. (This section first called that an upper bound. It is not: see "What the brown-out check does on a pour net"
+below.) `suspension/pcb_pour.py` adds an estimate *with* the pour: a sheet
 solve of KinematiK's own reading of the file (tracks, pads, vias and the zones' `filled_polygon`) on its own grid.
 The reference is the corrected 2-D solve with KiCad's own filled zones added (`benchmarks/electrical/pours.json`).
 Planes too large for this machine's memory (1.5 million cells per layer) are left out: 6 on the demo boards and 6 on
@@ -264,7 +333,116 @@ the team boards, mostly whole-board ground planes.
 - **Not scored:** on 27 held-out nets KinematiK named two pads with the same designator and number (for example a
   part with two pad 1s), which the reference cannot tell apart, or the reference found no copper path.
 
-So the pour estimate is a conservative indicator, not yet a 2 % tool; the brown-out check doesn't use it.
+**Round 2** (addendum 6, the solve redone with the reference's discretization), held out on 43 nets: 15 within 2 %,
+every miss high. The misses came from two reading flaws: KiCad `custom` pads read as their 0.1 mm anchor (25 nets)
+and KiCad 5 pours read without their outline stroke (3 nets).
+
+**Round 3** (addendum 8) reads both. On round 2's misses it now lands within ±0.5 % wherever the reference converges.
+On ten hand-solder LED nets the reference itself keeps moving as the grid is refined (0.21 → 0.55 mΩ), so they can't be
+scored at 2 %.
+
+**Round 3 held out, KiCad 8/9 boards** (`benchmarks/electrical/kicad9/pours_round3.json`, `pours_round4.json`;
+plan addenda 8 and 9). 54 of the 63 pour nets were solved; 8 planes are over the memory cap (KinematiK returns "too
+large" for them and gives no estimate) and 4 just under it were not reached.
+- First pass, 43 nets: 19 references agreed with themselves at twice the cell size, and round 3 was within 2 % on all
+  19. The other 24 were then solved at half and a quarter cell: 23 converged, and against them round 3 was within
+  2 % on 17 and **low on 6** (−2.2 % to −6.5 %).
+- The 11 larger nets: 8 references converged, round 3 within 2 % on all 8 (worst +0.15 %).
+- **Round 3 in all: 44 of 50 held-out nets within 2 % (88 %). All 6 misses read low.**
+
+**Why it read low, and the two fixes.**
+1. *Grid.* On 4 of the 6 the answer was still rising when the cell was halved, and KinematiK solved once.
+   **Round 4** (addendum 10) solves again between the same pads at half the cell, and at a quarter if those differ by
+   more than 2 %. It returns the finest value with `grid_change_pct` and `converged`; where a finer grid does not
+   fit in memory the result is marked not converged.
+2. *Empty pours.* The other 2 stayed 5 % low after that. Each has a pour KiCad filled and left empty (an island
+   reaching no pad), and KinematiK had counted its drawn outline as copper. Such a pour is no longer copper
+   (addendum 11), which also stops it from joining pads in the connectivity check.
+
+**Round 4.**
+- *Design data* (all 43 nets of the first batch re-scored): 42 where both converge, **40 within 2 %**, worst +0.80 %.
+  The 2 misses (−4.9 %, −5.0 %) are the empty-pour nets, fixed by addendum 11 and no longer pour nets.
+- *Held out* (the 11 larger nets, never looked at before round 4 was frozen): KinematiK marked 7 converged. On the 5
+  whose reference also converges, **5 of 5 are within 2 %** (worst +0.38 %). On `/MASTER_FUSE_OUT` and `+24V` the
+  reference had not converged at its own cell size; solved again at KinematiK's final cell size (addendum 13) they
+  are −0.02 % and +0.43 %. **7 of 7 held-out converged estimates within 2 %.**
+  4 were marked not converged and are reported as such.
+- *Not finished:* `+3V3` on the BMS LV board (1.18 M cells) did not finish within 40 minutes; 3 more nets just under
+  the memory cap were not reached.
+
+**The nets "the reference could not resolve" (addendum 13).** On 15 design nets the reference kept climbing at every
+grid refinement. The fault was in the reference: it put a pad's terminal at the mean of its outline points, which on
+the concave custom LED pads falls outside the pad, so current entered the pour at a point. Corrected (terminal at
+the pad's own position) and re-solved: where both KinematiK and the reference converge, **20 of 20 within 2 %**,
+worst 0.78 % (`benchmarks/electrical/pours_unresolved_design.json`). Convex pads are unaffected.
+
+**What the brown-out check does on a pour net.** Before this round it used the 1-D figure, which covers only pads
+joined by tracks, and called it conservative. It was not: a load fed through the pour was never checked (on one net
+the worst path through the pour was 40 × the tracked figure), and on 29 of 52 KiCad 9 pour nets there was no figure
+at all. Now the check solves the pour within the app's size limit and uses the larger of the two (×1.02 when the
+pour estimate converged, ×1.10 when not). Where the pour is too large to solve, the report says the drop through
+the pour was **not checked**. On the 52 KiCad 9 pour nets, 32 solve within the limit (35 s for all of them).
+
+**What the app runs, and what the benchmark leaves open.** In the app the pour solve is limited to 150,000 cells per
+net, so it answers in seconds. The nets this benchmark could not finish (`+3V3` and three others of 1.0–1.5 million
+cells) are far outside that limit; in the app they get the warning that the drop through the pour was not checked,
+never a number. The 5 estimates KinematiK labels not converged are all within 3.4 % of the reference, inside the
+×1.10 the brown-out check applies to them.
+
+**The rate, proven (addendum 14).** The claim tested is what the app does. 220 fresh pour nets were taken in a
+registered random order from 111 team boards, until 80 had both a converged app value and a converged reference.
+- **80 of 80 within 2 %.** Worst −0.27 % / +0.76 %, median |error| 0.015 %. The 95 % lower bound on the rate is
+  0.05^(1/80) = **96.3 %**. File: `benchmarks/electrical/pours_rate.json`.
+- 30 nets the app marked unconverged: all 30 also within 2 % (worst +1.28 %), well inside the ×1.10 the brown-out
+  check gives them.
+- 110 nets got no value in the app (larger than 150,000 cells, or no pad pair to measure). The app warns on those
+  that the drop through the pour was not checked.
+- Every reference converged.
+- **Limit of that sample:** the 80 scored nets come from 13 boards, mostly small signal pours. Addenda 15–16 close
+  the board spread:
+
+**Across boards (addenda 15–16).** 42 boards no electrical benchmark had used: Formula Student boards from PUT
+Motorsport and Illinois Tech, the Speeduino engine-management boards and UIUC's rocketry boards. At most 3 nets per
+board, in a registered random order.
+- **Addendum 15:** 71 nets on 26 boards, **70 within 2 %**. The miss was +3.07 % (high), on a through-hole roundrect
+  pad whose corner ratio the sheet solve did not read. Fixed: the net now reads −0.03 %.
+- **Addendum 16 (held out for the fix):** the next 53 nets on 19 of those boards, **53 of 53 within 2 %**, worst
+  −0.73 % / +0.47 %.
+- **In all:** 204 scored pour nets on 39 boards, 203 within 2 %; the one miss is fixed and held out.
+  - **Unverified estimates:** every estimate the app marked unconverged is within 1.71 % of the reference.
+  - **Never failed:** the reference converged on every net.
+
+**Large planes.** By default the app solves a pour up to 150,000 cells, so it answers in seconds; every scored net
+above is under 100 mm² (largest 41 mm²). Switching on **Solve large pours** raises the limit to 3 million cells,
+which takes minutes per large pour and can take much longer on a whole-board ground plane, and the app says so
+before it starts. The evidence at that size is the held-out large-plane set of rounds 3–4 (`pours_round4.json`):
+7 of 7 converged estimates within 2 %, on pours of 34–131 mm² solved at 0.3–1.2 million cells. That is fewer nets
+than the small-pour proof, so it is evidence rather than a proven rate. Whole-board ground planes (thousands of mm²,
+6–24 million cells) were never solved by the reference either. They stay over the limit and are still reported as
+not checked.
+
+
+**What can be said.** A pour estimate KinematiK marks converged has matched a converged reference within 2 % on
+every net where both exist: 7 of 7 held out, and 60 of 62 on design data (the 2 misses being the empty pours since
+fixed). With 7 held-out nets the 95 % lower bound on that rate is 0.05^(1/7) = 65 %: strong evidence, not yet a proven 2 % rate. Whole-board planes are not estimated,
+and the report says so.
+
+## From the file to the built board
+
+A model that is right about the file can still be wrong about the board: finished copper comes back thinner or
+thicker than ordered, and joints, connectors and crimps add resistance no layout file holds. Two things in KinematiK
+account for this:
+
+- **The brown-out check assumes copper up to 10 % thin** (`COPPER_FINISH_FACTOR`, set your fab's tolerance with
+  `diagnose(copper_finish=...)`), on top of the model's 1.10 margin.
+- **A bring-up measurement plan** (`bringup_measurements`, and a table in the fix report): for each declared power
+  net, the two pads to probe with a 4-wire milliohm meter, the resistance expected at 22 °C and the band a good board
+  falls in (the model's held-out error with the copper tolerance). A reading above the band means thin copper, a
+  cracked joint or a wrong track; the check is re-run with the measured value.
+
+Heating stays an IPC chart for an isolated trace in still air: it does not model neighbouring hot parts, planes
+underneath, airflow or enclosures. Every report says so and asks for the hottest local temperature near the trace as
+the ambient, which keeps the result on the safe side without pretending to model the rest.
 
 ## Not covered
 

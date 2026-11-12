@@ -295,13 +295,15 @@ def correlate_speed_trace(measured_distance, measured_speed,
                          note=f"could not parse traces: {e}")
         return _finish([], tr, tol, context="Speed trace")
 
-    bad = (md.size < 2 or ms.size != md.size or pd_.size < 2 or ps.size != pd_.size)
+    bad = (md.size < 2 or ms.size != md.size or pd_.size < 2 or ps.size != pd_.size
+           or not all(np.isfinite(a).all() for a in (md, ms, pd_, ps)))     # one nan sample makes every metric nan
     if bad:
         tr = TraceResult(ok=False, n_points=0, mean_measured_speed=math.nan,
                          rmse=math.nan, rmse_frac=math.nan, bias=math.nan,
                          bias_frac=math.nan, peak_speed_error=math.nan,
                          r2=math.nan, within_tol=False,
-                         note="trace arrays missing, too short, or mismatched lengths")
+                         note="trace arrays missing, too short, mismatched lengths, or holding a value "
+                              "that is not a finite number")
         return _finish([], tr, tol, context="Speed trace")
 
     # Resample prediction onto the measured distance axis. Both sims produce a

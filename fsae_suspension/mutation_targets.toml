@@ -168,7 +168,7 @@ deselect = []
 [[group]]
 name = "num"
 files = ["suspension/_num.py"]
-tests = ["tests/test_mutation_num.py"]
+tests = ["tests/test_mutation_num.py", "tests/test_untrusted_inputs.py"]
 deselect = []
 
 [[group]]
@@ -186,13 +186,13 @@ deselect = []
 [[group]]
 name = "tiremodel"
 files = ["suspension/tiremodel.py"]
-tests = ["tests/test_mutation_tiremodel.py"]
+tests = ["tests/test_mutation_tiremodel.py", "tests/test_untrusted_inputs.py"]
 deselect = []
 
 [[group]]
 name = "tirefit"
 files = ["suspension/tirefit.py"]
-tests = ["tests/test_mutation_tirefit.py"]
+tests = ["tests/test_mutation_tirefit.py", "tests/test_untrusted_inputs.py"]
 deselect = []
 
 [[group]]
@@ -329,6 +329,7 @@ files = ["suspension/chassis.py"]
 tests = [
     "tests/test_chassis.py",
     "tests/test_mutation_chassis.py",
+    "tests/test_untrusted_inputs.py",
 ]
 deselect = []
 
@@ -390,6 +391,7 @@ files = ["suspension/ice_powertrain.py"]
 tests = [
     "tests/test_mutation_ice_powertrain.py",
     "tests/test_plausibility.py",
+    "tests/test_untrusted_inputs.py",
 ]
 deselect = []
 
@@ -431,6 +433,7 @@ files = ["suspension/laptime.py"]
 tests = [
     "tests/test_laptime.py",
     "tests/test_mutation_laptime.py",
+    "tests/test_untrusted_inputs.py",
 ]
 deselect = []
 
@@ -530,6 +533,7 @@ name = "aeromap"
 files = ["suspension/aero/aeromap.py"]
 tests = [
     "tests/test_mutation_aeromap.py",
+    "tests/test_untrusted_inputs.py",
 ]
 deselect = []
 
@@ -547,6 +551,7 @@ files = ["suspension/ev_electrical_check.py"]
 tests = [
     "tests/test_mutation_ev_electrical_check.py",
     "tests/test_plausibility.py",
+    "tests/test_untrusted_inputs.py",
 ]
 deselect = []
 

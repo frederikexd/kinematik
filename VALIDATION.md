@@ -200,7 +200,8 @@ quote absolute downforce.
   97.9 % within 5 %, worst low −3.1 % (before: 2.8 % within 2 %). Still short of 2 % on about one net in eight,
   reading high. The brown-out check adds a 1.10 margin, which covers every held-out net.
 - **Nets with copper pours.** A with-pour estimate, held out on 17 team-board nets: 35 % within 2 %, 71 % within 5 %,
-  never below the reference. A conservative indicator; the brown-out check keeps the trace-only bound.
+  never below the reference. Later rounds (custom pads, KiCad 5 fills, a grid check, empty pours) and what the
+  brown-out check now does on a pour net are in `docs/ELECTRICAL_BENCHMARK.md`, section E.
 - **Trace heating.** Against the 1956 NBS measurements behind IPC-2221: plain IPC-2221 read up to 8 % optimistic on
   wide traces at a 10 °C rise; KinematiK now uses IPC-2221 × 0.975 (44 of 44 points within 5 %, calibrated on them),
   and rates inner layers like outer ones (IPC-2152).

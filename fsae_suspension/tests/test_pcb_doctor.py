@@ -6,9 +6,11 @@
 """PCB Doctor — parse a real board file, diagnose real-life failures, name the
 component, patch the traces in place, and verify the patched file re-parses."""
 
+import json
 import math
 import re
 import unittest
+from pathlib import Path
 
 from suspension.pcb_doctor import (
     parse_kicad_pcb, parse_board, sniff_format, demo_kicad_pcb,
@@ -120,25 +122,54 @@ class TestDiagnosis(unittest.TestCase):
 
 class TestAutoFix(unittest.TestCase):
     def test_patched_file_reparses_with_wider_traces(self):
+        """The demo's FAN_PWR needs 6.55 mm. On F.Cu that would run over GND, so those segments are refused and
+        turned manual with the reason; on B.Cu there is room and it is widened. The fixed file has no new clash."""
+        from suspension.pcb_doctor import widening_conflict
         board, assignments = _demo_setup(fan_a=8.0)
         rep = diagnose(board, assignments)
         patched, applied = apply_fixes(board, rep.fixes)
         self.assertTrue(applied)
+        refused = [fx for fx in rep.fixes if not fx.auto and "would leave" in fx.note]
+        self.assertTrue(refused)
+        self.assertTrue(all("'GND'" in fx.note and "reroute" in fx.note for fx in refused))
         board2 = parse_kicad_pcb(patched)
-        fan = board2.net_id("FAN_PWR")
-        old_min = min(s.width_mm for s in board.segments_of(board.net_id("FAN_PWR")))
-        new_min = min(s.width_mm for s in board2.segments_of(fan))
-        self.assertGreater(new_min, old_min)
-        # patched geometry clears ampacity at the same current
-        assignments2 = dict(assignments)
-        rep2 = diagnose(board2, assignments2)
-        amp2 = [f for f in rep2.findings
-                if f.check.startswith("trace ampacity — FAN_PWR")
-                and f.severity == Severity.FAIL]
-        self.assertFalse(amp2)
+        for fx in applied:
+            self.assertGreater(board2.segments[fx.seg_index].width_mm, fx.old_width_mm)
+            self.assertIsNone(widening_conflict(board2, fx.seg_index, board2.segments[fx.seg_index].width_mm))
+        for fx in refused:                                   # left exactly as they were
+            self.assertEqual(board2.segments[fx.seg_index].width_mm, fx.old_width_mm)
         # only widths changed: same net list, same segment count
         self.assertEqual(board.nets, board2.nets)
         self.assertEqual(len(board.segments), len(board2.segments))
+        self.assertFalse([f for f in diagnose(board2, assignments).fixes if f.auto])   # nothing left to auto-fix
+
+    def test_a_widening_with_room_clears_the_finding(self):
+        b = parse_kicad_pcb('(kicad_pcb (version 20221018) (layers (0 "F.Cu" signal)) (net 0 "") (net 1 "PWR")'
+                            ' (segment (start 0 0) (end 30 0) (width 0.2) (layer "F.Cu") (net 1)))')
+        asg = auto_assign_net_currents(b, ledger=None)
+        asg[b.net_id("PWR")] = {**asg.get(b.net_id("PWR"), {}), "current_a": 5.0, "voltage_v": 12.0,
+                                "declared": True, "assumed": False, "source": "test"}
+        rep = diagnose(b, asg)
+        patched, applied = apply_fixes(b, rep.fixes)
+        self.assertTrue(applied)
+        rep2 = diagnose(parse_kicad_pcb(patched), asg)
+        self.assertFalse([f for f in rep2.findings if f.check.startswith("trace ampacity") and f.severity == Severity.FAIL])
+
+    def test_two_nets_widened_side_by_side_cannot_close_the_gap(self):
+        from suspension.pcb_doctor import FIX_MIN_CLEARANCE_MM, TraceFix
+        b = parse_kicad_pcb('(kicad_pcb (version 20221018) (layers (0 "F.Cu" signal)) (net 0 "") (net 1 "A") (net 2 "B")'
+                            ' (segment (start 0 0) (end 30 0) (width 0.2) (layer "F.Cu") (net 1))'
+                            ' (segment (start 0 1.1) (end 30 1.1) (width 0.2) (layer "F.Cu") (net 2)))')
+        fixes = [TraceFix(net="A", nid=1, seg_index=0, old_width_mm=0.2, new_width_mm=1.0, layer="F.Cu"),
+                 TraceFix(net="B", nid=2, seg_index=1, old_width_mm=0.2, new_width_mm=1.0, layer="F.Cu")]
+        patched, applied = apply_fixes(b, fixes)                 # each alone is clear (0.5 mm gap), both are not
+        self.assertEqual([fx.net for fx in applied], ["A"])
+        self.assertFalse(fixes[1].auto)
+        self.assertIn("once the other fixes are in", fixes[1].note)
+        b2 = parse_kicad_pcb(patched)
+        gap = 1.1 - b2.segments[0].width_mm / 2 - b2.segments[1].width_mm / 2
+        self.assertGreaterEqual(gap, FIX_MIN_CLEARANCE_MM - 1e-9)
+        self.assertEqual(b.segments[0].width_mm, 0.2)            # the diagnosed board object is untouched
 
     def test_diff_pair_members_never_auto_widened(self):
         board, assignments = _demo_setup()
@@ -919,22 +950,19 @@ class TestAltiumAutoFix(unittest.TestCase):
         self.assertTrue(any(float(w[:-3]) > 200 for w in widths), widths)
 
     def test_patched_altium_board_reparses_wider_and_clears(self):
+        from suspension.pcb_doctor import widening_conflict
         board, assignments = _alt_setup(fan_a=8.0)
         rep = diagnose(board, assignments)
-        patched, _ = apply_fixes(board, rep.fixes)
+        patched, applied = apply_fixes(board, rep.fixes)
         board2 = parse_board(patched, "demo.PcbDoc")
-        fan = board2.net_id("FAN_PWR")
-        old_min = min(s.width_mm
-                      for s in board.segments_of(board.net_id("FAN_PWR")))
-        self.assertGreater(min(s.width_mm for s in board2.segments_of(fan)),
-                           old_min)
+        self.assertTrue(applied)
+        for fx in applied:                                      # wider, in the file's units, and clear of every net
+            self.assertGreater(board2.segments[fx.seg_index].width_mm, fx.old_width_mm)
+            self.assertIsNone(widening_conflict(board2, fx.seg_index, board2.segments[fx.seg_index].width_mm))
         # only widths moved
         self.assertEqual(board.nets, board2.nets)
         self.assertEqual(len(board.segments), len(board2.segments))
-        rep2 = diagnose(board2, assignments)
-        self.assertFalse([f for f in rep2.findings
-                          if f.check.startswith("trace ampacity — FAN_PWR")
-                          and f.severity == Severity.FAIL])
+        self.assertFalse([f for f in diagnose(board2, assignments).fixes if f.auto])
 
     def test_one_arc_one_width_token_patched_once(self):
         """Many segments share an arc's single WIDTH token. Two edits at
@@ -1252,3 +1280,427 @@ class TestRound3NetResistance(unittest.TestCase):
                             ' (layers (0 "F.Cu" signal) (31 "B.Cu" signal)) (net 0 "") (net 1 "SIG")\n'
                             ' (via (at 0 0) (size 0.8) (layers "F.Cu" "B.Cu") (net 1)))')
         self.assertAlmostEqual(b.vias[0].drill_mm, 0.45)
+
+
+class TestBuiltBoardTolerance(unittest.TestCase):
+    """The board from the fab is not the file: thin copper in the brown-out check, a measurement plan for bring-up."""
+
+    def test_measurement_plan_band_brackets_the_estimate(self):
+        b = parse_kicad_pcb(demo_kicad_pcb())
+        from suspension.pcb_doctor import bringup_measurements
+        rows = bringup_measurements(b)
+        self.assertTrue(rows)
+        for r in rows:
+            lo, hi = r["band_mohm"]
+            self.assertLess(lo, r["expected_mohm"])
+            self.assertGreater(hi, r["expected_mohm"])
+
+    def test_thinner_copper_assumption_raises_the_drop(self):
+        b = parse_kicad_pcb(demo_kicad_pcb())
+        asg = auto_assign_net_currents(b, ledger=None)
+        apply_demo_declarations(b, asg)
+
+        def worst(rep):
+            import re as _re
+            vals = [float(m) for f in rep.findings if f.check.startswith("IR drop")
+                    for m in _re.findall(r"drops (\\d+\\.\\d+) V", f.message)]
+            return max(vals) if vals else 0.0
+        nominal = worst(diagnose(b, asg, copper_finish=1.0))
+        thin = worst(diagnose(b, asg, copper_finish=0.8))
+        if nominal:
+            self.assertAlmostEqual(thin / nominal, 1.0 / 0.8, places=2)
+
+
+class TestPourRound3Reading(unittest.TestCase):
+    """Pour estimate round 3 (benchmark plan addendum 8): what KinematiK reads beyond a pad's anchor and a bare fill."""
+
+    def test_custom_pad_primitives_turned_with_the_pad(self):
+        b = parse_kicad_pcb(
+            '(kicad_pcb (version 20221018) (layers (0 "F.Cu" signal)) (net 0 "") (net 1 "K")'
+            ' (footprint "led" (layer "F.Cu") (at 10 10 -90) (fp_text reference "D1" (at 0 0))'
+            '  (pad "1" smd custom (at -0.4 0.5 270) (size 0.1 0.1) (layers "F.Cu") (net 1 "K")'
+            '   (options (clearance outline) (anchor circle))'
+            '   (primitives (gr_poly (pts (xy -0.15 0.25) (xy -0.15 -0.15) (xy 0 -0.15) (xy 0.2 0.05) (xy 0.2 0.25))'
+            '    (width 0.0001) (fill yes))))))')
+        p = b.footprints[0].pads[0]
+        self.assertEqual(p.primitives[0][0], "poly")
+        xs = sorted(round(x, 3) for x, _y in p.primitives[0][1])
+        ys = sorted(round(y, 3) for _x, y in p.primitives[0][1])
+        # KiCad 7's own polygon for this pad spans x 9.85..10.25 (pad at 10.5, 9.6 rotated) — checked in pcbnew
+        self.assertAlmostEqual(xs[-1] - xs[0], 0.4, places=3)
+        self.assertAlmostEqual(ys[-1] - ys[0], 0.35, places=3)
+
+    def test_kicad5_fill_is_stroked_and_lowers_the_pour_resistance(self):
+        from suspension import pcb_pour as P
+        zone = ('(zone (net 1) (net_name "P") (layer "F.Cu") (min_thickness 0.254)'
+                ' (polygon (pts (xy 0 -1) (xy 10 -1) (xy 10 1) (xy 0 1)))'
+                ' (filled_polygon (pts (xy 0.127 -0.873) (xy 9.873 -0.873) (xy 9.873 0.873) (xy 0.127 0.873))))')
+        fps = ''.join(f'(module m{i} (layer F.Cu) (at {x} 0) (fp_text reference J{i} (at 0 0))'
+                      f' (pad 1 smd rect (at 0 0) (size 0.5 1.5) (layers F.Cu) (net 1 P)))' for i, x in ((1, 0.5), (2, 9.5)))
+        txt = lambda v: f'(kicad_pcb (version {v}) (layers (0 F.Cu signal)) (net 0 "") (net 1 P) {fps} {zone})'
+        old, new = parse_kicad_pcb(txt(20171130)), parse_kicad_pcb(txt(20221018))
+        self.assertAlmostEqual(old.zones[0].stroke_mm, 0.254)
+        self.assertEqual(new.zones[0].stroke_mm, 0.0)
+        r_old = P.pour_resistance(old, old.net_id("P"))["r_ohm"]
+        r_new = P.pour_resistance(new, new.net_id("P"))["r_ohm"]
+        # the stroke adds half of 0.254 mm on each side of a 1.746 mm wide strip: about 2.0 / 1.746 wider
+        self.assertAlmostEqual(r_new / r_old, 2.0 / 1.746, delta=0.04)
+
+
+class TestPourGridCheck(unittest.TestCase):
+    """Pour estimate round 4 (plan addendum 10): the estimate checks its own grid and says whether it converged."""
+
+    def test_a_plain_strip_converges_and_says_so(self):
+        from suspension import pcb_pour as P
+        fps = ''.join(f'(footprint "m{i}" (layer "F.Cu") (at {x} 0) (property "Reference" "J{i}")'
+                      f' (pad "1" smd rect (at 0 0) (size 0.5 2) (layers "F.Cu") (net 1 "P")))' for i, x in ((1, 0.25), (2, 9.75)))
+        b = parse_kicad_pcb('(kicad_pcb (version 20221018) (layers (0 "F.Cu" signal)) (net 0 "") (net 1 "P") ' + fps +
+                            ' (zone (net 1) (net_name "P") (layer "F.Cu") (fill yes (thermal_bridge_width 0.5))'
+                            ' (filled_polygon (layer "F.Cu") (pts (xy 0 -1) (xy 10 -1) (xy 10 1) (xy 0 1)))))')
+        r = P.pour_resistance(b, b.net_id("P"))
+        self.assertTrue(r["converged"])
+        self.assertLessEqual(r["grid_change_pct"], P.GRID_TOL_PCT)
+        self.assertLess(r["h_mm"], P.pour_grid_mm(b, b.net_id("P")))          # the reported value is the finer solve
+        # 9 mm of 2 mm wide 1 oz copper between the pads at 60 C: rho L / (w t)
+        from suspension.electronics import Trace
+        want = Trace(name="t", net="t", owner_subsystem="e", width_mm=2.0, copper_oz=1.0,
+                     length_mm=9.0).resistance_ohm(temp_c=60.0)
+        self.assertAlmostEqual(r["r_ohm"] / want, 1.0, delta=0.02)
+
+    def test_no_room_for_a_finer_grid_is_reported_as_unverified(self):
+        from suspension import pcb_pour as P
+        fps = ''.join(f'(footprint "m{i}" (layer "F.Cu") (at {x} 0) (property "Reference" "J{i}")'
+                      f' (pad "1" smd rect (at 0 0) (size 0.5 2) (layers "F.Cu") (net 1 "P")))' for i, x in ((1, 0.25), (2, 9.75)))
+        b = parse_kicad_pcb('(kicad_pcb (version 20221018) (layers (0 "F.Cu" signal)) (net 0 "") (net 1 "P") ' + fps +
+                            ' (zone (net 1) (net_name "P") (layer "F.Cu") (fill yes (thermal_bridge_width 0.5))'
+                            ' (filled_polygon (layer "F.Cu") (pts (xy 0 -1) (xy 10 -1) (xy 10 1) (xy 0 1)))))')
+        h = P.pour_grid_mm(b, b.net_id("P"))
+        old = P.MAX_CELLS_PER_LAYER
+        P.MAX_CELLS_PER_LAYER = int(20.0 / (h * h) * 1.5)                      # room for h, not for h / 2
+        try:
+            r = P.pour_resistance(b, b.net_id("P"))
+        finally:
+            P.MAX_CELLS_PER_LAYER = old
+        self.assertFalse(r["converged"])
+        self.assertIsNone(r["grid_change_pct"])
+        self.assertAlmostEqual(r["h_mm"], h)
+
+
+class TestEmptyPours(unittest.TestCase):
+    """A pour with no stored fill (plan addendum 11)."""
+    HEAD = ('(kicad_pcb (version 20241229) (layers (0 "F.Cu" signal)) (net 0 "") (net 1 "A") (net 2 "B")'
+            ' (footprint "f" (layer "F.Cu") (at 0 0) (property "Reference" "J1")'
+            '  (pad "1" smd rect (at 1 1) (size 1 1) (layers "F.Cu") (net 1 "A"))'
+            '  (pad "2" smd rect (at 8 1) (size 1 1) (layers "F.Cu") (net 1 "A")))')
+    EMPTY = ' (zone (net 1) (net_name "A") (layer "F.Cu") (polygon (pts (xy 0 0) (xy 10 0) (xy 10 2) (xy 0 2))))'
+    FILLED_B = (' (zone (net 2) (net_name "B") (layer "F.Cu") (polygon (pts (xy 0 5) (xy 10 5) (xy 10 7) (xy 0 7)))'
+                ' (filled_polygon (layer "F.Cu") (pts (xy 0 5) (xy 10 5) (xy 10 7) (xy 0 7))))')
+    KEEPOUT = (' (zone (net 0) (net_name "") (layer "F.Cu") (keepout (tracks not_allowed))'
+               ' (polygon (pts (xy 20 0) (xy 30 0) (xy 30 2) (xy 20 2))))')
+
+    def test_empty_pour_in_a_filled_board_is_not_copper(self):
+        b = parse_kicad_pcb(self.HEAD + self.EMPTY + self.FILLED_B + self.KEEPOUT + ")")
+        self.assertEqual([z.net for z in b.zones if z.net], [2])
+        self.assertNotIn(1, b.zone_nets)
+        self.assertEqual(sum("no filled copper" in n for n in b.notes), 1)
+        self.assertIn("nets: A)", " ".join(b.notes))
+
+    def test_board_saved_without_any_fill_keeps_outlines_and_says_so(self):
+        b = parse_kicad_pcb(self.HEAD + self.EMPTY + self.KEEPOUT + ")")
+        self.assertEqual([z.net for z in b.zones if z.net], [1])
+        self.assertIn(1, b.zone_nets)
+        self.assertTrue(any("saved without being filled" in n for n in b.notes))
+
+
+class TestRefinedNetResistance(unittest.TestCase):
+    """Plan addendum 12: the sheet solve between the 1-D model's worst pair, and what the brown-out check does with it."""
+
+    def _board(self, body):
+        return TestRound3NetResistance._board(body)
+
+    def test_a_plain_track_is_refined_and_agrees_with_rho_l_over_a(self):
+        from suspension.pcb_doctor import refined_net_resistance
+        b = self._board(' (segment (start 0 0) (end 20 0) (width 0.25) (layer "F.Cu") (net 1))\n')
+        r = refined_net_resistance(b, b.net_id("SIG"))
+        self.assertEqual(r["source"], "sheet solve")
+        self.assertAlmostEqual(r["r_ohm"] / TestRound3NetResistance._r(0.25, 19.0), 1.0, delta=0.02)
+        self.assertAlmostEqual(r["r_ohm"] / r["r_1d_ohm"], 1.0, delta=0.04)
+
+    def test_falls_back_to_the_1d_value_when_the_net_is_too_large(self):
+        from suspension import pcb_doctor as D
+        b = self._board(' (segment (start 0 0) (end 20 0) (width 0.25) (layer "F.Cu") (net 1))\n')
+        old = D.REFINE_MAX_CELLS
+        D.REFINE_MAX_CELLS = 100
+        try:
+            r = D.refined_net_resistance(b, b.net_id("SIG"))
+        finally:
+            D.REFINE_MAX_CELLS = old
+        self.assertEqual(r["source"], "1-D")
+        self.assertEqual(r["r_ohm"], r["r_1d_ohm"])
+
+    def test_brownout_bound_is_never_below_the_1d_bound(self):
+        """The check takes the larger of 1-D × 1.10 and sheet × 1.02, so refining can only make it stricter."""
+        from suspension import pcb_doctor as D
+        self.assertGreaterEqual(D.NET_R_UPPER_FACTOR, 1.10)
+        self.assertGreater(D.SHEET_UPPER_FACTOR, 1.0)
+        src = Path(D.__file__).read_text(encoding="utf-8")
+        self.assertIn('r_up = max(r_up, ref_["r_ohm"] * SHEET_UPPER_FACTOR)', src)
+
+
+class TestBrownoutThroughAPour(unittest.TestCase):
+    """Plan addendum 13: a load fed through a pour is checked through the pour, and an unsolved pour is said out loud."""
+    #  Two pads 60 mm apart joined only by a 0.6 mm wide filled strip; a third pad next to the first joined by a track.
+    BOARD = ('(kicad_pcb (version 20221018) (layers (0 "F.Cu" signal)) (net 0 "") (net 1 "VCC")'
+             ' (footprint "f" (layer "F.Cu") (at 0 0) (property "Reference" "J1")'
+             '  (pad "1" smd rect (at 0 0) (size 1 1) (layers "F.Cu") (net 1 "VCC")))'
+             ' (footprint "f" (layer "F.Cu") (at 3 0) (property "Reference" "C1")'
+             '  (pad "1" smd rect (at 0 0) (size 1 1) (layers "F.Cu") (net 1 "VCC")))'
+             ' (footprint "f" (layer "F.Cu") (at 60 0) (property "Reference" "U1")'
+             '  (pad "1" smd rect (at 0 0) (size 1 1) (layers "F.Cu") (net 1 "VCC")))'
+             ' (segment (start 0 0) (end 3 0) (width 1.0) (layer "F.Cu") (net 1))'
+             ' (zone (net 1) (net_name "VCC") (layer "F.Cu") (fill yes (thermal_bridge_width 0.5))'
+             '  (filled_polygon (layer "F.Cu") (pts (xy -0.5 -0.3) (xy 60.5 -0.3) (xy 60.5 0.3) (xy -0.5 0.3)))))')
+
+    def _findings(self, **patch):
+        from suspension import pcb_doctor as D
+        b = parse_kicad_pcb(self.BOARD)
+        asg = {b.net_id("VCC"): {"current_a": 10.0, "voltage_v": 5.0}}
+        old = {k: getattr(D, k) for k in patch}
+        for k, v in patch.items():
+            setattr(D, k, v)
+        try:
+            rep = diagnose(b, asg)
+        finally:
+            for k, v in old.items():
+                setattr(D, k, v)
+        return [f for f in rep.findings if f.check.startswith("IR drop")]
+
+    def test_the_far_load_fed_by_the_pour_is_what_gets_checked(self):
+        from suspension import pcb_doctor as D
+        b = parse_kicad_pcb(self.BOARD)
+        nid = b.net_id("VCC")
+        one_d = D.analyze_net(b, nid)["worst_r_ohm"]                 # the 3 mm track between J1 and C1 only
+        pour = D.pour_net_resistance(b, nid)
+        self.assertEqual(sorted(pour["pair"]), ["J1.1", "U1.1"])
+        self.assertGreater(pour["r_ohm"], 10 * one_d)                # 60 mm of 0.6 mm strip against 3 mm of 1 mm track
+        fs = self._findings()
+        self.assertEqual([f.severity.name for f in fs], ["FAIL"])
+        self.assertIn("U1.1", fs[0].message)
+        self.assertIn("(through the pour)", fs[0].message)
+
+    def test_a_pour_too_large_to_solve_is_reported_as_not_checked(self):
+        fs = self._findings(REFINE_MAX_CELLS=50)
+        warn = [f for f in fs if "NOT checked" in f.message]
+        self.assertEqual(len(warn), 1)
+        self.assertEqual(warn[0].severity.name, "WARN")
+        self.assertIn("covers only the pads its tracks join", warn[0].message)
+        self.assertFalse(any("conservative" in f.message for f in fs))
+
+    def test_an_unconverged_pour_estimate_gets_the_wider_margin(self):
+        from suspension import pcb_doctor as D
+        self.assertGreaterEqual(D.POUR_UNVERIFIED_FACTOR, 1.10)
+        self.assertGreater(D.POUR_UNVERIFIED_FACTOR, D.SHEET_UPPER_FACTOR)
+
+
+class TestVerifiedFix(unittest.TestCase):
+    """A patched board must never carry a finding the original did not have, or a worse one."""
+
+    def test_demo_patched_board_is_never_worse(self):
+        from suspension.pcb_doctor import _worse_findings, fix_board
+        for text, name in ((demo_kicad_pcb(), "d.kicad_pcb"), (demo_altium_pcb(), "d.PcbDoc")):
+            with self.subTest(name):
+                board = parse_board(text, name)
+                asg = apply_demo_declarations(board, auto_assign_net_currents(board, ledger=None))
+                rep0 = diagnose(board, asg)
+                out = fix_board(board, asg, report=rep0)
+                self.assertIsNotNone(out["text"])
+                b2 = parse_board(out["text"], name)
+                b2.copper_oz = board.copper_oz
+                self.assertEqual(_worse_findings(rep0, diagnose(b2, asg)), [])
+                self.assertTrue(out["remaining"])                # FAN_PWR on F.Cu has no room: said, not hidden
+                self.assertTrue(all(f.severity.value in ("fail", "warning") for f in out["remaining"]))
+
+    def test_a_widening_into_an_hv_gap_is_refused(self):
+        """LV default spacing is not enough next to 400 V: IPC-2221 B4 applies to the fix as it does to the check.
+        10 A needs 8.2 mm (heating and the 2x fusing margin); with the 400 V net 6 mm away that leaves 1.65 mm,
+        under the 2.5 mm B4 wants but well over the 0.2 mm LV default, so only an HV-aware fixer refuses it."""
+        from suspension.pcb_doctor import FIX_MIN_CLEARANCE_MM, clearance_required_mm, fix_board
+        b = parse_kicad_pcb('(kicad_pcb (version 20221018) (layers (0 "F.Cu" signal)) (net 0 "") (net 1 "PWR") (net 2 "HV")'
+                            ' (segment (start 0 0) (end 30 0) (width 0.2) (layer "F.Cu") (net 1))'
+                            ' (segment (start 0 6.0) (end 30 6.0) (width 0.5) (layer "F.Cu") (net 2)))')
+        asg = auto_assign_net_currents(b, ledger=None)
+        asg[1] = {**asg.get(1, {}), "current_a": 10.0, "voltage_v": 12.0, "declared": True, "assumed": False, "source": "t"}
+        asg[2] = {**asg.get(2, {}), "current_a": 0.1, "voltage_v": 400.0, "declared": True, "assumed": False, "source": "t"}
+        need_hv = clearance_required_mm(400.0)
+        out = fix_board(b, asg)
+        refused = [fx for fx in out["manual"] if fx.net == "PWR"]
+        self.assertTrue(refused)
+        self.assertIn("'HV' (needs 2.5 mm)", refused[0].note)
+        lv_gap = 6.0 - refused[0].new_width_mm / 2 - 0.25
+        self.assertTrue(FIX_MIN_CLEARANCE_MM < lv_gap < need_hv)     # an LV-only check would have written it
+        b2 = parse_kicad_pcb(out["text"]) if out["text"] else b
+        self.assertGreaterEqual(6.0 - b2.segments[0].width_mm / 2 - 0.25, need_hv - 1e-9)
+
+    def test_a_fix_that_makes_another_finding_worse_is_withdrawn(self):
+        from unittest import mock
+
+        from suspension import pcb_doctor as D
+        board = parse_board(demo_kicad_pcb(), "d.kicad_pcb")
+        asg = apply_demo_declarations(board, auto_assign_net_currents(board, ledger=None))
+        rep0 = D.diagnose(board, asg)
+        real = D.diagnose
+        calls = {"n": 0}
+
+        def worse_after_patch(b, a, **kw):
+            r = real(b, a, **kw)
+            calls["n"] += 1
+            r.findings.append(D.Finding(check="invented — FAN_PWR", severity=D.Severity.FAIL,
+                                        subsystems=["electrics"], message="'FAN_PWR' got worse"))
+            return r
+        with mock.patch.object(D, "diagnose", worse_after_patch):
+            out = D.fix_board(board, asg, report=rep0)
+        self.assertGreater(calls["n"], 0)
+        self.assertIsNone(out["text"])                           # nothing safe to hand back
+        self.assertTrue(all(not fx.auto for fx in rep0.fixes if fx.net == "FAN_PWR"))
+        self.assertTrue(any("withdrawn" in fx.note for fx in rep0.fixes))
+
+
+class TestFixHonoursBoardRules(unittest.TestCase):
+    def test_net_class_clearance_wider_than_the_default_is_kept(self):
+        from suspension.pcb_doctor import TraceFix, apply_fixes, widening_conflict
+        txt = ('(kicad_pcb (version 20211014) (layers (0 "F.Cu" signal)) (net 0 "") (net 1 "A") (net 2 "B")'
+               ' (net_class Default "" (clearance 0.5) (add_net A) (add_net B))'
+               ' (segment (start 0 0) (end 30 0) (width 0.2) (layer "F.Cu") (net 1))'
+               ' (segment (start 0 1.0) (end 30 1.0) (width 0.2) (layer "F.Cu") (net 2)))')
+        b = parse_kicad_pcb(txt)
+        self.assertEqual(b.clearance_mm, {1: 0.5, 2: 0.5})
+        #  0.8 mm leaves 0.5 mm... to 0.1 mm half-width: gap 1.0 - 0.4 - 0.1 = 0.5, allowed; 1.0 mm leaves 0.4, refused
+        self.assertIsNone(widening_conflict(b, 0, 0.8))
+        clash = widening_conflict(b, 0, 1.0)
+        self.assertEqual((clash[0], round(clash[1], 3), clash[2]), ("B", 0.4, 0.5))
+        fx = TraceFix(net="A", nid=1, seg_index=0, old_width_mm=0.2, new_width_mm=1.0, layer="F.Cu")
+        _, applied = apply_fixes(b, [fx])
+        self.assertEqual(applied, [])
+        self.assertIn("needs 0.5 mm", fx.note)
+
+
+class TestRecommendedViasAndLargePours(unittest.TestCase):
+    """Vias are recommended, never added unless picked; large pours are opt-in and said to be slow."""
+
+    def _demo(self):
+        board = parse_board(demo_kicad_pcb(), "d.kicad_pcb")
+        asg = apply_demo_declarations(board, auto_assign_net_currents(board, ledger=None))
+        return board, asg, diagnose(board, asg)
+
+    def test_vias_are_recommended_but_not_written_unless_picked(self):
+        from suspension.pcb_doctor import ViaFix, fix_board
+        board, asg, rep = self._demo()
+        self.assertTrue(rep.via_recommendations)
+        self.assertTrue(all(isinstance(v, ViaFix) for v in rep.via_recommendations))
+        out = fix_board(board, asg, report=rep)                               # nothing picked
+        n_vias = len(board.vias)
+        self.assertEqual(len(parse_board(out["text"], "d.kicad_pcb").vias), n_vias)
+        self.assertFalse(any(isinstance(a, ViaFix) for a in out["applied"]))
+
+    def test_picked_vias_are_written_clear_and_clear_the_bottleneck(self):
+        from suspension.pcb_doctor import _worse_findings, copper_conflict, fix_board
+        board, asg, rep = self._demo()
+        picked = rep.via_recommendations
+        out = fix_board(board, asg, report=rep, vias=picked)
+        b2 = parse_board(out["text"], "d.kicad_pcb")
+        self.assertEqual(len(b2.vias), len(board.vias) + len(picked))
+        self.assertEqual(_worse_findings(rep, out["report"]), [])
+        self.assertFalse([f for f in out["report"].findings if f.check.startswith("via bottleneck")])
+        for v in picked:                                               # the new copper is clear of other nets
+            for ly in v.layers:
+                self.assertIsNone(copper_conflict(b2, v.nid, v.at, v.at, v.size_mm / 2, ly))
+
+    def test_no_room_means_no_recommendation(self):
+        from suspension.pcb_doctor import recommend_stitching_vias
+        b = parse_kicad_pcb('(kicad_pcb (version 20221018) (layers (0 "F.Cu" signal) (31 "B.Cu" signal)) (net 0 "")'
+                            ' (net 1 "A") (net 2 "B") (via (at 0 0) (size 0.6) (drill 0.3) (layers "F.Cu" "B.Cu") (net 1))'
+                            ' (zone (net 2) (net_name "B") (layer "F.Cu") (filled_polygon (layer "F.Cu")'
+                            '  (pts (xy -5 -5) (xy 5 -5) (xy 5 5) (xy -5 5) (xy -5 -0.5) (xy -0.5 -0.5) (xy -0.5 0.5)'
+                            '   (xy 0.5 0.5) (xy 0.5 -0.5) (xy -5 -0.5)))))')
+        self.assertEqual(recommend_stitching_vias(b, 1, 3, 0.3), [])         # boxed in by B's pour
+
+    def test_altium_boards_get_the_recommendation_but_no_write(self):
+        from suspension.pcb_doctor import ViaFix, apply_fixes
+        b = parse_board(demo_altium_pcb(), "d.PcbDoc")
+        v = ViaFix(net="X", nid=1, at=(0, 0), size_mm=0.6, drill_mm=0.3, layers=("F.Cu", "B.Cu"), joins=(1, 0),
+                   stub_width_mm=0.3)
+        with self.assertRaises(ValueError):
+            apply_fixes(b, [], [v])
+
+    def test_large_pours_are_opt_in_and_the_unsolved_warning_says_how(self):
+        from suspension import pcb_doctor as D
+        self.assertGreater(D.LARGE_POUR_MAX_CELLS, 10 * D.REFINE_MAX_CELLS)
+        b = parse_kicad_pcb(TestBrownoutThroughAPour.BOARD)
+        asg = {b.net_id("VCC"): {"current_a": 10.0, "voltage_v": 5.0}}
+        old = D.REFINE_MAX_CELLS
+        D.REFINE_MAX_CELLS = 50
+        try:
+            quick = [f for f in D.diagnose(b, asg).findings if "NOT checked" in f.message]
+            slow = D.diagnose(b, asg, pour_max_cells=D.LARGE_POUR_MAX_CELLS)
+        finally:
+            D.REFINE_MAX_CELLS = old
+        self.assertTrue(quick and "Solve large pours" in quick[0].message)
+        self.assertFalse([f for f in slow.findings if "NOT checked" in f.message])   # solved once switched on
+        self.assertTrue([f for f in slow.findings if "(through the pour)" in f.message])
+
+
+class TestLoadsWrittenToTheLedger(unittest.TestCase):
+    """Current, voltage and power are typed once, in the electrics module, and land in the integration ledger."""
+
+    def test_write_read_and_derived_power(self):
+        from suspension.interfaces import IntegrationLedger
+        from suspension.pcb_doctor import LOAD_SUBSYSTEMS, subsystem_loads, write_loads_to_ledger
+        led = {"interfaces": {"cooling": {"name": "cooling", "mass_kg": 3.2, "notes": "radiator + fan"}}}
+        changed = write_loads_to_ledger(led, [
+            {"subsystem": "cooling", "peak_current_a": 12.0, "voltage_v": 12.0, "power_draw_w": None},
+            {"subsystem": "electrics", "peak_current_a": 4.0, "voltage_v": 5.0, "power_draw_w": 15.0},
+            {"subsystem": "brakes", "peak_current_a": None, "voltage_v": None, "power_draw_w": None}])
+        self.assertEqual(changed, ["cooling", "electrics"])
+        c = led["interfaces"]["cooling"]
+        self.assertEqual((c["peak_current_a"], c["voltage_v"], c["power_draw_w"]), (12.0, 12.0, 144.0))
+        self.assertEqual(c["mass_kg"], 3.2)                                  # the rest of the declaration untouched
+        self.assertIn("radiator + fan", c["notes"])
+        self.assertIn("power = V x I", c["notes"])
+        self.assertEqual(led["interfaces"]["electrics"]["power_draw_w"], 15.0)   # typed power is kept
+        self.assertFalse(led["interfaces"]["electrics"]["is_estimate"])
+        self.assertNotIn("brakes", led["interfaces"])                         # nothing typed, nothing created
+        rows = {r["subsystem"]: r for r in subsystem_loads(led)}
+        self.assertEqual(list(rows)[:len(LOAD_SUBSYSTEMS)], list(LOAD_SUBSYSTEMS))
+        self.assertEqual(rows["cooling"]["peak_current_a"], 12.0)
+        L = IntegrationLedger.from_dict(led)                                 # still a valid ledger
+        self.assertEqual(L.get("cooling").peak_current_a, 12.0)
+        self.assertEqual(write_loads_to_ledger(led, subsystem_loads(led)), [])   # re-saving the same is no change
+
+    def test_clearing_a_cell_clears_the_ledger_and_bad_values_write_nothing(self):
+        from suspension.pcb_doctor import write_loads_to_ledger
+        led = {"interfaces": {"cooling": {"name": "cooling", "peak_current_a": 12.0, "voltage_v": 12.0}}}
+        write_loads_to_ledger(led, [{"subsystem": "cooling", "peak_current_a": float("nan"), "voltage_v": 12.0,
+                                     "power_draw_w": None}])
+        self.assertIsNone(led["interfaces"]["cooling"]["peak_current_a"])
+        before = json.dumps(led, sort_keys=True)
+        for bad in (-1.0, float("inf"), "lots"):
+            with self.assertRaises(ValueError):
+                write_loads_to_ledger(led, [{"subsystem": "electrics", "peak_current_a": 1.0, "voltage_v": 5.0,
+                                             "power_draw_w": None},
+                                            {"subsystem": "cooling", "peak_current_a": bad, "voltage_v": 12.0,
+                                             "power_draw_w": None}])
+        self.assertEqual(json.dumps(led, sort_keys=True), before)            # all or nothing
+
+    def test_the_board_follows_what_was_typed(self):
+        from suspension.interfaces import IntegrationLedger
+        from suspension.pcb_doctor import ledger_fingerprint, write_loads_to_ledger
+        board = parse_kicad_pcb(demo_kicad_pcb())
+        led = {"interfaces": {}}
+        fp0 = ledger_fingerprint(IntegrationLedger.from_dict(led))
+        write_loads_to_ledger(led, [{"subsystem": "cooling", "peak_current_a": 9.0, "voltage_v": 12.0,
+                                     "power_draw_w": None}])
+        L = IntegrationLedger.from_dict(led)
+        self.assertNotEqual(ledger_fingerprint(L), fp0)                      # the net table refreshes
+        fan = auto_assign_net_currents(board, ledger=L)[board.net_id("FAN_PWR")]
+        self.assertEqual((fan["current_a"], fan["voltage_v"]), (9.0, 12.0))
+        self.assertTrue(fan.declared)

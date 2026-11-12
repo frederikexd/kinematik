@@ -28,6 +28,7 @@ from .pcb_doctor import (OZ_TO_UM, RHO_CU_20C, ALPHA_CU, PcbBoard, via_resistanc
 POUR_TEMP_C = 60.0          # the nodal solve's copper temperature (ambient 40 °C + 20 °C), °C
 MAX_CELLS_PER_LAYER = 1_500_000
 _SS = 2                     # samples per half-cell edge (4 × 4 per cell)
+GRID_TOL_PCT = 2.0          # two successive cell sizes must agree this closely (percent) to call the estimate converged
 K_TERM = 1e4                # pads and via rings conduct this many times better than the copper (unitless)
 
 
@@ -55,7 +56,12 @@ def _reduce(inside, i0, j0):
 
 
 def _cells_track(seg, h):
-    (ax, ay), (bx, by), hw = seg.start, seg.end, seg.width_mm / 2.0
+    (ax, ay), (bx, by) = seg.start, seg.end
+    return _cells_capsule(ax, ay, bx, by, seg.width_mm / 2.0, h)
+
+
+def _cells_capsule(ax, ay, bx, by, hw, h):
+    """A line of half width hw with round ends (a track, a custom pad's stroke, a KiCad 5 pour's outline)."""
     i0, i1 = int(math.floor((min(ax, bx) - hw) / h)) - 1, int(math.ceil((max(ax, bx) + hw) / h)) + 1
     j0, j1 = int(math.floor((min(ay, by) - hw) / h)) - 1, int(math.ceil((max(ay, by) + hw) / h)) + 1
     xs, ys = _samples(i0, i1, j0, j1, h)
@@ -95,7 +101,7 @@ def _cells_pad(pad, h):
         ex, ey = max(w / 2.0 - r, 0.0), max(ht / 2.0 - r, 0.0)
         inside = np.hypot(np.maximum(ax_ - ex, 0), np.maximum(ay_ - ey, 0)) <= r
     elif pad.shape == "roundrect":
-        r = 0.25 * min(w, ht)
+        r = getattr(pad, "rratio", 0.25) * min(w, ht)
         ex, ey = w / 2.0 - r, ht / 2.0 - r
         inside = (ax_ <= w / 2.0) & (ay_ <= ht / 2.0) & (np.hypot(np.maximum(ax_ - ex, 0), np.maximum(ay_ - ey, 0)) <= r)
     else:
@@ -126,18 +132,52 @@ def _cells_polygon(pts, h):
     return _reduce(inside, i0, j0)
 
 
-def pour_resistance(board: PcbBoard, nid: int, max_pads: int = 10) -> dict:
-    """Worst pad-to-pad resistance (Ω) among the net's first `max_pads` uniquely named pads, with its pours, by a
-    sheet solve. Returns {"r_ohm", "pair", "h_mm"} or {"r_ohm": None, "why": ...}."""
+def pour_resistance(board: PcbBoard, nid: int, max_pads: int = 10, pair=None, max_cells=None) -> dict:
+    """Worst pad-to-pad resistance (Ω) among the net's first `max_pads` pads (a name two pads share gets @x,y), or
+    between the two pads named in `pair`, with the net's pours if it has any, by a sheet solve of at most
+    `max_cells` cells in all (default: MAX_CELLS_PER_LAYER on each layer) that checks its own grid: it is solved again between the same two pads at half the
+    cell size (mm), and at a quarter if those differ by more than GRID_TOL_PCT. Returns {"r_ohm" (the finest solve),
+    "pair", "h_mm", "grid_change_pct" (the last change, percent), "converged"} or {"r_ohm": None, "why": ...}.
+    `converged` False means the finer grid did not fit in memory or the answer was still moving: an unverified
+    estimate, to be read as such."""
+    only = frozenset(pair) if pair else None
+    out = _pour_at(board, nid, pour_grid_mm(board, nid), max_pads, only=only, max_cells=max_cells)
+    if out.get("r_ohm") is None:
+        return out
+    out.update(grid_change_pct=None, converged=False)
+    for _ in range(2):
+        fine = _pour_at(board, nid, out["h_mm"] / 2.0, max_pads, only=frozenset(out["pair"]), max_cells=max_cells)
+        if fine.get("r_ohm") is None:                       # too large for memory at this cell size
+            break
+        change = 100.0 * abs(fine["r_ohm"] - out["r_ohm"]) / fine["r_ohm"]
+        out.update(r_ohm=fine["r_ohm"], h_mm=fine["h_mm"], grid_change_pct=change, converged=change <= GRID_TOL_PCT)
+        if out["converged"]:
+            break
+    return out
+
+
+def _pour_at(board: PcbBoard, nid: int, h: float, max_pads: int = 10, only=None, max_cells=None) -> dict:
+    """One sheet solve at cell size h (mm): the worst pair among the first `max_pads` pads, or the pair named in
+    `only`. Returns {"r_ohm", "pair", "h_mm"} or {"r_ohm": None, "why": ...}."""
     from scipy.sparse import coo_matrix
     from scipy.sparse.csgraph import connected_components
-    h = pour_grid_mm(board, nid)
     hh = h / 2.0
     rho = RHO_CU_20C * (1 + ALPHA_CU * (POUR_TEMP_C - 20.0))
     sheet_g = board.copper_oz * OZ_TO_UM * 1e-6 / rho
     layers = list(board.copper_layers) or ["F.Cu", "B.Cu"]
     lidx = {ly: i for i, ly in enumerate(layers)}
     off = 1 << 20
+    cap = MAX_CELLS_PER_LAYER
+    total_cap = max_cells or MAX_CELLS_PER_LAYER * max(len(layers), 1)
+    track_mm2 = sum(sg.length_mm * sg.width_mm for sg in board.segments_of(nid))
+    if track_mm2 / (h * h) > total_cap:                    # the tracks alone are too many cells: refuse before drawing
+        return {"r_ohm": None, "why": "too large for the sheet solve", "h_mm": h}
+    for ly in layers:                                      # refuse before drawing anything too large for memory
+        area_mm2 = sum(abs(np.dot(np.asarray(z.outline)[:, 0], np.roll(np.asarray(z.outline)[:, 1], 1))
+                           - np.dot(np.asarray(z.outline)[:, 1], np.roll(np.asarray(z.outline)[:, 0], 1))) / 2.0
+                       for z in board.zones if z.net == nid and z.layer == ly and len(z.outline) >= 3)
+        if area_mm2 / (h * h) > min(cap, total_cap):
+            return {"r_ohm": None, "why": "too large for the sheet solve", "h_mm": h}
     allp: list = []                                        # half-cell coverage: (layer, P, Q, c, is_terminal)
     for s in board.segments_of(nid):
         if s.layer in lidx:
@@ -145,14 +185,19 @@ def pour_resistance(board: PcbBoard, nid: int, max_pads: int = 10) -> dict:
     for z in board.zones:
         if z.net == nid and z.layer in lidx and len(z.outline) >= 3:
             allp.append((z.layer, *_cells_polygon(z.outline, hh), False))
+            if z.stroke_mm > 0:                            # KiCad 5 fill: the outline is stroked at min_thickness
+                for (ax, ay), (bx, by) in zip(z.outline, z.outline[1:] + z.outline[:1]):
+                    allp.append((z.layer, *_cells_capsule(ax, ay, bx, by, z.stroke_mm / 2.0, hh), False))
     pads = [(fp, p) for fp in board.footprints for p in fp.pads if p.net == nid]
     anchors: list = []                                     # (layer, x, y, terminal key)
     for k, (fp, p) in enumerate(pads):
-        I, J, c = _cells_pad(p, hh)
+        cells = [_cells_pad(p, hh)]
+        for kind, g in p.primitives:                       # a custom pad's copper beyond its anchor
+            cells.append(_cells_polygon(g, hh) if kind == "poly" else _cells_capsule(*g, hh))
         side = p.layer or ("B.Cu" if fp.layer == "B.Cu" else "F.Cu")
         for ly in (layers if p.through else [side]):
             if ly in lidx:
-                allp.append((ly, I, J, c, True))
+                allp += [(ly, I, J, c, True) for I, J, c in cells]
                 anchors.append((ly, p.at[0] + p.copper_offset[0], p.at[1] + p.copper_offset[1], ("pad", k)))
     vias = board.vias_of(nid)
     for k, v in enumerate(vias):
@@ -163,7 +208,7 @@ def pour_resistance(board: PcbBoard, nid: int, max_pads: int = 10) -> dict:
     if not allp:
         return {"r_ohm": None, "why": "no copper", "h_mm": h}
 
-    def union(terms_only):
+    def _union(terms_only):
         ks, cs = [], []
         for ly, I, J, c, t in allp:
             if terms_only and not t:
@@ -178,7 +223,7 @@ def pour_resistance(board: PcbBoard, nid: int, max_pads: int = 10) -> dict:
         last = np.r_[k_[1:] != k_[:-1], True]
         return k_[last], np.minimum(c_[last], 1.0)
 
-    def gather(k_, c_, fx, fy):
+    def _gather(k_, c_, fx, fy):
         """Half cells (key, coverage) into boxes of 2 × 2: cells (fx = fy = 0) or face boxes (shift 1 on an axis)."""
         L = k_ >> 42
         P = ((k_ >> 21) & ((1 << 21) - 1)) - off
@@ -188,14 +233,14 @@ def pour_resistance(board: PcbBoard, nid: int, max_pads: int = 10) -> dict:
         u, inv = np.unique(kk, return_inverse=True)
         return u, np.minimum(np.bincount(inv, weights=c_) / 4.0, 1.0)
 
-    Ha, Ht = union(False), union(True)
-    key, _cov = gather(*Ha, 0, 0)
+    Ha, Ht = _union(False), _union(True)
+    key, _cov = _gather(*Ha, 0, 0)
     n = key.size
     per_layer = np.bincount((key >> 42).astype(int))
-    if per_layer.max() > MAX_CELLS_PER_LAYER:
+    if per_layer.max() > cap or n > total_cap:
         return {"r_ohm": None, "why": "too large for the sheet solve", "h_mm": h}
 
-    def lookup(keys, k_, c_):
+    def _lookup(keys, k_, c_):
         if k_.size == 0:
             return np.zeros(keys.size)
         pos = np.searchsorted(k_, keys)
@@ -204,13 +249,13 @@ def pour_resistance(board: PcbBoard, nid: int, max_pads: int = 10) -> dict:
 
     rows, cols, gs = [], [], []
     for fx, fy, step in ((1, 0, np.int64(1) << 21), (0, 1, np.int64(1))):
-        fk, fc = gather(*Ha, fx, fy)
-        tk, tc = gather(*Ht, fx, fy)
+        fk, fc = _gather(*Ha, fx, fy)
+        tk, tc = _gather(*Ht, fx, fy)
         nk = key + step
         pos = np.searchsorted(key, nk)
         ok = (pos < n) & (key[np.minimum(pos, n - 1)] == nk)
         a, b = np.nonzero(ok)[0], pos[ok]
-        g = sheet_g * (lookup(key[a], fk, fc) + K_TERM * lookup(key[a], tk, tc))
+        g = sheet_g * (_lookup(key[a], fk, fc) + K_TERM * _lookup(key[a], tk, tc))
         rows.append(a); cols.append(b); gs.append(g)
     anchor: dict = {}
     for ly, x, y, tk in anchors:                           # the cell holding each terminal's centre, per layer
@@ -233,22 +278,23 @@ def pour_resistance(board: PcbBoard, nid: int, max_pads: int = 10) -> dict:
     R, C_, G = R[m], C_[m], G[m]
     M = coo_matrix((np.r_[G, G, -G, -G], (np.r_[R, C_, R, C_], np.r_[R, C_, C_, R])), shape=(n, n)).tocsr()
     names = [f"{fp.ref}.{p.number}" for fp, p in pads]
-    unique = [k for k, nm in enumerate(names) if names.count(nm) == 1]
+    names = [nm if names.count(nm) == 1 else f"{nm}@{p.at[0]:.2f},{p.at[1]:.2f}"   # shared names: told apart by place
+             for nm, (fp, p) in zip(names, pads)]
     pnodes = []
-    for k in unique:                                       # pads whose name is unique, on copper
+    for k in range(len(pads)):                             # pads on copper
         q = next((anchor[(("pad", k), ly)] for ly in layers if (("pad", k), ly) in anchor), None)
         if q is not None:
             pnodes.append((names[k], q))
-    pnodes = pnodes[:max_pads]
+    pnodes = [t for t in pnodes if t[0] in only] if only else pnodes[:max_pads]
     if len(pnodes) < 2:
-        return {"r_ohm": None, "why": "fewer than two uniquely named pads on copper", "h_mm": h}
+        return {"r_ohm": None, "why": "fewer than two pads on copper", "h_mm": h}
     _nc, lab = connected_components(M != 0, directed=False)
     comp = lab[pnodes[0][1]]
     if any(lab[q] != comp for _n, q in pnodes):
         return {"r_ohm": None, "why": "pads not joined by copper", "h_mm": h}
     keep = np.where(lab == comp)[0]
 
-    def resist_from(g_node):
+    def _resist_from(g_node):
         """Effective resistance from one pad to every other (ground it, unit current in at each)."""
         kk = keep[keep != g_node]
         where = np.full(n, -1); where[kk] = np.arange(kk.size)
@@ -260,9 +306,9 @@ def pour_resistance(board: PcbBoard, nid: int, max_pads: int = 10) -> dict:
         X = _solve(A, B)
         return {q: float(X[where[q], i]) for i, q in enumerate(targets)}
 
-    r0 = resist_from(pnodes[0][1])                          # double sweep: farthest from the first, then from it
+    r0 = _resist_from(pnodes[0][1])                          # double sweep: farthest from the first, then from it
     far = max(r0, key=r0.get)
-    r1 = resist_from(far)
+    r1 = _resist_from(far)
     best = max(r1.items(), key=lambda t: t[1])
     name = {q: nm for nm, q in pnodes}
     return {"r_ohm": best[1], "pair": (name[far], name[best[0]]), "h_mm": h}

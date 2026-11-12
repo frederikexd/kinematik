@@ -1424,9 +1424,10 @@ def _cached_diagnose(_board, fp: str, _assign, knobs: tuple):
     underscore-prefixed so Streamlit does not try to hash them; `fp` and
     `knobs` carry the real cache identity."""
     from suspension import pcb_doctor as _pdr
-    rail, brown, amb, tmax, sf = knobs
+    rail, brown, amb, tmax, sf, big = knobs
     return _pdr.diagnose(_board, _assign, rail_v=rail, brownout_v=brown,
-                         ambient_c=amb, max_temp_c=tmax, fuse_sf=sf)
+                         ambient_c=amb, max_temp_c=tmax, fuse_sf=sf,
+                         pour_max_cells=_pdr.LARGE_POUR_MAX_CELLS if big else None)
 
 
 @st.cache_data(show_spinner=False, ttl=600, max_entries=4)
@@ -2665,6 +2666,7 @@ def save_store(store):
 #  runs exactly as before in local single-user mode — no gate, no regression.
 # --------------------------------------------------------------------------- #
 from suspension import auth_ui as _auth_ui   # light import: stdlib + lazy supabase
+from suspension._num import json_finite as _json_finite   # noqa: E402  uploaded JSON: NaN / Infinity refused
 
 # --------------------------------------------------------------------------- #
 #  LOGIN GATE — DISABLED for now.
@@ -4467,7 +4469,7 @@ def render_migration_surfaces():
                         value=False, key="_mig_restore_inc_ledger")
                 if _up is not None:
                     try:
-                        apply_project_bundle(json.load(_up),
+                        apply_project_bundle(_json_finite(_up),
                                              include_shared_ledger=_inc_led)
                         st.success("Backup restored — geometry, vehicle, "
                                    "ledger, handover, and pedal inputs are "
@@ -25860,6 +25862,40 @@ def render_pcb_doctor():
     board_ctx = store._ensure_board()
     led = interfaces_mod.IntegrationLedger.from_dict(st.session_state.ledger)
 
+    # ---------------- subsystem loads: typed here, written to the ledger ------- #
+    # The electrical member enters each subsystem's peak current, voltage and power draw HERE, where they are
+    # used; the integration ledger receives them, so the rest of the car (power budget, harness, the pre-fab gate)
+    # sees the same numbers without anyone typing them twice.
+    with st.expander("🔌 Subsystem loads (current, voltage, power) — entered here, written to the "
+                     "integration ledger", expanded=not any(
+                         r["peak_current_a"] is not None for r in pdr_mod.subsystem_loads(st.session_state.ledger))):
+        st.markdown(
+            '<p class="hint">Type each subsystem\'s <b>peak current</b>, <b>voltage</b> and <b>continuous power '
+            'draw</b>. They go straight into the integration ledger (the Integration tab shows them, marked as '
+            'set here) and every power net on the board matched to that subsystem takes them. Leave power blank '
+            'to have it filled as V × I. Clear a cell to clear it in the ledger.</p>', unsafe_allow_html=True)
+        import pandas as _pd_l
+        _loads = pdr_mod.subsystem_loads(st.session_state.ledger)
+        _ldf = _pd_l.DataFrame(_loads)
+        _led_ed = st.data_editor(
+            _ldf, key="pdr_loads_ed", hide_index=True, width='stretch', disabled=["subsystem"],
+            column_config={
+                "subsystem": st.column_config.TextColumn("subsystem"),
+                "peak_current_a": st.column_config.NumberColumn("peak current (A)", min_value=0.0, max_value=1000.0,
+                                                                step=0.1),
+                "voltage_v": st.column_config.NumberColumn("voltage (V)", min_value=0.0, max_value=1000.0, step=0.1),
+                "power_draw_w": st.column_config.NumberColumn("power draw (W)", min_value=0.0, max_value=200000.0,
+                                                              step=1.0)})
+        try:
+            _changed = pdr_mod.write_loads_to_ledger(st.session_state.ledger, _led_ed.to_dict("records"))
+        except ValueError as _e:
+            st.error(f"Not written to the ledger: {_e}")
+            _changed = []
+        if _changed:
+            st.session_state.ledger = dict(st.session_state.ledger)        # a new object: every reader sees it
+            led = interfaces_mod.IntegrationLedger.from_dict(st.session_state.ledger)
+            st.success(f"Written to the integration ledger: {', '.join(_changed)}.")
+
     # ---------------- load: drag a file or one-click demo -------------------- #
     def _pdr_reset():
         for k in ("pdr_assign", "pdr_assign_fp", "pdr_assign_edits"):
@@ -26094,11 +26130,22 @@ def render_pcb_doctor():
              "fuse-safety numbers come from ⚙️ Board context above — one source "
              "of truth for both panels.")
     pboard.copper_oz = float(copper_oz)
+    _n_pour = len([n for n in pboard.zone_nets if n])
+    _big = st.toggle(
+        "Solve large pours (much slower)", value=False, key="pdr_big_pours", disabled=not _n_pour,
+        help="Off: pours up to 150,000 cells are solved in seconds; larger ones are reported as NOT checked. "
+             "On: planes up to about 3 million cells are solved too. That takes minutes per large pour and can "
+             "take much longer on a whole-board ground plane, so the page waits until it is done. Planes larger "
+             "than that are still reported as not checked.")
+    if _big:
+        st.warning(f"Large pours are on: this board has {_n_pour} poured net(s). Expect minutes per large pour, "
+                   "longer for whole-board planes. Leave the page open; the result is kept once solved.")
     _knobs = (float(board_ctx.rail_nominal_v), float(board_ctx.ecu_brownout_v),
               float(board_ctx.ambient_c), float(board_ctx.max_trace_temp_c),
-              float(board_ctx.fuse_safety_factor))
+              float(board_ctx.fuse_safety_factor), bool(_big))
     _fp = _pcb_fingerprint(pboard, assign, _knobs)
-    with st.spinner("Diagnosing the routed copper…"):
+    with st.spinner("Solving the large pours: this can take many minutes…" if _big
+                    else "Diagnosing the routed copper…"):
         rep = _cached_diagnose(pboard, _fp, assign, _knobs)
 
     counts = rep.counts()
@@ -26159,6 +26206,23 @@ def render_pcb_doctor():
         else:
             st.caption("No under-sized copper at the assigned currents — "
                        "nothing to rewrite.")
+        #  Recommended, never automatic: the engineer decides which of these go into the file.
+        _picked_vias = []
+        if rep.via_recommendations:
+            st.markdown(
+                f'<p class="hint"><b>{len(rep.via_recommendations)} stitching via(s) recommended</b> where a via '
+                f'is the bottleneck. Each sits beside an existing via of the same net, is joined to it on every '
+                f'layer it spans, and keeps {pdr_mod.FIX_MIN_CLEARANCE_MM:g} mm (or your net-class or IPC-2221 HV '
+                f'clearance) to all other copper. <b>None is added unless you tick it.</b> Check the placement '
+                f'against your mechanical and thermal intent before you do.</p>', unsafe_allow_html=True)
+            for _k, _vf in enumerate(rep.via_recommendations):
+                if st.checkbox(f"Add via on {_vf.net} at ({round(_vf.at[0], 2)}, {round(_vf.at[1], 2)}) mm, "
+                               f"⌀{_vf.drill_mm:g} drill, {_vf.note}", value=False, key=f"pdr_via_{_k}",
+                               disabled=pboard.fmt != "kicad",
+                               help=None if pboard.fmt == "kicad" else
+                               "Altium boards: add this via by hand in Altium; the Doctor writes vias into "
+                               "KiCad files only."):
+                    _picked_vias.append(_vf)
         if auto_n and not pboard.patchable:
             # Every prescription above still stands — only the automatic
             # rewrite is withheld, because writing widths into a binary board
@@ -26169,28 +26233,44 @@ def render_pcb_doctor():
                 f"the one-click re-trace, re-save from Altium as **File ▸ Save "
                 f"As ▸ PCB ASCII File** and drop that in — the findings will be "
                 f"the same, and the patched file will reopen in Altium.")
-        elif auto_n:
-            patched, applied = pdr_mod.apply_fixes(pboard, rep.fixes)
+        elif auto_n or _picked_vias:
             try:
-                board2 = pdr_mod.parse_board(patched, _pdr_fname)
-                board2.copper_oz = pboard.copper_oz
-                rep2 = pdr_mod.diagnose(
-                    board2, assign,
+                _fixed = pdr_mod.fix_board(
+                    pboard, assign, report=rep, vias=_picked_vias,
+                    pour_max_cells=pdr_mod.LARGE_POUR_MAX_CELLS if _big else None,
                     rail_v=float(board_ctx.rail_nominal_v),
                     brownout_v=float(board_ctx.ecu_brownout_v),
                     ambient_c=float(board_ctx.ambient_c),
                     max_temp_c=float(board_ctx.max_trace_temp_c),
                     fuse_sf=float(board_ctx.fuse_safety_factor))
-                c2 = rep2.counts()
+                patched, applied = _fixed["text"], _fixed["applied"]
+                if patched is None:
+                    raise ValueError("no widening could be applied without making something else worse")
+                c2 = _fixed["report"].counts()
+                _left = _fixed["remaining"]
                 st.markdown(
                     f'<p class="hint">Patched board re-diagnosed: '
                     f'<b>{counts["fail"]} → {c2["fail"]} FAIL</b>, '
-                    f'{counts["warning"]} → {c2["warning"]} WARN. Only the '
-                    f'width tokens changed — nets, routing and everything else '
-                    f'are byte-identical, in the file\'s own units. Re-run '
-                    f'{pboard.fmt_label.split(" /")[0]} DRC on it: a widened '
-                    f'trace can newly crowd an LV neighbour.</p>',
+                    f'{counts["warning"]} → {c2["warning"]} WARN. Verified: the patched '
+                    f'file has <b>no finding the original did not have, and none worse</b>; '
+                    f'a widening that would have caused one was withdrawn. Every widening '
+                    f'keeps {pdr_mod.FIX_MIN_CLEARANCE_MM:g} mm to other nets on its layer '
+                    f'(IPC-2221 B4 next to a declared HV net). Only width tokens changed, in '
+                    f'the file\'s own units.</p>',
                     unsafe_allow_html=True)
+                if _left:
+                    st.warning(
+                        f"**{len(_left)} finding(s) remain on the patched board.** A width "
+                        f"rewrite cannot clear them: they need a reroute where there is no "
+                        f"room to widen, more vias, copper weight, or clearance changes. "
+                        f"They are listed in the fix report with the change each needs. "
+                        f"The patched file is better, not finished; run "
+                        f"{pboard.fmt_label.split(' /')[0]} DRC on it before fab.")
+                    with st.expander("What is still open"):
+                        for _f in _left:
+                            st.markdown(f"- **{_f.severity.value.upper()}** {_f.check}")
+                else:
+                    st.success("Every finding the width fixes address is cleared on the patched board.")
             except ValueError:
                 st.warning("Patched file failed to re-parse — not offered for "
                            "download. Please report this board.")
@@ -26206,7 +26286,8 @@ def render_pcb_doctor():
                         break
                 dl = st.columns(2)
                 dl[0].download_button(
-                    f"⬇ Patched board ({auto_n} traces re-sized)",
+                    f"⬇ Patched board ({sum(1 for _a in applied if not isinstance(_a, pdr_mod.ViaFix))} traces "
+                    f"re-sized, {sum(1 for _a in applied if isinstance(_a, pdr_mod.ViaFix))} vias you picked)",
                     data=patched, file_name=f"{base}_doctored{_sfx}",
                     mime="text/plain", key="pdr_dl_board")
                 dl[1].download_button(
@@ -27732,7 +27813,7 @@ with tab5c:
     if flex_up is not None:
         try:
             import json as _json
-            _d = _json.load(flex_up)
+            _d = _json_finite(flex_up)
             flex_body = load_flex_body(_d)
             names = list(flex_body.names)
             st.success(f"Loaded flex body with interface nodes: {', '.join(names)}")
@@ -29385,7 +29466,7 @@ with tab9:
         if up is not None:
             try:
                 import json as _json
-                d = _json.load(up)
+                d = _json_finite(up)
                 new_coeffs = d["coeffs"]
                 new_fnom = float(d.get("FNOMIN", 1100.0))
                 # validate it builds
@@ -33445,7 +33526,7 @@ with sc3:
             value=False, key="_load_inc_ledger")
     if loaded is not None:
         try:
-            _bundle = json.load(loaded)
+            _bundle = _json_finite(loaded)
             if isinstance(_bundle, dict) and "inputs_sha256" in _bundle and "targets" in _bundle \
                     and "volume" in _bundle:
                 # an InverseGenesis manifest, not a project file: say so instead of "loading" it silently

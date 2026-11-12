@@ -39,7 +39,7 @@ from __future__ import annotations
 
 import math
 import numpy as np
-from ._num import vec as _vec
+from ._num import finite as _finite, vec as _vec
 from scipy.optimize import least_squares
 
 from .tiremodel import PacejkaLateral, _DEFAULT_FSAE_COEFFS
@@ -180,6 +180,16 @@ def fit_from_ttc_channels(chans: dict, **kw):
     """
     if not all(k in chans for k in ("FY", "FZ", "SA")):
         raise ValueError("Need FY, FZ and SA channels to fit a lateral model.")
+    n = {k: _finite(f"tire data channel {k}", chans[k], 8).size for k in ("FY", "FZ", "SA", "IA") if k in chans}
+    if len(set(n.values())) != 1:
+        raise ValueError(f"tire data channels must be the same length, got {n}")
     sa = np.radians(chans["SA"])
     ia = np.radians(chans["IA"]) if "IA" in chans else None
-    return fit_mf52_lateral(sa, chans["FZ"], chans["FY"], IA_rad=ia, **kw)
+    try:
+        fit = fit_mf52_lateral(sa, chans["FZ"], chans["FY"], IA_rad=ia, **kw)
+    except IndexError:
+        raise ValueError("the tire data does not cover enough loads and slip angles to fit a lateral model") from None
+    if not (math.isfinite(fit["rmse_N"]) and math.isfinite(fit["r2"])):
+        raise ValueError("the tire fit did not converge to finite numbers: the data may be constant, far out of "
+                         "range, or in the wrong units")
+    return fit

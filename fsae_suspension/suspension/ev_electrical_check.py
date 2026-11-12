@@ -46,7 +46,7 @@ import math
 
 import numpy as np
 from . import plausibility
-from ._num import vec as _vec
+from ._num import all_finite as _all_finite, finite as _finite, finite_scalar as _finite_scalar, vec as _vec
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Data classes
@@ -454,7 +454,9 @@ class TireLosses:
         for key, name in keys.items():
             m = re.search(rf"(?m)^\s*{key}\s*=\s*([-+0-9.eE]+)", text)
             if m:
-                kw[name] = float(m.group(1))
+                kw[name] = _finite_scalar(f".tir {key}", m.group(1))
+        if isinstance(n_tires, bool) or not isinstance(n_tires, int) or n_tires < 1:
+            raise ValueError(f"n_tires must be a whole number of tires, got {n_tires!r}")
         return cls(n_tires=n_tires, **kw)
 
 
@@ -792,8 +794,13 @@ def check_lap_from_speed_csv(
     Converts speed to m/s, integrates to get distance, then delegates to
     `check_lap_electrical`.
     """
-    t = _vec(time_s)
-    v_mph = _vec(speed_mph)
+    t = _finite("speed trace time (s)", time_s, 1)
+    v_mph = _finite("speed trace speed (mph)", speed_mph, 1)
+    if t.size != v_mph.size:
+        raise ValueError(f"the speed trace needs one speed per time, got {v_mph.size} and {t.size}")
+    if np.any(np.diff(t) <= 0):
+        raise ValueError("speed trace time must rise from one sample to the next")
+    vehicle_mass_kg = _finite_scalar("vehicle mass (kg)", vehicle_mass_kg, positive=True)
     v_ms = v_mph * 0.44704                          # mph → m/s
 
     # Integrate speed over time to get distance
@@ -802,13 +809,21 @@ def check_lap_from_speed_csv(
         dt = t[i] - t[i - 1]
         s[i] = s[i - 1] + 0.5 * (v_ms[i - 1] + v_ms[i]) * dt
 
-    return check_lap_electrical(
+    if np.max(np.abs(v_mph)) > 1000.0:
+        raise ValueError("a speed above 1000 mph in the trace: check the column and its unit")
+    for label, val in (("drivetrain efficiency", drivetrain_eff), ("drag CdA (m²)", drag_cda), ("rolling resistance", crr)):
+        _finite_scalar(label, val)
+    res = check_lap_electrical(
         v_ms, s, params,
         drivetrain_eff=drivetrain_eff,
         vehicle_mass_kg=vehicle_mass_kg,
         drag_cda=drag_cda,
         crr=crr,
     )
+    if not _all_finite(res):
+        raise ValueError("the electrical check gave a result that is not a finite number: one of the pack, motor "
+                         "or vehicle parameters is nan, infinite or far out of range")
+    return res
 
 
 def load_speed_vs_time_from_bytes(file_bytes: bytes) -> tuple[np.ndarray, np.ndarray]:

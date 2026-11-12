@@ -1,0 +1,115 @@
+{
+ "what": "Native Altium boards (designed in Altium, never converted). Counts read in Altium Designer Professional 26.11.1 by the KinematiK author on 2026-11-11: components and pads from Board Information; tracks and arcs with the PCB Filter queries IsTrack And OnSignal / IsArc And OnSignal; vias from Board Information. KinematiK counts straight copper segments, distinct arcs, vias, pads, and components excluding its free-pads placeholder.",
+ "limit": "exact equality on every count (plan addendum 7)",
+ "boards": [
+  {
+   "board": "1_PDP_V3",
+   "altium": {
+    "components": 52,
+    "pads": 329,
+    "vias": 53,
+    "tracks": 501,
+    "arcs": 0
+   },
+   "kinematik": {
+    "components": 52,
+    "pads": 329,
+    "vias": 53,
+    "tracks": 501,
+    "arcs": 0
+   },
+   "source": "qfsae_pcb PDP_V3"
+  },
+  {
+   "board": "2_BSPD_002",
+   "altium": {
+    "components": 75,
+    "pads": 242,
+    "vias": 39,
+    "tracks": 824,
+    "arcs": 1
+   },
+   "kinematik": {
+    "components": 75,
+    "pads": 242,
+    "vias": 39,
+    "tracks": 824,
+    "arcs": 1
+   },
+   "source": "qfsae_pcb BSPD_002"
+  },
+  {
+   "board": "3_BRAKE_LIGHT",
+   "altium": {
+    "components": 73,
+    "pads": 147,
+    "vias": 21,
+    "tracks": 160,
+    "arcs": 0
+   },
+   "kinematik": {
+    "components": 73,
+    "pads": 147,
+    "vias": 21,
+    "tracks": 160,
+    "arcs": 0
+   },
+   "source": "qfsae_pcb Q23_BRAKE_LIGHT/Q23_BRAKE_LIGHT_O1.PcbDoc"
+  },
+  {
+   "board": "4_Analog_to_CAN",
+   "altium": {
+    "components": 29,
+    "pads": 116,
+    "vias": 23,
+    "tracks": 218,
+    "arcs": 0
+   },
+   "kinematik": {
+    "components": 29,
+    "pads": 116,
+    "vias": 23,
+    "tracks": 218,
+    "arcs": 0
+   },
+   "source": "qfsae_pcb Analog to CAN/Rev2/PCB.PcbDoc"
+  },
+  {
+   "board": "5_PMBoard",
+   "altium": {
+    "components": 76,
+    "pads": 250,
+    "vias": 65,
+    "tracks": 386,
+    "arcs": 0
+   },
+   "kinematik": {
+    "components": 76,
+    "pads": 250,
+    "vias": 65,
+    "tracks": 386,
+    "arcs": 0
+   },
+   "source": "qfsae_pcb PMBoard"
+  },
+  {
+   "board": "6_Triangular_Brakelight",
+   "altium": {
+    "components": 23,
+    "pads": 46,
+    "vias": 0,
+    "tracks": 137,
+    "arcs": 20
+   },
+   "kinematik": {
+    "components": 23,
+    "pads": 46,
+    "vias": 0,
+    "tracks": 137,
+    "arcs": 20
+   },
+   "source": "qfsae_pcb Triangular_Brakelight"
+  }
+ ],
+ "result": "6 of 6 boards identical on all 5 counts"
+}

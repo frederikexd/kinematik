@@ -676,18 +676,26 @@ class GenesisManifest:
     @staticmethod
     def from_json(text: str) -> GenesisManifest:
         """Parse a manifest; lengths in mm, angles in deg, yields as dimensionless fractions."""
-        d = json.loads(text)
-        if d.get("schema") != MANIFEST_SCHEMA:
+        def _not_finite(token):
+            raise ValueError(f"the manifest holds {token}, which is not a finite number")
+
+        d = json.loads(text, parse_constant=_not_finite)       # NaN / Infinity: python reads them, a solver must not
+        if not isinstance(d, dict) or d.get("schema") != MANIFEST_SCHEMA:
             raise ValueError(f"Not a genesis manifest (schema "
-                             f"{d.get('schema')!r}).")
-        m = GenesisManifest(
-            name=d["name"], hardpoints=d["hardpoints"],
-            targets=d["targets"], volume=d["volume"],
-            tolerance=d.get("tolerance"),
-            search=SearchSettings(**d.get("search", {})),
-            context=d.get("context", {}), recorded=d.get("recorded"),
-            kinematik_version=d.get("kinematik_version", "unknown"),
-            start_search=d.get("start_search"))
+                             f"{d.get('schema') if isinstance(d, dict) else None!r}).")
+        try:
+            m = GenesisManifest(
+                name=d["name"], hardpoints=d["hardpoints"],
+                targets=d["targets"], volume=d["volume"],
+                tolerance=d.get("tolerance"),
+                search=SearchSettings(**d.get("search", {})),
+                context=d.get("context", {}), recorded=d.get("recorded"),
+                kinematik_version=d.get("kinematik_version", "unknown"),
+                start_search=d.get("start_search"))
+        except KeyError as exc:
+            raise ValueError(f"the manifest has no {exc.args[0]!r} entry") from exc
+        except TypeError as exc:
+            raise ValueError(f"the manifest's search settings are not readable ({exc})") from exc
         stored = d.get("inputs_sha256")
         if stored and stored != m.inputs_sha256:
             raise ValueError("Manifest inputs were edited after it was "

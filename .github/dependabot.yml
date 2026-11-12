@@ -1,0 +1,25 @@
+# Dependabot opens a pull request when a dependency or a pinned GitHub Action has a newer release or a security fix.
+# Every pull request runs the full gates (tests, lint, security, mutation where it applies) before it can merge.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ['*']
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+  - package-ecosystem: pip
+    directory: /fsae_suspension
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: monthly

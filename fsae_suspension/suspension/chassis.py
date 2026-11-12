@@ -243,7 +243,15 @@ def load_part_mesh(path: str, *, max_faces: int = _MAX_FACES,
         size_mm : [lx,ly,lz]      extents after unit scaling
         unit_scale, triangles
     """
-    scene = _load_scene(path, 0.1, 0.3)
+    if not isinstance(unit_scale, str) and not 1e-6 <= float(unit_scale) <= 1e6:      # nan fails both comparisons
+        raise ValueError(f"unit_scale must be \"auto\" or a number from 1e-6 to 1e6, got {unit_scale}")
+    try:
+        scene = _load_scene(path, 0.1, 0.3)
+    except (ValueError, ImportError, MemoryError):
+        raise
+    except Exception as exc:                                        # noqa: BLE001  third-party readers, untrusted file
+        raise ValueError(f"could not read the CAD/mesh file ({type(exc).__name__}): it may be damaged or "
+                         "not the format its name says") from exc
 
     if isinstance(scene, trimesh.Scene):
         geoms = [g for g in scene.geometry.values()
@@ -273,6 +281,9 @@ def load_part_mesh(path: str, *, max_faces: int = _MAX_FACES,
     ctr = (mesh.bounds[0] + mesh.bounds[1]) / 2.0
     verts = (mesh.vertices - ctr)
     size_mm = (mesh.bounds[1] - mesh.bounds[0])
+    if not (np.isfinite(verts).all() and np.isfinite(size_mm).all()):
+        raise ValueError("the part has a vertex that is not at a finite position (a damaged file, or a unit scale "
+                         "far out of range)")
     return {
         "verts": verts.tolist(),
         "faces": mesh.faces.tolist(),

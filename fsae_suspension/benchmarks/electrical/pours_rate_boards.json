@@ -1,0 +1,4694 @@
+{
+ "what": "Plan addendum 15: the in-app pour estimate on 42 boards never used before, up to 3 converged nets per board in the order random.Random(20261115) gives; KinematiK frozen at e807fff; reference KiCad 9.0.3.",
+ "nets": [
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1-revA/BAGEL-MK1.kicad_pcb",
+   "net": "/Switch 6/SubBatt_V",
+   "app_s": 1.4,
+   "pour_mm2": 12.590654432133306,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "R703.1",
+    "U704.5"
+   ],
+   "app_ohm": 0.004959234410147527,
+   "app_h_mm": 0.0125,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.025,
+     0.004938939525010277
+    ],
+    [
+     0.0125,
+     0.004986025773594989
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.004986025773594989,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.5373290204263248,
+   "ref_s": 3
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1-revA/BAGEL-MK1.kicad_pcb",
+   "net": "/Switch 5/Reg_V",
+   "app_s": 0.0,
+   "pour_mm2": 241.30710086785257,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1-revA/BAGEL-MK1.kicad_pcb",
+   "net": "/Switch 6/Reg_V",
+   "app_s": 0.0,
+   "pour_mm2": 227.31769517436624,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1-revA/BAGEL-MK1.kicad_pcb",
+   "net": "Net-(J303-Pin_1)",
+   "app_s": 1.0,
+   "pour_mm2": 9.46117847179994,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "R309.1",
+    "J303.1"
+   ],
+   "app_ohm": 0.011312326131313485,
+   "app_h_mm": 0.0125,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.025,
+     0.01126091744061815
+    ],
+    [
+     0.0125,
+     0.011308825362742143
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.011308825362742143,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.03095607597651817,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1-revA/BAGEL-MK1.kicad_pcb",
+   "net": "/Switch 3/Reg_V",
+   "app_s": 0.0,
+   "pour_mm2": 253.8440165668726,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1-revA/BAGEL-MK1.kicad_pcb",
+   "net": "/Switch 4/SubBatt_V",
+   "app_s": 1.3,
+   "pour_mm2": 12.590649425284937,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "R503.1",
+    "U504.5"
+   ],
+   "app_ohm": 0.004948358793157362,
+   "app_h_mm": 0.0125,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.025,
+     0.004949880129382795
+    ],
+    [
+     0.0125,
+     0.0049701652430156
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0049701652430156,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.438746979064375,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1-revA/BAGEL-MK1.kicad_pcb",
+   "net": "/Switch 2/Reg_V",
+   "app_s": 0.0,
+   "pour_mm2": 242.55992363393307,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1-revA/BAGEL-MK1.kicad_pcb",
+   "net": "/Switch 1/Reg_V",
+   "app_s": 0.0,
+   "pour_mm2": 226.0460692308843,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1-revA/BAGEL-MK1.kicad_pcb",
+   "net": "Net-(J703-Pin_1)",
+   "app_s": 1.2,
+   "pour_mm2": 9.461172841722146,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "R709.1",
+    "J703.1"
+   ],
+   "app_ohm": 0.01129802073494591,
+   "app_h_mm": 0.0125,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.025,
+     0.011193388175047923
+    ],
+    [
+     0.0125,
+     0.011305073096205702
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.011305073096205702,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.06238227032923094,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1-revA/BAGEL-MK1.kicad_pcb",
+   "net": "/Switch 1/SubBatt_GND",
+   "app_s": 0.0,
+   "pour_mm2": 275.6099040340632,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1-revA/BAGEL-MK1.kicad_pcb",
+   "net": "/Switch 4/Reg_V",
+   "app_s": 0.0,
+   "pour_mm2": 244.89818946272135,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1-revA/BAGEL-MK1.kicad_pcb",
+   "net": "/Switch 3/SubBatt_GND",
+   "app_s": 0.0,
+   "pour_mm2": 353.9834523797035,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1-revA/BAGEL-MK1.kicad_pcb",
+   "net": "Net-(J503-Pin_1)",
+   "app_s": 1.2,
+   "pour_mm2": 9.46117974363733,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "R509.1",
+    "J503.1"
+   ],
+   "app_ohm": 0.011306905074732239,
+   "app_h_mm": 0.0125,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.025,
+     0.011272832867277593
+    ],
+    [
+     0.0125,
+     0.011305907432538273
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.011305907432538273,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.008824078915536937,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1-revA/BAGEL-MK1.kicad_pcb",
+   "net": "Net-(J603-Pin_1)",
+   "app_s": 1.2,
+   "pour_mm2": 9.46117805322865,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "R609.1",
+    "J603.1"
+   ],
+   "app_ohm": 0.011301348440061533,
+   "app_h_mm": 0.0125,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.025,
+     0.011266328877813725
+    ],
+    [
+     0.0125,
+     0.011303810275061821
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.011303810275061821,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.02177880679508082,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1-revA/BAGEL-MK1.kicad_pcb",
+   "net": "/Switch 6/SubBatt_GND",
+   "app_s": 0.0,
+   "pour_mm2": 263.85681223124266,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1-revA/BAGEL-MK1.kicad_pcb",
+   "net": "/Switch 1/SubBatt_V",
+   "app_s": 1.4,
+   "pour_mm2": 12.590650208469015,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "R203.1",
+    "U204.5"
+   ],
+   "app_ohm": 0.004960903866172503,
+   "app_h_mm": 0.0125,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.025,
+     0.004943004127923594
+    ],
+    [
+     0.0125,
+     0.004985783619072415
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.004985783619072415,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.49901389231449267,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1-revA/BAGEL-MK1.kicad_pcb",
+   "net": "/Switch 2/SubBatt_V",
+   "app_s": 1.2,
+   "pour_mm2": 12.5907057444565,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "R303.1",
+    "U304.5"
+   ],
+   "app_ohm": 0.0049503363502803,
+   "app_h_mm": 0.0125,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.025,
+     0.004936283047002814
+    ],
+    [
+     0.0125,
+     0.004970828674201712
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.004970828674201712,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.41225166394821544,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1-revA/BAGEL-MK1.kicad_pcb",
+   "net": "/Switch 5/SubBatt_GND",
+   "app_s": 0.0,
+   "pour_mm2": 291.4798334296793,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1-revA/BAGEL-MK1.kicad_pcb",
+   "net": "MCU_V",
+   "app_s": 0.0,
+   "pour_mm2": 361.0967114418745,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1-revA/BAGEL-MK1.kicad_pcb",
+   "net": "/Switch 4/SubBatt_GND",
+   "app_s": 0.0,
+   "pour_mm2": 349.37751334160566,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1-revA/BAGEL-MK1.kicad_pcb",
+   "net": "/Switch 2/SubBatt_GND",
+   "app_s": 0.0,
+   "pour_mm2": 287.8958555236459,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1-revA/BAGEL-MK1.kicad_pcb",
+   "net": "MCU_GND",
+   "app_s": 0.0,
+   "pour_mm2": 2207.4009467959404,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1-revA/BAGEL-MK1.kicad_pcb",
+   "net": "Net-(D101-K)",
+   "app_s": 0.2,
+   "pour_mm2": 2.1726951983873732,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "U103.3",
+    "D101.1"
+   ],
+   "app_ohm": 0.0008054675822591261,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": false,
+   "app_grid_change_pct": 3.6759334323464983,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.0007655492236854128
+    ],
+    [
+     0.010416666666666666,
+     0.0007955889999633704
+    ],
+    [
+     0.005208333333333333,
+     0.0007983309463265551
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0007983309463265551,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.8939445433512994,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1-revA/BAGEL-MK1.kicad_pcb",
+   "net": "Net-(J403-Pin_1)",
+   "app_s": 1.3,
+   "pour_mm2": 9.461172048177104,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "R409.1",
+    "J403.1"
+   ],
+   "app_ohm": 0.011321715806780664,
+   "app_h_mm": 0.0125,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.025,
+     0.011322890135658223
+    ],
+    [
+     0.0125,
+     0.011317846938617402
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.011317846938617402,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.03418378234167907,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1-revA/BAGEL-MK1.kicad_pcb",
+   "net": "Net-(J203-Pin_1)",
+   "app_s": 1.0,
+   "pour_mm2": 9.461178134893999,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "R209.1",
+    "J203.1"
+   ],
+   "app_ohm": 0.011339425603910366,
+   "app_h_mm": 0.0125,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.025,
+     0.01123273557701349
+    ],
+    [
+     0.0125,
+     0.011338911773840273
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.011338911773840273,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.004531564230703111,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1-revA/BAGEL-MK1.kicad_pcb",
+   "net": "/Switch 5/SubBatt_V",
+   "app_s": 1.1,
+   "pour_mm2": 12.590568912448362,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "R603.1",
+    "U604.5"
+   ],
+   "app_ohm": 0.0049435983828600635,
+   "app_h_mm": 0.0125,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.025,
+     0.0049458974834659135
+    ],
+    [
+     0.0125,
+     0.004966782665341303
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.004966782665341303,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.4667867318419616,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1-revA/BAGEL-MK1.kicad_pcb",
+   "net": "/CoinCell_V",
+   "app_s": 0.2,
+   "pour_mm2": 4.626772573508788,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "D101.2",
+    "J103.1"
+   ],
+   "app_ohm": 0.0005956549812050721,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.3922679019550091,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.0005859570338798136
+    ],
+    [
+     0.020833333333333332,
+     0.0005866022652555806
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0005866022652555806,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 1.54324599233302,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1-revA/BAGEL-MK1.kicad_pcb",
+   "net": "/Switch 3/SubBatt_V",
+   "app_s": 1.1,
+   "pour_mm2": 12.590582314063795,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "R403.1",
+    "U404.5"
+   ],
+   "app_ohm": 0.004944072585357666,
+   "app_h_mm": 0.0125,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.025,
+     0.004955002504860646
+    ],
+    [
+     0.0125,
+     0.0049652651095416075
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0049652651095416075,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.42681556203749693,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Avocado/BAGEL-MK1.1-Avocado.kicad_pcb",
+   "net": "/Switch 2/Reg_V",
+   "app_s": 0.0,
+   "pour_mm2": 342.5384230911732,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Avocado/BAGEL-MK1.1-Avocado.kicad_pcb",
+   "net": "/SubBatt_V4",
+   "app_s": 0.2,
+   "pour_mm2": 6.502129314467311,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Avocado/BAGEL-MK1.1-Avocado.kicad_pcb",
+   "net": "MCU_V",
+   "app_s": 0.0,
+   "pour_mm2": 455.4463056102395,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Avocado/BAGEL-MK1.1-Avocado.kicad_pcb",
+   "net": "/Switch 5/Reg_V",
+   "app_s": 0.0,
+   "pour_mm2": 342.5748960748315,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Avocado/BAGEL-MK1.1-Avocado.kicad_pcb",
+   "net": "Net-(D101-K)",
+   "app_s": 0.1,
+   "pour_mm2": 2.881902666995302,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "D101.1",
+    "U103.4"
+   ],
+   "app_ohm": 0.002123347992401194,
+   "app_h_mm": 0.012499999999999999,
+   "app_converged": true,
+   "app_grid_change_pct": 1.3257469174265861,
+   "reference_steps": [
+    [
+     0.024999999999999998,
+     0.0020867791610735213
+    ],
+    [
+     0.012499999999999999,
+     0.0021162986834739545
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0021162986834739545,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.333096125905441,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Avocado/BAGEL-MK1.1-Avocado.kicad_pcb",
+   "net": "/SubBatt_GND1",
+   "app_s": 0.0,
+   "pour_mm2": 270.3620374298189,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Avocado/BAGEL-MK1.1-Avocado.kicad_pcb",
+   "net": "/Switch 3/Reg_V",
+   "app_s": 0.0,
+   "pour_mm2": 387.32537066936493,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Avocado/BAGEL-MK1.1-Avocado.kicad_pcb",
+   "net": "/V_out_5",
+   "app_s": 0.4,
+   "pour_mm2": 4.068173684645444,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Avocado/BAGEL-MK1.1-Avocado.kicad_pcb",
+   "net": "MCU_GND",
+   "app_s": 0.0,
+   "pour_mm2": 555.1029311828315,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Avocado/BAGEL-MK1.1-Avocado.kicad_pcb",
+   "net": "/V_out_2",
+   "app_s": 0.4,
+   "pour_mm2": 4.328839556110324,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Avocado/BAGEL-MK1.1-Avocado.kicad_pcb",
+   "net": "/Switch 1/Reg_V",
+   "app_s": 0.0,
+   "pour_mm2": 253.5770062506199,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Avocado/BAGEL-MK1.1-Avocado.kicad_pcb",
+   "net": "/SubBatt_V3",
+   "app_s": 0.3,
+   "pour_mm2": 6.303874737815931,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Avocado/BAGEL-MK1.1-Avocado.kicad_pcb",
+   "net": "/I2C_SCL",
+   "app_s": 0.3,
+   "pour_mm2": 9.041669249068946,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Avocado/BAGEL-MK1.1-Avocado.kicad_pcb",
+   "net": "/SubBatt_V1",
+   "app_s": 0.3,
+   "pour_mm2": 6.545509622315876,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Avocado/BAGEL-MK1.1-Avocado.kicad_pcb",
+   "net": "/SubBatt_GND5",
+   "app_s": 0.0,
+   "pour_mm2": 367.44939818623243,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Avocado/BAGEL-MK1.1-Avocado.kicad_pcb",
+   "net": "/SubBatt_GND4",
+   "app_s": 0.0,
+   "pour_mm2": 420.0587838497013,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Avocado/BAGEL-MK1.1-Avocado.kicad_pcb",
+   "net": "/GPIO_Clock",
+   "app_s": 0.5,
+   "pour_mm2": 11.207834942266345,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Avocado/BAGEL-MK1.1-Avocado.kicad_pcb",
+   "net": "/I2C_SDA",
+   "app_s": 1.2,
+   "pour_mm2": 9.511107759550214,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "U105.13",
+    "R109.1"
+   ],
+   "app_ohm": 0.18801696158743195,
+   "app_h_mm": 0.0125,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.025,
+     0.18541318642638366
+    ],
+    [
+     0.0125,
+     0.1879953794304244
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.1879953794304244,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.011480152902132446,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Avocado/BAGEL-MK1.1-Avocado.kicad_pcb",
+   "net": "/SubBatt_GND3",
+   "app_s": 0.0,
+   "pour_mm2": 421.56976081081666,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Avocado/BAGEL-MK1.1-Avocado.kicad_pcb",
+   "net": "/SubBatt_V5",
+   "app_s": 0.5,
+   "pour_mm2": 6.478822395205498,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Avocado/BAGEL-MK1.1-Avocado.kicad_pcb",
+   "net": "/V_out_4",
+   "app_s": 0.2,
+   "pour_mm2": 4.3288399502052926,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Avocado/BAGEL-MK1.1-Avocado.kicad_pcb",
+   "net": "/SubBatt_V2",
+   "app_s": 0.3,
+   "pour_mm2": 5.442405841778964,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Avocado/BAGEL-MK1.1-Avocado.kicad_pcb",
+   "net": "/SubBatt_GND2",
+   "app_s": 0.0,
+   "pour_mm2": 368.7962111895904,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Avocado/BAGEL-MK1.1-Avocado.kicad_pcb",
+   "net": "/Switch 4/Reg_V",
+   "app_s": 0.0,
+   "pour_mm2": 391.14052275614813,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Avocado/BAGEL-MK1.1-Avocado.kicad_pcb",
+   "net": "/Switch 6/Reg_V",
+   "app_s": 0.0,
+   "pour_mm2": 251.36197923868895,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Avocado/BAGEL-MK1.1-Avocado.kicad_pcb",
+   "net": "/V_out_6",
+   "app_s": 0.2,
+   "pour_mm2": 4.155380774580408,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Avocado/BAGEL-MK1.1-Avocado.kicad_pcb",
+   "net": "/V_out_3",
+   "app_s": 0.3,
+   "pour_mm2": 4.155382564931642,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Avocado/BAGEL-MK1.1-Avocado.kicad_pcb",
+   "net": "/V_out_1",
+   "app_s": 0.2,
+   "pour_mm2": 4.15537559974473,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Avocado/BAGEL-MK1.1-Avocado.kicad_pcb",
+   "net": "/SubBatt_V6",
+   "app_s": 0.2,
+   "pour_mm2": 6.405046997126192,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Avocado/BAGEL-MK1.1-Avocado.kicad_pcb",
+   "net": "/EXP_RESET",
+   "app_s": 1.0,
+   "pour_mm2": 10.348767945542932,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "R103.1",
+    "U102.13"
+   ],
+   "app_ohm": 0.16196044334771353,
+   "app_h_mm": 0.0125,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.025,
+     0.1605356153367468
+    ],
+    [
+     0.0125,
+     0.16194314688858644
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.16194314688858644,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.01068057491744323,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Avocado/BAGEL-MK1.1-Avocado.kicad_pcb",
+   "net": "/SubBatt_GND6",
+   "app_s": 0.0,
+   "pour_mm2": 269.52124488487607,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Butter/BAGEL-MK1.1-Butter.kicad_pcb",
+   "net": "/Switch 2/Reg_V",
+   "app_s": 0.0,
+   "pour_mm2": 516.9528826959431,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Butter/BAGEL-MK1.1-Butter.kicad_pcb",
+   "net": "Net-(J303-Pin_1)",
+   "app_s": 1.3,
+   "pour_mm2": 9.461174820084125,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "R310.1",
+    "J303.1"
+   ],
+   "app_ohm": 0.011159586725060953,
+   "app_h_mm": 0.0125,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.025,
+     0.011123330720677336
+    ],
+    [
+     0.0125,
+     0.011159707216897193
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.011159707216897193,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.0010797042780619215,
+   "ref_s": 2
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Butter/BAGEL-MK1.1-Butter.kicad_pcb",
+   "net": "/Switch 3/SubBatt_GND",
+   "app_s": 0.0,
+   "pour_mm2": 678.1449372395873,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Butter/BAGEL-MK1.1-Butter.kicad_pcb",
+   "net": "/Switch 2/SubBatt_V",
+   "app_s": 0.5,
+   "pour_mm2": 13.52895691874437,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "U304.5",
+    "D301.2"
+   ],
+   "app_ohm": 0.004870110646284166,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.8072459943836263,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.004825764572107052
+    ],
+    [
+     0.020833333333333332,
+     0.004878401241567495
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.004878401241567495,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.16994492401910533,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Butter/BAGEL-MK1.1-Butter.kicad_pcb",
+   "net": "/Switch 1/SubBatt_V",
+   "app_s": 0.4,
+   "pour_mm2": 13.53846319875447,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "U204.5",
+    "D201.2"
+   ],
+   "app_ohm": 0.004857508427935195,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.8100872572366267,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.004828217807586764
+    ],
+    [
+     0.020833333333333332,
+     0.004875947345598567
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.004875947345598567,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.3781607215265992,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Butter/BAGEL-MK1.1-Butter.kicad_pcb",
+   "net": "Net-(J203-Pin_1)",
+   "app_s": 1.2,
+   "pour_mm2": 9.461172237060964,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "R210.1",
+    "J203.1"
+   ],
+   "app_ohm": 0.01116961423475035,
+   "app_h_mm": 0.0125,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.025,
+     0.011068797292914299
+    ],
+    [
+     0.0125,
+     0.01117600173893304
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.01117600173893304,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.057153750794769476,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Butter/BAGEL-MK1.1-Butter.kicad_pcb",
+   "net": "/Switch 1/Reg_V",
+   "app_s": 0.0,
+   "pour_mm2": 590.4901063740253,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Butter/BAGEL-MK1.1-Butter.kicad_pcb",
+   "net": "/Switch 2/SubBatt_GND",
+   "app_s": 0.0,
+   "pour_mm2": 669.1737546622753,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Butter/BAGEL-MK1.1-Butter.kicad_pcb",
+   "net": "/Switch 1/SubBatt_GND",
+   "app_s": 0.0,
+   "pour_mm2": 670.3207214400172,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Butter/BAGEL-MK1.1-Butter.kicad_pcb",
+   "net": "Net-(J403-Pin_1)",
+   "app_s": 1.2,
+   "pour_mm2": 9.461172428564169,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "R410.1",
+    "J403.1"
+   ],
+   "app_ohm": 0.011240161526091095,
+   "app_h_mm": 0.0125,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.025,
+     0.01091855617079546
+    ],
+    [
+     0.0125,
+     0.011251831153816439
+    ],
+    [
+     0.00625,
+     0.01128000492100018
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.01128000492100018,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.35322143197746847,
+   "ref_s": 9
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Butter/BAGEL-MK1.1-Butter.kicad_pcb",
+   "net": "MCU_GND",
+   "app_s": 0.0,
+   "pour_mm2": 2673.067986726761,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/BAGEL-MK1/BAGEL-MK1.1-Butter/BAGEL-MK1.1-Butter.kicad_pcb",
+   "net": "Net-(D101-K)",
+   "app_s": 0.3,
+   "pour_mm2": 3.5172516258899122,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "U103.4",
+    "U103.6"
+   ],
+   "app_ohm": 0.0036638987676344426,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.10631448808689102,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.0036406617482931287
+    ],
+    [
+     0.010416666666666666,
+     0.0036505050554650775
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0036505050554650775,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.366900249852109,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/CAM-MK1/SG_CAM.kicad_pcb",
+   "net": "Net-(U107-BOOT)",
+   "app_s": 0.0,
+   "pour_mm2": 2.3068298352882266,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "C115.1",
+    "U107.7"
+   ],
+   "app_ohm": 0.0007096033996035309,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 1.08948832254854,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.0007027239950503629
+    ],
+    [
+     0.020833333333333332,
+     0.0007101658800350172
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0007101658800350172,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.07920409122704752,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/CAM-MK1/SG_CAM.kicad_pcb",
+   "net": "Net-(U105-VBUS_VS_DISCH)",
+   "app_s": 0.1,
+   "pour_mm2": 1.6545548487338237,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "R110.1",
+    "U105.18"
+   ],
+   "app_ohm": 0.0006864017693053033,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.3020779546762322,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.0006847145636016313
+    ],
+    [
+     0.010416666666666666,
+     0.000686384809891012
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.000686384809891012,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.002470831820122754,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/CAM-MK1/SG_CAM.kicad_pcb",
+   "net": "/VBAT",
+   "app_s": 1.2,
+   "pour_mm2": 7.052623361872975,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "R107.1",
+    "J103.1"
+   ],
+   "app_ohm": 0.01037010548315985,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.020372705849837452,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.010368000648051592
+    ],
+    [
+     0.020833333333333332,
+     0.010370542718939429
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.010370542718939429,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.0042161320909506195,
+   "ref_s": 2
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/CAM-MK2/CAM-MK2-revA/CAM-MK2.kicad_pcb",
+   "net": "Net-(U106-IN-)",
+   "app_s": 0.0,
+   "pour_mm2": 0.5354234999977052,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "U106.9",
+    "U106.8"
+   ],
+   "app_ohm": 0.00029001352802815185,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": false,
+   "app_grid_change_pct": 9.173216137802154,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.0002607412185818035
+    ],
+    [
+     0.010416666666666666,
+     0.0002891591639050087
+    ],
+    [
+     0.005208333333333333,
+     0.00028513779981611593
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.00028513779981611593,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 1.7099550516207485,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/CAM-MK2/CAM-MK2-revA/CAM-MK2.kicad_pcb",
+   "net": "Net-(U106-IN+)",
+   "app_s": 0.0,
+   "pour_mm2": 0.5354234999977052,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "U106.2",
+    "U106.1"
+   ],
+   "app_ohm": 0.0002810441800617004,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.12408729103099474,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.00027941549874629164
+    ],
+    [
+     0.010416666666666666,
+     0.0002799148017809442
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0002799148017809442,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.4034721542307107,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/CAM-MK2/CAM-MK2-revA/CAM-MK2.kicad_pcb",
+   "net": "/VTX_POW",
+   "app_s": 0.2,
+   "pour_mm2": 3.602923500002362,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "Q101.7",
+    "J105.2"
+   ],
+   "app_ohm": 0.004044244717252471,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.16433564455695457,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.00403803068524747
+    ],
+    [
+     0.020833333333333332,
+     0.0040441455863106076
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0040441455863106076,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.0024512209006122276,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/CAM-MK2/CAM-MK2-revA/CAM-MK2.kicad_pcb",
+   "net": "/VBAT",
+   "app_s": 0.4,
+   "pour_mm2": 6.972648032999132,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "U108.2",
+    "J102.1"
+   ],
+   "app_ohm": 0.0061851769309054835,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 1.1419581244109576,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.0061182149656041
+    ],
+    [
+     0.020833333333333332,
+     0.006184944988731496
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.006184944988731496,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.0037501089243274777,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/CAM-MK2/CAM-MK2.1-revA/CAM-MK2.1.kicad_pcb",
+   "net": "Net-(U106-IN-)",
+   "app_s": 0.0,
+   "pour_mm2": 0.5354234999977052,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "U106.9",
+    "U106.8"
+   ],
+   "app_ohm": 0.00029001352802815185,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": false,
+   "app_grid_change_pct": 9.173216137802154,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.0002607412185818035
+    ],
+    [
+     0.010416666666666666,
+     0.0002891591639050087
+    ],
+    [
+     0.005208333333333333,
+     0.00028513779981611593
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.00028513779981611593,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 1.7099550516207485,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/CAM-MK2/CAM-MK2.1-revA/CAM-MK2.1.kicad_pcb",
+   "net": "Net-(U106-IN+)",
+   "app_s": 0.0,
+   "pour_mm2": 0.5354234999977052,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "U106.2",
+    "U106.1"
+   ],
+   "app_ohm": 0.0002810441800617004,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.12408729103099474,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.00027941549874629164
+    ],
+    [
+     0.010416666666666666,
+     0.0002799148017809442
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0002799148017809442,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.4034721542307107,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/CAM-MK2/CAM-MK2.1-revA/CAM-MK2.1.kicad_pcb",
+   "net": "/VREG_IN",
+   "app_s": 0.7,
+   "pour_mm2": 18.96338872356864,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "R101.1",
+    "U104.7@143.94,75.38"
+   ],
+   "app_ohm": 0.006747840449162632,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 1.325456086993706,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.006645951452103839
+    ],
+    [
+     0.020833333333333332,
+     0.006735685882011578
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.006735685882011578,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.18045032627656,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/CAM-MK2/CAM-MK2.1-revA/CAM-MK2.1.kicad_pcb",
+   "net": "/USB_POWER",
+   "app_s": 0.5,
+   "pour_mm2": 7.978859840601217,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "U108.7",
+    "J101.B4"
+   ],
+   "app_ohm": 0.007871601414877206,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.3055575302736131,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.007847505258196488
+    ],
+    [
+     0.020833333333333332,
+     0.007872170219425812
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.007872170219425812,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.0072255112980479375,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/CAM-MK3/CAM-MK3-revA/CAM-MK3-revA.kicad_pcb",
+   "net": "Net-(U202-FB)",
+   "app_s": 0.8,
+   "pour_mm2": 4.34202212037053,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "U202.7",
+    "C206.2"
+   ],
+   "app_ohm": 0.005187298209436403,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 1.2176501140301685,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.005250468895232017
+    ],
+    [
+     0.008333333333333333,
+     0.0051928793950477324
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0051928793950477324,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.10747766675752723,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/CAM-MK3/CAM-MK3-revA/CAM-MK3-revA.kicad_pcb",
+   "net": "Net-(U202-EN)",
+   "app_s": 1.0,
+   "pour_mm2": 4.105652650439879,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "U202.6",
+    "R202.2"
+   ],
+   "app_ohm": 0.009009343566805416,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 0.05674869004803352,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.009014467118317921
+    ],
+    [
+     0.008333333333333333,
+     0.009010461810291264
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.009010461810291264,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.012410501363757653,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/CAM-MK3/CAM-MK3-revA/CAM-MK3-revA.kicad_pcb",
+   "net": "Net-(C101-Pad1)",
+   "app_s": 0.4,
+   "pour_mm2": 4.116153763548937,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "C101.1",
+    "R102.2"
+   ],
+   "app_ohm": 0.0006114906101446932,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": false,
+   "app_grid_change_pct": 2.1335980850428875,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.0006000909610462623
+    ],
+    [
+     0.010416666666666666,
+     0.0006115457898657581
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0006115457898657581,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.009022990915685813,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/CAM-MK3/CAM-MK3-revA/CAM-MK3-revA.kicad_pcb",
+   "net": "/VREG_IN",
+   "app_s": 2.3,
+   "pour_mm2": 7.454706137417816,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "U201.1",
+    "U106.7"
+   ],
+   "app_ohm": 0.04420458764608659,
+   "app_h_mm": 0.016666666666666666,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.03333333333333333,
+     0.043977047231131716
+    ],
+    [
+     0.016666666666666666,
+     0.04422462304014227
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.04422462304014227,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.04530370793096594,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/CAM-MK3/CAM-MK3-revA/CAM-MK3-revA.kicad_pcb",
+   "net": "/CAM_2_POW",
+   "app_s": 0.4,
+   "pour_mm2": 2.9765276504622307,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "U105.23",
+    "J107.3"
+   ],
+   "app_ohm": 0.006753665292821047,
+   "app_h_mm": 0.012499999999999999,
+   "app_converged": true,
+   "app_grid_change_pct": 0.5980978229624585,
+   "reference_steps": [
+    [
+     0.024999999999999998,
+     0.0067139620429445815
+    ],
+    [
+     0.012499999999999999,
+     0.006751710550480461
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.006751710550480461,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.028951808967092596,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/CAM-MK3/CAM-MK3-revB/CAM-MK3-revB.kicad_pcb",
+   "net": "Net-(U202-FB)",
+   "app_s": 0.8,
+   "pour_mm2": 4.34202212037053,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "U202.7",
+    "C206.2"
+   ],
+   "app_ohm": 0.005187298209436403,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 1.2176501140301685,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.005250468895232017
+    ],
+    [
+     0.008333333333333333,
+     0.0051928793950477324
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0051928793950477324,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.10747766675752723,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/CAM-MK3/CAM-MK3-revB/CAM-MK3-revB.kicad_pcb",
+   "net": "Net-(U202-EN)",
+   "app_s": 0.9,
+   "pour_mm2": 4.105652650439879,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "U202.6",
+    "R202.2"
+   ],
+   "app_ohm": 0.009009343566805416,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 0.05674869004803352,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.009014467118317921
+    ],
+    [
+     0.008333333333333333,
+     0.009010461810291264
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.009010461810291264,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.012410501363757653,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/CAM-MK3/CAM-MK3-revB/CAM-MK3-revB.kicad_pcb",
+   "net": "Net-(C101-Pad1)",
+   "app_s": 0.4,
+   "pour_mm2": 4.116153763548937,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "C101.1",
+    "R102.2"
+   ],
+   "app_ohm": 0.0006114906101446932,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": false,
+   "app_grid_change_pct": 2.1335980850428875,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.0006000909610462623
+    ],
+    [
+     0.010416666666666666,
+     0.0006115457898657581
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0006115457898657581,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.009022990915685813,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/CAM-MK3/CAM-MK3-revB/CAM-MK3-revB.kicad_pcb",
+   "net": "/VREG_IN",
+   "app_s": 2.5,
+   "pour_mm2": 7.454706137417816,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "U201.1",
+    "U106.7"
+   ],
+   "app_ohm": 0.04420458764608659,
+   "app_h_mm": 0.016666666666666666,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.03333333333333333,
+     0.043977047231131716
+    ],
+    [
+     0.016666666666666666,
+     0.04422462304014227
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.04422462304014227,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.04530370793096594,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/CAM-MK3/CAM-MK3-revB/CAM-MK3-revB.kicad_pcb",
+   "net": "/CAM_2_POW",
+   "app_s": 0.5,
+   "pour_mm2": 2.9765276504622307,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "U105.23",
+    "J107.3"
+   ],
+   "app_ohm": 0.006753665292821047,
+   "app_h_mm": 0.012499999999999999,
+   "app_converged": true,
+   "app_grid_change_pct": 0.5980978229624585,
+   "reference_steps": [
+    [
+     0.024999999999999998,
+     0.0067139620429445815
+    ],
+    [
+     0.012499999999999999,
+     0.006751710550480461
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.006751710550480461,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.028951808967092596,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/CAM-MK3/CAM-MK3-revC/CAM-MK3-revC.kicad_pcb",
+   "net": "Net-(U202-FB)",
+   "app_s": 0.8,
+   "pour_mm2": 4.34202212037053,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "U202.7",
+    "C206.2"
+   ],
+   "app_ohm": 0.005187298209436403,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 1.2176501140301685,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.005250468895232017
+    ],
+    [
+     0.008333333333333333,
+     0.0051928793950477324
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0051928793950477324,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.10747766675752723,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/CAM-MK3/CAM-MK3-revC/CAM-MK3-revC.kicad_pcb",
+   "net": "Net-(U202-EN)",
+   "app_s": 0.9,
+   "pour_mm2": 4.105652650439879,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "U202.6",
+    "R202.2"
+   ],
+   "app_ohm": 0.009009343566805416,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 0.05674869004803352,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.009014467118317921
+    ],
+    [
+     0.008333333333333333,
+     0.009010461810291264
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.009010461810291264,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.012410501363757653,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/CAM-MK3/CAM-MK3-revC/CAM-MK3-revC.kicad_pcb",
+   "net": "Net-(C101-Pad1)",
+   "app_s": 0.4,
+   "pour_mm2": 4.120652650453849,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "C101.1",
+    "R102.2"
+   ],
+   "app_ohm": 0.0006114906097092623,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": false,
+   "app_grid_change_pct": 2.133598026164244,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.0006000909609583651
+    ],
+    [
+     0.010416666666666666,
+     0.0006115457896105543
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0006115457896105543,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.009023020390208636,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/CAM-MK3/CAM-MK3-revC/CAM-MK3-revC.kicad_pcb",
+   "net": "/VREG_IN",
+   "app_s": 2.6,
+   "pour_mm2": 7.454706137417816,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "U201.1",
+    "U106.7"
+   ],
+   "app_ohm": 0.044459426671499644,
+   "app_h_mm": 0.016666666666666666,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.03333333333333333,
+     0.04428690370670032
+    ],
+    [
+     0.016666666666666666,
+     0.044479461948337795
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.044479461948337795,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.045043883087936276,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/CAM-MK3/CAM-MK3-revC/CAM-MK3-revC.kicad_pcb",
+   "net": "/CAM_2_POW",
+   "app_s": 0.5,
+   "pour_mm2": 2.9765276504622307,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "U105.23",
+    "J107.3"
+   ],
+   "app_ohm": 0.006753665292821047,
+   "app_h_mm": 0.012499999999999999,
+   "app_converged": true,
+   "app_grid_change_pct": 0.5980978229624585,
+   "reference_steps": [
+    [
+     0.024999999999999998,
+     0.0067139620429445815
+    ],
+    [
+     0.012499999999999999,
+     0.006751710550480461
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.006751710550480461,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.028951808967092596,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Drone_Power/drone_power_2_screws/drone_power_2_screws.kicad_pcb",
+   "net": "Net-(U3-SW)",
+   "app_s": 0.2,
+   "pour_mm2": 0.6039102115610149,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "C11.2",
+    "U3.5"
+   ],
+   "app_ohm": 0.002731804615735847,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.24006184582445342,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.002725886206563379
+    ],
+    [
+     0.020833333333333332,
+     0.002729731201229636
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.002729731201229636,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.07595672809386222,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Drone_Power/drone_power_2_screws/drone_power_2_screws.kicad_pcb",
+   "net": "Net-(U3-FB)",
+   "app_s": 0.3,
+   "pour_mm2": 1.631324649846647,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "R6.1",
+    "U3.8"
+   ],
+   "app_ohm": 0.001691597612947423,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.749468803012879,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.0016716479966539302
+    ],
+    [
+     0.010416666666666666,
+     0.0016862817425311396
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0016862817425311396,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.31524212604616686,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Drone_Power/drone_power_2_screws/drone_power_2_screws.kicad_pcb",
+   "net": "Net-(U2-FB)",
+   "app_s": 0.4,
+   "pour_mm2": 1.9788267962576356,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "R4.1",
+    "U2.8"
+   ],
+   "app_ohm": 0.0016997868043260862,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.6693319885097087,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.0016852266095773126
+    ],
+    [
+     0.010416666666666666,
+     0.001694123463771892
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.001694123463771892,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.3342932599248005,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Drone_Power/drone_power_2_screws_V2/drone_power_2_screws_V2.kicad_pcb",
+   "net": "Net-(U3-SW)",
+   "app_s": 0.4,
+   "pour_mm2": 15.685447772266343,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "L3.1",
+    "Cboot2.1"
+   ],
+   "app_ohm": 0.0035317169671885535,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 1.3394842163683534,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.0034843685628177996
+    ],
+    [
+     0.020833333333333332,
+     0.003530744708560378
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.003530744708560378,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.02753692799759566,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Drone_Power/drone_power_2_screws_V2/drone_power_2_screws_V2.kicad_pcb",
+   "net": "Net-(U3-CBOOT)",
+   "app_s": 0.2,
+   "pour_mm2": 1.7168982899165712,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "U3.3",
+    "Cboot2.2"
+   ],
+   "app_ohm": 0.0006888360748951546,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": false,
+   "app_grid_change_pct": 5.390299416140761,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.0006525503632517409
+    ],
+    [
+     0.010416666666666666,
+     0.0006888563848625885
+    ],
+    [
+     0.005208333333333333,
+     0.00068733424635163
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.00068733424635163,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.21850046778497667,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Drone_Power/drone_power_2_screws_V2/drone_power_2_screws_V2.kicad_pcb",
+   "net": "Net-(U2-SW)",
+   "app_s": 1.1,
+   "pour_mm2": 3.693173360428773,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "L2.1",
+    "U2.6"
+   ],
+   "app_ohm": 0.0020102291450824336,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.12134225381003605,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.002008588263206364
+    ],
+    [
+     0.020833333333333332,
+     0.0020108971386283737
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0020108971386283737,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.033218683000157956,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Drone_Power/drone_power_2_screws_V2/drone_power_2_screws_V2.kicad_pcb",
+   "net": "/V_Batt",
+   "app_s": 0.0,
+   "pour_mm2": 18.697942697093822,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Drone_Power/drone_power_2_screws_V2/drone_power_2_screws_V2.kicad_pcb",
+   "net": "Net-(U1-SW)",
+   "app_s": 0.5,
+   "pour_mm2": 3.887222186749568,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "L1.1",
+    "U1.6"
+   ],
+   "app_ohm": 0.0015780791645592209,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 1.467695796869832,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.0015548490148107848
+    ],
+    [
+     0.020833333333333332,
+     0.0015785823142741855
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0015785823142741855,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.03187351780232772,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Drone_Power/drone_power_3_screws/drone_power_3_screws.kicad_pcb",
+   "net": "Net-(U3-SW)",
+   "app_s": 0.4,
+   "pour_mm2": 0.4385084982495755,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "L3.1",
+    "U3.5"
+   ],
+   "app_ohm": 0.01690567029241983,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.10770287203074703,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.016885540439989598
+    ],
+    [
+     0.020833333333333332,
+     0.016904411769999652
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.016904411769999652,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.007444934714673224,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Drone_Power/drone_power_3_screws/drone_power_3_screws.kicad_pcb",
+   "net": "Net-(U3-FB)",
+   "app_s": 0.0,
+   "pour_mm2": 1.3897565455408767,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "R6.1",
+    "U3.8"
+   ],
+   "app_ohm": 0.001394015997202313,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.19786161112693074,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.0013896278650739283
+    ],
+    [
+     0.020833333333333332,
+     0.0013890860052477442
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0013890860052477442,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.3549090506955066,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Drone_Power/drone_power_3_screws/drone_power_3_screws.kicad_pcb",
+   "net": "Net-(U2-FB)",
+   "app_s": 0.2,
+   "pour_mm2": 1.354600778897293,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "R4.1",
+    "U2.8"
+   ],
+   "app_ohm": 0.0013730828036219158,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.5013453173013711,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.001362930848738888
+    ],
+    [
+     0.010416666666666666,
+     0.0013668490012734165
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0013668490012734165,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.45607103218363587,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/EAGLE-MK1/EAGLE-MK1-revA/EAGLE-MK1-revA.kicad_pcb",
+   "net": "+5V",
+   "app_s": 0.7,
+   "pour_mm2": 14.978785673331004,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "J108.2",
+    "C36.2"
+   ],
+   "app_ohm": 0.11134214030508893,
+   "app_h_mm": 0.03333333333333333,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.06666666666666667,
+     0.11221638485002733
+    ],
+    [
+     0.03333333333333333,
+     0.11134605327007291
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.11134605327007291,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.0035142377022401305,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/EAGLE-MK1/EAGLE-MK1-revA/EAGLE-MK1-revA.kicad_pcb",
+   "net": "Net-(U2-L1)",
+   "app_s": 1.7,
+   "pour_mm2": 7.102866305387579,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "L4.1",
+    "U2.9"
+   ],
+   "app_ohm": 0.001106393100884939,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 0.7949931255782764,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.0010975503290793554
+    ],
+    [
+     0.008333333333333333,
+     0.0011062655991286208
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0011062655991286208,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.011525419973179574,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/EAGLE-MK1/EAGLE-MK1-revA/EAGLE-MK1-revA.kicad_pcb",
+   "net": "Net-(U2-L2)",
+   "app_s": 0.8,
+   "pour_mm2": 7.38560938226874,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "L4.2",
+    "U2.7"
+   ],
+   "app_ohm": 0.0010449978641484897,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 1.6561721435907688,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.001025347030988429
+    ],
+    [
+     0.010416666666666666,
+     0.0010421300414767015
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0010421300414767015,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.2751885616620875,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/EAGLE-MK1/EAGLE-MK1-revA/EAGLE-MK1-revA.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "pour_mm2": 2488.0246634185314,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/EAGLE-MK1/EAGLE-MK1-revA/EAGLE-MK1-revA.kicad_pcb",
+   "net": "+3V3",
+   "app_s": 0.0,
+   "pour_mm2": 2377.6961524635553,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/EAGLE-MK1/EAGLE-MK1-revA/EAGLE-MK1-revA.kicad_pcb",
+   "net": "/VREG_IN",
+   "app_s": 0.7,
+   "pour_mm2": 10.835768578646821,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "U5.11",
+    "C1.2"
+   ],
+   "app_ohm": 0.029711477994979498,
+   "app_h_mm": 0.016666666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.4520438994943979,
+   "reference_steps": [
+    [
+     0.03333333333333333,
+     0.02980784411566833
+    ],
+    [
+     0.016666666666666666,
+     0.029653157029522505
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.029653157029522505,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.19667708702628683,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/EAGLE-MK1/EAGLE-MK1-revB/EAGLE-MK1-revB.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "pour_mm2": 2442.511889349844,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/EAGLE-MK1/EAGLE-MK1-revB/EAGLE-MK1-revB.kicad_pcb",
+   "net": "+3V3",
+   "app_s": 0.0,
+   "pour_mm2": 2446.2731335759163,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/EAGLE-MK1/EAGLE-MK1-revB/EAGLE-MK1-revB.kicad_pcb",
+   "net": "/VREG_IN",
+   "app_s": 0.5,
+   "pour_mm2": 6.056784818647429,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "U3.11",
+    "U4.7"
+   ],
+   "app_ohm": 0.016622774337990604,
+   "app_h_mm": 0.016666666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.693529040100711,
+   "reference_steps": [
+    [
+     0.03333333333333333,
+     0.01672468809779103
+    ],
+    [
+     0.016666666666666666,
+     0.01659730926006424
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.01659730926006424,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.15342895361742936,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Feather_Duo/Feather_Duo.kicad_pcb",
+   "net": "+3V3",
+   "app_s": 0.0,
+   "pour_mm2": 1290.5802592001855,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Feather_Duo/Feather_Duo.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "pour_mm2": 1334.661260722205,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/MIDAS-MK1/MIDAS-MK1-revA/MIDAS-MK1.kicad_pcb",
+   "net": "Net-(U303-FB)",
+   "app_s": 0.3,
+   "pour_mm2": 3.36183204932604,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "R316.1",
+    "U303.5"
+   ],
+   "app_ohm": 0.0009644303867175159,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.05613612461015727,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.0009653041359644535
+    ],
+    [
+     0.010416666666666666,
+     0.0009647446310626515
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0009647446310626515,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.03257280061661483,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/MIDAS-MK1/MIDAS-MK1-revA/MIDAS-MK1.kicad_pcb",
+   "net": "Net-(Q204A-S1)",
+   "app_s": 0.5,
+   "pour_mm2": 15.250600497674895,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "R221.2",
+    "Q204.5"
+   ],
+   "app_ohm": 0.009634155394008465,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.12624024034079853,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.00962241239636437
+    ],
+    [
+     0.020833333333333332,
+     0.009632307456266634
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.009632307456266634,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.019184787759551902,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/MIDAS-MK1/MIDAS-MK1-revA/MIDAS-MK1.kicad_pcb",
+   "net": "/USB_POWER",
+   "app_s": 0.0,
+   "pour_mm2": 13.930631509516388,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/MIDAS-MK1/MIDAS-MK1-revA/MIDAS-MK1.kicad_pcb",
+   "net": "Net-(D302-K)",
+   "app_s": 0.2,
+   "pour_mm2": 6.691473106620833,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "U302.2",
+    "D302.1"
+   ],
+   "app_ohm": 0.0011024632128120537,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 1.7244514609584143,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.0010787029098052328
+    ],
+    [
+     0.020833333333333332,
+     0.0011002321023253557
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0011002321023253557,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.20278543790737125,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/MIDAS-MK1/MIDAS-MK1-revB/MIDAS-MK1.kicad_pcb",
+   "net": "Net-(U303-FB)",
+   "app_s": 0.3,
+   "pour_mm2": 3.493678106868174,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "R316.1",
+    "U303.6"
+   ],
+   "app_ohm": 0.0009122593522299344,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.30584920210971017,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.0009075613290391906
+    ],
+    [
+     0.010416666666666666,
+     0.0009126274949609055
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0009126274949609055,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.04033877271985009,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/MIDAS-MK1/MIDAS-MK1-revB/MIDAS-MK1.kicad_pcb",
+   "net": "Net-(Q204A-S1)",
+   "app_s": 0.3,
+   "pour_mm2": 15.250600497674895,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "R221.2",
+    "Q204.5"
+   ],
+   "app_ohm": 0.009634155394008465,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.12624024034079853,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.00962241239636437
+    ],
+    [
+     0.020833333333333332,
+     0.009632307456266634
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.009632307456266634,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.019184787759551902,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/MIDAS-MK1/MIDAS-MK1-revB/MIDAS-MK1.kicad_pcb",
+   "net": "/USB_POWER",
+   "app_s": 0.0,
+   "pour_mm2": 13.930631509516388,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/MIDAS-MK1/MIDAS-MK1-revB/MIDAS-MK1.kicad_pcb",
+   "net": "Net-(D302-K)",
+   "app_s": 0.1,
+   "pour_mm2": 8.17541028233245,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "U302.5",
+    "R311.2"
+   ],
+   "app_ohm": 0.0031485825500816287,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.9829612629939902,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.0031131448788837327
+    ],
+    [
+     0.020833333333333332,
+     0.0031459726226810937
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0031459726226810937,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.08296090632571307,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/MIDAS-MK1/MIDAS-MK1.1-revA/MIDAS-MK1.1.kicad_pcb",
+   "net": "Net-(Q203A-S1)",
+   "app_s": 0.4,
+   "pour_mm2": 14.64719821838662,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "R209.2",
+    "Q203.5"
+   ],
+   "app_ohm": 0.009936340936794161,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.47684002202127157,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.009887548041851001
+    ],
+    [
+     0.020833333333333332,
+     0.009935991500909042
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.009935991500909042,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.0035168698069742987,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/MIDAS-MK1/MIDAS-MK1.1-revA/MIDAS-MK1.1.kicad_pcb",
+   "net": "Net-(U403-VCC)",
+   "app_s": 0.2,
+   "pour_mm2": 8.08663179463474,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "U403.6",
+    "L402.2"
+   ],
+   "app_ohm": 0.0008442325391773645,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 1.3907028931893388,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.0008318992733146326
+    ],
+    [
+     0.020833333333333332,
+     0.0008444760733845363
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0008444760733845363,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.02883849700984209,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/MIDAS-MK1/MIDAS-MK1.1-revA/MIDAS-MK1.1.kicad_pcb",
+   "net": "Net-(Q201A-D1-Pad7)",
+   "app_s": 0.7,
+   "pour_mm2": 9.186566490796395,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "Q201.8",
+    "Q201.5"
+   ],
+   "app_ohm": 0.0005893645033001822,
+   "app_h_mm": 0.0125,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.025,
+     0.0005835621971044684
+    ],
+    [
+     0.0125,
+     0.0005895489265921917
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0005895489265921917,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.03128210122873565,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/MIDAS-MK1/MIDAS-MK1.1-revA/MIDAS-MK1.1.kicad_pcb",
+   "net": "Net-(Q205A-S1)",
+   "app_s": 0.4,
+   "pour_mm2": 14.64719821838662,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "Q205.5",
+    "R222.2"
+   ],
+   "app_ohm": 0.009934808186144043,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.46695222218205235,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.009886615156163965
+    ],
+    [
+     0.020833333333333332,
+     0.009934544926035014
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.009934544926035014,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.0026499463336104867,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/MIDAS-MK1/MIDAS-MK1.1-revB/MIDAS-MK1.1.kicad_pcb",
+   "net": "Net-(Q203A-S1)",
+   "app_s": 0.3,
+   "pour_mm2": 14.64719821838662,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "R209.2",
+    "Q203.5"
+   ],
+   "app_ohm": 0.009936340936794161,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.47684002202127157,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.009887548041851001
+    ],
+    [
+     0.020833333333333332,
+     0.009935991500909042
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.009935991500909042,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.0035168698069742987,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/MIDAS-MK1/MIDAS-MK1.1-revB/MIDAS-MK1.1.kicad_pcb",
+   "net": "Net-(U403-VCC)",
+   "app_s": 0.2,
+   "pour_mm2": 8.08663179463474,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "U403.6",
+    "L402.2"
+   ],
+   "app_ohm": 0.0008442325391773645,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 1.3907028931893388,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.0008318992733146326
+    ],
+    [
+     0.020833333333333332,
+     0.0008444760733845363
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0008444760733845363,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.02883849700984209,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/MIDAS-MK1/MIDAS-MK1.1-revB/MIDAS-MK1.1.kicad_pcb",
+   "net": "Net-(Q201A-D1-Pad7)",
+   "app_s": 0.6,
+   "pour_mm2": 9.186566490796395,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "Q201.8",
+    "Q201.5"
+   ],
+   "app_ohm": 0.0005893645033001822,
+   "app_h_mm": 0.0125,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.025,
+     0.0005835621971044684
+    ],
+    [
+     0.0125,
+     0.0005895489265921917
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0005895489265921917,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.03128210122873565,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/MIDAS-MK1/MIDAS-MK1.1-revB/MIDAS-MK1.1.kicad_pcb",
+   "net": "Net-(Q205A-S1)",
+   "app_s": 0.3,
+   "pour_mm2": 14.64719821838662,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "Q205.5",
+    "R222.2"
+   ],
+   "app_ohm": 0.009934808186144043,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.46695222218205235,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.009886615156163965
+    ],
+    [
+     0.020833333333333332,
+     0.009934544926035014
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.009934544926035014,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.0026499463336104867,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/MIDAS-MK2/MIDAS-MK2-revA/MIDAS-MK2.kicad_pcb",
+   "net": "Net-(U303-FB)",
+   "app_s": 0.1,
+   "pour_mm2": 3.341535945510259,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "U303.6",
+    "R313.1"
+   ],
+   "app_ohm": 0.0008040707268869502,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 1.7495025223250267,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.0007901367437825833
+    ],
+    [
+     0.020833333333333332,
+     0.0008026414380757616
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0008026414380757616,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.17807313993345453,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/MIDAS-MK2/MIDAS-MK2-revA/MIDAS-MK2.kicad_pcb",
+   "net": "Net-(D301-K)",
+   "app_s": 0.1,
+   "pour_mm2": 4.514063887647353,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "R303.2",
+    "U303.5"
+   ],
+   "app_ohm": 0.008920215021294654,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.4198351336567374,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.008956004739453408
+    ],
+    [
+     0.020833333333333332,
+     0.008920921767229063
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.008920921767229063,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.007922342027544271,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/MIDAS-MK2/MIDAS-MK2-revA/MIDAS-MK2.kicad_pcb",
+   "net": "/Pyro Circuitry/GND2",
+   "app_s": 0.1,
+   "pour_mm2": 9.180889852548717,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "C204.2",
+    "U203.11"
+   ],
+   "app_ohm": 0.0008939249961028461,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 1.8408806781000504,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.0008792706641468147
+    ],
+    [
+     0.020833333333333332,
+     0.0008934188391086303
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0008934188391086303,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.0566539423682455,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/MIDAS-MK2/MIDAS-MK2.1-revA/MIDAS-MK2.1.kicad_pcb",
+   "net": "Net-(U303-FB)",
+   "app_s": 0.1,
+   "pour_mm2": 3.341535945510259,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "U303.6",
+    "R313.1"
+   ],
+   "app_ohm": 0.0008040707268869502,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 1.7495025223250267,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.0007901367437825833
+    ],
+    [
+     0.020833333333333332,
+     0.0008026414380757616
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0008026414380757616,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.17807313993345453,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/MIDAS-MK2/MIDAS-MK2.1-revA/MIDAS-MK2.1.kicad_pcb",
+   "net": "Net-(D201-K)",
+   "app_s": 1.5,
+   "pour_mm2": 12.56661867769435,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "D201.1",
+    "U202.13"
+   ],
+   "app_ohm": 0.0006541287902290186,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.616567085074928,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.0006460377047291072
+    ],
+    [
+     0.010416666666666666,
+     0.0006495821184963992
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0006495821184963992,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.6999379452044874,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/MIDAS-MK2/MIDAS-MK2.1-revA/MIDAS-MK2.1.kicad_pcb",
+   "net": "/Pyro Circuitry/GND2",
+   "app_s": 0.1,
+   "pour_mm2": 9.180889852548717,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "C203.2",
+    "U203.11"
+   ],
+   "app_ohm": 0.0008939249961028461,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 1.8408806781000504,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.0008792706641468147
+    ],
+    [
+     0.020833333333333332,
+     0.0008934188391086303
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0008934188391086303,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.0566539423682455,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/MIDAS-MK2/MIDAS-MK2.1-revB/MIDAS-MK2.1.kicad_pcb",
+   "net": "Net-(U303-FB)",
+   "app_s": 0.1,
+   "pour_mm2": 3.341535945510259,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "U303.6",
+    "R313.1"
+   ],
+   "app_ohm": 0.0008040707268869502,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 1.7495025223250267,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.0007901367437825833
+    ],
+    [
+     0.020833333333333332,
+     0.0008026414380757616
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0008026414380757616,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.17807313993345453,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/MIDAS-MK2/MIDAS-MK2.1-revB/MIDAS-MK2.1.kicad_pcb",
+   "net": "Net-(D201-K)",
+   "app_s": 1.5,
+   "pour_mm2": 12.56661867769435,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "D201.1",
+    "U202.13"
+   ],
+   "app_ohm": 0.0006541287902290186,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.616567085074928,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.0006460377047291072
+    ],
+    [
+     0.010416666666666666,
+     0.0006495821184963992
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0006495821184963992,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.6999379452044874,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/MIDAS-MK2/MIDAS-MK2.1-revB/MIDAS-MK2.1.kicad_pcb",
+   "net": "/Pyro Circuitry/GND2",
+   "app_s": 0.2,
+   "pour_mm2": 9.180889852548717,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "C203.2",
+    "U203.11"
+   ],
+   "app_ohm": 0.0008939249961028461,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 1.8408806781000504,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.0008792706641468147
+    ],
+    [
+     0.020833333333333332,
+     0.0008934188391086303
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0008934188391086303,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.0566539423682455,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Mini-MK1/Mini-MK1.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "pour_mm2": 1663.2096209079027,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Mini-MK1/Mini-MK1.kicad_pcb",
+   "net": "/V_PYRO",
+   "app_s": 0.0,
+   "pour_mm2": 58.77696594665758,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Mini-MK1/Mini-MK1.kicad_pcb",
+   "net": "/VBAT",
+   "app_s": 0.4,
+   "pour_mm2": 9.987727522733621,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "U203.2",
+    "U202.6"
+   ],
+   "app_ohm": 0.0007630009669462557,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 1.8392945384360242,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.0007476828656759298
+    ],
+    [
+     0.020833333333333332,
+     0.0007626182859198781
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0007626182859198781,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.05017989123037303,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Mini-MK1/Mini-MK1.kicad_pcb",
+   "net": "/SYS_POWER",
+   "app_s": 0.2,
+   "pour_mm2": 16.987840446527116,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Mini-MK1/Mini-MK1.kicad_pcb",
+   "net": "/PYRO_C",
+   "app_s": 0.7,
+   "pour_mm2": 12.70310832472751,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "R408.2",
+    "J103.3"
+   ],
+   "app_ohm": 0.00048216161108687635,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": false,
+   "app_grid_change_pct": 2.3189557479496616,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.0004714209633937574
+    ],
+    [
+     0.020833333333333332,
+     0.00048215887097111473
+    ],
+    [
+     0.010416666666666666,
+     0.0004892315315817875
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0004892315315817875,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -1.4451072832637357,
+   "ref_s": 2
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Mini-MK1/Mini-MK1.kicad_pcb",
+   "net": "/PYRO_A",
+   "app_s": 0.7,
+   "pour_mm2": 12.94175587760401,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "R407.2",
+    "J102.4"
+   ],
+   "app_ohm": 0.00045882501283596666,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": false,
+   "app_grid_change_pct": 2.8660857356956617,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.0004461960224065552
+    ],
+    [
+     0.020833333333333332,
+     0.0004588565767392758
+    ],
+    [
+     0.010416666666666666,
+     0.0004641611267431657
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0004641611267431657,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -1.1496253347712315,
+   "ref_s": 2
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Mini-MK1/Mini-MK1.kicad_pcb",
+   "net": "/VCAP",
+   "app_s": 0.4,
+   "pour_mm2": 17.768039614195004,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Mini-MK1/Mini-MK1.kicad_pcb",
+   "net": "/PYRO_B",
+   "app_s": 0.5,
+   "pour_mm2": 12.698044711025432,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "R419.2",
+    "J102.6"
+   ],
+   "app_ohm": 0.00048146647196377834,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 1.8048623713511016,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.00047292189899405656
+    ],
+    [
+     0.020833333333333332,
+     0.0004817301032082724
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0004817301032082724,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.05472592282240729,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Mini-MK1/Mini-MK1.kicad_pcb",
+   "net": "/VBAT_PYRO",
+   "app_s": 1.5,
+   "pour_mm2": 9.658059321751352,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "D101.2",
+    "U401.5"
+   ],
+   "app_ohm": 0.003818880722770502,
+   "app_h_mm": 0.0125,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.025,
+     0.0037243213861096035
+    ],
+    [
+     0.0125,
+     0.003795865138706022
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.003795865138706022,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.6063330287947366,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Mini-MK1/Mini-MK1.kicad_pcb",
+   "net": "+3V3",
+   "app_s": 0.0,
+   "pour_mm2": 1595.4630256444216,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Mini-MK1/Mini-MK1.kicad_pcb",
+   "net": "/PYRO_D",
+   "app_s": 0.5,
+   "pour_mm2": 13.71284520253539,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "pair": [
+    "R420.2",
+    "J103.1"
+   ],
+   "app_ohm": 0.0004032752070809756,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 1.2120949274092152,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.00038724915175382196
+    ],
+    [
+     0.020833333333333332,
+     0.00039124831389126163
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.00039124831389126163,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 3.0739795579174167,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Motor-MK1/Motor-MK1.kicad_pcb",
+   "net": "Net-(J2-Pin_4)",
+   "app_s": 0.8,
+   "pour_mm2": 130.7816237907973,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "U3.32",
+    "J2.4"
+   ],
+   "app_ohm": 0.0047114972258299696,
+   "app_h_mm": 0.041666666666666664,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.08333333333333333,
+     0.00469438484891276
+    ],
+    [
+     0.041666666666666664,
+     0.004708535973155289
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.004708535973155289,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.06289115537321255,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Motor-MK1/Motor-MK1.kicad_pcb",
+   "net": "Net-(J2-Pin_3)",
+   "app_s": 0.8,
+   "pour_mm2": 132.9663894039113,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "U3.2",
+    "J2.3"
+   ],
+   "app_ohm": 0.0046493062588545625,
+   "app_h_mm": 0.041666666666666664,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.08333333333333333,
+     0.004635214842525594
+    ],
+    [
+     0.041666666666666664,
+     0.004646336198599962
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.004646336198599962,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.06392262909205026,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Motor-MK1/Motor-MK1.kicad_pcb",
+   "net": "Net-(J1-Pin_4)",
+   "app_s": 1.0,
+   "pour_mm2": 130.79305046983063,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "J1.4",
+    "U2.32"
+   ],
+   "app_ohm": 0.004647375737029251,
+   "app_h_mm": 0.041666666666666664,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.08333333333333333,
+     0.004630020833142229
+    ],
+    [
+     0.041666666666666664,
+     0.004644642021551742
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.004644642021551742,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.0588573988011154,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Motor-MK1/Motor-MK1.kicad_pcb",
+   "net": "Net-(J1-Pin_2)",
+   "app_s": 0.8,
+   "pour_mm2": 67.55930729961256,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "J1.2",
+    "U2.29"
+   ],
+   "app_ohm": 0.002341634867830776,
+   "app_h_mm": 0.041666666666666664,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.08333333333333333,
+     0.0023208499373489093
+    ],
+    [
+     0.041666666666666664,
+     0.002342153975206911
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.002342153975206911,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.02216367419178855,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Motor-MK1/Motor-MK1.kicad_pcb",
+   "net": "/VBAT",
+   "app_s": 0.0,
+   "pour_mm2": 535.5398414097726,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Motor-MK1/Motor-MK1.kicad_pcb",
+   "net": "Net-(J2-Pin_2)",
+   "app_s": 1.0,
+   "pour_mm2": 59.46211240027333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "U3.29",
+    "J2.2"
+   ],
+   "app_ohm": 0.0024938786812283196,
+   "app_h_mm": 0.041666666666666664,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.08333333333333333,
+     0.002477718685643175
+    ],
+    [
+     0.041666666666666664,
+     0.002493611956683244
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.002493611956683244,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.010696313207869679,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Motor-MK1/Motor-MK1.kicad_pcb",
+   "net": "/Power/SYS_Power",
+   "app_s": 2.0,
+   "pour_mm2": 13.883354759891517,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "C18.1",
+    "U203.8"
+   ],
+   "app_ohm": 0.0022611252821320297,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.7805016008775105,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.002243362330625443
+    ],
+    [
+     0.010416666666666666,
+     0.0022607428948213048
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0022607428948213048,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.016914232556075603,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Motor-MK1/Motor-MK1.kicad_pcb",
+   "net": "Net-(J1-Pin_1)",
+   "app_s": 0.5,
+   "pour_mm2": 68.53463925604592,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "J1.1",
+    "U2.5"
+   ],
+   "app_ohm": 0.0022765700009042644,
+   "app_h_mm": 0.041666666666666664,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.08333333333333333,
+     0.002226094189160311
+    ],
+    [
+     0.041666666666666664,
+     0.002266618849668017
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.002266618849668017,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.43903063974364276,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Motor-MK1/Motor-MK1.kicad_pcb",
+   "net": "/USB_POWER",
+   "app_s": 0.4,
+   "pour_mm2": 3.956486462702742,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "U203.7",
+    "J101.B4"
+   ],
+   "app_ohm": 0.02699934380875851,
+   "app_h_mm": 0.016666666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.15268103078968034,
+   "reference_steps": [
+    [
+     0.03333333333333333,
+     0.02695806780799003
+    ],
+    [
+     0.016666666666666666,
+     0.026999262845842715
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.026999262845842715,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.0002998708381607429,
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Motor-MK1/Motor-MK1.kicad_pcb",
+   "net": "Net-(J2-Pin_1)",
+   "app_s": 0.6,
+   "pour_mm2": 59.422240304003935,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "U3.5",
+    "J2.1"
+   ],
+   "app_ohm": 0.0024130576619165144,
+   "app_h_mm": 0.041666666666666664,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.08333333333333333,
+     0.002356042748357822
+    ],
+    [
+     0.041666666666666664,
+     0.0024048902005073805
+    ],
+    [
+     0.020833333333333332,
+     0.0024224154398662674
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0024224154398662674,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.38629946770276646,
+   "ref_s": 8
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Motor-MK1/Motor-MK1.kicad_pcb",
+   "net": "Net-(J1-Pin_3)",
+   "app_s": 0.8,
+   "pour_mm2": 129.9774157361826,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "J1.3",
+    "U2.2"
+   ],
+   "app_ohm": 0.004702436227602583,
+   "app_h_mm": 0.041666666666666664,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.08333333333333333,
+     0.004688829991108134
+    ],
+    [
+     0.041666666666666664,
+     0.0046989632760993695
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0046989632760993695,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.07390888796425799,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Motor-MK1/Motor-MK1.kicad_pcb",
+   "net": "+3V3",
+   "app_s": 0.0,
+   "pour_mm2": 3761.537914067507,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Motor-MK1/Motor-MK1.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "pour_mm2": 3933.3965535461903,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Motor-MK2 (GATOR)/GATOR.kicad_pcb",
+   "net": "Net-(J4-Pin_4)",
+   "app_s": 0.9,
+   "pour_mm2": 136.52509649051353,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "U4.32",
+    "J4.4"
+   ],
+   "app_ohm": 0.004708417443367798,
+   "app_h_mm": 0.041666666666666664,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "error": "AttributeError(\"'NoneType' object has no attribute 'GetEnabledLayers'\")",
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Motor-MK2 (GATOR)/GATOR.kicad_pcb",
+   "net": "Net-(J4-Pin_3)",
+   "app_s": 0.8,
+   "pour_mm2": 128.85253813653253,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "U4.2",
+    "J4.3"
+   ],
+   "app_ohm": 0.004766358766229018,
+   "app_h_mm": 0.041666666666666664,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "error": "AttributeError(\"'NoneType' object has no attribute 'GetEnabledLayers'\")",
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Motor-MK2 (GATOR)/GATOR.kicad_pcb",
+   "net": "Net-(J2-Pin_4)",
+   "app_s": 0.9,
+   "pour_mm2": 137.52359399548732,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "J2.4",
+    "U1.32"
+   ],
+   "app_ohm": 0.00456557689109627,
+   "app_h_mm": 0.041666666666666664,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "error": "AttributeError(\"'NoneType' object has no attribute 'GetEnabledLayers'\")",
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Motor-MK2 (GATOR)/GATOR.kicad_pcb",
+   "net": "Net-(J2-Pin_2)",
+   "app_s": 0.5,
+   "pour_mm2": 66.76640418660827,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "J2.2",
+    "U1.29"
+   ],
+   "app_ohm": 0.0023986863153479523,
+   "app_h_mm": 0.041666666666666664,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "error": "AttributeError(\"'NoneType' object has no attribute 'GetEnabledLayers'\")",
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Motor-MK2 (GATOR)/GATOR.kicad_pcb",
+   "net": "/VBAT",
+   "app_s": 0.0,
+   "pour_mm2": 563.0075804172084,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Motor-MK2 (GATOR)/GATOR.kicad_pcb",
+   "net": "Net-(J4-Pin_2)",
+   "app_s": 0.7,
+   "pour_mm2": 58.204969896702096,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "U4.29",
+    "J4.2"
+   ],
+   "app_ohm": 0.0026138538136782218,
+   "app_h_mm": 0.041666666666666664,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "error": "AttributeError(\"'NoneType' object has no attribute 'GetEnabledLayers'\")",
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Motor-MK2 (GATOR)/GATOR.kicad_pcb",
+   "net": "/SYS_Power",
+   "app_s": 0.4,
+   "pour_mm2": 14.174514585640281,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "C26.1",
+    "U6.8"
+   ],
+   "app_ohm": 0.0021485401617355525,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.803799869873294,
+   "error": "AttributeError(\"'NoneType' object has no attribute 'GetEnabledLayers'\")",
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Motor-MK2 (GATOR)/GATOR.kicad_pcb",
+   "net": "Net-(J2-Pin_1)",
+   "app_s": 0.7,
+   "pour_mm2": 68.44254748593085,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "J2.1",
+    "U1.5"
+   ],
+   "app_ohm": 0.002291071804067206,
+   "app_h_mm": 0.041666666666666664,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "error": "AttributeError(\"'NoneType' object has no attribute 'GetEnabledLayers'\")",
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Motor-MK2 (GATOR)/GATOR.kicad_pcb",
+   "net": "/USB_POWER",
+   "app_s": 0.6,
+   "pour_mm2": 3.9566926019033417,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "J1.B4",
+    "U6.7"
+   ],
+   "app_ohm": 0.029022632220739763,
+   "app_h_mm": 0.016666666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.2339218144190122,
+   "error": "AttributeError(\"'NoneType' object has no attribute 'GetEnabledLayers'\")",
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Motor-MK2 (GATOR)/GATOR.kicad_pcb",
+   "net": "Net-(J4-Pin_1)",
+   "app_s": 0.7,
+   "pour_mm2": 59.422241942811524,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "U4.5",
+    "J4.1"
+   ],
+   "app_ohm": 0.0024048671733626556,
+   "app_h_mm": 0.041666666666666664,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "error": "AttributeError(\"'NoneType' object has no attribute 'GetEnabledLayers'\")",
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Motor-MK2 (GATOR)/GATOR.kicad_pcb",
+   "net": "Net-(J2-Pin_3)",
+   "app_s": 0.8,
+   "pour_mm2": 135.45310429029632,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "J2.3",
+    "U1.2"
+   ],
+   "app_ohm": 0.00471590898323783,
+   "app_h_mm": 0.041666666666666664,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "error": "AttributeError(\"'NoneType' object has no attribute 'GetEnabledLayers'\")",
+   "ref_s": 0
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Motor-MK2 (GATOR)/GATOR.kicad_pcb",
+   "net": "+3V3",
+   "app_s": 0.0,
+   "pour_mm2": 4374.293424829841,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Motor-MK2 (GATOR)/GATOR.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "pour_mm2": 4535.181805163622,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Onboarding/555-Timer-Demo-Circuit/555-Timer-Demo-Circuit.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "pour_mm2": 1067.6009686691687,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Onboarding/L1-Altimeter/L1-Altimeter.kicad_pcb",
+   "net": "+3V3",
+   "app_s": 0.0,
+   "pour_mm2": 943.9937247343623,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/Onboarding/L1-Altimeter/L1-Altimeter.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "pour_mm2": 982.1666383016855,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/SPARK-MK1/SPARK-MK1.kicad_pcb",
+   "net": "/PYRO_A_OUT",
+   "app_s": 1.0,
+   "pour_mm2": 40.6330902648333,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "J103.1",
+    "R127.2"
+   ],
+   "app_ohm": 0.0035738821856964253,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.7009444013625405,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.0035570208512517784
+    ],
+    [
+     0.020833333333333332,
+     0.0035955762187922812
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0035955762187922812,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.6033534481197256,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/SPARK-MK1/SPARK-MK1.kicad_pcb",
+   "net": "/PYRO_D_OUT",
+   "app_s": 1.0,
+   "pour_mm2": 40.49661138642114,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "R130.2",
+    "J106.1"
+   ],
+   "app_ohm": 0.0036555040034046546,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.3075376156778724,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.003654403001705538
+    ],
+    [
+     0.020833333333333332,
+     0.0036765538100413265
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0036765538100413265,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.5725417802720845,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/SPARK-MK1/SPARK-MK1.kicad_pcb",
+   "net": "/PYRO_B",
+   "app_s": 0.8,
+   "pour_mm2": 39.08601978304796,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "J104.2",
+    "U105.5"
+   ],
+   "app_ohm": 0.003243105923620069,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.003221870161783582
+    ],
+    [
+     0.020833333333333332,
+     0.0032629000303543193
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0032629000303543193,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.6066415320760243,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/SPARK-MK1/SPARK-MK1.kicad_pcb",
+   "net": "/PYRO_A",
+   "app_s": 1.0,
+   "pour_mm2": 39.681596904527396,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "J103.2",
+    "U104.5"
+   ],
+   "app_ohm": 0.0032037386422642104,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.8508608521210563,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.003195680576286404
+    ],
+    [
+     0.020833333333333332,
+     0.0032282313544080327
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0032282313544080327,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.7587037437815081,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/TeleDecoder/TeleDecoder-revA/TeleDecoder-revA.kicad_pcb",
+   "net": "+3V3",
+   "app_s": 0.0,
+   "pour_mm2": 1283.8532367944717,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/TeleDecoder/TeleDecoder-revA/TeleDecoder-revA.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "pour_mm2": 1370.8457717597485,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/TeleDecoder/TeleDecoder-revB/TeleDecoder-revB.kicad_pcb",
+   "net": "+3V3",
+   "app_s": 0.0,
+   "pour_mm2": 1239.3740950673819,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/ISSUIUC_ISS-PCB/boards/TeleDecoder/TeleDecoder-revB/TeleDecoder-revB.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "pour_mm2": 1369.376617051661,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6062,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/PUT-Motorsport_PUTM_EV_REARBOX/hardware/connector/connector.kicad_pcb",
+   "net": "PUMP_OUT2",
+   "app_s": 1.3,
+   "pour_mm2": 3.528521142259706,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.565,
+   "pair": [
+    "R5.2",
+    "J1.10"
+   ],
+   "app_ohm": 0.0008941805767554316,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 1.0911704660529995,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.0008843983830834773
+    ],
+    [
+     0.010416666666666666,
+     0.0008942747255169982
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0008942747255169982,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.010527946153482404,
+   "ref_s": 2
+  },
+  {
+   "board": "r5boards/PUT-Motorsport_PUTM_EV_REARBOX/hardware/connector/connector.kicad_pcb",
+   "net": "ASSI_OUT_B",
+   "app_s": 0.6,
+   "pour_mm2": 1.1761731552833226,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.565,
+   "pair": [
+    "R7.2",
+    "J1.47"
+   ],
+   "app_ohm": 0.0004753683834059968,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 1.1855869730325395,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.0004697360670053694
+    ],
+    [
+     0.010416666666666666,
+     0.0004754004846853334
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0004754004846853334,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.006752470889437312,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/PUT-Motorsport_PUTM_EV_REARBOX/hardware/connector/connector.kicad_pcb",
+   "net": "LOAD_CELL_IN_L-",
+   "app_s": 1.4,
+   "pour_mm2": 1.5010265939636156,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.565,
+   "pair": [
+    "J2.18",
+    "J1.46"
+   ],
+   "app_ohm": 0.060946660447271386,
+   "app_h_mm": 0.016666666666666666,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.03333333333333333,
+     0.0625735848166484
+    ],
+    [
+     0.016666666666666666,
+     0.06094364424734917
+    ],
+    [
+     0.008333333333333333,
+     0.06084538509802795
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.06084538509802795,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.16644705112849323,
+   "ref_s": 5
+  },
+  {
+   "board": "r5boards/PUT-Motorsport_PUTM_EV_REARBOX/hardware/connector/connector.kicad_pcb",
+   "net": "Net-(J2-Pin_4)",
+   "app_s": 0.7,
+   "pour_mm2": 1.3879265015712008,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.565,
+   "pair": [
+    "R1.2",
+    "J2.4"
+   ],
+   "app_ohm": 0.015435148214982694,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.1962464589283567,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.015465425983019079
+    ],
+    [
+     0.020833333333333332,
+     0.015435330425619056
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.015435330425619056,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.001180477717921402,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/PUT-Motorsport_PUTM_EV_REARBOX/hardware/rearbox/rearbox.kicad_pcb",
+   "net": "/Suspension Potentiometers/N1",
+   "app_s": 1.2,
+   "pour_mm2": 0.32216581993270665,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.565,
+   "pair": [
+    "U27.2",
+    "NT4.2"
+   ],
+   "app_ohm": 0.061597902455787536,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 0.2946737224704388,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.061414428743590106
+    ],
+    [
+     0.008333333333333333,
+     0.06159758352689585
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.06159758352689585,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.0005177620182816867,
+   "ref_s": 2
+  },
+  {
+   "board": "r5boards/PUT-Motorsport_PUTM_EV_REARBOX/hardware/rearbox/rearbox.kicad_pcb",
+   "net": "Net-(R89-Pad2)",
+   "app_s": 0.8,
+   "pour_mm2": 0.10112325998488814,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.565,
+   "pair": [
+    "TP38.1",
+    "U19.6"
+   ],
+   "app_ohm": 0.008337617788234716,
+   "app_h_mm": 0.00625,
+   "app_converged": true,
+   "app_grid_change_pct": 0.8414796926564494,
+   "reference_steps": [
+    [
+     0.0125,
+     0.008266038029795877
+    ],
+    [
+     0.00625,
+     0.008338415759576605
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.008338415759576605,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.009569819554422487,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/PUT-Motorsport_PUTM_EV_REARBOX/hardware/rearbox/rearbox.kicad_pcb",
+   "net": "+3.3VA",
+   "app_s": 0.0,
+   "pour_mm2": 1.1270156076934654,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.565,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/PUT-Motorsport_PUTM_EV_REARBOX/hardware/rearbox/rearbox.kicad_pcb",
+   "net": "/Safety Inputs/OUT_RFU",
+   "app_s": 0.8,
+   "pour_mm2": 0.24001639513880946,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.565,
+   "pair": [
+    "U11.16",
+    "U9.1"
+   ],
+   "app_ohm": 0.04756001264327567,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 0.12320925077174637,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.04749684470854153
+    ],
+    [
+     0.008333333333333333,
+     0.04755456344718674
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.04755456344718674,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.011458828961763423,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/win2466_Hardware/DropBear/MAP Card/MAP Card.kicad_pcb",
+   "net": "GND",
+   "app_s": 1.2,
+   "pour_mm2": 133.68695409444626,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "C2.1",
+    "C3.1"
+   ],
+   "app_ohm": 0.019931623777448365,
+   "app_h_mm": 0.041666666666666664,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.08333333333333333,
+     0.020023673479619624
+    ],
+    [
+     0.041666666666666664,
+     0.01992328591438497
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.01992328591438497,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.0418498389232802,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/win2466_Hardware/DropBear/V1.1/DropBear.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "pour_mm2": 7267.752712389454,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/win2466_Hardware/DropBear/V1.1/DropBear.kicad_pcb",
+   "net": "STEPPER-A1",
+   "app_s": 0.6,
+   "pour_mm2": 17.183190670155454,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/win2466_Hardware/DropBear/V1.1/DropBear.kicad_pcb",
+   "net": "SPARE2-OUT",
+   "app_s": 0.8,
+   "pour_mm2": 17.022780225117458,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "J1.C3",
+    "IC2.5"
+   ],
+   "app_ohm": 0.17501503639440782,
+   "app_h_mm": 0.03333333333333333,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.06666666666666667,
+     0.17501292258871692
+    ],
+    [
+     0.03333333333333333,
+     0.17501451179590888
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.17501451179590888,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.0002997457145381688,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/win2466_Hardware/DropBear/V1.1/DropBear.kicad_pcb",
+   "net": "FAN-OUT",
+   "app_s": 0.2,
+   "pour_mm2": 18.272414474515244,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/win2466_Hardware/DropBear/V1.1/DropBear.kicad_pcb",
+   "net": "VPPSENS",
+   "app_s": 0.0,
+   "pour_mm2": 80.48601712890377,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/win2466_Hardware/DropBear/V1.1/DropBear.kicad_pcb",
+   "net": "IDLE-OUT",
+   "app_s": 0.5,
+   "pour_mm2": 16.464181540359277,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/win2466_Hardware/DropBear/V1.1/DropBear.kicad_pcb",
+   "net": "BOOST-OUT",
+   "app_s": 0.3,
+   "pour_mm2": 20.136345567239914,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/win2466_Hardware/DropBear/V1.1/DropBear.kicad_pcb",
+   "net": "SPARE1-OUT",
+   "app_s": 0.8,
+   "pour_mm2": 17.020631027931813,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "pair": [
+    "J1.C6",
+    "IC3.8"
+   ],
+   "app_ohm": 0.2394463503671136,
+   "app_h_mm": 0.03333333333333333,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "reference_steps": [
+    [
+     0.06666666666666667,
+     0.23966446647070105
+    ],
+    [
+     0.03333333333333333,
+     0.23944584022417953
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.23944584022417953,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.00021305149155992353,
+   "ref_s": 1
+  },
+  {
+   "board": "r5boards/win2466_Hardware/PNPs/Miata NA6/Latest/48-pin breakout/48-pin breakout.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "pour_mm2": 4057.35199091956,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/win2466_Hardware/PNPs/Miata NA6/Latest/NA6 v1.3.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "pour_mm2": 6173.811195223301,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/win2466_Hardware/PNPs/Miata NA6/Latest/NA6 v1.3.kicad_pcb",
+   "net": "VPPSENS",
+   "app_s": 0.3,
+   "pour_mm2": 40.048559912334895,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/win2466_Hardware/PNPs/Miata NA6/Prior versions/v1.2/NA6.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "pour_mm2": 5775.176523369111,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/win2466_Hardware/PNPs/Miata NA6/Prior versions/v1.2/NA6.kicad_pcb",
+   "net": "VPPSENS",
+   "app_s": 0.3,
+   "pour_mm2": 36.903151999998954,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/win2466_Hardware/VR Conditioner/Latest/VR-Conditioner-MAX9926+reg.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "pour_mm2": 144.82982115622144,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/win2466_Hardware/v0.4/SMD/Latest/v0.4.4d.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "pour_mm2": 5826.211946535477,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/win2466_Hardware/v0.4/SMD/Prior Versions/0.4.4b/v0.4.4b.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "pour_mm2": 5683.241687141286,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/win2466_Hardware/v0.4/SMD/Prior Versions/0.4.4c/v0.4.4c.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "pour_mm2": 5571.053020223684,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/win2466_Hardware/v0.4/THT/Latest/v0.4.3d.kicad_pcb",
+   "net": "IDLE-OUT",
+   "app_s": 0.3,
+   "pour_mm2": 27.09671999999773,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/win2466_Hardware/v0.4/THT/Latest/v0.4.3d.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "pour_mm2": 5342.72676438553,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  },
+  {
+   "board": "r5boards/win2466_Hardware/v0.4/THT/Latest/v0.4.3d.kicad_pcb",
+   "net": "HC-2-OUT",
+   "app_s": 0.2,
+   "pour_mm2": 28.387040000001434,
+   "copper_oz": 1.0,
+   "board_thickness_mm": 1.6,
+   "app": "no value"
+  }
+ ]
+}

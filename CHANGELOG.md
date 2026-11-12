@@ -3,6 +3,49 @@
 
 ## Unreleased
 
+**Electrics: loads typed once.**
+- Each subsystem's peak current, voltage and power draw are entered in the electrics module (PCB Doctor, "Subsystem loads") and written straight into the integration ledger.
+- Power is filled as V × I when left blank.
+- Every power net matched to that subsystem takes the declared current and voltage.
+- No more typing them in the Integration tab first.
+
+**PCB Doctor: large pours and recommended vias.**
+- *Large pours:* a "Solve large pours (much slower)" switch solves planes up to 3 million cells. It says before it starts that it takes minutes per pour.
+- *Recommended vias:* where a via is the bottleneck, the Doctor proposes stitching vias of the net's own size beside the existing one, joined on every layer and clear of other copper.
+  - None is written unless the engineer ticks it.
+  - Picked vias are verified like every other fix.
+  - KiCad files only; on Altium they are a recommendation to place by hand.
+
+**Electrical: sheet-solve net resistance, pour grid check, empty pours.**
+- Net resistance is refined by a 2-D sheet solve between the worst pad pair. Held out on 100 new KiCad 9 nets: 92 of 92 refined nets within 2 %.
+- The brown-out bound is the larger of the 1-D bound and the sheet-solve value, so it only gets stricter.
+- The pour estimate checks its own grid and marks each result converged or not.
+- A pour KiCad filled and left empty is no longer counted as copper or as a connection.
+- Published as found: the pour estimate read low on 6 of 50 held-out nets before these fixes.
+
+**Brown-out check on pour nets (correction).** It called the tracked-pads figure conservative; it was not, since a
+load fed through the pour was never checked. It now solves the pour and says when a pour was too large to check.
+
+**More untrusted inputs.** Track paths, GPS, cone maps, speed traces, `.tir` files, tire coefficients, tire test
+data, spring bench logs, part meshes and uploaded JSON now refuse `nan`/`inf` values instead of returning `nan`
+results.
+
+**Untrusted inputs.** Fuzzing the upload parsers with damaged files found and fixed:
+- Board files: three crashes; `inf`/`nan` track widths accepted.
+- Aero map CSV, run log, dyno CSV, STEP tube import, manifests: `nan`/`inf` accepted into the model, or a raw traceback instead of a message.
+- Zip uploads: no limit on unpacked size (decompression bomb).
+
+**Project hygiene.** GitHub Actions pinned by commit, read-only tokens, job timeouts, Dependabot, OpenSSF Scorecard,
+pre-commit. One release number (1.5.0) across packaging, citation and changelog. README clone command and Python
+version corrected.
+
+**Electrical benchmark: native Altium, KiCad 9, pours round 3.**
+- Six boards designed in Altium: 30 of 30 counts equal Altium Designer 26.11.1.
+- Four KiCad 8/9 team boards read exactly as KiCad 9.0.3 reads them.
+- Held-out net resistance on those boards: 70 of 95 within 2 %, all within 10 %. Short pad-to-pad nets miss.
+- The pour estimate now reads KiCad custom pads and KiCad 5 pour strokes. Held out on 19 converged nets: 19 of 19 within 2 %.
+- The KiCad 9 export kit is fixed for KiCad 9's API.
+
 **Prediction ledger: KinematiK against real cars.** KinematiK now predicts official Formula Student skidpad and
 75 m acceleration times from each team's own published car data (formulastudent.de team pages). It seals the
 predictions with a SHA-256 fingerprint of the code that made them, then scores them against the organizers' timing.

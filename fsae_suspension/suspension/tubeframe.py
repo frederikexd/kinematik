@@ -317,6 +317,8 @@ class FrameGraph:
     # ---- construction ---------------------------------------------------- #
     def add_node(self, nid: str, xyz_mm, label: str = "") -> FrameNode:
         n = FrameNode(str(nid), tuple(float(v) for v in xyz_mm), label)
+        if len(n.xyz_mm) != 3 or not all(math.isfinite(v) for v in n.xyz_mm):
+            raise ValueError(f"node {nid!r}: its position must be three finite numbers (mm), got {tuple(xyz_mm)!r}")
         self.nodes[n.nid] = n
         return n
 
@@ -360,6 +362,8 @@ class FrameGraph:
         g = FrameGraph(size_table=st or None)
         for nd in d.get("nodes", []):
             n = FrameNode.from_dict(nd)
+            if len(n.xyz_mm) != 3 or not all(math.isfinite(float(v)) for v in n.xyz_mm):
+                raise ValueError(f"node {n.nid!r}: its position must be three finite numbers (mm)")
             g.nodes[n.nid] = n
         for td in d.get("tubes", []):
             g.tubes.append(FrameTube.from_dict(td))
@@ -379,22 +383,39 @@ class FrameGraph:
         g = FrameGraph(size_table=size_table)
         label_to_key = {v.lower(): k for k, v in MEMBER_CLASS_LABELS.items()}
 
-        for row in csv.DictReader(io.StringIO(nodes_csv.strip())):
-            row = {(k or "").strip().lower(): (v or "").strip()
-                   for k, v in row.items()}
-            g.add_node(row["id"], (float(row["x"]), float(row["y"]),
-                                   float(row["z"])), row.get("label", ""))
+        def _rows(text, what, need):
+            """Lower-cased rows of one CSV, each checked for the columns it must have; ValueError names the row."""
+            try:
+                raw = list(csv.DictReader(io.StringIO(text.strip())))
+            except csv.Error as exc:
+                raise ValueError(f"the {what} file is not a readable CSV ({exc})") from exc
+            for line, r in enumerate(raw, start=2):                 # row 1 is the header
+                r = {(k or "").strip().lower(): (v if isinstance(v, str) else "").strip() for k, v in r.items()}
+                missing = [c for c in need if not r.get(c)]
+                if missing:
+                    raise ValueError(f"{what} CSV row {line}: no value for {', '.join(missing)} "
+                                     f"(columns needed: {', '.join(need)})")
+                yield line, r
 
-        for row in csv.DictReader(io.StringIO(tubes_csv.strip())):
-            row = {(k or "").strip().lower(): (v or "").strip()
-                   for k, v in row.items()}
+        for line, row in _rows(nodes_csv, "nodes", ("id", "x", "y", "z")):
+            try:
+                g.add_node(row["id"], (float(row["x"]), float(row["y"]), float(row["z"])), row.get("label", ""))
+            except ValueError as exc:
+                raise ValueError(f"nodes CSV row {line}: {exc}") from exc
+
+        for line, row in _rows(tubes_csv, "tubes", ("name", "a", "b")):
             cls = row.get("class", "non_structural")
             cls = label_to_key.get(cls.lower(), cls.lower().replace(" ", "_"))
             if cls not in MEMBER_CLASS_MIN_SIZE:
                 cls = "non_structural"
             prim = row.get("primary", "1").lower() not in ("0", "false", "no", "n")
-            g.add_tube(row["name"], row["a"], row["b"], member_class=cls,
-                       size=row.get("size", "C") or "C", is_primary=prim)
+            try:
+                g.add_tube(row["name"], row["a"], row["b"], member_class=cls,
+                           size=row.get("size", "C") or "C", is_primary=prim)
+            except KeyError as exc:                                 # a tube end that is not in the nodes file
+                raise ValueError(f"tubes CSV row {line}: {exc.args[0]}") from exc
+            except ValueError as exc:
+                raise ValueError(f"tubes CSV row {line}: {exc}") from exc
         return g
 
     # ---- graph helpers ----------------------------------------------------- #

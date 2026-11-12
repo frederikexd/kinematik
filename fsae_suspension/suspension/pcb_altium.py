@@ -221,7 +221,7 @@ def _truthy(raw) -> bool:
 def _int(raw, default=None):
     try:
         return int(float(str(raw).strip()))
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         return default
 
 

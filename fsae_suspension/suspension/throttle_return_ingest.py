@@ -50,6 +50,7 @@ UNITS: SI out (N/m for rate), mm for the CAD cross-check (to match the pedal UI)
 from __future__ import annotations
 
 import csv
+import math
 import io
 import re
 from dataclasses import dataclass, field
@@ -161,7 +162,12 @@ def spring_rate_from_bench_log(csv_bytes: bytes,
                                 subsystems=["brakes"]))
         return BenchFit(0.0, 0.0, 0.0, 0, False, findings)
 
-    rows = list(csv.reader(io.StringIO(text)))
+    try:
+        rows = list(csv.reader(io.StringIO(text)))
+    except csv.Error:
+        findings.append(Finding("throttle-bench-fit", Severity.MISSING,
+                                "Could not read the bench log as CSV.", subsystems=["brakes"]))
+        return BenchFit(0.0, 0.0, 0.0, 0, False, findings)
     rows = [r for r in rows if any(c.strip() for c in r)]
     if not rows:
         findings.append(Finding("throttle-bench-fit", Severity.MISSING,
@@ -215,6 +221,8 @@ def spring_rate_from_bench_log(csv_bytes: bytes,
             dval = float(r[d_idx])
         except Exception:
             continue
+        if not (math.isfinite(fval) and math.isfinite(dval)):       # "1e999", "nan": not a measurement
+            continue
         if force_in_kgf:
             fval *= 9.80665
         if deflection_in_mm:
@@ -223,6 +231,11 @@ def spring_rate_from_bench_log(csv_bytes: bytes,
         ys.append(fval)
 
     n = len(xs)
+    if n == 0:
+        findings.append(Finding("throttle-bench-fit", Severity.MISSING,
+                                "The bench log has no row with a usable force and deflection.",
+                                subsystems=["brakes"]))
+        return BenchFit(0.0, 0.0, 0.0, 0, False, findings)
     if n < min_points:
         findings.append(Finding(
             "throttle-bench-fit", Severity.WARN,
@@ -254,6 +267,11 @@ def spring_rate_from_bench_log(csv_bytes: bytes,
         b = 0.0
         r2 = 0.0
 
+    if not all(math.isfinite(v) for v in (k, b, r2)):
+        findings.append(Finding("throttle-bench-fit", Severity.MISSING,
+                                "The bench log's numbers do not give a finite spring rate (a deflection that is "
+                                "zero or vanishingly small, or a value far out of range).", subsystems=["brakes"]))
+        return BenchFit(0.0, 0.0, 0.0, n, False, findings)
     trustworthy = (n >= min_points) and (r2 >= r2_floor) and (k > 0)
 
     if k <= 0:

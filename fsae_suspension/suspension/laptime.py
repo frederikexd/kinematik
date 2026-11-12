@@ -48,7 +48,7 @@ import math
 from dataclasses import dataclass, field
 
 import numpy as np
-from ._num import vec as _vec
+from ._num import finite as _finite, finite_scalar as _finite_scalar, vec as _vec
 
 from .dynamics import VehicleDynamics
 
@@ -747,6 +747,9 @@ def _menger_curvature(x, y):
 _STRAIGHT_RADIUS_M = 200.0   # flatter than this is a straight
 
 
+_MAX_COORD_M = 1.0e6      # a track coordinate (m) beyond 1,000 km is a unit or column mistake, not a track
+
+
 def track_from_path(x, y, name: str = "Imported path", ds: float = 1.0,
                     smooth_window: int = 5, min_radius_m: float = 3.0,
                     straight_radius_m: float = _STRAIGHT_RADIUS_M,
@@ -768,6 +771,16 @@ def track_from_path(x, y, name: str = "Imported path", ds: float = 1.0,
     Units: metres. If you have lat/long, project to a local metric frame first
     (see `latlon_to_xy`).
     """
+    #  A path too short, ragged or not numeric gives an empty track, as it always has. A value that IS a number
+    #  but not a finite one (nan, inf, a unit mistake beyond 1,000 km) is refused: it would silently bend the track.
+    try:
+        _xa, _ya = np.asarray(x, float).ravel(), np.asarray(y, float).ravel()
+    except (TypeError, ValueError):
+        _xa = _ya = None
+    if _xa is not None and _xa.size == _ya.size:
+        _finite("track x (m)", _xa, 0, _MAX_COORD_M)
+        _finite("track y (m)", _ya, 0, _MAX_COORD_M)
+    ds = _finite_scalar("track step ds (m)", ds, positive=True)
     try:
         x = _vec(x).ravel()
         y = _vec(y).ravel()
@@ -816,6 +829,10 @@ def cones_to_centerline(left_x, left_y, right_x, right_y):
     Rows may differ in length; the shorter is interpolated onto the longer's
     arc-length parameterisation so midpoints pair up sensibly. Returns (x, y).
     """
+    left_x, left_y = (_finite(f"left cone {a} (m)", v, 0, _MAX_COORD_M) for a, v in (("x", left_x), ("y", left_y)))
+    right_x, right_y = (_finite(f"right cone {a} (m)", v, 0, _MAX_COORD_M) for a, v in (("x", right_x), ("y", right_y)))
+    if left_x.size != left_y.size or right_x.size != right_y.size:
+        raise ValueError("each cone row needs as many x as y values")
     lx = _vec(left_x); ly = _vec(left_y)
     rx = _vec(right_x); ry = _vec(right_y)
     if lx.size < 2 or rx.size < 2:
@@ -844,6 +861,11 @@ def latlon_to_xy(lat, lon):
     fraction of a percent over an FSAE-sized site (a few hundred metres), which is
     far below the curvature smoothing noise. Returns (x_east_m, y_north_m).
     """
+    lat, lon = _finite("latitude", lat, 0), _finite("longitude", lon, 0)
+    if lat.size != lon.size:
+        raise ValueError(f"latitude and longitude must be the same length, got {lat.size} and {lon.size}")
+    if np.any(np.abs(lat) > 90.0) or np.any(np.abs(lon) > 180.0):
+        raise ValueError("latitude must be within ±90° and longitude within ±180°: check the column order and units")
     lat = _vec(lat); lon = _vec(lon)
     if lat.size == 0:
         return np.array([]), np.array([])
@@ -934,6 +956,8 @@ def compare_line_vs_centerline(veh, x, y, track_width_m: float = 3.0,
     track width reads out directly in seconds. Returns a dict with both tracks,
     both LapResults, and the time gained. Never raises.
     """
+    x, y = _finite("track x (m)", x, 0, _MAX_COORD_M), _finite("track y (m)", y, 0, _MAX_COORD_M)
+    track_width_m = _finite_scalar("track width (m)", track_width_m, positive=True)
     pt = pt or Powertrain()
     base_track = track_from_path(x, y, name="Centreline", ds=ds)
     lx, ly, off = optimise_racing_line(x, y, track_width_m=track_width_m)

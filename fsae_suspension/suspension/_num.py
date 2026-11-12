@@ -6,7 +6,72 @@
 """The one place an input becomes a float array, for every module that needs it."""
 from __future__ import annotations
 
+import json
+
 import numpy as np
+
+
+def finite(name: str, values, min_len: int = 1, max_abs: float | None = None) -> np.ndarray:
+    """``values`` as a 1-D float array in their own units (points in mm stay in mm), or ValueError naming ``name``: every entry must be a finite
+    number (no nan, no inf), within ±``max_abs`` when that is given, and there must be at least ``min_len`` of them. For data that came from a file or a
+    logger, where one bad sample would otherwise turn every result downstream into nan without a word."""
+    try:
+        a = np.asarray(values, float).ravel()
+    except (TypeError, ValueError):
+        raise ValueError(f"{name}: not a list of numbers") from None
+    if a.size < min_len:
+        raise ValueError(f"{name}: needs at least {min_len} value(s), got {a.size}")
+    bad = int(np.count_nonzero(~np.isfinite(a)))
+    if bad:
+        raise ValueError(f"{name}: {bad} of {a.size} value(s) are not finite numbers (nan or inf)")
+    if max_abs is not None and a.size and float(np.max(np.abs(a))) > max_abs:
+        raise ValueError(f"{name}: a value of {float(a[np.argmax(np.abs(a))]):g} is beyond ±{max_abs:g}")
+    return a
+
+
+def finite_scalar(name: str, value, positive: bool = False) -> float:
+    """``value`` as a float in its own units (a mass in kg stays in kg), or ValueError naming ``name`` when it is
+    not a finite number (or, with ``positive``, not above zero)."""
+    try:
+        v = float(value)
+    except (TypeError, ValueError):
+        raise ValueError(f"{name}: not a number") from None
+    if not np.isfinite(v):
+        raise ValueError(f"{name}: {v} is not a finite number")
+    if positive and v <= 0:
+        raise ValueError(f"{name}: must be above zero, got {v:g}")
+    return v
+
+
+def all_finite(obj) -> bool:
+    """True when no float in ``obj`` (numbers, arrays, and lists, tuples, dicts or dataclasses of them, to any
+    depth) is nan or inf; unitless, the values are only tested. For the last line of a function that must not hand back a poisoned result."""
+    if isinstance(obj, (bool, str, bytes, int)) or obj is None:
+        return True
+    if isinstance(obj, (float, np.floating)):
+        return bool(np.isfinite(obj))
+    if isinstance(obj, np.ndarray):
+        return obj.dtype.kind != "f" or bool(np.isfinite(obj).all())
+    if isinstance(obj, dict):
+        return all(all_finite(v) for v in obj.values())
+    if isinstance(obj, (list, tuple, set)):
+        return all(all_finite(v) for v in obj)
+    if hasattr(obj, "__dict__"):
+        return all(all_finite(v) for v in vars(obj).values())
+    return True
+
+
+def json_finite(source):
+    """Parsed JSON from text, bytes or an open file, refusing the tokens NaN, Infinity and -Infinity with
+    ValueError. Python's reader accepts them; a file that holds one is not data a model can use (unitless: the
+    values are passed through untouched)."""
+    def _refuse(token):
+        raise ValueError(f"the file holds {token}, which is not a finite number")
+
+    text = source.read() if hasattr(source, "read") else source
+    if isinstance(text, (bytes, bytearray)):
+        text = bytes(text).decode("utf-8-sig")
+    return json.loads(text, parse_constant=_refuse)
 
 
 def vec(v) -> np.ndarray:

@@ -128,11 +128,22 @@ def _read_dyno_csv(text: str):
     """Header, data rows, rpm and crank torque (Nm) of a dyno export: rpm plus torque (torque_nm, Nm, lbft) or
     power (power_kw, kW, hp); units are taken from the header, a bare 'torque' or 'power' is Nm or kW."""
     rows = [r for r in io.StringIO(text.strip()).read().splitlines() if r.strip()]
+    if len(rows) < 2:
+        raise ValueError("a dyno file needs a header row and at least one row of numbers")
     head = [h.strip().lower() for h in rows[0].replace(";", ",").replace("\t", ",").split(",")]
-    data = np.array([[float(x) for x in r.replace(";", ",").replace("\t", ",").split(",")[:len(head)]]
-                     for r in rows[1:]])
-    i_rpm = next(i for i, h in enumerate(head) if "rpm" in h)
+    cells = [r.replace(";", ",").replace("\t", ",").split(",")[:len(head)] for r in rows[1:]]
+    short = next((n for n, c in enumerate(cells, start=2) if len(c) != len(head)), None)
+    if short is not None:
+        raise ValueError(f"dyno file row {short} has fewer values than the header has columns ({len(head)})")
+    data = np.array([[float(x) for x in c] for c in cells])
+    if not np.isfinite(data).all():
+        raise ValueError("the dyno file holds a value that is not a finite number (nan, inf or an overflow)")
+    i_rpm = next((i for i, h in enumerate(head) if "rpm" in h), None)
+    if i_rpm is None:
+        raise ValueError("no rpm column found (headers: rpm plus torque_nm, lbft, power_kw or hp)")
     rpm = data[:, i_rpm]
+    if (rpm < 0).any():
+        raise ValueError("an rpm in a dyno file cannot be negative")
     tq = None
     for i, h in enumerate(head):
         if "bsfc" in h:                                 # a fuel-map column (its unit has "kW" in it), not the curve
@@ -717,6 +728,9 @@ def fuel_map_from_csv(text: str, displacement_cc: float, lhv_mj_kg: float) -> Fu
     line = fit_willans(tq, rpm, fuel, displacement_cc, lhv_mj_kg, source="dyno fuel map")
     model = line.fuel_power_w(p_kw[ok] * 1e3, rpm[ok], displacement_cc) / (lhv_mj_kg * 1e3)
     rms = float(np.sqrt(np.mean((model / fuel[ok] - 1.0) ** 2)))
+    if not math.isfinite(rms):                                   # pragma: no mutate
+        raise ValueError("the fuel map could not be fitted: check for a fuel or power value that is zero, "
+                         "negative or far out of range")
     w = []
     if not 0.25 <= line.eta_indicated <= 0.50:
         w.append(f"indicated efficiency {line.eta_indicated:.2f} is outside 0.25-0.50, typical of spark-ignition "

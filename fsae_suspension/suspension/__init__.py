@@ -825,4 +825,7 @@ __all__ = [
     "validate_workspace_id", "assert_payload_scoped",
 ]
 
+# The solver stamp written into every reproducibility manifest (genesis_repro), not the release number. It changes
+# only when solver output can change, because a manifest recorded on one stamp is flagged when re-run on another.
+# The release number is in pyproject.toml, CITATION.cff and CHANGELOG.md.
 __version__ = "0.23.0"

@@ -326,6 +326,10 @@ def _roll_up_provenance(files):
     return best
 
 
+MAX_MEMBER_BYTES = 256 * 1024 * 1024      # one unpacked member (bytes)
+MAX_BUNDLE_BYTES = 512 * 1024 * 1024      # everything unpacked from one upload (bytes)
+
+
 def ingest_bundle(filename: str, data: bytes, max_files: int = 500) -> dict:
     """Ingest a single uploaded artefact.
 
@@ -340,14 +344,17 @@ def ingest_bundle(filename: str, data: bytes, max_files: int = 500) -> dict:
           "kinds": {"part": 7, "fea": 6, ...},
           "provenance": {... rolled-up IGES metadata ...},
           "files": [ {per-file meta}, ... ],
+          "skipped": [ {"name", "reason"}, ... ],   members not unpacked (size limits, encryption, damage)
         }
     """
     bundle_sha = _sha256(data)
     files = []
+    skipped = []                       # members not read, with the reason: a zip can claim 50 kB and unpack to 50 GB
     is_zip = filename.lower().endswith(".zip") or zipfile.is_zipfile(io.BytesIO(data))
     if is_zip:
         try:
             with zipfile.ZipFile(io.BytesIO(data)) as zf:
+                unpacked = 0
                 for info in zf.infolist():
                     if info.is_dir():
                         continue
@@ -356,13 +363,22 @@ def ingest_bundle(filename: str, data: bytes, max_files: int = 500) -> dict:
                     base = os.path.basename(info.filename)
                     if not base or base.startswith("."):
                         continue
-                    try:
-                        member = zf.read(info)
-                    except Exception:
+                    if info.file_size > MAX_MEMBER_BYTES or unpacked + info.file_size > MAX_BUNDLE_BYTES:
+                        skipped.append({"name": info.filename, "reason": "too large to unpack safely"})
                         continue
+                    try:
+                        with zf.open(info) as fh:                   # the declared size can lie: read to the limit only
+                            member = fh.read(MAX_MEMBER_BYTES + 1)
+                    except Exception:                               # noqa: BLE001  encrypted, corrupt, unknown method
+                        skipped.append({"name": info.filename, "reason": "could not be unpacked"})
+                        continue
+                    if len(member) > MAX_MEMBER_BYTES:
+                        skipped.append({"name": info.filename, "reason": "too large to unpack safely"})
+                        continue
+                    unpacked += len(member)
                     files.append(extract_file_meta(info.filename, member))
-        except zipfile.BadZipFile:
-            files.append(extract_file_meta(filename, data))
+        except (zipfile.BadZipFile, NotImplementedError, RuntimeError, OSError, ValueError):
+            files, skipped = [extract_file_meta(filename, data)], []     # not a zip we can open: one opaque file
     else:
         files.append(extract_file_meta(filename, data))
 
@@ -378,6 +394,7 @@ def ingest_bundle(filename: str, data: bytes, max_files: int = 500) -> dict:
         "kinds": kinds,
         "provenance": _roll_up_provenance(files),
         "files": files,
+        "skipped": skipped,
     }
 
 

@@ -206,6 +206,45 @@ def test_microstrip_impedance_against_altium():
             assert abs(c["atlc_ohm"] - c["altium_ohm"]) / c["altium_ohm"] <= 0.02, c["case"]
 
 
+# --------------------------------------------------------------------------- C3. Native Altium boards ---- #
+def test_native_altium_board_reading():
+    """Six boards designed in Altium (never converted), counted in Altium Designer 26.11.1 by the author and by
+    KinematiK. Limit: every count identical. Set KK_ALTIUM_KIT to the kit folder to re-read the boards here."""
+    import os
+    d = json.loads((REF / "altium" / "results_native.json").read_text(encoding="utf-8"))
+    assert len(d["boards"]) == 6
+    for r in d["boards"]:
+        assert r["altium"] == r["kinematik"], r["board"]
+    kit = os.environ.get("KK_ALTIUM_KIT")
+    if kit:
+        from suspension import pcb_doctor as D
+        for r in d["boards"]:
+            p = Path(kit) / f"{r['board']}.PcbDoc"
+            b = D.parse_board(p.read_bytes(), p.name)
+            got = dict(components=sum(1 for f in b.footprints if f.ref != "?"),
+                       pads=sum(len(f.pads) for f in b.footprints), vias=len(b.vias),
+                       tracks=sum(1 for s in b.segments if not s.from_arc),
+                       arcs=len({s.arc_id for s in b.segments if s.from_arc}))
+            assert got == r["altium"], r["board"]
+
+
+# --------------------------------------------------------------------------- A4 / B6. KiCad 8/9 boards ---- #
+def test_kicad9_boards_read_and_net_resistance():
+    """Four FS boards saved in KiCad 8-9, read by KiCad 9.0.3 (plan addendum 7). Reading: every count exact, length
+    0.1 %. Net resistance (held out, a3805c1): published as a miss at 2 %; pinned at what it scored. The 1.10 margin
+    alone misses the worst net by 0.01 %; the brown-out bound (1.10 / copper finish 0.90) covers every net."""
+    d = json.loads((REF / "kicad9" / "results.json").read_text(encoding="utf-8"))
+    assert d["tool"].startswith("KiCad 9.0.3")
+    for b in d["reading"]["boards"]:
+        assert b["kicad"] == b["kinematik"] and not b["nets_missing"] and b["worst_length_pct"] <= 0.1, b["board"]
+    rows = d["net_resistance"]["nets"]
+    assert len(rows) == 100
+    e = [(o["kk_ohm"] - o["copper2d_ohm"]) / o["copper2d_ohm"] for o in rows if o.get("copper2d_ohm")]
+    assert len(e) == 95 and sum(abs(x) <= 0.02 for x in e) == 70
+    assert all(abs(x) <= 0.10 for x in e) and min(e) * 1.10 > -0.101
+    assert all((1 + x) * 1.10 / 0.90 >= 1.10 for x in e)
+
+
 # --------------------------------------------------------------------------- D. Trace heating vs NBS ---- #
 def test_trace_heating_against_nbs_measurements():
     """Plan addendum 5. KinematiK's ampacity (IPC-2221 × 0.975) against the NBS 1956 measured curves. Points at 4
@@ -238,3 +277,106 @@ def test_pour_estimate_recorded_result():
         rows = [o for o in d[grp] if o.get("copper2d_ohm") and not o.get("excluded")]
         e = np.array([100.0 * (o["kinematik_ohm"] - o["copper2d_ohm"]) / o["copper2d_ohm"] for o in rows])
         assert len(e) >= n_min and e.min() > 0.0 and np.all(e < 50.0), grp
+
+
+def test_pour_round3_held_out_on_kicad9_boards():
+    """Pour estimate round 3, held out on the KiCad 8/9 boards (plan addendum 8): every net the reference resolves
+    (twice the cell size within 2 %) within 2 %."""
+    d = json.loads((REF / "kicad9" / "pours_round3.json").read_text(encoding="utf-8"))
+    sc = [o for o in d["nets"] if o["converged"]]
+    assert len(sc) == 19
+    for o in sc:
+        assert abs(o["kinematik_r3_ohm"] - o["copper2d_ohm"]) / o["copper2d_ohm"] <= 0.02, o["net"]
+
+
+def test_refined_net_resistance_held_out_on_kicad9_boards():
+    """Plan addendum 12: 100 nets B6 never sampled, solved once by the reference. Every net the sheet solve refines is
+    within 2 %; the ones it leaves to the 1-D model are the connector nets whose pad names repeat, which the
+    reference cannot solve either."""
+    d = json.loads((REF / "kicad9" / "net_resistance_refined.json").read_text(encoding="utf-8"))
+    rows = d["held_out"]["nets"]
+    assert len(rows) == 100
+    refined = [o for o in rows if o["source"] == "sheet solve" and o["copper2d_ohm"]]
+    assert len(refined) == 92
+    err = [(o["kinematik_refined_ohm"] - o["copper2d_ohm"]) / o["copper2d_ohm"] for o in refined]
+    assert all(abs(e) <= 0.02 for e in err) and max(map(abs, err)) < 0.013
+    one_d = [(o["kinematik_1d_ohm"] - o["copper2d_ohm"]) / o["copper2d_ohm"] for o in refined]
+    assert sum(abs(e) <= 0.02 for e in one_d) == 68            # what the 1-D model alone scored on the same nets
+    shipped = [o for o in refined if o["source_at_shipped_limit"] == "sheet solve"]
+    assert len(shipped) == 78                                  # the shipped size limit refines these; all within 2 % too
+    assert not [o for o in rows if o["source"] == "1-D" and o["copper2d_ohm"]]
+
+
+def test_pour_round4_grid_check_results():
+    """Plan addenda 9-11. Round 3 on the larger held-out nets, and round 4 (grid check) where it marks itself
+    converged and the reference converges too. Pinned as scored; the misses stay visible."""
+    d = json.loads((REF / "kicad9" / "pours_round4.json").read_text(encoding="utf-8"))
+    held = d["held_out"]
+    assert len(held) == 11
+    r3 = [(o["kinematik_ohm"] - o["copper2d_ohm"]) / o["copper2d_ohm"] for o in held if o["reference_converged"]]
+    assert len(r3) == 8 and all(abs(e) <= 0.02 for e in r3)
+    r4 = [(o["kinematik_r4_ohm"] - o["copper2d_ohm"]) / o["copper2d_ohm"]
+          for o in held if o.get("r4_converged") and o["reference_converged"]]
+    assert len(r4) == 5 and all(abs(e) <= 0.02 for e in r4)
+    same = [(o["kinematik_r4_ohm"] - o["reference_same_cell_ohm"]) / o["reference_same_cell_ohm"]
+            for o in held if o.get("reference_same_cell_ohm")]                 # addendum 13, item 2
+    assert len(same) == 2 and all(abs(e) <= 0.02 for e in same)
+    assert sum(1 for o in held if not o.get("r4_converged")) == 4            # reported as not converged, not hidden
+    design = [o for o in d["design"] if o["r4_converged"] and o["reference_converged"]]
+    err = [(o["kinematik_r4_ohm"] - o["reference_ohm"]) / o["reference_ohm"] for o in design]
+    assert len(err) == 42 and sum(abs(e) <= 0.02 for e in err) == 40         # the 2 misses: empty pours (addendum 11)
+
+
+def test_pour_nets_with_a_corrected_reference():
+    """Plan addendum 13: the design nets whose reference had not converged, after the reference's terminal fix."""
+    d = json.loads((REF / "pours_unresolved_design.json").read_text(encoding="utf-8"))
+    both = [o for o in d["nets"] if o["reference_converged"] and o["converged"]]
+    assert len(both) == 20 and all(abs(o["error_pct"]) <= 2.0 for o in both)
+
+
+def test_unverified_pour_estimates_stay_inside_the_brownout_margin():
+    """An estimate KinematiK labels not converged is used by the brown-out check with POUR_UNVERIFIED_FACTOR. Every
+    such estimate in the benchmark is within that factor of the reference, high or low."""
+    from suspension.pcb_doctor import POUR_UNVERIFIED_FACTOR
+    d = json.loads((REF / "kicad9" / "pours_round4.json").read_text(encoding="utf-8"))
+    rows = [(o["kinematik_r4_ohm"], o["copper2d_ohm"]) for o in d["held_out"]
+            if not o.get("r4_converged") and o.get("kinematik_r4_ohm") and o.get("copper2d_ohm")]
+    rows += [(o["kinematik_r4_ohm"], o["reference_ohm"]) for o in d["design"] if not o.get("r4_converged")]
+    assert len(rows) == 5
+    for kk, ref in rows:
+        assert kk * POUR_UNVERIFIED_FACTOR >= ref and kk <= ref * POUR_UNVERIFIED_FACTOR
+
+
+def test_in_app_pour_rate_is_proven_on_80_fresh_nets():
+    """Plan addendum 14: 80 of 80 converged in-app pour estimates within 2 % of a converged reference, so the rate is
+    at least 96.3 % at 95 % confidence. Estimates the app marks unconverged are also inside the 1.10 margin."""
+    from suspension.pcb_doctor import POUR_UNVERIFIED_FACTOR
+    d = json.loads((REF / "pours_rate.json").read_text(encoding="utf-8"))
+    sc = [o for o in d["nets"] if o.get("app_converged") and o.get("reference_converged")]
+    assert len(sc) == 80 and all(abs(o["error_pct"]) <= 2.0 for o in sc)
+    assert 0.05 ** (1 / len(sc)) > 0.963
+    un = [o for o in d["nets"] if o.get("app_converged") is False and o.get("reference_converged")]
+    assert un and all(1 / POUR_UNVERIFIED_FACTOR <= 1 + o["error_pct"] / 100 <= POUR_UNVERIFIED_FACTOR for o in un)
+    assert not [o for o in d["nets"] if "reference_steps" in o and not o.get("reference_converged")]
+
+
+@pytest.mark.parametrize("name,n,within,boards", [("pours_rate_boards.json", 71, 70, 26), ("pours_rate_fix.json", 53, 53, 19)])
+def test_in_app_pour_rate_across_boards(name, n, within, boards):
+    """Plan addenda 15-16: the pour estimate on 42 boards never used before, at most 3 nets per board. Addendum 15's
+    one miss (+3.07 %, a roundrect pad's corner ratio) is pinned as found; addendum 16 holds the fix out."""
+    d = json.loads((REF / name).read_text(encoding="utf-8"))
+    sc = [o for o in d["nets"] if o.get("app_converged") and o.get("reference_converged")]
+    assert len(sc) == n and sum(abs(o["error_pct"]) <= 2.0 for o in sc) == within
+    assert len({o["board"] for o in sc}) == boards
+    assert max(abs(o["error_pct"]) for o in sc) < (3.1 if within < n else 2.0)
+
+
+def test_roundrect_corner_ratio_is_read_for_the_sheet_solve():
+    from suspension.pcb_doctor import parse_kicad_pcb
+    b = parse_kicad_pcb('(kicad_pcb (version 20240108) (layers (0 "F.Cu" signal)) (net 0 "") (net 1 "A")'
+                        ' (footprint "f" (layer "F.Cu") (at 0 0) (property "Reference" "J1")'
+                        '  (pad "1" thru_hole roundrect (at 0 0) (size 2.1 2.1) (drill 1) (layers "*.Cu")'
+                        '   (roundrect_rratio 0.119048) (net 1 "A"))'
+                        '  (pad "2" smd roundrect (at 3 0) (size 1 1) (layers "F.Cu") (net 1 "A"))))')
+    p1, p2 = b.footprints[0].pads
+    assert p1.rratio == pytest.approx(0.119048) and p2.rratio == 0.25
