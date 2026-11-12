@@ -4,6 +4,7 @@ import io
 import math
 import zipfile
 
+import numpy as np
 import pytest
 
 from suspension import cad_ingest
@@ -97,3 +98,120 @@ def test_a_zip_python_cannot_open_is_kept_as_one_opaque_file():
     raw[j + 8:j + 10] = (99).to_bytes(2, "little")
     man = cad_ingest.ingest_bundle("b.zip", bytes(raw))
     assert man["file_count"] in (0, 1)                        # skipped member or one opaque file, never a crash
+
+
+# --- dyno CSV (engine map) ------------------------------------------------------------------------------------ #
+from suspension import ice_powertrain as ice  # noqa: E402
+
+
+@pytest.mark.parametrize("text,why", [
+    ("", "header row and at least one row"),
+    ("rpm,torque_nm\n", "header row and at least one row"),
+    ("rpm,torque_nm\n3000\n6000,50", "row 2 has fewer values than the header has columns \\(2\\)"),
+    ("rpm,torque_nm\n3000,40\n6000", "row 3 has fewer values"),
+    ("speed,torque_nm\n3000,40\n6000,50", "no rpm column"),
+    ("rpm,torque_nm\n3000,nan\n6000,50", "not a finite number"),
+    ("rpm,torque_nm\n3000,40\n6000,inf", "not a finite number"),
+    ("rpm,torque_nm\n1e999,40\n6000,50", "not a finite number"),
+    ("rpm,torque_nm\n-3000,40\n6000,50", "cannot be negative"),
+])
+def test_dyno_csv_refuses_what_it_cannot_trust(text, why):
+    with pytest.raises(ValueError, match=why):
+        ice.EngineMap.from_csv(text)
+
+
+def test_dyno_csv_still_reads_a_clean_file_and_extra_columns():
+    e = ice.EngineMap.from_csv("rpm,torque_nm,note\n6000,60,1\n2000,40,2\n")
+    assert e.rpm == [2000.0, 6000.0] and e.torque_nm == [40.0, 60.0]
+
+
+# --- hardpoint tables (CSV / Excel) --------------------------------------------------------------------------- #
+from suspension import hardpoint_import  # noqa: E402
+
+
+@pytest.mark.parametrize("data,name", [(b"PK\x03\x04" + b"\x00" * 200, "book.xlsx"), (b"PK\x05\x06" + b"\x00" * 18, "x.xlsx"),
+                                       (b"not a workbook at all", "pts.xlsx")])
+def test_a_damaged_workbook_is_a_value_error_not_a_zip_traceback(data, name):
+    with pytest.raises(ValueError, match="not a readable Excel workbook"):
+        hardpoint_import.parse_tabular(data, name)
+
+
+def test_a_csv_the_reader_cannot_walk_is_a_value_error():
+    with pytest.raises(ValueError, match="not a readable CSV"):
+        hardpoint_import.parse_tabular(b"Point,X,Y,Z\nA,1,2," + b"9" * 200_000 + b"\n", "pts.csv")
+
+
+# --- STEP tube import and reproducibility manifests ----------------------------------------------------------- #
+from suspension import genesis_analysis as ga  # noqa: E402
+from suspension import genesis_repro  # noqa: E402
+
+STEP = """ISO-10303-21;
+HEADER;
+ENDSEC;
+DATA;
+#9000=(LENGTH_UNIT()NAMED_UNIT(*)SI_UNIT(.MILLI.,.METRE.));
+#1=CARTESIAN_POINT('',(0.0,0.0,0.0));
+#2=CARTESIAN_POINT('',(0.0,0.0,0.0));
+#3=DIRECTION('',(1.0,0.0,0.0));
+#4=AXIS2_PLACEMENT_3D('',#2,#3,$);
+#5=CYLINDRICAL_SURFACE('',#4,12.7);
+#6=CARTESIAN_POINT('',(0.0,-12.7,0.0));
+#7=VERTEX_POINT('',#6);
+#8=CARTESIAN_POINT('',(500.0,-12.7,0.0));
+#9=VERTEX_POINT('',#8);
+#10=LINE('',#1,#1);
+#11=EDGE_CURVE('',#7,#9,#10,.T.);
+#12=ORIENTED_EDGE('',*,*,#11,.T.);
+#13=LINE('',#1,#1);
+#14=EDGE_CURVE('',#9,#7,#13,.T.);
+#15=ORIENTED_EDGE('',*,*,#14,.T.);
+#16=EDGE_LOOP('',(#12,#15));
+#17=FACE_OUTER_BOUND('',#16,.T.);
+#18=ADVANCED_FACE('',(#17),#5,.T.);
+ENDSEC;
+END-ISO-10303-21;
+"""
+
+
+def test_step_tube_import_reads_the_clean_file():
+    out = ga.parse_step_tubes(STEP, outer_radius_mm=12.7)
+    assert len(out.axes) == 1
+    p0, p1, _wall = out.axes[0]
+    assert abs(float(np.linalg.norm(np.asarray(p1) - np.asarray(p0))) - 500.0) < 1e-6
+
+
+@pytest.mark.parametrize("damage", [
+    lambda s: s.replace("#8=CARTESIAN_POINT('',(500.0,-12.7,0.0));\n", ""),      # a vertex points at nothing
+    lambda s: s.replace("#3=DIRECTION('',(1.0,0.0,0.0));\n", ""),                # the axis has no direction
+    lambda s: s.replace("#5=CYLINDRICAL_SURFACE('',#4,12.7);", "#5=CYLINDRICAL_SURFACE('',#4);"),
+])
+def test_step_with_a_missing_or_truncated_entity_is_a_value_error(damage):
+    with pytest.raises(ValueError, match="damaged or incomplete"):
+        ga.parse_step_tubes(damage(STEP), outer_radius_mm=12.7)
+
+
+@pytest.mark.parametrize("bad", ["1e999", "nan", "inf"])
+def test_step_with_a_coordinate_that_is_not_finite_is_refused(bad):
+    with pytest.raises(ValueError):
+        out = ga.parse_step_tubes(STEP.replace("(500.0,-12.7,0.0)", f"({bad},-12.7,0.0)"), outer_radius_mm=12.7)
+        assert np.isfinite(np.asarray(out.vertices, float)).all()      # or, if it was read, nothing non-finite got in
+        raise ValueError("read without the bad value")
+
+
+def test_manifest_with_nan_or_infinity_is_refused():
+    schema = genesis_repro.MANIFEST_SCHEMA
+    for token in ("NaN", "Infinity", "-Infinity"):
+        with pytest.raises(ValueError, match="not a finite number"):
+            genesis_repro.GenesisManifest.from_json(f'{{"schema": "{schema}", "name": "x", "volume": {token}}}')
+
+
+@pytest.mark.parametrize("text,why", [
+    ("[]", "Not a genesis manifest"),
+    ("3", "Not a genesis manifest"),
+    (f'{{"schema": "{genesis_repro.MANIFEST_SCHEMA}"}}', "has no 'name' entry"),
+    (f'{{"schema": "{genesis_repro.MANIFEST_SCHEMA}", "name": "x", "hardpoints": {{}}, "targets": {{}}, "volume": {{}},'
+     ' "search": {"no_such": 1}}', "search settings are not readable"),
+])
+def test_manifest_that_is_not_one_is_a_value_error(text, why):
+    with pytest.raises(ValueError, match=why):
+        genesis_repro.GenesisManifest.from_json(text)

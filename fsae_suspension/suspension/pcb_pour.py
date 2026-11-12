@@ -135,7 +135,7 @@ def _cells_polygon(pts, h):
 def pour_resistance(board: PcbBoard, nid: int, max_pads: int = 10, pair=None, max_cells=None) -> dict:
     """Worst pad-to-pad resistance (Ω) among the net's first `max_pads` pads (a name two pads share gets @x,y), or
     between the two pads named in `pair`, with the net's pours if it has any, by a sheet solve of at most
-    `max_cells` cells per layer (default MAX_CELLS_PER_LAYER) that checks its own grid: it is solved again between the same two pads at half the
+    `max_cells` cells in all (default: MAX_CELLS_PER_LAYER on each layer) that checks its own grid: it is solved again between the same two pads at half the
     cell size (mm), and at a quarter if those differ by more than GRID_TOL_PCT. Returns {"r_ohm" (the finest solve),
     "pair", "h_mm", "grid_change_pct" (the last change, percent), "converged"} or {"r_ohm": None, "why": ...}.
     `converged` False means the finer grid did not fit in memory or the answer was still moving: an unverified
@@ -167,15 +167,16 @@ def _pour_at(board: PcbBoard, nid: int, h: float, max_pads: int = 10, only=None,
     layers = list(board.copper_layers) or ["F.Cu", "B.Cu"]
     lidx = {ly: i for i, ly in enumerate(layers)}
     off = 1 << 20
-    cap = max_cells or MAX_CELLS_PER_LAYER
+    cap = MAX_CELLS_PER_LAYER
+    total_cap = max_cells or MAX_CELLS_PER_LAYER * max(len(layers), 1)
     track_mm2 = sum(sg.length_mm * sg.width_mm for sg in board.segments_of(nid))
-    if track_mm2 / (h * h) > cap * max(len(layers), 1):   # the tracks alone are too many cells: refuse before drawing
+    if track_mm2 / (h * h) > total_cap:                    # the tracks alone are too many cells: refuse before drawing
         return {"r_ohm": None, "why": "too large for the sheet solve", "h_mm": h}
     for ly in layers:                                      # refuse before drawing anything too large for memory
         area_mm2 = sum(abs(np.dot(np.asarray(z.outline)[:, 0], np.roll(np.asarray(z.outline)[:, 1], 1))
                            - np.dot(np.asarray(z.outline)[:, 1], np.roll(np.asarray(z.outline)[:, 0], 1))) / 2.0
                        for z in board.zones if z.net == nid and z.layer == ly and len(z.outline) >= 3)
-        if area_mm2 / (h * h) > cap:
+        if area_mm2 / (h * h) > min(cap, total_cap):
             return {"r_ohm": None, "why": "too large for the sheet solve", "h_mm": h}
     allp: list = []                                        # half-cell coverage: (layer, P, Q, c, is_terminal)
     for s in board.segments_of(nid):
@@ -236,7 +237,7 @@ def _pour_at(board: PcbBoard, nid: int, h: float, max_pads: int = 10, only=None,
     key, _cov = _gather(*Ha, 0, 0)
     n = key.size
     per_layer = np.bincount((key >> 42).astype(int))
-    if per_layer.max() > cap:
+    if per_layer.max() > cap or n > total_cap:
         return {"r_ohm": None, "why": "too large for the sheet solve", "h_mm": h}
 
     def _lookup(keys, k_, c_):

@@ -141,6 +141,25 @@ def _unit_from_header(cells) -> str | None:
 
 
 def _rows_from_csv(data: bytes) -> list[tuple[str, list]]:
+    """CSV rows, or ValueError when the bytes are not a CSV the reader can walk."""
+    try:
+        return _rows_from_csv_raw(data)
+    except csv.Error as exc:
+        raise ValueError(f"the file is not a readable CSV ({exc})") from exc
+
+
+def _rows_from_xlsx(data: bytes) -> list[tuple[str, list]]:
+    """Workbook rows, or ValueError when the bytes are not a workbook openpyxl can open (a damaged or truncated
+    .xlsx, an encrypted one, a zip that is not a workbook). The reader is third-party code on an untrusted file,
+    so whatever it raises becomes the one error a caller handles."""
+    try:
+        return _rows_from_xlsx_raw(data)
+    except Exception as exc:                                    # noqa: BLE001
+        raise ValueError(f"the file is not a readable Excel workbook ({type(exc).__name__}); "
+                         "save it again as .xlsx or export CSV") from exc
+
+
+def _rows_from_csv_raw(data: bytes) -> list[tuple[str, list]]:
     text = data.decode("utf-8-sig", errors="replace")
     # deterministic delimiter choice: whichever of , ; tab appears most in the
     # first lines wins (the Sniffer fails on headerless one-column-ish files;
@@ -151,7 +170,7 @@ def _rows_from_csv(data: bytes) -> list[tuple[str, list]]:
     return [("csv", r) for r in rows]
 
 
-def _rows_from_xlsx(data: bytes) -> list[tuple[str, list]]:
+def _rows_from_xlsx_raw(data: bytes) -> list[tuple[str, list]]:
     import openpyxl                              # lazy: heavy import
     wb = openpyxl.load_workbook(io.BytesIO(data), data_only=True, read_only=True)
     out = []

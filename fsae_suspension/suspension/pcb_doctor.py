@@ -1098,9 +1098,10 @@ SAFETY_CONTRACT = "false alarms are acceptable; false all-clears are not"
 NET_R_UPPER_FACTOR = 1.10
 
 #  The 1-D estimate misses by up to 9 % on short pad-to-pad nets (benchmark B6). Where a net is small enough, a 2-D
-#  sheet solve of the same copper between the same two pads replaces it (plan addendum 12). This many cells per layer
-#  keeps one net to a few seconds.
-REFINE_MAX_CELLS = 400_000
+#  sheet solve of the same copper between the same two pads replaces it (plan addendum 12). This many cells in all
+#  keeps one net to a few seconds and a few hundred MB, so the hosted app stays responsive; a larger net keeps the
+#  1-D value and its margin.
+REFINE_MAX_CELLS = 150_000
 #  The brown-out check holds a converged sheet-solve value to this factor (unitless): the solve's own grid tolerance.
 SHEET_UPPER_FACTOR = 1.02
 

@@ -287,3 +287,21 @@ def test_pour_round3_held_out_on_kicad9_boards():
     assert len(sc) == 19
     for o in sc:
         assert abs(o["kinematik_r3_ohm"] - o["copper2d_ohm"]) / o["copper2d_ohm"] <= 0.02, o["net"]
+
+
+def test_refined_net_resistance_held_out_on_kicad9_boards():
+    """Plan addendum 12: 100 nets B6 never sampled, solved once by the reference. Every net the sheet solve refines is
+    within 2 %; the ones it leaves to the 1-D model are the connector nets whose pad names repeat, which the
+    reference cannot solve either."""
+    d = json.loads((REF / "kicad9" / "net_resistance_refined.json").read_text(encoding="utf-8"))
+    rows = d["held_out"]["nets"]
+    assert len(rows) == 100
+    refined = [o for o in rows if o["source"] == "sheet solve" and o["copper2d_ohm"]]
+    assert len(refined) == 92
+    err = [(o["kinematik_refined_ohm"] - o["copper2d_ohm"]) / o["copper2d_ohm"] for o in refined]
+    assert all(abs(e) <= 0.02 for e in err) and max(map(abs, err)) < 0.013
+    one_d = [(o["kinematik_1d_ohm"] - o["copper2d_ohm"]) / o["copper2d_ohm"] for o in refined]
+    assert sum(abs(e) <= 0.02 for e in one_d) == 68            # what the 1-D model alone scored on the same nets
+    shipped = [o for o in refined if o["source_at_shipped_limit"] == "sheet solve"]
+    assert len(shipped) == 78                                  # the shipped size limit refines these; all within 2 % too
+    assert not [o for o in rows if o["source"] == "1-D" and o["copper2d_ohm"]]

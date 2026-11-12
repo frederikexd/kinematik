@@ -148,7 +148,30 @@ _UNIT_SCALE = {"MILLI": 1.0, "CENTI": 10.0, "DECI": 100.0, "": 1000.0,
                "MICRO": 1e-3}
 
 
-def parse_step_tubes(text: str, outer_radius_mm=None,
+def parse_step_tubes(text: str, outer_radius_mm=None, radius_tol_mm: float = 0.02, axis_tol_mm: float = 0.5,
+                     min_length_mm: float = 1.0, detect_range_mm=(4.0, 40.0),
+                     split_gap_mm: float | None = 1.0) -> StepTubes:
+    """Tube axis lines, walls and bends from STEP text, all lengths in mm (see `_parse_step_tubes_raw` for the
+    method and the arguments). A damaged file (a reference to an entity that is not there, a truncated record, a
+    coordinate that is not a finite number) raises ValueError: a frame with a nan node is not a frame."""
+    try:
+        with np.errstate(all="ignore"):
+            out = _parse_step_tubes_raw(text, outer_radius_mm, radius_tol_mm, axis_tol_mm, min_length_mm,
+                                        detect_range_mm, split_gap_mm)
+    except (KeyError, IndexError, TypeError, ZeroDivisionError, AttributeError) as exc:
+        raise ValueError(f"the STEP file is damaged or incomplete ({type(exc).__name__}: {exc}); "
+                         "export it again from CAD") from exc
+    numbers = [np.asarray(out.vertices, float).ravel(), np.asarray(out.od_mm, float).ravel(),
+               np.asarray([v for b in out.bends for v in b], float).ravel(),
+               np.asarray([c for p0, p1, _w in out.axes for c in (*p0, *p1)], float).ravel(),
+               np.asarray([w for _p0, _p1, w in out.axes if w is not None], float).ravel()]
+    if not all(np.isfinite(a).all() for a in numbers):
+        raise ValueError("the STEP file holds a coordinate or radius that is not a finite number; "
+                         "export it again from CAD")
+    return out
+
+
+def _parse_step_tubes_raw(text: str, outer_radius_mm=None,
                      radius_tol_mm: float = 0.02,
                      axis_tol_mm: float = 0.5,
                      min_length_mm: float = 1.0,
