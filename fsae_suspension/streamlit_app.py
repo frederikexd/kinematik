@@ -18709,10 +18709,10 @@ with tab_car:
               }, sort_keys=True, default=str)
           except Exception:
               _fp = None
-          _memo = st.session_state.get("_car3d_fig_memo")
-          if (_fp is not None and _memo is not None
-                  and _memo.get("fp") == _fp and _memo.get("fig") is not None):
-              _fig_car = _memo["fig"]
+          _car3d_memo = st.session_state.get("_car3d_fig_memo")
+          if (_fp is not None and _car3d_memo is not None
+                  and _car3d_memo.get("fp") == _fp and _car3d_memo.get("fig") is not None):
+              _fig_car = _car3d_memo["fig"]
 
           if _fig_car is None:
               _fig_car = fullcar_mod.build_full_car_figure(
@@ -19130,10 +19130,10 @@ with tab_car:
                     _do_rerun()
             _subs = ["(all)"] + _store_cad_subsystems(_cad_store)
             _filt = st.selectbox("Filter by subsystem", _subs, key="cad_lib_filter")
-            _shown = (_all_files if _filt == "(all)"
+            _files_shown = (_all_files if _filt == "(all)"
                       else _store_cad_files(_cad_store, _filt))
-            st.caption(f"{len(_shown)} of {len(_all_files)} file(s)")
-            for _cf in _shown:
+            st.caption(f"{len(_files_shown)} of {len(_all_files)} file(s)")
+            for _cf in _files_shown:
                 _row = st.columns([2.8, 1.2, 1.1, 1.0, 1.1, 0.8])
                 _meta = f"`{_cf.subsystem}`"
                 if _cf.uploader:
@@ -29310,11 +29310,11 @@ with tab8:
               _seen = getattr(n, "seen_by", {}) or {}
               if _seen:
                   _names = sorted(_seen.keys())
-                  _shown = ", ".join(_names[:4])
+                  _seen_by = ", ".join(_names[:4])
                   if len(_names) > 4:
-                      _shown += f" +{len(_names) - 4} more"
+                      _seen_by += f" +{len(_names) - 4} more"
                   seen_line = (f"<br><span class='tag good' style='margin-top:.25rem;"
-                               f"display:inline-block;'>✓ Seen by {_shown}</span>")
+                               f"display:inline-block;'>✓ Seen by {_seen_by}</span>")
               else:
                   seen_line = ("<br><span class='hint' style='font-size:.8rem;'>"
                                "○ Not yet opened by anyone else</span>")
