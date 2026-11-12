@@ -329,3 +329,16 @@ def test_pour_nets_with_a_corrected_reference():
     d = json.loads((REF / "pours_unresolved_design.json").read_text(encoding="utf-8"))
     both = [o for o in d["nets"] if o["reference_converged"] and o["converged"]]
     assert len(both) == 20 and all(abs(o["error_pct"]) <= 2.0 for o in both)
+
+
+def test_unverified_pour_estimates_stay_inside_the_brownout_margin():
+    """An estimate KinematiK labels not converged is used by the brown-out check with POUR_UNVERIFIED_FACTOR. Every
+    such estimate in the benchmark is within that factor of the reference, high or low."""
+    from suspension.pcb_doctor import POUR_UNVERIFIED_FACTOR
+    d = json.loads((REF / "kicad9" / "pours_round4.json").read_text(encoding="utf-8"))
+    rows = [(o["kinematik_r4_ohm"], o["copper2d_ohm"]) for o in d["held_out"]
+            if not o.get("r4_converged") and o.get("kinematik_r4_ohm") and o.get("copper2d_ohm")]
+    rows += [(o["kinematik_r4_ohm"], o["reference_ohm"]) for o in d["design"] if not o.get("r4_converged")]
+    assert len(rows) == 5
+    for kk, ref in rows:
+        assert kk * POUR_UNVERIFIED_FACTOR >= ref and kk <= ref * POUR_UNVERIFIED_FACTOR

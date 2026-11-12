@@ -382,6 +382,12 @@ at all. Now the check solves the pour within the app's size limit and uses the l
 pour estimate converged, ×1.10 when not). Where the pour is too large to solve, the report says the drop through
 the pour was **not checked**. On the 52 KiCad 9 pour nets, 32 solve within the limit (35 s for all of them).
 
+**What the app runs, and what the benchmark leaves open.** In the app the pour solve is limited to 150,000 cells per
+net, so it answers in seconds. The nets this benchmark could not finish (`+3V3` and three others of 1.0–1.5 million
+cells) are far outside that limit; in the app they get the warning that the drop through the pour was not checked,
+never a number. The 5 estimates KinematiK labels not converged are all within 3.4 % of the reference, inside the
+×1.10 the brown-out check applies to them.
+
 **What can be said.** A pour estimate KinematiK marks converged has matched a converged reference within 2 % on
 every net where both exist: 5 of 5 held out, and 60 of 62 on design data (the 2 misses being the empty pours since
 fixed). That is strong evidence but only 5 held-out nets, not a proven rate. Whole-board planes are not estimated,
