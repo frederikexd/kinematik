@@ -101,7 +101,7 @@ def _cells_pad(pad, h):
         ex, ey = max(w / 2.0 - r, 0.0), max(ht / 2.0 - r, 0.0)
         inside = np.hypot(np.maximum(ax_ - ex, 0), np.maximum(ay_ - ey, 0)) <= r
     elif pad.shape == "roundrect":
-        r = 0.25 * min(w, ht)
+        r = getattr(pad, "rratio", 0.25) * min(w, ht)
         ex, ey = w / 2.0 - r, ht / 2.0 - r
         inside = (ax_ <= w / 2.0) & (ay_ <= ht / 2.0) & (np.hypot(np.maximum(ax_ - ex, 0), np.maximum(ay_ - ey, 0)) <= r)
     else:

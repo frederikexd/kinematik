@@ -473,3 +473,15 @@ Addendum 14's 80 nets came from 13 boards, most of them small signal pours. This
   largest filled layer) and by whether the net is a power or ground rail by name, so the result shows whether big
   power pours are covered.
 - **Pass:** every scored net within 2 %. The combined bound with addendum 14 is reported too.
+
+### Addendum 15, result, and addendum 16 (written before any addendum-16 net was solved)
+
+**Addendum 15 result**, scored once: 71 nets on 26 boards with both values converged, **70 within 2 %**. The miss:
+`/PYRO_D` on UIUC's Mini-MK1, +3.07 % (high). Cause: KinematiK drew every roundrect pad with KiCad's default corner
+radius (a quarter of the short side); this through-hole pad's file says 0.119, so KinematiK's terminal was 4 % too
+small. Fixed in the 2-D sheet solve: it now reads `roundrect_rratio`. With the fix the net reads −0.03 %. The 1-D
+model keeps the default radius, since benchmarks B5 and B6 were scored with it.
+
+**Addendum 16, held out for the fix:** on the same 42 boards, the next up to 3 pour nets of each board in the same
+registered order (`random.Random(20261115)`), after those addendum 15 examined, under the same rules and reference.
+KinematiK frozen at the commit that adds this text. Pass: every scored net within 2 %.

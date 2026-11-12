@@ -285,6 +285,8 @@ class PcbPad:
     # A KiCad `custom` pad's copper beyond its anchor, in board mm:
     # ("poly", [(x, y), ...]) and ("capsule", (x0, y0, x1, y1, half_width)).
     primitives: list = field(default_factory=list)
+    #  A roundrect's corner radius as a fraction of its shorter side (KiCad's `roundrect_rratio`; 0.25 when absent).
+    rratio: float = 0.25
 
 
 @dataclass
@@ -933,6 +935,8 @@ def _parse_footprint(node, net_ref=None) -> PcbFootprint:
         ay = fy - px * sr + py * cr
         psz = _child(pd, "size")
         size = tuple(_floats(psz, 2)) if psz else (1.0, 1.0)
+        rr_ = _child(pd, "roundrect_rratio")
+        rratio = min(max(_floats(rr_)[0], 0.0), 0.5) if rr_ and _floats(rr_) else 0.25
         # (drill … (offset dx dy)): the copper sits off the hole, in the pad's
         # own frame; rotate it by the pad's board orientation like `at` above.
         off = (0.0, 0.0)
@@ -962,7 +966,8 @@ def _parse_footprint(node, net_ref=None) -> PcbFootprint:
         fp.pads.append(PcbPad(number=number, net=pnet, net_name=pname,
                               at=(ax, ay), size=size, through=through,
                               layer=pad_layer, shape=shape,
-                              angle_deg=float(pang or 0.0), copper_offset=off, primitives=prims))
+                              angle_deg=float(pang or 0.0), copper_offset=off, primitives=prims,
+                              rratio=rratio))
     return fp
 
 
@@ -1794,7 +1799,8 @@ def _pad_overlaps(pad, pt, margin_mm: float) -> bool:
             return math.hypot(*seg) <= h / 2.0 + margin_mm
         seg = (lx, max(abs(ly) - (h - w) / 2.0, 0.0))
         return math.hypot(*seg) <= w / 2.0 + margin_mm
-    # a rectangle; a roundrect's corners are rounded (KiCad's default radius, a quarter of the shorter side)
+    # a rectangle; a roundrect's corners are rounded with KiCad's default radius, a quarter of the shorter side. The
+    # 1-D model keeps this (its benchmarks B5-B6 were scored with it); the 2-D sheet solve uses the file's own ratio.
     rad = 0.25 * min(w, h) if shape == "roundrect" else 0.0
     ex = max(abs(lx) - (w / 2.0 - rad), 0.0)
     ey = max(abs(ly) - (h / 2.0 - rad), 0.0)
