@@ -756,17 +756,28 @@ def _copper2d_solve(shapes, pad_key, pad_pos, stack, via_drills, pair, copper_oz
         rows.append(a_i); cols.append(b_i); gs.append(g)
     # terminal anchors: the cell nearest each pad's (or via's) centre on each of its layers
     anchor: dict = {}
+    term_k, term_c = grid(0.0, 0.0, only_terms=True)           # how much of each cell is pad or via copper
     for ly, kind, args, tk in shapes:
         if tk is None:
             continue
         if kind == "capsule":
-            cx, cy = args[0], args[1]
+            cands = [(args[0], args[1])]
         else:
-            pts = np.asarray(args[0]); cx, cy = pts[:, 0].mean(), pts[:, 1].mean()
-        ck = (np.int64(ly) << 42) | ((np.int64(np.floor(cx / h)) + off) << 21) | (np.int64(np.floor(cy / h)) + off)
-        pidx = int(np.searchsorted(key, ck))
-        if pidx < n and key[pidx] == ck:
-            anchor.setdefault((tk, ly), pidx)
+            pts = np.asarray(args[0]); cands = [(pts[:, 0].mean(), pts[:, 1].mean())]
+        if tk in pad_pos:              # the pad's own position first: the vertex mean of a concave custom pad can
+            cands.insert(0, pad_pos[tk])                       # fall in a notch outside it (plan addendum 13)
+        for cx, cy in cands:
+            ck = (np.int64(ly) << 42) | ((np.int64(np.floor(cx / h)) + off) << 21) | (np.int64(np.floor(cy / h)) + off)
+            pidx = int(np.searchsorted(key, ck))
+            if pidx < n and key[pidx] == ck and lookup(key[pidx:pidx + 1], term_k, term_c)[0] > 0.5:
+                anchor.setdefault((tk, ly), pidx)
+                break
+        else:                                                  # neither is the pad's copper: the old rule
+            cx, cy = cands[-1]
+            ck = (np.int64(ly) << 42) | ((np.int64(np.floor(cx / h)) + off) << 21) | (np.int64(np.floor(cy / h)) + off)
+            pidx = int(np.searchsorted(key, ck))
+            if pidx < n and key[pidx] == ck:
+                anchor.setdefault((tk, ly), pidx)
     big = sheet_g * k_term * 100.0
     for p_keys in pad_key.values():                       # a pad on several layers: one conductor through its hole
         for k0 in p_keys:
