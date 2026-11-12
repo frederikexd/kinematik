@@ -3,6 +3,12 @@
 
 ## Unreleased
 
+**Electrics: loads typed once.**
+- Each subsystem's peak current, voltage and power draw are entered in the electrics module (PCB Doctor, "Subsystem loads") and written straight into the integration ledger.
+- Power is filled as V × I when left blank.
+- Every power net matched to that subsystem takes the declared current and voltage.
+- No more typing them in the Integration tab first.
+
 **PCB Doctor: large pours and recommended vias.**
 - *Large pours:* a "Solve large pours (much slower)" switch solves planes up to 3 million cells. It says before it starts that it takes minutes per pour.
 - *Recommended vias:* where a via is the bottleneck, the Doctor proposes stitching vias of the net's own size beside the existing one, joined on every layer and clear of other copper.

@@ -1583,6 +1583,64 @@ _SIGNAL_NAME = re.compile(
 _SKIP_NAME = re.compile(r"^(gnd|agnd|dgnd|pgnd|earth|chassis)|unconnected|no_?connect|n\$?c$", re.I)
 
 
+#  The subsystems a board's power nets are matched to, in the order the electrics module lists them.
+LOAD_SUBSYSTEMS = tuple(dict.fromkeys(sub for _pat, sub in _NET_HINTS))
+
+
+def subsystem_loads(ledger_dict: dict) -> list:
+    """The electrical loads the integration ledger holds for each board subsystem: rows of {"subsystem",
+    "peak_current_a" (A), "voltage_v" (V), "power_draw_w" (W)}, None where nothing is declared."""
+    ifaces = (ledger_dict or {}).get("interfaces", {}) or {}
+    names = list(LOAD_SUBSYSTEMS) + sorted(n for n, d in ifaces.items() if n not in LOAD_SUBSYSTEMS
+                                           and any((d or {}).get(k) is not None
+                                                   for k in ("peak_current_a", "voltage_v", "power_draw_w")))
+    return [{"subsystem": n, **{k: (ifaces.get(n) or {}).get(k)
+                                for k in ("peak_current_a", "voltage_v", "power_draw_w")}} for n in names]
+
+
+def write_loads_to_ledger(ledger_dict: dict, rows: list, source: str = "electrics module") -> list:
+    """Write the loads typed in the electrics module into the integration ledger (in place) and return the names of
+    the subsystems that changed. Each row: {"subsystem", "peak_current_a" (A), "voltage_v" (V), "power_draw_w" (W)};
+    a blank cell clears that field. When power is blank but current and voltage are both given, power is filled as
+    V × I and the ledger's note says it was derived. A value that is not a finite number of zero or more is refused
+    with ValueError naming the subsystem and the field, and nothing is written."""
+    clean = []
+    for r in rows:
+        sub = str(r.get("subsystem") or "").strip()
+        if not sub:
+            continue
+        vals = {}
+        for k, unit in (("peak_current_a", "A"), ("voltage_v", "V"), ("power_draw_w", "W")):
+            v = r.get(k)
+            if v is None or (isinstance(v, str) and not v.strip()) or (isinstance(v, float) and math.isnan(v)):
+                vals[k] = None
+                continue
+            try:
+                v = float(v)
+            except (TypeError, ValueError):
+                raise ValueError(f"{sub}: {k} is not a number ({v!r})") from None
+            if not math.isfinite(v) or v < 0:
+                raise ValueError(f"{sub}: {k} must be a finite number of zero or more {unit}, got {v:g}")
+            vals[k] = v
+        derived = vals["power_draw_w"] is None and vals["peak_current_a"] is not None and vals["voltage_v"] is not None
+        if derived:
+            vals["power_draw_w"] = vals["peak_current_a"] * vals["voltage_v"]
+        clean.append((sub, vals, derived))
+    ifaces = ledger_dict.setdefault("interfaces", {})
+    changed = []
+    for sub, vals, derived in clean:
+        d = dict(ifaces.get(sub) or {"name": sub, "is_estimate": False})   # typed by the engineer: declared
+        before = {k: d.get(k) for k in vals}
+        d.update(vals)
+        if before != vals:
+            note = (d.get("notes") or "").split(" [electrics:")[0].rstrip()
+            d["notes"] = (note + f" [electrics: current, voltage{', power = V x I' if derived else ', power'} set in "
+                          f"the {source}]").strip()
+            ifaces[sub] = d
+            changed.append(sub)
+    return changed
+
+
 def ledger_fingerprint(ledger=None) -> tuple:
     """
     A hashable summary of everything `auto_assign_net_currents` reads off the
@@ -1599,25 +1657,29 @@ def ledger_fingerprint(ledger=None) -> tuple:
     out = []
     for name, iface in (getattr(ledger, "interfaces", {}) or {}).items():
         peak = getattr(iface, "peak_current_a", None)
-        if peak is None:
+        volt = getattr(iface, "voltage_v", None)
+        if peak is None and volt is None:
             # Undeclared contributes nothing to the assignment, so its absence
             # must not appear as a change — otherwise declaring a mass in an
             # unrelated subsystem would throw away the net table.
             continue
-        out.append((str(name), float(peak)))
-    return tuple(sorted(out))
+        out.append((str(name), None if peak is None else float(peak), None if volt is None else float(volt)))
+    return tuple(sorted(out, key=lambda t: t[0]))
 
 
 def auto_assign_net_currents(board: PcbBoard, ledger=None) -> dict:
     """Map each routed net to (current_a, voltage_v, source_note) using name
     heuristics against the integration ledger's declared peak currents. Every
     guess is labelled; the UI lets the user overwrite all of it."""
-    peaks = {}
+    peaks, volts = {}, {}
     if ledger is not None:
         for sub_name, iface in getattr(ledger, "interfaces", {}).items():
             i = getattr(iface, "peak_current_a", None)
             if i:
                 peaks[sub_name] = float(i)
+            v = getattr(iface, "voltage_v", None)
+            if v:
+                volts[sub_name] = float(v)
     out = {}
     for nid in board.routed_net_ids():
         name = board.net_name(nid)
@@ -1632,8 +1694,10 @@ def auto_assign_net_currents(board: PcbBoard, ledger=None) -> dict:
             continue
         cur, volt, src = 1.0, 5.0, "assumed 1 A (no ledger match — edit me)"
         assumed = True
+        matched = None
         for pat, sub in _NET_HINTS:
             if re.search(pat, name, re.I):
+                matched = sub
                 if sub in peaks:
                     cur = peaks[sub]
                     src = f"ledger: {sub} declared peak {cur:g} A"
@@ -1643,6 +1707,8 @@ def auto_assign_net_currents(board: PcbBoard, ledger=None) -> dict:
                 break
         if _HV_NAME.search(name):
             volt = 400.0
+        if matched in volts:                 # the subsystem's declared voltage beats the name guess
+            volt = volts[matched]
         a = NetAssignment(net=name, voltage_v=volt)
         if assumed:
             a.assume(cur, src)               # a guess, and labelled as one

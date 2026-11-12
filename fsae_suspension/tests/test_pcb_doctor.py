@@ -6,6 +6,7 @@
 """PCB Doctor — parse a real board file, diagnose real-life failures, name the
 component, patch the traces in place, and verify the patched file re-parses."""
 
+import json
 import math
 import re
 import unittest
@@ -1646,3 +1647,60 @@ class TestRecommendedViasAndLargePours(unittest.TestCase):
         self.assertTrue(quick and "Solve large pours" in quick[0].message)
         self.assertFalse([f for f in slow.findings if "NOT checked" in f.message])   # solved once switched on
         self.assertTrue([f for f in slow.findings if "(through the pour)" in f.message])
+
+
+class TestLoadsWrittenToTheLedger(unittest.TestCase):
+    """Current, voltage and power are typed once, in the electrics module, and land in the integration ledger."""
+
+    def test_write_read_and_derived_power(self):
+        from suspension.interfaces import IntegrationLedger
+        from suspension.pcb_doctor import LOAD_SUBSYSTEMS, subsystem_loads, write_loads_to_ledger
+        led = {"interfaces": {"cooling": {"name": "cooling", "mass_kg": 3.2, "notes": "radiator + fan"}}}
+        changed = write_loads_to_ledger(led, [
+            {"subsystem": "cooling", "peak_current_a": 12.0, "voltage_v": 12.0, "power_draw_w": None},
+            {"subsystem": "electrics", "peak_current_a": 4.0, "voltage_v": 5.0, "power_draw_w": 15.0},
+            {"subsystem": "brakes", "peak_current_a": None, "voltage_v": None, "power_draw_w": None}])
+        self.assertEqual(changed, ["cooling", "electrics"])
+        c = led["interfaces"]["cooling"]
+        self.assertEqual((c["peak_current_a"], c["voltage_v"], c["power_draw_w"]), (12.0, 12.0, 144.0))
+        self.assertEqual(c["mass_kg"], 3.2)                                  # the rest of the declaration untouched
+        self.assertIn("radiator + fan", c["notes"])
+        self.assertIn("power = V x I", c["notes"])
+        self.assertEqual(led["interfaces"]["electrics"]["power_draw_w"], 15.0)   # typed power is kept
+        self.assertFalse(led["interfaces"]["electrics"]["is_estimate"])
+        self.assertNotIn("brakes", led["interfaces"])                         # nothing typed, nothing created
+        rows = {r["subsystem"]: r for r in subsystem_loads(led)}
+        self.assertEqual(list(rows)[:len(LOAD_SUBSYSTEMS)], list(LOAD_SUBSYSTEMS))
+        self.assertEqual(rows["cooling"]["peak_current_a"], 12.0)
+        L = IntegrationLedger.from_dict(led)                                 # still a valid ledger
+        self.assertEqual(L.get("cooling").peak_current_a, 12.0)
+        self.assertEqual(write_loads_to_ledger(led, subsystem_loads(led)), [])   # re-saving the same is no change
+
+    def test_clearing_a_cell_clears_the_ledger_and_bad_values_write_nothing(self):
+        from suspension.pcb_doctor import write_loads_to_ledger
+        led = {"interfaces": {"cooling": {"name": "cooling", "peak_current_a": 12.0, "voltage_v": 12.0}}}
+        write_loads_to_ledger(led, [{"subsystem": "cooling", "peak_current_a": float("nan"), "voltage_v": 12.0,
+                                     "power_draw_w": None}])
+        self.assertIsNone(led["interfaces"]["cooling"]["peak_current_a"])
+        before = json.dumps(led, sort_keys=True)
+        for bad in (-1.0, float("inf"), "lots"):
+            with self.assertRaises(ValueError):
+                write_loads_to_ledger(led, [{"subsystem": "electrics", "peak_current_a": 1.0, "voltage_v": 5.0,
+                                             "power_draw_w": None},
+                                            {"subsystem": "cooling", "peak_current_a": bad, "voltage_v": 12.0,
+                                             "power_draw_w": None}])
+        self.assertEqual(json.dumps(led, sort_keys=True), before)            # all or nothing
+
+    def test_the_board_follows_what_was_typed(self):
+        from suspension.interfaces import IntegrationLedger
+        from suspension.pcb_doctor import ledger_fingerprint, write_loads_to_ledger
+        board = parse_kicad_pcb(demo_kicad_pcb())
+        led = {"interfaces": {}}
+        fp0 = ledger_fingerprint(IntegrationLedger.from_dict(led))
+        write_loads_to_ledger(led, [{"subsystem": "cooling", "peak_current_a": 9.0, "voltage_v": 12.0,
+                                     "power_draw_w": None}])
+        L = IntegrationLedger.from_dict(led)
+        self.assertNotEqual(ledger_fingerprint(L), fp0)                      # the net table refreshes
+        fan = auto_assign_net_currents(board, ledger=L)[board.net_id("FAN_PWR")]
+        self.assertEqual((fan["current_a"], fan["voltage_v"]), (9.0, 12.0))
+        self.assertTrue(fan.declared)

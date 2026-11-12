@@ -26004,6 +26004,40 @@ def render_pcb_doctor():
                 st.markdown(f'<p class="hint">• {_n}</p>',
                             unsafe_allow_html=True)
 
+    # ---------------- subsystem loads: typed here, written to the ledger ------- #
+    # The electrical member enters each subsystem's peak current, voltage and power draw HERE, where they are
+    # used; the integration ledger receives them, so the rest of the car (power budget, harness, the pre-fab gate)
+    # sees the same numbers without anyone typing them twice.
+    with st.expander("🔌 Subsystem loads (current, voltage, power) — entered here, written to the "
+                     "integration ledger", expanded=not any(
+                         r["peak_current_a"] is not None for r in pdr_mod.subsystem_loads(st.session_state.ledger))):
+        st.markdown(
+            '<p class="hint">Type each subsystem\'s <b>peak current</b>, <b>voltage</b> and <b>continuous power '
+            'draw</b>. They go straight into the integration ledger (the Integration tab shows them, marked as '
+            'set here) and every power net on the board matched to that subsystem takes them. Leave power blank '
+            'to have it filled as V × I. Clear a cell to clear it in the ledger.</p>', unsafe_allow_html=True)
+        import pandas as _pd_l
+        _loads = pdr_mod.subsystem_loads(st.session_state.ledger)
+        _ldf = _pd_l.DataFrame(_loads)
+        _led_ed = st.data_editor(
+            _ldf, key="pdr_loads_ed", hide_index=True, width='stretch', disabled=["subsystem"],
+            column_config={
+                "subsystem": st.column_config.TextColumn("subsystem"),
+                "peak_current_a": st.column_config.NumberColumn("peak current (A)", min_value=0.0, max_value=1000.0,
+                                                                step=0.1),
+                "voltage_v": st.column_config.NumberColumn("voltage (V)", min_value=0.0, max_value=1000.0, step=0.1),
+                "power_draw_w": st.column_config.NumberColumn("power draw (W)", min_value=0.0, max_value=200000.0,
+                                                              step=1.0)})
+        try:
+            _changed = pdr_mod.write_loads_to_ledger(st.session_state.ledger, _led_ed.to_dict("records"))
+        except ValueError as _e:
+            st.error(f"Not written to the ledger: {_e}")
+            _changed = []
+        if _changed:
+            st.session_state.ledger = dict(st.session_state.ledger)        # a new object: every reader sees it
+            led = interfaces_mod.IntegrationLedger.from_dict(st.session_state.ledger)
+            st.success(f"Written to the integration ledger: {', '.join(_changed)}.")
+
     # ---------------- per-net current/voltage assignments --------------------- #
     # The diagnosis below reads its ambient off board_ctx. Resolve that from the
     # car-level ledger here too, so the Doctor agrees with the pre-fab gate even

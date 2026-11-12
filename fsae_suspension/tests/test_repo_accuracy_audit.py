@@ -369,7 +369,8 @@ _UNIT_IN_NAME = re.compile(
 
 _UNIT_WORDS = re.compile(
     r"\b(mm|cm|\bm\b|km|N/mm|N/m|N·m|Nm|deg|degree|rad|radian|kg|N\b|Pa|bar|"
-    r"°C|degC|Kelvin|W/|J/|m/s|g\b|%|percent|unitless|dimensionless)",
+    r"°C|degC|Kelvin|W/|J/|m/s|g\b|%|percent|unitless|dimensionless)"
+    r"|\((?:A|V|W|Ω|mΩ|ohm)\)",                # electrical units written as "(A)", "(V)", "(W)", "(Ω)"
     re.I)
 
 #: Modules that are pure plumbing: IO, registries, UI adapters, persistence.
@@ -437,7 +438,7 @@ def test_public_physics_functions_state_their_units():
     #  Both reductions came from making the CHECK sharper, not from documenting
     #  anything — that work is still outstanding. A check with 250 false
     #  positives in it hides the real ones.
-    LIMIT = 1047    # 2026-09: genesis units documented (1077 -> 1048); review modules documented (1048 -> 1047)
+    LIMIT = 1046    # 2026-11: electrical units (A, V, W, Ω) recognised (1047 -> 1046); 2026-09: genesis units documented (1077 -> 1048); review modules (1048 -> 1047)
     detail = "\n".join(
         f"  {rel}: {len(v)} function(s)" for rel, v in sorted(
             missing.items(), key=lambda kv: -len(kv[1]))[:15])
