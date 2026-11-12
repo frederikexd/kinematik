@@ -26188,9 +26188,12 @@ def render_pcb_doctor():
                     f'<b>{counts["fail"]} → {c2["fail"]} FAIL</b>, '
                     f'{counts["warning"]} → {c2["warning"]} WARN. Only the '
                     f'width tokens changed — nets, routing and everything else '
-                    f'are byte-identical, in the file\'s own units. Re-run '
-                    f'{pboard.fmt_label.split(" /")[0]} DRC on it: a widened '
-                    f'trace can newly crowd an LV neighbour.</p>',
+                    f'are byte-identical, in the file\'s own units. Every '
+                    f'widening was checked to keep {pdr_mod.FIX_MIN_CLEARANCE_MM:g} mm '
+                    f'to every other net on its layer, with the other fixes in place; '
+                    f'one that would not is left out and listed as MANUAL. Still '
+                    f'run {pboard.fmt_label.split(" /")[0]} DRC: your board\'s own '
+                    f'rules may be tighter.</p>',
                     unsafe_allow_html=True)
             except ValueError:
                 st.warning("Patched file failed to re-parse — not offered for "

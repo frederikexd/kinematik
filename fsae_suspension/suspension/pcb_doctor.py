@@ -1994,13 +1994,18 @@ def diagnose(board: PcbBoard, assignments: dict,
                     continue
                 r = _req_w(s.layer in ("F.Cu", "B.Cu"), board.copper_oz)
                 if s.width_mm < r * 0.999:
+                    w_new = math.ceil(r * 20) / 20.0                  # round up to 0.05
+                    clash = None if is_pair_member else widening_conflict(board, i, w_new)
                     rep.fixes.append(TraceFix(
                         net=name, nid=nid, seg_index=i, old_width_mm=s.width_mm,
-                        new_width_mm=math.ceil(r * 20) / 20.0,   # round up to 0.05
-                        layer=s.layer, auto=not is_pair_member,
+                        new_width_mm=w_new,
+                        layer=s.layer, auto=not is_pair_member and clash is None,
                         note=("diff-pair member — widening changes impedance; "
                               "prescribed only, use copper weight / paralleling"
-                              if is_pair_member else "")))
+                              if is_pair_member else
+                              f"widening to {w_new:g} mm would leave {max(clash[1], 0):.2f} mm to "
+                              f"'{clash[0]}' (needs {FIX_MIN_CLEARANCE_MM:g} mm): not applied — reroute "
+                              f"this segment, or move the net to 2 oz copper" if clash else "")))
 
         # -- fusing margin -------------------------------------------------------- #
         if fuse_i < fuse_sf * cur:
@@ -2284,6 +2289,59 @@ def diagnose(board: PcbBoard, assignments: dict,
 # --------------------------------------------------------------------------- #
 #  The auto-fix: rewrite widths in the original file, verify, report
 # --------------------------------------------------------------------------- #
+#  Copper-to-copper spacing (mm) a widened trace must keep to every other net on its layer. KiCad's own default
+#  clearance; a board's rules may be tighter, never looser for a fix this tool makes on its own.
+FIX_MIN_CLEARANCE_MM = 0.2
+
+
+def _seg_seg_mm(a0, a1, b0, b1) -> float:
+    """Shortest distance (mm) between two line segments in the plane."""
+    def _pt(p, q0, q1):
+        dx, dy = q1[0] - q0[0], q1[1] - q0[1]
+        L2 = dx * dx + dy * dy
+        t = 0.0 if L2 <= 0 else max(0.0, min(1.0, ((p[0] - q0[0]) * dx + (p[1] - q0[1]) * dy) / L2))
+        return math.hypot(p[0] - q0[0] - t * dx, p[1] - q0[1] - t * dy)
+
+    def _cross(o, a, b):
+        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+
+    d1, d2, d3, d4 = _cross(b0, b1, a0), _cross(b0, b1, a1), _cross(a0, a1, b0), _cross(a0, a1, b1)
+    if ((d1 > 0) != (d2 > 0)) and ((d3 > 0) != (d4 > 0)):
+        return 0.0
+    return min(_pt(a0, b0, b1), _pt(a1, b0, b1), _pt(b0, a0, a1), _pt(b1, a0, a1))
+
+
+def widening_conflict(board: PcbBoard, seg_index: int, new_width_mm: float,
+                      min_clear_mm: float = FIX_MIN_CLEARANCE_MM):
+    """The first piece of another net's copper on the same layer that a segment widened to `new_width_mm` (mm)
+    would come closer to than `min_clear_mm` (mm), as (net name, gap mm), or None when the widening is clear.
+    Checks tracks, pads (as their bounding circle, conservatively) and vias."""
+    sg = board.segments[seg_index]
+    hw = new_width_mm / 2.0
+    a0, a1 = sg.start, sg.end
+    for o in board.segments:
+        if o.net == sg.net or o.layer != sg.layer:
+            continue
+        gap = _seg_seg_mm(a0, a1, o.start, o.end) - hw - o.width_mm / 2.0
+        if gap < min_clear_mm - 1e-6:
+            return board.net_name(o.net), gap
+    for fp in board.footprints:
+        for p in fp.pads:
+            if p.net == sg.net or not (p.through or (p.layer or ("B.Cu" if fp.layer == "B.Cu" else "F.Cu")) == sg.layer):
+                continue
+            r = math.hypot(p.size[0], p.size[1]) / 2.0
+            gap = _seg_seg_mm(a0, a1, p.at, p.at) - hw - r
+            if gap < min_clear_mm - 1e-6:
+                return (board.net_name(p.net) if p.net else f"{fp.ref}.{p.number}"), gap
+    for v in board.vias:
+        if v.net == sg.net:
+            continue
+        gap = _seg_seg_mm(a0, a1, v.at, v.at) - hw - v.size_mm / 2.0
+        if gap < min_clear_mm - 1e-6:
+            return board.net_name(v.net), gap
+    return None
+
+
 def apply_fixes(board: PcbBoard, fixes: list) -> tuple:
     """Return (patched_text, applied_fixes). Only auto=True fixes are applied;
     each rewrites exactly the one width token of its segment — KiCad's
@@ -2307,17 +2365,33 @@ def apply_fixes(board: PcbBoard, fixes: list) -> tuple:
             f"get the one-click re-trace; every finding above still applies.")
     per_span = {}          # span -> (width_mm, segment)
     applied = []
-    for fx in fixes:
-        if not fx.auto:
-            continue
-        seg = board.segments[fx.seg_index]
-        span = tuple(seg.width_span)
-        if span == (0, 0):
-            continue       # nothing to patch (synthetic segment)
-        prev = per_span.get(span)
-        if prev is None or fx.new_width_mm > prev[0]:
-            per_span[span] = (fx.new_width_mm, seg)
-        applied.append(fx)
+    #  Each widening is checked against the board as it will be, other accepted widenings included, so two nets
+    #  widened side by side cannot close the gap between them. One that would is left out and turned manual.
+    old_w = {}
+    try:
+        for fx in fixes:
+            if not fx.auto:
+                continue
+            seg = board.segments[fx.seg_index]
+            span = tuple(seg.width_span)
+            if span == (0, 0):
+                continue       # nothing to patch (synthetic segment)
+            clash = widening_conflict(board, fx.seg_index, fx.new_width_mm)
+            if clash is not None:
+                fx.auto = False
+                fx.note = (f"widening to {fx.new_width_mm:g} mm would leave {max(clash[1], 0):.2f} mm to "
+                           f"'{clash[0]}' once the other fixes are in (needs {FIX_MIN_CLEARANCE_MM:g} mm): not "
+                           f"applied — reroute this segment, or move the net to 2 oz copper")
+                continue
+            old_w.setdefault(fx.seg_index, seg.width_mm)
+            seg.width_mm = max(seg.width_mm, fx.new_width_mm)
+            prev = per_span.get(span)
+            if prev is None or fx.new_width_mm > prev[0]:
+                per_span[span] = (fx.new_width_mm, seg)
+            applied.append(fx)
+    finally:
+        for i, w in old_w.items():                      # the board object is the diagnosis, not the patch
+            board.segments[i].width_mm = w
     edits = sorted(((s[0], s[1], seg.width_token(w))
                     for s, (w, seg) in per_span.items()),
                    key=lambda e: e[0], reverse=True)

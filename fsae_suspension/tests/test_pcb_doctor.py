@@ -120,25 +120,54 @@ class TestDiagnosis(unittest.TestCase):
 
 class TestAutoFix(unittest.TestCase):
     def test_patched_file_reparses_with_wider_traces(self):
+        """The demo's FAN_PWR needs 6.55 mm. On F.Cu that would run over GND, so those segments are refused and
+        turned manual with the reason; on B.Cu there is room and it is widened. The fixed file has no new clash."""
+        from suspension.pcb_doctor import widening_conflict
         board, assignments = _demo_setup(fan_a=8.0)
         rep = diagnose(board, assignments)
         patched, applied = apply_fixes(board, rep.fixes)
         self.assertTrue(applied)
+        refused = [fx for fx in rep.fixes if not fx.auto and "would leave" in fx.note]
+        self.assertTrue(refused)
+        self.assertTrue(all("'GND'" in fx.note and "reroute" in fx.note for fx in refused))
         board2 = parse_kicad_pcb(patched)
-        fan = board2.net_id("FAN_PWR")
-        old_min = min(s.width_mm for s in board.segments_of(board.net_id("FAN_PWR")))
-        new_min = min(s.width_mm for s in board2.segments_of(fan))
-        self.assertGreater(new_min, old_min)
-        # patched geometry clears ampacity at the same current
-        assignments2 = dict(assignments)
-        rep2 = diagnose(board2, assignments2)
-        amp2 = [f for f in rep2.findings
-                if f.check.startswith("trace ampacity — FAN_PWR")
-                and f.severity == Severity.FAIL]
-        self.assertFalse(amp2)
+        for fx in applied:
+            self.assertGreater(board2.segments[fx.seg_index].width_mm, fx.old_width_mm)
+            self.assertIsNone(widening_conflict(board2, fx.seg_index, board2.segments[fx.seg_index].width_mm))
+        for fx in refused:                                   # left exactly as they were
+            self.assertEqual(board2.segments[fx.seg_index].width_mm, fx.old_width_mm)
         # only widths changed: same net list, same segment count
         self.assertEqual(board.nets, board2.nets)
         self.assertEqual(len(board.segments), len(board2.segments))
+        self.assertFalse([f for f in diagnose(board2, assignments).fixes if f.auto])   # nothing left to auto-fix
+
+    def test_a_widening_with_room_clears_the_finding(self):
+        b = parse_kicad_pcb('(kicad_pcb (version 20221018) (layers (0 "F.Cu" signal)) (net 0 "") (net 1 "PWR")'
+                            ' (segment (start 0 0) (end 30 0) (width 0.2) (layer "F.Cu") (net 1)))')
+        asg = auto_assign_net_currents(b, ledger=None)
+        asg[b.net_id("PWR")] = {**asg.get(b.net_id("PWR"), {}), "current_a": 5.0, "voltage_v": 12.0,
+                                "declared": True, "assumed": False, "source": "test"}
+        rep = diagnose(b, asg)
+        patched, applied = apply_fixes(b, rep.fixes)
+        self.assertTrue(applied)
+        rep2 = diagnose(parse_kicad_pcb(patched), asg)
+        self.assertFalse([f for f in rep2.findings if f.check.startswith("trace ampacity") and f.severity == Severity.FAIL])
+
+    def test_two_nets_widened_side_by_side_cannot_close_the_gap(self):
+        from suspension.pcb_doctor import FIX_MIN_CLEARANCE_MM, TraceFix
+        b = parse_kicad_pcb('(kicad_pcb (version 20221018) (layers (0 "F.Cu" signal)) (net 0 "") (net 1 "A") (net 2 "B")'
+                            ' (segment (start 0 0) (end 30 0) (width 0.2) (layer "F.Cu") (net 1))'
+                            ' (segment (start 0 1.1) (end 30 1.1) (width 0.2) (layer "F.Cu") (net 2)))')
+        fixes = [TraceFix(net="A", nid=1, seg_index=0, old_width_mm=0.2, new_width_mm=1.0, layer="F.Cu"),
+                 TraceFix(net="B", nid=2, seg_index=1, old_width_mm=0.2, new_width_mm=1.0, layer="F.Cu")]
+        patched, applied = apply_fixes(b, fixes)                 # each alone is clear (0.5 mm gap), both are not
+        self.assertEqual([fx.net for fx in applied], ["A"])
+        self.assertFalse(fixes[1].auto)
+        self.assertIn("once the other fixes are in", fixes[1].note)
+        b2 = parse_kicad_pcb(patched)
+        gap = 1.1 - b2.segments[0].width_mm / 2 - b2.segments[1].width_mm / 2
+        self.assertGreaterEqual(gap, FIX_MIN_CLEARANCE_MM - 1e-9)
+        self.assertEqual(b.segments[0].width_mm, 0.2)            # the diagnosed board object is untouched
 
     def test_diff_pair_members_never_auto_widened(self):
         board, assignments = _demo_setup()
@@ -919,22 +948,19 @@ class TestAltiumAutoFix(unittest.TestCase):
         self.assertTrue(any(float(w[:-3]) > 200 for w in widths), widths)
 
     def test_patched_altium_board_reparses_wider_and_clears(self):
+        from suspension.pcb_doctor import widening_conflict
         board, assignments = _alt_setup(fan_a=8.0)
         rep = diagnose(board, assignments)
-        patched, _ = apply_fixes(board, rep.fixes)
+        patched, applied = apply_fixes(board, rep.fixes)
         board2 = parse_board(patched, "demo.PcbDoc")
-        fan = board2.net_id("FAN_PWR")
-        old_min = min(s.width_mm
-                      for s in board.segments_of(board.net_id("FAN_PWR")))
-        self.assertGreater(min(s.width_mm for s in board2.segments_of(fan)),
-                           old_min)
+        self.assertTrue(applied)
+        for fx in applied:                                      # wider, in the file's units, and clear of every net
+            self.assertGreater(board2.segments[fx.seg_index].width_mm, fx.old_width_mm)
+            self.assertIsNone(widening_conflict(board2, fx.seg_index, board2.segments[fx.seg_index].width_mm))
         # only widths moved
         self.assertEqual(board.nets, board2.nets)
         self.assertEqual(len(board.segments), len(board2.segments))
-        rep2 = diagnose(board2, assignments)
-        self.assertFalse([f for f in rep2.findings
-                          if f.check.startswith("trace ampacity — FAN_PWR")
-                          and f.severity == Severity.FAIL])
+        self.assertFalse([f for f in diagnose(board2, assignments).fixes if f.auto])
 
     def test_one_arc_one_width_token_patched_once(self):
         """Many segments share an arc's single WIDTH token. Two edits at
