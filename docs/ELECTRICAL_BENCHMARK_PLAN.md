@@ -457,3 +457,19 @@ limited to 150,000 cells, worst pair among up to 64 pads) returns a value marked
 488 of the 598 nets are on boards saved by KiCad 8, which KiCad 7 cannot open. For those the reference reads the
 board with KiCad 9.0.3 (the environment of addendum 7's amendment), with the same solver code and rules. The
 KinematiK values were already computed by the frozen commit and are not recomputed.
+
+## Addendum 15, closing addendum 14's caveat (written before any of these nets was solved)
+
+Addendum 14's 80 nets came from 13 boards, most of them small signal pours. This test spreads across boards.
+
+- **Boards:** the 42 boards with pours that no electrical benchmark has used: Formula Student boards from PUT
+  Motorsport (steering wheel, rear box, SWPS, AMS master, dashboard, data acquisition) and Illinois Tech, the
+  Speeduino engine-management boards (`win2466/Hardware`), and the UIUC rocketry boards (`ISSUIUC/ISS-PCB`), 637
+  pour nets.
+- **Nets:** at most 3 per board, in the order `random.Random(20261115)` shuffles each board's pour nets, skipping
+  nets the app gives no value for, until the board has 3 scored or none left. KinematiK frozen at e807fff.
+- **Reference and claim:** as addendum 14 (KiCad 9.0.3 reads every board).
+- **Reported:** the rate with its bound; errors by board; and the scored nets split by pour size (area of the
+  largest filled layer) and by whether the net is a power or ground rail by name, so the result shows whether big
+  power pours are covered.
+- **Pass:** every scored net within 2 %. The combined bound with addendum 14 is reported too.
