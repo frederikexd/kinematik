@@ -597,7 +597,11 @@ def copper2d_resistance(board, net: str, pair, copper_oz: float, thickness_mm: f
         c = v.GetPosition()
         for ly in stack:
             if v.IsOnLayer(ly):
-                shapes.append((ly, "capsule", (c.x * nm, c.y * nm, c.x * nm, c.y * nm, v.GetWidth() * nm / 2.0),
+                try:                                   # KiCad 9 vias have a width per layer
+                    vw = v.GetWidth(ly)
+                except TypeError:
+                    vw = v.GetWidth()
+                shapes.append((ly, "capsule", (c.x * nm, c.y * nm, c.x * nm, c.y * nm, vw * nm / 2.0),
                                ("via", i)))
     if include_zones:                  # addendum 4: the pour's copper as KiCad filled it (clearances, spokes)
         for z in board.Zones():
@@ -608,7 +612,10 @@ def copper2d_resistance(board, net: str, pair, copper_oz: float, thickness_mm: f
                     continue
                 ps = z.GetFilledPolysList(ly)
                 ps = pcbnew.SHAPE_POLY_SET(ps)
-                ps.Fracture(pcbnew.SHAPE_POLY_SET.PM_FAST)
+                try:                                   # KiCad 7 takes a mode; KiCad 8-9 do not
+                    ps.Fracture(pcbnew.SHAPE_POLY_SET.PM_FAST)
+                except (AttributeError, TypeError):
+                    ps.Fracture()
                 for k in range(ps.OutlineCount()):
                     o = ps.Outline(k)
                     shapes.append((ly, "scan", ([(o.CPoint(j).x * nm, o.CPoint(j).y * nm)
@@ -616,7 +623,8 @@ def copper2d_resistance(board, net: str, pair, copper_oz: float, thickness_mm: f
     pad_key: dict = {}
     pad_pos: dict = {}
     for p in pads:
-        key = ("pad", p.GetParent().GetReference(), p.GetNumber(), id(p))
+        _fp = p.GetParentFootprint() if hasattr(p, "GetParentFootprint") else p.GetParent()   # KiCad 9 and 7
+        key = ("pad", _fp.GetReference(), p.GetNumber(), id(p))
         pad_key.setdefault(f"{key[1]}.{key[2]}", []).append(key)
         pad_pos[key] = (p.GetPosition().x * nm, p.GetPosition().y * nm)
         for ly in stack:
