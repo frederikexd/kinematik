@@ -2,7 +2,12 @@
 # findings; the version is pinned so a new ruff release cannot turn the badge red without a code change.
 name: lint
 
-on: [push, pull_request]
+# Pushes run on main only; any other branch runs through its pull request, so a change is never checked twice.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
 
 # The token can read the repository and nothing else; a job that needs more asks for it itself.
 permissions:

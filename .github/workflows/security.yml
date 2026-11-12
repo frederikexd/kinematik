@@ -2,7 +2,12 @@
 # lint (bandit, failing on any medium or high finding). Runs on every push without an account or token.
 name: security
 
-on: [push, pull_request]
+# Pushes run on main only; any other branch runs through its pull request, so a change is never checked twice.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
 
 # The token can read the repository and nothing else; a job that needs more asks for it itself.
 permissions:
