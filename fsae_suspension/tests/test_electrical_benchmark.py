@@ -358,3 +358,25 @@ def test_in_app_pour_rate_is_proven_on_80_fresh_nets():
     un = [o for o in d["nets"] if o.get("app_converged") is False and o.get("reference_converged")]
     assert un and all(1 / POUR_UNVERIFIED_FACTOR <= 1 + o["error_pct"] / 100 <= POUR_UNVERIFIED_FACTOR for o in un)
     assert not [o for o in d["nets"] if "reference_steps" in o and not o.get("reference_converged")]
+
+
+@pytest.mark.parametrize("name,n,within,boards", [("pours_rate_boards.json", 71, 70, 26), ("pours_rate_fix.json", 53, 53, 19)])
+def test_in_app_pour_rate_across_boards(name, n, within, boards):
+    """Plan addenda 15-16: the pour estimate on 42 boards never used before, at most 3 nets per board. Addendum 15's
+    one miss (+3.07 %, a roundrect pad's corner ratio) is pinned as found; addendum 16 holds the fix out."""
+    d = json.loads((REF / name).read_text(encoding="utf-8"))
+    sc = [o for o in d["nets"] if o.get("app_converged") and o.get("reference_converged")]
+    assert len(sc) == n and sum(abs(o["error_pct"]) <= 2.0 for o in sc) == within
+    assert len({o["board"] for o in sc}) == boards
+    assert max(abs(o["error_pct"]) for o in sc) < (3.1 if within < n else 2.0)
+
+
+def test_roundrect_corner_ratio_is_read_for_the_sheet_solve():
+    from suspension.pcb_doctor import parse_kicad_pcb
+    b = parse_kicad_pcb('(kicad_pcb (version 20240108) (layers (0 "F.Cu" signal)) (net 0 "") (net 1 "A")'
+                        ' (footprint "f" (layer "F.Cu") (at 0 0) (property "Reference" "J1")'
+                        '  (pad "1" thru_hole roundrect (at 0 0) (size 2.1 2.1) (drill 1) (layers "*.Cu")'
+                        '   (roundrect_rratio 0.119048) (net 1 "A"))'
+                        '  (pad "2" smd roundrect (at 3 0) (size 1 1) (layers "F.Cu") (net 1 "A"))))')
+    p1, p2 = b.footprints[0].pads
+    assert p1.rratio == pytest.approx(0.119048) and p2.rratio == 0.25

@@ -398,7 +398,24 @@ registered random order from 111 team boards, until 80 had both a converged app 
 - 110 nets got no value in the app (larger than 150,000 cells, or no pad pair to measure). The app warns on those
   that the drop through the pour was not checked.
 - Every reference converged.
-- **Limit of the sample:** the 80 scored nets come from 13 boards, mostly small signal pours.
+- **Limit of that sample:** the 80 scored nets come from 13 boards, mostly small signal pours. Addenda 15–16 close
+  the board spread:
+
+**Across boards (addenda 15–16).** 42 boards no electrical benchmark had used: Formula Student boards from PUT
+Motorsport and Illinois Tech, the Speeduino engine-management boards and UIUC's rocketry boards. At most 3 nets per
+board, in a registered random order.
+- **Addendum 15:** 71 nets on 26 boards, **70 within 2 %**. The miss was +3.07 % (high), on a through-hole roundrect
+  pad whose corner ratio the sheet solve did not read. Fixed: the net now reads −0.03 %.
+- **Addendum 16 (held out for the fix):** the next 53 nets on 19 of those boards, **53 of 53 within 2 %**, worst
+  −0.73 % / +0.47 %.
+- **In all:** 204 scored pour nets on 39 boards, 203 within 2 %; the one miss is fixed and held out.
+  - **Unverified estimates:** every estimate the app marked unconverged is within 1.71 % of the reference.
+  - **Never failed:** the reference converged on every net.
+
+**What remains outside the proof.** Every scored pour is under 100 mm² (largest 41 mm²): the app only solves a pour
+up to 150,000 cells, so it answers in seconds. Large power and ground planes get no number in the app. It says the
+drop through them was not checked, and the user checks those in their PCB tool's DC analysis.
+
 
 **What can be said.** A pour estimate KinematiK marks converged has matched a converged reference within 2 % on
 every net where both exist: 7 of 7 held out, and 60 of 62 on design data (the 2 misses being the empty pours since
