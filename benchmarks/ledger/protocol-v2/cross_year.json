@@ -1,0 +1,254 @@
+{
+ "2025->2026": {
+  "v1": {
+   "skidpad": {
+    "n": 22,
+    "excluded": 3,
+    "mae_pct": 9.656729296734355,
+    "median_abs_pct": 7.77289059841236,
+    "bias_pct": -9.656729296734355,
+    "within_5pct": 3,
+    "spearman": 0.44664031620553357
+   },
+   "accel": {
+    "n": 25,
+    "excluded": 0,
+    "mae_pct": 7.738409755766773,
+    "median_abs_pct": 4.987640758033506,
+    "bias_pct": -4.999291726850034,
+    "within_5pct": 13,
+    "spearman": 0.3208309349596196
+   }
+  },
+  "v2 shared factors (1, 2, 3, 5)": {
+   "skidpad": {
+    "n": 22,
+    "excluded": 3,
+    "mae_pct": 3.8887584105431583,
+    "median_abs_pct": 2.9453183838139734,
+    "bias_pct": -0.48568715558118053,
+    "within_5pct": 16,
+    "spearman": 0.5009884413276185
+   },
+   "accel": {
+    "n": 25,
+    "excluded": 0,
+    "mae_pct": 6.762908167963011,
+    "median_abs_pct": 6.781312697047869,
+    "bias_pct": 3.496137581476054,
+    "within_5pct": 6,
+    "spearman": 0.4839392280326157
+   },
+   "best_lap": {
+    "n": 21,
+    "mae_pct": 4.845714556596915,
+    "bias_pct": 1.0727426951128354,
+    "within_5pct": 13
+   }
+  },
+  "tried: team record on both events": {
+   "skidpad": {
+    "n": 22,
+    "excluded": 3,
+    "mae_pct": 3.225578743311512,
+    "median_abs_pct": 2.04743001543507,
+    "bias_pct": -0.9099659713133428,
+    "within_5pct": 18,
+    "spearman": 0.6047430830039525
+   },
+   "accel": {
+    "n": 25,
+    "excluded": 0,
+    "mae_pct": 7.659063369651432,
+    "median_abs_pct": 6.620111731843578,
+    "bias_pct": 5.408351130834917,
+    "within_5pct": 7,
+    "spearman": 0.6397384230669633
+   },
+   "best_lap": {
+    "n": 21,
+    "mae_pct": 3.6148302871056277,
+    "bias_pct": 0.7252455589994435,
+    "within_5pct": 17
+   }
+  },
+  "v2 final (1-5, record on skidpad)": {
+   "skidpad": {
+    "n": 22,
+    "excluded": 3,
+    "mae_pct": 3.225578743311512,
+    "median_abs_pct": 2.04743001543507,
+    "bias_pct": -0.9099659713133428,
+    "within_5pct": 18,
+    "spearman": 0.6047430830039525
+   },
+   "accel": {
+    "n": 25,
+    "excluded": 0,
+    "mae_pct": 6.762908167963011,
+    "median_abs_pct": 6.781312697047869,
+    "bias_pct": 3.496137581476054,
+    "within_5pct": 6,
+    "spearman": 0.4839392280326157
+   },
+   "best_lap": {
+    "n": 21,
+    "mae_pct": 3.6148302871056277,
+    "bias_pct": 0.7252455589994435,
+    "within_5pct": 17
+   }
+  },
+  "challenger: accel at fastest quarter": {
+   "skidpad": {
+    "n": 22,
+    "excluded": 3,
+    "mae_pct": 3.225578743311512,
+    "median_abs_pct": 2.04743001543507,
+    "bias_pct": -0.9099659713133428,
+    "within_5pct": 18,
+    "spearman": 0.6047430830039525
+   },
+   "accel": {
+    "n": 25,
+    "excluded": 0,
+    "mae_pct": 4.546414266156141,
+    "median_abs_pct": 2.8552314690928555,
+    "bias_pct": -2.805760885640254,
+    "within_5pct": 18,
+    "spearman": 0.4839392280326157
+   },
+   "best_lap": {
+    "n": 21,
+    "mae_pct": 3.6148302871056277,
+    "bias_pct": 0.7252455589994435,
+    "within_5pct": 17
+   }
+  }
+ },
+ "2026->2025": {
+  "v1": {
+   "skidpad": {
+    "n": 19,
+    "excluded": 2,
+    "mae_pct": 8.663026322675176,
+    "median_abs_pct": 9.385094376337817,
+    "bias_pct": -8.663026322675176,
+    "within_5pct": 6,
+    "spearman": 0.6684210526315788
+   },
+   "accel": {
+    "n": 18,
+    "excluded": 3,
+    "mae_pct": 12.15046598727571,
+    "median_abs_pct": 9.553110798903925,
+    "bias_pct": -11.851788255486825,
+    "within_5pct": 6,
+    "spearman": 0.7931764637960922
+   }
+  },
+  "v2 shared factors (1, 2, 3, 5)": {
+   "skidpad": {
+    "n": 19,
+    "excluded": 2,
+    "mae_pct": 4.731537711905397,
+    "median_abs_pct": 4.055238095238101,
+    "bias_pct": 1.1470093134937276,
+    "within_5pct": 12,
+    "spearman": 0.7631578947368419
+   },
+   "accel": {
+    "n": 18,
+    "excluded": 3,
+    "mae_pct": 10.276401384347702,
+    "median_abs_pct": 6.205280009674361,
+    "bias_pct": -9.028897361653222,
+    "within_5pct": 7,
+    "spearman": 0.7931764637960922
+   },
+   "best_lap": {
+    "n": 19,
+    "mae_pct": 4.997710945942539,
+    "bias_pct": 2.536421772412807,
+    "within_5pct": 10
+   }
+  },
+  "tried: team record on both events": {
+   "skidpad": {
+    "n": 19,
+    "excluded": 2,
+    "mae_pct": 4.166719144061512,
+    "median_abs_pct": 4.008331823944943,
+    "bias_pct": 1.8650915585206407,
+    "within_5pct": 13,
+    "spearman": 0.8175438596491227
+   },
+   "accel": {
+    "n": 18,
+    "excluded": 3,
+    "mae_pct": 9.465208250920575,
+    "median_abs_pct": 6.978499506348236,
+    "bias_pct": -7.663409367259935,
+    "within_5pct": 8,
+    "spearman": 0.6794223425215549
+   },
+   "best_lap": {
+    "n": 19,
+    "mae_pct": 4.8567033246029405,
+    "bias_pct": 3.2696583039427964,
+    "within_5pct": 11
+   }
+  },
+  "v2 final (1-5, record on skidpad)": {
+   "skidpad": {
+    "n": 19,
+    "excluded": 2,
+    "mae_pct": 4.166719144061512,
+    "median_abs_pct": 4.008331823944943,
+    "bias_pct": 1.8650915585206407,
+    "within_5pct": 13,
+    "spearman": 0.8175438596491227
+   },
+   "accel": {
+    "n": 18,
+    "excluded": 3,
+    "mae_pct": 10.276401384347702,
+    "median_abs_pct": 6.205280009674361,
+    "bias_pct": -9.028897361653222,
+    "within_5pct": 7,
+    "spearman": 0.7931764637960922
+   },
+   "best_lap": {
+    "n": 19,
+    "mae_pct": 4.8567033246029405,
+    "bias_pct": 3.2696583039427964,
+    "within_5pct": 11
+   }
+  },
+  "challenger: accel at fastest quarter": {
+   "skidpad": {
+    "n": 19,
+    "excluded": 2,
+    "mae_pct": 4.166719144061512,
+    "median_abs_pct": 4.008331823944943,
+    "bias_pct": 1.8650915585206407,
+    "within_5pct": 13,
+    "spearman": 0.8175438596491227
+   },
+   "accel": {
+    "n": 18,
+    "excluded": 3,
+    "mae_pct": 10.744897350620974,
+    "median_abs_pct": 7.007226373684071,
+    "bias_pct": -9.80558791051915,
+    "within_5pct": 7,
+    "spearman": 0.7931764637960922
+   },
+   "best_lap": {
+    "n": 19,
+    "mae_pct": 4.8567033246029405,
+    "bias_pct": 3.2696583039427964,
+    "within_5pct": 11
+   }
+  }
+ }
+}

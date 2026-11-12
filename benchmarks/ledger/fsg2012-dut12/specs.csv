@@ -1,0 +1,2 @@
+event,car,team,year,source_url,wheelbase_mm,track_f_mm,track_r_mm,weight_f_kg,weight_r_kg,tyres,n_motors,power_per_motor_kw,max_rpm,ratio_primary,ratio_secondary
+FSG 2012 (FSE),E1,Formula Student Team Delft DUT12 (Delft TU),2012,https://www.formulastudent.de/teams/fsc/details/tid/285,1530,1200,1200,105,108,"18x6 R10 Hoosier LC0",4,28,20000,13,NA

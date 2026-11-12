@@ -1,0 +1,17 @@
+event,car,team,year,source_url,wheelbase_mm,track_f_mm,track_r_mm,weight_f_kg,weight_r_kg,tyres,n_motors,power_per_motor_kw,max_rpm,ratio_primary,ratio_secondary
+FSG 2023,31,TUfast Racing Team (München TU),2023,https://www.formulastudent.de/teams/fsc/details/tid/336,1650,1225,1225,117,117,16 x 7.5 R10,4,35,20000,15.5,NA
+FSG 2023,85,Formula Student Team Delft (Delft TU),2023,https://www.formulastudent.de/teams/fsc/details/tid/285,1530,1250,1250,117,116,"225/25 R10, Compound B & D, Vredestein",4,35,20000,10.82,NA
+FSG 2023,99,Ecurie Aix (Aachen RWTH),2023,https://www.formulastudent.de/teams/fsc/details/tid/258,1530,1250,1250,115,115,195x40 R10 Vredestein Dual Layer,4,35.37,20000,12.13,NA
+FSG 2023,63,Revolve NTNU (Trondheim NTNU),2023,https://www.formulastudent.de/teams/fsc/details/tid/611,1530,1220,1220,114,113,"16.0 x 7.5 - 10, Hoosier, R20",4,35.3,20000,13.38,NA
+FSG 2023,113,municHMotorsport (München UAS),2023,https://www.formulastudent.de/teams/fsc/details/tid/255,1530,1240,1240,132,132,"16,0x7,5-10 Hoosier LC0 / 16,0x7,5-10 Hoosier LC0",4,35,20000,12.3,NA
+FSG 2023,26,Rennteam Uni Stuttgart (Stuttgart U),2023,https://www.formulastudent.de/teams/fsc/details/tid/224,1540,1200,1200,123,125,16.0x7.5-10 Hoosier R20,4,43,210000,12.31,NA
+FSG 2023,120,KA-RaceIng (Karlsruhe IT),2023,https://www.formulastudent.de/teams/fsc/details/tid/254,1530,1220,1220,129,132,"16""x7.5""-10"", Hoosier LC0",4,25.2,20000,12.009,NA
+FSG 2023,54,BCN eMotorsport (Barcelona ETSEIB),2023,https://www.formulastudent.de/teams/fsc/details/tid/365,1530,1200,1150,159,135,16.0 x 7.5 - R10,4,54.4,20000,9.05,NA
+FSG 2023,78,e-gnition Hamburg (Hamburg TU),2023,https://www.formulastudent.de/teams/fsc/details/tid/414,1530,1230,1230,140,138,"16.0x6.0 R10, Hoosier LC0",4,35,14000,10.02,NA
+FSG 2023,40,University Racing Eindhoven (Eindhoven TU),2023,https://www.formulastudent.de/teams/fsc/details/tid/256,1535,1220,1220,131,131,205x25 Vredestein/205x25 Vredestein,4,35,20000,NA,NA
+FSG 2023,131,FaSTTUBe (Berlin TU),2023,https://www.formulastudent.de/teams/fsc/details/tid/230,1575,1200,1200,139,155,"16x7.5-10, R20, Hoosier",2,60,8000,4.36,NA
+FSG 2023,51,ARUS (Sevilla U),2023,https://www.formulastudent.de/teams/fsc/details/tid/875,1535,1240,1172,150,150,Hoosier R20 18.0x6.0,1,109,6500,4.01,NA
+FSG 2023,34,Schanzer Racing Electric (Ingolstadt UAS),2023,https://www.formulastudent.de/teams/fsc/details/tid/342,1600,1200,1164,136,147,"205x470 R13, Continental C20 / 205x470 R13, Continental C20",4,35,20000,16.5,NA
+FSG 2023,23,HorsePower Hannover (Hannover U),2023,https://www.formulastudent.de/teams/fsc/details/tid/348,1555,1220,1220,125,182,"Hoosier 16x7,5 R10",4,36,20000,11,NA
+FSG 2023,172,GET racing Dortmund (Dortmund TU),2023,https://www.formulastudent.de/teams/fsc/details/tid/1174,1550,1245,1205,152,186,"16x6 R10, Hoosier/16x6 R10, Hoosier",2,60,6500,4.5,NA
+FSG 2023,103,PWR Racing Team (Wrocław TU),2023,https://www.formulastudent.de/teams/fsc/details/tid/1258,1525,1200,1180,145,185,"16.0/7.5-10, Hoosier R25B / 16.0/7.5-10, Hoosier R25B",2,47,15000,9.8,NA

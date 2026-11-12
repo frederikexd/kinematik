@@ -1,0 +1,137 @@
+{
+ "protocol_version": "2",
+ "protocol": {
+  "physics": "protocol v1 (ledger.build): published spec, FS power limit, KinematiK defaults for the rest",
+  "1 calibration": "time factor = median(official / predicted) on the training competition's clean runs; skidpad per compound group (R20, LC0, other; pooled below 4 cars), acceleration pooled",
+  "2 data checks": "published values outside {'wheelbase_mm': (1525.0, 2000.0), 'track_f_mm': (900.0, 1600.0), 'track_r_mm': (900.0, 1600.0), 'weight_f_kg': (50.0, 250.0), 'weight_r_kg': (50.0, 250.0), 'power_per_motor_kw': (3.0, 150.0), 'max_rpm': (2000.0, 30000.0), 'ratio_primary': (1.0, 30.0)} are treated as not published; a redline and ratio capping the car below 25.0 m/s drop the motor map",
+  "3 published inputs": "tyre compound (calibration group) and tyre diameter; aero not used (unreliable)",
+  "4 team record": "prediction x (1 + 0.5 x (last competition's official / calibrated prediction - 1)), same team (FSG team id), clean runs only; events ('skidpad',)",
+  "5 skidpad": "path radius 7.625 m + 0.25 m + half the mean track; the faster of left and right laps is scored as a second channel"
+ },
+ "calibration": {
+  "skidpad": {
+   "R20": 1.121037033180662,
+   "LC0": 1.075120521381832,
+   "other": 1.1756390088637865
+  },
+  "skidpad_pooled": 1.133525816779299,
+  "accel": 1.0315859177166495,
+  "accel_quantile": 0.25,
+  "n": {
+   "skidpad": 41,
+   "accel": 43,
+   "skidpad_R20": 26,
+   "skidpad_LC0": 5,
+   "skidpad_other": 10
+  },
+  "source": "FSG 2025 + FSG 2026"
+ },
+ "team_record": {
+  "336": {
+   "skidpad": 0.9447338735706357,
+   "accel": 0.9966709169735982
+  },
+  "285": {
+   "skidpad": 0.9899313575204928,
+   "accel": 0.9766032584753527
+  },
+  "258": {
+   "skidpad": 0.9749102273325332,
+   "accel": 0.9656130109120091
+  },
+  "611": {
+   "skidpad": 0.9741611445473173,
+   "accel": 0.9992486645143623
+  },
+  "384": {
+   "skidpad": 1.0,
+   "accel": 1.0361360695885886
+  },
+  "255": {
+   "skidpad": 1.0207155692562162,
+   "accel": 0.9699522798869941
+  },
+  "224": {
+   "skidpad": 1.012709404295974,
+   "accel": 1.0021903813458017
+  },
+  "254": {
+   "skidpad": 1.0137747801338852,
+   "accel": 1.0037572556332754
+  },
+  "1258": {
+   "skidpad": 0.9914322784334821,
+   "accel": 1.0202561853727807
+  },
+  "365": {
+   "skidpad": 1.0030077823238621,
+   "accel": 1.0007513354856374
+  },
+  "414": {
+   "skidpad": 1.033940608865736,
+   "accel": 1.0164185419207306
+  },
+  "394": {
+   "skidpad": 0.9967531100533665,
+   "accel": 1.0956864825611485
+  },
+  "256": {
+   "skidpad": 0.9969922176761377,
+   "accel": 1.050053450149975
+  },
+  "230": {
+   "skidpad": 1.0633338106250974,
+   "accel": 1.0038783837284173
+  },
+  "875": {
+   "skidpad": 1.045903621675923,
+   "accel": 0.9961643068835582
+  },
+  "444": {
+   "skidpad": 1.0046330959163419,
+   "accel": 1.0052542960415485
+  },
+  "1292": {
+   "skidpad": 1.0428899236189673,
+   "accel": 0.9723555138696472
+  },
+  "1074": {
+   "skidpad": 1.1785124768440374,
+   "accel": 1.124095866082693
+  },
+  "290": {
+   "accel": 1.1322957254911112
+  },
+  "1328": {
+   "skidpad": 1.169759764394293,
+   "accel": 1.1865129045828637
+  },
+  "1049": {
+   "accel": 1.149222549455682
+  },
+  "342": {
+   "accel": 1.221542313348478
+  },
+  "348": {
+   "skidpad": 0.9892927772467324,
+   "accel": 1.0597374877644106
+  },
+  "664": {
+   "skidpad": 0.9686882170494326,
+   "accel": 0.9799541900743057
+  },
+  "1174": {
+   "skidpad": 0.9872369070610238,
+   "accel": 1.034388360283673
+  }
+ },
+ "team_record_from": "FSG 2026",
+ "code_sha256": {
+  "ledger_v2.py": "dcdfae3e9a2909c4480bb05bf4a35310250ae676243f23f19489130aa9a88d66",
+  "ledger.py": "db0403f0896e11a21d68c11b60e4c24a1e8535e3f9a7ee90ae65dc08371fe565",
+  "laptime.py": "114e31522d3687909ae9bcd4bffa4a2d1559bf2149b09da2f380d689a32bcc48",
+  "dynamics.py": "feaae87a922f50c38b40246e4fef511b19109062c8c7db4948c04e7609440aa2",
+  "tiremodel.py": "91077d8bcaea0a122cbfeb0a7246d8f33489de051b6310a755e4c93a5b6d4aff"
+ },
+ "sha256": "88667c6b5e5e5e7462cb5f324c22be2b6447420af98eb0cabb043ca54dc0edef"
+}

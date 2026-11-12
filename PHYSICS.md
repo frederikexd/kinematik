@@ -1534,13 +1534,16 @@ P(i fails first) = ∫ φ_i(x) Π_{j≠i} (1 − Φ_j(x)) dx         (trapezoida
 
 ```
 R = ρ_Cu(T) L / A,   ρ_Cu(T) = ρ_20 (1 + α (T − 20))
-IPC-2221:   I = k ΔT^0.44 A^0.725   (A in square mils; k = 0.048 external, 0.024 internal)
+IPC-2221:   I = k ΔT^0.44 A^0.725   (A in square mils; k = 0.048 × 0.975 on every layer: the 0.975 from the NBS check, and IPC-2221's 0.024 for inner layers not used, since IPC-2152 found buried traces no hotter)
 Onderdonk:  I = A_cmil √( log10( (T_m − T_a)/(234 + T_a) + 1 ) / (33 t) ),   T_m = 1083 °C,   A_cmil = A_sqmil · 4/π
-microstrip: Z0 = 87/√(ε_r + 1.41) · ln( 5.98 h / (0.8 w + t) )
+microstrip: Hammerstad–Jensen with Wheeler's thickness correction (u = w/h, T = t/h):
+            Δu1 = (T/π) ln(1 + 4e / (T coth²√(6.517 u))),   u_r = u + ½(1 + sech√(ε_r − 1)) Δu1
+            Z01(u) = (η0/2π) ln( f(u)/u + √(1 + 4/u²) ),   f(u) = 6 + (2π − 6) e^(−(30.666/u)^0.7528)
+            ε_e = (ε_r + 1)/2 + (ε_r − 1)/2 (1 + 10/u_r)^(−ab),   Z0 = Z01(u_r)/√ε_e
 diff pair:  Z_diff ≈ 2 Z0 (1 − 0.48 e^(−0.96 s/h))
 ```
 
-plus a geometric crosstalk budget against switching aggressors. `pcb_doctor` applies the same checks to imported KiCad and Altium boards.
+plus a geometric crosstalk budget against switching aggressors. `pcb_doctor` applies the same checks to imported KiCad and Altium boards. Its net resistance is a nodal solve of the trace and via-barrel resistances. A pad joins copper that overlaps its own outline (circle, oval, or rounded rectangle, rotated). A surface pad or a track joins a via on its own layer, so the barrel stays in the path. Only a two-terminal part bridges its own pads (10 mΩ); pads that share a number (a switch's two pin-1 legs) are separate copper, joined for connectivity only. A track's length counts only where its centreline is off pad copper, via rings and wider tracks of the net (sampled every 25 µm), since the wider copper carries the current there; a track lying wholly inside a wider one carries none. A pad's copper may be offset from its drill (`(drill … (offset dx dy))`, turned with the pad), and a via without a drill takes its net class's or the board's default. The worst pad-to-pad resistance is `R_ab = X_aa + X_bb − 2 X_ab`, with X the inverse of the conductance matrix grounded at one node of each connected piece. Checked against a 2-D solve of the copper (docs/ELECTRICAL_BENCHMARK.md, round 3), it reads low as well as high, so the brown-out check uses `1.15 · R` (`NET_R_UPPER_FACTOR`).
 
 ### 27.5 Harness (`harness.py`)
 

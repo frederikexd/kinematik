@@ -1,0 +1,23 @@
+event,car,team,year,source_url,wheelbase_mm,track_f_mm,track_r_mm,weight_f_kg,weight_r_kg,tyres,n_motors,power_per_motor_kw,max_rpm,ratio_primary,ratio_secondary
+FSG 2024,31,TUfast Racing Team (München TU),2024,https://www.formulastudent.de/teams/fsc/details/tid/336,1530,1225,1225,119,119,"16x7.5 R10, Hoosier LC0 / 16x7.5 R10, Hoosier LC0",4,35,20000,NA,NA
+FSG 2024,99,Ecurie Aix (Aachen RWTH),2024,https://www.formulastudent.de/teams/fsc/details/tid/258,1530,1250,1250,114,114,"16.0 x 7.5 - 10, Hoosier LC0",4,35.37,20000,12.13,NA
+FSG 2024,63,Revolve NTNU (Trondheim NTNU),2024,https://www.formulastudent.de/teams/fsc/details/tid/611,1530,1220,1220,112,120,"16.0 x 7.5 - 10, Hoosier, R20",4,35.4,20000,13.38,NA
+FSG 2024,11,Global Formula Racing (Ravensburg DHBW),2024,https://www.formulastudent.de/teams/fsc/details/tid/384,1535,1230,1230,133,135,"7.5""/16""-10"" Hoosier LC0",4,28,22500,15,NA
+FSG 2024,13,municHMotorsport (München UAS),2024,https://www.formulastudent.de/teams/fsc/details/tid/255,1530,1240,1240,130,130,Hoosier 16.0x7.5-10 LC0,4,35,20000,12.3,NA
+FSG 2024,26,Rennteam Uni Stuttgart (Stuttgart U),2024,https://www.formulastudent.de/teams/fsc/details/tid/224,1540,1200,1200,119,129,16.0x7.5-10 Hoosier R20/ 16.0x7.5-10 Hoosier R20,4,43,210000,11.68,NA
+FSG 2024,24,KA-RaceIng (Karlsruhe IT),2024,https://www.formulastudent.de/teams/fsc/details/tid/254,1530,1220,1220,124,124,"16""x7.5""-10"", Hoosier LC0",4,25.2,20000,12.009,NA
+FSG 2024,54,BCN eMotorsport (Barcelona ETSEIB),2024,https://www.formulastudent.de/teams/fsc/details/tid/365,1530,1200,1150,159,135,16.0 x 7.5 - R10,4,35,20000,12,NA
+FSG 2024,78,e-gnition Hamburg (Hamburg TU),2024,https://www.formulastudent.de/teams/fsc/details/tid/414,1530,1230,1230,135,132,"16.0x6.0 R10, Hoosier R20",4,35,19000,11.8,NA
+FSG 2024,42,EFORCE Prague Formula (Prague CTU),2024,https://www.formulastudent.de/teams/fsc/details/tid/394,1530,1200,1200,129,154,Hoosier 16x7.5-10 R20,4,36,20000,11.47,NA
+FSG 2024,340,University Racing Eindhoven (Eindhoven TU),2024,https://www.formulastudent.de/teams/fsc/details/tid/256,1535,1220,1220,133,145,205x25 Vredestein/205x25 Vredestein,4,35,20000,14.06,NA
+FSG 2024,313,FaSTTUBe (Berlin TU),2024,https://www.formulastudent.de/teams/fsc/details/tid/230,1575,1200,1200,135,147,16x7.5-10 Hoosier R20,2,60,8000,4.81,NA
+FSG 2024,92,ARUS (Sevilla U),2024,https://www.formulastudent.de/teams/fsc/details/tid/875,1535,1240,1172,137,168,Hoosier R20 18.0x6.0,1,109,6500,4.01,NA
+FSG 2024,51,UGent Racing (Ghent U),2024,https://www.formulastudent.de/teams/fsc/details/tid/1292,1535,1300,1300,174,178,191x50 R10 Hoosier R20 / 191x50 R10 Hoosier R20,2,40,7000,3.405,NA
+FSG 2024,79,Rennschmiede Pforzheim (Pforzheim U),2024,https://www.formulastudent.de/teams/fsc/details/tid/1074,1535,1200,1207,119,145,"16.0 x 6.0 - 10, Hoosier R25B / 16.0 x 7.5 - 10, Hoosier R25B",2,40,11000,7,NA
+FSG 2024,130,Valais Wallis Racing Team (Sion HES),2024,https://www.formulastudent.de/teams/fsc/details/tid/1328,1550,1450,1450,180,180,"20.0x10.0-13 R20,Hoosier R25B/ 20.0x10.0-13 R20,Hoosier R25B",2,35,20000,16.04,NA
+FSG 2024,34,Schanzer Racing Electric (Ingolstadt UAS),2024,https://www.formulastudent.de/teams/fsc/details/tid/342,1600,1200,1164,148,162,175 / 518 R13 Goodyear,4,35,20000,18.7,NA
+FSG 2024,187,HorsePower Hannover (Hannover U),2024,https://www.formulastudent.de/teams/fsc/details/tid/348,1555,1200,1200,125,182,"Hoosier 16x7,5 R20/LC0",4,36,20000,13.185,NA
+FSG 2024,107,Bern Racing Team (Bern UAS),2024,https://www.formulastudent.de/teams/fsc/details/tid/664,1566,1240,1233,162,146,16x7.5-10 Hoosier R20,4,35.366,20000,11.84,NA
+FSG 2024,172,GET racing Dortmund (Dortmund TU),2024,https://www.formulastudent.de/teams/fsc/details/tid/1174,1550,1245,1205,132,162,"16x6 R10, Hoosier/16x6 R10, Hoosier",2,60,6500,4.5,NA
+FSG 2024,114,PWR Racing Team (Wrocław TU),2024,https://www.formulastudent.de/teams/fsc/details/tid/1258,1525,1200,1180,156,156,"190.5x40 R10, Hoosier R20 / 190.5x40 R10, Hoosier R20",2,35.4,20000,12.87,NA
+FSG 2024,46,Squadra Corse PoliTo (Turin PT),2024,https://www.formulastudent.de/teams/fsc/details/tid/444,1525,1202,1200,133,145,Pirelli 185/40 R13,4,35,20000,4.83,2.83

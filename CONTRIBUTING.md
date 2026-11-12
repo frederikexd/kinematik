@@ -6,6 +6,9 @@ If you believe there is an error in the mathematics or physics, open an issue.
 
 Be specific: name the module, the equation, and what you believe the correct result should be. General skepticism without a technical objection is not a contribution.
 
+This is a standing challenge: confirmed breaks are credited by name in [CHALLENGE.md](CHALLENGE.md), along with
+independent reproductions, successful or not.
+
 ## Bug Reports
 
 Open an issue with:

@@ -31,7 +31,7 @@ def _area_mil2(w, oz):
 
 
 def _rise(I, w, oz, ext=True):
-    k = 0.048 if ext else 0.024
+    k = 0.048 * 0.975                           # IPC-2221 × 0.975 (NBS check); internal layers as external
     return min((I / (k * _area_mil2(w, oz) ** 0.725)) ** (1 / 0.44), 1063.0)
 
 
@@ -109,8 +109,17 @@ def test_trace_dict_roundtrip_ignores_unknown():
 
 # ------------------------------------------------------------- DiffPair ---- #
 def _z0(w, s, h, oz=1.0, er=4.3):
+    """Hammerstad and Jensen (1980) microstrip Z0 with Wheeler's thickness correction, written out independently
+    of the module (Wadell, Transmission Line Design Handbook, 3.5.1)."""
     t = oz * OZ / 1000
-    return 87 / math.sqrt(er + 1.41) * math.log(5.98 * h / (0.8 * w + t))
+    u, T = w / h, t / h
+    du1 = T / math.pi * math.log(1 + 4 * math.e / (T * (1 / math.tanh(math.sqrt(6.517 * u))) ** 2))
+    ur = u + 0.5 * (1 + 1 / math.cosh(math.sqrt(er - 1))) * du1
+    f = 6 + (2 * math.pi - 6) * math.exp(-((30.666 / ur) ** 0.7528))
+    z01 = 376.730313668 / (2 * math.pi) * math.log(f / ur + math.sqrt(1 + 4 / ur ** 2))
+    a = 1 + math.log((ur ** 4 + (ur / 52) ** 2) / (ur ** 4 + 0.432)) / 49 + math.log(1 + (ur / 18.1) ** 3) / 18.7
+    b = 0.564 * ((er - 0.9) / (er + 3)) ** 0.053
+    return z01 / math.sqrt((er + 1) / 2 + (er - 1) / 2 * (1 + 10 / ur) ** (-a * b))
 
 
 def test_diffpair_impedance():
@@ -140,6 +149,11 @@ def test_diffpair_defaults_and_nan_guards():
         assert math.isnan(flat.differential_z0_ohm())
     small_h = DiffPair("p", "e", height_mm=0.5, trace_w_mm=0.3)
     assert np.isfinite(small_h.differential_z0_ohm())
+    low_er = DiffPair("p", "e", eps_r=1.5)                      # the thickness correction's εr term below 2
+    assert low_er.single_ended_z0_ohm() == pytest.approx(_z0(0.2, 0.2, 0.2, er=1.5), rel=1e-12)
+    bare = DiffPair("p", "e", copper_oz=0.0)                    # zero-thickness copper: no Wheeler correction
+    assert bare.single_ended_z0_ohm() > dp.single_ended_z0_ohm()
+    assert DiffPair("p", "e", copper_oz=0.0, eps_r=1.0).single_ended_z0_ohm() == pytest.approx(126.5, abs=0.5)
 
 
 def test_polyline_and_dict_roundtrip():

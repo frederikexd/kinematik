@@ -64,8 +64,8 @@ class TestPrescriber(unittest.TestCase):
         w3 = required_width_mm(5.0, 20.0, 2.0, external=True)
         self.assertGreater(w2, w1)
         self.assertLess(w3, w1)
-        # inner layers need more copper than outer
-        self.assertGreater(required_width_mm(5.0, 20.0, 1.0, external=False), w1)
+        # inner layers rated as outer (IPC-2152 found buried traces no hotter), not IPC-2221's half
+        self.assertAlmostEqual(required_width_mm(5.0, 20.0, 1.0, external=False), w1)
 
     def test_prescription_shape(self):
         p = prescribe_trace(8.0, dT_c=20.0, length_mm=120.0)
@@ -1176,3 +1176,79 @@ class TestViewerDrawsPads(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestRound3NetResistance(unittest.TestCase):
+    """The round-3 net-resistance changes (docs/ELECTRICAL_BENCHMARK.md), each on a board small enough to check by
+    hand. Copper: 1 oz, at 60 °C (the nodal solve's temperature)."""
+
+    @staticmethod
+    def _r(width_mm, length_mm):
+        from suspension.electronics import Trace
+        return Trace(name="t", net="t", owner_subsystem="e", width_mm=width_mm, copper_oz=1.0,
+                     length_mm=length_mm).resistance_ohm(temp_c=60.0)
+
+    @staticmethod
+    def _board(body, pads=('(pad "1" smd rect (at 0 0) (size 1 1) (net 1 "SIG"))',
+                           '(pad "1" smd rect (at 20 0) (size 1 1) (net 1 "SIG"))')):
+        fps = "".join(f' (footprint "f{i}" (layer "F.Cu") (at 0 0) (property "Reference" "J{i}") {p})\n'
+                      for i, p in enumerate(pads, 1))
+        return parse_kicad_pcb('(kicad_pcb (version 20241229)\n (layers (0 "F.Cu" signal) (31 "B.Cu" signal))\n'
+                               ' (net 0 "") (net 1 "SIG")\n' + fps + body + ")")
+
+    def _worst(self, b):
+        return analyze_net(b, b.net_id("SIG"))["worst_r_ohm"]
+
+    def test_track_on_a_pad_is_not_counted(self):
+        """A 20 mm track from pad centre to pad centre: the 0.5 mm under each 1 mm pad carries no current."""
+        b = self._board(' (segment (start 0 0) (end 20 0) (width 0.25) (layer "F.Cu") (net 1))\n')
+        self.assertAlmostEqual(self._worst(b) / self._r(0.25, 19.0), 1.0, delta=0.03)
+
+    def test_long_chain_is_the_sum_of_its_tracks(self):
+        """200 tracks in series: the solve must give their sum (numpy's pinv had lost a quarter on such chains)."""
+        segs = "".join(f' (segment (start {0.1 * k} 0) (end {0.1 * (k + 1)} 0) (width 0.25) (layer "F.Cu") (net 1))\n'
+                       for k in range(200))
+        b = self._board(segs)
+        self.assertAlmostEqual(self._worst(b) / self._r(0.25, 19.0), 1.0, delta=0.03)
+
+    def test_short_arc_chords_are_not_welded_shut(self):
+        """Chords 40 um long are shorter than the 50 um endpoint weld; they still carry their resistance."""
+        segs = "".join(f' (segment (start {0.04 * k} 0) (end {0.04 * (k + 1)} 0) (width 0.25) (layer "F.Cu") (net 1))\n'
+                       for k in range(500))
+        b = self._board(segs)
+        self.assertAlmostEqual(self._worst(b) / self._r(0.25, 19.0), 1.0, delta=0.03)
+
+    def test_thin_track_inside_a_wide_one_carries_nothing(self):
+        """A 0.2 mm track left on top of a 1 mm track adds no copper; it must not halve the resistance."""
+        b = self._board(' (segment (start 0 0) (end 20 0) (width 1) (layer "F.Cu") (net 1))\n'
+                        ' (segment (start 2 0) (end 18 0) (width 0.2) (layer "F.Cu") (net 1))\n'
+                        ' (segment (start 2 0.1) (end 2 0) (width 1) (layer "F.Cu") (net 1))\n'
+                        ' (segment (start 18 0.1) (end 18 0) (width 1) (layer "F.Cu") (net 1))\n')
+        self.assertAlmostEqual(self._worst(b) / self._r(1.0, 19.0), 1.0, delta=0.05)
+
+    def test_same_numbered_pads_are_separate_copper(self):
+        """A switch's two pin-1 legs are joined inside the part, not by copper: no shortcut, still connected."""
+        pads = ('(pad "1" smd rect (at 0 0) (size 1 1) (net 1 "SIG"))',
+                '(pad "1" smd rect (at 10 0) (size 1 1) (net 1 "SIG")) (pad "1" smd rect (at 10 5) (size 1 1)'
+                ' (net 1 "SIG")) (pad "2" smd rect (at 10 10) (size 1 1) (net 0 ""))',
+                '(pad "1" smd rect (at 20 5) (size 1 1) (net 1 "SIG"))')
+        b = self._board(' (segment (start 0 0) (end 10 0) (width 0.25) (layer "F.Cu") (net 1))\n'
+                        ' (segment (start 10 0) (end 10 5) (width 0.25) (layer "F.Cu") (net 1))\n'
+                        ' (segment (start 10 5) (end 20 5) (width 0.25) (layer "F.Cu") (net 1))\n', pads)
+        r = analyze_net(b, b.net_id("SIG"))
+        self.assertFalse(r["open_groups"])
+        self.assertAlmostEqual(r["worst_r_ohm"] / self._r(0.25, 22.0), 1.0, delta=0.03)   # 24 mm less 0.5 mm under each pad end
+
+    def test_pad_copper_offset_from_its_drill(self):
+        """(drill 1 (offset 2 0)) moves the copper 2 mm from the hole, turned with the pad."""
+        b = self._board("", ('(pad "1" thru_hole rect (at 0 0 90) (size 3 1) (drill 1 (offset 2 0))'
+                             ' (layers "*.Cu") (net 1 "SIG"))',))
+        p = b.footprints[0].pads[0]
+        self.assertAlmostEqual(math.hypot(*p.copper_offset), 2.0, places=6)
+        self.assertAlmostEqual(abs(p.copper_offset[1]), 2.0, places=6)
+
+    def test_via_without_a_drill_takes_the_board_default(self):
+        b = parse_kicad_pcb('(kicad_pcb (version 20241229) (setup (via_drill 0.45))\n'
+                            ' (layers (0 "F.Cu" signal) (31 "B.Cu" signal)) (net 0 "") (net 1 "SIG")\n'
+                            ' (via (at 0 0) (size 0.8) (layers "F.Cu" "B.Cu") (net 1)))')
+        self.assertAlmostEqual(b.vias[0].drill_mm, 0.45)

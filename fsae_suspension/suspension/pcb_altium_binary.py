@@ -41,6 +41,7 @@ AGPL-3.0; the layouts below were written from that reference, not copied):
 
 from __future__ import annotations
 
+import math
 import struct
 
 from .pcb_doctor import (PcbBoard, PcbSegment, PcbVia, PcbPad, PcbFootprint,
@@ -294,7 +295,7 @@ def parse_altium_binary(data: bytes) -> PcbBoard:
             net=nid, layer=layer, width_mm=w, start=p1, end=p2))
 
     # ---- arcs (record type 1) ------------------------------------------------ #
-    for c, start, end in _iter_records(stream("Arcs6"), 1):
+    for arc_no, (c, start, end) in enumerate(_iter_records(stream("Arcs6"), 1)):
         if end - start < 45:
             continue
         c.pos = start
@@ -314,7 +315,7 @@ def parse_altium_binary(data: bytes) -> PcbBoard:
         pts = [(px, -py) for px, py in
                _arc_points_center(cx, -cy, r, a0, a1)]
         board.segments.extend(_chord_segments(
-            pts, net=nid, layer=layer, width_mm=w))
+            pts, net=nid, layer=layer, width_mm=w, arc_id=arc_no))
 
     # ---- vias (record type 3) ------------------------------------------------ #
     for c, start, end in _iter_records(stream("Vias6"), 3):
@@ -350,41 +351,29 @@ def parse_altium_binary(data: bytes) -> PcbBoard:
     #  must equal L-1. False positives are essentially impossible.
     pbuf = stream("Pads6")
 
-    def _pad_starts(buf: bytes):
-        out, i, n = [], 0, len(buf)
-        while i < n - 6:
-            if buf[i] == 2:
-                L = struct.unpack_from("<I", buf, i + 1)[0]
-                if 1 <= L <= 64 and i + 5 + L <= n and buf[i + 5] == L - 1:
-                    out.append(i)
-                    i += 5 + L
-                    continue
-            i += 1
-        return out
-
-    c = _Cursor(pbuf)
-    for _start in _pad_starts(pbuf):
-        c.pos = _start
-        c.u8()                                      # record type, already known
-        s1, e1 = c.subrecord()                      # name (length-prefixed str)
-        c.pos = s1
-        name = "?"
-        if e1 > s1:
-            n = c.u8()
-            name = c.buf[c.pos:c.pos + n].decode("latin-1", "replace") or "?"
-        c.pos = e1
-        ok = True
-        for _ in range(3):                          # subrecords 2, 3, 4
-            if c.remaining() < 4:
-                ok = False
-                break
-            s, e = c.subrecord()
-            c.pos = e
-        if not ok or c.remaining() < 4:
-            continue
-        s5, e5 = c.subrecord()
-        if e5 - s5 < 49:
-            continue
+    def _try_pad(i: int):
+        """Parse a pad record at i, or None if it isn't one. Returns (pad, component index, end of the record)."""
+        n_ = len(pbuf)
+        if pbuf[i] != 2 or i + 6 > n_:
+            return None
+        L = struct.unpack_from("<I", pbuf, i + 1)[0]
+        if not (1 <= L <= 64 and i + 5 + L <= n_ and pbuf[i + 5] == L - 1):
+            return None
+        name = pbuf[i + 6:i + 5 + L].decode("latin-1", "replace") or "?"
+        pos = i + 5 + L
+        spans = []
+        for _ in range(4):                          # subrecords 2, 3, 4, 5: each must fit in the stream
+            if pos + 4 > n_:
+                return None
+            m = struct.unpack_from("<I", pbuf, pos)[0]
+            if pos + 4 + m > n_:
+                return None
+            spans.append((pos + 4, pos + 4 + m))
+            pos += 4 + m
+        s5, e5 = spans[-1]
+        if not (49 <= e5 - s5 <= 4096):
+            return None
+        c = _Cursor(pbuf)
         c.pos = s5
         code = c.u8()
         c.skip(2)
@@ -397,11 +386,32 @@ def parse_altium_binary(data: bytes) -> PcbBoard:
         c.size_xy()                                 # midsize
         c.size_xy()                                 # botsize
         hole = c.mm()
+        #  A real pad has a positive size under 100 mm, a hole under 20 mm and a
+        #  position on a board (Altium's limit is 2540 mm). The record signature
+        #  alone let bytes inside other records through as pads with sizes of
+        #  -2897 mm (StickHub: 289 pads read where Altium reports 278).
+        if not (topsize and 0 < topsize[0] < 100 and 0 < topsize[1] < 100 and 0 <= hole < 20
+                and all(math.isfinite(v) and abs(v) < 2540 for v in at)):
+            return None
+        end = e5
+        if end + 4 <= n_:                           # pad-mode subrecord(s) follow; skip one if it frames cleanly
+            m = struct.unpack_from("<I", pbuf, end)[0]
+            if end + 4 + m <= n_ and (end + 4 + m == n_ or pbuf[end + 4 + m] == 2):
+                end += 4 + m
         layer = layer_from_code(code)
         through = (layer == MULTILAYER) or hole > 0.0
         pad = PcbPad(number=name, net=nid, net_name=board.nets.get(nid, ""),
-                     at=at, size=topsize or (1.0, 1.0), through=through,
+                     at=at, size=topsize, through=through,
                      layer=(layer if layer in ("F.Cu", "B.Cu") else ""))
+        return pad, comp_i, end, layer
+
+    i = 0
+    while i < len(pbuf) - 6:
+        got = _try_pad(i)
+        if got is None:
+            i += 1
+            continue
+        pad, comp_i, i, layer = got                 # carry on after the whole record
         (comps[comp_i] if comp_i < len(comps) else loose).pads.append(pad)
         if layer in ("F.Cu", "B.Cu"):
             found.add(layer)
@@ -435,7 +445,7 @@ def parse_altium_binary(data: bytes) -> PcbBoard:
             board.board_thickness_mm = th
         break
 
-    board.footprints = [c_ for c_ in comps if c_.pads or c_.ref != "?"]
+    board.footprints = list(comps)                # every component, padless ones (logos) included
     if loose.pads:
         board.footprints.append(loose)
     board.copper_layers = _ascii._order_layers(found)

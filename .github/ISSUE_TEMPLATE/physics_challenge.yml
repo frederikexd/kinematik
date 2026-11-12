@@ -32,3 +32,8 @@ body:
       label: Case that shows the difference
       description: Inputs and the two results side by side, if you have them.
       render: text
+  - type: input
+    id: credit
+    attributes:
+      label: How to credit you in CHALLENGE.md if it's confirmed
+      placeholder: Name, team or handle, or "anonymous"

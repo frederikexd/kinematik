@@ -52,7 +52,22 @@ random typos) ([details](docs/GIGO_BENCHMARK_PLAN.md)):
 | 2, plausibility checks added | 65 of 119 (18 of 20 on the Formula Student car) | 99 of 99 | 0 |
 | 3, cars the checks were never written against | **64 of 83 on two Formula Student cars (77 %, 95 % CI 67–85 %)** | 23 of 23 | 0 |
 
-**Check it yourself, a few minutes on your laptop**
+The electrical modules were checked against KiCad 7, SPICE (ngspice) and a 2-D field solver (atlc, standing in for
+Altium's impedance calculator, which can't run here). Limits were set before each run
+([details](docs/ELECTRICAL_BENCHMARK.md)):
+
+| Checked against | Cases | Result |
+|---|---|---|
+| KiCad 7's own reader | KiCad's 14 demo boards: about 15,000 tracks, 1,260 vias, 4,869 pads | Exact on every count, net width and pad position; net lengths within 0.009 mm |
+| SPICE: precharge and the pack over a lap | 4 precharge circuits; a 520-point lap with regen | Within 0.001 % and 0.0011 % |
+| SPICE: net resistance on real boards | 963 nets | **Missed the 2 % limit.** Four connectivity flaws found and fixed; now 72.5 % within 2 %, 91.8 % within 10 % (same boards) |
+| Corrected 2-D copper solve: net resistance, held-out FS team boards | 142 sampled nets | **Still misses 2 % on 13 %, reading high.** 87.3 % within 2 %, 97.9 % within 5 %, median +0.55 %, worst low −3.1 % (was 2.8 % within 2 %, median +16.9 %) |
+| Altium Designer 26: board reading and impedance calculator | 3 boards; 21 cross-sections | Counts equal Altium's (after 2 reader fixes); impedance 21 of 21 within limits, worst 4.0 % |
+| Trace heating vs NBS 1956 measurements | 44 points | IPC-2221 × 0.975: 44 of 44 within 5 % (calibrated on these points) |
+| Nets with copper pours, held out | 17 nets | **Miss:** 35 % within 2 %, 71 % within 5 %; never reads low |
+| atlc field solver: microstrip impedance | 11 cases, then 10 unseen | IPC-2141 missed by up to 8.3 %; replaced by Hammerstad–Jensen, 10 of 10 unseen within 3.4 % |
+
+**Check it yourself**: [in your browser](https://colab.research.google.com/github/frederikexd/kinematik/blob/main/notebooks/reproduce.ipynb) (Google Colab, nothing to install, about 10 minutes), or in a few minutes on your laptop. Think a result is wrong? [Break it](CHALLENGE.md).
 
 EV/ICE powertrain benchmarks:
 
@@ -173,7 +188,8 @@ case.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Issues and pull requests welcome.
+See [CONTRIBUTING.md](CONTRIBUTING.md). Issues and pull requests welcome. Think a result is wrong?
+[Break it](CHALLENGE.md): confirmed breaks and independent reproductions are credited there by name.
 Deployment and database notes are in [DEPLOY.md](DEPLOY.md); release
 history is in [CHANGELOG.md](CHANGELOG.md).
 

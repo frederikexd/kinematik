@@ -3,6 +3,118 @@
 
 ## Unreleased
 
+**Prediction ledger: KinematiK against real cars.** KinematiK now predicts official Formula Student skidpad and
+75 m acceleration times from each team's own published car data (formulastudent.de team pages). It seals the
+predictions with a SHA-256 fingerprint of the code that made them, then scores them against the organizers' timing.
+Every input is labelled published, rule or assumed. Unknowns use KinematiK's own defaults, the same for every car,
+never tuned to results. A record says whether it is **blind** (sealed before the event) or a **hindcast** (results
+already public). First entries, both hindcasts:
+- FSG 2026, 25 cars. Skidpad: mean absolute error 9.7 %, bias −9.7 % (optimistic), rank correlation 0.45.
+  Acceleration: mean absolute error 7.7 %, median 5.0 %, 13 of 25 within 5 %. Two misses trace to published rpm and
+  ratio data that contradict the official times.
+- TU Delft DUT12 at FSG 2012, the case in Doyle et al. (2019), SAE 2019-01-0163. Predicted 3.267 s against an
+  official 3.454 s (−5.4 %); the paper's simulator gave 3.494 s with the team's own parameter estimates.
+
+The blind entry for FSG 2027 is the next step. `suspension/ledger.py`, `scripts/ledger.py`, `benchmarks/ledger/`,
+`docs/PREDICTION_LEDGER.md`, `tests/test_ledger.py` (100 % statement and branch coverage of the ledger).
+
+**Prediction ledger protocol v2.** It keeps v1's physics and adds five fixed rules, fitted on one competition and
+tested on another:
+- shared time factors, with skidpad grouped by tire compound;
+- published values that contradict themselves set aside;
+- the published compound and metric tire sizes used;
+- a team's previous-year record, shrunk halfway, on skidpad;
+- the skidpad path radius set from the car's own track.
+
+Aero is not used, because teams' aero entries proved unreliable. FSG 2025 was added: 21 cars with official results.
+- Skidpad, fit on 2025 and predict 2026: mean absolute error 9.7 % → 3.2 %, 18 of 22 within 5 %. The reverse
+  direction: 8.7 % → 4.2 %.
+- Acceleration does not carry across years. The factor was 1.106 from 2025 and 1.037 from 2026. The forward error
+  is 7.7 % → 6.8 %, but 6 of 25 cars are within 5 %, against 13 under v1.
+
+A challenger is registered but not adopted: acceleration calibrated to the fastest quarter of the field. Forward, it
+gives 18 of 25 within 5 % (mean error 4.5 %); reverse, it is unchanged at 7 of 18. It was proposed after the 2026
+test had been seen, so v2 keeps the median.
+`benchmarks/ledger/protocol-v2/CALIBRATION.json` (v2) and `CALIBRATION_challenger.json` are both frozen, fitted on
+both years, for the blind FSG 2027 test, which decides between them.
+
+**Registered tests on unseen data.** `protocol-v2/REGISTRATION.md` fixed the calibrations, tests and decision rule
+before any of this data was downloaded. FSG 2023 and 2024 were added: 38 cars, with specs from the team pages and
+official skidpad, acceleration and autocross results. Autocross results were added for 2025 and 2026 too.
+- Frozen v2 on 2023 and 2024: skidpad 4.8 % mean error (17 of 26 within 5 %), acceleration 7.1 % (17 of 29).
+- The registered challenger lost (7.7 %, 14 of 29), so v2 stands.
+- The skidpad factor fitted on each year alone stays within 1.121–1.157 over four years. It maps to effective grip:
+  the model holds 1.69 g, and the official times imply 1.3 g as driven.
+- Autocross relative pace from public specs does not beat a spec-blind baseline (rank correlation −0.59 to 0.72).
+  This is reported as a negative result.
+
+`suspension/ledger_pace.py`, `scripts/ledger_v2.py registered`, `tests/test_ledger_pace.py` (100 % statement and
+branch coverage).
+
+**Blind test on a team's own car.** `scripts/team_test.py` takes a team's car and two or more setups. It seals the
+predictions for skidpad, acceleration, a test-course lap and lateral limit, plus every A vs B difference, before
+the test day. After the test it scores the absolute error and whether each predicted change had the right
+direction and size, with measured ties within the team's stated noise left out. With the car's hardpoints, it also predicts
+camber and toe against wheel travel and scores them in degrees against a tolerance set before the test. That is
+a garage measurement with an angle gauge, with no rig needed. Private tire and hardpoint files are recorded by
+hash only. `team_test.py tolerance` sets the camber and toe pass band before the test. It moves every
+hardpoint at random by the stated measuring error, then combines the result with the angle gauge's accuracy.
+`benchmarks/team-test/RC_LINKAGE.md` runs the suspension test on a physical RC or home-built corner, without a
+team. VALIDATION.md gains an "Independent feedback" section quoting public comments exactly, marked as statements,
+not tests. How-to in `benchmarks/team-test/README.md`; `suspension/team_test.py`, `tests/test_team_test.py`
+(100 % statement and branch coverage).
+`suspension/ledger_v2.py`, `scripts/ledger_v2.py`, `tests/test_ledger_v2.py` (100 % statement and branch coverage).
+
+
+
+**Same cars, other organizers.** Registered before any prediction was computed: the ledger now predicts FS Czech
+2025/2026 and FS Italy 2025/2026 from the same teams' FSG car data, with calibration fitted on the other FSG year.
+Skidpad 4.6 % mean error, 17 of 26 within 5 % (FS Czech 3.6 % and 4.8 %); acceleration 9.5 %, 13 of 26. FS Italy
+runs faster than FSG on both events (3–4 cars). `scripts/ledger_v2.py other-events`, `benchmarks/ledger/other-events/`.
+
+**Reproduce it yourself.** The `reproduce` workflow gains a ledger job. It checks every sealed record and frozen
+calibration (`ledger_v2.py verify-all`), re-runs the registered tests, and fails if any published number changes.
+It is byte-identical on the locked versions. `notebooks/reproduce.ipynb` runs the powertrain and suspension
+benchmarks and the ledger checks in Google Colab, with nothing to install.
+
+**Break it.** `CHALLENGE.md` is a standing challenge. Confirmed breaks, wrong results or claims that don't
+reproduce are credited by name, along with independent reproductions, successful or not. New issue template:
+"I reproduced it / I couldn't".
+
+
+**Electrical benchmark: KiCad, SPICE and a field solver.** The limits were set before the runs
+(`docs/ELECTRICAL_BENCHMARK_PLAN.md`; results in `docs/ELECTRICAL_BENCHMARK.md`).
+- KiCad 7: the PCB Doctor reads all 14 KiCad demo boards exactly as KiCad does.
+- ngspice: precharge and the pack along a lap match within 0.001 %.
+- Net resistance on real boards against SPICE missed the 2 % limit and read low by up to 98.5 %. Four flaws were
+  fixed:
+  - the 10 mΩ component-body bridge now applies only to two-terminal parts;
+  - a surface pad now joins a via on its own layer;
+  - a track ending on a via no longer bypasses the barrel resistance;
+  - a pad now catches only copper that overlaps its real outline, not a circle of half its longest side.
+  The result is 72.5 % of nets within 2 % and 91.8 % within 10 %, still short of the limit.
+- Round 3, net resistance against a 2-D solve of the copper. Before, KinematiK read a median 10.7 % high. Fixed on
+  KiCad's demo boards only:
+  - track on pads, via rings and wider track no longer counts as track;
+  - an exact grounded solve replaces numpy's pseudo-inverse, which lost up to 25 % on long nets;
+  - arc chords are no longer welded shut;
+  - same-numbered pads are separate copper.
+  Then it was checked once on 395 held-out nets from team boards: 87.8 % within 2 %, 98.2 % within 5 %, median
+  −0.4 %, worst −11.2 % / +18.0 %. The brown-out check now uses 1.15 × the resistance.
+  `benchmarks/electrical/nets_round3.json`.
+- Pads with copper offset from the drill are read, and vias without a drill take the net-class or board default.
+- The 2-D reference was corrected (it read thin diagonal tracks up to 8 % high). Against it, on 142 held-out team
+  nets: 87.3 % within 2 %, 97.9 % within 5 %, worst low −3.1 %. Fixes: near-pad track ends no longer short arcs; a
+  pad is touched across the track's whole width. Brown-out margin 1.10.
+- Altium Designer 26.11.1: the binary reader read phantom pads and dropped padless components (both fixed); counts
+  now equal Altium's. Altium's impedance calculator: 21 of 21 within limits.
+- Trace heating checked against NBS Report 4283 (1956): ampacity is now IPC-2221 × 0.975, and inner layers are rated
+  like outer layers (IPC-2152).
+- `suspension/pcb_pour.py`: a with-pour resistance estimate (informational; conservative on held-out boards).
+- The reference script writes atlc's BMP itself (no Pillow import).
+- atlc field solver: the IPC-2141 microstrip formula missed by up to 8.3 %. It is replaced by Hammerstad–Jensen
+  (what KiCad's calculator uses), which passed 10 of 10 unseen geometries within 3.4 %.
+`scripts/electrical_reference.py`, `benchmarks/electrical/`, `tests/test_electrical_benchmark.py`.
 
 ## 1.5.0 (2026-11-06)
 

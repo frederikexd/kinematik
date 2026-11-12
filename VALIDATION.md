@@ -188,6 +188,43 @@ reproduce and have been replaced with the measured values. Both solvers are
 inviscid: no separation, stall or profile drag. Compare designs with them; do not
 quote absolute downforce.
 
+## Electrical: KiCad, SPICE and a field solver
+
+[docs/ELECTRICAL_BENCHMARK.md](docs/ELECTRICAL_BENCHMARK.md) gives the cases and limits, all set before the runs.
+
+- **KiCad 7.** The PCB Doctor reads all 14 of KiCad's demo boards exactly as KiCad's own reader does.
+- **SPICE (ngspice).** Precharge and the pack along a lap match within 0.001 %.
+- **Net resistance on real boards.** It missed the 2 % limit against SPICE. Four connectivity flaws, all reading
+  low, were fixed. Rounds 3 and 3b used a 2-D solve of the copper as the reference, corrected once when it proved
+  to read thin diagonal tracks high. On 142 held-out nets from Formula Student team boards: 87.3 % within 2 %,
+  97.9 % within 5 %, worst low −3.1 % (before: 2.8 % within 2 %). Still short of 2 % on about one net in eight,
+  reading high. The brown-out check adds a 1.10 margin, which covers every held-out net.
+- **Nets with copper pours.** A with-pour estimate, held out on 17 team-board nets: 35 % within 2 %, 71 % within 5 %,
+  never below the reference. A conservative indicator; the brown-out check keeps the trace-only bound.
+- **Trace heating.** Against the 1956 NBS measurements behind IPC-2221: plain IPC-2221 read up to 8 % optimistic on
+  wide traces at a 10 °C rise; KinematiK now uses IPC-2221 × 0.975 (44 of 44 points within 5 %, calibrated on them),
+  and rates inner layers like outer ones (IPC-2152).
+- **Microstrip impedance.** The IPC-2141 formula missed a field solver (atlc) by up to 8.3 %. Hammerstad–Jensen
+  replaced it and passed 10 of 10 geometries it had never seen, within 3.4 %.
+- **Altium Designer 26.11.1.** KinematiK reads Altium's own saved boards exactly as Altium counts them, after two reader
+  fixes this check exposed (phantom pads, dropped padless components). Its impedance calculator, on the same
+  21 cross-sections as atlc: 21 of 21 within limits, worst 4.0 %; Altium and atlc agree within 1.6 %.
+
+## Real cars: the prediction ledger
+
+KinematiK predicts official Formula Student skidpad and acceleration times from each team's published car data,
+sealed with a code fingerprint, then scored against the organizers' timing
+([docs/PREDICTION_LEDGER.md](docs/PREDICTION_LEDGER.md)). The first entry is a **hindcast** on FSG 2026: the results
+were public before it was sealed. Under a fixed protocol (KinematiK defaults for tire, CG height and aero for every
+car), 25 cars came out as follows. Skidpad: mean absolute error 9.7 %, predicted faster than official by 9.7 % on
+average. Acceleration: mean absolute error 7.7 %, 13 of 25 within 5 %. Two acceleration misses trace to published
+rpm and ratio data that contradict the official times. A blind entry, sealed before FSG 2027 runs, is next. Protocol v2 adds calibration fitted on one year and tested on the other (FSG 2025 → 2026). It cuts the skidpad
+error from 9.7 % to 3.2 % (18 of 22 within 5 %). Acceleration improves only from 7.7 % to 6.8 %, and fewer cars land
+within 5 %, because the factor did not carry across years. v2 is frozen for the FSG 2027 blind test. Registered before their data was seen, tests on FSG 2023 and 2024 gave the following. Skidpad: 4.8 %
+(17 of 26 within 5 %). Acceleration: 7.1 % (17 of 29). The skidpad factor is stable at 1.12–1.16 across four years.
+Autocross pace from public specs did **not** beat a spec-blind baseline. The same cars at other organizers (FS Czech, FS Italy;
+registered first, factors from the other FSG year): skidpad 4.6 % (17 of 26 within 5 %), acceleration 9.5 %.
+
 ## Not validated yet
 
 - **No measured car.** Nothing has been correlated with an instrumented vehicle,
@@ -215,6 +252,25 @@ quote absolute downforce.
 A manuscript describing the inverse synthesis is in preparation and is in the process of being
 peer reviewed. The software is archived at Zenodo,
 [doi:10.5281/zenodo.23450788](https://doi.org/10.5281/zenodo.23450788).
+
+## Independent feedback
+
+People outside the project have commented publicly. These are statements, not measured tests. None of them give
+numbers, a version or a method, so they count as feedback, not as evidence that KinematiK matches a real car.
+Quoted exactly:
+
+- **Daivik Tulsee, aerodynamics project lead (UP Racing)**, LinkedIn comment
+  ([post](https://lnkd.in/p/g4sj_JGd)): "The pre-validation logic lining up with the baseline models was genuinely
+  impressive: it's rare to find a tool that speaks the same language as the hand calcs and CFD."
+- **SIT Formula Racing Team**, LinkedIn comment ([post](https://lnkd.in/p/gXUpeZUa)): "We truly appreciate the
+  opportunity to explore and validate your work at SIT Formula Racing. […] It's been a pleasure contributing to
+  your validation efforts."
+- **Cosworth Electronics**, LinkedIn comment on the mutation testing ([post](https://lnkd.in/p/gvaMw7jC)):
+  "Testing the tests is the bit most people skip, so 60,000 planted bugs is a serious effort." This is a comment
+  on method, not an endorsement of KinematiK's results.
+
+The test that would make this evidence is a team's blind test (`benchmarks/team-test/`): predictions sealed
+before the test day, measured, and published either way.
 
 ## How this was built
 

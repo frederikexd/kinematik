@@ -1,0 +1,7558 @@
+{
+ "boards": {
+  "complex_hierarchy/complex_hierarchy.kicad_pcb": {
+   "arc_tracks": 0,
+   "footprints": 68,
+   "nets": {
+    "+12V": {
+     "length_mm": 113.9503,
+     "widths_mm": [
+      0.6096
+     ]
+    },
+    "-VAA": {
+     "length_mm": 112.78465,
+     "widths_mm": [
+      0.6,
+      0.6096
+     ]
+    },
+    "/12Vext": {
+     "length_mm": 9.022865,
+     "widths_mm": [
+      0.6
+     ]
+    },
+    "/ampli_ht_horizontal/PIEZO_IN": {
+     "length_mm": 10.350179,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/ampli_ht_horizontal/PIEZO_OUT": {
+     "length_mm": 17.473016,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "/ampli_ht_horizontal/S_OUT+": {
+     "length_mm": 79.153715,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "/ampli_ht_horizontal/Vpil_0_3,3V": {
+     "length_mm": 25.186903,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/ampli_ht_vertical/PIEZO_IN": {
+     "length_mm": 11.395446,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/ampli_ht_vertical/PIEZO_OUT": {
+     "length_mm": 16.565963,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "/ampli_ht_vertical/S_OUT+": {
+     "length_mm": 77.778419,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "/ampli_ht_vertical/Vpil_0_3,3V": {
+     "length_mm": 29.347574,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "HT": {
+     "length_mm": 193.192522,
+     "widths_mm": [
+      0.6,
+      0.6096
+     ]
+    },
+    "Net-(C12-Pad1)": {
+     "length_mm": 13.165969,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "Net-(C14-Pad1)": {
+     "length_mm": 12.583574,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "Net-(C3-Pad2)": {
+     "length_mm": 12.750733,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "Net-(C5-Pad1)": {
+     "length_mm": 3.753656,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(C6-Pad2)": {
+     "length_mm": 6.163236,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "Net-(C8-Pad1)": {
+     "length_mm": 5.221313,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(D2-K)": {
+     "length_mm": 8.956918,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "Net-(D3-K)": {
+     "length_mm": 15.140765,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "Net-(D4-A)": {
+     "length_mm": 9.198154,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(D4-K)": {
+     "length_mm": 22.004912,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "Net-(D5-K)": {
+     "length_mm": 3.429,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(D6-K)": {
+     "length_mm": 22.331759,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "Net-(D7-A)": {
+     "length_mm": 9.198154,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(D7-K)": {
+     "length_mm": 22.313708,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "Net-(D8-A)": {
+     "length_mm": 21.420969,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "Net-(D9-A)": {
+     "length_mm": 24.264444,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "Net-(Q1-E)": {
+     "length_mm": 13.323784,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "Net-(Q2-E)": {
+     "length_mm": 33.855753,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "Net-(Q3-E)": {
+     "length_mm": 18.137456,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "Net-(Q4-B)": {
+     "length_mm": 8.273051,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "Net-(Q4-E)": {
+     "length_mm": 8.483472,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "Net-(Q5-E)": {
+     "length_mm": 11.676523,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "Net-(Q6-E)": {
+     "length_mm": 33.589172,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "Net-(Q7-E)": {
+     "length_mm": 19.744441,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "Net-(Q8-B)": {
+     "length_mm": 9.771523,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "Net-(Q8-E)": {
+     "length_mm": 21.702046,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "Net-(R11-Pad1)": {
+     "length_mm": 11.103154,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(R19-Pad2)": {
+     "length_mm": 15.950943,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(R21-Pad1)": {
+     "length_mm": 9.942102,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(R9-Pad2)": {
+     "length_mm": 25.087466,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(U1-CAP+)": {
+     "length_mm": 17.453154,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(U1-CAP-)": {
+     "length_mm": 5.869077,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(U3A--)": {
+     "length_mm": 16.769287,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(U3B-+)": {
+     "length_mm": 8.146051,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(U4A--)": {
+     "length_mm": 20.610102,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(U4B-+)": {
+     "length_mm": 16.42439,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "VCC": {
+     "length_mm": 31.749359,
+     "widths_mm": [
+      0.6,
+      0.6096
+     ]
+    }
+   },
+   "pads": 165,
+   "straight_tracks": 365,
+   "via_drills_mm": []
+  },
+  "custom_pads_test/custom_pads_test.kicad_pcb": {
+   "arc_tracks": 0,
+   "footprints": 5,
+   "nets": {
+    "/PAD1": {
+     "length_mm": 71.739369,
+     "widths_mm": [
+      0.4,
+      0.5
+     ]
+    },
+    "/PAD2": {
+     "length_mm": 29.228702,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "GND": {
+     "length_mm": 7.313402,
+     "widths_mm": [
+      0.4
+     ]
+    }
+   },
+   "pads": 11,
+   "straight_tracks": 19,
+   "via_drills_mm": []
+  },
+  "ecc83/ecc83-pp.kicad_pcb": {
+   "arc_tracks": 0,
+   "footprints": 15,
+   "nets": {
+    "Net-(P1-PM)": {
+     "length_mm": 29.133802,
+     "widths_mm": [
+      0.8
+     ]
+    },
+    "Net-(P2-P1)": {
+     "length_mm": 19.128638,
+     "widths_mm": [
+      0.8
+     ]
+    },
+    "Net-(P3-P1)": {
+     "length_mm": 26.556281,
+     "widths_mm": [
+      0.8
+     ]
+    },
+    "Net-(P4-P1)": {
+     "length_mm": 11.286882,
+     "widths_mm": [
+      0.8
+     ]
+    },
+    "Net-(P4-PM)": {
+     "length_mm": 27.890061,
+     "widths_mm": [
+      0.8
+     ]
+    },
+    "Net-(U1A-G)": {
+     "length_mm": 68.59,
+     "widths_mm": [
+      0.8
+     ]
+    },
+    "Net-(U1A-K)": {
+     "length_mm": 11.839077,
+     "widths_mm": [
+      0.8
+     ]
+    },
+    "Net-(U1B-K)": {
+     "length_mm": 16.573686,
+     "widths_mm": [
+      0.8
+     ]
+    }
+   },
+   "pads": 33,
+   "straight_tracks": 59,
+   "via_drills_mm": []
+  },
+  "ecc83/ecc83-pp_v2.kicad_pcb": {
+   "arc_tracks": 0,
+   "footprints": 15,
+   "nets": {
+    "GND": {
+     "length_mm": 0.254,
+     "widths_mm": [
+      0.8636
+     ]
+    },
+    "Net-(P1-PM)": {
+     "length_mm": 14.26232,
+     "widths_mm": [
+      0.8636
+     ]
+    },
+    "Net-(P2-P1)": {
+     "length_mm": 14.015128,
+     "widths_mm": [
+      0.8636
+     ]
+    },
+    "Net-(P3-P1)": {
+     "length_mm": 25.628906,
+     "widths_mm": [
+      0.8636
+     ]
+    },
+    "Net-(P4-P1)": {
+     "length_mm": 29.847547,
+     "widths_mm": [
+      0.8636
+     ]
+    },
+    "Net-(P4-PM)": {
+     "length_mm": 15.834928,
+     "widths_mm": [
+      0.8636
+     ]
+    },
+    "Net-(U1A-G)": {
+     "length_mm": 79.15989,
+     "widths_mm": [
+      0.8636
+     ]
+    },
+    "Net-(U1A-K)": {
+     "length_mm": 29.788131,
+     "widths_mm": [
+      0.8636
+     ]
+    },
+    "Net-(U1B-K)": {
+     "length_mm": 10.298243,
+     "widths_mm": [
+      0.8636
+     ]
+    }
+   },
+   "pads": 34,
+   "straight_tracks": 53,
+   "via_drills_mm": []
+  },
+  "flat_hierarchy/flat_hierarchy.kicad_pcb": {
+   "arc_tracks": 0,
+   "footprints": 64,
+   "nets": {
+    "/pic_programmer/PC-CLOCK-OUT": {
+     "length_mm": 22.578282,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "/pic_programmer/PC-DATA-IN": {
+     "length_mm": 45.493819,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "/pic_programmer/PC-DATA-OUT": {
+     "length_mm": 9.534026,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "/pic_programmer/VPP_ON": {
+     "length_mm": 8.89,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "CLOCK-RB6": {
+     "length_mm": 200.01405,
+     "widths_mm": [
+      0.4318,
+      0.635
+     ]
+    },
+    "DATA-RB7": {
+     "length_mm": 214.228383,
+     "widths_mm": [
+      0.4318,
+      0.635
+     ]
+    },
+    "Net-(C5-Pad1)": {
+     "length_mm": 5.606051,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "Net-(D1-A)": {
+     "length_mm": 13.617943,
+     "widths_mm": [
+      0.8
+     ]
+    },
+    "Net-(D1-K)": {
+     "length_mm": 35.129492,
+     "widths_mm": [
+      1.016
+     ]
+    },
+    "Net-(D10-A)": {
+     "length_mm": 11.956051,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "Net-(D11-A)": {
+     "length_mm": 5.343026,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "Net-(D11-K)": {
+     "length_mm": 19.140256,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "Net-(D12-A)": {
+     "length_mm": 7.810179,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "Net-(D2-A)": {
+     "length_mm": 45.885142,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "Net-(D4-A)": {
+     "length_mm": 44.656041,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "Net-(D6-A)": {
+     "length_mm": 41.806829,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "Net-(D8-A)": {
+     "length_mm": 4.445,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "Net-(D9-A)": {
+     "length_mm": 4.445,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "Net-(Q1-B)": {
+     "length_mm": 27.876179,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "Net-(Q2-B)": {
+     "length_mm": 22.019867,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "Net-(Q2-C)": {
+     "length_mm": 41.31201,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "Net-(Q3-B)": {
+     "length_mm": 27.342651,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "Net-(R12-Pad1)": {
+     "length_mm": 8.781051,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "Net-(R13-Pad1)": {
+     "length_mm": 15.319554,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "Net-(R15-Pad1)": {
+     "length_mm": 17.126307,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "Net-(R16-Pad1)": {
+     "length_mm": 16.863282,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "Net-(R8-Pad1)": {
+     "length_mm": 51.920622,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "Net-(U4-FB+)": {
+     "length_mm": 32.584205,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "Net-(U4-Vc)": {
+     "length_mm": 11.956051,
+     "widths_mm": [
+      0.4318,
+      0.635
+     ]
+    },
+    "VCC": {
+     "length_mm": 226.701672,
+     "widths_mm": [
+      0.4,
+      1.016
+     ]
+    },
+    "VCC_PIC": {
+     "length_mm": 223.039608,
+     "widths_mm": [
+      0.4318,
+      0.635,
+      1.016
+     ]
+    },
+    "VPP": {
+     "length_mm": 44.117875,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "VPP-MCLR": {
+     "length_mm": 242.686692,
+     "widths_mm": [
+      0.635
+     ]
+    }
+   },
+   "pads": 247,
+   "straight_tracks": 366,
+   "via_drills_mm": [
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6
+   ]
+  },
+  "interf_u/interf_u.kicad_pcb": {
+   "arc_tracks": 0,
+   "footprints": 25,
+   "nets": {
+    "/8MH-OUT": {
+     "length_mm": 15.766051,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/ACK": {
+     "length_mm": 11.910282,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/AUTOFD-": {
+     "length_mm": 15.600759,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/BIT0": {
+     "length_mm": 12.736102,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/BIT1": {
+     "length_mm": 9.271,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/BIT2": {
+     "length_mm": 12.166472,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/BIT3": {
+     "length_mm": 9.209859,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/BIT4": {
+     "length_mm": 9.437841,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/BIT5": {
+     "length_mm": 13.008154,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/BIT6": {
+     "length_mm": 10.722154,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/BIT7": {
+     "length_mm": 24.156136,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "/BUST+": {
+     "length_mm": 17.79741,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/CLKLCA": {
+     "length_mm": 17.376115,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/CS1-": {
+     "length_mm": 64.026051,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/D0": {
+     "length_mm": 48.677102,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/D1": {
+     "length_mm": 20.102102,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/D2": {
+     "length_mm": 19.576051,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/D3": {
+     "length_mm": 22.116051,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/D4": {
+     "length_mm": 22.116051,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/D5": {
+     "length_mm": 19.576051,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/D6": {
+     "length_mm": 23.168154,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/D7": {
+     "length_mm": 25.708154,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/DIR": {
+     "length_mm": 29.518154,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/DONE": {
+     "length_mm": 46.214141,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/ENBBUF": {
+     "length_mm": 36.83,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/ERROR-": {
+     "length_mm": 12.113867,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/INIT-": {
+     "length_mm": 14.757272,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/LED1": {
+     "length_mm": 64.854969,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/LED2": {
+     "length_mm": 40.550651,
+     "widths_mm": [
+      0.381,
+      0.4318
+     ]
+    },
+    "/MA0": {
+     "length_mm": 84.346051,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MA1": {
+     "length_mm": 42.962102,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MA10": {
+     "length_mm": 71.646051,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MA11": {
+     "length_mm": 51.634205,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MA12": {
+     "length_mm": 55.970256,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MA13": {
+     "length_mm": 55.662102,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MA14": {
+     "length_mm": 51.326051,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MA15": {
+     "length_mm": 70.530128,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MA16": {
+     "length_mm": 126.782102,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MA2": {
+     "length_mm": 39.678154,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MA3": {
+     "length_mm": 42.962102,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MA4": {
+     "length_mm": 39.678154,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MA5": {
+     "length_mm": 96.302102,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MA6": {
+     "length_mm": 49.094205,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MA7": {
+     "length_mm": 91.222102,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MA8": {
+     "length_mm": 64.026051,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MA9": {
+     "length_mm": 53.866051,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MATCHL": {
+     "length_mm": 30.634077,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MD0": {
+     "length_mm": 45.502102,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MD1": {
+     "length_mm": 44.758154,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MD2": {
+     "length_mm": 69.414205,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MD3": {
+     "length_mm": 36.83,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MD4": {
+     "length_mm": 72.39,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MD5": {
+     "length_mm": 69.85,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MD6": {
+     "length_mm": 62.23,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MD7": {
+     "length_mm": 55.662102,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/OE-": {
+     "length_mm": 94.506051,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PC-A0": {
+     "length_mm": 118.66693,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PC-A1": {
+     "length_mm": 96.302102,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PC-A10": {
+     "length_mm": 90.252779,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PC-A11": {
+     "length_mm": 20.846051,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PC-A2": {
+     "length_mm": 106.026307,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PC-A3": {
+     "length_mm": 92.274205,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PC-A4": {
+     "length_mm": 109.957651,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PC-A5": {
+     "length_mm": 106.924333,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PC-A6": {
+     "length_mm": 87.938154,
+     "widths_mm": [
+      0.3,
+      0.4,
+      0.4318
+     ]
+    },
+    "/PC-A7": {
+     "length_mm": 90.786307,
+     "widths_mm": [
+      0.3,
+      0.381,
+      0.4318
+     ]
+    },
+    "/PC-A8": {
+     "length_mm": 104.666051,
+     "widths_mm": [
+      0.3,
+      0.4,
+      0.4318
+     ]
+    },
+    "/PC-A9": {
+     "length_mm": 96.420714,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "/PC-AEN": {
+     "length_mm": 110.580256,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "/PC-DB0": {
+     "length_mm": 16.074205,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PC-DB1": {
+     "length_mm": 16.074205,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PC-DB2": {
+     "length_mm": 16.074205,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PC-DB3": {
+     "length_mm": 16.074205,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PC-DB4": {
+     "length_mm": 16.074205,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PC-DB5": {
+     "length_mm": 16.074205,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PC-DB6": {
+     "length_mm": 16.074205,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PC-DB7": {
+     "length_mm": 17.562102,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PC-IOR": {
+     "length_mm": 15.022102,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PC-IOW": {
+     "length_mm": 20.102102,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PC-RD": {
+     "length_mm": 43.165046,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PC-RST": {
+     "length_mm": 37.882102,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PC-WR": {
+     "length_mm": 37.77912,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PE+": {
+     "length_mm": 13.753707,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PROG-": {
+     "length_mm": 46.772102,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/REF10": {
+     "length_mm": 8.89,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/REF11": {
+     "length_mm": 17.562102,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/REF4": {
+     "length_mm": 8.89,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/REF5": {
+     "length_mm": 17.562102,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/REF6": {
+     "length_mm": 8.89,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/REF7": {
+     "length_mm": 8.89,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/REF8": {
+     "length_mm": 17.562102,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/REF9": {
+     "length_mm": 17.562102,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/RSTL": {
+     "length_mm": 7.402102,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/SEL_LPT": {
+     "length_mm": 18.678026,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/SLCT+": {
+     "length_mm": 12.173307,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/SLCTIN-": {
+     "length_mm": 24.776661,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "/STROBE": {
+     "length_mm": 13.534205,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/WR-": {
+     "length_mm": 117.366051,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/WR_REG": {
+     "length_mm": 7.248026,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "GND": {
+     "length_mm": 440.839724,
+     "widths_mm": [
+      0.381,
+      0.5588
+     ]
+    },
+    "Net-(C3-Pad1)": {
+     "length_mm": 15.548154,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(D1-A)": {
+     "length_mm": 8.672102,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(D2-A)": {
+     "length_mm": 5.492904,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "Net-(U3-Y0)": {
+     "length_mm": 3.81,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(U3-Y1)": {
+     "length_mm": 3.81,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(U3-Y2)": {
+     "length_mm": 3.81,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(U3-Y3)": {
+     "length_mm": 3.81,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(U5-CS2)": {
+     "length_mm": 3.81,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(U9-P{slash}A3)": {
+     "length_mm": 30.788154,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "VCC": {
+     "length_mm": 339.35358,
+     "widths_mm": [
+      0.4,
+      0.5588
+     ]
+    }
+   },
+   "pads": 379,
+   "straight_tracks": 731,
+   "via_drills_mm": [
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.635,
+    0.635,
+    0.635
+   ]
+  },
+  "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb": {
+   "arc_tracks": 0,
+   "footprints": 160,
+   "nets": {
+    "+3.3V": {
+     "length_mm": 308.402113,
+     "widths_mm": [
+      0.2032,
+      0.254,
+      0.4,
+      0.5588
+     ]
+    },
+    "/ALLPST": {
+     "length_mm": 8.890036,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/AN0": {
+     "length_mm": 72.081713,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/AN1": {
+     "length_mm": 68.856391,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/AN2": {
+     "length_mm": 83.453473,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/AN3": {
+     "length_mm": 98.867149,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/AN4": {
+     "length_mm": 60.011077,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/AN5": {
+     "length_mm": 57.097673,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/AN6": {
+     "length_mm": 52.118278,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/AN7": {
+     "length_mm": 51.620928,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/BKPT-": {
+     "length_mm": 87.348059,
+     "widths_mm": [
+      0.254,
+      0.381,
+      0.4318
+     ]
+    },
+    "/CANRX": {
+     "length_mm": 106.436195,
+     "widths_mm": [
+      0.2,
+      0.254
+     ]
+    },
+    "/CANTX": {
+     "length_mm": 111.112283,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/CLKIN{slash}EXTAL": {
+     "length_mm": 29.402385,
+     "widths_mm": [
+      0.254,
+      0.381,
+      0.4
+     ]
+    },
+    "/CLKMOD0": {
+     "length_mm": 25.956546,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/CLKMOD1": {
+     "length_mm": 26.457069,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/DDAT0": {
+     "length_mm": 96.926331,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/DDAT1": {
+     "length_mm": 93.055911,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/DDAT2": {
+     "length_mm": 91.852336,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/DDAT3": {
+     "length_mm": 92.671218,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/DSCLK": {
+     "length_mm": 78.327705,
+     "widths_mm": [
+      0.254,
+      0.381,
+      0.4318
+     ]
+    },
+    "/DSI": {
+     "length_mm": 80.220729,
+     "widths_mm": [
+      0.254,
+      0.4318
+     ]
+    },
+    "/DSO": {
+     "length_mm": 88.322001,
+     "widths_mm": [
+      0.254,
+      0.381,
+      0.4318
+     ]
+    },
+    "/DSPI_DOUT": {
+     "length_mm": 144.970696,
+     "widths_mm": [
+      0.2,
+      0.254
+     ]
+    },
+    "/DTIN0": {
+     "length_mm": 139.268463,
+     "widths_mm": [
+      0.254,
+      0.381
+     ]
+    },
+    "/DTIN1": {
+     "length_mm": 137.775236,
+     "widths_mm": [
+      0.254,
+      0.381
+     ]
+    },
+    "/DTIN2": {
+     "length_mm": 126.076926,
+     "widths_mm": [
+      0.254,
+      0.381
+     ]
+    },
+    "/DTIN3": {
+     "length_mm": 131.260148,
+     "widths_mm": [
+      0.254,
+      0.381
+     ]
+    },
+    "/GPT0": {
+     "length_mm": 49.991468,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/GPT1": {
+     "length_mm": 53.625189,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/GPT2": {
+     "length_mm": 50.658887,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/GPT3": {
+     "length_mm": 56.962283,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/IRQ-1": {
+     "length_mm": 129.085454,
+     "widths_mm": [
+      0.254,
+      0.381
+     ]
+    },
+    "/IRQ-2": {
+     "length_mm": 116.327007,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/IRQ-3": {
+     "length_mm": 123.035047,
+     "widths_mm": [
+      0.254,
+      0.381
+     ]
+    },
+    "/IRQ-4": {
+     "length_mm": 106.533702,
+     "widths_mm": [
+      0.254,
+      0.381,
+      0.4318
+     ]
+    },
+    "/IRQ-5": {
+     "length_mm": 119.050402,
+     "widths_mm": [
+      0.254,
+      0.381,
+      0.4318
+     ]
+    },
+    "/IRQ-6": {
+     "length_mm": 63.707592,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/IRQ-7": {
+     "length_mm": 78.093219,
+     "widths_mm": [
+      0.254,
+      0.381
+     ]
+    },
+    "/JTAG_EN": {
+     "length_mm": 21.315551,
+     "widths_mm": [
+      0.254,
+      0.4318
+     ]
+    },
+    "/PST0": {
+     "length_mm": 82.119037,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/PST1": {
+     "length_mm": 74.25911,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/PST2": {
+     "length_mm": 79.023892,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/PST3": {
+     "length_mm": 88.748729,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/PWM1": {
+     "length_mm": 87.67171,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/PWM3": {
+     "length_mm": 80.945709,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/PWM5": {
+     "length_mm": 42.173709,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/PWM7": {
+     "length_mm": 37.833556,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/QSPI_CLK": {
+     "length_mm": 154.566135,
+     "widths_mm": [
+      0.2,
+      0.254
+     ]
+    },
+    "/QSPI_CS0": {
+     "length_mm": 86.829746,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/QSPI_CS1": {
+     "length_mm": 163.693738,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/QSPI_CS2": {
+     "length_mm": 135.926958,
+     "widths_mm": [
+      0.2,
+      0.254
+     ]
+    },
+    "/QSPI_CS3": {
+     "length_mm": 71.025496,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/QSPI_DIN": {
+     "length_mm": 138.979769,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/RCON-": {
+     "length_mm": 102.834458,
+     "widths_mm": [
+      0.254,
+      0.381
+     ]
+    },
+    "/RSTI-": {
+     "length_mm": 207.379955,
+     "widths_mm": [
+      0.254,
+      0.381,
+      0.4318
+     ]
+    },
+    "/RSTO-": {
+     "length_mm": 105.825044,
+     "widths_mm": [
+      0.254,
+      0.381
+     ]
+    },
+    "/TCLK": {
+     "length_mm": 86.261625,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/UCTS0": {
+     "length_mm": 155.128768,
+     "widths_mm": [
+      0.2,
+      0.254
+     ]
+    },
+    "/UCTS1": {
+     "length_mm": 154.457531,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/UCTS2": {
+     "length_mm": 85.369075,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/URTS0": {
+     "length_mm": 162.425129,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/URTS1": {
+     "length_mm": 171.162842,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/URTS2": {
+     "length_mm": 79.678532,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/URXD0": {
+     "length_mm": 151.174324,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/URXD1": {
+     "length_mm": 117.544063,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/URXD2": {
+     "length_mm": 85.274597,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/UTXD0": {
+     "length_mm": 147.53387,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/UTXD1": {
+     "length_mm": 120.278398,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/UTXD2": {
+     "length_mm": 80.250794,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/VCCA": {
+     "length_mm": 48.385594,
+     "widths_mm": [
+      0.254,
+      0.381
+     ]
+    },
+    "/VDDPLL": {
+     "length_mm": 14.211598,
+     "widths_mm": [
+      0.254,
+      0.381
+     ]
+    },
+    "/XTAL": {
+     "length_mm": 116.829029,
+     "widths_mm": [
+      0.2,
+      0.254,
+      0.381
+     ]
+    },
+    "/inout_user/CAN_H": {
+     "length_mm": 29.951762,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "/inout_user/CAN_L": {
+     "length_mm": 16.459794,
+     "widths_mm": [
+      0.381,
+      0.4318,
+      0.762
+     ]
+    },
+    "/inout_user/CTS0": {
+     "length_mm": 44.522894,
+     "widths_mm": [
+      0.381,
+      0.4
+     ]
+    },
+    "/inout_user/CTS1": {
+     "length_mm": 32.287632,
+     "widths_mm": [
+      0.381,
+      0.4
+     ]
+    },
+    "/inout_user/CTS2{slash}CANH": {
+     "length_mm": 20.841164,
+     "widths_mm": [
+      0.2,
+      0.381
+     ]
+    },
+    "/inout_user/RTS0": {
+     "length_mm": 55.760884,
+     "widths_mm": [
+      0.381,
+      0.4,
+      0.4318
+     ]
+    },
+    "/inout_user/RTS1": {
+     "length_mm": 43.159727,
+     "widths_mm": [
+      0.381,
+      0.4
+     ]
+    },
+    "/inout_user/RTS2": {
+     "length_mm": 14.382622,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/inout_user/RXD0": {
+     "length_mm": 16.901011,
+     "widths_mm": [
+      0.2,
+      0.4
+     ]
+    },
+    "/inout_user/RXD1": {
+     "length_mm": 17.418969,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "/inout_user/RXD2": {
+     "length_mm": 22.976387,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "/inout_user/RxD_CAN": {
+     "length_mm": 8.514287,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/inout_user/TXD0": {
+     "length_mm": 15.726012,
+     "widths_mm": [
+      0.2,
+      0.4
+     ]
+    },
+    "/inout_user/TXD1": {
+     "length_mm": 11.441364,
+     "widths_mm": [
+      0.381,
+      0.4
+     ]
+    },
+    "/inout_user/TXD2{slash}CANL": {
+     "length_mm": 26.156708,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "/inout_user/TxD_CAN": {
+     "length_mm": 4.568261,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/xilinx/+3,3V_OUT": {
+     "length_mm": 8.672102,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/xilinx/LED_TEST1": {
+     "length_mm": 27.912073,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/xilinx/LED_TEST2": {
+     "length_mm": 23.338412,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/xilinx/TCK": {
+     "length_mm": 65.673344,
+     "widths_mm": [
+      0.2,
+      0.254
+     ]
+    },
+    "/xilinx/TDI": {
+     "length_mm": 46.362491,
+     "widths_mm": [
+      0.2,
+      0.254
+     ]
+    },
+    "/xilinx/TDO": {
+     "length_mm": 56.952201,
+     "widths_mm": [
+      0.2,
+      0.254
+     ]
+    },
+    "/xilinx/TMS": {
+     "length_mm": 44.741871,
+     "widths_mm": [
+      0.2,
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D0": {
+     "length_mm": 23.323511,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D1": {
+     "length_mm": 21.713617,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D10": {
+     "length_mm": 9.455492,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D11": {
+     "length_mm": 10.074128,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D12": {
+     "length_mm": 9.902635,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D13": {
+     "length_mm": 10.333997,
+     "widths_mm": [
+      0.2,
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D14": {
+     "length_mm": 10.970519,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D15": {
+     "length_mm": 13.964328,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D16": {
+     "length_mm": 19.005027,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D17": {
+     "length_mm": 19.472556,
+     "widths_mm": [
+      0.2,
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D18": {
+     "length_mm": 24.341233,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D19": {
+     "length_mm": 26.323101,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D2": {
+     "length_mm": 19.12509,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D20": {
+     "length_mm": 27.119878,
+     "widths_mm": [
+      0.2,
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D21": {
+     "length_mm": 23.690565,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D22": {
+     "length_mm": 19.263804,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D23": {
+     "length_mm": 14.819869,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D24": {
+     "length_mm": 12.873997,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D25": {
+     "length_mm": 12.442635,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D26": {
+     "length_mm": 12.994989,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D27": {
+     "length_mm": 12.380561,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D28": {
+     "length_mm": 13.313611,
+     "widths_mm": [
+      0.2,
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D29": {
+     "length_mm": 12.901352,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D3": {
+     "length_mm": 19.319015,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D30": {
+     "length_mm": 12.696192,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D31": {
+     "length_mm": 12.858216,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D32": {
+     "length_mm": 24.580561,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D33": {
+     "length_mm": 15.395973,
+     "widths_mm": [
+      0.2,
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D34": {
+     "length_mm": 19.305916,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D35": {
+     "length_mm": 18.24893,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D36": {
+     "length_mm": 23.227828,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D4": {
+     "length_mm": 13.408322,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D5": {
+     "length_mm": 10.128837,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D6": {
+     "length_mm": 9.697475,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D7": {
+     "length_mm": 9.613307,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D8": {
+     "length_mm": 10.249829,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "/xilinx/XIL_D9": {
+     "length_mm": 10.265611,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "GND": {
+     "length_mm": 347.325719,
+     "widths_mm": [
+      0.2,
+      0.254,
+      0.3,
+      0.381,
+      0.4,
+      0.5588
+     ]
+    },
+    "GNDA": {
+     "length_mm": 62.366415,
+     "widths_mm": [
+      0.254,
+      0.4
+     ]
+    },
+    "Net-(ABRT_SW101-Pad1)": {
+     "length_mm": 23.039284,
+     "widths_mm": [
+      0.254,
+      0.4318,
+      0.762
+     ]
+    },
+    "Net-(BDM_PORT101-P22)": {
+     "length_mm": 5.308472,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "Net-(BDM_PORT101-P6)": {
+     "length_mm": 38.934205,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "Net-(C104-Pad1)": {
+     "length_mm": 9.757985,
+     "widths_mm": [
+      0.254,
+      0.762
+     ]
+    },
+    "Net-(CAN_TERM201-Pad2)": {
+     "length_mm": 9.371311,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "Net-(COM_SEL201-P3)": {
+     "length_mm": 28.995776,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "Net-(COM_SEL202-P3)": {
+     "length_mm": 18.902759,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "Net-(COM_SEL203-P3)": {
+     "length_mm": 18.467638,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "Net-(D101-K)": {
+     "length_mm": 10.890864,
+     "widths_mm": [
+      0.254,
+      0.381
+     ]
+    },
+    "Net-(D102-K)": {
+     "length_mm": 28.9329,
+     "widths_mm": [
+      0.381,
+      0.4,
+      0.4318
+     ]
+    },
+    "Net-(D201-K)": {
+     "length_mm": 42.529489,
+     "widths_mm": [
+      0.4318,
+      0.762
+     ]
+    },
+    "Net-(D301-A)": {
+     "length_mm": 3.1115,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "Net-(D302-A)": {
+     "length_mm": 3.1115,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "Net-(F201-Pad1)": {
+     "length_mm": 12.809148,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "Net-(L102-Pad1)": {
+     "length_mm": 4.447442,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(LED201-A)": {
+     "length_mm": 2.2225,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(LED202-A)": {
+     "length_mm": 2.2225,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(LED203-A)": {
+     "length_mm": 2.2225,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(LED204-A)": {
+     "length_mm": 2.275105,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(LED205-A)": {
+     "length_mm": 2.798513,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(LEDABRT101-K)": {
+     "length_mm": 2.3495,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(LED_RST101-A)": {
+     "length_mm": 2.612526,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "Net-(MCU_PORT201-P1)": {
+     "length_mm": 11.307513,
+     "widths_mm": [
+      0.2,
+      0.4318
+     ]
+    },
+    "Net-(PULUPEN201-Pad2)": {
+     "length_mm": 4.527858,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "Net-(PULUPEN201-Pad4)": {
+     "length_mm": 4.024958,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "Net-(PULUPEN201-Pad6)": {
+     "length_mm": 4.053105,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(PULUPEN201-Pad8)": {
+     "length_mm": 4.053105,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(Q101-B)": {
+     "length_mm": 2.237908,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "Net-(Q101-C)": {
+     "length_mm": 4.266169,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "Net-(TB201-P1)": {
+     "length_mm": 34.28056,
+     "widths_mm": [
+      1.524
+     ]
+    },
+    "Net-(U102-TCLK{slash}PSTCLK{slash}CLKOUT)": {
+     "length_mm": 3.650068,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "Net-(U102-TEST)": {
+     "length_mm": 8.637741,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "Net-(U201A-E)": {
+     "length_mm": 26.142861,
+     "widths_mm": [
+      0.254,
+      0.381,
+      0.4318
+     ]
+    },
+    "Net-(U201A-O)": {
+     "length_mm": 3.554131,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "Net-(U201B-O)": {
+     "length_mm": 3.659341,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(U201C-O)": {
+     "length_mm": 13.076941,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "Net-(U201D-O)": {
+     "length_mm": 13.56689,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "Net-(U202-C1+)": {
+     "length_mm": 3.232118,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(U202-C1-)": {
+     "length_mm": 3.532341,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "Net-(U202-C2+)": {
+     "length_mm": 3.074303,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(U202-C2-)": {
+     "length_mm": 3.337328,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(U202-R1OUT)": {
+     "length_mm": 8.833656,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "Net-(U202-R2OUT)": {
+     "length_mm": 8.307605,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "Net-(U202-T1IN)": {
+     "length_mm": 14.142128,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "Net-(U202-T2IN)": {
+     "length_mm": 9.096682,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "Net-(U202-V+)": {
+     "length_mm": 6.376576,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U202-V-)": {
+     "length_mm": 6.545787,
+     "widths_mm": [
+      0.381,
+      0.4318
+     ]
+    },
+    "Net-(U203-C1+)": {
+     "length_mm": 3.284723,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "Net-(U203-C1-)": {
+     "length_mm": 3.659341,
+     "widths_mm": [
+      0.254,
+      0.381
+     ]
+    },
+    "Net-(U203-C2+)": {
+     "length_mm": 3.201303,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "Net-(U203-C2-)": {
+     "length_mm": 3.411723,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "Net-(U203-R1OUT)": {
+     "length_mm": 8.833656,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "Net-(U203-R2OUT)": {
+     "length_mm": 8.307605,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(U203-T1IN)": {
+     "length_mm": 14.142128,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "Net-(U203-T2IN)": {
+     "length_mm": 9.096682,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(U203-V+)": {
+     "length_mm": 6.96427,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "Net-(U203-V-)": {
+     "length_mm": 6.663761,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "Net-(U204-C1+)": {
+     "length_mm": 3.284723,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "Net-(U204-C1-)": {
+     "length_mm": 3.659341,
+     "widths_mm": [
+      0.254,
+      0.381
+     ]
+    },
+    "Net-(U204-C2+)": {
+     "length_mm": 3.074303,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "Net-(U204-C2-)": {
+     "length_mm": 3.284723,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "Net-(U204-R1OUT)": {
+     "length_mm": 21.433803,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "Net-(U204-R2OUT)": {
+     "length_mm": 9.64981,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "Net-(U204-T1IN)": {
+     "length_mm": 17.33331,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "Net-(U204-T2IN)": {
+     "length_mm": 10.473441,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "Net-(U204-V+)": {
+     "length_mm": 7.5565,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "Net-(U204-V-)": {
+     "length_mm": 6.527687,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "Net-(U205-Rsl)": {
+     "length_mm": 7.214507,
+     "widths_mm": [
+      0.381
+     ]
+    },
+    "Net-(U205-Vref)": {
+     "length_mm": 9.491512,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U301-P11)": {
+     "length_mm": 22.089089,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "Net-(U301-P4)": {
+     "length_mm": 13.038595,
+     "widths_mm": [
+      0.254
+     ]
+    },
+    "Net-(UARTCAN201-P6)": {
+     "length_mm": 11.919245,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "Net-(UARTCAN202-P6)": {
+     "length_mm": 11.515052,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "Net-(UARTCAN203-P6)": {
+     "length_mm": 15.344687,
+     "widths_mm": [
+      0.4
+     ]
+    }
+   },
+   "pads": 825,
+   "straight_tracks": 2939,
+   "via_drills_mm": [
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4
+   ]
+  },
+  "microwave/microwave.kicad_pcb": {
+   "arc_tracks": 0,
+   "footprints": 4,
+   "nets": {},
+   "pads": 8,
+   "straight_tracks": 0,
+   "via_drills_mm": []
+  },
+  "pic_programmer/pic_programmer.kicad_pcb": {
+   "arc_tracks": 0,
+   "footprints": 63,
+   "nets": {
+    "/CLOCK-RB6": {
+     "length_mm": 200.01405,
+     "widths_mm": [
+      0.4318,
+      0.5
+     ]
+    },
+    "/DATA-RB7": {
+     "length_mm": 214.228383,
+     "widths_mm": [
+      0.4,
+      0.4318,
+      0.5
+     ]
+    },
+    "/PC-CLOCK-OUT": {
+     "length_mm": 21.970098,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/PC-DATA-IN": {
+     "length_mm": 45.822935,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/PC-DATA-OUT": {
+     "length_mm": 8.648873,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/VPP_ON": {
+     "length_mm": 8.632174,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/VPP{slash}MCLR": {
+     "length_mm": 242.686692,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "/pic_sockets/VCC_PIC": {
+     "length_mm": 292.439303,
+     "widths_mm": [
+      0.35,
+      0.4,
+      0.5
+     ]
+    },
+    "Net-(C2-Pad1)": {
+     "length_mm": 37.309962,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(C4-Pad1)": {
+     "length_mm": 11.956051,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(C5-Pad1)": {
+     "length_mm": 5.606051,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(C9-Pad2)": {
+     "length_mm": 21.842791,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(D1-Pad2)": {
+     "length_mm": 13.449747,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(D10-Pad2)": {
+     "length_mm": 11.956051,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(D11-Pad1)": {
+     "length_mm": 17.77781,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(D11-Pad2)": {
+     "length_mm": 5.343026,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(D12-Pad2)": {
+     "length_mm": 6.921179,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(D2-Pad2)": {
+     "length_mm": 39.76211,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(D4-Pad2)": {
+     "length_mm": 43.11457,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(D6-Pad2)": {
+     "length_mm": 46.793516,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(D8-Pad2)": {
+     "length_mm": 4.445,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(D9-Pad2)": {
+     "length_mm": 4.445,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(Q1-Pad2)": {
+     "length_mm": 27.306549,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(Q2-Pad1)": {
+     "length_mm": 34.51783,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(Q3-Pad2)": {
+     "length_mm": 29.300256,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(R12-Pad1)": {
+     "length_mm": 8.781051,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(R13-Pad1)": {
+     "length_mm": 15.319554,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(R15-Pad1)": {
+     "length_mm": 17.126307,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(R16-Pad1)": {
+     "length_mm": 15.751097,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(R8-Pad1)": {
+     "length_mm": 55.057276,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "Net-(RV1-Pad2)": {
+     "length_mm": 32.584205,
+     "widths_mm": [
+      0.5
+     ]
+    },
+    "VCC": {
+     "length_mm": 162.395795,
+     "widths_mm": [
+      0.8
+     ]
+    },
+    "VPP": {
+     "length_mm": 42.314898,
+     "widths_mm": [
+      0.5
+     ]
+    }
+   },
+   "pads": 247,
+   "straight_tracks": 370,
+   "via_drills_mm": [
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6
+   ]
+  },
+  "sonde xilinx/sonde xilinx.kicad_pcb": {
+   "arc_tracks": 0,
+   "footprints": 25,
+   "nets": {
+    "/CLK-D1": {
+     "length_mm": 6.60687,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "/CTRL-D3": {
+     "length_mm": 9.073712,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "/DONE-SELECT*": {
+     "length_mm": 7.121026,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "/PWR_3,3-5V": {
+     "length_mm": 27.940453,
+     "widths_mm": [
+      1.016
+     ]
+    },
+    "/TCK-CCLK": {
+     "length_mm": 25.272359,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "/TD0-DONE": {
+     "length_mm": 21.86392,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "/TD0-PROG-D4": {
+     "length_mm": 17.238995,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "/TDI-DIN": {
+     "length_mm": 24.040651,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "/TDI-DIN-D0": {
+     "length_mm": 36.70081,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "/TMS-PROG": {
+     "length_mm": 28.84641,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "/TMS-PROG-D2": {
+     "length_mm": 6.29124,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "/VCC_SENSE-ERROR*": {
+     "length_mm": 7.317934,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "GND": {
+     "length_mm": 19.059026,
+     "widths_mm": [
+      1.016
+     ]
+    },
+    "Net-(D1-K)": {
+     "length_mm": 6.181226,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "Net-(J1-Pad11)": {
+     "length_mm": 23.513051,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "Net-(U1A-E)": {
+     "length_mm": 5.606051,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "Net-(U1A-O)": {
+     "length_mm": 79.664461,
+     "widths_mm": [
+      0.4318,
+      0.635
+     ]
+    },
+    "Net-(U1B-D)": {
+     "length_mm": 5.08,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "Net-(U1B-E)": {
+     "length_mm": 27.767231,
+     "widths_mm": [
+      0.4318,
+      0.635
+     ]
+    },
+    "Net-(U1B-O)": {
+     "length_mm": 37.972359,
+     "widths_mm": [
+      0.4318,
+      0.635
+     ]
+    },
+    "Net-(U1C-D)": {
+     "length_mm": 34.33139,
+     "widths_mm": [
+      0.4318,
+      0.635
+     ]
+    },
+    "Net-(U1C-O)": {
+     "length_mm": 28.921808,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "Net-(U1D-D)": {
+     "length_mm": 18.621682,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "Net-(U1D-O)": {
+     "length_mm": 57.766307,
+     "widths_mm": [
+      0.4318,
+      0.635
+     ]
+    },
+    "Net-(U2A-O)": {
+     "length_mm": 32.212231,
+     "widths_mm": [
+      0.635
+     ]
+    },
+    "VCC": {
+     "length_mm": 42.744205,
+     "widths_mm": [
+      1.016
+     ]
+    }
+   },
+   "pads": 108,
+   "straight_tracks": 208,
+   "via_drills_mm": [
+    0.635,
+    0.635,
+    0.635
+   ]
+  },
+  "stickhub/StickHub.kicad_pcb": {
+   "arc_tracks": 180,
+   "footprints": 94,
+   "nets": {
+    "+1V8": {
+     "length_mm": 20.559718,
+     "widths_mm": [
+      0.15,
+      0.25,
+      0.3
+     ]
+    },
+    "+3.3V": {
+     "length_mm": 43.046005,
+     "widths_mm": [
+      0.2,
+      0.25,
+      0.3
+     ]
+    },
+    "+5V": {
+     "length_mm": 87.695582,
+     "widths_mm": [
+      0.2,
+      0.3,
+      0.4,
+      0.5,
+      0.6
+     ]
+    },
+    "/D+": {
+     "length_mm": 18.752454,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "/D-": {
+     "length_mm": 18.655398,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "/LC": {
+     "length_mm": 28.766724,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "/LED1": {
+     "length_mm": 2.142343,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "/LED2": {
+     "length_mm": 2.038799,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "/LED3": {
+     "length_mm": 1.915903,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "/LED4": {
+     "length_mm": 1.801713,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "/LED5": {
+     "length_mm": 1.930393,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "/LED6": {
+     "length_mm": 1.816095,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "/LED7": {
+     "length_mm": 1.710367,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "/U1D+": {
+     "length_mm": 8.945798,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "/U1D-": {
+     "length_mm": 8.9372,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "/U2D+": {
+     "length_mm": 7.0422,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "/U2D-": {
+     "length_mm": 5.909142,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "/U3D+": {
+     "length_mm": 14.603559,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "/U3D-": {
+     "length_mm": 14.569722,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "/U4D+": {
+     "length_mm": 20.627083,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "/U4D-": {
+     "length_mm": 20.625742,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "/U5D+": {
+     "length_mm": 9.895938,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "/U5D-": {
+     "length_mm": 9.915825,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "/U6D+": {
+     "length_mm": 15.512761,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "/U6D-": {
+     "length_mm": 15.529785,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "/U7D+": {
+     "length_mm": 12.362818,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "/U7D-": {
+     "length_mm": 12.429937,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "/XI": {
+     "length_mm": 3.393314,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "/XO": {
+     "length_mm": 4.849009,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "GND": {
+     "length_mm": 196.525611,
+     "widths_mm": [
+      0.15,
+      0.25,
+      0.3,
+      0.4,
+      0.5,
+      0.6
+     ]
+    },
+    "Net-(D15-1)": {
+     "length_mm": 12.69271,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "Net-(D16-1)": {
+     "length_mm": 13.319019,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "Net-(D17-1)": {
+     "length_mm": 14.714497,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "Net-(D18-1)": {
+     "length_mm": 17.183411,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "Net-(D19-1)": {
+     "length_mm": 9.800528,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "Net-(D20-1)": {
+     "length_mm": 12.108176,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "Net-(D21-1)": {
+     "length_mm": 13.929805,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "Net-(J1-Pin_1)": {
+     "length_mm": 13.767869,
+     "widths_mm": [
+      0.4,
+      0.6
+     ]
+    },
+    "Net-(U1-EXT_RST#)": {
+     "length_mm": 1.703035,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "Net-(U1-REXT)": {
+     "length_mm": 1.434556,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "Net-(U1-TEST1#)": {
+     "length_mm": 1.710388,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "Net-(U1-TEST3#)": {
+     "length_mm": 1.619734,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "Net-(U1-VBUS_SENSE)": {
+     "length_mm": 4.415763,
+     "widths_mm": [
+      0.15
+     ]
+    },
+    "Net-(U2-CAP)": {
+     "length_mm": 2.173349,
+     "widths_mm": [
+      0.25
+     ]
+    },
+    "VIN": {
+     "length_mm": 9.495043,
+     "widths_mm": [
+      0.2,
+      0.25,
+      0.4,
+      0.6
+     ]
+    }
+   },
+   "pads": 278,
+   "straight_tracks": 1111,
+   "via_drills_mm": [
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.3,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4
+   ]
+  },
+  "test_pads_inside_pads/test_pads_inside_pads.kicad_pcb": {
+   "arc_tracks": 0,
+   "footprints": 4,
+   "nets": {
+    "/NET1": {
+     "length_mm": 19.939,
+     "widths_mm": [
+      0.2032
+     ]
+    },
+    "/NET2": {
+     "length_mm": 12.044759,
+     "widths_mm": [
+      0.2032
+     ]
+    }
+   },
+   "pads": 14,
+   "straight_tracks": 4,
+   "via_drills_mm": []
+  },
+  "test_xil_95108/carte_test.kicad_pcb": {
+   "arc_tracks": 0,
+   "footprints": 42,
+   "nets": {
+    "+12V": {
+     "length_mm": 180.641584,
+     "widths_mm": [
+      1.016
+     ]
+    },
+    "-12V": {
+     "length_mm": 127.665712,
+     "widths_mm": [
+      0.8,
+      1.016
+     ]
+    },
+    "/+12BATT": {
+     "length_mm": 10.319363,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/-12BATT": {
+     "length_mm": 17.360708,
+     "widths_mm": [
+      1.016
+     ]
+    },
+    "/CSMEM": {
+     "length_mm": 33.546051,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/DAT0": {
+     "length_mm": 20.256179,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/DAT1": {
+     "length_mm": 15.548154,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/DAT2": {
+     "length_mm": 6.876051,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/DAT3": {
+     "length_mm": 6.876051,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/DAT4": {
+     "length_mm": 18.088154,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/DAT5": {
+     "length_mm": 18.088154,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/DAT6": {
+     "length_mm": 7.248026,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/DAT7": {
+     "length_mm": 6.876051,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/DCLK": {
+     "length_mm": 10.468154,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/LED1": {
+     "length_mm": 17.562102,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/LED2": {
+     "length_mm": 13.90333,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "/MA0": {
+     "length_mm": 18.306051,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MA1": {
+     "length_mm": 20.846051,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MA2": {
+     "length_mm": 31.532102,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MA3": {
+     "length_mm": 68.985887,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MA4": {
+     "length_mm": 61.414753,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MA5": {
+     "length_mm": 39.678154,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MA6": {
+     "length_mm": 37.138154,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MA7": {
+     "length_mm": 37.138154,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MD0": {
+     "length_mm": 18.306051,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MD1": {
+     "length_mm": 18.306051,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MD10": {
+     "length_mm": 33.546051,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MD11": {
+     "length_mm": 33.546051,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MD12": {
+     "length_mm": 21.898154,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MD13": {
+     "length_mm": 34.598154,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MD14": {
+     "length_mm": 24.284077,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MD2": {
+     "length_mm": 20.846051,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MD3": {
+     "length_mm": 20.846051,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MD4": {
+     "length_mm": 20.846051,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MD5": {
+     "length_mm": 20.846051,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MD6": {
+     "length_mm": 20.846051,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MD7": {
+     "length_mm": 21.898154,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MD8": {
+     "length_mm": 34.598154,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/MD9": {
+     "length_mm": 33.546051,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/OEMEM": {
+     "length_mm": 33.546051,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PARBUS0": {
+     "length_mm": 22.318995,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PARBUS1": {
+     "length_mm": 19.875179,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PARBUS2": {
+     "length_mm": 19.621179,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PARBUS3": {
+     "length_mm": 19.515969,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PARBUS4": {
+     "length_mm": 24.873307,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PARBUS5": {
+     "length_mm": 20.410256,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PARBUS6": {
+     "length_mm": 19.476128,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PARBUS7": {
+     "length_mm": 21.762128,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PAR_AUX0{slash}STROBE*": {
+     "length_mm": 22.424205,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PAR_AUX1{slash}ERROR*": {
+     "length_mm": 21.771901,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PAR_AUX2{slash}AUTOLF*": {
+     "length_mm": 22.202954,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PAR_AUX3{slash}SELECT*": {
+     "length_mm": 18.959102,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PAR_AUX4{slash}PE": {
+     "length_mm": 18.779497,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PAR_AUX5{slash}BUSY*": {
+     "length_mm": 21.214287,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PAR_AUX6{slash}ACK": {
+     "length_mm": 18.288,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PAR_AUX7{slash}INIT": {
+     "length_mm": 25.406088,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PAR_AUX8{slash}SELECT": {
+     "length_mm": 25.174625,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PIN_TEST0": {
+     "length_mm": 6.613026,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/PIN_TEST1": {
+     "length_mm": 9.679077,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/R{slash}W-A14": {
+     "length_mm": 37.138154,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/SW0": {
+     "length_mm": 72.215139,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/SW1": {
+     "length_mm": 81.556359,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/TCK": {
+     "length_mm": 31.318025,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "/TDI": {
+     "length_mm": 37.109272,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "/TDO": {
+     "length_mm": 163.809018,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "/TMS": {
+     "length_mm": 34.552308,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "/XIN{slash}CLK": {
+     "length_mm": 38.934205,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "GND": {
+     "length_mm": 212.218652,
+     "widths_mm": [
+      0.4,
+      0.4318,
+      0.635,
+      1.016
+     ]
+    },
+    "Net-(C14-Pad2)": {
+     "length_mm": 9.650076,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "Net-(C2-Pad2)": {
+     "length_mm": 11.500411,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "Net-(C4-Pad1)": {
+     "length_mm": 20.737102,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(C5-Pad1)": {
+     "length_mm": 37.655179,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(D2-A)": {
+     "length_mm": 9.198154,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(D3-A)": {
+     "length_mm": 9.570128,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(K1-PM)": {
+     "length_mm": 6.35,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(P3-P1)": {
+     "length_mm": 15.09121,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(U1-VOUT)": {
+     "length_mm": 13.24132,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "Net-(U1-VOUT)_1": {
+     "length_mm": 4.672878,
+     "widths_mm": [
+      0.4
+     ]
+    },
+    "Net-(U1-VREF)": {
+     "length_mm": 3.429,
+     "widths_mm": [
+      0.4318
+     ]
+    },
+    "Net-(U6-+)": {
+     "length_mm": 29.753987,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "Net-(U6--)": {
+     "length_mm": 35.989225,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "Net-(U6-OUT)": {
+     "length_mm": 79.275984,
+     "widths_mm": [
+      0.4,
+      0.4318
+     ]
+    },
+    "VCC": {
+     "length_mm": 338.422526,
+     "widths_mm": [
+      0.4318,
+      0.635,
+      1.016
+     ]
+    }
+   },
+   "pads": 282,
+   "straight_tracks": 635,
+   "via_drills_mm": [
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6
+   ]
+  },
+  "video/video.kicad_pcb": {
+   "arc_tracks": 0,
+   "footprints": 189,
+   "nets": {
+    "+12V": {
+     "length_mm": 2.667,
+     "widths_mm": [
+      0.23
+     ]
+    },
+    "+3.3V": {
+     "length_mm": 167.376333,
+     "widths_mm": [
+      0.23
+     ]
+    },
+    "+5F": {
+     "length_mm": 43.908995,
+     "widths_mm": [
+      0.23
+     ]
+    },
+    "+5V": {
+     "length_mm": 992.854239,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/ACCES_RAM-": {
+     "length_mm": 264.307825,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/ACQ_ON": {
+     "length_mm": 191.599331,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/ADR2": {
+     "length_mm": 84.497938,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/ADR3": {
+     "length_mm": 81.328152,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/ADR4": {
+     "length_mm": 81.196248,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/ADR5": {
+     "length_mm": 81.630291,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/ADR6": {
+     "length_mm": 54.808766,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/BE-0": {
+     "length_mm": 107.036405,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/BE-1": {
+     "length_mm": 95.163951,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/BE-2": {
+     "length_mm": 96.289241,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/BE-3": {
+     "length_mm": 96.366499,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/BLANK-": {
+     "length_mm": 301.264026,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/BLUE_IN": {
+     "length_mm": 298.306728,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/BLUE_OUT": {
+     "length_mm": 373.352045,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/BPCLK": {
+     "length_mm": 60.297591,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/BT812_RD-": {
+     "length_mm": 295.769523,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/BT812_WR-": {
+     "length_mm": 281.522866,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/CAS0-": {
+     "length_mm": 142.541915,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/CAS1-": {
+     "length_mm": 152.002241,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/CAS2-": {
+     "length_mm": 150.477776,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/CAS3-": {
+     "length_mm": 133.819946,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/CLAMP": {
+     "length_mm": 255.768826,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/CLKCAD": {
+     "length_mm": 222.808861,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/CLKCDA": {
+     "length_mm": 236.689247,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/CSYNC-OUT": {
+     "length_mm": 421.730098,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/CSYNCIN-": {
+     "length_mm": 201.341035,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/C_OUT": {
+     "length_mm": 5.67142,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/DQ0": {
+     "length_mm": 312.173486,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/DQ1": {
+     "length_mm": 316.523242,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/DQ10": {
+     "length_mm": 114.192503,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/DQ11": {
+     "length_mm": 114.905636,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/DQ12": {
+     "length_mm": 124.655807,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/DQ13": {
+     "length_mm": 139.943579,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/DQ14": {
+     "length_mm": 129.889351,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/DQ15": {
+     "length_mm": 149.358204,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/DQ16": {
+     "length_mm": 87.644895,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/DQ17": {
+     "length_mm": 78.535827,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/DQ18": {
+     "length_mm": 78.538012,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/DQ19": {
+     "length_mm": 73.976971,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/DQ2": {
+     "length_mm": 311.073618,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/DQ20": {
+     "length_mm": 95.712461,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/DQ21": {
+     "length_mm": 84.630535,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/DQ22": {
+     "length_mm": 104.617012,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/DQ23": {
+     "length_mm": 91.709824,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/DQ24": {
+     "length_mm": 49.125298,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/DQ25": {
+     "length_mm": 41.398279,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/DQ26": {
+     "length_mm": 44.452815,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/DQ27": {
+     "length_mm": 43.442897,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/DQ28": {
+     "length_mm": 47.495938,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/DQ29": {
+     "length_mm": 54.340864,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/DQ3": {
+     "length_mm": 331.331224,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/DQ30": {
+     "length_mm": 63.067687,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/DQ31": {
+     "length_mm": 69.295974,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/DQ4": {
+     "length_mm": 321.834885,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/DQ5": {
+     "length_mm": 328.211332,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/DQ6": {
+     "length_mm": 328.007694,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/DQ7": {
+     "length_mm": 332.520458,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/DQ8": {
+     "length_mm": 110.411022,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/DQ9": {
+     "length_mm": 113.063014,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/ESVIDEO-RVB/OE_RVB-": {
+     "length_mm": 68.603338,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/ESVIDEO-RVB/REF+": {
+     "length_mm": 32.889261,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/ESVIDEO-RVB/VAA": {
+     "length_mm": 119.35383,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/F_PALIN": {
+     "length_mm": 250.894887,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/GREEN_IN": {
+     "length_mm": 424.507874,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/GREEN_OUT": {
+     "length_mm": 355.852983,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/HD_PAL-": {
+     "length_mm": 212.014964,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/IRQ-": {
+     "length_mm": 33.473205,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/IRQ_SRL": {
+     "length_mm": 105.04595,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/MXA0": {
+     "length_mm": 227.616821,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/MXA1": {
+     "length_mm": 228.146718,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/MXA10": {
+     "length_mm": 191.556086,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/MXA2": {
+     "length_mm": 224.199487,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/MXA3": {
+     "length_mm": 204.420492,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/MXA4": {
+     "length_mm": 201.1876,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/MXA5": {
+     "length_mm": 226.735541,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/MXA6": {
+     "length_mm": 206.819024,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/MXA7": {
+     "length_mm": 190.019269,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/MXA8": {
+     "length_mm": 178.486601,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/MXA9": {
+     "length_mm": 176.018714,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/OE_PAL-": {
+     "length_mm": 76.502482,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/PCA0": {
+     "length_mm": 326.12301,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/PCA1": {
+     "length_mm": 315.845856,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/PCA2": {
+     "length_mm": 280.975647,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/PTADR-": {
+     "length_mm": 162.834305,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/PTATN-": {
+     "length_mm": 115.868849,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/PTBE-0": {
+     "length_mm": 55.032239,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/PTBE-1": {
+     "length_mm": 53.215146,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/PTBE-2": {
+     "length_mm": 51.493492,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/PTBE-3": {
+     "length_mm": 42.424451,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/PTBURST": {
+     "length_mm": 54.597086,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/PTNUM0": {
+     "length_mm": 43.777946,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/PTNUM1": {
+     "length_mm": 41.590246,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/PTRDY-": {
+     "length_mm": 110.999068,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/PTWR": {
+     "length_mm": 59.66837,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/RAS0-": {
+     "length_mm": 98.095654,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/RAS1-": {
+     "length_mm": 94.48761,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/RAS2-": {
+     "length_mm": 87.70793,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/RAS3-": {
+     "length_mm": 97.283345,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/RAS4-": {
+     "length_mm": 98.649477,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/RAS5-": {
+     "length_mm": 105.082897,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/RAS6-": {
+     "length_mm": 113.512087,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/RAS7-": {
+     "length_mm": 130.829087,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/RDCAD-": {
+     "length_mm": 275.554761,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/RDCDA-": {
+     "length_mm": 273.309424,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/RDEMPTY": {
+     "length_mm": 10.0838,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/RDFIFO-": {
+     "length_mm": 66.388048,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/RED_IN": {
+     "length_mm": 422.393439,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/RED_OUT": {
+     "length_mm": 353.07588,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/SELECT-": {
+     "length_mm": 110.399116,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/SYSRST-": {
+     "length_mm": 357.96881,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVB0": {
+     "length_mm": 73.086639,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVB1": {
+     "length_mm": 77.353627,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVB2": {
+     "length_mm": 75.28861,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVB3": {
+     "length_mm": 87.352659,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVB4": {
+     "length_mm": 82.133509,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVB5": {
+     "length_mm": 91.357612,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVB6": {
+     "length_mm": 89.537093,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVB7": {
+     "length_mm": 98.521541,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVG0": {
+     "length_mm": 97.905838,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVG1": {
+     "length_mm": 92.475043,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVG2": {
+     "length_mm": 86.651394,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVG3": {
+     "length_mm": 86.73296,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVG4": {
+     "length_mm": 75.979656,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVG5": {
+     "length_mm": 71.471547,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVG6": {
+     "length_mm": 70.605558,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVG7": {
+     "length_mm": 68.57201,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVI0": {
+     "length_mm": 249.87016,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVI1": {
+     "length_mm": 227.921323,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVR0": {
+     "length_mm": 133.973233,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVR1": {
+     "length_mm": 125.962964,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVR2": {
+     "length_mm": 138.375529,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVR3": {
+     "length_mm": 127.874348,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVR4": {
+     "length_mm": 120.37606,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVR5": {
+     "length_mm": 115.315775,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVR6": {
+     "length_mm": 118.138655,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVR7": {
+     "length_mm": 111.342315,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVRAM0": {
+     "length_mm": 199.549417,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVRAM1": {
+     "length_mm": 197.863553,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVRAM10": {
+     "length_mm": 191.734223,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVRAM11": {
+     "length_mm": 195.021557,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVRAM12": {
+     "length_mm": 189.723666,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVRAM13": {
+     "length_mm": 192.482491,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVRAM14": {
+     "length_mm": 191.099752,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVRAM15": {
+     "length_mm": 191.602464,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVRAM16": {
+     "length_mm": 197.704499,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVRAM17": {
+     "length_mm": 201.101188,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVRAM18": {
+     "length_mm": 194.135425,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVRAM19": {
+     "length_mm": 197.730081,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVRAM2": {
+     "length_mm": 200.592184,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVRAM20": {
+     "length_mm": 198.456312,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVRAM21": {
+     "length_mm": 191.994348,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVRAM22": {
+     "length_mm": 199.925236,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVRAM23": {
+     "length_mm": 205.764502,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVRAM24": {
+     "length_mm": 178.281029,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVRAM25": {
+     "length_mm": 182.713265,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVRAM26": {
+     "length_mm": 186.969635,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVRAM27": {
+     "length_mm": 190.40766,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVRAM28": {
+     "length_mm": 193.206894,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVRAM29": {
+     "length_mm": 197.323499,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVRAM3": {
+     "length_mm": 200.781125,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVRAM30": {
+     "length_mm": 208.374048,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVRAM31": {
+     "length_mm": 212.140468,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVRAM4": {
+     "length_mm": 187.319328,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVRAM5": {
+     "length_mm": 190.606009,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVRAM6": {
+     "length_mm": 187.13717,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVRAM7": {
+     "length_mm": 191.238771,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVRAM8": {
+     "length_mm": 190.440129,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/TVRAM9": {
+     "length_mm": 193.687817,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/VD_PAL-": {
+     "length_mm": 227.821591,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/WRAM-": {
+     "length_mm": 125.461174,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/WRCAD-": {
+     "length_mm": 270.835192,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/WRCDA-": {
+     "length_mm": 280.318148,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/WRFIFDO-": {
+     "length_mm": 64.905384,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/WRFULL": {
+     "length_mm": 10.357347,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/WRITE_RAM": {
+     "length_mm": 81.115252,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/X_CLK": {
+     "length_mm": 250.596123,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/X_DATA": {
+     "length_mm": 198.90589,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/X_DONE": {
+     "length_mm": 226.841406,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/X_IRQ": {
+     "length_mm": 72.078887,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/X_PROG-": {
+     "length_mm": 257.118153,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/Y_OUT": {
+     "length_mm": 5.903631,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/EA1": {
+     "length_mm": 23.379792,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/EA10": {
+     "length_mm": 33.570723,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/EA11": {
+     "length_mm": 36.07669,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/EA12": {
+     "length_mm": 40.733205,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/EA13": {
+     "length_mm": 35.373533,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/EA14": {
+     "length_mm": 36.627911,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/EA15": {
+     "length_mm": 36.368805,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/EA2": {
+     "length_mm": 20.328641,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/EA3": {
+     "length_mm": 27.691222,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/EA4": {
+     "length_mm": 45.825588,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/EA5": {
+     "length_mm": 75.238933,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/EA6": {
+     "length_mm": 75.29048,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/EA7": {
+     "length_mm": 53.317879,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/EA9": {
+     "length_mm": 63.107346,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/EQ0": {
+     "length_mm": 61.518415,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/EQ1": {
+     "length_mm": 52.884092,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/EQ2": {
+     "length_mm": 42.00941,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/EQ3": {
+     "length_mm": 35.975169,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/EQ4": {
+     "length_mm": 24.247846,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/EQ5": {
+     "length_mm": 37.269832,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/EQ6": {
+     "length_mm": 35.646774,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/EQ7": {
+     "length_mm": 16.217836,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_AD0": {
+     "length_mm": 36.020479,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_AD1": {
+     "length_mm": 34.489696,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_AD10": {
+     "length_mm": 16.686614,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_AD11": {
+     "length_mm": 16.468226,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_AD12": {
+     "length_mm": 16.960161,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_AD13": {
+     "length_mm": 16.782051,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_AD14": {
+     "length_mm": 16.64453,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_AD15": {
+     "length_mm": 16.569826,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_AD16": {
+     "length_mm": 17.25475,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_AD17": {
+     "length_mm": 16.718177,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_AD18": {
+     "length_mm": 16.928598,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_AD19": {
+     "length_mm": 16.676093,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_AD2": {
+     "length_mm": 33.62099,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_AD20": {
+     "length_mm": 16.731251,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_AD21": {
+     "length_mm": 16.43411,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_AD22": {
+     "length_mm": 16.733056,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_AD23": {
+     "length_mm": 16.655051,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_AD24": {
+     "length_mm": 23.879044,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_AD25": {
+     "length_mm": 25.010775,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_AD26": {
+     "length_mm": 25.879481,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_AD27": {
+     "length_mm": 27.263717,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_AD28": {
+     "length_mm": 28.395448,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_AD29": {
+     "length_mm": 31.580221,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_AD3": {
+     "length_mm": 31.857998,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_AD30": {
+     "length_mm": 32.574432,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_AD31": {
+     "length_mm": 34.49524,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_AD4": {
+     "length_mm": 29.30972,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_AD5": {
+     "length_mm": 27.778937,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_AD6": {
+     "length_mm": 27.025963,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_AD7": {
+     "length_mm": 25.67329,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_AD8": {
+     "length_mm": 22.504272,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_AD9": {
+     "length_mm": 16.939119,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_CLK": {
+     "length_mm": 66.888064,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_C{slash}BE0#": {
+     "length_mm": 25.80029,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_C{slash}BE1#": {
+     "length_mm": 17.538817,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_C{slash}BE2#": {
+     "length_mm": 17.002245,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_C{slash}BE3#": {
+     "length_mm": 22.973141,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_DEVSEL#": {
+     "length_mm": 16.455152,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_FRAME#": {
+     "length_mm": 17.065371,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_GNT#": {
+     "length_mm": 37.306543,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_IDSEL": {
+     "length_mm": 19.313026,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_INTA#": {
+     "length_mm": 72.431912,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_IRDY#": {
+     "length_mm": 16.760261,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_LOCK#": {
+     "length_mm": 16.739219,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_PAR": {
+     "length_mm": 17.286313,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_PERR#": {
+     "length_mm": 16.518278,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_REQ#": {
+     "length_mm": 35.806576,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_RST#": {
+     "length_mm": 53.196657,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_SERR#": {
+     "length_mm": 17.023287,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_STOP#": {
+     "length_mm": 17.096934,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/buspci.sch/P_TRDY#": {
+     "length_mm": 17.233708,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/graphic/14MHZOUT": {
+     "length_mm": 30.479743,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/graphic/CCLK": {
+     "length_mm": 18.728388,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/graphic/CLK10MHz": {
+     "length_mm": 66.950654,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/graphic/CSIO-": {
+     "length_mm": 43.642231,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/graphic/DIN": {
+     "length_mm": 24.33743,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/graphic/DONE": {
+     "length_mm": 27.117917,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/graphic/HDOUT": {
+     "length_mm": 49.050368,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/graphic/HDREFOUT": {
+     "length_mm": 46.420966,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/graphic/IA0": {
+     "length_mm": 5.223005,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/graphic/IA1": {
+     "length_mm": 5.03212,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/graphic/IA2": {
+     "length_mm": 4.769094,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/graphic/IA3": {
+     "length_mm": 4.737531,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/graphic/IA4": {
+     "length_mm": 5.922037,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/graphic/IA5": {
+     "length_mm": 6.735725,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/graphic/IA6": {
+     "length_mm": 6.238416,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/graphic/IA7": {
+     "length_mm": 13.884867,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/graphic/IA8": {
+     "length_mm": 20.187078,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/graphic/IA9": {
+     "length_mm": 5.043387,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/graphic/ICAS-": {
+     "length_mm": 27.203908,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/graphic/ID0": {
+     "length_mm": 4.675405,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/graphic/ID1": {
+     "length_mm": 4.997708,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/graphic/ID2": {
+     "length_mm": 26.906438,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/graphic/ID3": {
+     "length_mm": 26.672814,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/graphic/IOE-": {
+     "length_mm": 27.829444,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/graphic/IRAS-": {
+     "length_mm": 4.835785,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/graphic/IWR-": {
+     "length_mm": 4.730988,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/graphic/LED": {
+     "length_mm": 5.24398,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/graphic/PROG*": {
+     "length_mm": 29.180734,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/graphic/RESERV1": {
+     "length_mm": 83.325289,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/graphic/VOSC": {
+     "length_mm": 25.725055,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/graphic/XTAL_I": {
+     "length_mm": 24.663131,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/graphic/X_DIN": {
+     "length_mm": 51.412287,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/modul/CHROM": {
+     "length_mm": 54.757964,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/modul/CVBS": {
+     "length_mm": 12.061261,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/modul/CVBSOUT": {
+     "length_mm": 20.973051,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/modul/LUM": {
+     "length_mm": 60.144753,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/pal-ntsc.sch/C-VIDEO": {
+     "length_mm": 20.244072,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/pal-ntsc.sch/VAF": {
+     "length_mm": 147.066023,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/pal-ntsc.sch/Y-VIDEO": {
+     "length_mm": 60.953687,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/pal-ntsc.sch/Y_SYNC": {
+     "length_mm": 12.595987,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/{slash}PCRD": {
+     "length_mm": 128.579301,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "/{slash}PCWR": {
+     "length_mm": 138.0598,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "GND": {
+     "length_mm": 760.427542,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(BUS1-PRSNT1#)": {
+     "length_mm": 26.508446,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(BUS1-PRSNT2#)": {
+     "length_mm": 16.274051,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(BUS1-TDI)": {
+     "length_mm": 16.256,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(C1-Pad1)": {
+     "length_mm": 5.990039,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(C3-Pad1)": {
+     "length_mm": 1.778,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(C36-Pad2)": {
+     "length_mm": 4.956,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(C39-Pad2)": {
+     "length_mm": 3.302,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(C4-Pad1)": {
+     "length_mm": 4.564523,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(C40-Pad2)": {
+     "length_mm": 3.556,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(C41-Pad2)": {
+     "length_mm": 2.159,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(C46-Pad1)": {
+     "length_mm": 11.25942,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(C49-Pad1)": {
+     "length_mm": 18.323187,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(C5-Pad2)": {
+     "length_mm": 2.794,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(C61-Pad1)": {
+     "length_mm": 12.993152,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(C8-Pad2)": {
+     "length_mm": 8.59242,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(CV1-Pad1)": {
+     "length_mm": 10.01121,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(D6-A)": {
+     "length_mm": 2.057119,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(L6-Pad1)": {
+     "length_mm": 21.963761,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(P4-P1)": {
+     "length_mm": 35.595778,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(POT1-Pad1)": {
+     "length_mm": 29.630577,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(Q1-B)": {
+     "length_mm": 5.470026,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(Q1-E)": {
+     "length_mm": 10.419287,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(Q2-B)": {
+     "length_mm": 9.087656,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(Q2-E)": {
+     "length_mm": 7.454708,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(Q3-B)": {
+     "length_mm": 16.177867,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(Q3-E)": {
+     "length_mm": 7.112,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U1-SCL)": {
+     "length_mm": 18.884836,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U1-SDA)": {
+     "length_mm": 17.296834,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U10-CLEVEL)": {
+     "length_mm": 16.053419,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U10-CREF+)": {
+     "length_mm": 36.438101,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U10-N{slash}C)": {
+     "length_mm": 9.22381,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U10-OUT_C)": {
+     "length_mm": 4.652868,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U10-R{slash}2)": {
+     "length_mm": 12.411446,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U10-SYNC_DET)": {
+     "length_mm": 27.874374,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U10-VIN_C)": {
+     "length_mm": 4.49941,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U10-VIN_Y{slash}COMP.)": {
+     "length_mm": 6.530972,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U10-XTAL1_IN)": {
+     "length_mm": 28.081184,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U10-XTAL1_OUT)": {
+     "length_mm": 23.862809,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U11-FLT#)": {
+     "length_mm": 13.77829,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U11-MODE_16{slash}32)": {
+     "length_mm": 8.875431,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U11-SNV)": {
+     "length_mm": 10.731373,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U20-B)": {
+     "length_mm": 3.683,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U20-B{slash}ADJ)": {
+     "length_mm": 7.761313,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U20-CS)": {
+     "length_mm": 24.621497,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U20-FLT)": {
+     "length_mm": 6.411631,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U20-G)": {
+     "length_mm": 8.151338,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U20-MCTR)": {
+     "length_mm": 25.287313,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U20-NOTCH)": {
+     "length_mm": 29.9916,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U20-OSC)": {
+     "length_mm": 10.051446,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U20-R)": {
+     "length_mm": 13.591438,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U20-UOFF)": {
+     "length_mm": 3.236631,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U20-VCC)": {
+     "length_mm": 36.622677,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U20-VOFF)": {
+     "length_mm": 6.801656,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U20-VREF)": {
+     "length_mm": 14.94242,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U20-Y+SIN)": {
+     "length_mm": 54.910695,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U20-Y+SOUT)": {
+     "length_mm": 3.53421,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U23-P87)": {
+     "length_mm": 40.055415,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U23-PGCK4)": {
+     "length_mm": 21.141826,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U23-SGCK3)": {
+     "length_mm": 5.15981,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U8-BIN)": {
+     "length_mm": 14.43442,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U8-BVID0)": {
+     "length_mm": 6.94142,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U8-CEXT1)": {
+     "length_mm": 6.985,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U8-CEXT2)": {
+     "length_mm": 20.99639,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U8-GIN)": {
+     "length_mm": 15.70442,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U8-GVID0)": {
+     "length_mm": 5.31221,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U8-RIN)": {
+     "length_mm": 16.020051,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U8-RSET)": {
+     "length_mm": 3.937,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U8-RVID0)": {
+     "length_mm": 25.432364,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U9-COMP)": {
+     "length_mm": 9.486708,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U9-IREF)": {
+     "length_mm": 18.39321,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "Net-(U9-VREF)": {
+     "length_mm": 6.005102,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "unconnected-(BUS1--12V)": {
+     "length_mm": 2.667,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "unconnected-(BUS1-3.3VAUX)": {
+     "length_mm": 2.667,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "unconnected-(BUS1-ACK64#)": {
+     "length_mm": 2.667,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "unconnected-(BUS1-INTB#)": {
+     "length_mm": 2.667,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "unconnected-(BUS1-INTC#)": {
+     "length_mm": 2.667,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "unconnected-(BUS1-INTD#)": {
+     "length_mm": 2.667,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "unconnected-(BUS1-PME#)": {
+     "length_mm": 2.667,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "unconnected-(BUS1-REQ64#)": {
+     "length_mm": 2.667,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "unconnected-(BUS1-RESERVED)": {
+     "length_mm": 2.667,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "unconnected-(BUS1-RESERVED)_2": {
+     "length_mm": 2.667,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "unconnected-(BUS1-RESERVED)_4": {
+     "length_mm": 2.667,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "unconnected-(BUS1-RESERVED)_5": {
+     "length_mm": 2.667,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "unconnected-(BUS1-RESERVED)_8": {
+     "length_mm": 2.667,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "unconnected-(BUS1-RESERVED)_9": {
+     "length_mm": 2.667,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "unconnected-(BUS1-TCK)": {
+     "length_mm": 2.667,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "unconnected-(BUS1-TMS)": {
+     "length_mm": 2.667,
+     "widths_mm": [
+      0.2
+     ]
+    },
+    "unconnected-(BUS1-TRST#)": {
+     "length_mm": 2.667,
+     "widths_mm": [
+      0.2
+     ]
+    }
+   },
+   "pads": 2238,
+   "straight_tracks": 7951,
+   "via_drills_mm": [
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4
+   ]
+  }
+ },
+ "tool": "KiCad 7.0.11 (pcbnew Python API)"
+}

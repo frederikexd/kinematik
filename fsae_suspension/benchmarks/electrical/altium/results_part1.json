@@ -1,0 +1,77 @@
+{
+ "altium_version": "Altium Designer 26.11.1",
+ "how": "KiCad demo boards imported with Altium's KiCad Importer, saved as binary .PcbDoc (Part 1 of the kit). Altium's own counts from Board Information and the PCB Filter (IsTrack And OnSignal); KinematiK's from its binary .PcbDoc reader; KiCad's from pcbnew (kicad_boards.json).",
+ "boards": {
+  "pic_programmer": {
+   "altium": {
+    "components": 63,
+    "pads": 247,
+    "vias": 6
+   },
+   "kinematik_from_pcbdoc": {
+    "tracks": 370,
+    "arcs": 0,
+    "vias": 6,
+    "pads": 247,
+    "components": 63
+   },
+   "kicad": {
+    "tracks": 370,
+    "arcs": 0,
+    "vias": 6,
+    "pads": 247,
+    "components": 63
+   },
+   "nets": 33,
+   "worst_net_length_pct": 0.0
+  },
+  "StickHub": {
+   "altium": {
+    "components": 94,
+    "pads": 278,
+    "vias": 87,
+    "tracks_on_signal": 1108
+   },
+   "kinematik_from_pcbdoc": {
+    "tracks": 1108,
+    "arcs": 180,
+    "vias": 87,
+    "pads": 278,
+    "components": 94
+   },
+   "kicad": {
+    "tracks": 1111,
+    "arcs": 180,
+    "vias": 87,
+    "pads": 278,
+    "components": 94
+   },
+   "nets": 45,
+   "worst_net_length_pct": 0.04,
+   "note": "Altium's importer drops 3 zero-length tracks (GND, +3.3V, Net-(U1-VBUS_SENSE)); Altium itself reports 1108."
+  },
+  "video": {
+   "altium": {
+    "tracks_on_signal": 7951
+   },
+   "kinematik_from_pcbdoc": {
+    "tracks": 7951,
+    "arcs": 0,
+    "vias": 808,
+    "pads": 2238,
+    "components": 189
+   },
+   "kicad": {
+    "tracks": 7951,
+    "arcs": 0,
+    "vias": 808,
+    "pads": 2238,
+    "components": 189
+   },
+   "nets": 389,
+   "worst_net_length_pct": 0.0
+  }
+ },
+ "first_read": "Before two reader fixes the same files read StickHub as 289 pads / 90 components and video as 2450 pads: the pad-record scan accepted bytes inside other records as pads (sizes of -2897 mm), and padless components (logos) were dropped. Both fixed; the counts above are after.",
+ "impedance": "Part 2 (Layer Stack Manager) not yet run."
+}

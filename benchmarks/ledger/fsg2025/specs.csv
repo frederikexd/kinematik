@@ -1,0 +1,22 @@
+event,car,team,year,source_url,wheelbase_mm,track_f_mm,track_r_mm,weight_f_kg,weight_r_kg,tyres,n_motors,power_per_motor_kw,max_rpm,ratio_primary,ratio_secondary
+FSG 2025,31,TUfast Racing Team (München TU),2025,https://www.formulastudent.de/teams/fsc/details/tid/336,1530,1225,1225,109,119,16x7.5 R10 Hoosier LC0,4,35,20000,12.4,NA
+FSG 2025,85,Formula Student Team Delft (Delft TU),2025,https://www.formulastudent.de/teams/fsc/details/tid/285,1530,1250,1250,119,128,Dry: Hoosier 16 x 7.5-10 R20,4,35,20500,2.72,4.35
+FSG 2025,99,Ecurie Aix (Aachen RWTH),2025,https://www.formulastudent.de/teams/fsc/details/tid/258,1530,1250,1250,112,112,"16.0 x 7.5 - 10, Hoosier LC0",4,35.37,20000,12.13,NA
+FSG 2025,63,Revolve NTNU (Trondheim NTNU),2025,https://www.formulastudent.de/teams/fsc/details/tid/611,1530,1220,1220,114,115,Hoosier R20 16.0 x 7.5 - 10,4,35,20000,13.38,NA
+FSG 2025,75,Global Formula Racing (Ravensburg DHBW),2025,https://www.formulastudent.de/teams/fsc/details/tid/384,1535,1230,1230,133,135,7.5,4,28,22500,15,NA
+FSG 2025,131,municHMotorsport (München UAS),2025,https://www.formulastudent.de/teams/fsc/details/tid/255,1530,1240,1240,129,129,Hoosier LC0,4,35,20000,NA,NA
+FSG 2025,26,Rennteam Uni Stuttgart (Stuttgart U),2025,https://www.formulastudent.de/teams/fsc/details/tid/224,1540,1200,1200,121,126,16.0x7.5-10 Hoosier R20,4,43,21000,11.68,NA
+FSG 2025,76,KA-RaceIng (Karlsruhe IT),2025,https://www.formulastudent.de/teams/fsc/details/tid/254,1530,1220,1220,119,124,16,4,38,20000,12.009,NA
+FSG 2025,54,BCN eMotorsport (Barcelona ETSEIB),2025,https://www.formulastudent.de/teams/fsc/details/tid/365,1530,1225,1175,144,144,"16.0x7.5 R10, Hoosier R20",4,35,20000,9.05,NA
+FSG 2025,78,e-gnition Hamburg (Hamburg TU),2025,https://www.formulastudent.de/teams/fsc/details/tid/414,1530,1230,1230,136,133,"16.0x6.0 R10, Hoosier R20",4,35.366,19000,11.8,NA
+FSG 2025,42,EFORCE Prague Formula (Prague CTU),2025,https://www.formulastudent.de/teams/fsc/details/tid/394,1530,1200,1200,130,128,Hoosier 16x7.5-10 R20,4,36,20000,11.47,NA
+FSG 2025,40,University Racing Eindhoven (Eindhoven TU),2025,https://www.formulastudent.de/teams/fsc/details/tid/256,1535,1220,1220,134,146,"16.0x7.5-10 R20, Hoosier",4,35,20000,14.06,NA
+FSG 2025,313,FaSTTUBe (Berlin TU),2025,https://www.formulastudent.de/teams/fsc/details/tid/230,1575,1200,1200,114,133,Hoosier R20,2,60,8000,4.9,NA
+FSG 2025,92,ARUS (Sevilla U),2025,https://www.formulastudent.de/teams/fsc/details/tid/875,1535,1220,1220,162,176,Hoosier R20 18x6.0 R10,4,35,20000,12.48,12.48
+FSG 2025,51,UGent Racing (Ghent U),2025,https://www.formulastudent.de/teams/fsc/details/tid/1292,1535,1300,1300,110,145,16.0x7.5-10,2,86,7000,4.08,NA
+FSG 2025,279,Rennschmiede Pforzheim (Pforzheim U),2025,https://www.formulastudent.de/teams/fsc/details/tid/1074,1535,1200,1200,143,146,"7.5x16 R10, Hoosier",4,35,20000,13.4,NA
+FSG 2025,13,Valais Wallis Racing Team (Sion HES),2025,https://www.formulastudent.de/teams/fsc/details/tid/1328,1575,1475,1475,149,149,20.0x10.0-13 R20,2,35,20000,16.04,NA
+FSG 2025,34,Schanzer Racing Electric (Ingolstadt UAS),2025,https://www.formulastudent.de/teams/fsc/details/tid/342,1600,1200,1164,134,147,Goodyear 175 / 518 R13,4,35,20000,18.7,18.7
+FSG 2025,101,HorsePower Hannover (Hannover U),2025,https://www.formulastudent.de/teams/fsc/details/tid/348,1540,1230,1230,115,172,Hoosier 16x7.5 R10 R20/LC0,4,36,20000,11.67,NA
+FSG 2025,227,Bern Racing Team (Bern UAS),2025,https://www.formulastudent.de/teams/fsc/details/tid/664,1528,1208,1208,145,155,"16.0x7.5-10, Hoosier R20",4,35.366,20000,11.84,NA
+FSG 2025,172,GET racing Dortmund (Dortmund TU),2025,https://www.formulastudent.de/teams/fsc/details/tid/1174,155,124,1205,122,152,"16x7.5 R10, Hoosier",2,60,6500,5,NA

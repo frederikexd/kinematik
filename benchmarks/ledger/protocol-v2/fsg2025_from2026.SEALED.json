@@ -1,0 +1,2423 @@
+{
+ "ledger": "KinematiK prediction ledger",
+ "protocol_version": "2",
+ "protocol": {
+  "physics": "protocol v1 (ledger.build): published spec, FS power limit, KinematiK defaults for the rest",
+  "1 calibration": "time factor = median(official / predicted) on the training competition's clean runs; skidpad per compound group (R20, LC0, other; pooled below 4 cars), acceleration pooled",
+  "2 data checks": "published values outside {'wheelbase_mm': (1525.0, 2000.0), 'track_f_mm': (900.0, 1600.0), 'track_r_mm': (900.0, 1600.0), 'weight_f_kg': (50.0, 250.0), 'weight_r_kg': (50.0, 250.0), 'power_per_motor_kw': (3.0, 150.0), 'max_rpm': (2000.0, 30000.0), 'ratio_primary': (1.0, 30.0)} are treated as not published; a redline and ratio capping the car below 25.0 m/s drop the motor map",
+  "3 published inputs": "tyre compound (calibration group) and tyre diameter; aero not used (unreliable)",
+  "4 team record": "prediction x (1 + 0.5 x (last competition's official / calibrated prediction - 1)), same team (FSG team id), clean runs only; events ('skidpad',)",
+  "5 skidpad": "path radius 7.625 m + 0.25 m + half the mean track; the faster of left and right laps is scored as a second channel"
+ },
+ "event": "FSG 2025",
+ "kind": "hindcast",
+ "note": "Reverse: fit on FSG 2026, predict FSG 2025. Results for both years were public when this was made.",
+ "sealed_utc": "2026-11-07T11:32:30Z",
+ "code_sha256": {
+  "ledger_v2.py": "dcdfae3e9a2909c4480bb05bf4a35310250ae676243f23f19489130aa9a88d66",
+  "ledger.py": "db0403f0896e11a21d68c11b60e4c24a1e8535e3f9a7ee90ae65dc08371fe565",
+  "laptime.py": "114e31522d3687909ae9bcd4bffa4a2d1559bf2149b09da2f380d689a32bcc48",
+  "dynamics.py": "feaae87a922f50c38b40246e4fef511b19109062c8c7db4948c04e7609440aa2",
+  "tiremodel.py": "91077d8bcaea0a122cbfeb0a7246d8f33489de051b6310a755e4c93a5b6d4aff"
+ },
+ "calibration": {
+  "skidpad": {
+   "R20": 1.117531173557845,
+   "LC0": 1.121037033180662,
+   "other": 1.2035739666561391
+  },
+  "skidpad_pooled": 1.121037033180662,
+  "accel": 1.0370061755206255,
+  "accel_quantile": 0.5,
+  "n": {
+   "skidpad": 22,
+   "accel": 25,
+   "skidpad_R20": 16,
+   "skidpad_LC0": 2,
+   "skidpad_other": 4
+  },
+  "source": "FSG 2026"
+ },
+ "team_record": {
+  "336": {
+   "skidpad": 0.9476976426537962,
+   "accel": 0.9914614848185681
+  },
+  "285": {
+   "skidpad": 0.9930369177570295,
+   "accel": 0.9714987166142767
+  },
+  "258": {
+   "skidpad": 0.9779686640748346,
+   "accel": 0.9605659132364444
+  },
+  "611": {
+   "skidpad": 0.9772172313067699,
+   "accel": 0.9940257589041549
+  },
+  "384": {
+   "skidpad": 0.9590410392879231,
+   "accel": 1.0307203596827639
+  },
+  "255": {
+   "skidpad": 0.9789081203568456,
+   "accel": 0.9648825015783911
+  },
+  "224": {
+   "skidpad": 1.0158864226147246,
+   "accel": 0.996952099873821
+  },
+  "254": {
+   "skidpad": 1.0169551406933015,
+   "accel": 0.9985107843715086
+  },
+  "1258": {
+   "skidpad": 0.9945425472796313,
+   "accel": 1.014923476965287
+  },
+  "365": {
+   "skidpad": 1.0061543652278766,
+   "accel": 0.9955205756656371
+  },
+  "414": {
+   "skidpad": 1.0371842325952403,
+   "accel": 1.0111058922335812
+  },
+  "394": {
+   "skidpad": 0.999880071130728,
+   "accel": 1.0899595126086008
+  },
+  "256": {
+   "skidpad": 1.0001199288692721,
+   "accel": 1.0445649964241233
+  },
+  "230": {
+   "skidpad": 1.0666696451507496,
+   "accel": 0.9986312793503601
+  },
+  "875": {
+   "skidpad": 1.049184775135757,
+   "accel": 0.9909575226947204
+  },
+  "444": {
+   "skidpad": 0.9813155567299516,
+   "accel": 0.9999999999999999
+  },
+  "1292": {
+   "skidpad": 1.0186844432700484,
+   "accel": 0.9672731742590418
+  },
+  "1074": {
+   "skidpad": 1.151159196355706,
+   "accel": 1.118220405034939
+  },
+  "290": {
+   "accel": 1.126377405149942
+  },
+  "1328": {
+   "skidpad": 1.1734294727867036,
+   "accel": 1.1803112001162972
+  },
+  "1049": {
+   "accel": 1.143215755437252
+  },
+  "342": {
+   "accel": 1.2151575160221846
+  },
+  "348": {
+   "skidpad": 0.9663312869334724,
+   "accel": 1.0541984171939416
+  },
+  "664": {
+   "skidpad": 0.9717271344305382,
+   "accel": 0.9748321334543223
+  },
+  "1174": {
+   "skidpad": 0.990334014410254,
+   "accel": 1.0289817853620196
+  }
+ },
+ "team_record_events": [
+  "skidpad"
+ ],
+ "specs": [
+  {
+   "event": "FSG 2025",
+   "car": "31",
+   "team": "TUfast Racing Team (München TU)",
+   "year": 2025,
+   "source_url": "https://www.formulastudent.de/teams/fsc/details/tid/336",
+   "wheelbase_mm": 1530.0,
+   "track_f_mm": 1225.0,
+   "track_r_mm": 1225.0,
+   "weight_f_kg": 109.0,
+   "weight_r_kg": 119.0,
+   "tyres": "16x7.5 R10 Hoosier LC0",
+   "n_motors": 4,
+   "power_per_motor_kw": 35.0,
+   "max_rpm": 20000.0,
+   "ratio_primary": 12.4,
+   "ratio_secondary": null
+  },
+  {
+   "event": "FSG 2025",
+   "car": "85",
+   "team": "Formula Student Team Delft (Delft TU)",
+   "year": 2025,
+   "source_url": "https://www.formulastudent.de/teams/fsc/details/tid/285",
+   "wheelbase_mm": 1530.0,
+   "track_f_mm": 1250.0,
+   "track_r_mm": 1250.0,
+   "weight_f_kg": 119.0,
+   "weight_r_kg": 128.0,
+   "tyres": "Dry: Hoosier 16 x 7.5-10 R20",
+   "n_motors": 4,
+   "power_per_motor_kw": 35.0,
+   "max_rpm": 20500.0,
+   "ratio_primary": 2.72,
+   "ratio_secondary": 4.35
+  },
+  {
+   "event": "FSG 2025",
+   "car": "99",
+   "team": "Ecurie Aix (Aachen RWTH)",
+   "year": 2025,
+   "source_url": "https://www.formulastudent.de/teams/fsc/details/tid/258",
+   "wheelbase_mm": 1530.0,
+   "track_f_mm": 1250.0,
+   "track_r_mm": 1250.0,
+   "weight_f_kg": 112.0,
+   "weight_r_kg": 112.0,
+   "tyres": "16.0 x 7.5 - 10, Hoosier LC0",
+   "n_motors": 4,
+   "power_per_motor_kw": 35.37,
+   "max_rpm": 20000.0,
+   "ratio_primary": 12.13,
+   "ratio_secondary": null
+  },
+  {
+   "event": "FSG 2025",
+   "car": "63",
+   "team": "Revolve NTNU (Trondheim NTNU)",
+   "year": 2025,
+   "source_url": "https://www.formulastudent.de/teams/fsc/details/tid/611",
+   "wheelbase_mm": 1530.0,
+   "track_f_mm": 1220.0,
+   "track_r_mm": 1220.0,
+   "weight_f_kg": 114.0,
+   "weight_r_kg": 115.0,
+   "tyres": "Hoosier R20 16.0 x 7.5 - 10",
+   "n_motors": 4,
+   "power_per_motor_kw": 35.0,
+   "max_rpm": 20000.0,
+   "ratio_primary": 13.38,
+   "ratio_secondary": null
+  },
+  {
+   "event": "FSG 2025",
+   "car": "75",
+   "team": "Global Formula Racing (Ravensburg DHBW)",
+   "year": 2025,
+   "source_url": "https://www.formulastudent.de/teams/fsc/details/tid/384",
+   "wheelbase_mm": 1535.0,
+   "track_f_mm": 1230.0,
+   "track_r_mm": 1230.0,
+   "weight_f_kg": 133.0,
+   "weight_r_kg": 135.0,
+   "tyres": "7.5",
+   "n_motors": 4,
+   "power_per_motor_kw": 28.0,
+   "max_rpm": 22500.0,
+   "ratio_primary": 15.0,
+   "ratio_secondary": null
+  },
+  {
+   "event": "FSG 2025",
+   "car": "131",
+   "team": "municHMotorsport (München UAS)",
+   "year": 2025,
+   "source_url": "https://www.formulastudent.de/teams/fsc/details/tid/255",
+   "wheelbase_mm": 1530.0,
+   "track_f_mm": 1240.0,
+   "track_r_mm": 1240.0,
+   "weight_f_kg": 129.0,
+   "weight_r_kg": 129.0,
+   "tyres": "Hoosier LC0",
+   "n_motors": 4,
+   "power_per_motor_kw": 35.0,
+   "max_rpm": 20000.0,
+   "ratio_primary": null,
+   "ratio_secondary": null
+  },
+  {
+   "event": "FSG 2025",
+   "car": "26",
+   "team": "Rennteam Uni Stuttgart (Stuttgart U)",
+   "year": 2025,
+   "source_url": "https://www.formulastudent.de/teams/fsc/details/tid/224",
+   "wheelbase_mm": 1540.0,
+   "track_f_mm": 1200.0,
+   "track_r_mm": 1200.0,
+   "weight_f_kg": 121.0,
+   "weight_r_kg": 126.0,
+   "tyres": "16.0x7.5-10 Hoosier R20",
+   "n_motors": 4,
+   "power_per_motor_kw": 43.0,
+   "max_rpm": 21000.0,
+   "ratio_primary": 11.68,
+   "ratio_secondary": null
+  },
+  {
+   "event": "FSG 2025",
+   "car": "76",
+   "team": "KA-RaceIng (Karlsruhe IT)",
+   "year": 2025,
+   "source_url": "https://www.formulastudent.de/teams/fsc/details/tid/254",
+   "wheelbase_mm": 1530.0,
+   "track_f_mm": 1220.0,
+   "track_r_mm": 1220.0,
+   "weight_f_kg": 119.0,
+   "weight_r_kg": 124.0,
+   "tyres": "16",
+   "n_motors": 4,
+   "power_per_motor_kw": 38.0,
+   "max_rpm": 20000.0,
+   "ratio_primary": 12.009,
+   "ratio_secondary": null
+  },
+  {
+   "event": "FSG 2025",
+   "car": "54",
+   "team": "BCN eMotorsport (Barcelona ETSEIB)",
+   "year": 2025,
+   "source_url": "https://www.formulastudent.de/teams/fsc/details/tid/365",
+   "wheelbase_mm": 1530.0,
+   "track_f_mm": 1225.0,
+   "track_r_mm": 1175.0,
+   "weight_f_kg": 144.0,
+   "weight_r_kg": 144.0,
+   "tyres": "16.0x7.5 R10, Hoosier R20",
+   "n_motors": 4,
+   "power_per_motor_kw": 35.0,
+   "max_rpm": 20000.0,
+   "ratio_primary": 9.05,
+   "ratio_secondary": null
+  },
+  {
+   "event": "FSG 2025",
+   "car": "78",
+   "team": "e-gnition Hamburg (Hamburg TU)",
+   "year": 2025,
+   "source_url": "https://www.formulastudent.de/teams/fsc/details/tid/414",
+   "wheelbase_mm": 1530.0,
+   "track_f_mm": 1230.0,
+   "track_r_mm": 1230.0,
+   "weight_f_kg": 136.0,
+   "weight_r_kg": 133.0,
+   "tyres": "16.0x6.0 R10, Hoosier R20",
+   "n_motors": 4,
+   "power_per_motor_kw": 35.366,
+   "max_rpm": 19000.0,
+   "ratio_primary": 11.8,
+   "ratio_secondary": null
+  },
+  {
+   "event": "FSG 2025",
+   "car": "42",
+   "team": "EFORCE Prague Formula (Prague CTU)",
+   "year": 2025,
+   "source_url": "https://www.formulastudent.de/teams/fsc/details/tid/394",
+   "wheelbase_mm": 1530.0,
+   "track_f_mm": 1200.0,
+   "track_r_mm": 1200.0,
+   "weight_f_kg": 130.0,
+   "weight_r_kg": 128.0,
+   "tyres": "Hoosier 16x7.5-10 R20",
+   "n_motors": 4,
+   "power_per_motor_kw": 36.0,
+   "max_rpm": 20000.0,
+   "ratio_primary": 11.47,
+   "ratio_secondary": null
+  },
+  {
+   "event": "FSG 2025",
+   "car": "40",
+   "team": "University Racing Eindhoven (Eindhoven TU)",
+   "year": 2025,
+   "source_url": "https://www.formulastudent.de/teams/fsc/details/tid/256",
+   "wheelbase_mm": 1535.0,
+   "track_f_mm": 1220.0,
+   "track_r_mm": 1220.0,
+   "weight_f_kg": 134.0,
+   "weight_r_kg": 146.0,
+   "tyres": "16.0x7.5-10 R20, Hoosier",
+   "n_motors": 4,
+   "power_per_motor_kw": 35.0,
+   "max_rpm": 20000.0,
+   "ratio_primary": 14.06,
+   "ratio_secondary": null
+  },
+  {
+   "event": "FSG 2025",
+   "car": "313",
+   "team": "FaSTTUBe (Berlin TU)",
+   "year": 2025,
+   "source_url": "https://www.formulastudent.de/teams/fsc/details/tid/230",
+   "wheelbase_mm": 1575.0,
+   "track_f_mm": 1200.0,
+   "track_r_mm": 1200.0,
+   "weight_f_kg": 114.0,
+   "weight_r_kg": 133.0,
+   "tyres": "Hoosier R20",
+   "n_motors": 2,
+   "power_per_motor_kw": 60.0,
+   "max_rpm": 8000.0,
+   "ratio_primary": 4.9,
+   "ratio_secondary": null
+  },
+  {
+   "event": "FSG 2025",
+   "car": "92",
+   "team": "ARUS (Sevilla U)",
+   "year": 2025,
+   "source_url": "https://www.formulastudent.de/teams/fsc/details/tid/875",
+   "wheelbase_mm": 1535.0,
+   "track_f_mm": 1220.0,
+   "track_r_mm": 1220.0,
+   "weight_f_kg": 162.0,
+   "weight_r_kg": 176.0,
+   "tyres": "Hoosier R20 18x6.0 R10",
+   "n_motors": 4,
+   "power_per_motor_kw": 35.0,
+   "max_rpm": 20000.0,
+   "ratio_primary": 12.48,
+   "ratio_secondary": 12.48
+  },
+  {
+   "event": "FSG 2025",
+   "car": "51",
+   "team": "UGent Racing (Ghent U)",
+   "year": 2025,
+   "source_url": "https://www.formulastudent.de/teams/fsc/details/tid/1292",
+   "wheelbase_mm": 1535.0,
+   "track_f_mm": 1300.0,
+   "track_r_mm": 1300.0,
+   "weight_f_kg": 110.0,
+   "weight_r_kg": 145.0,
+   "tyres": "16.0x7.5-10",
+   "n_motors": 2,
+   "power_per_motor_kw": 86.0,
+   "max_rpm": 7000.0,
+   "ratio_primary": 4.08,
+   "ratio_secondary": null
+  },
+  {
+   "event": "FSG 2025",
+   "car": "279",
+   "team": "Rennschmiede Pforzheim (Pforzheim U)",
+   "year": 2025,
+   "source_url": "https://www.formulastudent.de/teams/fsc/details/tid/1074",
+   "wheelbase_mm": 1535.0,
+   "track_f_mm": 1200.0,
+   "track_r_mm": 1200.0,
+   "weight_f_kg": 143.0,
+   "weight_r_kg": 146.0,
+   "tyres": "7.5x16 R10, Hoosier",
+   "n_motors": 4,
+   "power_per_motor_kw": 35.0,
+   "max_rpm": 20000.0,
+   "ratio_primary": 13.4,
+   "ratio_secondary": null
+  },
+  {
+   "event": "FSG 2025",
+   "car": "13",
+   "team": "Valais Wallis Racing Team (Sion HES)",
+   "year": 2025,
+   "source_url": "https://www.formulastudent.de/teams/fsc/details/tid/1328",
+   "wheelbase_mm": 1575.0,
+   "track_f_mm": 1475.0,
+   "track_r_mm": 1475.0,
+   "weight_f_kg": 149.0,
+   "weight_r_kg": 149.0,
+   "tyres": "20.0x10.0-13 R20",
+   "n_motors": 2,
+   "power_per_motor_kw": 35.0,
+   "max_rpm": 20000.0,
+   "ratio_primary": 16.04,
+   "ratio_secondary": null
+  },
+  {
+   "event": "FSG 2025",
+   "car": "34",
+   "team": "Schanzer Racing Electric (Ingolstadt UAS)",
+   "year": 2025,
+   "source_url": "https://www.formulastudent.de/teams/fsc/details/tid/342",
+   "wheelbase_mm": 1600.0,
+   "track_f_mm": 1200.0,
+   "track_r_mm": 1164.0,
+   "weight_f_kg": 134.0,
+   "weight_r_kg": 147.0,
+   "tyres": "Goodyear 175 / 518 R13",
+   "n_motors": 4,
+   "power_per_motor_kw": 35.0,
+   "max_rpm": 20000.0,
+   "ratio_primary": 18.7,
+   "ratio_secondary": 18.7
+  },
+  {
+   "event": "FSG 2025",
+   "car": "101",
+   "team": "HorsePower Hannover (Hannover U)",
+   "year": 2025,
+   "source_url": "https://www.formulastudent.de/teams/fsc/details/tid/348",
+   "wheelbase_mm": 1540.0,
+   "track_f_mm": 1230.0,
+   "track_r_mm": 1230.0,
+   "weight_f_kg": 115.0,
+   "weight_r_kg": 172.0,
+   "tyres": "Hoosier 16x7.5 R10 R20/LC0",
+   "n_motors": 4,
+   "power_per_motor_kw": 36.0,
+   "max_rpm": 20000.0,
+   "ratio_primary": 11.67,
+   "ratio_secondary": null
+  },
+  {
+   "event": "FSG 2025",
+   "car": "227",
+   "team": "Bern Racing Team (Bern UAS)",
+   "year": 2025,
+   "source_url": "https://www.formulastudent.de/teams/fsc/details/tid/664",
+   "wheelbase_mm": 1528.0,
+   "track_f_mm": 1208.0,
+   "track_r_mm": 1208.0,
+   "weight_f_kg": 145.0,
+   "weight_r_kg": 155.0,
+   "tyres": "16.0x7.5-10, Hoosier R20",
+   "n_motors": 4,
+   "power_per_motor_kw": 35.366,
+   "max_rpm": 20000.0,
+   "ratio_primary": 11.84,
+   "ratio_secondary": null
+  },
+  {
+   "event": "FSG 2025",
+   "car": "172",
+   "team": "GET racing Dortmund (Dortmund TU)",
+   "year": 2025,
+   "source_url": "https://www.formulastudent.de/teams/fsc/details/tid/1174",
+   "wheelbase_mm": 155.0,
+   "track_f_mm": 124.0,
+   "track_r_mm": 1205.0,
+   "weight_f_kg": 122.0,
+   "weight_r_kg": 152.0,
+   "tyres": "16x7.5 R10, Hoosier",
+   "n_motors": 2,
+   "power_per_motor_kw": 60.0,
+   "max_rpm": 6500.0,
+   "ratio_primary": 5.0,
+   "ratio_secondary": null
+  }
+ ],
+ "predictions": [
+  {
+   "car": "31",
+   "team": "TUfast Racing Team (München TU)",
+   "skidpad_s": 4.818,
+   "accel_s": 3.4824,
+   "physics_skidpad_s": 4.4132,
+   "physics_accel_s": 3.3582,
+   "compound": "LC0",
+   "team_record": {
+    "skidpad": 0.9477
+   },
+   "rejected": {},
+   "inputs": {
+    "mass": {
+     "value": 228.0,
+     "unit": "kg",
+     "basis": "published"
+    },
+    "weight_dist_front": {
+     "value": 0.4780701754385965,
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheelbase": {
+     "value": 1530.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_front": {
+     "value": 1225.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_rear": {
+     "value": 1225.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "cg_height": {
+     "value": 300.0,
+     "unit": "mm",
+     "basis": "assumed"
+    },
+    "power": {
+     "value": 80.0,
+     "unit": "kW",
+     "basis": "rule"
+    },
+    "drive": {
+     "value": "awd",
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheel_radius": {
+     "value": 0.19710399999999997,
+     "unit": "m",
+     "basis": "published"
+    },
+    "cla": {
+     "value": 2.6,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "cda": {
+     "value": 1.1,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "overall_ratio": {
+     "value": 12.4,
+     "unit": "-",
+     "basis": "published"
+    },
+    "redline": {
+     "value": 20000.0,
+     "unit": "rpm",
+     "basis": "published"
+    },
+    "motor_torque": {
+     "value": 79.00691303225805,
+     "unit": "N·m",
+     "basis": "assumed"
+    },
+    "skidpad_radius": {
+     "value": 8.4875,
+     "unit": "m",
+     "basis": "rule"
+    }
+   },
+   "warnings": []
+  },
+  {
+   "car": "85",
+   "team": "Formula Student Team Delft (Delft TU)",
+   "skidpad_s": 4.957,
+   "accel_s": 3.4838,
+   "physics_skidpad_s": 4.4512,
+   "physics_accel_s": 3.3595,
+   "compound": "R20",
+   "team_record": {
+    "skidpad": 0.993
+   },
+   "rejected": {},
+   "inputs": {
+    "mass": {
+     "value": 247.0,
+     "unit": "kg",
+     "basis": "published"
+    },
+    "weight_dist_front": {
+     "value": 0.4817813765182186,
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheelbase": {
+     "value": 1530.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_front": {
+     "value": 1250.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_rear": {
+     "value": 1250.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "cg_height": {
+     "value": 300.0,
+     "unit": "mm",
+     "basis": "assumed"
+    },
+    "power": {
+     "value": 80.0,
+     "unit": "kW",
+     "basis": "rule"
+    },
+    "drive": {
+     "value": "awd",
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheel_radius": {
+     "value": 0.19710399999999997,
+     "unit": "m",
+     "basis": "published"
+    },
+    "cla": {
+     "value": 2.6,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "cda": {
+     "value": 1.1,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "overall_ratio": {
+     "value": 11.832,
+     "unit": "-",
+     "basis": "published"
+    },
+    "redline": {
+     "value": 20500.0,
+     "unit": "rpm",
+     "basis": "published"
+    },
+    "motor_torque": {
+     "value": 89.69964489519944,
+     "unit": "N·m",
+     "basis": "assumed"
+    },
+    "skidpad_radius": {
+     "value": 8.5,
+     "unit": "m",
+     "basis": "rule"
+    }
+   },
+   "warnings": []
+  },
+  {
+   "car": "99",
+   "team": "Ecurie Aix (Aachen RWTH)",
+   "skidpad_s": 4.8862,
+   "accel_s": 3.4589,
+   "physics_skidpad_s": 4.4072,
+   "physics_accel_s": 3.3354,
+   "compound": "LC0",
+   "team_record": {
+    "skidpad": 0.978
+   },
+   "rejected": {},
+   "inputs": {
+    "mass": {
+     "value": 224.0,
+     "unit": "kg",
+     "basis": "published"
+    },
+    "weight_dist_front": {
+     "value": 0.5,
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheelbase": {
+     "value": 1530.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_front": {
+     "value": 1250.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_rear": {
+     "value": 1250.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "cg_height": {
+     "value": 300.0,
+     "unit": "mm",
+     "basis": "assumed"
+    },
+    "power": {
+     "value": 80.0,
+     "unit": "kW",
+     "basis": "rule"
+    },
+    "drive": {
+     "value": "awd",
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheel_radius": {
+     "value": 0.19710399999999997,
+     "unit": "m",
+     "basis": "published"
+    },
+    "cla": {
+     "value": 2.6,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "cda": {
+     "value": 1.1,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "overall_ratio": {
+     "value": 12.13,
+     "unit": "-",
+     "basis": "published"
+    },
+    "redline": {
+     "value": 20000.0,
+     "unit": "rpm",
+     "basis": "published"
+    },
+    "motor_torque": {
+     "value": 79.34857813685076,
+     "unit": "N·m",
+     "basis": "assumed"
+    },
+    "skidpad_radius": {
+     "value": 8.5,
+     "unit": "m",
+     "basis": "rule"
+    }
+   },
+   "warnings": []
+  },
+  {
+   "car": "63",
+   "team": "Revolve NTNU (Trondheim NTNU)",
+   "skidpad_s": 4.8822,
+   "accel_s": 3.5616,
+   "physics_skidpad_s": 4.419,
+   "physics_accel_s": 3.4345,
+   "compound": "R20",
+   "team_record": {
+    "skidpad": 0.9772
+   },
+   "rejected": {},
+   "inputs": {
+    "mass": {
+     "value": 229.0,
+     "unit": "kg",
+     "basis": "published"
+    },
+    "weight_dist_front": {
+     "value": 0.4978165938864629,
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheelbase": {
+     "value": 1530.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_front": {
+     "value": 1220.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_rear": {
+     "value": 1220.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "cg_height": {
+     "value": 300.0,
+     "unit": "mm",
+     "basis": "assumed"
+    },
+    "power": {
+     "value": 80.0,
+     "unit": "kW",
+     "basis": "rule"
+    },
+    "drive": {
+     "value": "awd",
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheel_radius": {
+     "value": 0.19710399999999997,
+     "unit": "m",
+     "basis": "published"
+    },
+    "cla": {
+     "value": 2.6,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "cda": {
+     "value": 1.1,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "overall_ratio": {
+     "value": 13.38,
+     "unit": "-",
+     "basis": "published"
+    },
+    "redline": {
+     "value": 20000.0,
+     "unit": "rpm",
+     "basis": "published"
+    },
+    "motor_torque": {
+     "value": 73.54129961136023,
+     "unit": "N·m",
+     "basis": "assumed"
+    },
+    "skidpad_radius": {
+     "value": 8.485,
+     "unit": "m",
+     "basis": "rule"
+    }
+   },
+   "warnings": []
+  },
+  {
+   "car": "75",
+   "team": "Global Formula Racing (Ravensburg DHBW)",
+   "skidpad_s": 5.2997,
+   "accel_s": 3.6015,
+   "physics_skidpad_s": 4.4954,
+   "physics_accel_s": 3.473,
+   "compound": "other",
+   "team_record": {
+    "skidpad": 0.959
+   },
+   "rejected": {},
+   "inputs": {
+    "mass": {
+     "value": 268.0,
+     "unit": "kg",
+     "basis": "published"
+    },
+    "weight_dist_front": {
+     "value": 0.4962686567164179,
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheelbase": {
+     "value": 1535.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_front": {
+     "value": 1230.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_rear": {
+     "value": 1230.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "cg_height": {
+     "value": 300.0,
+     "unit": "mm",
+     "basis": "assumed"
+    },
+    "power": {
+     "value": 80.0,
+     "unit": "kW",
+     "basis": "rule"
+    },
+    "drive": {
+     "value": "awd",
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheel_radius": {
+     "value": 0.2,
+     "unit": "m",
+     "basis": "assumed"
+    },
+    "cla": {
+     "value": 2.6,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "cda": {
+     "value": 1.1,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "overall_ratio": {
+     "value": 15.0,
+     "unit": "-",
+     "basis": "published"
+    },
+    "redline": {
+     "value": 22500.0,
+     "unit": "rpm",
+     "basis": "published"
+    },
+    "motor_torque": {
+     "value": 77.89866666666667,
+     "unit": "N·m",
+     "basis": "assumed"
+    },
+    "skidpad_radius": {
+     "value": 8.49,
+     "unit": "m",
+     "basis": "rule"
+    }
+   },
+   "warnings": []
+  },
+  {
+   "car": "131",
+   "team": "municHMotorsport (München UAS)",
+   "skidpad_s": 4.9656,
+   "accel_s": 3.5422,
+   "physics_skidpad_s": 4.4767,
+   "physics_accel_s": 3.4158,
+   "compound": "LC0",
+   "team_record": {
+    "skidpad": 0.9789
+   },
+   "rejected": {},
+   "inputs": {
+    "mass": {
+     "value": 258.0,
+     "unit": "kg",
+     "basis": "published"
+    },
+    "weight_dist_front": {
+     "value": 0.5,
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheelbase": {
+     "value": 1530.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_front": {
+     "value": 1240.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_rear": {
+     "value": 1240.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "cg_height": {
+     "value": 300.0,
+     "unit": "mm",
+     "basis": "assumed"
+    },
+    "power": {
+     "value": 80.0,
+     "unit": "kW",
+     "basis": "rule"
+    },
+    "drive": {
+     "value": "awd",
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheel_radius": {
+     "value": 0.2,
+     "unit": "m",
+     "basis": "assumed"
+    },
+    "cla": {
+     "value": 2.6,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "cda": {
+     "value": 1.1,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "skidpad_radius": {
+     "value": 8.495,
+     "unit": "m",
+     "basis": "rule"
+    }
+   },
+   "warnings": []
+  },
+  {
+   "car": "26",
+   "team": "Rennteam Uni Stuttgart (Stuttgart U)",
+   "skidpad_s": 5.0194,
+   "accel_s": 3.4827,
+   "physics_skidpad_s": 4.4561,
+   "physics_accel_s": 3.3584,
+   "compound": "R20",
+   "team_record": {
+    "skidpad": 1.0159
+   },
+   "rejected": {},
+   "inputs": {
+    "mass": {
+     "value": 247.0,
+     "unit": "kg",
+     "basis": "published"
+    },
+    "weight_dist_front": {
+     "value": 0.4898785425101215,
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheelbase": {
+     "value": 1540.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_front": {
+     "value": 1200.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_rear": {
+     "value": 1200.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "cg_height": {
+     "value": 300.0,
+     "unit": "mm",
+     "basis": "assumed"
+    },
+    "power": {
+     "value": 80.0,
+     "unit": "kW",
+     "basis": "rule"
+    },
+    "drive": {
+     "value": "awd",
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheel_radius": {
+     "value": 0.19710399999999997,
+     "unit": "m",
+     "basis": "published"
+    },
+    "cla": {
+     "value": 2.6,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "cda": {
+     "value": 1.1,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "overall_ratio": {
+     "value": 11.68,
+     "unit": "-",
+     "basis": "published"
+    },
+    "redline": {
+     "value": 21000.0,
+     "unit": "rpm",
+     "basis": "published"
+    },
+    "motor_torque": {
+     "value": 90.86696904109589,
+     "unit": "N·m",
+     "basis": "assumed"
+    },
+    "skidpad_radius": {
+     "value": 8.475,
+     "unit": "m",
+     "basis": "rule"
+    }
+   },
+   "warnings": []
+  },
+  {
+   "car": "76",
+   "team": "KA-RaceIng (Karlsruhe IT)",
+   "skidpad_s": 5.3971,
+   "accel_s": 3.4849,
+   "physics_skidpad_s": 4.4466,
+   "physics_accel_s": 3.3606,
+   "compound": "other",
+   "team_record": {
+    "skidpad": 1.017
+   },
+   "rejected": {},
+   "inputs": {
+    "mass": {
+     "value": 243.0,
+     "unit": "kg",
+     "basis": "published"
+    },
+    "weight_dist_front": {
+     "value": 0.4897119341563786,
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheelbase": {
+     "value": 1530.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_front": {
+     "value": 1220.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_rear": {
+     "value": 1220.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "cg_height": {
+     "value": 300.0,
+     "unit": "mm",
+     "basis": "assumed"
+    },
+    "power": {
+     "value": 80.0,
+     "unit": "kW",
+     "basis": "rule"
+    },
+    "drive": {
+     "value": "awd",
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheel_radius": {
+     "value": 0.2,
+     "unit": "m",
+     "basis": "assumed"
+    },
+    "cla": {
+     "value": 2.6,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "cda": {
+     "value": 1.1,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "overall_ratio": {
+     "value": 12.009,
+     "unit": "-",
+     "basis": "published"
+    },
+    "redline": {
+     "value": 20000.0,
+     "unit": "rpm",
+     "basis": "published"
+    },
+    "motor_torque": {
+     "value": 88.22383212590556,
+     "unit": "N·m",
+     "basis": "assumed"
+    },
+    "skidpad_radius": {
+     "value": 8.485,
+     "unit": "m",
+     "basis": "rule"
+    }
+   },
+   "warnings": []
+  },
+  {
+   "car": "54",
+   "team": "BCN eMotorsport (Barcelona ETSEIB)",
+   "skidpad_s": 5.0773,
+   "accel_s": 3.521,
+   "physics_skidpad_s": 4.5294,
+   "physics_accel_s": 3.3953,
+   "compound": "R20",
+   "team_record": {
+    "skidpad": 1.0062
+   },
+   "rejected": {},
+   "inputs": {
+    "mass": {
+     "value": 288.0,
+     "unit": "kg",
+     "basis": "published"
+    },
+    "weight_dist_front": {
+     "value": 0.5,
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheelbase": {
+     "value": 1530.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_front": {
+     "value": 1225.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_rear": {
+     "value": 1175.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "cg_height": {
+     "value": 300.0,
+     "unit": "mm",
+     "basis": "assumed"
+    },
+    "power": {
+     "value": 80.0,
+     "unit": "kW",
+     "basis": "rule"
+    },
+    "drive": {
+     "value": "awd",
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheel_radius": {
+     "value": 0.19710399999999997,
+     "unit": "m",
+     "basis": "published"
+    },
+    "cla": {
+     "value": 2.6,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "cda": {
+     "value": 1.1,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "overall_ratio": {
+     "value": 9.05,
+     "unit": "-",
+     "basis": "published"
+    },
+    "redline": {
+     "value": 20000.0,
+     "unit": "rpm",
+     "basis": "published"
+    },
+    "motor_torque": {
+     "value": 136.7400832707182,
+     "unit": "N·m",
+     "basis": "assumed"
+    },
+    "skidpad_radius": {
+     "value": 8.475,
+     "unit": "m",
+     "basis": "rule"
+    }
+   },
+   "warnings": []
+  },
+  {
+   "car": "78",
+   "team": "e-gnition Hamburg (Hamburg TU)",
+   "skidpad_s": 5.1215,
+   "accel_s": 3.5605,
+   "physics_skidpad_s": 4.4992,
+   "physics_accel_s": 3.4334,
+   "compound": "R20",
+   "team_record": {
+    "skidpad": 1.0372
+   },
+   "rejected": {},
+   "inputs": {
+    "mass": {
+     "value": 269.0,
+     "unit": "kg",
+     "basis": "published"
+    },
+    "weight_dist_front": {
+     "value": 0.5055762081784386,
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheelbase": {
+     "value": 1530.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_front": {
+     "value": 1230.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_rear": {
+     "value": 1230.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "cg_height": {
+     "value": 300.0,
+     "unit": "mm",
+     "basis": "assumed"
+    },
+    "power": {
+     "value": 80.0,
+     "unit": "kW",
+     "basis": "rule"
+    },
+    "drive": {
+     "value": "awd",
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheel_radius": {
+     "value": 0.19710399999999997,
+     "unit": "m",
+     "basis": "published"
+    },
+    "cla": {
+     "value": 2.6,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "cda": {
+     "value": 1.1,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "overall_ratio": {
+     "value": 11.8,
+     "unit": "-",
+     "basis": "published"
+    },
+    "redline": {
+     "value": 19000.0,
+     "unit": "rpm",
+     "basis": "published"
+    },
+    "motor_torque": {
+     "value": 97.95400650847456,
+     "unit": "N·m",
+     "basis": "assumed"
+    },
+    "skidpad_radius": {
+     "value": 8.49,
+     "unit": "m",
+     "basis": "rule"
+    }
+   },
+   "warnings": []
+  },
+  {
+   "car": "42",
+   "team": "EFORCE Prague Formula (Prague CTU)",
+   "skidpad_s": 5.0065,
+   "accel_s": 3.5124,
+   "physics_skidpad_s": 4.4803,
+   "physics_accel_s": 3.3871,
+   "compound": "R20",
+   "team_record": {
+    "skidpad": 0.9999
+   },
+   "rejected": {},
+   "inputs": {
+    "mass": {
+     "value": 258.0,
+     "unit": "kg",
+     "basis": "published"
+    },
+    "weight_dist_front": {
+     "value": 0.5038759689922481,
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheelbase": {
+     "value": 1530.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_front": {
+     "value": 1200.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_rear": {
+     "value": 1200.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "cg_height": {
+     "value": 300.0,
+     "unit": "mm",
+     "basis": "assumed"
+    },
+    "power": {
+     "value": 80.0,
+     "unit": "kW",
+     "basis": "rule"
+    },
+    "drive": {
+     "value": "awd",
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheel_radius": {
+     "value": 0.19710399999999997,
+     "unit": "m",
+     "basis": "published"
+    },
+    "cla": {
+     "value": 2.6,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "cda": {
+     "value": 1.1,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "overall_ratio": {
+     "value": 11.47,
+     "unit": "-",
+     "basis": "published"
+    },
+    "redline": {
+     "value": 20000.0,
+     "unit": "rpm",
+     "basis": "published"
+    },
+    "motor_torque": {
+     "value": 96.65141565823888,
+     "unit": "N·m",
+     "basis": "assumed"
+    },
+    "skidpad_radius": {
+     "value": 8.475,
+     "unit": "m",
+     "basis": "rule"
+    }
+   },
+   "warnings": []
+  },
+  {
+   "car": "40",
+   "team": "University Racing Eindhoven (Eindhoven TU)",
+   "skidpad_s": 5.0448,
+   "accel_s": 3.6942,
+   "physics_skidpad_s": 4.5139,
+   "physics_accel_s": 3.5624,
+   "compound": "R20",
+   "team_record": {
+    "skidpad": 1.0001
+   },
+   "rejected": {},
+   "inputs": {
+    "mass": {
+     "value": 280.0,
+     "unit": "kg",
+     "basis": "published"
+    },
+    "weight_dist_front": {
+     "value": 0.4785714285714286,
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheelbase": {
+     "value": 1535.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_front": {
+     "value": 1220.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_rear": {
+     "value": 1220.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "cg_height": {
+     "value": 300.0,
+     "unit": "mm",
+     "basis": "assumed"
+    },
+    "power": {
+     "value": 80.0,
+     "unit": "kW",
+     "basis": "rule"
+    },
+    "drive": {
+     "value": "awd",
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheel_radius": {
+     "value": 0.19710399999999997,
+     "unit": "m",
+     "basis": "published"
+    },
+    "cla": {
+     "value": 2.6,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "cda": {
+     "value": 1.1,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "overall_ratio": {
+     "value": 14.06,
+     "unit": "-",
+     "basis": "published"
+    },
+    "redline": {
+     "value": 20000.0,
+     "unit": "rpm",
+     "basis": "published"
+    },
+    "motor_torque": {
+     "value": 85.57061280227593,
+     "unit": "N·m",
+     "basis": "assumed"
+    },
+    "skidpad_radius": {
+     "value": 8.485,
+     "unit": "m",
+     "basis": "rule"
+    }
+   },
+   "warnings": []
+  },
+  {
+   "car": "313",
+   "team": "FaSTTUBe (Berlin TU)",
+   "skidpad_s": 5.14,
+   "accel_s": 4.3591,
+   "physics_skidpad_s": 4.451,
+   "physics_accel_s": 4.2035,
+   "compound": "R20",
+   "team_record": {
+    "skidpad": 1.0667
+   },
+   "rejected": {},
+   "inputs": {
+    "mass": {
+     "value": 247.0,
+     "unit": "kg",
+     "basis": "published"
+    },
+    "weight_dist_front": {
+     "value": 0.46153846153846156,
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheelbase": {
+     "value": 1575.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_front": {
+     "value": 1200.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_rear": {
+     "value": 1200.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "cg_height": {
+     "value": 300.0,
+     "unit": "mm",
+     "basis": "assumed"
+    },
+    "power": {
+     "value": 80.0,
+     "unit": "kW",
+     "basis": "rule"
+    },
+    "drive": {
+     "value": "rwd",
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheel_radius": {
+     "value": 0.2,
+     "unit": "m",
+     "basis": "assumed"
+    },
+    "cla": {
+     "value": 2.6,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "cda": {
+     "value": 1.1,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "overall_ratio": {
+     "value": 4.9,
+     "unit": "-",
+     "basis": "published"
+    },
+    "redline": {
+     "value": 8000.0,
+     "unit": "rpm",
+     "basis": "published"
+    },
+    "motor_torque": {
+     "value": 219.7795918367347,
+     "unit": "N·m",
+     "basis": "assumed"
+    },
+    "skidpad_radius": {
+     "value": 8.475,
+     "unit": "m",
+     "basis": "rule"
+    }
+   },
+   "warnings": []
+  },
+  {
+   "car": "92",
+   "team": "ARUS (Sevilla U)",
+   "skidpad_s": 5.2779,
+   "accel_s": 3.663,
+   "physics_skidpad_s": 4.6094,
+   "physics_accel_s": 3.5323,
+   "compound": "R20",
+   "team_record": {
+    "skidpad": 1.0492
+   },
+   "rejected": {},
+   "inputs": {
+    "mass": {
+     "value": 338.0,
+     "unit": "kg",
+     "basis": "published"
+    },
+    "weight_dist_front": {
+     "value": 0.47928994082840237,
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheelbase": {
+     "value": 1535.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_front": {
+     "value": 1220.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_rear": {
+     "value": 1220.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "cg_height": {
+     "value": 300.0,
+     "unit": "mm",
+     "basis": "assumed"
+    },
+    "power": {
+     "value": 80.0,
+     "unit": "kW",
+     "basis": "rule"
+    },
+    "drive": {
+     "value": "awd",
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheel_radius": {
+     "value": 0.221742,
+     "unit": "m",
+     "basis": "published"
+    },
+    "cla": {
+     "value": 2.6,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "cda": {
+     "value": 1.1,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "overall_ratio": {
+     "value": 12.48,
+     "unit": "-",
+     "basis": "published"
+    },
+    "redline": {
+     "value": 20000.0,
+     "unit": "rpm",
+     "basis": "published"
+    },
+    "motor_torque": {
+     "value": 130.9201725,
+     "unit": "N·m",
+     "basis": "assumed"
+    },
+    "skidpad_radius": {
+     "value": 8.485,
+     "unit": "m",
+     "basis": "rule"
+    }
+   },
+   "warnings": []
+  },
+  {
+   "car": "51",
+   "team": "UGent Racing (Ghent U)",
+   "skidpad_s": 5.4288,
+   "accel_s": 4.257,
+   "physics_skidpad_s": 4.4688,
+   "physics_accel_s": 4.1051,
+   "compound": "other",
+   "team_record": {
+    "skidpad": 1.0187
+   },
+   "rejected": {},
+   "inputs": {
+    "mass": {
+     "value": 255.0,
+     "unit": "kg",
+     "basis": "published"
+    },
+    "weight_dist_front": {
+     "value": 0.43137254901960786,
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheelbase": {
+     "value": 1535.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_front": {
+     "value": 1300.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_rear": {
+     "value": 1300.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "cg_height": {
+     "value": 300.0,
+     "unit": "mm",
+     "basis": "assumed"
+    },
+    "power": {
+     "value": 80.0,
+     "unit": "kW",
+     "basis": "rule"
+    },
+    "drive": {
+     "value": "rwd",
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheel_radius": {
+     "value": 0.19710399999999997,
+     "unit": "m",
+     "basis": "published"
+    },
+    "cla": {
+     "value": 2.6,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "cda": {
+     "value": 1.1,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "overall_ratio": {
+     "value": 4.08,
+     "unit": "-",
+     "basis": "published"
+    },
+    "redline": {
+     "value": 7000.0,
+     "unit": "rpm",
+     "basis": "published"
+    },
+    "motor_torque": {
+     "value": 268.5542,
+     "unit": "N·m",
+     "basis": "assumed"
+    },
+    "skidpad_radius": {
+     "value": 8.525,
+     "unit": "m",
+     "basis": "rule"
+    }
+   },
+   "warnings": []
+  },
+  {
+   "car": "279",
+   "team": "Rennschmiede Pforzheim (Pforzheim U)",
+   "skidpad_s": 5.8709,
+   "accel_s": 3.6553,
+   "physics_skidpad_s": 4.5352,
+   "physics_accel_s": 3.5249,
+   "compound": "other",
+   "team_record": {
+    "skidpad": 1.1512
+   },
+   "rejected": {},
+   "inputs": {
+    "mass": {
+     "value": 289.0,
+     "unit": "kg",
+     "basis": "published"
+    },
+    "weight_dist_front": {
+     "value": 0.49480968858131485,
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheelbase": {
+     "value": 1535.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_front": {
+     "value": 1200.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_rear": {
+     "value": 1200.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "cg_height": {
+     "value": 300.0,
+     "unit": "mm",
+     "basis": "assumed"
+    },
+    "power": {
+     "value": 80.0,
+     "unit": "kW",
+     "basis": "rule"
+    },
+    "drive": {
+     "value": "awd",
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheel_radius": {
+     "value": 0.19710399999999997,
+     "unit": "m",
+     "basis": "published"
+    },
+    "cla": {
+     "value": 2.6,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "cda": {
+     "value": 1.1,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "overall_ratio": {
+     "value": 13.4,
+     "unit": "-",
+     "basis": "published"
+    },
+    "redline": {
+     "value": 20000.0,
+     "unit": "rpm",
+     "basis": "published"
+    },
+    "motor_torque": {
+     "value": 92.67124035820895,
+     "unit": "N·m",
+     "basis": "assumed"
+    },
+    "skidpad_radius": {
+     "value": 8.475,
+     "unit": "m",
+     "basis": "rule"
+    }
+   },
+   "warnings": []
+  },
+  {
+   "car": "13",
+   "team": "Valais Wallis Racing Team (Sion HES)",
+   "skidpad_s": 5.5128,
+   "accel_s": 4.6091,
+   "physics_skidpad_s": 4.5394,
+   "physics_accel_s": 4.4446,
+   "compound": "R20",
+   "team_record": {
+    "skidpad": 1.1734
+   },
+   "rejected": {},
+   "inputs": {
+    "mass": {
+     "value": 298.0,
+     "unit": "kg",
+     "basis": "published"
+    },
+    "weight_dist_front": {
+     "value": 0.5,
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheelbase": {
+     "value": 1575.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_front": {
+     "value": 1475.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_rear": {
+     "value": 1475.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "cg_height": {
+     "value": 300.0,
+     "unit": "mm",
+     "basis": "assumed"
+    },
+    "power": {
+     "value": 70.0,
+     "unit": "kW",
+     "basis": "rule"
+    },
+    "drive": {
+     "value": "rwd",
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheel_radius": {
+     "value": 0.24638,
+     "unit": "m",
+     "basis": "published"
+    },
+    "cla": {
+     "value": 2.6,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "cda": {
+     "value": 1.1,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "overall_ratio": {
+     "value": 16.04,
+     "unit": "-",
+     "basis": "published"
+    },
+    "redline": {
+     "value": 20000.0,
+     "unit": "rpm",
+     "basis": "published"
+    },
+    "motor_torque": {
+     "value": 99.78697206982545,
+     "unit": "N·m",
+     "basis": "assumed"
+    },
+    "skidpad_radius": {
+     "value": 8.6125,
+     "unit": "m",
+     "basis": "rule"
+    }
+   },
+   "warnings": []
+  },
+  {
+   "car": "34",
+   "team": "Schanzer Racing Electric (Ingolstadt UAS)",
+   "skidpad_s": 5.434,
+   "accel_s": 3.7566,
+   "physics_skidpad_s": 4.5149,
+   "physics_accel_s": 3.6225,
+   "compound": "other",
+   "team_record": {},
+   "rejected": {},
+   "inputs": {
+    "mass": {
+     "value": 281.0,
+     "unit": "kg",
+     "basis": "published"
+    },
+    "weight_dist_front": {
+     "value": 0.47686832740213525,
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheelbase": {
+     "value": 1600.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_front": {
+     "value": 1200.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_rear": {
+     "value": 1164.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "cg_height": {
+     "value": 300.0,
+     "unit": "mm",
+     "basis": "assumed"
+    },
+    "power": {
+     "value": 80.0,
+     "unit": "kW",
+     "basis": "rule"
+    },
+    "drive": {
+     "value": "awd",
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheel_radius": {
+     "value": 0.25118440999999997,
+     "unit": "m",
+     "basis": "published"
+    },
+    "cla": {
+     "value": 2.6,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "cda": {
+     "value": 1.1,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "overall_ratio": {
+     "value": 18.7,
+     "unit": "-",
+     "basis": "published"
+    },
+    "redline": {
+     "value": 20000.0,
+     "unit": "rpm",
+     "basis": "published"
+    },
+    "motor_torque": {
+     "value": 82.28371437315508,
+     "unit": "N·m",
+     "basis": "assumed"
+    },
+    "skidpad_radius": {
+     "value": 8.466,
+     "unit": "m",
+     "basis": "rule"
+    }
+   },
+   "warnings": []
+  },
+  {
+   "car": "101",
+   "team": "HorsePower Hannover (Hannover U)",
+   "skidpad_s": 5.3709,
+   "accel_s": 3.5784,
+   "physics_skidpad_s": 4.5389,
+   "physics_accel_s": 3.4507,
+   "compound": "other",
+   "team_record": {
+    "skidpad": 0.9663
+   },
+   "rejected": {},
+   "inputs": {
+    "mass": {
+     "value": 287.0,
+     "unit": "kg",
+     "basis": "published"
+    },
+    "weight_dist_front": {
+     "value": 0.40069686411149824,
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheelbase": {
+     "value": 1540.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_front": {
+     "value": 1230.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_rear": {
+     "value": 1230.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "cg_height": {
+     "value": 300.0,
+     "unit": "mm",
+     "basis": "assumed"
+    },
+    "power": {
+     "value": 80.0,
+     "unit": "kW",
+     "basis": "rule"
+    },
+    "drive": {
+     "value": "awd",
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheel_radius": {
+     "value": 0.19710399999999997,
+     "unit": "m",
+     "basis": "published"
+    },
+    "cla": {
+     "value": 2.6,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "cda": {
+     "value": 1.1,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "overall_ratio": {
+     "value": 11.67,
+     "unit": "-",
+     "basis": "published"
+    },
+    "redline": {
+     "value": 20000.0,
+     "unit": "rpm",
+     "basis": "published"
+    },
+    "motor_torque": {
+     "value": 105.67274090831191,
+     "unit": "N·m",
+     "basis": "assumed"
+    },
+    "skidpad_radius": {
+     "value": 8.49,
+     "unit": "m",
+     "basis": "rule"
+    }
+   },
+   "warnings": []
+  },
+  {
+   "car": "227",
+   "team": "Bern Racing Team (Bern UAS)",
+   "skidpad_s": 5.0135,
+   "accel_s": 3.6051,
+   "physics_skidpad_s": 4.5505,
+   "physics_accel_s": 3.4764,
+   "compound": "R20",
+   "team_record": {
+    "skidpad": 0.9717
+   },
+   "rejected": {},
+   "inputs": {
+    "mass": {
+     "value": 300.0,
+     "unit": "kg",
+     "basis": "published"
+    },
+    "weight_dist_front": {
+     "value": 0.48333333333333334,
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheelbase": {
+     "value": 1528.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_front": {
+     "value": 1208.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_rear": {
+     "value": 1208.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "cg_height": {
+     "value": 300.0,
+     "unit": "mm",
+     "basis": "assumed"
+    },
+    "power": {
+     "value": 80.0,
+     "unit": "kW",
+     "basis": "rule"
+    },
+    "drive": {
+     "value": "awd",
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheel_radius": {
+     "value": 0.19710399999999997,
+     "unit": "m",
+     "basis": "published"
+    },
+    "cla": {
+     "value": 2.6,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "cda": {
+     "value": 1.1,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "overall_ratio": {
+     "value": 11.84,
+     "unit": "-",
+     "basis": "published"
+    },
+    "redline": {
+     "value": 20000.0,
+     "unit": "rpm",
+     "basis": "published"
+    },
+    "motor_torque": {
+     "value": 108.87332432432432,
+     "unit": "N·m",
+     "basis": "assumed"
+    },
+    "skidpad_radius": {
+     "value": 8.479,
+     "unit": "m",
+     "basis": "rule"
+    }
+   },
+   "warnings": []
+  },
+  {
+   "car": "172",
+   "team": "GET racing Dortmund (Dortmund TU)",
+   "skidpad_s": 5.3928,
+   "accel_s": 4.514,
+   "physics_skidpad_s": 4.5024,
+   "physics_accel_s": 4.3529,
+   "compound": "other",
+   "team_record": {
+    "skidpad": 0.9903
+   },
+   "rejected": {
+    "wheelbase_mm": 155.0,
+    "track_f_mm": 124.0
+   },
+   "inputs": {
+    "mass": {
+     "value": 274.0,
+     "unit": "kg",
+     "basis": "published"
+    },
+    "weight_dist_front": {
+     "value": 0.44525547445255476,
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheelbase": {
+     "value": 1550.0,
+     "unit": "mm",
+     "basis": "assumed"
+    },
+    "track_front": {
+     "value": 1200.0,
+     "unit": "mm",
+     "basis": "assumed"
+    },
+    "track_rear": {
+     "value": 1205.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "cg_height": {
+     "value": 300.0,
+     "unit": "mm",
+     "basis": "assumed"
+    },
+    "power": {
+     "value": 80.0,
+     "unit": "kW",
+     "basis": "rule"
+    },
+    "drive": {
+     "value": "rwd",
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheel_radius": {
+     "value": 0.19710399999999997,
+     "unit": "m",
+     "basis": "published"
+    },
+    "cla": {
+     "value": 2.6,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "cda": {
+     "value": 1.1,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "overall_ratio": {
+     "value": 5.0,
+     "unit": "-",
+     "basis": "published"
+    },
+    "redline": {
+     "value": 6500.0,
+     "unit": "rpm",
+     "basis": "published"
+    },
+    "motor_torque": {
+     "value": 235.46832255999996,
+     "unit": "N·m",
+     "basis": "assumed"
+    },
+    "skidpad_radius": {
+     "value": 8.4763,
+     "unit": "m",
+     "basis": "rule"
+    }
+   },
+   "warnings": []
+  }
+ ],
+ "record_sha256": "80d9fec5c653c72cc340e56c1ea1064e0e6b99e165b1499877aca94023f46ba4"
+}

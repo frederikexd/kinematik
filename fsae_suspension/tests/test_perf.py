@@ -75,19 +75,28 @@ def test_ranks_the_expensive_tab_first():
 
 def test_nested_blocks_report_self_time_not_inclusive():
     """Inclusive time makes an outer tab look like the culprit when the cost
-    is really in something nested inside it."""
-    ss = {}
-    perf.set_enabled(ss, True)
-    perf.begin_run(ss)
-    outer = perf.enter(ss, "integration", active=True)
-    _busy(2)
-    inner = perf.enter(ss, "brakes", active=False)
-    _busy(20)
-    perf.exit(ss, inner)
-    perf.exit(ss, outer)
-    perf.end_run(ss)
-    by = {r["feature"]: r["median_ms"] for r in perf.summary(ss)["rows"]}
-    assert by["brakes"] > by["integration"] * 3, by
+    is really in something nested inside it.
+
+    Inclusive timing would put the outer tab above the inner one (it contains all 20 ms); self time puts it far
+    below. The check is that ordering, with a 1.5x margin, best of 3: on a busy CI runner a 2 ms spin once took
+    14 ms, which broke the old 3x ratio without anything being wrong."""
+    seen = []
+    for _attempt in range(3):
+        ss = {}
+        perf.set_enabled(ss, True)
+        perf.begin_run(ss)
+        outer = perf.enter(ss, "integration", active=True)
+        _busy(2)
+        inner = perf.enter(ss, "brakes", active=False)
+        _busy(20)
+        perf.exit(ss, inner)
+        perf.exit(ss, outer)
+        perf.end_run(ss)
+        by = {r["feature"]: r["median_ms"] for r in perf.summary(ss)["rows"]}
+        seen.append(by)
+        if by["brakes"] > by["integration"] * 1.5:
+            return
+    raise AssertionError(f"outer tab never below its nested block in 3 tries: {seen}")
 
 
 def test_multiple_blocks_for_one_feature_sum():

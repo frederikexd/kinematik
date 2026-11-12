@@ -1,0 +1,65 @@
+{
+ "team": "Example team (replace)",
+ "car": "Example car (replace)",
+ "test": "Test day YYYY-MM-DD, location (replace)",
+ "base": {
+  "mass": 270,
+  "cg_height": 290,
+  "wheelbase": 1530,
+  "track_front": 1220,
+  "track_rear": 1200,
+  "weight_dist_front": 0.47,
+  "roll_stiffness_front": 350,
+  "roll_stiffness_rear": 300,
+  "power_kw": 80,
+  "drive": "awd",
+  "cla": 2.6,
+  "cda": 1.1,
+  "wheel_radius_m": 0.2,
+  "overall_ratio": 12.4,
+  "redline_rpm": 20000,
+  "skidpad_radius_m": 9.125,
+  "accel_distance_m": 75
+ },
+ "setups": {
+  "A baseline": {},
+  "B ballast +15 kg": {
+   "mass": 285
+  },
+  "C stiffer front ARB": {
+   "roll_stiffness_front": 500
+  },
+  "D front camber shim (static -1.75 deg)": {
+   "kinematics": {
+    "front": {
+     "static_camber": -1.75
+    }
+   }
+  }
+ },
+ "noise": {
+  "skidpad_s": 0.02,
+  "accel_s": 0.02,
+  "max_lat_g": 0.01,
+  "camber": 0.05,
+  "toe": 0.03
+ },
+ "course_csv": "course.csv",
+ "course_name": "Example test course",
+ "kinematics": {
+  "front": {
+   "hardpoints_json": "front_hardpoints.json",
+   "travel_mm": [
+    -25,
+    -10,
+    0,
+    10,
+    25
+   ]
+  }
+ },
+ "tolerance": {
+  "camber": 0.3,
+  "toe": 0.1
+ }
+}

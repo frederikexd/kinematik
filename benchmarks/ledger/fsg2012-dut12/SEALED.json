@@ -1,0 +1,133 @@
+{
+ "ledger": "KinematiK prediction ledger",
+ "protocol_version": "1",
+ "protocol": {
+  "mass": "published: front + rear weight with a 68 kg driver (FSG car data)",
+  "weight_dist_front": "published: front weight / total",
+  "wheelbase, tracks": "published",
+  "cg_height": "assumed: KinematiK default (VehicleParams.cg_height), never per car",
+  "tyre grip": "assumed: KinematiK default_tire(), never per car",
+  "aero (ClA, CdA)": "assumed: KinematiK Powertrain defaults, never per car",
+  "power": "rule: min(motors x published power per motor, FS accumulator power limit for the year)",
+  "drive": "published: 4 motors = all-wheel drive, fewer = rear-wheel drive",
+  "overall ratio": "published: the primary ratio; primary x secondary only when the primary is below 5; when front and rear ratios differ, the rear one",
+  "redline": "published max motor rpm",
+  "wheel radius": "published tyre diameter / 2 x 0.97 (loaded)",
+  "motor torque": "assumed: enough for 2.0 g at the wheels (grip-limited launch)",
+  "skidpad": "KinematiK laptime.skidpad_time, radius 9.125 m",
+  "acceleration": "KinematiK laptime.acceleration_time over 75.0 m from rest",
+  "scoring exclusions": "skidpad: left/right laps more than 10% apart, or any penalty in the best time; listed but left out of the summary"
+ },
+ "event": "FSG 2012 FSE (TU Delft DUT12)",
+ "kind": "hindcast",
+ "note": "Paper case: Doyle, Cunningham, White & Early (2019), Lap Time Simulation Tool for the Development of an Electric Formula Student Car, SAE 2019-01-0163, report 3.454 s official vs 3.494 s from their simulator (+1.17 %).",
+ "sealed_utc": "2026-11-07T08:53:44Z",
+ "code_sha256": {
+  "ledger.py": "db0403f0896e11a21d68c11b60e4c24a1e8535e3f9a7ee90ae65dc08371fe565",
+  "laptime.py": "114e31522d3687909ae9bcd4bffa4a2d1559bf2149b09da2f380d689a32bcc48",
+  "dynamics.py": "feaae87a922f50c38b40246e4fef511b19109062c8c7db4948c04e7609440aa2",
+  "tiremodel.py": "91077d8bcaea0a122cbfeb0a7246d8f33489de051b6310a755e4c93a5b6d4aff"
+ },
+ "specs": [
+  {
+   "event": "FSG 2012 (FSE)",
+   "car": "E1",
+   "team": "Formula Student Team Delft DUT12 (Delft TU)",
+   "year": 2012,
+   "source_url": "https://www.formulastudent.de/teams/fsc/details/tid/285",
+   "wheelbase_mm": 1530.0,
+   "track_f_mm": 1200.0,
+   "track_r_mm": 1200.0,
+   "weight_f_kg": 105.0,
+   "weight_r_kg": 108.0,
+   "tyres": "18x6 R10 Hoosier LC0",
+   "n_motors": 4,
+   "power_per_motor_kw": 28.0,
+   "max_rpm": 20000.0,
+   "ratio_primary": 13.0,
+   "ratio_secondary": null
+  }
+ ],
+ "predictions": [
+  {
+   "car": "E1",
+   "team": "Formula Student Team Delft DUT12 (Delft TU)",
+   "skidpad_s": 4.529,
+   "accel_s": 3.2671,
+   "inputs": {
+    "mass": {
+     "value": 213.0,
+     "unit": "kg",
+     "basis": "published"
+    },
+    "weight_dist_front": {
+     "value": 0.49295774647887325,
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheelbase": {
+     "value": 1530.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_front": {
+     "value": 1200.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "track_rear": {
+     "value": 1200.0,
+     "unit": "mm",
+     "basis": "published"
+    },
+    "cg_height": {
+     "value": 300.0,
+     "unit": "mm",
+     "basis": "assumed"
+    },
+    "power": {
+     "value": 85.0,
+     "unit": "kW",
+     "basis": "rule"
+    },
+    "drive": {
+     "value": "awd",
+     "unit": "-",
+     "basis": "published"
+    },
+    "wheel_radius": {
+     "value": 0.221742,
+     "unit": "m",
+     "basis": "published"
+    },
+    "cla": {
+     "value": 2.6,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "cda": {
+     "value": 1.1,
+     "unit": "m^2",
+     "basis": "assumed"
+    },
+    "overall_ratio": {
+     "value": 13.0,
+     "unit": "-",
+     "basis": "published"
+    },
+    "redline": {
+     "value": 20000.0,
+     "unit": "rpm",
+     "basis": "published"
+    },
+    "motor_torque": {
+     "value": 79.20283098461539,
+     "unit": "N·m",
+     "basis": "assumed"
+    }
+   },
+   "warnings": []
+  }
+ ],
+ "record_sha256": "29ce01a720b02366e6e28ab1c213ae5da5befe49e4a853d8c69778689a936f20"
+}
