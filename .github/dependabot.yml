@@ -9,17 +9,22 @@ updates:
     groups:
       actions:
         patterns: ['*']
+  # requirements.txt states minimum versions (>=), so the app already installs the newest release. Raising a
+  # minimum adds nothing, so Dependabot only steps in when a release falls outside the stated range, and then in
+  # one grouped pull request. Security fixes still arrive through Dependabot security updates.
   - package-ecosystem: pip
-    directory: /
+    directories: ['/', '/fsae_suspension']
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
-  - package-ecosystem: pip
-    directory: /fsae_suspension
-    schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
+    versioning-strategy: increase-if-necessary
+    groups:
+      python:
+        patterns: ['*']
+  # The Python version in the image moves only when it is chosen on purpose (scientific wheels lag new releases).
   - package-ecosystem: docker
     directory: /
     schedule:
       interval: monthly
+    ignore:
+      - dependency-name: python
+        update-types: ['version-update:semver-major', 'version-update:semver-minor']
