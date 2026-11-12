@@ -1757,3 +1757,30 @@ class TestViewerShowsWhatTheFileGets(unittest.TestCase):
         for i, p in enumerate(boxes):
             for q in boxes[i + 1:]:
                 self.assertTrue(p[2] < q[0] or p[0] > q[2] or p[3] < q[1] or p[1] > q[3], (p, q))
+
+
+class TestCopperShort(unittest.TestCase):
+    """Tracks of two nets whose copper overlaps on one layer are a short, reported as a FAIL."""
+
+    _BOARD = """(kicad_pcb (version 20240108) (generator "t")
+  (layers (0 "F.Cu" signal) (31 "B.Cu" signal))
+  (net 0 "") (net 1 "GND") (net 2 "PWR_12V")
+  (segment (start 0 0) (end 50 0) (width 2.0) (layer "F.Cu") (net 2))
+  (segment (start 0 {y}) (end 50 {y}) (width 2.0) (layer "F.Cu") (net 1))
+  (segment (start 0 1.0) (end 50 1.0) (width 2.0) (layer "B.Cu") (net 1))
+)
+"""
+
+    def _shorts(self, y):
+        from suspension import pcb_doctor as pdr
+        b = pdr.parse_kicad_pcb(self._BOARD.format(y=y))
+        r = pdr.diagnose(b, pdr.auto_assign_net_currents(b))
+        return [f for f in r.findings if f.check.startswith("copper short")]
+
+    def test_overlapping_tracks_of_two_nets_are_a_short(self):
+        (f,) = self._shorts(1.5)                       # 2 mm tracks 1.5 mm apart overlap by 0.5 mm
+        self.assertEqual(f.severity, Severity.FAIL)
+        self.assertIn("'GND' and 'PWR_12V' copper overlaps by 0.50 mm on F.Cu", f.message)
+
+    def test_tracks_that_only_come_close_or_sit_on_another_layer_are_not_a_short(self):
+        self.assertEqual(self._shorts(2.5), [])        # 0.5 mm apart: clearance is the layout tool's DRC
