@@ -1,0 +1,3974 @@
+{
+ "what": "Plan addendum 14: the in-app pour estimate (pour_net_resistance, 150,000-cell limit) on fresh pour nets, shuffled with random.Random(20261114), KinematiK frozen at 0e62a49 (pour code; later commits do not touch it). Reference: corrected 2-D solve with KiCad filled zones, KiCad 7 or (for KiCad 8 files) KiCad 9.0.3, at the app cell size and twice it, refined once more if they differ by more than 2 %.",
+ "stopping_rule": "first 80 nets with a converged app value and a converged reference",
+ "nets": [
+  {
+   "board": "sufst_pcb/archive/sensor-board/sensor-board.kicad_pcb",
+   "net": "/STR_C5",
+   "app_s": 0.6,
+   "pair": [
+    "J1.2",
+    "R16.1"
+   ],
+   "app_ohm": 0.006182573168030773,
+   "app_h_mm": 0.016666666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.08824709254098137,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.03333333333333333,
+     0.006186887447772417
+    ],
+    [
+     0.016666666666666666,
+     0.006181888369508053
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.006181888369508053,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.011077497388956026
+  },
+  {
+   "board": "sufst_pcb/archive/sensor-board/sensor-board.kicad_pcb",
+   "net": "Net-(J3-Pin_1)",
+   "app_s": 0.3,
+   "pair": [
+    "J3.1",
+    "F1.1"
+   ],
+   "app_ohm": 0.0017304700336346355,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 1.2397909425749218,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.001706983443760127
+    ],
+    [
+     0.020833333333333332,
+     0.0017277985453443613
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0017277985453443613,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.1546180425647803
+  },
+  {
+   "board": "sufst_pcb/archive/sensor-board/sensor-board.kicad_pcb",
+   "net": "/STR_B7",
+   "app_s": 0.5,
+   "pair": [
+    "J1.9",
+    "R22.1"
+   ],
+   "app_ohm": 0.009515202722827397,
+   "app_h_mm": 0.016666666666666666,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "s": 1,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.03333333333333333,
+     0.009533868167505951
+    ],
+    [
+     0.016666666666666666,
+     0.009515470271600397
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.009515470271600397,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.0028117241225311673
+  },
+  {
+   "board": "sufst_pcb/ail/ail.kicad_pcb",
+   "net": "Net-(R12-Pad1)",
+   "app_s": 0.5,
+   "pair": [
+    "R13.1",
+    "R12.1"
+   ],
+   "app_ohm": 0.00028082513378091816,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": false,
+   "app_grid_change_pct": 4.931362062003402,
+   "s": 1,
+   "ref_s": 3,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.00026487015662876644
+    ],
+    [
+     0.010416666666666666,
+     0.0002792628430909606
+    ],
+    [
+     0.005208333333333333,
+     0.00027728085332690206
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.00027728085332690206,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 1.278227620656347
+  },
+  {
+   "board": "sufst_pcb/bspd/BSPD.kicad_pcb",
+   "net": "Net-(D5-A)",
+   "app_s": 0.7,
+   "pair": [
+    "R12.2",
+    "D5.2"
+   ],
+   "app_ohm": 0.010947224708223333,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 0.1102047283821842,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.010932568075860743
+    ],
+    [
+     0.008333333333333333,
+     0.010945379862947186
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.010945379862947186,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.01685501370667364
+  },
+  {
+   "board": "sufst_pcb/right-sidepanel/right-sidepanel.kicad_pcb",
+   "net": "/LVMP_V+",
+   "app_s": 0.4,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/8Ch-Sensor-Hub.kicad_pcb",
+   "net": "/ADC_L_8",
+   "app_s": 1.1,
+   "pair": [
+    "U2.20",
+    "R18.1"
+   ],
+   "app_ohm": 0.05440600918891421,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 0.06336076017148859,
+   "s": 1,
+   "ref_s": 2,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.05443674285987134
+    ],
+    [
+     0.008333333333333333,
+     0.05440292295171007
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.05440292295171007,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.00567292534423558
+  },
+  {
+   "board": "UCDFS_Circuits/BSPD_KR/BSPD KiCAD.kicad_pcb",
+   "net": "GLV-",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/8Ch-Sensor-Hub.kicad_pcb",
+   "net": "/3V3_FUSED_L",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/can-repeater/can-repeater.kicad_pcb",
+   "net": "SYS_JTCK-SW",
+   "app_s": 1.1,
+   "pair": [
+    "U4.49",
+    "J2.4"
+   ],
+   "app_ohm": 0.05259184560300419,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 0.10053447011629874,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.05263881610540607
+    ],
+    [
+     0.008333333333333333,
+     0.052590222690836276
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.052590222690836276,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.0030859579687625427
+  },
+  {
+   "board": "sufst_pcb/archive/sensor-board/sensor-board.kicad_pcb",
+   "net": "/STR_B5",
+   "app_s": 0.4,
+   "pair": [
+    "J1.3",
+    "U12.3"
+   ],
+   "app_ohm": 0.017334930076522807,
+   "app_h_mm": 0.016666666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.04556200842139851,
+   "s": 0,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.03333333333333333,
+     0.017340770522258225
+    ],
+    [
+     0.016666666666666666,
+     0.01733439529550674
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.01733439529550674,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.003085086078580268
+  },
+  {
+   "board": "sufst_pcb/archive/sensor-board/sensor-board.kicad_pcb",
+   "net": "/Strain Gauge Amplifier 6/RG2",
+   "app_s": 0.2,
+   "pair": [
+    "R17.1",
+    "U13.8"
+   ],
+   "app_ohm": 0.0028539979880743927,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 0.4705831446576204,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.0028404977864601145
+    ],
+    [
+     0.008333333333333333,
+     0.002854524345888493
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.002854524345888493,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.018439422836180608
+  },
+  {
+   "board": "LSUTigerRacing_Electronics/BSPD-2026-relayout/SPICE/BPSD-2025.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/archive/sensor-board/sensor-board.kicad_pcb",
+   "net": "/Strain Gauge Amplifier 9/RG1",
+   "app_s": 0.2,
+   "pair": [
+    "U16.1",
+    "R29.2"
+   ],
+   "app_ohm": 0.0028619863094430857,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 0.6331975852990077,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.002844925373887895
+    ],
+    [
+     0.008333333333333333,
+     0.0028619141909576496
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0028619141909576496,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.002519938776091024
+  },
+  {
+   "board": "sufst_pcb/right-sidepanel/right-sidepanel.kicad_pcb",
+   "net": "Net-(D4-A)",
+   "app_s": 0.5,
+   "pair": [
+    "R3.1",
+    "D4.2"
+   ],
+   "app_ohm": 0.009940447696440693,
+   "app_h_mm": 0.03333333333333333,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.06666666666666667,
+     0.009934180764168387
+    ],
+    [
+     0.03333333333333333,
+     0.009939368745226431
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.009939368745226431,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.010855329366665778
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/8Ch-Sensor-Hub.kicad_pcb",
+   "net": "/ClampedDivider8/IN",
+   "app_s": 0.9,
+   "pair": [
+    "JP7.1",
+    "U7.3"
+   ],
+   "app_ohm": 0.002473246771550226,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 1.1866205574280742,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.002450141681530181
+    ],
+    [
+     0.010416666666666666,
+     0.0024792260601715567
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0024792260601715567,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.24117561191321357
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/8Ch-Sensor-Hub.kicad_pcb",
+   "net": "Net-(D2-A+)",
+   "app_s": 0.1,
+   "pair": [
+    "R7.1",
+    "D2.2"
+   ],
+   "app_ohm": 0.0056352500395843875,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.045382927678267126,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.005629527921952516
+    ],
+    [
+     0.020833333333333332,
+     0.005633865744058604
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.005633865744058604,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.02457097113546247
+  },
+  {
+   "board": "sufst_pcb/archive/sensor-board/sensor-board.kicad_pcb",
+   "net": "/Strain Gauge Amplifier 3/BRIDGE-",
+   "app_s": 0.1,
+   "pair": [
+    "U10.2",
+    "R8.2"
+   ],
+   "app_ohm": 0.010540938700997546,
+   "app_h_mm": 0.016666666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.12227397082159443,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.03333333333333333,
+     0.010526860559443303
+    ],
+    [
+     0.016666666666666666,
+     0.010539615159222731
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.010539615159222731,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.012557780856514711
+  },
+  {
+   "board": "sufst_pcb/brake-light/brake-light.kicad_pcb",
+   "net": "Net-(D19-K)",
+   "app_s": 0.7,
+   "pair": [
+    "D19.1@183.02,59.61",
+    "D20.2"
+   ],
+   "app_ohm": 0.000993220620921274,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.14174092013025824,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.0009946061834267038
+    ],
+    [
+     0.020833333333333332,
+     0.0009932218373777278
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0009932218373777278,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.0001224758063078646
+  },
+  {
+   "board": "sufst_pcb/bspd/BSPD.kicad_pcb",
+   "net": "/BSPD_SDC",
+   "app_s": 4.0,
+   "pair": [
+    "U3.10",
+    "J2.5"
+   ],
+   "app_ohm": 0.11622629301697746,
+   "app_h_mm": 0.016666666666666666,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "s": 4,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.03333333333333333,
+     0.11715275490922342
+    ],
+    [
+     0.016666666666666666,
+     0.11622539798537505
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.11622539798537505,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.000770082630752178
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/8Ch-Sensor-Hub.kicad_pcb",
+   "net": "+GLV_PROT",
+   "app_s": 0.4,
+   "pair": [
+    "U7.5",
+    "U3.8"
+   ],
+   "app_ohm": 0.04850055046839344,
+   "app_h_mm": 0.041666666666666664,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.08333333333333333,
+     0.04828745853400771
+    ],
+    [
+     0.041666666666666664,
+     0.048499439606611114
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.048499439606611114,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.0022904631297393507
+  },
+  {
+   "board": "sufst_pcb/archive/debug-board/debug-board.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/16Ch-Sensor-Hub.kicad_pcb",
+   "net": "Net-(JP8-B)",
+   "app_s": 0.6,
+   "pair": [
+    "U8.1",
+    "JP8.2"
+   ],
+   "app_ohm": 0.003005054921714462,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.46833759510682715,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.002993157586570101
+    ],
+    [
+     0.010416666666666666,
+     0.003013307483098402
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.003013307483098402,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.2738705369507821
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/16Ch-Sensor-Hub.kicad_pcb",
+   "net": "/ClampedDivider12/IN",
+   "app_s": 1.1,
+   "pair": [
+    "JP19.1",
+    "U19.3"
+   ],
+   "app_ohm": 0.027739545948232403,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.1753514794886669,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.02779175415674766
+    ],
+    [
+     0.010416666666666666,
+     0.027744885142480247
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.027744885142480247,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.01924388664946708
+  },
+  {
+   "board": "sufst_pcb/dash/Dash-PCB.kicad_pcb",
+   "net": "Net-(IC2-SW_1)",
+   "app_s": 0.1,
+   "pair": [
+    "L1.1",
+    "IC2.3"
+   ],
+   "app_ohm": 0.0005163151133686837,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 1.565125367751294,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.0005045514484671079
+    ],
+    [
+     0.020833333333333332,
+     0.0005135257944749714
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0005135257944749714,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.5431701627693464
+  },
+  {
+   "board": "LSUTigerRacing_Electronics/BSPD/BSPD-revamp/BSPD-2025-relayout/SPICE/BPSD-2025.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/archive/sensor-board/sensor-board.kicad_pcb",
+   "net": "/STR_B10",
+   "app_s": 0.4,
+   "pair": [
+    "J2.5",
+    "U17.3"
+   ],
+   "app_ohm": 0.015534219792331758,
+   "app_h_mm": 0.016666666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.1501713164331367,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.03333333333333333,
+     0.015508214042987616
+    ],
+    [
+     0.016666666666666666,
+     0.015534402818895334
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.015534402818895334,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.0011782014777805827
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/16Ch-Sensor-Hub.kicad_pcb",
+   "net": "/ADC_L_6",
+   "app_s": 1.8,
+   "pair": [
+    "U2.21",
+    "R30.1"
+   ],
+   "app_ohm": 0.0436204147411608,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 0.519752657312616,
+   "s": 2,
+   "ref_s": 2,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.04384478701474827
+    ],
+    [
+     0.008333333333333333,
+     0.043618286987884856
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.043618286987884856,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.004878122051277245
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/16Ch-Sensor-Hub.kicad_pcb",
+   "net": "Net-(JP2-C)",
+   "app_s": 0.3,
+   "pair": [
+    "C5.1",
+    "JP2.2"
+   ],
+   "app_ohm": 0.001530728712106672,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.1888310301544919,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.0015332535686107631
+    ],
+    [
+     0.010416666666666666,
+     0.0015301603613166995
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0015301603613166995,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.037143217426161
+  },
+  {
+   "board": "sufst_pcb/dash/Dash-PCB.kicad_pcb",
+   "net": "/b",
+   "app_s": 1.0,
+   "pair": [
+    "IC1.20",
+    "U5.6"
+   ],
+   "app_ohm": 0.06727076652450688,
+   "app_h_mm": 0.016666666666666666,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "s": 1,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.03333333333333333,
+     0.06754184204619501
+    ],
+    [
+     0.016666666666666666,
+     0.06726543737319074
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.06726543737319074,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.007922569932272694
+  },
+  {
+   "board": "sufst_pcb/archive/sensor-board/sensor-board.kicad_pcb",
+   "net": "/STR_B12",
+   "app_s": 0.4,
+   "pair": [
+    "U19.3",
+    "J2.11"
+   ],
+   "app_ohm": 0.018032651803927175,
+   "app_h_mm": 0.016666666666666666,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.03333333333333333,
+     0.017868861842657794
+    ],
+    [
+     0.016666666666666666,
+     0.01803022155071288
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.01803022155071288,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.013478776217246136
+  },
+  {
+   "board": "UCDFS_Circuits/Voltage_Measurement_KR/Voltage_Measurement_KR.kicad_pcb",
+   "net": "GLV-",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/bspd/BSPD.kicad_pcb",
+   "net": "Net-(U4D--)",
+   "app_s": 0.3,
+   "pair": [
+    "U4.8",
+    "R20.2"
+   ],
+   "app_ohm": 0.004305316089221203,
+   "app_h_mm": 0.012499999999999999,
+   "app_converged": true,
+   "app_grid_change_pct": 0.5952776332950259,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.024999999999999998,
+     0.0042769378359651415
+    ],
+    [
+     0.012499999999999999,
+     0.004304631051072373
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.004304631051072373,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.015913980564263852
+  },
+  {
+   "board": "sufst_pcb/ail/ail.kicad_pcb",
+   "net": "Net-(R15-Pad2)",
+   "app_s": 0.5,
+   "pair": [
+    "R16.2",
+    "R15.2"
+   ],
+   "app_ohm": 0.00028082513378091816,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": false,
+   "app_grid_change_pct": 4.931362062003402,
+   "s": 0,
+   "ref_s": 3,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.00026487015662876644
+    ],
+    [
+     0.010416666666666666,
+     0.0002792628430909606
+    ],
+    [
+     0.005208333333333333,
+     0.00027728085332690206
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.00027728085332690206,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 1.278227620656347
+  },
+  {
+   "board": "sufst_pcb/tsal-led/tsal-led.kicad_pcb",
+   "net": "/RED-",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/ail/ail.kicad_pcb",
+   "net": "Net-(Q2-D)",
+   "app_s": 0.2,
+   "pair": [
+    "Q2.3",
+    "R8.1"
+   ],
+   "app_ohm": 0.004610042268522425,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.5380264057229289,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.004634499226021878
+    ],
+    [
+     0.020833333333333332,
+     0.004609380667080712
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.004609380667080712,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.014353369563036011
+  },
+  {
+   "board": "sufst_pcb/tsal-led/tsal-led.kicad_pcb",
+   "net": "/GRN-",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/right-sidepanel/right-sidepanel.kicad_pcb",
+   "net": "/SIDE-PANEL.GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/can-repeater/can-repeater.kicad_pcb",
+   "net": "2_CAN-",
+   "app_s": 0.9,
+   "pair": [
+    "J4.2",
+    "U3.6"
+   ],
+   "app_ohm": 0.0712196405192918,
+   "app_h_mm": 0.016666666666666666,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.03333333333333333,
+     0.07148839943385076
+    ],
+    [
+     0.016666666666666666,
+     0.07121703543894183
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.07121703543894183,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.003657945509694116
+  },
+  {
+   "board": "sufst_pcb/can-repeater/can-repeater.kicad_pcb",
+   "net": "Net-(D7-K)",
+   "app_s": 0.1,
+   "pair": [
+    "R15.2",
+    "D7.1"
+   ],
+   "app_ohm": 0.0006064243630077184,
+   "app_h_mm": 0.016666666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.3826491683028075,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.03333333333333333,
+     0.0006028642198377708
+    ],
+    [
+     0.016666666666666666,
+     0.0006054660896635175
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0006054660896635175,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.1582703574255495
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/16Ch-Sensor-Hub.kicad_pcb",
+   "net": "Net-(JP10-B)",
+   "app_s": 0.6,
+   "pair": [
+    "JP10.2",
+    "U10.1"
+   ],
+   "app_ohm": 0.0027232370893828773,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 1.1966610132018447,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.002692736136156947
+    ],
+    [
+     0.010416666666666666,
+     0.0027290452873303195
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0027290452873303195,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.2128289323158894
+  },
+  {
+   "board": "aditeyadc_bspd/BSPD.kicad_pcb",
+   "net": "+5V",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/8Ch-Sensor-Hub.kicad_pcb",
+   "net": "Net-(JP10-B)",
+   "app_s": 0.6,
+   "pair": [
+    "JP10.2",
+    "U10.1"
+   ],
+   "app_ohm": 0.004414222332028295,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 1.2410129708905557,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.0043594703447554515
+    ],
+    [
+     0.010416666666666666,
+     0.004422153902314316
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.004422153902314316,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.1793598879919034
+  },
+  {
+   "board": "sufst_pcb/curr-amp/curr-amp.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/bspd/BSPD.kicad_pcb",
+   "net": "+12V",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "UCDFS_Circuits/Archive/Battery Temperature Sensor_KR/Battery Temperature Sensor.kicad_pcb",
+   "net": "GND_HV",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/bspd/BSPD.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "LSUTigerRacing_Electronics/RML/RML Switching Regulator/RML HVI.kicad_pcb",
+   "net": "Net-(C7-Pad2)",
+   "app_s": 0.7,
+   "pair": [
+    "U3.2",
+    "L1.8"
+   ],
+   "app_ohm": 0.004215496821987258,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.9008851252248128,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.004163505371616752
+    ],
+    [
+     0.020833333333333332,
+     0.004206650036639056
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.004206650036639056,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.210304762011293
+  },
+  {
+   "board": "sufst_pcb/batak/batak.kicad_pcb",
+   "net": "/BUCK5V",
+   "app_s": 0.5,
+   "pair": [
+    "Q14.2",
+    "U5.3"
+   ],
+   "app_ohm": 0.006035357486148129,
+   "app_h_mm": 0.041666666666666664,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.08333333333333333,
+     0.005952332033710496
+    ],
+    [
+     0.041666666666666664,
+     0.0060278918061709595
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0060278918061709595,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.12385225576754255
+  },
+  {
+   "board": "michaelruppe_FSAE/TSAL/TSAL-DRV/TSAL-DRV.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/dash/Dash-PCB.kicad_pcb",
+   "net": "Net-(C4-Pad1)",
+   "app_s": 0.6,
+   "pair": [
+    "C4.1",
+    "R1.1"
+   ],
+   "app_ohm": 0.000668827908765839,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 1.7535738976954791,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.0006522891204960127
+    ],
+    [
+     0.010416666666666666,
+     0.0006637667805444058
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0006637667805444058,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.7624859167074005
+  },
+  {
+   "board": "sufst_pcb/tsal-led/tsal-led.kicad_pcb",
+   "net": "Net-(D10-A)",
+   "app_s": 0.3,
+   "pair": [
+    "D10.2",
+    "D6.1"
+   ],
+   "app_ohm": 0.006263870439419489,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 1.5545391538254818,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.006185223802166541
+    ],
+    [
+     0.020833333333333332,
+     0.006260434177665956
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.006260434177665956,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.05488855334971898
+  },
+  {
+   "board": "sufst_pcb/can-repeater/can-repeater.kicad_pcb",
+   "net": "MCU_CAN1_TX",
+   "app_s": 0.7,
+   "pair": [
+    "U2.1",
+    "U4.62"
+   ],
+   "app_ohm": 0.032269947247093755,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 0.011737737075338255,
+   "s": 1,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.032260028781727276
+    ],
+    [
+     0.008333333333333333,
+     0.03226567600206491
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.03226567600206491,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.013237736065319083
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/16Ch-Sensor-Hub.kicad_pcb",
+   "net": "/ADC_R_3",
+   "app_s": 3.1,
+   "pair": [
+    "U2.11",
+    "R33.1"
+   ],
+   "app_ohm": 0.04735736427860626,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 1.0233256734144194,
+   "s": 3,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.04783890009604347
+    ],
+    [
+     0.008333333333333333,
+     0.04735504562886055
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.04735504562886055,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.004896309812219002
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/8Ch-Sensor-Hub.kicad_pcb",
+   "net": "Net-(JP9-B)",
+   "app_s": 0.8,
+   "pair": [
+    "JP9.2",
+    "U9.1"
+   ],
+   "app_ohm": 0.004645487866332211,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.7551921500187638,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.004619528983077027
+    ],
+    [
+     0.010416666666666666,
+     0.004652188610042135
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.004652188610042135,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.14403422284856582
+  },
+  {
+   "board": "UCDFS_Circuits/Kieran Care package/Voltage_Measurement_KR/Voltage_Measurement_KR.kicad_pcb",
+   "net": "GLV-",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/bspd/BSPD.kicad_pcb",
+   "net": "/SDC_IND_A",
+   "app_s": 1.4,
+   "pair": [
+    "J2.6",
+    "R1.2"
+   ],
+   "app_ohm": 0.01253280811112194,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 0.08075284820670325,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.012517950815718696
+    ],
+    [
+     0.008333333333333333,
+     0.012531107253391205
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.012531107253391205,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.013573084136475622
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/8Ch-Sensor-Hub.kicad_pcb",
+   "net": "/I2C0_SDA",
+   "app_s": 0.8,
+   "pair": [
+    "U2.59",
+    "U21.5"
+   ],
+   "app_ohm": 0.05358173549538598,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 0.125555704570017,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.053646918240958005
+    ],
+    [
+     0.008333333333333333,
+     0.053580128626996994
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.053580128626996994,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.0029990006186420004
+  },
+  {
+   "board": "sufst_pcb/tsal-latching-integrated/tsal-latching-integrated.kicad_pcb",
+   "net": "/LATCH.RESET+",
+   "app_s": 0.6,
+   "pair": [
+    "J1.7",
+    "Q13.1"
+   ],
+   "app_ohm": 0.04637630413056972,
+   "app_h_mm": 0.024999999999999998,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.049999999999999996,
+     0.047094461306619456
+    ],
+    [
+     0.024999999999999998,
+     0.04637520765413304
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.04637520765413304,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.0023643590878474896
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/16Ch-Sensor-Hub.kicad_pcb",
+   "net": "/I2C0_SDA",
+   "app_s": 1.1,
+   "pair": [
+    "U2.59",
+    "U20.14"
+   ],
+   "app_ohm": 0.08736426141627733,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.17620138461578483,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.08720799055381429
+    ],
+    [
+     0.010416666666666666,
+     0.08736401408114397
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.08736401408114397,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.0002831087100974017
+  },
+  {
+   "board": "UCDFS_Circuits/Kieran Care package/APPS_KR/APPS final.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/brake-light/brake-light.kicad_pcb",
+   "net": "Net-(D8-A)",
+   "app_s": 0.8,
+   "pair": [
+    "D9.1@130.52,59.57",
+    "D8.2"
+   ],
+   "app_ohm": 0.0010307944325240574,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.1368883124702213,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.0010293372550220677
+    ],
+    [
+     0.020833333333333332,
+     0.0010307505034942565
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0010307505034942565,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.00426184897819315
+  },
+  {
+   "board": "LSUTigerRacing_Electronics/Charging_PCB/Charging_26/ChargingPCB26/ChargingPCB26/ChargingPCB26.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/archive/sensor-board/sensor-board.kicad_pcb",
+   "net": "/CAN+",
+   "app_s": 0.6,
+   "pair": [
+    "U6.7",
+    "R43.2"
+   ],
+   "app_ohm": 0.027206863487892502,
+   "app_h_mm": 0.016666666666666666,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "s": 1,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.03333333333333333,
+     0.027064354246059772
+    ],
+    [
+     0.016666666666666666,
+     0.027204888305757614
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.027204888305757614,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.007260394208152832
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/16Ch-Sensor-Hub.kicad_pcb",
+   "net": "Net-(JP15-B)",
+   "app_s": 0.6,
+   "pair": [
+    "JP15.2",
+    "U15.1"
+   ],
+   "app_ohm": 0.0029640634302516484,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 1.4588254578279602,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.0029303135095503792
+    ],
+    [
+     0.010416666666666666,
+     0.0029660228114761853
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0029660228114761853,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.06606089531596693
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/16Ch-Sensor-Hub.kicad_pcb",
+   "net": "Net-(U2-PD1)",
+   "app_s": 0.1,
+   "pair": [
+    "U2.6",
+    "R1.1"
+   ],
+   "app_ohm": 0.0038012304147369666,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.06913683705553983,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.0038043581922808556
+    ],
+    [
+     0.010416666666666666,
+     0.00380068401659552
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.00380068401659552,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.014376310660413338
+  },
+  {
+   "board": "sufst_pcb/right-sidepanel/right-sidepanel.kicad_pcb",
+   "net": "Net-(D2-A)",
+   "app_s": 0.7,
+   "pair": [
+    "D2.2",
+    "R5.1"
+   ],
+   "app_ohm": 0.024830432459501908,
+   "app_h_mm": 0.03333333333333333,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.06666666666666667,
+     0.024833315601480672
+    ],
+    [
+     0.03333333333333333,
+     0.02483387073042967
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.02483387073042967,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.013845086676511631
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/16Ch-Sensor-Hub.kicad_pcb",
+   "net": "USART1_RX",
+   "app_s": 0.5,
+   "pair": [
+    "U2.43",
+    "J3.2"
+   ],
+   "app_ohm": 0.07274165594139287,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.07252522205183848
+    ],
+    [
+     0.020833333333333332,
+     0.0727418379649936
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0727418379649936,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.0002502323364739212
+  },
+  {
+   "board": "sufst_pcb/archive/sensor-board/sensor-board.kicad_pcb",
+   "net": "/VBIAS",
+   "app_s": 0.3,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/8Ch-Sensor-Hub.kicad_pcb",
+   "net": "Net-(JP2-C)",
+   "app_s": 0.2,
+   "pair": [
+    "C5.1",
+    "JP2.2"
+   ],
+   "app_ohm": 0.001529884225512777,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.4575597366548627,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.001520289377535212
+    ],
+    [
+     0.010416666666666666,
+     0.001529495719509609
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.001529495719509609,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.02540092124563298
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/16Ch-Sensor-Hub.kicad_pcb",
+   "net": "/ADC_R_4",
+   "app_s": 1.1,
+   "pair": [
+    "U2.9",
+    "R36.1"
+   ],
+   "app_ohm": 0.03772038085052975,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 0.13161352412314564,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.03776587983198604
+    ],
+    [
+     0.008333333333333333,
+     0.03771801872158763
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.03771801872158763,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.00626260079978902
+  },
+  {
+   "board": "sufst_pcb/tsal-latching-integrated/tsal-latching-integrated.kicad_pcb",
+   "net": "Net-(D7-A)",
+   "app_s": 0.7,
+   "pair": [
+    "D7.2",
+    "R37.2"
+   ],
+   "app_ohm": 0.002991277468527495,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.1167397668790988,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.002979139578083116
+    ],
+    [
+     0.020833333333333332,
+     0.0029786794751003472
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0029786794751003472,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.4229388738351325
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/16Ch-Sensor-Hub.kicad_pcb",
+   "net": "/ClampedDivider3/IN",
+   "app_s": 1.2,
+   "pair": [
+    "JP10.1",
+    "U10.3"
+   ],
+   "app_ohm": 0.01833606941792455,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.6378011015477484,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.01840495076742794
+    ],
+    [
+     0.010416666666666666,
+     0.01828854246245523
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.01828854246245523,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.25987284425146306
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/8Ch-Sensor-Hub.kicad_pcb",
+   "net": "SYS_JTCK-SW",
+   "app_s": 0.7,
+   "pair": [
+    "U2.49",
+    "J1.4"
+   ],
+   "app_ohm": 0.051215856011505516,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.27481075745359235,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.051071745142053517
+    ],
+    [
+     0.010416666666666666,
+     0.05121321386405239
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.05121321386405239,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.005159112763619689
+  },
+  {
+   "board": "sufst_pcb/archive/telemetry/telemetry.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "LSUTigerRacing_Electronics/BSPD/BSPD-revamp/BPSD-2025/BPSD-2025.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/archive/sensor-board/sensor-board.kicad_pcb",
+   "net": "/Unfused 3V3",
+   "app_s": 1.3,
+   "pair": [
+    "U2.2@210.95,79.00",
+    "F3.1"
+   ],
+   "app_ohm": 0.0015639214177051411,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 1.0557347914825677,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.0015470161599671114
+    ],
+    [
+     0.020833333333333332,
+     0.0015648624616161533
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0015648624616161533,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.06013588632193256
+  },
+  {
+   "board": "sufst_pcb/archive/sensor-board/sensor-board.kicad_pcb",
+   "net": "/STR_12",
+   "app_s": 0.4,
+   "pair": [
+    "U19.6",
+    "U1.21"
+   ],
+   "app_ohm": 0.017241103640437298,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 1.3302726613491045,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.017469623367842232
+    ],
+    [
+     0.008333333333333333,
+     0.017242521806353075
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.017242521806353075,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.008224817295898745
+  },
+  {
+   "board": "sufst_pcb/can-repeater/can-repeater.kicad_pcb",
+   "net": "Net-(JP3-A)",
+   "app_s": 0.3,
+   "pair": [
+    "R11.2",
+    "JP3.1"
+   ],
+   "app_ohm": 0.0035997895040716602,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 0.2025100605192911,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.003589094229055455
+    ],
+    [
+     0.008333333333333333,
+     0.0036016543890110123
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0036016543890110123,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.05177856445754969
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/16Ch-Sensor-Hub.kicad_pcb",
+   "net": "USART1_TX",
+   "app_s": 0.5,
+   "pair": [
+    "U2.42",
+    "J3.1"
+   ],
+   "app_ohm": 0.07315759968537056,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.07291244630172292
+    ],
+    [
+     0.020833333333333332,
+     0.07315403722207584
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.07315403722207584,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.0048698109222700126
+  },
+  {
+   "board": "sufst_pcb/can-repeater/can-repeater.kicad_pcb",
+   "net": "1_CAN+",
+   "app_s": 0.5,
+   "pair": [
+    "J3.2",
+    "U2.7"
+   ],
+   "app_ohm": 0.05701400781770336,
+   "app_h_mm": 0.016666666666666666,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "s": 1,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.03333333333333333,
+     0.05716462360290331
+    ],
+    [
+     0.016666666666666666,
+     0.05701116746055916
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.05701116746055916,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.004982106612994031
+  },
+  {
+   "board": "LSUTigerRacing_Electronics/RML/RML-Yianni-Revamp/RML-Yianni-Revamp.kicad_pcb",
+   "net": "GNDPWR",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/can-repeater/can-repeater.kicad_pcb",
+   "net": "MCU_CAN2_TX",
+   "app_s": 0.3,
+   "pair": [
+    "U3.1",
+    "U4.34"
+   ],
+   "app_ohm": 0.02535514583854659,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 0.0009197986607112461,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.025355602959070137
+    ],
+    [
+     0.008333333333333333,
+     0.025354871353962867
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.025354871353962867,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.0010825713918638513
+  },
+  {
+   "board": "sufst_pcb/can-repeater/can-repeater.kicad_pcb",
+   "net": "Net-(U4-PD0)",
+   "app_s": 0.2,
+   "pair": [
+    "C16.1",
+    "U4.5"
+   ],
+   "app_ohm": 0.0039856607762821,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.26286378281304906,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.003992635008998884
+    ],
+    [
+     0.010416666666666666,
+     0.003984106831606684
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.003984106831606684,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.03900358953952132
+  },
+  {
+   "board": "sufst_pcb/batak/batak.kicad_pcb",
+   "net": "+3V3",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/archive/sensor-board/sensor-board.kicad_pcb",
+   "net": "/CLK-",
+   "app_s": 0.5,
+   "pair": [
+    "C9.1",
+    "U1.30"
+   ],
+   "app_ohm": 0.01553146625355531,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 0.03824410658506536,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.015473682402114788
+    ],
+    [
+     0.008333333333333333,
+     0.015486028227843233
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.015486028227843233,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.29341303685848086
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/16Ch-Sensor-Hub.kicad_pcb",
+   "net": "Net-(JP17-B)",
+   "app_s": 0.6,
+   "pair": [
+    "JP17.2",
+    "U17.1"
+   ],
+   "app_ohm": 0.0033052917103092356,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.31432622365903135,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.003295133840252389
+    ],
+    [
+     0.010416666666666666,
+     0.0033115604405335626
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0033115604405335626,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.189298378721936
+  },
+  {
+   "board": "sufst_pcb/lvbms-conn/lvbms-connector.kicad_pcb",
+   "net": "Net-(J1-Pin_2)",
+   "app_s": 0.7,
+   "pair": [
+    "J1.2",
+    "TP2.1"
+   ],
+   "app_ohm": 0.0007287248658675264,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.633738576100353,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.0007235561179498745
+    ],
+    [
+     0.020833333333333332,
+     0.0007298278724834372
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0007298278724834372,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.15113243238540353
+  },
+  {
+   "board": "sufst_pcb/bspd/BSPD.kicad_pcb",
+   "net": "/SCS Check/SCS_ERROR",
+   "app_s": 0.4,
+   "pair": [
+    "U1.6",
+    "U3.12"
+   ],
+   "app_ohm": 0.0190303279424339,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 0.027230592371971545,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.019033791930616703
+    ],
+    [
+     0.008333333333333333,
+     0.019029340946057977
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.019029340946057977,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.005186708140447749
+  },
+  {
+   "board": "sufst_pcb/ail/ail.kicad_pcb",
+   "net": "Net-(Q1-S)",
+   "app_s": 0.1,
+   "pair": [
+    "R11.2",
+    "Q1.3"
+   ],
+   "app_ohm": 0.0005840260970051089,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.6077943782287133,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.0005776928840894144
+    ],
+    [
+     0.020833333333333332,
+     0.0005806773221556584
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0005806773221556584,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.5767015038608214
+  },
+  {
+   "board": "UCDFS_Circuits/Kieran Care package/Teensy 4.1 Breakout Board/Breakout.kicad_pcb",
+   "net": "CAN_GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/16Ch-Sensor-Hub.kicad_pcb",
+   "net": "Net-(D2-A+)",
+   "app_s": 0.1,
+   "pair": [
+    "R7.1",
+    "D2.2"
+   ],
+   "app_ohm": 0.005653861892536744,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.11591749211362624,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.005659715449323749
+    ],
+    [
+     0.020833333333333332,
+     0.005652373556732466
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.005652373556732466,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.02633116494052956
+  },
+  {
+   "board": "sufst_pcb/right-sidepanel/right-sidepanel.kicad_pcb",
+   "net": "Net-(D1-K)",
+   "app_s": 0.1,
+   "pair": [
+    "R7.2",
+    "D1.1"
+   ],
+   "app_ohm": 0.00144824420676822,
+   "app_h_mm": 0.016666666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.9420108694283009,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.03333333333333333,
+     0.0014323932651162307
+    ],
+    [
+     0.016666666666666666,
+     0.0014484761973857974
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0014484761973857974,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.016016184318123905
+  },
+  {
+   "board": "sufst_pcb/archive/sensor-board/sensor-board.kicad_pcb",
+   "net": "/Strain Gauge Amplifier 1/RG2",
+   "app_s": 0.2,
+   "pair": [
+    "R42.1",
+    "U7.8"
+   ],
+   "app_ohm": 0.0028834002255498643,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 1.3736532165031983,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.002843035488449557
+    ],
+    [
+     0.008333333333333333,
+     0.0028831908534494056
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0028831908534494056,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.007261818974213519
+  },
+  {
+   "board": "sufst_pcb/can-repeater/can-repeater.kicad_pcb",
+   "net": "Net-(C17-Pad1)",
+   "app_s": 0.2,
+   "pair": [
+    "R9.2",
+    "C17.1"
+   ],
+   "app_ohm": 0.002633129994325247,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.48626438764906976,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.0026139120409438585
+    ],
+    [
+     0.010416666666666666,
+     0.0026307017392311
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0026307017392311,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.0923044622632263
+  },
+  {
+   "board": "sufst_pcb/can-repeater/can-repeater.kicad_pcb",
+   "net": "Net-(D6-K)",
+   "app_s": 0.1,
+   "pair": [
+    "D6.1",
+    "R14.2"
+   ],
+   "app_ohm": 0.0006064243627084939,
+   "app_h_mm": 0.016666666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.3826491719311734,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.03333333333333333,
+     0.0006028642201507555
+    ],
+    [
+     0.016666666666666666,
+     0.0006054660893391871
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0006054660893391871,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.1582703616568537
+  },
+  {
+   "board": "sufst_pcb/can-repeater/can-repeater.kicad_pcb",
+   "net": "MCU_CAN1_RX",
+   "app_s": 1.4,
+   "pair": [
+    "U2.4",
+    "U4.61"
+   ],
+   "app_ohm": 0.0375698108528412,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 0.07960583631198874,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.0375946923056336
+    ],
+    [
+     0.008333333333333333,
+     0.037566588551506214
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.037566588551506214,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.00857757241004009
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/16Ch-Sensor-Hub.kicad_pcb",
+   "net": "Net-(JP2-A)",
+   "app_s": 0.3,
+   "pair": [
+    "R5.2",
+    "JP2.1"
+   ],
+   "app_ohm": 0.0167138723428997,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.28360020190339974,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.016665387968129837
+    ],
+    [
+     0.010416666666666666,
+     0.016713402081913725
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.016713402081913725,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.002813676016821809
+  },
+  {
+   "board": "sufst_pcb/lvbms-conn/lvbms-connector.kicad_pcb",
+   "net": "Net-(J1-Pin_6)",
+   "app_s": 0.8,
+   "pair": [
+    "J1.6",
+    "TP6.1"
+   ],
+   "app_ohm": 0.0007277101723495724,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.49518574841254165,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.0007224888056834723
+    ],
+    [
+     0.020833333333333332,
+     0.0007287537297159184
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0007287537297159184,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.1431975335142055
+  },
+  {
+   "board": "sufst_pcb/right-sidepanel/right-sidepanel.kicad_pcb",
+   "net": "/PDM_BATT+",
+   "app_s": 0.9,
+   "pair": [
+    "R6.2",
+    "J1.7"
+   ],
+   "app_ohm": 0.0028984329934846585,
+   "app_h_mm": 0.041666666666666664,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.08333333333333333,
+     0.002878041939467153
+    ],
+    [
+     0.041666666666666664,
+     0.002897518624147673
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.002897518624147673,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.03155697876675578
+  },
+  {
+   "board": "UCDFS_Circuits/Pre-charge_KR/Pre-charge KiCAD.kicad_pcb",
+   "net": "TS-",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/tsal-led/tsal-led.kicad_pcb",
+   "net": "GLV",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/tsal-led/tsal-led.kicad_pcb",
+   "net": "Net-(IC1-COMP)",
+   "app_s": 0.1,
+   "pair": [
+    "IC1.5",
+    "R1.2"
+   ],
+   "app_ohm": 0.0024632153624418486,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 0.37356044597001825,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.002454267738683738
+    ],
+    [
+     0.008333333333333333,
+     0.0024629506453670083
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0024629506453670083,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.010747965061264075
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/8Ch-Sensor-Hub.kicad_pcb",
+   "net": "Net-(JP3-C)",
+   "app_s": 0.3,
+   "pair": [
+    "R6.2",
+    "JP3.2"
+   ],
+   "app_ohm": 0.0066986341403245855,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.10763862635534278,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.00669022255174774
+    ],
+    [
+     0.010416666666666666,
+     0.0066982585123900665
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0066982585123900665,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.005607844693122921
+  },
+  {
+   "board": "LSUTigerRacing_Electronics/BSPD/BSPD.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/dash/Dash-PCB.kicad_pcb",
+   "net": "D4",
+   "app_s": 1.5,
+   "pair": [
+    "U1.2",
+    "J3.5"
+   ],
+   "app_ohm": 0.0999685919208352,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "s": 2,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.10192733111148616
+    ],
+    [
+     0.020833333333333332,
+     0.09996559028329875
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.09996559028329875,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.003002670746932168
+  },
+  {
+   "board": "sufst_pcb/tsal-latching-integrated/tsal-latching-integrated.kicad_pcb",
+   "net": "/SHUTDOWN_IN",
+   "app_s": 0.5,
+   "pair": [
+    "J2.6",
+    "Q3.3"
+   ],
+   "app_ohm": 0.04296212292427839,
+   "app_h_mm": 0.041666666666666664,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.08333333333333333,
+     0.04287631410437787
+    ],
+    [
+     0.041666666666666664,
+     0.04296065328334919
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.04296065328334919,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.003420899862716098
+  },
+  {
+   "board": "sufst_pcb/dash/Dash-PCB.kicad_pcb",
+   "net": "/digit0",
+   "app_s": 1.2,
+   "pair": [
+    "IC1.3",
+    "U5.8"
+   ],
+   "app_ohm": 0.024362339153792257,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 0.31070800241081264,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.02443673735790995
+    ],
+    [
+     0.008333333333333333,
+     0.02436190082327802
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.02436190082327802,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.0017992459513616055
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/8Ch-Sensor-Hub.kicad_pcb",
+   "net": "/TOO_HOT",
+   "app_s": 0.7,
+   "pair": [
+    "U2.53",
+    "U21.3"
+   ],
+   "app_ohm": 0.05043243598959733,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.06407240173450779,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.05039398343398719
+    ],
+    [
+     0.010416666666666666,
+     0.05042956184425064
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.05042956184425064,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.005699326429930984
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/16Ch-Sensor-Hub.kicad_pcb",
+   "net": "/ClampedDivider14/IN",
+   "app_s": 1.2,
+   "pair": [
+    "JP13.1",
+    "U13.3"
+   ],
+   "app_ohm": 0.011278553582749202,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.253827680638359,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.011305934011165723
+    ],
+    [
+     0.010416666666666666,
+     0.011276389849452386
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.011276389849452386,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.019188173925366314
+  },
+  {
+   "board": "LSUTigerRacing_Electronics/Safety circuit PCB/Josh_SafetyCircuit/TEST.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/dash/Dash-PCB.kicad_pcb",
+   "net": "/SCL",
+   "app_s": 1.7,
+   "pair": [
+    "IC1.22",
+    "U3.14"
+   ],
+   "app_ohm": 0.16520810034034006,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "s": 2,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.16533276120574378
+    ],
+    [
+     0.020833333333333332,
+     0.16520542356780357
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.16520542356780357,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.0016202691647038137
+  },
+  {
+   "board": "sufst_pcb/tsal-led/tsal-led.kicad_pcb",
+   "net": "Net-(C11-Pad1)",
+   "app_s": 0.2,
+   "pair": [
+    "C11.1",
+    "R1.1"
+   ],
+   "app_ohm": 0.0006565432168357692,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 1.0257492627246803,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.0006627056652910613
+    ],
+    [
+     0.008333333333333333,
+     0.0006564285496534581
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0006564285496534581,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.017468341736748272
+  },
+  {
+   "board": "sufst_pcb/can-repeater/can-repeater.kicad_pcb",
+   "net": "MCU_CAN2_RX",
+   "app_s": 0.5,
+   "pair": [
+    "U3.4",
+    "U4.33"
+   ],
+   "app_ohm": 0.028858459973678547,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 0.1289572080099871,
+   "s": 1,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.028896744574452324
+    ],
+    [
+     0.008333333333333333,
+     0.0288587076621585
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0288587076621585,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.0008582798746603615
+  },
+  {
+   "board": "sufst_pcb/archive/sensor-board/sensor-board.kicad_pcb",
+   "net": "/STR_B11",
+   "app_s": 0.4,
+   "pair": [
+    "R50.1",
+    "J2.9"
+   ],
+   "app_ohm": 0.009947580090836195,
+   "app_h_mm": 0.016666666666666666,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.03333333333333333,
+     0.009879019352419936
+    ],
+    [
+     0.016666666666666666,
+     0.00994648813892291
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.00994648813892291,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.010978265876704363
+  },
+  {
+   "board": "sufst_pcb/dash/Dash-PCB.kicad_pcb",
+   "net": "/ICSPCLK",
+   "app_s": 2.0,
+   "pair": [
+    "J2.5",
+    "U1.16"
+   ],
+   "app_ohm": 0.09977434569099893,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "s": 2,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.1000995074753561
+    ],
+    [
+     0.020833333333333332,
+     0.09977339031888234
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.09977339031888234,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.0009575419994467538
+  },
+  {
+   "board": "sufst_pcb/bspd/BSPD.kicad_pcb",
+   "net": "/BPS.FRONT.SIG",
+   "app_s": 0.4,
+   "pair": [
+    "U5.2",
+    "J1.3"
+   ],
+   "app_ohm": 0.05963081986764058,
+   "app_h_mm": 0.016666666666666666,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.03333333333333333,
+     0.06057622309625049
+    ],
+    [
+     0.016666666666666666,
+     0.05962990312138539
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.05962990312138539,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.0015373935009055373
+  },
+  {
+   "board": "sufst_pcb/dash/Dash-PCB.kicad_pcb",
+   "net": "D6",
+   "app_s": 0.8,
+   "pair": [
+    "U1.4",
+    "J3.7"
+   ],
+   "app_ohm": 0.09157768151185046,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "s": 1,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.09217361208614686
+    ],
+    [
+     0.020833333333333332,
+     0.09157665928514877
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.09157665928514877,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.0011162524486740821
+  },
+  {
+   "board": "sufst_pcb/brake-light/brake-light.kicad_pcb",
+   "net": "Net-(D18-K)",
+   "app_s": 0.8,
+   "pair": [
+    "D19.2",
+    "D18.1@175.36,59.62"
+   ],
+   "app_ohm": 0.0010716733874865762,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.8823909371311628,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.001062035761196149
+    ],
+    [
+     0.020833333333333332,
+     0.0010716843373021197
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0010716843373021197,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.0010217388798472449
+  },
+  {
+   "board": "sufst_pcb/right-sidepanel/right-sidepanel.kicad_pcb",
+   "net": "/SDC_ORIGIN",
+   "app_s": 0.8,
+   "pair": [
+    "J1.2",
+    "R1.2"
+   ],
+   "app_ohm": 0.013411466610610944,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.19535152246314053,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.013437374798160708
+    ],
+    [
+     0.020833333333333332,
+     0.013411075069410762
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.013411075069410762,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.0029195362650336065
+  },
+  {
+   "board": "sufst_pcb/can-repeater/can-repeater.kicad_pcb",
+   "net": "Net-(JP1-A)",
+   "app_s": 0.4,
+   "pair": [
+    "R5.2",
+    "JP1.1"
+   ],
+   "app_ohm": 0.0044674237505306046,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 0.042101552601874856,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.004468404882016005
+    ],
+    [
+     0.008333333333333333,
+     0.00447024661275774
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.00447024661275774,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.06314779634482015
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/8Ch-Sensor-Hub.kicad_pcb",
+   "net": "Net-(U2-PB2)",
+   "app_s": 0.7,
+   "pair": [
+    "U2.28",
+    "R6.1"
+   ],
+   "app_ohm": 0.056157045065761774,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.0865819277228229,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.056104491614110484
+    ],
+    [
+     0.010416666666666666,
+     0.056154046140179825
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.056154046140179825,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.005340533386433144
+  },
+  {
+   "board": "sufst_pcb/dash/Dash-PCB.kicad_pcb",
+   "net": "/a",
+   "app_s": 0.4,
+   "pair": [
+    "U5.7",
+    "IC1.21"
+   ],
+   "app_ohm": 0.06196396553395699,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.06232257074587277
+    ],
+    [
+     0.020833333333333332,
+     0.061961724323668116
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.061961724323668116,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.003617088312735106
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/8Ch-Sensor-Hub.kicad_pcb",
+   "net": "/NReset",
+   "app_s": 0.4,
+   "pair": [
+    "U2.7",
+    "R2.1"
+   ],
+   "app_ohm": 0.0397589300417517,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.03966666634734433
+    ],
+    [
+     0.020833333333333332,
+     0.03975191144996707
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.03975191144996707,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.017655985658593387
+  },
+  {
+   "board": "sufst_pcb/archive/sensor-board/sensor-board.kicad_pcb",
+   "net": "/Strain Gauge Amplifier 2/RG2",
+   "app_s": 0.2,
+   "pair": [
+    "R1.1",
+    "U9.8"
+   ],
+   "app_ohm": 0.0029505094138338327,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 0.23437543718438533,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.002956061347986941
+    ],
+    [
+     0.008333333333333333,
+     0.0029499986960563676
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0029499986960563676,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.01731247468508279
+  },
+  {
+   "board": "sufst_pcb/archive/sensor-board/sensor-board.kicad_pcb",
+   "net": "/Strain Gauge Amplifier 8/BRIDGE-",
+   "app_s": 0.4,
+   "pair": [
+    "R27.2",
+    "U15.2"
+   ],
+   "app_ohm": 0.008487447027458333,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 0.5701180514153456,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.008439542519905398
+    ],
+    [
+     0.008333333333333333,
+     0.008487680742098786
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.008487680742098786,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.0027535748286844353
+  },
+  {
+   "board": "sufst_pcb/dash/Dash-PCB.kicad_pcb",
+   "net": "B5",
+   "app_s": 3.0,
+   "pair": [
+    "U1.15",
+    "J3.12"
+   ],
+   "app_ohm": 0.05697450216362351,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.9340491041926813,
+   "s": 3,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.05750500657772868
+    ],
+    [
+     0.010416666666666666,
+     0.056974099284100126
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.056974099284100126,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.000707127499066651
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/8Ch-Sensor-Hub.kicad_pcb",
+   "net": "Net-(JP8-B)",
+   "app_s": 0.7,
+   "pair": [
+    "JP8.2",
+    "U8.1"
+   ],
+   "app_ohm": 0.004430087054906342,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.5950527111388,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.0044118281120881534
+    ],
+    [
+     0.010416666666666666,
+     0.004439433850573328
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.004439433850573328,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.21054026215030497
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/16Ch-Sensor-Hub.kicad_pcb",
+   "net": "/3V3_FUSED_L",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/16Ch-Sensor-Hub.kicad_pcb",
+   "net": "/CAN_RX",
+   "app_s": 0.3,
+   "pair": [
+    "U2.44",
+    "U1.4"
+   ],
+   "app_ohm": 0.023448457253605403,
+   "app_h_mm": 0.010416666666666666,
+   "app_converged": true,
+   "app_grid_change_pct": 0.1403993633470873,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.020833333333333332,
+     0.023413689104089756
+    ],
+    [
+     0.010416666666666666,
+     0.02344821190173756
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.02344821190173756,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.0010463564082074939
+  },
+  {
+   "board": "sufst_pcb/can-repeater/can-repeater.kicad_pcb",
+   "net": "+3V3",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/archive/sensor-board/sensor-board.kicad_pcb",
+   "net": "/Strain Gauge Amplifier 6/RG1",
+   "app_s": 0.3,
+   "pair": [
+    "R17.2",
+    "U13.1"
+   ],
+   "app_ohm": 0.002855882241153686,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 0.4957865652973359,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.002840799504348554
+    ],
+    [
+     0.008333333333333333,
+     0.002855191140194275
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.002855191140194275,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.024205068083960057
+  },
+  {
+   "board": "sufst_pcb/ail/ail.kicad_pcb",
+   "net": "Net-(J3-Pin_2)",
+   "app_s": 0.9,
+   "pair": [
+    "J3.2",
+    "R8.2"
+   ],
+   "app_ohm": 0.030061140851868454,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.07515468164908096,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.030039299655793612
+    ],
+    [
+     0.020833333333333332,
+     0.030060385693771074
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.030060385693771074,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.002512137086574384
+  },
+  {
+   "board": "sufst_pcb/lvbms-conn/lvbms-connector.kicad_pcb",
+   "net": "Net-(J1-Pin_1)",
+   "app_s": 0.8,
+   "pair": [
+    "TP1.1",
+    "J1.1"
+   ],
+   "app_ohm": 0.0007094983892162506,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": true,
+   "app_grid_change_pct": 0.4370761768372334,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.000700933899436126
+    ],
+    [
+     0.020833333333333332,
+     0.0007054660635356089
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0007054660635356089,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.5715832254825637
+  },
+  {
+   "board": "sufst_pcb/can-repeater/can-repeater.kicad_pcb",
+   "net": "Net-(JP1-B)",
+   "app_s": 0.5,
+   "pair": [
+    "JP1.3",
+    "R4.1"
+   ],
+   "app_ohm": 0.02431513710573164,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 0.04216304508381289,
+   "s": 1,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.024321709638284356
+    ],
+    [
+     0.008333333333333333,
+     0.02431683408554093
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.02431683408554093,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.006978621490449921
+  },
+  {
+   "board": "LSUTigerRacing_Electronics/BSPD/BSPD-revamp/BSPD-2025-relayout/BPSD-2025.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/dash/Dash-PCB.kicad_pcb",
+   "net": "D3",
+   "app_s": 3.8,
+   "pair": [
+    "U1.41",
+    "J3.4"
+   ],
+   "app_ohm": 0.10493897516492183,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "s": 4,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.1055282983701065
+    ],
+    [
+     0.020833333333333332,
+     0.10493802185296557
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.10493802185296557,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.000908452379255742
+  },
+  {
+   "board": "sufst_pcb/tsal-led/tsal-led.kicad_pcb",
+   "net": "Net-(L2-Pad2)",
+   "app_s": 1.2,
+   "pair": [
+    "R6.1",
+    "L2.2"
+   ],
+   "app_ohm": 0.016876709321376467,
+   "app_h_mm": 0.016666666666666666,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.03333333333333333,
+     0.01676788371287318
+    ],
+    [
+     0.016666666666666666,
+     0.016865046239855477
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.016865046239855477,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.06915534861344774
+  },
+  {
+   "board": "sufst_pcb/dash/Dash-PCB.kicad_pcb",
+   "net": "/f",
+   "app_s": 1.5,
+   "pair": [
+    "U5.9",
+    "IC1.16"
+   ],
+   "app_ohm": 0.09625528277462791,
+   "app_h_mm": 0.016666666666666666,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.03333333333333333,
+     0.0966105369732097
+    ],
+    [
+     0.016666666666666666,
+     0.0962509873213093
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.0962509873213093,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.004462762864210212
+  },
+  {
+   "board": "sufst_pcb/dash/Dash-PCB.kicad_pcb",
+   "net": "Net-(LCD1-R{slash}~{W})",
+   "app_s": 0.7,
+   "pair": [
+    "U3.5",
+    "LCD1.5"
+   ],
+   "app_ohm": 0.01596662202711887,
+   "app_h_mm": 0.020833333333333332,
+   "app_converged": false,
+   "app_grid_change_pct": null,
+   "s": 1,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.041666666666666664,
+     0.015901870386386286
+    ],
+    [
+     0.020833333333333332,
+     0.01596425874236374
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.01596425874236374,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.014803598421142539
+  },
+  {
+   "board": "sufst_pcb/archive/sensor-board/sensor-board.kicad_pcb",
+   "net": "Net-(U1-RD2)",
+   "app_s": 0.9,
+   "pair": [
+    "U1.40",
+    "TP1.1"
+   ],
+   "app_ohm": 0.005838444586170055,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 0.29808652513243006,
+   "s": 1,
+   "ref_s": 1,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.005820688636552283
+    ],
+    [
+     0.008333333333333333,
+     0.005838074489761486
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.005838074489761486,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": 0.0063393574237124994
+  },
+  {
+   "board": "sufst_pcb/archive/sensor-board/sensor-board.kicad_pcb",
+   "net": "/Strain Gauge Amplifier 9/BRIDGE-",
+   "app_s": 0.5,
+   "pair": [
+    "R32.2",
+    "U16.2"
+   ],
+   "app_ohm": 0.007631934590358178,
+   "app_h_mm": 0.008333333333333333,
+   "app_converged": true,
+   "app_grid_change_pct": 0.28179881884104424,
+   "s": 0,
+   "ref_s": 0,
+   "reference_steps": [
+    [
+     0.016666666666666666,
+     0.007606828934469427
+    ],
+    [
+     0.008333333333333333,
+     0.007632378475742669
+    ]
+   ],
+   "reference_converged": true,
+   "reference_ohm": 0.007632378475742669,
+   "reference_reader": "KiCad 9.0.3",
+   "error_pct": -0.005815819877141859
+  },
+  {
+   "board": "UCDFS_Circuits/Kieran Care package/ENNOID_BMS - Master/BMS-Master.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/vcu/vcu.kicad_pcb",
+   "net": "+3.3VT",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/brake-light/brake-light.kicad_pcb",
+   "net": "/LED-",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/ail/ail.kicad_pcb",
+   "net": "/FUSE",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/brake-light/brake-light.kicad_pcb",
+   "net": "/LED+",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "UCDFS_Circuits/ENNOID_BMS/Master/BMS-Master.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "LSUTigerRacing_Electronics/RML/RML Quick/RML Quick.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "UCDFS_Circuits/Kieran Care package/BSPD_KR/BSPD KiCAD.kicad_pcb",
+   "net": "GLV-",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "LSUTigerRacing_Electronics/PrechargeDischarge/Discharge26/Discharge26.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/ail/ail.kicad_pcb",
+   "net": "/HV_MP",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "UCDFS_Circuits/PDU_KR/PDU_KR.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/archive/tsal/tsal.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/16Ch-Sensor-Hub.kicad_pcb",
+   "net": "+GLV_PROT",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/8Ch-Sensor-Hub.kicad_pcb",
+   "net": "+3V3",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "LSUTigerRacing_Electronics/RML/RML/RML.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "LSUTigerRacing_Electronics/RML/RML Switching Regulator/RML HVI.kicad_pcb",
+   "net": "GNDPWR",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "UCDFS_Circuits/Kieran Care package/NEW_TSAL_KR/TSAL.kicad_pcb",
+   "net": "GLVS-",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/dash/Dash-PCB.kicad_pcb",
+   "net": "+3V3",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/archive/latching/latching.kicad_pcb",
+   "net": "+12V",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/archive/sensor-board/strain-gauge-amp-breakout/strain-gauge-amp-breakout.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/bspd/BSPD.kicad_pcb",
+   "net": "/SHUTDOWN_OUT",
+   "app_s": 0.4,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/bms-interface/bms-interface.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "UCDFS_Circuits/Kieran Care package/PDU_KR/PDU_KR.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "UCDFS_Circuits/APPS_KR/APPS final.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/tsal-latching-integrated/tsal-latching-integrated.kicad_pcb",
+   "net": "+12V",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/lvbms-conn/lvbms-connector.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "UCDFS_Circuits/Kieran Care package/Pre-charge_KR/Pre-charge KiCAD.kicad_pcb",
+   "net": "TS-",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "UCDFS_Circuits/Kieran Care package/ENNOID_BMS - Slave/LTC6812-15W.kicad_pcb",
+   "net": "Cell_1-",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "UCDFS_Circuits/Archive/Battery Temperature Sensor_KR/Battery Temperature Sensor.kicad_pcb",
+   "net": "GLVS-",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "UCDFS_Circuits/Kieran Care package/Charger_Shutdown_KR/Charger_Shutdown_KR.kicad_pcb",
+   "net": "AIR1_aux-",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "michaelruppe_FSAE/TSALv3/TSALv3.kicad_pcb",
+   "net": "GLV-",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "LSUTigerRacing_Electronics/Charging_PCB/Charging_25/Charging_PCB.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/batak/batak.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "LSUTigerRacing_Electronics/BSPD-2026-relayout/BPSD-2025.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "UCDFS_Circuits/Kieran Care package/Voltage_Measurement_KR/Voltage_Measurement_KR.kicad_pcb",
+   "net": "TS-",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "UCDFS_Circuits/Charger_Shutdown_KR/Charger_Shutdown_KR.kicad_pcb",
+   "net": "AIR1_aux-",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/right-sidepanel/right-sidepanel.kicad_pcb",
+   "net": "/SHUT.TSMS",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/tsal-led/tsal-led.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "UCDFS_Circuits/NEW_TSAL_KR/TSAL.kicad_pcb",
+   "net": "GLVS-",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "LSUTigerRacing_Electronics/RML/RML Switching Regulator/RML HVI.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/dash/Dash-PCB.kicad_pcb",
+   "net": "+12V",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "UCDFS_Circuits/ENNOID_BMS/Slave/LTC6812-15W.kicad_pcb",
+   "net": "Cell_1-",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/right-sidepanel/right-sidepanel.kicad_pcb",
+   "net": "Net-(D1-A)",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/vcu/vcu.kicad_pcb",
+   "net": "+12V",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/can-repeater/can-repeater.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/16Ch-Sensor-Hub.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/archive/sensor-board/sensor-board.kicad_pcb",
+   "net": "+3V3",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/tsal-latching-integrated/tsal-latching-integrated.kicad_pcb",
+   "net": "+12T V",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "LSUTigerRacing_Electronics/Fault Latch 2/Fault Latch 2.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "aditeyadc_bspd/BSPD.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/archive/telemetry/telemetry.kicad_pcb",
+   "net": "+3V3",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/archive/sensor-board/sensor-board.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "LSUTigerRacing_Electronics/BSPD/BSPD-revamp/BPSD-2025/SPICE/BPSD-2025.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "LSUTigerRacing_Electronics/RML/RML/RML.kicad_pcb",
+   "net": "GNDPWR",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "UCDFS_Circuits/Kieran Care package/Pre-charge_KR/Pre-charge KiCAD.kicad_pcb",
+   "net": "GLV-",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/vcu/vcu.kicad_pcb",
+   "net": "+3.3V",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "UCDFS_Circuits/Pre-charge_KR/Pre-charge KiCAD.kicad_pcb",
+   "net": "GLV-",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/rotary-switch/rotary-switch.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "LSUTigerRacing_Electronics/RML/RML-Yianni-Revamp/RML-Yianni-Revamp.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "UCDFS_Circuits/(LVE)Shutdown_KR/(LVE)Shutdown.kicad_pcb",
+   "net": "GLVS-",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "UCDFS_Circuits/Teensy 4.1 Breakout Board/Breakout.kicad_pcb",
+   "net": "CAN_GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "UCDFS_Circuits/Kieran Care package/(LVE)Shutdown_KR/(LVE)Shutdown.kicad_pcb",
+   "net": "GLVS-",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/dash/Dash-PCB.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/archive/latching/latching.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/tsal-latching-integrated/tsal-latching-integrated.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/16Ch-Sensor-Hub.kicad_pcb",
+   "net": "+3V3",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "UCDFS_Circuits/Voltage_Measurement_KR/Voltage_Measurement_KR.kicad_pcb",
+   "net": "TS-",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/16Ch-Sensor-Hub.kicad_pcb",
+   "net": "/3V3_FUSED_R",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/archive/test-rig/test-rig.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/right-sidepanel/right-sidepanel.kicad_pcb",
+   "net": "/SHUT.TSAC.INTERLOCK",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/debug-board/can-node/can-node.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/sensor-hub/8Ch-Sensor-Hub.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/right-sidepanel/right-sidepanel.kicad_pcb",
+   "net": "/GLV_SWITCHED",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/vcu/vcu.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/archive/sensor-board/strain-gauge-amp-breakout/strain-gauge-amp-breakout.kicad_pcb",
+   "net": "3V3",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "sufst_pcb/ail/ail.kicad_pcb",
+   "net": "/HV-",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "LSUTigerRacing_Electronics/TTSI/TTSI.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  },
+  {
+   "board": "LSUTigerRacing_Electronics/Safety circuit PCB/Old_SafetyCircuit/TEST.kicad_pcb",
+   "net": "GND",
+   "app_s": 0.0,
+   "app": "no value",
+   "s": 0
+  }
+ ]
+}

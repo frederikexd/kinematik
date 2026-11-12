@@ -345,3 +345,16 @@ def test_unverified_pour_estimates_stay_inside_the_brownout_margin():
     assert len(rows) == 5
     for kk, ref in rows:
         assert kk * POUR_UNVERIFIED_FACTOR >= ref and kk <= ref * POUR_UNVERIFIED_FACTOR
+
+
+def test_in_app_pour_rate_is_proven_on_80_fresh_nets():
+    """Plan addendum 14: 80 of 80 converged in-app pour estimates within 2 % of a converged reference, so the rate is
+    at least 96.3 % at 95 % confidence. Estimates the app marks unconverged are also inside the 1.10 margin."""
+    from suspension.pcb_doctor import POUR_UNVERIFIED_FACTOR
+    d = json.loads((REF / "pours_rate.json").read_text(encoding="utf-8"))
+    sc = [o for o in d["nets"] if o.get("app_converged") and o.get("reference_converged")]
+    assert len(sc) == 80 and all(abs(o["error_pct"]) <= 2.0 for o in sc)
+    assert 0.05 ** (1 / len(sc)) > 0.963
+    un = [o for o in d["nets"] if o.get("app_converged") is False and o.get("reference_converged")]
+    assert un and all(1 / POUR_UNVERIFIED_FACTOR <= 1 + o["error_pct"] / 100 <= POUR_UNVERIFIED_FACTOR for o in un)
+    assert not [o for o in d["nets"] if "reference_steps" in o and not o.get("reference_converged")]

@@ -389,6 +389,17 @@ cells) are far outside that limit; in the app they get the warning that the drop
 never a number. The 5 estimates KinematiK labels not converged are all within 3.4 % of the reference, inside the
 ×1.10 the brown-out check applies to them.
 
+**The rate, proven (addendum 14).** The claim tested is what the app does. 220 fresh pour nets were taken in a
+registered random order from 111 team boards, until 80 had both a converged app value and a converged reference.
+- **80 of 80 within 2 %.** Worst −0.27 % / +0.76 %, median |error| 0.015 %. The 95 % lower bound on the rate is
+  0.05^(1/80) = **96.3 %**. File: `benchmarks/electrical/pours_rate.json`.
+- 30 nets the app marked unconverged: all 30 also within 2 % (worst +1.28 %), well inside the ×1.10 the brown-out
+  check gives them.
+- 110 nets got no value in the app (larger than 150,000 cells, or no pad pair to measure). The app warns on those
+  that the drop through the pour was not checked.
+- Every reference converged.
+- **Limit of the sample:** the 80 scored nets come from 13 boards, mostly small signal pours.
+
 **What can be said.** A pour estimate KinematiK marks converged has matched a converged reference within 2 % on
 every net where both exist: 7 of 7 held out, and 60 of 62 on design data (the 2 misses being the empty pours since
 fixed). With 7 held-out nets the 95 % lower bound on that rate is 0.05^(1/7) = 65 %: strong evidence, not yet a proven 2 % rate. Whole-board planes are not estimated,

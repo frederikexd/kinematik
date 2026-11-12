@@ -67,7 +67,7 @@ Altium's impedance calculator, which can't run here). Limits were set before eac
 | Altium Designer 26.11.1, native Altium boards | 6 team boards designed in Altium | 30 of 30 counts identical |
 | KiCad 9.0.3, boards saved in KiCad 8–9 | 4 team boards: 6,068 tracks, 505 nets | Every count identical; net lengths within 0.015 % |
 | 2-D solve of KiCad 9's copper, net resistance held out | 100 nets, then 100 more for the fix | 1-D model: **miss**, 70 of 95 within 2 % (all within 10 %). Sheet-solve refinement, held out: **92 of 92 within 2 %** |
-| Nets with copper pours, held out | 50 nets with a converged reference | **Miss:** 44 within 2 %, 6 read low by 2–6.5 %. Both causes fixed; after the fix, 7 of 7 held out and 60 of 62 design nets within 2 % |
+| Nets with copper pours, held out | 80 fresh nets, registered random order | **80 of 80 within 2 %** (rate ≥ 96.3 % at 95 % confidence). Earlier rounds missed (44 of 50) until custom pads, KiCad 5 fills, a grid check and empty pours were fixed |
 | atlc field solver: microstrip impedance | 11 cases, then 10 unseen | IPC-2141 missed by up to 8.3 %; replaced by Hammerstad–Jensen, 10 of 10 unseen within 3.4 % |
 
 **Check it yourself**: [in your browser](https://colab.research.google.com/github/frederikexd/kinematik/blob/main/notebooks/reproduce.ipynb) (Google Colab, nothing to install, about 10 minutes), or in a few minutes on your laptop. Think a result is wrong? [Break it](CHALLENGE.md).
