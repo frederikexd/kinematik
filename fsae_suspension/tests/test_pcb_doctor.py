@@ -1704,3 +1704,27 @@ class TestLoadsWrittenToTheLedger(unittest.TestCase):
         fan = auto_assign_net_currents(board, ledger=L)[board.net_id("FAN_PWR")]
         self.assertEqual((fan["current_a"], fan["voltage_v"]), (9.0, 12.0))
         self.assertTrue(fan.declared)
+
+
+class TestBrownoutAtTheNetsOwnVoltage:
+    """A 12 V feed is judged against 12 V and the board's brown-out fraction (4.5 V on 5 V: 90 %), not the 5 V rail."""
+
+    def _fan(self, volt):
+        from suspension import pcb_altium
+        from suspension import pcb_doctor as pdr
+        b = pcb_altium.parse_altium_ascii(pcb_altium.demo_altium_pcb())
+        b.copper_oz = 1.0
+        asg = pdr.auto_assign_net_currents(b)
+        pdr.apply_demo_declarations(b, asg, overrides={"FAN_PWR": {"current_a": 8.0, "voltage_v": volt}})
+        return [f for f in pdr.diagnose(b, asg).findings if "IR drop" in f.check and "FAN_PWR" in f.check]
+
+    def test_five_volt_net_keeps_the_board_rail(self):
+        (f,) = self._fan(5.0)
+        assert f.severity == Severity.FAIL and "the 5 V rail arrives" in f.message and "below the 4.5 V" in f.message
+        assert "brown-out fraction" not in f.message
+
+    def test_twelve_volt_net_is_judged_at_twelve_volts(self):
+        (f,) = self._fan(12.0)
+        assert f.severity == Severity.WARN and "5 V rail" not in f.message
+        assert "99% of the brown-out margin" in f.message
+        assert "(4.5 V on 5 V, the board's brown-out fraction, applied to this 12 V net)" in f.message

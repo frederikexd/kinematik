@@ -2188,11 +2188,17 @@ def diagnose(board: PcbBoard, assignments: dict,
         if r_est is not None and volt <= 60.0:
             r_up /= max(copper_finish, 1e-3)
             drop = cur * r_up
-            delivered = rail_v - drop
+            #  Each net is judged at its own voltage: a 12 V fan feed against 12 V, not against the 5 V logic rail.
+            #  The board's brown-out is kept as the same fraction of nominal (4.5 V on 5 V is 90 %, so 10.8 V on 12 V).
+            net_rail = volt if volt > 0 else rail_v
+            net_brownout = brownout_v * net_rail / rail_v if rail_v > 0 else brownout_v
+            scaled = (f" ({brownout_v:g} V on {rail_v:g} V, the board's brown-out fraction, applied to this "
+                      f"{net_rail:g} V net)" if net_rail != rail_v else "")
+            delivered = net_rail - drop
             zone_note = ("" if not nr["has_zone"] else " (through the pour)" if pour is not None and
                          r_est == pour["r_ohm"] else " (pads joined by tracks; the pour was not solved)"
                          if pour is None else " (the tracked pads; the pour's worst pair is lower)")
-            if delivered < brownout_v:
+            if delivered < net_brownout:
                 F.append(Finding(
                     check=f"IR drop / brown-out — {name}", severity=Severity.FAIL,
                     subsystems=["electrics"],
@@ -2201,23 +2207,23 @@ def diagnose(board: PcbBoard, assignments: dict,
                              f"{pr[0]} and {pr[1]}{zone_note}, taken as up to "
                              f"{r_up*1000:.0f} mΩ with the model's margin and copper up to "
                              f"{100*(1-copper_finish):.0f} % thin from the fab. At {cur:g} A that "
-                             f"drops {drop:.2f} V — the {rail_v:g} V rail arrives "
-                             f"at {delivered:.2f} V, below the {brownout_v:g} V "
-                             f"brown-out. On track this is the ECU resetting "
+                             f"drops {drop:.2f} V — the {net_rail:g} V rail arrives "
+                             f"at {delivered:.2f} V, below the {net_brownout:.3g} V "
+                             f"brown-out{scaled}. On track this is the ECU resetting "
                              f"exactly when the fans and brake light fire "
                              f"together — invisible on the bench at idle current. "
                              f"FIX: apply the width fixes below, add a pour, or "
                              f"feed {pr[1]} directly from the rail.")))
-            elif drop > 0.25 * (rail_v - brownout_v):
+            elif drop > 0.25 * (net_rail - net_brownout):
                 F.append(Finding(
                     check=f"IR drop — {name}", severity=Severity.WARN,
                     subsystems=["electrics"],
                     message=(f"'{name}' drops {drop:.2f} V at {cur:g} A over its "
                              f"real routed mesh (up to {r_up*1000:.0f} mΩ, "
                              f"{pr[0]}→{pr[1]}){zone_note} — "
-                             f"{drop/(rail_v-brownout_v)*100:.0f}% of the brown-out "
+                             f"{int(drop / (net_rail - net_brownout) * 100)}% of the brown-out "  # rounded down: 100 % only when it is all gone
                              f"margin gone in copper before any connector or "
-                             f"harness drop is counted.")))
+                             f"harness drop is counted.{scaled}")))
         elif nr.get("nodal_skipped"):
             F.append(Finding(
                 check=f"IR drop — {name}", severity=Severity.INFO,
