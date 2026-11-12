@@ -29,3 +29,24 @@ Only the latest version on the `main` branch, which is what the hosted app runs,
 - **All traffic** between the browser, the app and the database uses HTTPS.
 
 What is stored, where, and how to delete it: see [PRIVACY.md](PRIVACY.md).
+
+## Files you upload are treated as untrusted
+
+Every file a team uploads is parsed by code that assumes the file may be damaged, mislabeled or hostile.
+What that code guarantees, and how it is tested:
+
+- **No silent garbage.** A value that is not a finite number (`nan`, `inf`, `1e999`, JSON `NaN` / `Infinity`) is
+  refused with a message naming the file, row and column where that is known. It never becomes part of a model.
+  This covers board files, aero maps, run logs, dyno and fuel maps, frame CSVs, STEP tube imports, hardpoint
+  tables, track and GPS paths, cone maps, speed traces, `.tir` files, tire coefficients, tire test data, spring
+  bench logs, part meshes, reproducibility manifests and project bundles.
+- **A message, not a traceback.** A file the parser cannot read raises one error type (`ValueError`) with a
+  sentence for the person holding the file.
+- **Bounded memory.** A zip upload is unpacked to at most 256 MB per member and 512 MB in all, read to the limit
+  rather than trusting the size the archive declares.
+- **How it is tested.** `tests/test_pcb_upload_fuzz.py` replays 800 seeded damaged board files on every run.
+  `tests/test_untrusted_inputs.py` pins each refusal found by fuzzing about 30 entry points with more than 15 million damaged
+  inputs (truncation, deleted and duplicated chunks, numbers replaced by `nan`, `inf`, zero, negative and
+  overflowing values, random bytes). That fuzzing found more than 30 defects; each is fixed and has a test.
+- **Not covered.** Numbers typed into the app are bounded by their input widgets, not by this layer. Binary CAD
+  kernels (STEP tessellation, GLB) are third-party code; their failures are caught and reported, not prevented.
