@@ -1888,6 +1888,9 @@ def diagnose(board: PcbBoard, assignments: dict,
     executable width-fix list."""
     rep = DoctorReport()
     F = rep.findings
+    #  The voltages the user declared, kept on the board so a widening is checked against the clearance an HV net
+    #  needs (IPC-2221 B4), not only the LV default.
+    board.net_voltage_v = {nid: float(a.get("voltage_v", 0) or 0) for nid, a in assignments.items()}
 
     def hint(nid):
         a = assignments.get(nid, {})
@@ -2004,7 +2007,7 @@ def diagnose(board: PcbBoard, assignments: dict,
                               "prescribed only, use copper weight / paralleling"
                               if is_pair_member else
                               f"widening to {w_new:g} mm would leave {max(clash[1], 0):.2f} mm to "
-                              f"'{clash[0]}' (needs {FIX_MIN_CLEARANCE_MM:g} mm): not applied — reroute "
+                              f"'{clash[0]}' (needs {clash[2]:g} mm): not applied — reroute "
                               f"this segment, or move the net to 2 oz copper" if clash else "")))
 
         # -- fusing margin -------------------------------------------------------- #
@@ -2312,33 +2315,42 @@ def _seg_seg_mm(a0, a1, b0, b1) -> float:
 
 
 def widening_conflict(board: PcbBoard, seg_index: int, new_width_mm: float,
-                      min_clear_mm: float = FIX_MIN_CLEARANCE_MM):
+                      min_clear_mm: float = FIX_MIN_CLEARANCE_MM):   # noqa: C901
     """The first piece of another net's copper on the same layer that a segment widened to `new_width_mm` (mm)
-    would come closer to than `min_clear_mm` (mm), as (net name, gap mm), or None when the widening is clear.
+    would come closer to than it may, as (net name, gap mm, clearance needed mm), or None when the widening is
+    clear. The clearance needed is `min_clear_mm`, or IPC-2221 B4 when either net is declared above 60 V.
     Checks tracks, pads (as their bounding circle, conservatively) and vias."""
     sg = board.segments[seg_index]
     hw = new_width_mm / 2.0
     a0, a1 = sg.start, sg.end
+    volts = getattr(board, "net_voltage_v", {}) or {}
+
+    def need(other_net):
+        """Clearance (mm) between this segment's net and `other_net`: the LV default, or IPC-2221 B4 when either
+        carries more than 60 V."""
+        v = max(abs(volts.get(sg.net, 0.0)), abs(volts.get(other_net, 0.0)))
+        return max(min_clear_mm, clearance_required_mm(v)) if v > 60.0 else min_clear_mm
+
     for o in board.segments:
         if o.net == sg.net or o.layer != sg.layer:
             continue
         gap = _seg_seg_mm(a0, a1, o.start, o.end) - hw - o.width_mm / 2.0
-        if gap < min_clear_mm - 1e-6:
-            return board.net_name(o.net), gap
+        if gap < need(o.net) - 1e-6:
+            return board.net_name(o.net), gap, need(o.net)
     for fp in board.footprints:
         for p in fp.pads:
             if p.net == sg.net or not (p.through or (p.layer or ("B.Cu" if fp.layer == "B.Cu" else "F.Cu")) == sg.layer):
                 continue
             r = math.hypot(p.size[0], p.size[1]) / 2.0
             gap = _seg_seg_mm(a0, a1, p.at, p.at) - hw - r
-            if gap < min_clear_mm - 1e-6:
-                return (board.net_name(p.net) if p.net else f"{fp.ref}.{p.number}"), gap
+            if gap < need(p.net) - 1e-6:
+                return (board.net_name(p.net) if p.net else f"{fp.ref}.{p.number}"), gap, need(p.net)
     for v in board.vias:
         if v.net == sg.net:
             continue
         gap = _seg_seg_mm(a0, a1, v.at, v.at) - hw - v.size_mm / 2.0
-        if gap < min_clear_mm - 1e-6:
-            return board.net_name(v.net), gap
+        if gap < need(v.net) - 1e-6:
+            return board.net_name(v.net), gap, need(v.net)
     return None
 
 
@@ -2380,7 +2392,7 @@ def apply_fixes(board: PcbBoard, fixes: list) -> tuple:
             if clash is not None:
                 fx.auto = False
                 fx.note = (f"widening to {fx.new_width_mm:g} mm would leave {max(clash[1], 0):.2f} mm to "
-                           f"'{clash[0]}' once the other fixes are in (needs {FIX_MIN_CLEARANCE_MM:g} mm): not "
+                           f"'{clash[0]}' once the other fixes are in (needs {clash[2]:g} mm): not "
                            f"applied — reroute this segment, or move the net to 2 oz copper")
                 continue
             old_w.setdefault(fx.seg_index, seg.width_mm)
@@ -2399,6 +2411,68 @@ def apply_fixes(board: PcbBoard, fixes: list) -> tuple:
     for a, b, rep in edits:
         text = text[:a] + rep + text[b:]
     return text, applied
+
+
+_SEV_RANK = {"ok": 0, "info": 1, "missing": 2, "warning": 3, "fail": 4}
+
+
+def _worse_findings(before: DoctorReport, after: DoctorReport) -> list:
+    """Findings in `after` that are new, or more severe than the same check in `before` (by check name)."""
+    was = {}
+    for f in before.findings:
+        was[f.check] = max(was.get(f.check, 0), _SEV_RANK.get(f.severity.value, 0))
+    return [f for f in after.findings
+            if _SEV_RANK.get(f.severity.value, 0) >= _SEV_RANK["warning"]
+            and _SEV_RANK.get(f.severity.value, 0) > was.get(f.check, 0)]
+
+
+def fix_board(board: PcbBoard, assignments: dict, report: DoctorReport = None, max_rounds: int = 4,
+              **diag_kw) -> dict:
+    """Apply the automatic width fixes and prove the result: the patched file is parsed and diagnosed again, and
+    any fix whose result shows a finding the original did not have (or a worse one) is withdrawn, turned manual
+    with the reason, and the rest re-applied, until the patched board is no worse anywhere. Fixes that the first
+    patch leaves still wanting (heating moves with width) are applied in further rounds.
+
+    Returns {"text" (the patched file, or None when nothing could be applied safely), "applied", "manual",
+    "report" (the patched board's diagnosis), "remaining" (FAIL and WARN findings still on the patched board;
+    these need rerouting, vias or copper weight, which a width rewrite cannot give), "rounds"}.
+    diag_kw go to `diagnose` (rail_v, brownout_v, ambient_c in °C, max_temp_c in °C, fuse_sf, ...)."""
+    rep0 = report if report is not None else diagnose(board, assignments, **diag_kw)
+    work, text, rep, applied, rnd = board, None, rep0, [], 0
+    manual = [fx for fx in rep0.fixes if not fx.auto]
+    name = getattr(board, "filename", "") or ("x" + board.file_suffix)
+    for rnd in range(1, max_rounds + 1):
+        cand = list(rep.fixes)
+        if not [fx for fx in cand if fx.auto]:
+            break
+        progressed = False
+        while [fx for fx in cand if fx.auto]:
+            t2, app2 = apply_fixes(work, cand)
+            if not app2:
+                break
+            b2 = parse_board(t2, name)
+            b2.copper_oz = board.copper_oz
+            rep2 = diagnose(b2, assignments, **diag_kw)
+            worse = _worse_findings(rep0, rep2)
+            if not worse:
+                work, text, rep, progressed = b2, t2, rep2, True
+                applied += app2
+                break
+            #  Withdraw the fixes on the nets the new findings name; with no net to blame, withdraw them all.
+            bad = {fx.net for fx in app2 if any(fx.net in f.check or f"'{fx.net}'" in f.message for f in worse)}
+            for fx in app2:
+                if not bad or fx.net in bad:
+                    fx.auto = False
+                    fx.note = (f"withdrawn: with this widening the patched board shows "
+                               f"'{worse[0].check}' ({worse[0].severity.value}), which the original did not")
+        manual += [fx for fx in cand if not fx.auto and fx not in manual]
+        if not progressed:
+            break
+    #  A fix still wanted on the final board but not made is manual, whatever round it came from.
+    manual = [fx for fx in manual if not any(a.net == fx.net and a.seg_index == fx.seg_index for a in applied)]
+    remaining = [f for f in rep.findings if f.severity.value in ("fail", "warning")]
+    return {"text": text, "applied": applied, "manual": manual, "report": rep, "remaining": remaining,
+            "rounds": rnd}
 
 
 def bringup_measurements(board: PcbBoard, nets=None, room_c: float = 22.0,

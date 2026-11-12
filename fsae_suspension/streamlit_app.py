@@ -26171,30 +26171,42 @@ def render_pcb_doctor():
                 f"As ▸ PCB ASCII File** and drop that in — the findings will be "
                 f"the same, and the patched file will reopen in Altium.")
         elif auto_n:
-            patched, applied = pdr_mod.apply_fixes(pboard, rep.fixes)
             try:
-                board2 = pdr_mod.parse_board(patched, _pdr_fname)
-                board2.copper_oz = pboard.copper_oz
-                rep2 = pdr_mod.diagnose(
-                    board2, assign,
+                _fixed = pdr_mod.fix_board(
+                    pboard, assign, report=rep,
                     rail_v=float(board_ctx.rail_nominal_v),
                     brownout_v=float(board_ctx.ecu_brownout_v),
                     ambient_c=float(board_ctx.ambient_c),
                     max_temp_c=float(board_ctx.max_trace_temp_c),
                     fuse_sf=float(board_ctx.fuse_safety_factor))
-                c2 = rep2.counts()
+                patched, applied = _fixed["text"], _fixed["applied"]
+                if patched is None:
+                    raise ValueError("no widening could be applied without making something else worse")
+                c2 = _fixed["report"].counts()
+                _left = _fixed["remaining"]
                 st.markdown(
                     f'<p class="hint">Patched board re-diagnosed: '
                     f'<b>{counts["fail"]} → {c2["fail"]} FAIL</b>, '
-                    f'{counts["warning"]} → {c2["warning"]} WARN. Only the '
-                    f'width tokens changed — nets, routing and everything else '
-                    f'are byte-identical, in the file\'s own units. Every '
-                    f'widening was checked to keep {pdr_mod.FIX_MIN_CLEARANCE_MM:g} mm '
-                    f'to every other net on its layer, with the other fixes in place; '
-                    f'one that would not is left out and listed as MANUAL. Still '
-                    f'run {pboard.fmt_label.split(" /")[0]} DRC: your board\'s own '
-                    f'rules may be tighter.</p>',
+                    f'{counts["warning"]} → {c2["warning"]} WARN. Verified: the patched '
+                    f'file has <b>no finding the original did not have, and none worse</b>; '
+                    f'a widening that would have caused one was withdrawn. Every widening '
+                    f'keeps {pdr_mod.FIX_MIN_CLEARANCE_MM:g} mm to other nets on its layer '
+                    f'(IPC-2221 B4 next to a declared HV net). Only width tokens changed, in '
+                    f'the file\'s own units.</p>',
                     unsafe_allow_html=True)
+                if _left:
+                    st.warning(
+                        f"**{len(_left)} finding(s) remain on the patched board.** A width "
+                        f"rewrite cannot clear them: they need a reroute where there is no "
+                        f"room to widen, more vias, copper weight, or clearance changes. "
+                        f"They are listed in the fix report with the change each needs. "
+                        f"The patched file is better, not finished; run "
+                        f"{pboard.fmt_label.split(' /')[0]} DRC on it before fab.")
+                    with st.expander("What is still open"):
+                        for _f in _left:
+                            st.markdown(f"- **{_f.severity.value.upper()}** {_f.check}")
+                else:
+                    st.success("Every finding the width fixes address is cleared on the patched board.")
             except ValueError:
                 st.warning("Patched file failed to re-parse — not offered for "
                            "download. Please report this board.")

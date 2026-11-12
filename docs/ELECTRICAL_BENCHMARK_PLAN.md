@@ -451,3 +451,9 @@ limited to 150,000 cells, worst pair among up to 64 pads) returns a value marked
   the unconverged ones are checked against the brown-out check's ×1.10.
 - **Pass:** all scored nets within 2 %. With 80 of 80 the 95 % lower bound on the rate is 0.05^(1/80) = 96.3 %. Any
   miss is published with its cause.
+
+### Addendum 14, amendment (written before any reference value for these nets existed)
+
+488 of the 598 nets are on boards saved by KiCad 8, which KiCad 7 cannot open. For those the reference reads the
+board with KiCad 9.0.3 (the environment of addendum 7's amendment), with the same solver code and rules. The
+KinematiK values were already computed by the frozen commit and are not recomputed.

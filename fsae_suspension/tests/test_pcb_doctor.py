@@ -1498,3 +1498,66 @@ class TestBrownoutThroughAPour(unittest.TestCase):
         from suspension import pcb_doctor as D
         self.assertGreaterEqual(D.POUR_UNVERIFIED_FACTOR, 1.10)
         self.assertGreater(D.POUR_UNVERIFIED_FACTOR, D.SHEET_UPPER_FACTOR)
+
+
+class TestVerifiedFix(unittest.TestCase):
+    """A patched board must never carry a finding the original did not have, or a worse one."""
+
+    def test_demo_patched_board_is_never_worse(self):
+        from suspension.pcb_doctor import _worse_findings, fix_board
+        for text, name in ((demo_kicad_pcb(), "d.kicad_pcb"), (demo_altium_pcb(), "d.PcbDoc")):
+            with self.subTest(name):
+                board = parse_board(text, name)
+                asg = apply_demo_declarations(board, auto_assign_net_currents(board, ledger=None))
+                rep0 = diagnose(board, asg)
+                out = fix_board(board, asg, report=rep0)
+                self.assertIsNotNone(out["text"])
+                b2 = parse_board(out["text"], name)
+                b2.copper_oz = board.copper_oz
+                self.assertEqual(_worse_findings(rep0, diagnose(b2, asg)), [])
+                self.assertTrue(out["remaining"])                # FAN_PWR on F.Cu has no room: said, not hidden
+                self.assertTrue(all(f.severity.value in ("fail", "warning") for f in out["remaining"]))
+
+    def test_a_widening_into_an_hv_gap_is_refused(self):
+        """LV default spacing is not enough next to 400 V: IPC-2221 B4 applies to the fix as it does to the check.
+        10 A needs 8.2 mm (heating and the 2x fusing margin); with the 400 V net 6 mm away that leaves 1.65 mm,
+        under the 2.5 mm B4 wants but well over the 0.2 mm LV default, so only an HV-aware fixer refuses it."""
+        from suspension.pcb_doctor import FIX_MIN_CLEARANCE_MM, clearance_required_mm, fix_board
+        b = parse_kicad_pcb('(kicad_pcb (version 20221018) (layers (0 "F.Cu" signal)) (net 0 "") (net 1 "PWR") (net 2 "HV")'
+                            ' (segment (start 0 0) (end 30 0) (width 0.2) (layer "F.Cu") (net 1))'
+                            ' (segment (start 0 6.0) (end 30 6.0) (width 0.5) (layer "F.Cu") (net 2)))')
+        asg = auto_assign_net_currents(b, ledger=None)
+        asg[1] = {**asg.get(1, {}), "current_a": 10.0, "voltage_v": 12.0, "declared": True, "assumed": False, "source": "t"}
+        asg[2] = {**asg.get(2, {}), "current_a": 0.1, "voltage_v": 400.0, "declared": True, "assumed": False, "source": "t"}
+        need_hv = clearance_required_mm(400.0)
+        out = fix_board(b, asg)
+        refused = [fx for fx in out["manual"] if fx.net == "PWR"]
+        self.assertTrue(refused)
+        self.assertIn("'HV' (needs 2.5 mm)", refused[0].note)
+        lv_gap = 6.0 - refused[0].new_width_mm / 2 - 0.25
+        self.assertTrue(FIX_MIN_CLEARANCE_MM < lv_gap < need_hv)     # an LV-only check would have written it
+        b2 = parse_kicad_pcb(out["text"]) if out["text"] else b
+        self.assertGreaterEqual(6.0 - b2.segments[0].width_mm / 2 - 0.25, need_hv - 1e-9)
+
+    def test_a_fix_that_makes_another_finding_worse_is_withdrawn(self):
+        from unittest import mock
+
+        from suspension import pcb_doctor as D
+        board = parse_board(demo_kicad_pcb(), "d.kicad_pcb")
+        asg = apply_demo_declarations(board, auto_assign_net_currents(board, ledger=None))
+        rep0 = D.diagnose(board, asg)
+        real = D.diagnose
+        calls = {"n": 0}
+
+        def worse_after_patch(b, a, **kw):
+            r = real(b, a, **kw)
+            calls["n"] += 1
+            r.findings.append(D.Finding(check="invented — FAN_PWR", severity=D.Severity.FAIL,
+                                        subsystems=["electrics"], message="'FAN_PWR' got worse"))
+            return r
+        with mock.patch.object(D, "diagnose", worse_after_patch):
+            out = D.fix_board(board, asg, report=rep0)
+        self.assertGreater(calls["n"], 0)
+        self.assertIsNone(out["text"])                           # nothing safe to hand back
+        self.assertTrue(all(not fx.auto for fx in rep0.fixes if fx.net == "FAN_PWR"))
+        self.assertTrue(any("withdrawn" in fx.note for fx in rep0.fixes))
