@@ -3,6 +3,13 @@
 
 ## Unreleased
 
+**PCB Doctor: large pours and recommended vias.**
+- *Large pours:* a "Solve large pours (much slower)" switch solves planes up to 3 million cells. It says before it starts that it takes minutes per pour.
+- *Recommended vias:* where a via is the bottleneck, the Doctor proposes stitching vias of the net's own size beside the existing one, joined on every layer and clear of other copper.
+  - None is written unless the engineer ticks it.
+  - Picked vias are verified like every other fix.
+  - KiCad files only; on Altium they are a recommendation to place by hand.
+
 **Electrical: sheet-solve net resistance, pour grid check, empty pours.**
 - Net resistance is refined by a 2-D sheet solve between the worst pad pair. Held out on 100 new KiCad 9 nets: 92 of 92 refined nets within 2 %.
 - The brown-out bound is the larger of the 1-D bound and the sheet-solve value, so it only gets stricter.

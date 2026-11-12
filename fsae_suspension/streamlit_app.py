@@ -1424,9 +1424,10 @@ def _cached_diagnose(_board, fp: str, _assign, knobs: tuple):
     underscore-prefixed so Streamlit does not try to hash them; `fp` and
     `knobs` carry the real cache identity."""
     from suspension import pcb_doctor as _pdr
-    rail, brown, amb, tmax, sf = knobs
+    rail, brown, amb, tmax, sf, big = knobs
     return _pdr.diagnose(_board, _assign, rail_v=rail, brownout_v=brown,
-                         ambient_c=amb, max_temp_c=tmax, fuse_sf=sf)
+                         ambient_c=amb, max_temp_c=tmax, fuse_sf=sf,
+                         pour_max_cells=_pdr.LARGE_POUR_MAX_CELLS if big else None)
 
 
 @st.cache_data(show_spinner=False, ttl=600, max_entries=4)
@@ -26095,11 +26096,22 @@ def render_pcb_doctor():
              "fuse-safety numbers come from ⚙️ Board context above — one source "
              "of truth for both panels.")
     pboard.copper_oz = float(copper_oz)
+    _n_pour = len([n for n in pboard.zone_nets if n])
+    _big = st.toggle(
+        "Solve large pours (much slower)", value=False, key="pdr_big_pours", disabled=not _n_pour,
+        help="Off: pours up to 150,000 cells are solved in seconds; larger ones are reported as NOT checked. "
+             "On: planes up to about 3 million cells are solved too. That takes minutes per large pour and can "
+             "take much longer on a whole-board ground plane, so the page waits until it is done. Planes larger "
+             "than that are still reported as not checked.")
+    if _big:
+        st.warning(f"Large pours are on: this board has {_n_pour} poured net(s). Expect minutes per large pour, "
+                   "longer for whole-board planes. Leave the page open; the result is kept once solved.")
     _knobs = (float(board_ctx.rail_nominal_v), float(board_ctx.ecu_brownout_v),
               float(board_ctx.ambient_c), float(board_ctx.max_trace_temp_c),
-              float(board_ctx.fuse_safety_factor))
+              float(board_ctx.fuse_safety_factor), bool(_big))
     _fp = _pcb_fingerprint(pboard, assign, _knobs)
-    with st.spinner("Diagnosing the routed copper…"):
+    with st.spinner("Solving the large pours: this can take many minutes…" if _big
+                    else "Diagnosing the routed copper…"):
         rep = _cached_diagnose(pboard, _fp, assign, _knobs)
 
     counts = rep.counts()
@@ -26160,6 +26172,23 @@ def render_pcb_doctor():
         else:
             st.caption("No under-sized copper at the assigned currents — "
                        "nothing to rewrite.")
+        #  Recommended, never automatic: the engineer decides which of these go into the file.
+        _picked_vias = []
+        if rep.via_recommendations:
+            st.markdown(
+                f'<p class="hint"><b>{len(rep.via_recommendations)} stitching via(s) recommended</b> where a via '
+                f'is the bottleneck. Each sits beside an existing via of the same net, is joined to it on every '
+                f'layer it spans, and keeps {pdr_mod.FIX_MIN_CLEARANCE_MM:g} mm (or your net-class or IPC-2221 HV '
+                f'clearance) to all other copper. <b>None is added unless you tick it.</b> Check the placement '
+                f'against your mechanical and thermal intent before you do.</p>', unsafe_allow_html=True)
+            for _k, _vf in enumerate(rep.via_recommendations):
+                if st.checkbox(f"Add via on {_vf.net} at ({round(_vf.at[0], 2)}, {round(_vf.at[1], 2)}) mm, "
+                               f"⌀{_vf.drill_mm:g} drill, {_vf.note}", value=False, key=f"pdr_via_{_k}",
+                               disabled=pboard.fmt != "kicad",
+                               help=None if pboard.fmt == "kicad" else
+                               "Altium boards: add this via by hand in Altium; the Doctor writes vias into "
+                               "KiCad files only."):
+                    _picked_vias.append(_vf)
         if auto_n and not pboard.patchable:
             # Every prescription above still stands — only the automatic
             # rewrite is withheld, because writing widths into a binary board
@@ -26170,10 +26199,11 @@ def render_pcb_doctor():
                 f"the one-click re-trace, re-save from Altium as **File ▸ Save "
                 f"As ▸ PCB ASCII File** and drop that in — the findings will be "
                 f"the same, and the patched file will reopen in Altium.")
-        elif auto_n:
+        elif auto_n or _picked_vias:
             try:
                 _fixed = pdr_mod.fix_board(
-                    pboard, assign, report=rep,
+                    pboard, assign, report=rep, vias=_picked_vias,
+                    pour_max_cells=pdr_mod.LARGE_POUR_MAX_CELLS if _big else None,
                     rail_v=float(board_ctx.rail_nominal_v),
                     brownout_v=float(board_ctx.ecu_brownout_v),
                     ambient_c=float(board_ctx.ambient_c),
@@ -26222,7 +26252,8 @@ def render_pcb_doctor():
                         break
                 dl = st.columns(2)
                 dl[0].download_button(
-                    f"⬇ Patched board ({auto_n} traces re-sized)",
+                    f"⬇ Patched board ({sum(1 for _a in applied if not isinstance(_a, pdr_mod.ViaFix))} traces "
+                    f"re-sized, {sum(1 for _a in applied if isinstance(_a, pdr_mod.ViaFix))} vias you picked)",
                     data=patched, file_name=f"{base}_doctored{_sfx}",
                     mime="text/plain", key="pdr_dl_board")
                 dl[1].download_button(

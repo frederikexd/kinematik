@@ -1143,17 +1143,22 @@ def refined_net_resistance(board: PcbBoard, nid: int, nr: dict = None) -> dict:
 #  worst an unconverged estimate read low on the held-out pour nets was 6.5 %.
 POUR_UNVERIFIED_FACTOR = 1.10
 POUR_MAX_PADS = 64                 # pads of a pour net searched for the worst pair
+#  The opt-in "solve large pours" limit (cells in all): planes up to about 1.5 million cells per layer, the size the
+#  held-out large-plane benchmark (pours_round4.json, 7 of 7 converged nets within 2 %) was solved at. Minutes per
+#  plane, sometimes much longer; a plane larger than this is still not estimated.
+LARGE_POUR_MAX_CELLS = 3_000_000
 
 
-def pour_net_resistance(board: PcbBoard, nid: int) -> dict | None:
-    """Worst pad-to-pad resistance (Ω) of a net through its pour, from the sheet solve limited to REFINE_MAX_CELLS:
+def pour_net_resistance(board: PcbBoard, nid: int, max_cells: int | None = None) -> dict | None:
+    """Worst pad-to-pad resistance (Ω) of a net through its pour, from the sheet solve limited to `max_cells` cells
+    (default REFINE_MAX_CELLS, seconds per net; LARGE_POUR_MAX_CELLS solves large planes, minutes per net):
     {"r_ohm", "pair", "converged", ...}, or None when the net has no pour, is too large to solve here, or its pads
     are not joined by copper."""
     if nid not in board.zone_nets:
         return None
     try:
         from . import pcb_pour
-        out = pcb_pour.pour_resistance(board, nid, max_pads=POUR_MAX_PADS, max_cells=REFINE_MAX_CELLS)
+        out = pcb_pour.pour_resistance(board, nid, max_pads=POUR_MAX_PADS, max_cells=max_cells or REFINE_MAX_CELLS)
     except (ImportError, MemoryError):
         return None
     return out if out.get("r_ohm") else None
@@ -1873,9 +1878,26 @@ class TraceFix:
 
 
 @dataclass
+class ViaFix:
+    """A recommended stitching via (never applied unless the user picks it): a via of the net's own size beside an
+    existing one, joined to it by a short track on every layer it spans. Positions in board mm."""
+    net: str
+    nid: int
+    at: tuple
+    size_mm: float
+    drill_mm: float
+    layers: tuple
+    joins: tuple            # the existing via's position it is stitched to (mm)
+    stub_width_mm: float
+    note: str = ""
+
+
+@dataclass
 class DoctorReport:
     findings: list = field(default_factory=list)     # [Finding]
     fixes: list = field(default_factory=list)        # [TraceFix]
+    #  Recommended only. The Doctor never writes these on its own: the engineer picks which go in (plan of record).
+    via_recommendations: list = field(default_factory=list)   # [ViaFix]
     net_reports: dict = field(default_factory=dict)  # nid -> analyze_net dict
 
     def counts(self):
@@ -1895,7 +1917,7 @@ def diagnose(board: PcbBoard, assignments: dict,
              rail_v: float = 5.0, brownout_v: float = 4.5,
              ambient_c: float = 40.0, max_temp_c: float = 105.0,
              fuse_sf: float = 2.0, dT_budget_c: float = 20.0,
-             copper_finish: float = COPPER_FINISH_FACTOR) -> DoctorReport:
+             copper_finish: float = COPPER_FINISH_FACTOR, pour_max_cells: int | None = None) -> DoctorReport:
     """Run every check against the parsed board + the per-net current/voltage
     assignments. Returns findings (plain-language WHY + numeric FIX) and the
     executable width-fix list."""
@@ -2066,13 +2088,15 @@ def diagnose(board: PcbBoard, assignments: dict,
                                  f"with ≥{need} vias (add "
                                  f"{need - len(vlist)} more) or use a "
                                  f"⌀0.6 mm drill.")))
+                stub = max(min(sg.width_mm for sg in segs), 0.25)
+                rep.via_recommendations += recommend_stitching_vias(board, nid, need - len(vlist), stub)
 
         # -- true IR drop → brown-out ------------------------------------------------ #
         volt = float(a.get("voltage_v", rail_v) or rail_v)
         #  On a net with a pour the 1-D model sees only the pads its tracks join: a pad fed through the pour is
         #  not in its worst pair, and that pair can be many times the tracked one (40 x on one benchmark net,
         #  plan addendum 13). So the pour is solved too, and where it cannot be the report says what was left out.
-        pour = pour_net_resistance(board, nid) if (nr["has_zone"] and volt <= 60.0) else None
+        pour = pour_net_resistance(board, nid, pour_max_cells) if (nr["has_zone"] and volt <= 60.0) else None
         r_est, pr, r_up = nr["worst_r_ohm"], nr["worst_pair"] or ("?", "?"), 0.0
         if r_est is not None:
             ref_ = refined_net_resistance(board, nid, nr)
@@ -2087,11 +2111,14 @@ def diagnose(board: PcbBoard, assignments: dict,
             F.append(Finding(
                 check=f"IR drop — {name}", severity=Severity.WARN,
                 subsystems=["electrics"],
-                message=(f"'{name}' has a copper pour too large to solve here, so the voltage drop to pads fed "
-                         f"through the pour is NOT checked"
+                message=(f"'{name}' has a copper pour too large to solve "
+                         f"{'even with large pours switched on' if pour_max_cells else 'in the quick check'}, so the "
+                         f"voltage drop to pads fed through the pour is NOT checked"
                          + (f"; the figure below covers only the pads its tracks join." if r_est is not None
                             else " and none of its pads are joined by tracks alone.")
-                         + " Check the drop to the farthest load in your PCB tool's DC analysis.")))
+                         + (" Check the drop to the farthest load in your PCB tool's DC analysis." if pour_max_cells
+                            else " Switch on 'Solve large pours' to check it here (minutes per pour), or check the "
+                                 "drop to the farthest load in your PCB tool's DC analysis."))))
         if r_est is not None and volt <= 60.0:
             r_up /= max(copper_finish, 1e-3)
             drop = cur * r_up
@@ -2327,49 +2354,87 @@ def _seg_seg_mm(a0, a1, b0, b1) -> float:
     return min(_pt(a0, b0, b1), _pt(a1, b0, b1), _pt(b0, a0, a1), _pt(b1, a0, a1))
 
 
-def widening_conflict(board: PcbBoard, seg_index: int, new_width_mm: float,
-                      min_clear_mm: float = FIX_MIN_CLEARANCE_MM):   # noqa: C901
-    """The first piece of another net's copper on the same layer that a segment widened to `new_width_mm` (mm)
-    would come closer to than it may, as (net name, gap mm, clearance needed mm), or None when the widening is
-    clear. The clearance needed is `min_clear_mm`, or IPC-2221 B4 when either net is declared above 60 V.
-    Checks tracks, pads (as their bounding circle, conservatively) and vias."""
-    sg = board.segments[seg_index]
-    hw = new_width_mm / 2.0
-    a0, a1 = sg.start, sg.end
+def copper_conflict(board: PcbBoard, nid: int, a0, a1, half_width_mm: float, layer: str,
+                    min_clear_mm: float = FIX_MIN_CLEARANCE_MM, skip_segment: int = -1):
+    """The first piece of another net's copper on `layer` that a capsule from a0 to a1 (mm) of half width
+    `half_width_mm` (mm) would come closer to than it may, as (net name, gap mm, clearance needed mm), or None."""
     volts = getattr(board, "net_voltage_v", {}) or {}
+    rules = getattr(board, "clearance_mm", {}) or {}
 
-    def need(other_net):
-        """Clearance (mm) between this segment's net and `other_net`: the LV default, or IPC-2221 B4 when either
-        carries more than 60 V."""
-        v = max(abs(volts.get(sg.net, 0.0)), abs(volts.get(other_net, 0.0)))
-        rules = getattr(board, "clearance_mm", {}) or {}
-        lv = max(min_clear_mm, rules.get(sg.net, 0.0), rules.get(other_net, 0.0))   # the board's own net-class rule
+    def _need(other_net):
+        v = max(abs(volts.get(nid, 0.0)), abs(volts.get(other_net, 0.0)))
+        lv = max(min_clear_mm, rules.get(nid, 0.0), rules.get(other_net, 0.0))
         return max(lv, clearance_required_mm(v)) if v > 60.0 else lv
 
-    for o in board.segments:
-        if o.net == sg.net or o.layer != sg.layer:
+    for i, o in enumerate(board.segments):
+        if i == skip_segment or o.net == nid or o.layer != layer:
             continue
-        gap = _seg_seg_mm(a0, a1, o.start, o.end) - hw - o.width_mm / 2.0
-        if gap < need(o.net) - 1e-6:
-            return board.net_name(o.net), gap, need(o.net)
+        gap = _seg_seg_mm(a0, a1, o.start, o.end) - half_width_mm - o.width_mm / 2.0
+        if gap < _need(o.net) - 1e-6:
+            return board.net_name(o.net), gap, _need(o.net)
     for fp in board.footprints:
         for p in fp.pads:
-            if p.net == sg.net or not (p.through or (p.layer or ("B.Cu" if fp.layer == "B.Cu" else "F.Cu")) == sg.layer):
+            if p.net == nid or not (p.through or (p.layer or ("B.Cu" if fp.layer == "B.Cu" else "F.Cu")) == layer):
                 continue
-            r = math.hypot(p.size[0], p.size[1]) / 2.0
-            gap = _seg_seg_mm(a0, a1, p.at, p.at) - hw - r
-            if gap < need(p.net) - 1e-6:
-                return (board.net_name(p.net) if p.net else f"{fp.ref}.{p.number}"), gap, need(p.net)
+            gap = _seg_seg_mm(a0, a1, p.at, p.at) - half_width_mm - math.hypot(p.size[0], p.size[1]) / 2.0
+            if gap < _need(p.net) - 1e-6:
+                return (board.net_name(p.net) if p.net else f"{fp.ref}.{p.number}"), gap, _need(p.net)
     for v in board.vias:
-        if v.net == sg.net:
+        if v.net == nid or layer not in v.layers and not (v.layers == ("F.Cu", "B.Cu")):
             continue
-        gap = _seg_seg_mm(a0, a1, v.at, v.at) - hw - v.size_mm / 2.0
-        if gap < need(v.net) - 1e-6:
-            return board.net_name(v.net), gap, need(v.net)
+        gap = _seg_seg_mm(a0, a1, v.at, v.at) - half_width_mm - v.size_mm / 2.0
+        if gap < _need(v.net) - 1e-6:
+            return board.net_name(v.net), gap, _need(v.net)
+    for z in board.zones:                                  # another net's pour: its outline edges
+        if z.net == nid or z.layer != layer or len(z.outline) < 3:
+            continue
+        pts = z.outline
+        for q0, q1 in zip(pts, pts[1:] + pts[:1]):
+            gap = _seg_seg_mm(a0, a1, q0, q1) - half_width_mm
+            if gap < _need(z.net) - 1e-6:
+                return board.net_name(z.net), gap, _need(z.net)
     return None
 
 
-def apply_fixes(board: PcbBoard, fixes: list) -> tuple:
+def recommend_stitching_vias(board: PcbBoard, nid: int, n_more: int, stub_width_mm: float) -> list:
+    """Up to `n_more` stitching vias for net `nid`, each beside one of its vias, joined by a stub on every layer the
+    via spans and clear of all other copper (`copper_conflict`). Fewer come back when there is no room."""
+    vias = board.vias_of(nid)
+    if not vias or n_more <= 0:
+        return []
+    placed: list = []
+    for v in vias:
+        pitch = v.size_mm + max(FIX_MIN_CLEARANCE_MM, 0.2)
+        for k in range(8):
+            if len(placed) >= n_more:
+                return placed
+            ang = 2 * math.pi * k / 8
+            at = (v.at[0] + pitch * math.cos(ang), v.at[1] + pitch * math.sin(ang))
+            if any(math.hypot(at[0] - q.at[0], at[1] - q.at[1]) < pitch - 1e-9 for q in list(vias) + placed):
+                continue
+            layers = tuple(v.layers) if v.layers else ("F.Cu", "B.Cu")
+            if any(copper_conflict(board, nid, at, at, v.size_mm / 2.0, ly) for ly in layers) or \
+                    any(copper_conflict(board, nid, v.at, at, stub_width_mm / 2.0, ly) for ly in layers):
+                continue
+            placed.append(ViaFix(net=board.net_name(nid), nid=nid, at=at, size_mm=v.size_mm, drill_mm=v.drill_mm,
+                                 layers=layers, joins=tuple(v.at), stub_width_mm=stub_width_mm,
+                                 note=f"beside the via at ({v.at[0]:.2f}, {v.at[1]:.2f}) mm"))
+    return placed
+
+
+def widening_conflict(board: PcbBoard, seg_index: int, new_width_mm: float,
+                      min_clear_mm: float = FIX_MIN_CLEARANCE_MM):
+    """The first piece of another net's copper on the same layer that a segment widened to `new_width_mm` (mm)
+    would come closer to than it may, as (net name, gap mm, clearance needed mm), or None when the widening is
+    clear. The clearance needed is the larger of `min_clear_mm` and either net's net-class clearance in the file,
+    or IPC-2221 B4 when either net is declared above 60 V. Checks tracks, pads (as their bounding circle,
+    conservatively), vias and other nets' pours."""
+    sg = board.segments[seg_index]
+    return copper_conflict(board, sg.net, sg.start, sg.end, new_width_mm / 2.0, sg.layer, min_clear_mm,
+                           skip_segment=seg_index)
+
+
+def apply_fixes(board: PcbBoard, fixes: list, vias: list = ()) -> tuple:
     """Return (patched_text, applied_fixes). Only auto=True fixes are applied;
     each rewrites exactly the one width token of its segment — KiCad's
     `(width x)` or Altium's `WIDTH=x` — and nothing else in the file moves, so
@@ -2425,6 +2490,20 @@ def apply_fixes(board: PcbBoard, fixes: list) -> tuple:
     text = board.text
     for a, b, rep in edits:
         text = text[:a] + rep + text[b:]
+    if vias:                                       # only the ones the engineer picked; KiCad files only
+        if board.fmt != "kicad":
+            raise ValueError("stitching vias can be written into KiCad boards only; add them in Altium by hand")
+        add = []
+        for vf in vias:
+            ly = " ".join(f'"{x}"' for x in vf.layers[:2]) if len(vf.layers) >= 2 else '"F.Cu" "B.Cu"'
+            add.append(f'  (via (at {vf.at[0]:.4f} {vf.at[1]:.4f}) (size {vf.size_mm:g}) (drill {vf.drill_mm:g}) '
+                       f'(layers {ly}) (net {vf.nid}))')
+            for L in vf.layers:
+                add.append(f'  (segment (start {vf.joins[0]:.4f} {vf.joins[1]:.4f}) (end {vf.at[0]:.4f} '
+                           f'{vf.at[1]:.4f}) (width {vf.stub_width_mm:g}) (layer "{L}") (net {vf.nid}))')
+        end = text.rstrip().rfind(")")
+        text = text[:end] + "\n".join(add) + "\n" + text[end:]
+        applied = applied + list(vias)
     return text, applied
 
 
@@ -2442,7 +2521,7 @@ def _worse_findings(before: DoctorReport, after: DoctorReport) -> list:
 
 
 def fix_board(board: PcbBoard, assignments: dict, report: DoctorReport = None, max_rounds: int = 4,
-              **diag_kw) -> dict:
+              vias: list = (), **diag_kw) -> dict:
     """Apply the automatic width fixes and prove the result: the patched file is parsed and diagnosed again, and
     any fix whose result shows a finding the original did not have (or a worse one) is withdrawn, turned manual
     with the reason, and the rest re-applied, until the patched board is no worse anywhere. Fixes that the first
@@ -2453,6 +2532,7 @@ def fix_board(board: PcbBoard, assignments: dict, report: DoctorReport = None, m
     these need rerouting, vias or copper weight, which a width rewrite cannot give), "rounds"}.
     diag_kw go to `diagnose` (rail_v, brownout_v, ambient_c in °C, max_temp_c in °C, fuse_sf, ...)."""
     rep0 = report if report is not None else diagnose(board, assignments, **diag_kw)
+    vias = list(vias)
     work, text, rep, applied, rnd = board, None, rep0, [], 0
     manual = [fx for fx in rep0.fixes if not fx.auto]
     name = getattr(board, "filename", "") or ("x" + board.file_suffix)
@@ -2483,8 +2563,26 @@ def fix_board(board: PcbBoard, assignments: dict, report: DoctorReport = None, m
         manual += [fx for fx in cand if not fx.auto and fx not in manual]
         if not progressed:
             break
+    #  The stitching vias the engineer picked go in last, on top of the verified widths, and are verified the same way.
+    if vias and board.fmt == "kicad":
+        t3, app3 = apply_fixes(work, [], vias)
+        b3 = parse_board(t3, name)
+        b3.copper_oz = board.copper_oz
+        rep3 = diagnose(b3, assignments, **diag_kw)
+        worse = _worse_findings(rep0, rep3)
+        if worse:
+            for vf in vias:
+                vf.note += (f"; withdrawn: with the picked vias the board shows '{worse[0].check}' "
+                            f"({worse[0].severity.value}), which the original did not")
+            manual += vias
+        else:
+            work, text, rep = b3, t3, rep3
+            applied += app3
+    elif vias:
+        manual += vias                                 # Altium: written by hand from the recommendation
     #  A fix still wanted on the final board but not made is manual, whatever round it came from.
-    manual = [fx for fx in manual if not any(a.net == fx.net and a.seg_index == fx.seg_index for a in applied)]
+    manual = [fx for fx in manual if isinstance(fx, ViaFix) or not any(
+        getattr(a, "seg_index", None) == fx.seg_index and a.net == fx.net for a in applied)]
     remaining = [f for f in rep.findings if f.severity.value in ("fail", "warning")]
     return {"text": text, "applied": applied, "manual": manual, "report": rep, "remaining": remaining,
             "rounds": rnd}

@@ -1581,3 +1581,68 @@ class TestFixHonoursBoardRules(unittest.TestCase):
         _, applied = apply_fixes(b, [fx])
         self.assertEqual(applied, [])
         self.assertIn("needs 0.5 mm", fx.note)
+
+
+class TestRecommendedViasAndLargePours(unittest.TestCase):
+    """Vias are recommended, never added unless picked; large pours are opt-in and said to be slow."""
+
+    def _demo(self):
+        board = parse_board(demo_kicad_pcb(), "d.kicad_pcb")
+        asg = apply_demo_declarations(board, auto_assign_net_currents(board, ledger=None))
+        return board, asg, diagnose(board, asg)
+
+    def test_vias_are_recommended_but_not_written_unless_picked(self):
+        from suspension.pcb_doctor import ViaFix, fix_board
+        board, asg, rep = self._demo()
+        self.assertTrue(rep.via_recommendations)
+        self.assertTrue(all(isinstance(v, ViaFix) for v in rep.via_recommendations))
+        out = fix_board(board, asg, report=rep)                               # nothing picked
+        n_vias = len(board.vias)
+        self.assertEqual(len(parse_board(out["text"], "d.kicad_pcb").vias), n_vias)
+        self.assertFalse(any(isinstance(a, ViaFix) for a in out["applied"]))
+
+    def test_picked_vias_are_written_clear_and_clear_the_bottleneck(self):
+        from suspension.pcb_doctor import _worse_findings, copper_conflict, fix_board
+        board, asg, rep = self._demo()
+        picked = rep.via_recommendations
+        out = fix_board(board, asg, report=rep, vias=picked)
+        b2 = parse_board(out["text"], "d.kicad_pcb")
+        self.assertEqual(len(b2.vias), len(board.vias) + len(picked))
+        self.assertEqual(_worse_findings(rep, out["report"]), [])
+        self.assertFalse([f for f in out["report"].findings if f.check.startswith("via bottleneck")])
+        for v in picked:                                               # the new copper is clear of other nets
+            for ly in v.layers:
+                self.assertIsNone(copper_conflict(b2, v.nid, v.at, v.at, v.size_mm / 2, ly))
+
+    def test_no_room_means_no_recommendation(self):
+        from suspension.pcb_doctor import recommend_stitching_vias
+        b = parse_kicad_pcb('(kicad_pcb (version 20221018) (layers (0 "F.Cu" signal) (31 "B.Cu" signal)) (net 0 "")'
+                            ' (net 1 "A") (net 2 "B") (via (at 0 0) (size 0.6) (drill 0.3) (layers "F.Cu" "B.Cu") (net 1))'
+                            ' (zone (net 2) (net_name "B") (layer "F.Cu") (filled_polygon (layer "F.Cu")'
+                            '  (pts (xy -5 -5) (xy 5 -5) (xy 5 5) (xy -5 5) (xy -5 -0.5) (xy -0.5 -0.5) (xy -0.5 0.5)'
+                            '   (xy 0.5 0.5) (xy 0.5 -0.5) (xy -5 -0.5)))))')
+        self.assertEqual(recommend_stitching_vias(b, 1, 3, 0.3), [])         # boxed in by B's pour
+
+    def test_altium_boards_get_the_recommendation_but_no_write(self):
+        from suspension.pcb_doctor import ViaFix, apply_fixes
+        b = parse_board(demo_altium_pcb(), "d.PcbDoc")
+        v = ViaFix(net="X", nid=1, at=(0, 0), size_mm=0.6, drill_mm=0.3, layers=("F.Cu", "B.Cu"), joins=(1, 0),
+                   stub_width_mm=0.3)
+        with self.assertRaises(ValueError):
+            apply_fixes(b, [], [v])
+
+    def test_large_pours_are_opt_in_and_the_unsolved_warning_says_how(self):
+        from suspension import pcb_doctor as D
+        self.assertGreater(D.LARGE_POUR_MAX_CELLS, 10 * D.REFINE_MAX_CELLS)
+        b = parse_kicad_pcb(TestBrownoutThroughAPour.BOARD)
+        asg = {b.net_id("VCC"): {"current_a": 10.0, "voltage_v": 5.0}}
+        old = D.REFINE_MAX_CELLS
+        D.REFINE_MAX_CELLS = 50
+        try:
+            quick = [f for f in D.diagnose(b, asg).findings if "NOT checked" in f.message]
+            slow = D.diagnose(b, asg, pour_max_cells=D.LARGE_POUR_MAX_CELLS)
+        finally:
+            D.REFINE_MAX_CELLS = old
+        self.assertTrue(quick and "Solve large pours" in quick[0].message)
+        self.assertFalse([f for f in slow.findings if "NOT checked" in f.message])   # solved once switched on
+        self.assertTrue([f for f in slow.findings if "(through the pour)" in f.message])

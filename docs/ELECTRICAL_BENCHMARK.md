@@ -412,9 +412,12 @@ board, in a registered random order.
   - **Unverified estimates:** every estimate the app marked unconverged is within 1.71 % of the reference.
   - **Never failed:** the reference converged on every net.
 
-**What remains outside the proof.** Every scored pour is under 100 mm² (largest 41 mm²): the app only solves a pour
-up to 150,000 cells, so it answers in seconds. Large power and ground planes get no number in the app. It says the
-drop through them was not checked, and the user checks those in their PCB tool's DC analysis.
+**Large planes.** By default the app solves a pour up to 150,000 cells, so it answers in seconds; every scored net
+above is under 100 mm² (largest 41 mm²). Switching on **Solve large pours** raises the limit to 3 million cells,
+which takes minutes per large pour and can take much longer on a whole-board ground plane, and the app says so
+before it starts. The evidence at that size is the held-out large-plane set of rounds 3–4 (`pours_round4.json`):
+7 of 7 converged estimates within 2 %, on planes of 0.3–1.2 million cells. That is fewer nets than the small-pour
+proof, so it is evidence rather than a proven rate. A plane over the larger limit is still reported as not checked.
 
 
 **What can be said.** A pour estimate KinematiK marks converged has matched a converged reference within 2 % on

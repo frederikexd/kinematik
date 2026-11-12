@@ -116,6 +116,9 @@ print("@@" + json.dumps({{
     "parse_error": next((e for e in errs
                          if "Couldn't read that board file" in e), None),
     "panel_reached": has([b.label for b in at.button], "Demo"),
+    "big_toggle": next((t.label for t in at.toggle if "large pours" in t.label), None),
+    "via_boxes": [(c.label[:40], c.value) for c in at.checkbox if c.label.startswith("Add via on")],
+    "via_hint": has([m.value for m in at.markdown], "stitching via(s) recommended", "unless you tick it"),
 }}))
 '''
 
@@ -200,6 +203,15 @@ class TestPcbDoctorPanel(unittest.TestCase):
         self.assertIsNone(r["exception"])
         self.assertTrue(r["prescriber"])
         self.assertIsNone(r["caption"])
+
+    def test_vias_are_offered_unticked_and_large_pours_are_opt_in(self):
+        """Engineering judgement stays with the user: the demo's via bottleneck gets stitching vias offered, none
+        ticked; large pours are a switch that says it is slow."""
+        r = _render("kicad_demo")
+        self._assert_full_panel(r, "KiCad")
+        self.assertIn("much slower", r["big_toggle"] or "")
+        self.assertTrue(r["via_boxes"] and r["via_hint"])
+        self.assertTrue(all(v is False for _l, v in r["via_boxes"]))
 
 
 if __name__ == "__main__":
