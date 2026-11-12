@@ -35,6 +35,36 @@ st.set_page_config(page_title="KinematiK · FSAE Vehicle Design Studio",
 
 gc.collect()
 
+
+def _drop_stale_suspension_modules() -> bool:
+    """After a code update the server can keep the old `suspension` modules in memory,
+    so a name the new app imports looks missing (ImportError). If any loaded module's
+    file changed since the last run, drop the whole package so it is re-imported as one
+    consistent version, and clear the caches built from the old code."""
+    import sys
+    stamps = {}
+    for name, mod in list(sys.modules.items()):
+        if name == "suspension" or name.startswith("suspension."):
+            path = getattr(mod, "__file__", None)
+            try:
+                stamps[name] = os.path.getmtime(path) if path else None
+            except OSError:
+                stamps[name] = None
+    previous = getattr(sys, "_kinematik_module_stamps", None)
+    stale = previous is not None and any(
+        name in previous and previous[name] != stamp for name, stamp in stamps.items())
+    if stale:
+        for name in stamps:
+            sys.modules.pop(name, None)
+        st.cache_data.clear()
+        st.cache_resource.clear()
+        stamps = {}
+    sys._kinematik_module_stamps = stamps
+    return stale
+
+
+_drop_stale_suspension_modules()
+
 # --------------------------------------------------------------------------- #
 #  Feature flag: part-import / part-drop tools.
 #
