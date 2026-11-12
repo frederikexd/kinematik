@@ -40,7 +40,7 @@ cloud = ["supabase>=2.0"]                  # project sync, workspaces, analytics
 # a clean checkout. pyproject is the source of truth; keep both in sync.
 drive = [                                  # drive_export.py, drive_oauth.py
     "google-api-python-client>=2.0",
-    "google-auth>=2.0",
+    "google-auth>=2.62.1",
     "google-auth-oauthlib>=1.0",
 ]
 voice = [                                  # briefing TTS + voice memo STT
