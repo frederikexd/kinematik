@@ -1,5 +1,5 @@
 {
- "what": "Plan addendum 14: the in-app pour estimate (pour_net_resistance, 150,000-cell limit) on fresh pour nets, shuffled with random.Random(20261114), KinematiK frozen at 0e62a49 (pour code; later commits do not touch it). Reference: corrected 2-D solve with KiCad filled zones, KiCad 7 or (for KiCad 8 files) KiCad 9.0.3, at the app cell size and twice it, refined once more if they differ by more than 2 %.",
+ "what": "Plan addendum 14: the in-app pour estimate (pour_net_resistance, 150,000-cell limit) on fresh pour nets, shuffled with random.Random(20261114), KinematiK frozen at 9a84971 (the pour code has not changed since). Reference: corrected 2-D solve with KiCad filled zones, KiCad 7 or (for KiCad 8 files) KiCad 9.0.3, at the app cell size and twice it, refined once more if they differ by more than 2 %.",
  "stopping_rule": "first 80 nets with a converged app value and a converged reference",
  "nets": [
   {
