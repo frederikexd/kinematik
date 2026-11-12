@@ -321,4 +321,11 @@ def test_pour_round4_grid_check_results():
     assert sum(1 for o in held if not o.get("r4_converged")) == 4            # reported as not converged, not hidden
     design = [o for o in d["design"] if o["r4_converged"] and o["reference_converged"]]
     err = [(o["kinematik_r4_ohm"] - o["reference_ohm"]) / o["reference_ohm"] for o in design]
-    assert len(err) == 24 and sum(abs(e) <= 0.02 for e in err) == 22         # the 2 misses: empty pours (addendum 11)
+    assert len(err) == 42 and sum(abs(e) <= 0.02 for e in err) == 40         # the 2 misses: empty pours (addendum 11)
+
+
+def test_pour_nets_with_a_corrected_reference():
+    """Plan addendum 13: the design nets whose reference had not converged, after the reference's terminal fix."""
+    d = json.loads((REF / "pours_unresolved_design.json").read_text(encoding="utf-8"))
+    both = [o for o in d["nets"] if o["reference_converged"] and o["converged"]]
+    assert len(both) == 20 and all(abs(o["error_pct"]) <= 2.0 for o in both)

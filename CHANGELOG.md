@@ -10,6 +10,13 @@
 - A pour KiCad filled and left empty is no longer counted as copper or as a connection.
 - Published as found: the pour estimate read low on 6 of 50 held-out nets before these fixes.
 
+**Brown-out check on pour nets (correction).** It called the tracked-pads figure conservative; it was not, since a
+load fed through the pour was never checked. It now solves the pour and says when a pour was too large to check.
+
+**More untrusted inputs.** Track paths, GPS, cone maps, speed traces, `.tir` files, tire coefficients, tire test
+data, spring bench logs, part meshes and uploaded JSON now refuse `nan`/`inf` values instead of returning `nan`
+results.
+
 **Untrusted inputs.** Fuzzing the upload parsers with damaged files found and fixed:
 - Board files: three crashes; `inf`/`nan` track widths accepted.
 - Aero map CSV, run log, dyno CSV, STEP tube import, manifests: `nan`/`inf` accepted into the model, or a raw traceback instead of a message.

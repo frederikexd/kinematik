@@ -360,17 +360,32 @@ large" for them and gives no estimate) and 4 just under it were not reached.
    (addendum 11), which also stops it from joining pads in the connectivity check.
 
 **Round 4.**
-- *Design data* (24 of the first 43 nets re-scored, references brought to the same cell size): 22 within 2 %, worst
-  +0.57 %; the other 2 are the empty-pour nets, fixed by addendum 11 and no longer pour nets.
+- *Design data* (all 43 nets of the first batch re-scored): 42 where both converge, **40 within 2 %**, worst +0.80 %.
+  The 2 misses (−4.9 %, −5.0 %) are the empty-pour nets, fixed by addendum 11 and no longer pour nets.
 - *Held out* (the 11 larger nets, never looked at before round 4 was frozen): KinematiK marked 7 converged. On the 5
-  whose reference also converges, **5 of 5 are within 2 %** (worst +0.38 %). On the other 2 the reference at its own
-  cell size has not converged (KinematiK is 5.0 % and 5.5 % above it, the direction every refinement moves), so
-  they are not scored. 4 were marked not converged and are reported as such.
+  whose reference also converges, **5 of 5 are within 2 %** (worst +0.38 %). On `/MASTER_FUSE_OUT` and `+24V` the
+  reference has not converged at its own cell size, and the finer solve did not finish; they are unscored.
+  4 were marked not converged and are reported as such.
+- *Not finished:* `+3V3` on the BMS LV board (1.18 M cells) did not finish within 40 minutes; 3 more nets just under
+  the memory cap were not reached.
 
-**What can be said.** A pour estimate KinematiK marks converged has matched a converged reference within 2 % on every
-net where both exist, but only 5 of those nets were held out; that is evidence, not a proven rate. The plain
-sheet solve without pours has the stronger test (B7). Whole-board planes are not estimated at all. The brown-out
-check does not use the pour estimate: it keeps the trace-only upper bound.
+**The nets "the reference could not resolve" (addendum 13).** On 15 design nets the reference kept climbing at every
+grid refinement. The fault was in the reference: it put a pad's terminal at the mean of its outline points, which on
+the concave custom LED pads falls outside the pad, so current entered the pour at a point. Corrected (terminal at
+the pad's own position) and re-solved: where both KinematiK and the reference converge, **20 of 20 within 2 %**,
+worst 0.78 % (`benchmarks/electrical/pours_unresolved_design.json`). Convex pads are unaffected.
+
+**What the brown-out check does on a pour net.** Before this round it used the 1-D figure, which covers only pads
+joined by tracks, and called it conservative. It was not: a load fed through the pour was never checked (on one net
+the worst path through the pour was 40 × the tracked figure), and on 29 of 52 KiCad 9 pour nets there was no figure
+at all. Now the check solves the pour within the app's size limit and uses the larger of the two (×1.02 when the
+pour estimate converged, ×1.10 when not). Where the pour is too large to solve, the report says the drop through
+the pour was **not checked**. On the 52 KiCad 9 pour nets, 32 solve within the limit (35 s for all of them).
+
+**What can be said.** A pour estimate KinematiK marks converged has matched a converged reference within 2 % on
+every net where both exist: 5 of 5 held out, and 60 of 62 on design data (the 2 misses being the empty pours since
+fixed). That is strong evidence but only 5 held-out nets, not a proven rate. Whole-board planes are not estimated,
+and the report says so.
 
 ## From the file to the built board
 

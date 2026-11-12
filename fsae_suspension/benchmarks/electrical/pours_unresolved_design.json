@@ -1,0 +1,548 @@
+{
+ "what": "Plan addendum 13: the 26 design nets whose reference had not converged, re-solved with the corrected terminal placement; KinematiK (be040a3) scored where both converge.",
+ "nets": [
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED.kicad_pcb",
+   "net": "Net-(D1-K)",
+   "pair": [
+    "D1.1@51.63,40.64",
+    "D1.1@51.63,41.44"
+   ],
+   "reference_steps_ohm": [
+    0.00020746925736095682,
+    0.00023662397336027,
+    0.00023941048987803802
+   ],
+   "reference_converged": true,
+   "kinematik_ohm": 0.00023919542307591018,
+   "converged": true,
+   "grid_change_pct": 1.1630215476237489,
+   "why": null,
+   "s": 0,
+   "reference_was_resolved_before_the_correction": true,
+   "error_pct": -0.0898318207516291
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED.kicad_pcb",
+   "net": "Net-(D3-K)",
+   "pair": [
+    "D3.1@53.93,43.09",
+    "D3.1@53.93,42.29"
+   ],
+   "reference_steps_ohm": [
+    0.0001473799479021301,
+    0.00022820511579784553,
+    0.00021750434480755272
+   ],
+   "reference_converged": false,
+   "kinematik_ohm": 0.0002276820042482827,
+   "converged": true,
+   "grid_change_pct": 0.21712295961192377,
+   "why": null,
+   "s": 0,
+   "reference_was_resolved_before_the_correction": false,
+   "error_pct": 4.679290176817008
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED.kicad_pcb",
+   "net": "Net-(D4-K)",
+   "pair": [
+    "D4.1@52.28,42.29",
+    "D4.1@52.28,43.09"
+   ],
+   "reference_steps_ohm": [
+    0.00018382547017291951,
+    0.00022653692991693103,
+    0.00022449492266832062
+   ],
+   "reference_converged": true,
+   "kinematik_ohm": 0.00022447779684620463,
+   "converged": true,
+   "grid_change_pct": 0.9084413011376857,
+   "why": null,
+   "s": 0,
+   "reference_was_resolved_before_the_correction": true,
+   "error_pct": -0.00762860108924901
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED.kicad_pcb",
+   "net": "Net-(D5-K)",
+   "pair": [
+    "D5.1@50.63,43.09",
+    "D5.1@50.63,42.29"
+   ],
+   "reference_steps_ohm": [
+    0.00018459314060596666,
+    0.00020147409046175708,
+    0.0002214183122372761
+   ],
+   "reference_converged": false,
+   "kinematik_ohm": 0.00022140606789276202,
+   "converged": false,
+   "grid_change_pct": 9.006649751105442,
+   "why": null,
+   "s": 0,
+   "reference_was_resolved_before_the_correction": false,
+   "error_pct": -0.005529960187278249
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED.kicad_pcb",
+   "net": "Net-(D6-K)",
+   "pair": [
+    "D7.2",
+    "D6.1@48.98,42.29"
+   ],
+   "reference_steps_ohm": [
+    0.0006472446677351476,
+    0.0006996148824396425,
+    0.0007006649138771435
+   ],
+   "reference_converged": true,
+   "kinematik_ohm": 0.0007013084876646622,
+   "converged": true,
+   "grid_change_pct": 0.2052822255391949,
+   "why": null,
+   "s": 0,
+   "reference_was_resolved_before_the_correction": true,
+   "error_pct": 0.09185186453215533
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED.kicad_pcb",
+   "net": "Net-(D7-K)",
+   "pair": [
+    "D7.1@49.98,43.94",
+    "D7.1@49.98,44.74"
+   ],
+   "reference_steps_ohm": [
+    0.0002008063085966611,
+    0.0002053188071802612,
+    0.00022971166575701127
+   ],
+   "reference_converged": false,
+   "kinematik_ohm": 0.0002297099102737563,
+   "converged": false,
+   "grid_change_pct": 10.601415719494327,
+   "why": null,
+   "s": 0,
+   "reference_was_resolved_before_the_correction": false,
+   "error_pct": -0.0007642116255479614
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED.kicad_pcb",
+   "net": "Net-(D8-K)",
+   "pair": [
+    "D8.1@51.63,44.74",
+    "D8.1@51.63,43.94"
+   ],
+   "reference_steps_ohm": [
+    0.00020088695333308007,
+    0.00022015788400348116,
+    0.00023094036918043637
+   ],
+   "reference_converged": false,
+   "kinematik_ohm": 0.000230946621849407,
+   "converged": false,
+   "grid_change_pct": 4.651016056896351,
+   "why": null,
+   "s": 0,
+   "reference_was_resolved_before_the_correction": false,
+   "error_pct": 0.0027074820192041216
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED.kicad_pcb",
+   "net": "Net-(D10-A)",
+   "pair": [
+    "D9.1@53.28,44.74",
+    "D9.1@53.28,43.94"
+   ],
+   "reference_steps_ohm": [
+    0.00015250050440917813,
+    0.00021772556034981014,
+    0.00021689286123849802
+   ],
+   "reference_converged": true,
+   "kinematik_ohm": 0.00022615452187016045,
+   "converged": false,
+   "grid_change_pct": 3.5412642958444263,
+   "why": null,
+   "s": 0,
+   "reference_was_resolved_before_the_correction": true,
+   "error_pct": 4.270154664739367
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED.kicad_pcb",
+   "net": "Net-(D10-K)",
+   "pair": [
+    "D11.2",
+    "D10.1@54.93,43.94"
+   ],
+   "reference_steps_ohm": [
+    0.0016172500933111502,
+    0.0016261571904409014
+   ],
+   "reference_converged": true,
+   "kinematik_ohm": 0.0016258555330834763,
+   "converged": true,
+   "grid_change_pct": 0.7922648929699753,
+   "why": null,
+   "s": 0,
+   "reference_was_resolved_before_the_correction": true,
+   "error_pct": -0.01855031968608367
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED.kicad_pcb",
+   "net": "Net-(D11-K)",
+   "pair": [
+    "D11.1@52.28,45.59",
+    "D11.1@52.28,46.39"
+   ],
+   "reference_steps_ohm": [
+    0.00020852452351273303,
+    0.00019216050675691286,
+    0.00021547185347538857,
+    0.00021290789758667637
+   ],
+   "reference_converged": true,
+   "kinematik_ohm": 0.0002129606798869348,
+   "converged": true,
+   "grid_change_pct": 1.0081158231616234,
+   "why": null,
+   "s": 0,
+   "reference_was_resolved_before_the_correction": true,
+   "error_pct": 0.024791142487767814
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED_handsolder.kicad_pcb",
+   "net": "Net-(D1-K)",
+   "pair": [
+    "D2.2",
+    "D1.1@51.05,38.97"
+   ],
+   "reference_steps_ohm": [
+    0.0002074382589262327,
+    0.00021532592242601485,
+    0.00021929584608131874
+   ],
+   "reference_converged": true,
+   "kinematik_ohm": 0.00021932771756233562,
+   "converged": true,
+   "grid_change_pct": 1.812908830032492,
+   "why": null,
+   "s": 1,
+   "reference_was_resolved_before_the_correction": false,
+   "error_pct": 0.014533554367957002
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED_handsolder.kicad_pcb",
+   "net": "Net-(D2-K)",
+   "pair": [
+    "D2.1@53.84,38.97",
+    "D3.2"
+   ],
+   "reference_steps_ohm": [
+    0.0012033153130968912,
+    0.0012184683631495782
+   ],
+   "reference_converged": true,
+   "kinematik_ohm": 0.001217788069757385,
+   "converged": true,
+   "grid_change_pct": 1.0330084878917893,
+   "why": null,
+   "s": 0,
+   "reference_was_resolved_before_the_correction": false,
+   "error_pct": -0.055831846994758294
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED_handsolder.kicad_pcb",
+   "net": "Net-(D3-K)",
+   "pair": [
+    "D4.2",
+    "D3.1@55.63,41.76"
+   ],
+   "reference_steps_ohm": [
+    0.00020641012193471867,
+    0.00021667055081329967,
+    0.00022147647556853837
+   ],
+   "reference_converged": false,
+   "kinematik_ohm": 0.00022152084518257007,
+   "converged": false,
+   "grid_change_pct": 2.213544981426838,
+   "why": null,
+   "s": 1,
+   "reference_was_resolved_before_the_correction": false,
+   "error_pct": 0.020033556122744933
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED_handsolder.kicad_pcb",
+   "net": "Net-(D4-K)",
+   "pair": [
+    "D5.2",
+    "D4.1@52.84,41.76"
+   ],
+   "reference_steps_ohm": [
+    0.00020650020735052442,
+    0.00021675915328994434,
+    0.000218342841738643
+   ],
+   "reference_converged": true,
+   "kinematik_ohm": 0.0002182992915579059,
+   "converged": true,
+   "grid_change_pct": 0.6830609270227765,
+   "why": null,
+   "s": 1,
+   "reference_was_resolved_before_the_correction": false,
+   "error_pct": -0.019945779028218702
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED_handsolder.kicad_pcb",
+   "net": "Net-(D5-K)",
+   "pair": [
+    "D5.1@50.05,41.76",
+    "D6.2"
+   ],
+   "reference_steps_ohm": [
+    0.00020659121141325518,
+    0.00021685299650274598,
+    0.0002211524418372962
+   ],
+   "reference_converged": true,
+   "kinematik_ohm": 0.00022111988909803866,
+   "converged": true,
+   "grid_change_pct": 1.9444763916881127,
+   "why": null,
+   "s": 1,
+   "reference_was_resolved_before_the_correction": false,
+   "error_pct": -0.014719592959089312
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED_handsolder.kicad_pcb",
+   "net": "Net-(D6-K)",
+   "pair": [
+    "D6.1@47.25,41.76",
+    "D7.2"
+   ],
+   "reference_steps_ohm": [
+    0.0008320060568710522,
+    0.0008456281987059131
+   ],
+   "reference_converged": true,
+   "kinematik_ohm": 0.0008452640802049612,
+   "converged": true,
+   "grid_change_pct": 1.160967338322716,
+   "why": null,
+   "s": 0,
+   "reference_was_resolved_before_the_correction": false,
+   "error_pct": -0.04305893553563367
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED_handsolder.kicad_pcb",
+   "net": "Net-(D7-K)",
+   "pair": [
+    "D7.1@48.25,44.56",
+    "D8.2"
+   ],
+   "reference_steps_ohm": [
+    0.0002054969761201072,
+    0.00021895192851072176,
+    0.00022069540794640688
+   ],
+   "reference_converged": true,
+   "kinematik_ohm": 0.00022071584171618684,
+   "converged": true,
+   "grid_change_pct": 0.8363764391114781,
+   "why": null,
+   "s": 1,
+   "reference_was_resolved_before_the_correction": false,
+   "error_pct": 0.009258810579737542
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED_handsolder.kicad_pcb",
+   "net": "Net-(D8-K)",
+   "pair": [
+    "D9.2",
+    "D8.1@51.05,44.56"
+   ],
+   "reference_steps_ohm": [
+    0.00020558618846566347,
+    0.00021904846209398613,
+    0.000217999921486976
+   ],
+   "reference_converged": true,
+   "kinematik_ohm": 0.0002180302220605462,
+   "converged": true,
+   "grid_change_pct": 0.47969954815116783,
+   "why": null,
+   "s": 1,
+   "reference_was_resolved_before_the_correction": false,
+   "error_pct": 0.01389935068027981
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED_handsolder.kicad_pcb",
+   "net": "Net-(D10-A)",
+   "pair": [
+    "D9.1@53.84,44.56",
+    "D10.2"
+   ],
+   "reference_steps_ohm": [
+    0.00020567603286293927,
+    0.00021930815795385218,
+    0.00022066825909034261
+   ],
+   "reference_converged": true,
+   "kinematik_ohm": 0.00022070988079427733,
+   "converged": true,
+   "grid_change_pct": 0.6606971985449374,
+   "why": null,
+   "s": 1,
+   "reference_was_resolved_before_the_correction": false,
+   "error_pct": 0.01886166325246741
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED_handsolder.kicad_pcb",
+   "net": "Net-(D10-K)",
+   "pair": [
+    "D11.2",
+    "D10.1@56.63,44.56"
+   ],
+   "reference_steps_ohm": [
+    0.0015307320500409964,
+    0.0015556989965850216
+   ],
+   "reference_converged": true,
+   "kinematik_ohm": 0.0015562161496582674,
+   "converged": true,
+   "grid_change_pct": 1.3639358180972796,
+   "why": null,
+   "s": 0,
+   "reference_was_resolved_before_the_correction": false,
+   "error_pct": 0.0332424893492167
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED_handsolder.kicad_pcb",
+   "net": "Net-(D11-K)",
+   "pair": [
+    "D11.1@52.84,48.15",
+    "D12.2"
+   ],
+   "reference_steps_ohm": [
+    0.0002077572602228714,
+    0.00021808962104244407,
+    0.00021975025306159677
+   ],
+   "reference_converged": true,
+   "kinematik_ohm": 0.00021970536800699784,
+   "converged": true,
+   "grid_change_pct": 0.7121909134458141,
+   "why": null,
+   "s": 1,
+   "reference_was_resolved_before_the_correction": false,
+   "error_pct": -0.020425484828157092
+  },
+  {
+   "board": "sufst_pcb/ail-LED/ail-LED_handsolder.kicad_pcb",
+   "net": "/GND",
+   "pair": [
+    "RV1.2",
+    "D13.2"
+   ],
+   "reference_steps_ohm": [
+    0.0005698603107081732,
+    0.0005937275083540208,
+    0.0005995696640883956
+   ],
+   "reference_converged": true,
+   "kinematik_ohm": 0.0005998834426978494,
+   "converged": true,
+   "grid_change_pct": 1.037798218174087,
+   "why": null,
+   "s": 1,
+   "reference_was_resolved_before_the_correction": true,
+   "error_pct": 0.05233397022026409
+  },
+  {
+   "board": "sufst_pcb/hv-sense/hv_sense.kicad_pcb",
+   "net": "GND",
+   "pair": [
+    "R5.1",
+    "Q2.2"
+   ],
+   "reference_steps_ohm": [
+    0.005151878474497959,
+    0.005410305486810095,
+    0.005463330226389399
+   ],
+   "reference_converged": true,
+   "kinematik_ohm": 0.005497613808206149,
+   "converged": true,
+   "grid_change_pct": 1.3430982958049176,
+   "why": null,
+   "s": 95,
+   "reference_was_resolved_before_the_correction": true,
+   "error_pct": 0.6275216835905484
+  },
+  {
+   "board": "sufst_pcb/isolator/CAN_Bridge.kicad_pcb",
+   "net": "GND2",
+   "pair": [
+    "U6.9",
+    "C7.2"
+   ],
+   "reference_steps_ohm": [
+    0.005172659859068285,
+    0.005279453711098513,
+    0.005315886766274433
+   ],
+   "reference_converged": true,
+   "kinematik_ohm": 0.005316016590071984,
+   "converged": true,
+   "grid_change_pct": 0.5794808326648567,
+   "why": null,
+   "s": 124,
+   "reference_was_resolved_before_the_correction": true,
+   "error_pct": 0.0024421851566591712
+  },
+  {
+   "board": "sufst_pcb/ss-relay/ss-relay.kicad_pcb",
+   "net": "/COM",
+   "pair": [
+    "Q2.5",
+    "K1.2@98.53,63.40"
+   ],
+   "reference_steps_ohm": [
+    0.0013294100652650647,
+    0.001382028630071244,
+    0.0013916702816783157
+   ],
+   "reference_converged": true,
+   "kinematik_ohm": 0.0013926773363863228,
+   "converged": true,
+   "grid_change_pct": 0.40699226705866137,
+   "why": null,
+   "s": 1,
+   "reference_was_resolved_before_the_correction": true,
+   "error_pct": 0.07236302458026866
+  },
+  {
+   "board": "sufst_pcb/ss-relay/ss-relay.kicad_pcb",
+   "net": "Net-(Q1-D)",
+   "pair": [
+    "Q2.3",
+    "Q1.5"
+   ],
+   "reference_steps_ohm": [
+    0.0007083939932462459,
+    0.0007802613633557498,
+    0.0007893099615812833
+   ],
+   "reference_converged": true,
+   "kinematik_ohm": 0.0007954871524816939,
+   "converged": true,
+   "grid_change_pct": 1.3385692443246182,
+   "why": null,
+   "s": 0,
+   "reference_was_resolved_before_the_correction": true,
+   "error_pct": 0.7826064792132437
+  }
+ ]
+}
