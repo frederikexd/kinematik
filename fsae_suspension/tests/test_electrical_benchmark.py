@@ -305,3 +305,20 @@ def test_refined_net_resistance_held_out_on_kicad9_boards():
     shipped = [o for o in refined if o["source_at_shipped_limit"] == "sheet solve"]
     assert len(shipped) == 78                                  # the shipped size limit refines these; all within 2 % too
     assert not [o for o in rows if o["source"] == "1-D" and o["copper2d_ohm"]]
+
+
+def test_pour_round4_grid_check_results():
+    """Plan addenda 9-11. Round 3 on the larger held-out nets, and round 4 (grid check) where it marks itself
+    converged and the reference converges too. Pinned as scored; the misses stay visible."""
+    d = json.loads((REF / "kicad9" / "pours_round4.json").read_text(encoding="utf-8"))
+    held = d["held_out"]
+    assert len(held) == 11
+    r3 = [(o["kinematik_ohm"] - o["copper2d_ohm"]) / o["copper2d_ohm"] for o in held if o["reference_converged"]]
+    assert len(r3) == 8 and all(abs(e) <= 0.02 for e in r3)
+    r4 = [(o["kinematik_r4_ohm"] - o["copper2d_ohm"]) / o["copper2d_ohm"]
+          for o in held if o.get("r4_converged") and o["reference_converged"]]
+    assert len(r4) == 5 and all(abs(e) <= 0.02 for e in r4)
+    assert sum(1 for o in held if not o.get("r4_converged")) == 4            # reported as not converged, not hidden
+    design = [o for o in d["design"] if o["r4_converged"] and o["reference_converged"]]
+    err = [(o["kinematik_r4_ohm"] - o["reference_ohm"]) / o["reference_ohm"] for o in design]
+    assert len(err) == 24 and sum(abs(e) <= 0.02 for e in err) == 22         # the 2 misses: empty pours (addendum 11)

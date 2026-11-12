@@ -3,6 +3,22 @@
 
 ## Unreleased
 
+**Electrical: sheet-solve net resistance, pour grid check, empty pours.**
+- Net resistance is refined by a 2-D sheet solve between the worst pad pair. Held out on 100 new KiCad 9 nets: 92 of 92 refined nets within 2 %.
+- The brown-out bound is the larger of the 1-D bound and the sheet-solve value, so it only gets stricter.
+- The pour estimate checks its own grid and marks each result converged or not.
+- A pour KiCad filled and left empty is no longer counted as copper or as a connection.
+- Published as found: the pour estimate read low on 6 of 50 held-out nets before these fixes.
+
+**Untrusted inputs.** Fuzzing the upload parsers with damaged files found and fixed:
+- Board files: three crashes; `inf`/`nan` track widths accepted.
+- Aero map CSV, run log, dyno CSV, STEP tube import, manifests: `nan`/`inf` accepted into the model, or a raw traceback instead of a message.
+- Zip uploads: no limit on unpacked size (decompression bomb).
+
+**Project hygiene.** GitHub Actions pinned by commit, read-only tokens, job timeouts, Dependabot, OpenSSF Scorecard,
+pre-commit. One release number (1.5.0) across packaging, citation and changelog. README clone command and Python
+version corrected.
+
 **Electrical benchmark: native Altium, KiCad 9, pours round 3.**
 - Six boards designed in Altium: 30 of 30 counts equal Altium Designer 26.11.1.
 - Four KiCad 8/9 team boards read exactly as KiCad 9.0.3 reads them.
