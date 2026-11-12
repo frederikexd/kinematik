@@ -49,7 +49,7 @@ matplotlib>=3.7    # renders the CAPTURED CHARTS into the report PDFs
 gTTS>=2.5          # downloadable MP3 of the mission briefing (streamlit_app.py:
                    #  _briefing_mp3_bytes). Needs network at call time; the app
                    #  and the offline HTML/txt briefing downloads work without it.
-piper-tts>=1.2     # PREFERRED offline TTS for the briefing audio file
+piper-tts>=1.8.0     # PREFERRED offline TTS for the briefing audio file
                    #  (streamlit_app.py: _briefing_local_audio). Fully local at
                    #  synthesis time — no network, no rate limit. On Streamlit
                    #  Cloud the filesystem is ephemeral, so COMMIT a voice model
