@@ -381,7 +381,7 @@ class FrameGraph:
         g = FrameGraph(size_table=size_table)
         label_to_key = {v.lower(): k for k, v in MEMBER_CLASS_LABELS.items()}
 
-        def rows(text, what, need):
+        def _rows(text, what, need):
             """Lower-cased rows of one CSV, each checked for the columns it must have; ValueError names the row."""
             try:
                 raw = list(csv.DictReader(io.StringIO(text.strip())))
@@ -395,13 +395,13 @@ class FrameGraph:
                                      f"(columns needed: {', '.join(need)})")
                 yield line, r
 
-        for line, row in rows(nodes_csv, "nodes", ("id", "x", "y", "z")):
+        for line, row in _rows(nodes_csv, "nodes", ("id", "x", "y", "z")):
             try:
                 g.add_node(row["id"], (float(row["x"]), float(row["y"]), float(row["z"])), row.get("label", ""))
             except ValueError as exc:
                 raise ValueError(f"nodes CSV row {line}: {exc}") from exc
 
-        for line, row in rows(tubes_csv, "tubes", ("name", "a", "b")):
+        for line, row in _rows(tubes_csv, "tubes", ("name", "a", "b")):
             cls = row.get("class", "non_structural")
             cls = label_to_key.get(cls.lower(), cls.lower().replace(" ", "_"))
             if cls not in MEMBER_CLASS_MIN_SIZE:

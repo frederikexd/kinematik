@@ -223,7 +223,7 @@ class AeroMap:
                  provenance: CFDProvenance | None = None) -> AeroMap:
         m = cls(reference_area_m2, reference_length_m, provenance)
 
-        def num(row, line, key, default=None):
+        def _cell(row, line, key, default=None):
             """A finite number from one cell, or `default` when the cell is empty. Anything else is refused with
             its row and column: an aero map with a nan or inf point poisons every interpolation that touches it."""
             raw = (row.get(key) or "").strip()
@@ -243,19 +243,19 @@ class AeroMap:
             raise ValueError(f"aero map file is not a readable CSV ({exc})") from exc
         for line, row in enumerate(rows, start=2):                # row 1 is the header
             att = Attitude(
-                num(row, line, "roll_deg", 0.0),
-                num(row, line, "pitch_deg", 0.0),
-                num(row, line, "yaw_deg", 0.0),
-                num(row, line, "ride_height_mm", 30.0),
-                num(row, line, "speed_ms", 20.0),
+                _cell(row, line, "roll_deg", 0.0),
+                _cell(row, line, "pitch_deg", 0.0),
+                _cell(row, line, "yaw_deg", 0.0),
+                _cell(row, line, "ride_height_mm", 30.0),
+                _cell(row, line, "speed_ms", 20.0),
             )
             if att.speed_ms <= 0:
                 raise ValueError(f"aero map CSV row {line}, column speed_ms: {att.speed_ms:g} m/s is not a speed "
                                  "a coefficient can be referred to")
             conv = (row.get("converged") or "1").strip().lower() in ("1", "true", "yes")
             res = CoeffResult(
-                attitude=att, c_lift=num(row, line, "c_lift"), c_drag=num(row, line, "c_drag"),
-                c_side=num(row, line, "c_side"), aero_balance_front=num(row, line, "aero_balance_front"),
+                attitude=att, c_lift=_cell(row, line, "c_lift"), c_drag=_cell(row, line, "c_drag"),
+                c_side=_cell(row, line, "c_side"), aero_balance_front=_cell(row, line, "aero_balance_front"),
                 converged=conv, provenance=provenance,
             )
             m.add(res)

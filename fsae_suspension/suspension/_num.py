@@ -10,7 +10,7 @@ import numpy as np
 
 
 def finite(name: str, values, min_len: int = 1, max_abs: float | None = None) -> np.ndarray:
-    """``values`` as a 1-D float array, units unchanged, or ValueError naming ``name``: every entry must be a finite
+    """``values`` as a 1-D float array in their own units (points in mm stay in mm), or ValueError naming ``name``: every entry must be a finite
     number (no nan, no inf), within ±``max_abs`` when that is given, and there must be at least ``min_len`` of them. For data that came from a file or a
     logger, where one bad sample would otherwise turn every result downstream into nan without a word."""
     try:
@@ -28,8 +28,8 @@ def finite(name: str, values, min_len: int = 1, max_abs: float | None = None) ->
 
 
 def finite_scalar(name: str, value, positive: bool = False) -> float:
-    """``value`` as a float, units unchanged, or ValueError naming ``name`` when it is not a finite number (or, with
-    ``positive``, not above zero)."""
+    """``value`` as a float in its own units (a mass in kg stays in kg), or ValueError naming ``name`` when it is
+    not a finite number (or, with ``positive``, not above zero)."""
     try:
         v = float(value)
     except (TypeError, ValueError):
@@ -43,7 +43,7 @@ def finite_scalar(name: str, value, positive: bool = False) -> float:
 
 def all_finite(obj) -> bool:
     """True when no float in ``obj`` (numbers, arrays, and lists, tuples, dicts or dataclasses of them, to any
-    depth) is nan or inf. For the last line of a function that must not hand back a poisoned result."""
+    depth) is nan or inf; unitless, the values are only tested. For the last line of a function that must not hand back a poisoned result."""
     if isinstance(obj, (bool, str, bytes, int)) or obj is None:
         return True
     if isinstance(obj, (float, np.floating)):

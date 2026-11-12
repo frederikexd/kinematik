@@ -1417,3 +1417,58 @@ class TestRefinedNetResistance(unittest.TestCase):
         self.assertGreater(D.SHEET_UPPER_FACTOR, 1.0)
         src = __import__("inspect").getsource(D.diagnose)
         self.assertIn('r_up = max(r_up, ref_["r_ohm"] * SHEET_UPPER_FACTOR)', src)
+
+
+class TestBrownoutThroughAPour(unittest.TestCase):
+    """Plan addendum 13: a load fed through a pour is checked through the pour, and an unsolved pour is said out loud."""
+    #  Two pads 60 mm apart joined only by a 0.6 mm wide filled strip; a third pad next to the first joined by a track.
+    BOARD = ('(kicad_pcb (version 20221018) (layers (0 "F.Cu" signal)) (net 0 "") (net 1 "VCC")'
+             ' (footprint "f" (layer "F.Cu") (at 0 0) (property "Reference" "J1")'
+             '  (pad "1" smd rect (at 0 0) (size 1 1) (layers "F.Cu") (net 1 "VCC")))'
+             ' (footprint "f" (layer "F.Cu") (at 3 0) (property "Reference" "C1")'
+             '  (pad "1" smd rect (at 0 0) (size 1 1) (layers "F.Cu") (net 1 "VCC")))'
+             ' (footprint "f" (layer "F.Cu") (at 60 0) (property "Reference" "U1")'
+             '  (pad "1" smd rect (at 0 0) (size 1 1) (layers "F.Cu") (net 1 "VCC")))'
+             ' (segment (start 0 0) (end 3 0) (width 1.0) (layer "F.Cu") (net 1))'
+             ' (zone (net 1) (net_name "VCC") (layer "F.Cu") (fill yes (thermal_bridge_width 0.5))'
+             '  (filled_polygon (layer "F.Cu") (pts (xy -0.5 -0.3) (xy 60.5 -0.3) (xy 60.5 0.3) (xy -0.5 0.3)))))')
+
+    def _findings(self, **patch):
+        from suspension import pcb_doctor as D
+        b = parse_kicad_pcb(self.BOARD)
+        asg = {b.net_id("VCC"): {"current_a": 10.0, "voltage_v": 5.0}}
+        old = {k: getattr(D, k) for k in patch}
+        for k, v in patch.items():
+            setattr(D, k, v)
+        try:
+            rep = diagnose(b, asg)
+        finally:
+            for k, v in old.items():
+                setattr(D, k, v)
+        return [f for f in rep.findings if f.check.startswith("IR drop")]
+
+    def test_the_far_load_fed_by_the_pour_is_what_gets_checked(self):
+        from suspension import pcb_doctor as D
+        b = parse_kicad_pcb(self.BOARD)
+        nid = b.net_id("VCC")
+        one_d = D.analyze_net(b, nid)["worst_r_ohm"]                 # the 3 mm track between J1 and C1 only
+        pour = D.pour_net_resistance(b, nid)
+        self.assertEqual(sorted(pour["pair"]), ["J1.1", "U1.1"])
+        self.assertGreater(pour["r_ohm"], 10 * one_d)                # 60 mm of 0.6 mm strip against 3 mm of 1 mm track
+        fs = self._findings()
+        self.assertEqual([f.severity.name for f in fs], ["FAIL"])
+        self.assertIn("U1.1", fs[0].message)
+        self.assertIn("(through the pour)", fs[0].message)
+
+    def test_a_pour_too_large_to_solve_is_reported_as_not_checked(self):
+        fs = self._findings(REFINE_MAX_CELLS=50)
+        warn = [f for f in fs if "NOT checked" in f.message]
+        self.assertEqual(len(warn), 1)
+        self.assertEqual(warn[0].severity.name, "WARN")
+        self.assertIn("covers only the pads its tracks join", warn[0].message)
+        self.assertFalse(any("conservative" in f.message for f in fs))
+
+    def test_an_unconverged_pour_estimate_gets_the_wider_margin(self):
+        from suspension import pcb_doctor as D
+        self.assertGreaterEqual(D.POUR_UNVERIFIED_FACTOR, 1.10)
+        self.assertGreater(D.POUR_UNVERIFIED_FACTOR, D.SHEET_UPPER_FACTOR)

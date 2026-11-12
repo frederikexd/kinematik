@@ -1125,6 +1125,26 @@ def refined_net_resistance(board: PcbBoard, nid: int, nr: dict = None) -> dict:
     return out
 
 
+#  A pour estimate whose grid check did not converge is held to this factor (unitless) in the brown-out check. The
+#  worst an unconverged estimate read low on the held-out pour nets was 6.5 %.
+POUR_UNVERIFIED_FACTOR = 1.10
+POUR_MAX_PADS = 64                 # pads of a pour net searched for the worst pair
+
+
+def pour_net_resistance(board: PcbBoard, nid: int) -> dict | None:
+    """Worst pad-to-pad resistance (Ω) of a net through its pour, from the sheet solve limited to REFINE_MAX_CELLS:
+    {"r_ohm", "pair", "converged", ...}, or None when the net has no pour, is too large to solve here, or its pads
+    are not joined by copper."""
+    if nid not in board.zone_nets:
+        return None
+    try:
+        from . import pcb_pour
+        out = pcb_pour.pour_resistance(board, nid, max_pads=POUR_MAX_PADS, max_cells=REFINE_MAX_CELLS)
+    except (ImportError, MemoryError):
+        return None
+    return out if out.get("r_ohm") else None
+
+
 #  The board that comes back from the fab is not the file. Finished copper can
 #  be thinner than ordered (plating and etch tolerance), so the brown-out check
 #  also assumes the copper may be this fraction of its nominal thickness. 0.90
@@ -2026,23 +2046,42 @@ def diagnose(board: PcbBoard, assignments: dict,
 
         # -- true IR drop → brown-out ------------------------------------------------ #
         volt = float(a.get("voltage_v", rail_v) or rail_v)
-        if nr["worst_r_ohm"] is not None and volt <= 60.0:
+        #  On a net with a pour the 1-D model sees only the pads its tracks join: a pad fed through the pour is
+        #  not in its worst pair, and that pair can be many times the tracked one (40 x on one benchmark net,
+        #  plan addendum 13). So the pour is solved too, and where it cannot be the report says what was left out.
+        pour = pour_net_resistance(board, nid) if (nr["has_zone"] and volt <= 60.0) else None
+        r_est, pr, r_up = nr["worst_r_ohm"], nr["worst_pair"] or ("?", "?"), 0.0
+        if r_est is not None:
             ref_ = refined_net_resistance(board, nid, nr)
-            r_up = nr["worst_r_ohm"] * NET_R_UPPER_FACTOR          # never below the bound the 1-D model gave
+            r_up = r_est * NET_R_UPPER_FACTOR                      # never below the bound the 1-D model gave
             if ref_["source"] == "sheet solve":
                 r_up = max(r_up, ref_["r_ohm"] * SHEET_UPPER_FACTOR)
+        if pour is not None:
+            p_up = pour["r_ohm"] * (SHEET_UPPER_FACTOR if pour["converged"] else POUR_UNVERIFIED_FACTOR)
+            if p_up > r_up:
+                r_est, pr, r_up = pour["r_ohm"], tuple(pour["pair"]), p_up
+        if nr["has_zone"] and volt <= 60.0 and pour is None:
+            F.append(Finding(
+                check=f"IR drop — {name}", severity=Severity.WARN,
+                subsystems=["electrics"],
+                message=(f"'{name}' has a copper pour too large to solve here, so the voltage drop to pads fed "
+                         f"through the pour is NOT checked"
+                         + (f"; the figure below covers only the pads its tracks join." if r_est is not None
+                            else " and none of its pads are joined by tracks alone.")
+                         + " Check the drop to the farthest load in your PCB tool's DC analysis.")))
+        if r_est is not None and volt <= 60.0:
             r_up /= max(copper_finish, 1e-3)
             drop = cur * r_up
             delivered = rail_v - drop
-            pr = nr["worst_pair"] or ("?", "?")
-            zone_note = (" (trace-only, pour on this net will lower it — "
-                         "conservative)" if nr["has_zone"] else "")
+            zone_note = ("" if not nr["has_zone"] else " (through the pour)" if pour is not None and
+                         r_est == pour["r_ohm"] else " (pads joined by tracks; the pour was not solved)"
+                         if pour is None else " (the tracked pads; the pour's worst pair is lower)")
             if delivered < brownout_v:
                 F.append(Finding(
                     check=f"IR drop / brown-out — {name}", severity=Severity.FAIL,
                     subsystems=["electrics"],
                     message=(f"Nodal analysis of the routed copper on '{name}' "
-                             f"gives {nr['worst_r_ohm']*1000:.0f} mΩ between "
+                             f"gives {r_est*1000:.0f} mΩ between "
                              f"{pr[0]} and {pr[1]}{zone_note}, taken as up to "
                              f"{r_up*1000:.0f} mΩ with the model's margin and copper up to "
                              f"{100*(1-copper_finish):.0f} % thin from the fab. At {cur:g} A that "
