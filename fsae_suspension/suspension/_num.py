@@ -46,8 +46,6 @@ def finite_scalar(name: str, value, positive: bool = False) -> float:
 def all_finite(obj) -> bool:
     """True when no float in ``obj`` (numbers, arrays, and lists, tuples, dicts or dataclasses of them, to any
     depth) is nan or inf; unitless, the values are only tested. For the last line of a function that must not hand back a poisoned result."""
-    if isinstance(obj, (bool, str, bytes, int)) or obj is None:
-        return True
     if isinstance(obj, (float, np.floating)):
         return bool(np.isfinite(obj))
     if isinstance(obj, np.ndarray):
@@ -58,7 +56,7 @@ def all_finite(obj) -> bool:
         return all(all_finite(v) for v in obj)
     if hasattr(obj, "__dict__"):
         return all(all_finite(v) for v in vars(obj).values())
-    return True
+    return True                      # ints, bools, strings, bytes, None: nothing that can be nan
 
 
 def json_finite(source):
@@ -70,7 +68,7 @@ def json_finite(source):
 
     text = source.read() if hasattr(source, "read") else source
     if isinstance(text, (bytes, bytearray)):
-        text = bytes(text).decode("utf-8-sig")
+        text = bytes(text).decode("utf-8-sig")  # pragma: no mutate (codec names compare case-blind)
     return json.loads(text, parse_constant=_refuse)
 
 

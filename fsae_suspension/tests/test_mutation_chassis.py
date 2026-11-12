@@ -188,3 +188,51 @@ def test_characterized_checks():
     res["env_open"] = ch.envelope_fit_check(open_tube, (-100.0, -50.0, -135.0), (200.0, 100.0, 50.0))
     res["sheet"] = ch.manufacturing_sheet(HP, kin)
     check("chassis_checks", json.loads(json.dumps(plain(res))))
+
+
+# ---- part loader guards: scale range, reader failures, non-finite geometry: exact words and boundaries ----
+def _says(exc_info, text):
+    assert str(exc_info.value) == text
+
+
+def _box_file(tmp_path):
+    return _write(tmp_path, "b.stl", trimesh.creation.box(extents=[300.0, 80.0, 50.0]))
+
+
+def test_unit_scale_range_is_inclusive_and_named(tmp_path):
+    f = _box_file(tmp_path)
+    assert ch.load_part_mesh(f, unit_scale=1e-6)["unit_scale"] == 1e-6
+    assert ch.load_part_mesh(f, unit_scale=1e6)["unit_scale"] == 1e6
+    for bad in (0.0, 9e-7, 1.1e6, float("nan"), -1.0):
+        with pytest.raises(ValueError) as e:
+            ch.load_part_mesh(f, unit_scale=bad)
+        _says(e, f'unit_scale must be "auto" or a number from 1e-6 to 1e6, got {bad}')
+
+
+def test_reader_failures_become_value_errors_and_ours_pass_through(monkeypatch):
+    def _raise(exc):
+        def f(*a, **k):
+            raise exc
+        return f
+    monkeypatch.setattr(ch, "_load_scene", _raise(RuntimeError("boom")))
+    with pytest.raises(ValueError) as e:
+        ch.load_part_mesh("x.stl")
+    _says(e, "could not read the CAD/mesh file (RuntimeError): it may be damaged or not the format its name says")
+    assert isinstance(e.value.__cause__, RuntimeError)
+    for exc in (ValueError("ours"), ImportError("no reader"), MemoryError("big")):
+        monkeypatch.setattr(ch, "_load_scene", _raise(exc))
+        with pytest.raises(type(exc)) as e:
+            ch.load_part_mesh("x.stl")
+        assert e.value is exc
+
+
+def test_geometry_that_is_not_finite_is_refused(monkeypatch):
+    msg = ("the part has a vertex that is not at a finite position (a damaged file, or a unit scale far out of "
+           "range)")
+    for verts in ([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, np.inf, 0.0]],          # a vertex at infinity
+                  [[-1e308, 0.0, 0.0], [1e308, 0.0, 0.0], [0.0, 1.0, 0.0]]):     # finite vertices, extent overflows
+        mesh = trimesh.Trimesh(vertices=verts, faces=[[0, 1, 2]], process=False)
+        monkeypatch.setattr(ch, "_load_scene", lambda *a, _m=mesh, **k: _m)
+        with pytest.raises(ValueError) as e:
+            ch.load_part_mesh("x.stl", unit_scale=1.0)
+        _says(e, msg)

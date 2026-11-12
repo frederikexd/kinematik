@@ -654,3 +654,77 @@ def test_the_spinning_parts_slow_every_change_of_speed():
         assert lt._accel_long(car, v, lt.Powertrain(rot_mass_factor=0.8), 1.5, 0.0) == pytest.approx(a1)  # floor 1
     slow = lt.acceleration_time(car, lt.Powertrain(rot_mass_factor=1.2)).lap_time_s
     assert slow > lt.acceleration_time(car, lt.Powertrain()).lap_time_s
+
+
+# ---- imported coordinates: each guard, its exact words, its exact boundary ----
+def _says(exc_info, text):
+    assert str(exc_info.value) == text
+
+
+def test_track_from_path_refuses_non_finite_and_absurd_coordinates():
+    with pytest.raises(ValueError) as e:
+        lt.track_from_path([0.0, float("nan"), 5.0], [0.0, 1.0, 2.0])
+    _says(e, "track x (m): 1 of 3 value(s) are not finite numbers (nan or inf)")
+    with pytest.raises(ValueError) as e:
+        lt.track_from_path([0.0, 1.0, 5.0], [0.0, 2e6, 2.0])
+    _says(e, "track y (m): a value of 2e+06 is beyond ±1e+06")
+    with pytest.raises(ValueError) as e:
+        lt.track_from_path([0.0, 1.0, 5.0], [0.0, 1.0, 2.0], ds=0.0)
+    _says(e, "track step ds (m): must be above zero, got 0")
+
+
+def test_track_from_path_keeps_its_empty_track_for_short_or_ragged_or_text_input():
+    for x, y in (([], []), ([0.0, 1.0], [0.0, 1.0, 2.0]), (["a", "b", "c"], ["d", "e", "f"]),
+                 ([0.0, 1.0, 2.0], ["d", "e", "f"])):
+        assert lt.track_from_path(x, y, name="t").segments == []
+    assert lt.track_from_path([0.0, 1e6, 0.0], [0.0, 0.0, 1e6], ds=1e5).segments      # 1,000 km is still a number
+
+
+def test_cone_rows_are_checked_by_name():
+    ok = ([0.0, 10.0], [2.0, 2.0], [0.0, 10.0], [-2.0, -2.0])
+    for i, name in enumerate(("left cone x (m)", "left cone y (m)", "right cone x (m)", "right cone y (m)")):
+        bad = list(ok)
+        bad[i] = [0.0, float("inf")]
+        with pytest.raises(ValueError) as e:
+            lt.cones_to_centerline(*bad)
+        _says(e, f"{name}: 1 of 2 value(s) are not finite numbers (nan or inf)")
+    for i in (0, 2):
+        bad = list(ok)
+        bad[i] = [0.0, 5.0, 10.0]
+        with pytest.raises(ValueError) as e:
+            lt.cones_to_centerline(*bad)
+        _says(e, "each cone row needs as many x as y values")
+    x, y = lt.cones_to_centerline([], [], [], [])
+    assert x.size == 0 and y.size == 0
+
+
+def test_latlon_limits_and_words():
+    with pytest.raises(ValueError) as e:
+        lt.latlon_to_xy([1.0, 2.0], [3.0])
+    _says(e, "latitude and longitude must be the same length, got 2 and 1")
+    for lat, lon in (([90.001], [0.0]), ([-90.001], [0.0]), ([0.0], [180.001]), ([0.0], [-180.001])):
+        with pytest.raises(ValueError) as e:
+            lt.latlon_to_xy(lat, lon)
+        _says(e, "latitude must be within ±90° and longitude within ±180°: check the column order and units")
+    x, _ = lt.latlon_to_xy([90.0, -90.0], [180.0, -180.0])
+    assert x.size == 2
+    with pytest.raises(ValueError) as e:
+        lt.latlon_to_xy([float("nan")], [0.0])
+    _says(e, "latitude: 1 of 1 value(s) are not finite numbers (nan or inf)")
+    with pytest.raises(ValueError) as e:
+        lt.latlon_to_xy([0.0], [float("-inf")])
+    _says(e, "longitude: 1 of 1 value(s) are not finite numbers (nan or inf)")
+
+
+def test_compare_line_guards():
+    car = _car()
+    with pytest.raises(ValueError) as e:
+        lt.compare_line_vs_centerline(car, [0.0, float("nan")], [0.0, 1.0])
+    _says(e, "track x (m): 1 of 2 value(s) are not finite numbers (nan or inf)")
+    with pytest.raises(ValueError) as e:
+        lt.compare_line_vs_centerline(car, [0.0, 1.0], [0.0, -3e6])
+    _says(e, "track y (m): a value of -3e+06 is beyond ±1e+06")
+    with pytest.raises(ValueError) as e:
+        lt.compare_line_vs_centerline(car, [0.0, 1.0], [0.0, 1.0], track_width_m=0.0)
+    _says(e, "track width (m): must be above zero, got 0")
+    assert math.isnan(lt.compare_line_vs_centerline(car, [], [])["time_gained_s"])
