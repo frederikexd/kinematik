@@ -433,3 +433,21 @@ so the reference injected current into the pour at a point.
 copper. Identical for every convex pad, so no earlier result changes; this is checked by re-solving nets that had
 converged. The 15 nets are then solved again with the corrected reference under addendum 9's convergence rule and
 KinematiK's unchanged numbers are scored against them.
+
+## Addendum 14, proving the pour rate (written before any of these nets was solved)
+
+**The claim tested** is what the app does: when `pcb_doctor.pour_net_resistance` (the sheet solve with the pour,
+limited to 150,000 cells, worst pair among up to 64 pads) returns a value marked `converged`, that value is within
+2 % of a converged reference between the same two pads.
+
+- **Nets:** the 598 pour nets of the 111 round-3 team boards (KiCad 5–7) that no pour benchmark has used, shuffled
+  with `random.Random(20261114)` and taken in that order. KinematiK frozen at 9a84971.
+- **Reference:** the corrected 2-D solve with KiCad's own filled zones (addenda 3, 4, 13), read by KiCad 7, between
+  KinematiK's pair, at KinematiK's final cell size and at twice it. Converged when the two agree within 2 %; if not,
+  solved again at half the cell size and scored against the finest pair that agrees. A net whose reference does not
+  converge by then is reported, not scored.
+- **Stopping rule:** the first 80 nets with both a converged app value and a converged reference, or the end of
+  the list. Nets where the app returns no value or an unconverged one are counted and reported with their error;
+  the unconverged ones are checked against the brown-out check's ×1.10.
+- **Pass:** all scored nets within 2 %. With 80 of 80 the 95 % lower bound on the rate is 0.05^(1/80) = 96.3 %. Any
+  miss is published with its cause.
