@@ -403,3 +403,18 @@ trace-only nets of the same four boards that B6 did not sample, each solved once
 export between the 1-D model's worst pair, scored against the refined value frozen at the commit that implements
 this. Limit 2 %. Both the nets the refinement converges on and the ones it falls back on are scored and reported
 separately; with n converged nets all within 2 %, the 95 % lower bound on that rate is 0.05^(1/n).
+
+## Addendum 13, the pour nets still open (written before any of these runs)
+
+1. **Nets whose reference never converges** (the 26 design nets of addendum 9's second list, 16 of them unresolved
+   at a quarter cell): the current estimate is run on all 26. The check is of the label, not the number: on the 16
+   KinematiK must not mark its estimate converged, or if it does, the finding is published. On the 10 with a
+   converged reference the usual 2 % applies. Design data.
+2. **`/MASTER_FUSE_OUT` and `+24V`** (KinematiK converged, reference not): the reference is solved at KinematiK's
+   final cell size and the net scored against it. Held out for round 4, as addendum 10 registered.
+3. **The 19 nets of the first batch not re-scored with round 4**, and **the 4 large nets never reached**: run under
+   a time limit per net (20 and 40 minutes on the benchmark machine). A net that does not finish is reported as
+   not finished, with its size.
+4. **Planes over the memory cap** get no estimate by design. For them the claim is only what the brown-out check
+   already does: it uses the trace-only bound, which is higher than any estimate with the pour. That is checked on
+   every pour net solved so far: the trace-only 1-D value must be at or above the pour estimate.
