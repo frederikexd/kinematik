@@ -67,10 +67,27 @@ Altium's impedance calculator, which can't run here). Limits were set before eac
 | Altium Designer 26.11.1, native Altium boards | 6 team boards designed in Altium | 30 of 30 counts identical |
 | KiCad 9.0.3, boards saved in KiCad 8–9 | 4 team boards: 6,068 tracks, 505 nets | Every count identical; net lengths within 0.015 % |
 | 2-D solve of KiCad 9's copper, net resistance held out | 100 nets, then 100 more for the fix | 1-D model: **miss**, 70 of 95 within 2 % (all within 10 %). Sheet-solve refinement, held out: **92 of 92 within 2 %** |
-| Nets with copper pours (pours up to ~100 mm²), held out | 204 fresh nets on 39 boards, registered random order | **203 of 204 within 2 %**; the miss (+3.1 %, roundrect corners) fixed and held out on 53 more: 53 of 53. Large planes are not estimated, and the app says so |
+| Nets with copper pours (pours up to ~100 mm²), held out | 204 fresh nets on 39 boards, registered random order | **203 of 204 within 2 %**; the miss (+3.1 %, roundrect corners) fixed and held out on 53 more: 53 of 53. Large planes (34–131 mm²): 7 of 7 within 2 %, opt-in because they are much slower to solve |
 | atlc field solver: microstrip impedance | 11 cases, then 10 unseen | IPC-2141 missed by up to 8.3 %; replaced by Hammerstad–Jensen, 10 of 10 unseen within 3.4 % |
 
-**Check it yourself**: [in your browser](https://colab.research.google.com/github/frederikexd/kinematik/blob/main/notebooks/reproduce.ipynb) (Google Colab, nothing to install, about 10 minutes), or in a few minutes on your laptop. Think a result is wrong? [Break it](CHALLENGE.md).
+**Check it yourself**: copy and paste the commands below; each set takes a few minutes on a laptop. Think a result is
+wrong? [Break it](CHALLENGE.md).
+
+Setup, once:
+
+```bash
+git clone https://github.com/frederikexd/kinematik.git
+cd kinematik
+pip install -r requirements.txt
+cd fsae_suspension
+```
+
+Electrical benchmarks (PCB Doctor, SPICE, impedance, heating):
+
+```bash
+pytest tests/test_electrical_benchmark.py tests/test_pcb_doctor.py tests/test_ev_electrical_check.py \
+       tests/test_pcb_upload_fuzz.py
+```
 
 EV/ICE powertrain benchmarks:
 
