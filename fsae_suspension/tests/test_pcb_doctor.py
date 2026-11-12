@@ -9,6 +9,7 @@ component, patch the traces in place, and verify the patched file re-parses."""
 import math
 import re
 import unittest
+from pathlib import Path
 
 from suspension.pcb_doctor import (
     parse_kicad_pcb, parse_board, sniff_format, demo_kicad_pcb,
@@ -1441,7 +1442,7 @@ class TestRefinedNetResistance(unittest.TestCase):
         from suspension import pcb_doctor as D
         self.assertGreaterEqual(D.NET_R_UPPER_FACTOR, 1.10)
         self.assertGreater(D.SHEET_UPPER_FACTOR, 1.0)
-        src = __import__("inspect").getsource(D.diagnose)
+        src = Path(D.__file__).read_text(encoding="utf-8")
         self.assertIn('r_up = max(r_up, ref_["r_ohm"] * SHEET_UPPER_FACTOR)', src)
 
 
