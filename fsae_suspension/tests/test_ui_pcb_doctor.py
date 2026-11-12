@@ -119,6 +119,7 @@ print("@@" + json.dumps({{
     "big_toggle": next((t.label for t in at.toggle if "large pours" in t.label), None),
     "via_boxes": [(c.label[:40], c.value) for c in at.checkbox if c.label.startswith("Add via on")],
     "via_hint": has([m.value for m in at.markdown], "stitching via(s) recommended", "unless you tick it"),
+    "loads_editor": has(exps, "Subsystem loads", "integration ledger"),
 }}))
 '''
 
@@ -202,6 +203,7 @@ class TestPcbDoctorPanel(unittest.TestCase):
         r = _render("empty")
         self.assertIsNone(r["exception"])
         self.assertTrue(r["prescriber"])
+        self.assertTrue(r["loads_editor"], "loads must be enterable before any board is loaded")
         self.assertIsNone(r["caption"])
 
     def test_vias_are_offered_unticked_and_large_pours_are_opt_in(self):
