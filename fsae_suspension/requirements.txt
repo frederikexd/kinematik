@@ -68,6 +68,6 @@ faster-whisper>=1.0  # speech-to-text (faster than openai-whisper, no model down
 google-api-python-client>=2.0   # Google Drive export of stamped reports (drive_export.py)
 google-auth>=2.0                # service-account / OAuth credentials for Drive
 google-auth-oauthlib>=1.0       # per-user OAuth consent flow for Drive export
-olefile>=0.46        # read native binary Altium .PcbDoc (PCB Doctor)
+olefile>=0.47        # read native binary Altium .PcbDoc (PCB Doctor)
 
 defusedxml>=0.7    # safe XML parsing of uploaded workbooks and documents (xlsx_formula_cache.py)
