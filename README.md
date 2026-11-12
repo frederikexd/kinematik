@@ -52,8 +52,7 @@ random typos) ([details](docs/GIGO_BENCHMARK_PLAN.md)):
 | 2, plausibility checks added | 65 of 119 (18 of 20 on the Formula Student car) | 99 of 99 | 0 |
 | 3, cars the checks were never written against | **64 of 83 on two Formula Student cars (77 %, 95 % CI 67–85 %)** | 23 of 23 | 0 |
 
-The electrical modules were checked against KiCad 7, SPICE (ngspice) and a 2-D field solver (atlc, standing in for
-Altium's impedance calculator, which can't run here). Limits were set before each run
+The electrical modules were checked against KiCad 7, SPICE (ngspice) and a 2-D field solver (atlc). Limits were set before each run
 ([details](docs/ELECTRICAL_BENCHMARK.md)):
 
 | Checked against | Cases | Result |
