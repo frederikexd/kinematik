@@ -34,7 +34,7 @@ dependencies = [
 excel = ["openpyxl>=3.1"]  # xlcalculator dropped: unused, pinned numpy<2  # ev_electrical_check, ev_excel_roundtrip
 cad = ["cascadio>=0.0.16", "fast_simplification>=0.1", "rtree>=1.0"]
 pdf = ["reportlab>=4.0"]                   # project.py: render_pdf
-cloud = ["supabase>=2.0"]                  # project sync, workspaces, analytics
+cloud = ["supabase>=2.34.1"]                  # project sync, workspaces, analytics
 # drive/voice were previously listed ONLY in requirements.txt, so `pip install
 # kinematik[all]` silently omitted them and tests/test_report.py hard-failed on
 # a clean checkout. pyproject is the source of truth; keep both in sync.

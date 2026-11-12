@@ -58,7 +58,7 @@ piper-tts>=1.2     # PREFERRED offline TTS for the briefing audio file
                    #  cold start. Falls back to gTTS, then to the offline HTML
                    #  player, when absent. ffmpeg (present on Streamlit Cloud)
                    #  transcodes its WAV to MP3; without ffmpeg you get WAV.
-supabase>=2.0      # cloud project sync / shared setup  (project.py: SupabaseStore;
+supabase>=2.34.1      # cloud project sync / shared setup  (project.py: SupabaseStore;
                    #  workspace.py: tenant-scoped backend — run workspace_isolation.sql)
 
 
