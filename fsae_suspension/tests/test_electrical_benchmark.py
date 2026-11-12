@@ -318,6 +318,9 @@ def test_pour_round4_grid_check_results():
     r4 = [(o["kinematik_r4_ohm"] - o["copper2d_ohm"]) / o["copper2d_ohm"]
           for o in held if o.get("r4_converged") and o["reference_converged"]]
     assert len(r4) == 5 and all(abs(e) <= 0.02 for e in r4)
+    same = [(o["kinematik_r4_ohm"] - o["reference_same_cell_ohm"]) / o["reference_same_cell_ohm"]
+            for o in held if o.get("reference_same_cell_ohm")]                 # addendum 13, item 2
+    assert len(same) == 2 and all(abs(e) <= 0.02 for e in same)
     assert sum(1 for o in held if not o.get("r4_converged")) == 4            # reported as not converged, not hidden
     design = [o for o in d["design"] if o["r4_converged"] and o["reference_converged"]]
     err = [(o["kinematik_r4_ohm"] - o["reference_ohm"]) / o["reference_ohm"] for o in design]

@@ -1013,7 +1013,9 @@
    "copper2d_ohm": 9.581610830932802e-05,
    "copper2d_coarse_ohm": 8.768050635431731e-05,
    "reference_h_mm": 0.041666666666666664,
-   "reference_converged": false
+   "reference_converged": false,
+   "reference_same_cell_ohm": 0.0001011552871998641,
+   "reference_same_cell_h_mm": 0.010416666666666666
   },
   {
    "board": "BMS_LV_2022.kicad_pcb",
@@ -1057,7 +1059,9 @@
    "copper2d_ohm": 0.00033125332306145296,
    "copper2d_coarse_ohm": 0.0003237671449295721,
    "reference_h_mm": 0.042333333333333334,
-   "reference_converged": false
+   "reference_converged": false,
+   "reference_same_cell_ohm": 0.00034646205791351623,
+   "reference_same_cell_h_mm": 0.010583333333333333
   },
   {
    "board": "BMS_LV_2022.kicad_pcb",
@@ -1202,5 +1206,5 @@
    "note": "3 more nets just under the memory cap were queued after it and not reached before the session time limit"
   }
  ],
- "unscored_held_out": "/MASTER_FUSE_OUT and +24V: KinematiK converged, the reference at its own cell size did not, and the finer reference did not finish"
+ "unscored_held_out": "none: /MASTER_FUSE_OUT and +24V were scored against the reference at KinematiK final cell size (addendum 13, item 2)"
 }

@@ -364,7 +364,8 @@ large" for them and gives no estimate) and 4 just under it were not reached.
   The 2 misses (−4.9 %, −5.0 %) are the empty-pour nets, fixed by addendum 11 and no longer pour nets.
 - *Held out* (the 11 larger nets, never looked at before round 4 was frozen): KinematiK marked 7 converged. On the 5
   whose reference also converges, **5 of 5 are within 2 %** (worst +0.38 %). On `/MASTER_FUSE_OUT` and `+24V` the
-  reference has not converged at its own cell size, and the finer solve did not finish; they are unscored.
+  reference had not converged at its own cell size; solved again at KinematiK's final cell size (addendum 13) they
+  are −0.02 % and +0.43 %. **7 of 7 held-out converged estimates within 2 %.**
   4 were marked not converged and are reported as such.
 - *Not finished:* `+3V3` on the BMS LV board (1.18 M cells) did not finish within 40 minutes; 3 more nets just under
   the memory cap were not reached.
@@ -389,8 +390,8 @@ never a number. The 5 estimates KinematiK labels not converged are all within 3.
 ×1.10 the brown-out check applies to them.
 
 **What can be said.** A pour estimate KinematiK marks converged has matched a converged reference within 2 % on
-every net where both exist: 5 of 5 held out, and 60 of 62 on design data (the 2 misses being the empty pours since
-fixed). That is strong evidence but only 5 held-out nets, not a proven rate. Whole-board planes are not estimated,
+every net where both exist: 7 of 7 held out, and 60 of 62 on design data (the 2 misses being the empty pours since
+fixed). With 7 held-out nets the 95 % lower bound on that rate is 0.05^(1/7) = 65 %: strong evidence, not yet a proven 2 % rate. Whole-board planes are not estimated,
 and the report says so.
 
 ## From the file to the built board
