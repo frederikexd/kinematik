@@ -416,8 +416,10 @@ board, in a registered random order.
 above is under 100 mm² (largest 41 mm²). Switching on **Solve large pours** raises the limit to 3 million cells,
 which takes minutes per large pour and can take much longer on a whole-board ground plane, and the app says so
 before it starts. The evidence at that size is the held-out large-plane set of rounds 3–4 (`pours_round4.json`):
-7 of 7 converged estimates within 2 %, on planes of 0.3–1.2 million cells. That is fewer nets than the small-pour
-proof, so it is evidence rather than a proven rate. A plane over the larger limit is still reported as not checked.
+7 of 7 converged estimates within 2 %, on pours of 34–131 mm² solved at 0.3–1.2 million cells. That is fewer nets
+than the small-pour proof, so it is evidence rather than a proven rate. Whole-board ground planes (thousands of mm²,
+6–24 million cells) were never solved by the reference either. They stay over the limit and are still reported as
+not checked.
 
 
 **What can be said.** A pour estimate KinematiK marks converged has matched a converged reference within 2 % on
