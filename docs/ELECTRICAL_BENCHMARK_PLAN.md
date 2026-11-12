@@ -418,3 +418,18 @@ separately; with n converged nets all within 2 %, the 95 % lower bound on that r
 4. **Planes over the memory cap** get no estimate by design. For them the claim is only what the brown-out check
    already does: it uses the trace-only bound, which is higher than any estimate with the pour. That is checked on
    every pour net solved so far: the trace-only 1-D value must be at or above the pour estimate.
+
+### Addendum 13, first result and a correction to the reference (written before the corrected reference was run)
+
+On the 15 design nets whose reference never converged, KinematiK marked 11 of its estimates converged, at about
+0.22 mΩ where the reference read 0.40, 0.48, 0.55 mΩ and climbing by the same step at every halving. A constant
+step per halving is a logarithm: current entering plain copper at a single cell. The cause is in the reference, not
+in the boards: it puts a pad's terminal at the **mean of its polygon's vertices**. For an ordinary pad that is its
+centre. For the concave custom pads of these LED footprints the mean falls in a notch outside the pad, on the pour,
+so the reference injected current into the pour at a point.
+
+**Correction (reference method, addendum 3):** a pad's terminal is the cell at the pad's own position (KiCad's
+`GetPosition`, the anchor of a custom pad), falling back to the vertex mean only if that cell is not the pad's
+copper. Identical for every convex pad, so no earlier result changes; this is checked by re-solving nets that had
+converged. The 15 nets are then solved again with the corrected reference under addendum 9's convergence rule and
+KinematiK's unchanged numbers are scored against them.

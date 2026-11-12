@@ -57,6 +57,12 @@ class PacejkaLateral:
                    if k not in self.coeffs]
         if missing:
             raise ValueError(f"Missing required lateral coefficients: {missing}")
+        bad = sorted(k for k, v in self.coeffs.items()
+                     if isinstance(v, (int, float)) and not isinstance(v, bool) and not math.isfinite(v))
+        if bad:
+            raise ValueError(f"Tire coefficients must be finite numbers; not finite: {bad}")
+        if not (isinstance(self.FNOMIN, (int, float)) and math.isfinite(self.FNOMIN) and self.FNOMIN > 0):
+            raise ValueError(f"FNOMIN (nominal load, N) must be a finite number above zero, got {self.FNOMIN!r}")
 
     def _C(self, name, default=0.0):
         return float(self.coeffs.get(name, default))

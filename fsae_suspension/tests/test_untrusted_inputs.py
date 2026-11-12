@@ -255,3 +255,190 @@ def test_frame_csv_refuses_with_the_row_and_the_reason(nodes, tubes, why):
 def test_add_node_refuses_a_non_finite_position_on_every_path():
     with pytest.raises(ValueError, match="three finite numbers"):
         FrameGraph().add_node("n", (0.0, float("nan"), 0.0))
+
+
+# --- the shared guards (suspension/_num.py) ------------------------------------------------------------------- #
+from suspension import _num  # noqa: E402
+
+
+def test_finite_returns_a_flat_float_array_and_leaves_units_alone():
+    a = _num.finite("x", [[1, 2], [3, 4]])
+    assert a.dtype == float and a.tolist() == [1.0, 2.0, 3.0, 4.0]
+    assert _num.finite("x", [5.0], 1).tolist() == [5.0]
+    assert _num.finite("x", [-3.0, 3.0], 2, 3.0).tolist() == [-3.0, 3.0]          # the bound itself is allowed
+
+
+@pytest.mark.parametrize("values,min_len,max_abs,why", [
+    ([1.0, float("nan"), 3.0], 1, None, r"x: 1 of 3 value\(s\) are not finite numbers"),
+    ([float("inf"), float("-inf")], 1, None, r"x: 2 of 2 value\(s\) are not finite"),
+    ([], 1, None, r"x: needs at least 1 value\(s\), got 0"),
+    ([1.0, 2.0], 3, None, r"x: needs at least 3 value\(s\), got 2"),
+    (["a", "b"], 1, None, "x: not a list of numbers"),
+    ([[1, 2], [3]], 1, None, "x: not a list of numbers"),
+    ([1.0, -7.0, 2.0], 1, 5.0, r"x: a value of -7 is beyond ±5"),
+])
+def test_finite_refuses_and_names_the_input(values, min_len, max_abs, why):
+    with pytest.raises(ValueError, match=why):
+        _num.finite("x", values, min_len, max_abs)
+
+
+def test_finite_scalar():
+    assert _num.finite_scalar("m", "2.5") == 2.5 and _num.finite_scalar("m", -1) == -1.0
+    assert _num.finite_scalar("m", 1e-9, positive=True) == 1e-9
+    for bad, why in ((float("nan"), "m: nan is not a finite number"), (float("inf"), "m: inf is not a finite"),
+                     ("abc", "m: not a number"), (None, "m: not a number")):
+        with pytest.raises(ValueError, match=why):
+            _num.finite_scalar("m", bad)
+    for bad in (0, -2.0):
+        with pytest.raises(ValueError, match="m: must be above zero, got"):
+            _num.finite_scalar("m", bad, positive=True)
+
+
+def test_all_finite_walks_every_container():
+    from dataclasses import dataclass
+
+    @dataclass
+    class Box:
+        v: object
+
+    assert _num.all_finite([1.0, (2, {"a": np.array([1.0, 2.0])}), Box(3.0), "nan", None, True, np.array([1, 2])])
+    for bad in (float("nan"), np.float64("inf"), [1.0, float("inf")], (float("nan"),), {"a": float("-inf")},
+                np.array([1.0, np.nan]), Box([np.array([np.inf])]), {float("nan")}):
+        assert not _num.all_finite(bad)
+
+
+# --- track geometry (GPS breadcrumbs, cone maps) -------------------------------------------------------------- #
+from suspension import laptime  # noqa: E402
+
+XS, YS = [0.0, 10.0, 20.0, 20.0, 10.0, 0.0], [0.0, 0.0, 5.0, 15.0, 20.0, 12.0]
+
+
+@pytest.mark.parametrize("bad", [float("nan"), float("inf"), 2.0e6])
+def test_track_from_path_refuses_a_bad_coordinate(bad):
+    for x, y, name in ((XS[:2] + [bad] + XS[3:], YS, "track x"), (XS, YS[:4] + [bad] + YS[5:], "track y")):
+        with pytest.raises(ValueError, match=name):
+            laptime.track_from_path(x, y)
+
+
+def test_track_from_path_refuses_short_mismatched_or_bad_step():
+    with pytest.raises(ValueError, match="needs at least 3"):
+        laptime.track_from_path([0, 1], [0, 1])
+    with pytest.raises(ValueError, match="same length, got 6 and 5"):
+        laptime.track_from_path(XS, YS[:5])
+    for ds in (0.0, -1.0, float("nan"), float("inf")):
+        with pytest.raises(ValueError, match="track step ds"):
+            laptime.track_from_path(XS, YS, ds=ds)
+    assert len(laptime.track_from_path(XS, YS).segments) > 3     # and a clean path still builds
+
+
+def test_cones_and_gps_refuse_bad_values():
+    lx, ly, rx, ry = [0, 5, 10], [2, 2, 2], [0, 5, 10], [-2, -2, -2]
+    cx, cy = laptime.cones_to_centerline(lx, ly, rx, ry)
+    assert np.allclose(cy, 0.0) and np.allclose(cx, [0, 5, 10])
+    for i, name in enumerate(("left cone x", "left cone y", "right cone x", "right cone y")):
+        rows = [list(lx), list(ly), list(rx), list(ry)]
+        rows[i][1] = float("nan")
+        with pytest.raises(ValueError, match=name):
+            laptime.cones_to_centerline(*rows)
+    with pytest.raises(ValueError, match="as many x as y"):
+        laptime.cones_to_centerline(lx, ly[:2], rx, ry)
+    with pytest.raises(ValueError, match="as many x as y"):
+        laptime.cones_to_centerline(lx, ly, rx[:2], ry)
+    x, y = laptime.latlon_to_xy([52.0, 52.001], [4.0, 4.002])
+    assert np.isfinite(x).all() and np.isfinite(y).all()
+    for lat, lon, why in (([52.0, float("nan")], [4.0, 4.0], "latitude"), ([52.0, 52.0], [4.0, float("inf")], "longitude"),
+                          ([52.0], [4.0, 4.1], "same length, got 1 and 2"), ([91.0, 52.0], [4.0, 4.0], "within ±90"),
+                          ([52.0, 52.0], [4.0, -181.0], "within ±90"), ([-90.0, 90.0], [180.0, -180.0], None)):
+        if why is None:
+            laptime.latlon_to_xy(lat, lon)                       # the limits themselves are valid
+        else:
+            with pytest.raises(ValueError, match=why):
+                laptime.latlon_to_xy(lat, lon)
+
+
+# --- speed traces, tire files, bench logs, meshes ------------------------------------------------------------- #
+from suspension import chassis, correlation, ev_electrical_check, throttle_return_ingest, tirefit, tiremodel  # noqa: E402
+
+
+def test_speed_trace_correlation_marks_a_trace_with_a_bad_sample_not_ok():
+    d = np.linspace(0, 100, 21)
+    good = correlation.correlate_speed_trace(d, 10 + 0.1 * d, d, 10 + 0.1 * d)
+    assert good.trace.ok and good.trace.rmse == pytest.approx(0.0, abs=1e-9)
+    for which in range(4):
+        arrs = [d.copy(), 10 + 0.1 * d, d.copy(), 10 + 0.1 * d]
+        arrs[which][5] = float("nan")
+        rep = correlation.correlate_speed_trace(*arrs)
+        assert not rep.trace.ok and "not a finite number" in rep.trace.note
+
+
+def test_lap_check_from_a_speed_trace_refuses_bad_samples():
+    p = ev_electrical_check.ElecParams()
+    t, v = list(range(10)), [30.0] * 10
+    assert ev_electrical_check.check_lap_from_speed_csv(v, t, p) is not None
+    cases = [(v[:5] + [float("nan")] + v[6:], t, "speed trace speed"), (v, t[:5] + [float("inf")] + t[6:], "speed trace time"),
+             (v[:2], t[:2], "needs at least 3"), (v, t[:9], "one speed per time, got 10 and 9"),
+             (v, [0, 1, 2, 2, 4, 5, 6, 7, 8, 9], "time must rise"), (v, list(range(9, -1, -1)), "time must rise"),
+             (v[:5] + [1001.0] + v[6:], t, "above 1000 mph")]
+    for vv, tt, why in cases:
+        with pytest.raises(ValueError, match=why):
+            ev_electrical_check.check_lap_from_speed_csv(vv, tt, p)
+    for kw, why in (({"vehicle_mass_kg": 0.0}, "vehicle mass"), ({"vehicle_mass_kg": float("nan")}, "vehicle mass"),
+                    ({"drag_cda": float("inf")}, "drag CdA"), ({"crr": float("nan")}, "rolling resistance"),
+                    ({"drivetrain_eff": float("nan")}, "drivetrain efficiency")):
+        with pytest.raises(ValueError, match=why):
+            ev_electrical_check.check_lap_from_speed_csv(v, t, p, **kw)
+
+
+def test_tir_file_with_an_overflowing_value_is_refused():
+    tir = "[MODEL]\nLONGVL = 16.9\nFNOMIN = 6000\nPKY1 = -20\nPKY4 = 2\n"
+    assert ev_electrical_check.TireLosses.from_tir(tir).fz_nom_n == 6000.0
+    with pytest.raises(ValueError, match=r"\.tir PKY4"):
+        ev_electrical_check.TireLosses.from_tir(tir.replace("PKY4 = 2", "PKY4 = 1e999"))
+    for n in (0, -1, 2.5, float("nan"), True):
+        with pytest.raises(ValueError, match="whole number of tires"):
+            ev_electrical_check.TireLosses.from_tir(tir, n_tires=n)
+
+
+def test_tire_model_refuses_coefficients_that_are_not_finite():
+    c = dict(tiremodel.default_tire().coeffs)
+    assert tiremodel.PacejkaLateral(coeffs=c, FNOMIN=1100.0).mu_peak(1100.0) > 0
+    for bad in (float("nan"), float("inf")):
+        with pytest.raises(ValueError, match=r"not finite: \['PDY1'\]"):
+            tiremodel.PacejkaLateral(coeffs={**c, "PDY1": bad}, FNOMIN=1100.0)
+    for f in (0.0, -5.0, float("nan"), float("inf"), "1100"):
+        with pytest.raises(ValueError, match="FNOMIN"):
+            tiremodel.PacejkaLateral(coeffs=c, FNOMIN=f)
+
+
+def test_bench_log_that_cannot_give_a_rate_says_so():
+    ok = throttle_return_ingest.spring_rate_from_bench_log(b"deflection_mm,force_N\n10,5\n20,10\n30,15\n40,20\n")
+    assert ok.is_trustworthy and ok.k_N_per_m == pytest.approx(500.0)
+    for log in (b"deflection_mm,force_N\n", b"deflection_mm,force_N\n1e-320,3\n", b"deflection_mm,force_N\n10,1e999\n",
+                b"deflection_mm,force_N\nnan,nan\n", b"deflection_mm,force_N\n10," + b"9" * 200_000 + b"\n"):
+        fit = throttle_return_ingest.spring_rate_from_bench_log(log)
+        assert not fit.is_trustworthy and fit.k_N_per_m == 0.0 and fit.findings
+
+
+def test_tire_data_channels_must_be_finite_and_matching():
+    sa = np.linspace(-12, 12, 21)
+    ch = {"SA": sa, "FZ": np.full(21, 1000.0), "FY": -1500 * np.tanh(sa / 4)}
+    with pytest.raises(ValueError, match="tire data channel FY"):
+        tirefit.fit_from_ttc_channels({**ch, "FY": np.where(sa == 0, np.nan, ch["FY"])})
+    with pytest.raises(ValueError, match="same length"):
+        tirefit.fit_from_ttc_channels({**ch, "FZ": ch["FZ"][:20]})
+    with pytest.raises(ValueError, match="needs at least 8"):
+        tirefit.fit_from_ttc_channels({k: v[:4] for k, v in ch.items()})
+
+
+def test_damaged_mesh_file_is_a_value_error(tmp_path):
+    p = tmp_path / "part.glb"
+    p.write_bytes(b"glTF" + b"\x02\x00\x00\x00" + b"\xff" * 40)
+    with pytest.raises(ValueError):
+        chassis.load_part_mesh(str(p))
+    stl = tmp_path / "tri.stl"
+    stl.write_text("solid t\nfacet normal 0 0 1\nouter loop\nvertex 0 0 0\nvertex 10 0 0\nvertex 0 10 0\nendloop\n"
+                   "endfacet\nendsolid t\n")
+    assert chassis.load_part_mesh(str(stl))["triangles"] == 1
+    for scale in (0.0, -1.0, float("nan"), float("inf"), 1e308):
+        with pytest.raises(ValueError):
+            chassis.load_part_mesh(str(stl), unit_scale=scale)

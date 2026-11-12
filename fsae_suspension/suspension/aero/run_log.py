@@ -1076,7 +1076,10 @@ def _load_grid(source, sheet: str | None = None) -> tuple:
         dialect = csv.Sniffer().sniff(text[:4096], delimiters=",;\t|")
     except csv.Error:
         dialect = csv.excel
-    grid = [row for row in csv.reader(io.StringIO(text), dialect)]
+    try:
+        grid = [row for row in csv.reader(io.StringIO(text), dialect)]
+    except csv.Error as exc:
+        raise ValueError(f"the run log is not a readable CSV ({exc})") from exc
     return (grid, sheet or "", label)
 
 
