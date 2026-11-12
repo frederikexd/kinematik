@@ -1728,3 +1728,32 @@ class TestBrownoutAtTheNetsOwnVoltage:
         assert f.severity == Severity.WARN and "5 V rail" not in f.message
         assert "99% of the brown-out margin" in f.message
         assert "(4.5 V on 5 V, the board's brown-out fraction, applied to this 12 V net)" in f.message
+
+
+class TestViewerShowsWhatTheFileGets(unittest.TestCase):
+    """Only segments the verified fix wrote glow; withdrawn or manual ones are amber; no two labels overlap."""
+
+    def test_glow_matches_the_fixed_file_and_labels_never_overlap(self):
+        from suspension import pcb_altium
+        from suspension import pcb_doctor as pdr
+        b = pcb_altium.parse_altium_ascii(pcb_altium.demo_altium_pcb())
+        asg = pdr.auto_assign_net_currents(b)
+        pdr.apply_demo_declarations(b, asg)
+        rep = pdr.diagnose(b, asg)
+        fx = pdr.fix_board(b, asg, report=rep)
+        segs = tuple(a.seg_index for a in fx["applied"] if not isinstance(a, pdr.ViaFix))
+        svg = pdr.board_svg(b, report=rep, applied=segs)
+        n_man = len({f.seg_index for f in rep.fixes}) - len(segs)
+        self.assertIn(f"glow = widened in the fixed file ({len(segs)})", svg)
+        self.assertIn(f"amber = needs a manual fix ({n_man})", svg)
+        self.assertNotIn("a fix will widen", svg)
+        self.assertGreater(n_man, 0)
+        none = pdr.board_svg(b, report=rep, applied=())
+        self.assertNotIn("glow = widened", none)
+        self.assertIn(f"amber = needs a manual fix ({len({f.seg_index for f in rep.fixes})})", none)
+        labs = re.findall(r'<text x="([\d.\-]+)" y="([\d.\-]+)" font-size="10" font-weight="700" '
+                          r'fill="#e8edf2">([^<]*)</text>', svg)
+        boxes = [(float(x), float(y) - 10, float(x) + 6.6 * len(t) + 2, float(y)) for x, y, t in labs]
+        for i, p in enumerate(boxes):
+            for q in boxes[i + 1:]:
+                self.assertTrue(p[2] < q[0] or p[0] > q[2] or p[3] < q[1] or p[1] > q[3], (p, q))
