@@ -29,7 +29,7 @@ networkx>=3.0      # trimesh needs it to slice a mesh into sections (vortex-latt
 # --- optional features: imported lazily, only when the feature is used ---
 # The app boots fine without these; each one just unlocks its feature.
 openpyxl>=3.1      # Excel workbook read/write           (ev_electrical_check.py, ev_excel_roundtrip.py)
-cascadio>=0.0.16; python_version < "3.13"   # STEP/STP chassis import (chassis.py, integration.py). No 3.13/3.14 wheel; STEP importer degrades gracefully when absent. Pin Python to 3.12 to keep STEP import working.
+cascadio>=0.1.1; python_version < "3.13"   # STEP/STP chassis import (chassis.py, integration.py). No 3.13/3.14 wheel; STEP importer degrades gracefully when absent. Pin Python to 3.12 to keep STEP import working.
 fast_simplification>=0.1   # faster CAD-part decimation for the 3D model (optional;
                            # falls back to built-in vertex clustering if absent)
 rtree>=1.0         # chassis/part collision queries via trimesh.proximity
