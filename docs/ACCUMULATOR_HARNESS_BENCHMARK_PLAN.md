@@ -91,3 +91,23 @@ flow (agreement with the other two is not a test of the physics, which the corre
 ±15-25 % against the measurements they were fitted to, bounds).
 
 Neither B1 nor B2 replaces a measured pack: absolute temperatures stay flagged "synthesized" until calibrated.
+
+## Addendum 3 (2026-11-13)
+
+### C1. Still-air cooling (ht, natural convection)
+
+Every pack in the app runs with no fan placed, so every cell is cooled by the still-air coefficient `h_floor`
+(8 W/m²K before this addendum). Reference: `ht`'s natural-convection correlations for a 21 mm can in 30 °C air at a
+surface rise of 5, 10, 20 and 40 K (Churchill-Chu for a horizontal cylinder; ht's default method for a 70 mm
+vertical one), air properties from CoolProp at the film temperature.
+
+Disclosure: the horizontal values were computed once (4.5 to 7.3 W/m²K) before this limit was written, so C1 is not
+blind. Limit: `h_floor` within 30 % of both correlations at every rise. 8 W/m²K misses at 5 and 10 K (up to 78 %
+high, i.e. optimistic cooling); the default moves to the correlation's value at a 10 K rise, rounded, and is
+re-scored.
+
+### C2. How far to trust an absolute temperature
+
+The correlations scatter by about ±15-25 % against the measurements behind them, and none of this replaces a
+measured pack. The app therefore reports the hottest cell with the cooling coefficient at 0.8x and 1.2x as a band,
+and labels the fan-draught proxy as unbenchmarked wherever fans are placed.
