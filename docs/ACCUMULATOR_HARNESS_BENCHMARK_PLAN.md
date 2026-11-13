@@ -52,3 +52,19 @@ resistance as n_series × r_cell / n_parallel. The reference solves the full net
   interconnects out.
 
 A miss here is a limit of the lumped model, published as such, not tuned away.
+
+## Addendum 1 (2026-11-13, registered before its reference was generated)
+
+### A4. Per-cell pack thermal network (ngspice)
+
+`suspension.pack_thermal.PackThermalModel.simulate` on a 4 x 6 grid with two fans, 20 minutes of 1 s mixed
+current, temperature coefficient of resistance and wake warming off so the network is linear. The per-cell
+convection coefficients come from KinematiK's airflow proxy and are recorded as inputs: what is checked is the
+network solve (Joule heat, cell-to-cell conduction, convection to air), not the airflow proxy. Reference: the same
+network in ngspice by the thermal-electrical analogy (temperature as voltage, heat as current, capacitance as
+thermal mass, conductances as resistors), transient with a fine maximum step.
+
+Limit: every cell within 0.2 K at every second.
+
+The airflow proxy itself is not benchmarked here: that needs CFD or a measured pack, and stays flagged
+"synthesized" until calibrated.
