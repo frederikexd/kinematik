@@ -205,7 +205,7 @@ PHYSICS_OWNERS: tuple[Quantity, ...] = (
         description="Conductor cross-section by AWG, mm^2",
         owner="suspension/harness.py",
         mirrors=("suspension/fuse_test.py",),
-        agreement="Agree to rounding (<0.1%) on all nine shared gauges.",
+        agreement="Identical: both compute the area from the AWG definition (ASTM B258).",
     ),
     Quantity(
         key="air_density",
