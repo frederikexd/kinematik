@@ -114,6 +114,57 @@ def test_pack_thermal_network_matches_ngspice():
     assert np.max(np.abs(res.temp_history_c - ref)) <= 0.2           # registered: 0.2 K
 
 
+# --------------------------------------------------- B1/B2. ht tube-bank correlations: airflow (addendum 2) -- #
+def _bank():
+    from suspension.pack_thermal import CellParams, PackLayout
+    d = _ref("b1_ht_tube_bank.json")
+    x = d["inputs"]
+    lay = PackLayout(rows=x["cells_across"], cols=x["rows_along_flow"], cell=CellParams(pitch_mm=x["pitch_m"] * 1000))
+    return d, x, lay
+
+
+def _corr(flow):
+    rows = flow["h_row_w_m2k"]
+    return np.array([rows[k] for k in ("zukauskas_bejan", "grimison", "esdu_73031")])
+
+
+def test_airflow_proxy_misses_the_tube_bank_correlations():
+    from suspension.pack_thermal import AirflowParams, Fan
+    d, x, lay = _bank()
+    mean_h = {}
+    worst = 0.0
+    for cfm, flow in d["flows"].items():
+        fan = Fan(x_mm=0.0, y_mm=x["cells_across"] * x["pitch_m"] * 500.0, cfm=float(cfm))
+        h = AirflowParams().h_field(lay.positions_mm(), [fan]).reshape(x["cells_across"], x["rows_along_flow"])
+        ref = _corr(flow).mean(axis=0)
+        worst = max(worst, float(np.max(np.abs(h / ref - 1.0))))
+        mean_h[cfm] = (h.mean(), ref.mean())
+        assert h[:, 0].mean() > h[:, -1].mean() and ref[0] < ref[-1]       # it cools the wrong end
+    assert worst > 0.9                                                      # registered 30 %: a miss, kept
+    proxy_ratio, ref_ratio = mean_h["80"][0] / mean_h["20"][0], mean_h["80"][1] / mean_h["20"][1]
+    assert abs(proxy_ratio / ref_ratio - 1.0) <= 0.15   # registered 15 %: the flow scaling passes (10 %)
+
+
+def test_duct_mode_round1_missed_the_implementation_limit_and_is_kept():
+    d, _, _ = _bank()
+    r1 = _ref("b2_round1_kinematik.json")["h_row_w_m2k"]
+    dev = max(np.max(np.abs(np.array(r1[c]) / np.array(f["h_row_w_m2k"]["zukauskas_bejan"]) - 1.0))
+              for c, f in d["flows"].items())
+    assert 0.04 < dev < 0.05                                                # 4.35 %: Incropera's coarse row table
+
+
+def test_duct_mode_matches_the_tube_bank_correlations():
+    from suspension.pack_thermal import AirflowParams
+    d, x, lay = _bank()
+    for cfm, flow in d["flows"].items():
+        h = AirflowParams(mode="duct", duct_cfm=float(cfm)).h_field(lay.positions_mm(), [])
+        h = h.reshape(x["cells_across"], x["rows_along_flow"])
+        corr = _corr(flow)
+        assert np.max(np.abs(h / corr[0] - 1.0)) <= 0.02                    # registered: 2 % against ht's Zukauskas
+        assert np.max(np.abs(h / corr.mean(axis=0) - 1.0)) <= 0.30          # B1's 30 % against all three
+        assert np.all(h >= corr.min(axis=0) * 0.999) and np.all(h <= corr.max(axis=0) * 1.001)
+
+
 def test_the_references_are_the_registered_ones():
     plan = (ROOT.parent / "docs" / "ACCUMULATOR_HARNESS_BENCHMARK_PLAN.md").read_text(encoding="utf-8")
     for tool in ("ngspice", "PyBaMM", "liionpack"):
