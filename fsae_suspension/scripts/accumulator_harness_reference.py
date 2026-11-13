@@ -10,8 +10,10 @@
   a1   PyBaMM:    pack terminal voltage, current and charge along a lap             -> a1_pybamm_pack_lap.json
   a2   PyBaMM:    lumped pack temperature with cooling over 30 minutes              -> a2_pybamm_pack_thermal.json
   a3   liionpack: a 140s3p pack network, cell by cell, with interconnects           -> a3_liionpack_network.json
+  a4   ngspice:   the per-cell pack thermal network (addendum 1)                    -> a4_ngspice_pack_network.json
 
-Nothing here imports KinematiK: the references are built from the tools and the plan alone. Needs ngspice on PATH
+Nothing here imports KinematiK except a4, which takes the per-cell convection coefficients from KinematiK's airflow
+proxy as recorded inputs (the proxy is not under test there; the network solve is). Needs ngspice on PATH
 and `pip install pybamm liionpack`. tests/test_accumulator_harness_benchmark.py checks KinematiK against the JSON.
 """
 import argparse
@@ -179,8 +181,75 @@ def a3():
         "cases": cases})
 
 
+A4 = {"rows": 4, "cols": 6, "parallel": 6, "pitch_mm": 22.0, "ambient_c": 30.0, "k_cell_cell_w_k": 0.35,
+      "cell_mass_kg": 0.070, "cell_cp_j_kgk": 1000.0, "r_cell_ohm": 0.022, "surface_m2": 0.0042,
+      "fans": [{"x_mm": 0.0, "y_mm": 44.0, "cfm": 120.0, "throw_mm": 90.0},
+               {"x_mm": 132.0, "y_mm": 0.0, "cfm": 80.0, "throw_mm": 60.0}],
+      "pattern_a_s": [[90.0, 8], [30.0, 20], [-20.0, 6], [60.0, 12], [10.0, 14]], "seconds": 1200}
+
+
+def a4_inputs():
+    """The pack current at every second and the per-cell h from KinematiK's airflow proxy (an input here)."""
+    import sys
+    sys.path.insert(0, str(ROOT))
+    from suspension.pack_thermal import AirflowParams, CellParams, Fan, PackLayout
+    cur = []
+    while len(cur) < A4["seconds"] + 1:
+        for a, dur in A4["pattern_a_s"]:
+            cur.extend([a] * dur)
+    cur = cur[:A4["seconds"] + 1]
+    cell = CellParams(mass_kg=A4["cell_mass_kg"], cp=A4["cell_cp_j_kgk"], r_internal_ohm=A4["r_cell_ohm"],
+                      r_tempco_per_c=0.0, surface_area_m2=A4["surface_m2"], pitch_mm=A4["pitch_mm"])
+    lay = PackLayout(rows=A4["rows"], cols=A4["cols"], parallel=A4["parallel"], cell=cell, ambient_c=A4["ambient_c"])
+    fans = [Fan(**f) for f in A4["fans"]]
+    h = AirflowParams(enable_wake_warming=False).h_field(lay.positions_mm(), fans)
+    return cur, [float(x) for x in h]
+
+
+def a4():
+    cur, h = a4_inputs()
+    R, C, n = A4["rows"], A4["cols"], A4["rows"] * A4["cols"]
+    cap = A4["cell_mass_kg"] * A4["cell_cp_j_kgk"]
+    eps = 1e-4
+    lines = ["* pack thermal network: node voltage = temperature (C), current = heat (W)",
+             f"Vair air 0 DC {A4['ambient_c']}"]
+    for i in range(n):
+        lines.append(f"C{i} n{i} 0 {cap} IC={A4['ambient_c']}")
+        lines.append(f"Rh{i} n{i} air {1.0 / (h[i] * A4['surface_m2'])!r}")
+        pts = [(0.0, cur[1])]
+        for k in range(1, len(cur)):
+            q = (cur[k] / A4["parallel"]) ** 2 * A4["r_cell_ohm"]       # heat over (t[k-1], t[k]]
+            pts += [(k - 1 + eps, q), (float(k), q)]
+        pwl = " ".join(f"{t:.6g} {q:.10g}" for t, q in pts)
+        lines.append(f"Iq{i} 0 n{i} PWL({pwl})")
+    for r in range(R):
+        for c in range(C):
+            i = r * C + c
+            if c + 1 < C:
+                lines.append(f"Rk{i}_{i + 1} n{i} n{i + 1} {1.0 / A4['k_cell_cell_w_k']!r}")
+            if r + 1 < R:
+                lines.append(f"Rk{i}_{i + C} n{i} n{i + C} {1.0 / A4['k_cell_cell_w_k']!r}")
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp) / "t.txt"
+        vecs = " ".join(f"v(n{i})" for i in range(n))
+        lines += [".options reltol=1e-6", ".control", f"tran 0.5 {A4['seconds']} 0 0.05 uic",
+                  f"wrdata {out} {vecs}", ".endc", ".end"]
+        cir = Path(tmp) / "t.cir"
+        cir.write_text("\n".join(lines) + "\n")
+        subprocess.run(["ngspice", "-b", str(cir)], capture_output=True, text=True, check=True)
+        data = np.loadtxt(out)
+    t = data[:, 0]
+    temps = data[:, 1::2]
+    grid = np.arange(0.0, A4["seconds"] + 0.5, 1.0)
+    ref = np.column_stack([np.interp(grid, t, temps[:, j]) for j in range(n)])
+    _write("a4_ngspice_pack_network.json", {
+        "tool": f"{_ngspice_version()} (thermal-electrical analogy, max step 0.05 s)",
+        "inputs": {**A4, "h_w_m2k": h, "pack_current_a": cur},
+        "t_s": grid.tolist(), "temp_c": ref.round(6).tolist()})
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("steps", nargs="*", default=["h1", "a1", "a2", "a3"])
+    ap.add_argument("steps", nargs="*", default=["h1", "a1", "a2", "a3", "a4"])
     for step in ap.parse_args().steps:
-        {"h1": h1, "a1": a1, "a2": a2, "a3": a3}[step]()
+        {"h1": h1, "a1": a1, "a2": a2, "a3": a3, "a4": a4}[step]()
