@@ -4,15 +4,15 @@
    "any_cell_breached_limit": false,
    "breach_count": 0,
    "final_temp_c": [
-    30.003592049074992,
-    30.003592049074992
+    30.00359265967368,
+    30.00359265967368
    ],
    "hottest_cell_index": 0,
    "hottest_cell_rc": [
     0,
     0
    ],
-   "hottest_peak_c": 30.003592049074992,
+   "hottest_peak_c": 30.00359265967368,
    "ok": true,
    "pack_current_a": [
     0.0,
@@ -45,8 +45,8 @@
     0.0
    ],
    "peak_temp_c": [
-    30.003592049074992,
-    30.003592049074992
+    30.00359265967368,
+    30.00359265967368
    ],
    "synthesized": false,
    "time_s": [
@@ -97,19 +97,19 @@
    "any_cell_breached_limit": true,
    "breach_count": 6,
    "final_temp_c": [
-    90.17957070607814,
-    90.25604160108774,
-    90.30718040547347,
-    90.25597430949175,
-    90.28824078024464,
-    90.31011479533636
+    90.1785971996096,
+    90.25788570056764,
+    90.31086876502681,
+    90.25781602072114,
+    90.29125006210623,
+    90.3139079486774
    ],
    "hottest_cell_index": 5,
    "hottest_cell_rc": [
     1,
     2
    ],
-   "hottest_peak_c": 90.31011479533636,
+   "hottest_peak_c": 90.3139079486774,
    "ok": true,
    "pack_current_a": [
     0.0,
@@ -128,12 +128,12 @@
     0.0
    ],
    "peak_temp_c": [
-    90.17957070607814,
-    90.25604160108774,
-    90.30718040547347,
-    90.25597430949175,
-    90.28824078024464,
-    90.31011479533636
+    90.1785971996096,
+    90.25788570056764,
+    90.31086876502681,
+    90.25781602072114,
+    90.29125006210623,
+    90.3139079486774
    ],
    "synthesized": true,
    "time_s": [
@@ -168,25 +168,27 @@
     0.2,
     0.2
    ],
-   "warnings": []
+   "warnings": [
+    "Fan-draught airflow map: a geometric estimate, not benchmarked. Against three tube-bank correlations for air pushed through a pack it was off by up to 95 % and cooled the wrong end; for a ducted pack use the duct mode."
+   ]
   },
   "meta0": {
    "any_cell_breached_limit": true,
    "breach_count": 6,
    "final_temp_c": [
-    90.17957070607814,
-    90.25604160108774,
-    90.30718040547347,
-    90.25597430949175,
-    90.28824078024464,
-    90.31011479533636
+    90.1785971996096,
+    90.25788570056764,
+    90.31086876502681,
+    90.25781602072114,
+    90.29125006210623,
+    90.3139079486774
    ],
    "hottest_cell_index": 5,
    "hottest_cell_rc": [
     1,
     2
    ],
-   "hottest_peak_c": 90.31011479533636,
+   "hottest_peak_c": 90.3139079486774,
    "ok": true,
    "pack_current_a": [
     0.0,
@@ -205,12 +207,12 @@
     0.0
    ],
    "peak_temp_c": [
-    90.17957070607814,
-    90.25604160108774,
-    90.30718040547347,
-    90.25597430949175,
-    90.28824078024464,
-    90.31011479533636
+    90.1785971996096,
+    90.25788570056764,
+    90.31086876502681,
+    90.25781602072114,
+    90.29125006210623,
+    90.3139079486774
    ],
    "synthesized": true,
    "time_s": [
@@ -245,25 +247,27 @@
     0.2,
     0.2
    ],
-   "warnings": []
+   "warnings": [
+    "Fan-draught airflow map: a geometric estimate, not benchmarked. Against three tube-bank correlations for air pushed through a pack it was off by up to 95 % and cooled the wrong end; for a ducted pack use the duct mode."
+   ]
   },
   "meta2": {
    "any_cell_breached_limit": true,
    "breach_count": 6,
    "final_temp_c": [
-    133.01155825830367,
-    133.2967771126979,
-    133.49017347432752,
-    133.2961574269895,
-    133.41820845020175,
-    133.50151973823685
+    133.00778690487363,
+    133.30357318572277,
+    133.50406465243125,
+    133.30293096545708,
+    133.42946653115726,
+    133.515825316398
    ],
    "hottest_cell_index": 5,
    "hottest_cell_rc": [
     1,
     2
    ],
-   "hottest_peak_c": 133.50151973823685,
+   "hottest_peak_c": 133.515825316398,
    "ok": true,
    "pack_current_a": [
     0.0,
@@ -296,12 +300,12 @@
     0.0
    ],
    "peak_temp_c": [
-    133.01155825830367,
-    133.2967771126979,
-    133.49017347432752,
-    133.2961574269895,
-    133.41820845020175,
-    133.50151973823685
+    133.00778690487363,
+    133.30357318572277,
+    133.50406465243125,
+    133.30293096545708,
+    133.42946653115726,
+    133.515825316398
    ],
    "synthesized": true,
    "time_s": [
@@ -350,25 +354,27 @@
     0.2,
     0.2
    ],
-   "warnings": []
+   "warnings": [
+    "Fan-draught airflow map: a geometric estimate, not benchmarked. Against three tube-bank correlations for air pushed through a pack it was off by up to 95 % and cooled the wrong end; for a ducted pack use the duct mode."
+   ]
   },
   "metax": {
    "any_cell_breached_limit": true,
    "breach_count": 6,
    "final_temp_c": [
-    90.17957070607814,
-    90.25604160108774,
-    90.30718040547347,
-    90.25597430949175,
-    90.28824078024464,
-    90.31011479533636
+    90.1785971996096,
+    90.25788570056764,
+    90.31086876502681,
+    90.25781602072114,
+    90.29125006210623,
+    90.3139079486774
    ],
    "hottest_cell_index": 5,
    "hottest_cell_rc": [
     1,
     2
    ],
-   "hottest_peak_c": 90.31011479533636,
+   "hottest_peak_c": 90.3139079486774,
    "ok": true,
    "pack_current_a": [
     0.0,
@@ -387,12 +393,12 @@
     0.0
    ],
    "peak_temp_c": [
-    90.17957070607814,
-    90.25604160108774,
-    90.30718040547347,
-    90.25597430949175,
-    90.28824078024464,
-    90.31011479533636
+    90.1785971996096,
+    90.25788570056764,
+    90.31086876502681,
+    90.25781602072114,
+    90.29125006210623,
+    90.3139079486774
    ],
    "synthesized": true,
    "time_s": [
@@ -427,26 +433,28 @@
     0.2,
     0.2
    ],
-   "warnings": []
+   "warnings": [
+    "Fan-draught airflow map: a geometric estimate, not benchmarked. Against three tube-bank correlations for air pushed through a pack it was off by up to 95 % and cooled the wrong end; for a ducted pack use the duct mode."
+   ]
   }
  },
  "drv_dflt": {
   "any_cell_breached_limit": true,
   "breach_count": 6,
   "final_temp_c": [
-   90.31188126395786,
-   90.31188126395786,
-   90.31188126395786,
-   90.31188126395786,
-   90.31188126395786,
-   90.31188126395786
+   90.31584853712299,
+   90.31584853712299,
+   90.31584853712299,
+   90.31584853712299,
+   90.31584853712299,
+   90.31584853712299
   ],
   "hottest_cell_index": 0,
   "hottest_cell_rc": [
    0,
    0
   ],
-  "hottest_peak_c": 90.31188126395786,
+  "hottest_peak_c": 90.31584853712299,
   "ok": true,
   "pack_current_a": [
    0.0,
@@ -465,12 +473,12 @@
    0.0
   ],
   "peak_temp_c": [
-   90.31188126395786,
-   90.31188126395786,
-   90.31188126395786,
-   90.31188126395786,
-   90.31188126395786,
-   90.31188126395786
+   90.31584853712299,
+   90.31584853712299,
+   90.31584853712299,
+   90.31584853712299,
+   90.31584853712299,
+   90.31584853712299
   ],
   "synthesized": true,
   "time_s": [
@@ -511,19 +519,19 @@
   "any_cell_breached_limit": true,
   "breach_count": 6,
   "final_temp_c": [
-   135.88052641706548,
-   136.1685137679312,
-   136.36377991728222,
-   136.16790882576822,
-   136.29112451104865,
-   136.37522537101228
+   135.8767191219476,
+   136.17537704340518,
+   136.37780741171824,
+   136.17475012117814,
+   136.30249344677054,
+   136.38967091268495
   ],
   "hottest_cell_index": 5,
   "hottest_cell_rc": [
    1,
    2
   ],
-  "hottest_peak_c": 136.37522537101228,
+  "hottest_peak_c": 136.38967091268495,
   "ok": true,
   "pack_current_a": [
    0.0,
@@ -556,12 +564,12 @@
    0.0
   ],
   "peak_temp_c": [
-   135.88052641706548,
-   136.1685137679312,
-   136.36377991728222,
-   136.16790882576822,
-   136.29112451104865,
-   136.37522537101228
+   135.8767191219476,
+   136.17537704340518,
+   136.37780741171824,
+   136.17475012117814,
+   136.30249344677054,
+   136.38967091268495
   ],
   "synthesized": true,
   "time_s": [
@@ -610,7 +618,9 @@
    0.2,
    0.2
   ],
-  "warnings": []
+  "warnings": [
+   "Fan-draught airflow map: a geometric estimate, not benchmarked. Against three tube-bank correlations for air pushed through a pack it was off by up to 95 % and cooled the wrong end; for a ducted pack use the duct mode."
+  ]
  },
  "failed": {
   "any_cell_breached_limit": false,
@@ -680,20 +690,20 @@
  },
  "h": [
   [
-   18.937449334415213,
-   70.94067520850288,
-   12.023662748985632,
-   19.1539379998112
+   16.84556311555011,
+   70.78920786553657,
+   9.673799418723902,
+   17.070129716222063
   ],
   [
    75.0,
-   8.0,
-   8.0,
-   43.328592410884255
+   5.5,
+   5.5,
+   42.146823470991876
   ],
   [
-   8.0,
-   8.0
+   5.5,
+   5.5
   ]
  ],
  "hist": [
@@ -707,43 +717,43 @@
   ],
   [
    30.02857142857143,
-   30.029064604890415,
-   30.028784948469,
-   30.029064604890415,
-   30.028947692326756,
-   30.028753725357177
+   30.029066134150078,
+   30.028745037514668,
+   30.029066134150078,
+   30.028927245956872,
+   30.028710393560306
   ],
   [
-   30.01477311669157,
-   30.023060451407336,
-   30.02735152327915,
-   30.02306115054839,
-   30.02588624631665,
-   30.027562999736677
+   30.01468034478387,
+   30.02323898895846,
+   30.027620553959327,
+   30.023239791700046,
+   30.026130727863634,
+   30.027834814435632
   ],
   [
-   29.99830735239434,
-   30.015864107034545,
-   30.025619010778637,
-   30.01585192766103,
-   30.022203049215666,
-   30.026128191972386
+   29.998105486277964,
+   30.016254381527258,
+   30.02625817258131,
+   30.01624203352324,
+   30.02276465064059,
+   30.026777829324086
   ],
   [
-   40.511340788207164,
-   40.55182279692704,
-   40.575174073915846,
-   40.551737686551306,
-   40.56689021812966,
-   40.57644662391979
+   40.51086851868075,
+   40.552736125704655,
+   40.57673247214545,
+   40.552648981947854,
+   40.56823794644211,
+   40.57803545826927
   ],
   [
-   54.76010724668488,
-   54.93566668131818,
-   55.047811223408885,
-   54.935234527145695,
-   55.00678163501909,
-   55.05425253145389
+   54.757952836375544,
+   54.93981736111037,
+   55.05571047765028,
+   54.93937355635085,
+   55.01334089627577,
+   55.06235816364275
   ]
  ],
  "runs": {
@@ -751,54 +761,55 @@
    "any_cell_breached_limit": true,
    "breach_count": 6,
    "final_temp_c": [
-    987.8598246790482,
-    988.1404580635541,
-    988.3851833826129,
-    988.0181196909974,
-    988.2301240074524,
-    988.4201053955248
+    989.063653871088,
+    989.3551202440533,
+    989.6092924176878,
+    989.2280587732216,
+    989.4482469683038,
+    989.6455624584586
    ],
    "hottest_cell_index": 5,
    "hottest_cell_rc": [
     1,
     2
    ],
-   "hottest_peak_c": 988.4201053955248,
+   "hottest_peak_c": 989.6455624584586,
    "ok": true,
    "pack_current_a": [
     0.0,
     900.0
    ],
    "peak_temp_c": [
-    987.8598246790482,
-    988.1404580635541,
-    988.3851833826129,
-    988.0181196909974,
-    988.2301240074524,
-    988.4201053955248
+    989.063653871088,
+    989.3551202440533,
+    989.6092924176878,
+    989.2280587732216,
+    989.4482469683038,
+    989.6455624584586
    ],
    "synthesized": true,
    "time_s": [
     0.0,
-    87.50943829057272
+    87.50932529105062
    ],
    "time_to_limit_s": [
-    87.50943829057272,
-    87.50943829057272,
-    87.50943829057272,
-    87.50943829057272,
-    87.50943829057272,
-    87.50943829057272
+    87.50932529105062,
+    87.50932529105062,
+    87.50932529105062,
+    87.50932529105062,
+    87.50932529105062,
+    87.50932529105062
    ],
    "time_to_warn_s": [
-    87.50943829057272,
-    87.50943829057272,
-    87.50943829057272,
-    87.50943829057272,
-    87.50943829057272,
-    87.50943829057272
+    87.50932529105062,
+    87.50932529105062,
+    87.50932529105062,
+    87.50932529105062,
+    87.50932529105062,
+    87.50932529105062
    ],
    "warnings": [
+    "Fan-draught airflow map: a geometric estimate, not benchmarked. Against three tube-bank correlations for air pushed through a pack it was off by up to 95 % and cooled the wrong end; for a ducted pack use the duct mode.",
     "UNSTABLE: this step needs more than 5000 sub-steps to satisfy the explicit-Euler stability limit, and has been capped there. The integrator is now running past its stability bound, so the temperature field will oscillate and diverge — these are not merely coarse results, they are wrong. Shorten the macro step, coarsen the cell grid, or use a smaller cell heat capacity."
    ]
   },
@@ -806,19 +817,19 @@
    "any_cell_breached_limit": true,
    "breach_count": 6,
    "final_temp_c": [
-    145.12152538151804,
-    145.79369653405553,
-    146.24820634566427,
-    145.7918555584559,
-    146.07914948343466,
-    146.27502938809195
+    145.1127717591001,
+    145.8097920713228,
+    146.28088701002855,
+    145.80788660894996,
+    146.10568485451088,
+    146.3086819523063
    ],
    "hottest_cell_index": 5,
    "hottest_cell_rc": [
     1,
     2
    ],
-   "hottest_peak_c": 146.27502938809195,
+   "hottest_peak_c": 146.3086819523063,
    "ok": true,
    "pack_current_a": [
     0.0,
@@ -829,12 +840,12 @@
     250.0
    ],
    "peak_temp_c": [
-    145.12152538151804,
-    145.79369653405553,
-    146.24820634566427,
-    145.7918555584559,
-    146.07914948343466,
-    146.27502938809195
+    145.1127717591001,
+    145.8097920713228,
+    146.28088701002855,
+    145.80788660894996,
+    146.10568485451088,
+    146.3086819523063
    ],
    "synthesized": true,
    "time_s": [
@@ -861,25 +872,27 @@
     0.4,
     0.4
    ],
-   "warnings": []
+   "warnings": [
+    "Fan-draught airflow map: a geometric estimate, not benchmarked. Against three tube-bank correlations for air pushed through a pack it was off by up to 95 % and cooled the wrong end; for a ducted pack use the duct mode."
+   ]
   },
   "hot2": {
    "any_cell_breached_limit": true,
    "breach_count": 6,
    "final_temp_c": [
-    938.3362340826753,
-    958.0567330443452,
-    971.8190934142416,
-    957.9879993377583,
-    966.6538047782228,
-    972.6486812811578
+    937.8222072989266,
+    958.2787323600201,
+    972.5630989227088,
+    958.2074020677902,
+    967.2010871469214,
+    973.424359564665
    ],
    "hottest_cell_index": 5,
    "hottest_cell_rc": [
     1,
     2
    ],
-   "hottest_peak_c": 972.6486812811578,
+   "hottest_peak_c": 973.424359564665,
    "ok": true,
    "pack_current_a": [
     0.0,
@@ -896,12 +909,12 @@
     750.0
    ],
    "peak_temp_c": [
-    938.3362340826753,
-    958.0567330443452,
-    971.8190934142416,
-    957.9879993377583,
-    966.6538047782228,
-    972.6486812811578
+    937.8222072989266,
+    958.2787323600201,
+    972.5630989227088,
+    958.2074020677902,
+    967.2010871469214,
+    973.424359564665
    ],
    "synthesized": true,
    "time_s": [
@@ -934,25 +947,27 @@
     0.4,
     0.4
    ],
-   "warnings": []
+   "warnings": [
+    "Fan-draught airflow map: a geometric estimate, not benchmarked. Against three tube-bank correlations for air pushed through a pack it was off by up to 95 % and cooled the wrong end; for a ducted pack use the duct mode."
+   ]
   },
   "hot3": {
    "any_cell_breached_limit": true,
    "breach_count": 6,
    "final_temp_c": [
-    961.8707174602002,
-    995.9438122574632,
-    1020.5073486962826,
-    995.1782822519979,
-    1011.0489542096628,
-    1022.3206897053049
+    960.8142294985793,
+    996.157864994732,
+    1021.6643551956768,
+    995.3630391027029,
+    1011.8400129126893,
+    1023.5480467264963
    ],
    "hottest_cell_index": 5,
    "hottest_cell_rc": [
     1,
     2
    ],
-   "hottest_peak_c": 1022.3206897053049,
+   "hottest_peak_c": 1023.5480467264963,
    "ok": true,
    "pack_current_a": [
     0.0,
@@ -975,12 +990,12 @@
     750.0
    ],
    "peak_temp_c": [
-    961.8707174602002,
-    995.9438122574632,
-    1020.5073486962826,
-    995.1782822519979,
-    1011.0489542096628,
-    1022.3206897053049
+    960.8142294985793,
+    996.157864994732,
+    1021.6643551956768,
+    995.3630391027029,
+    1011.8400129126893,
+    1023.5480467264963
    ],
    "synthesized": true,
    "time_s": [
@@ -1019,25 +1034,27 @@
     0.4,
     0.4
    ],
-   "warnings": []
+   "warnings": [
+    "Fan-draught airflow map: a geometric estimate, not benchmarked. Against three tube-bank correlations for air pushed through a pack it was off by up to 95 % and cooled the wrong end; for a ducted pack use the duct mode."
+   ]
   },
   "lay": {
    "any_cell_breached_limit": false,
    "breach_count": 0,
    "final_temp_c": [
-    54.76010724668488,
-    54.93566668131818,
-    55.047811223408885,
-    54.935234527145695,
-    55.00678163501909,
-    55.05425253145389
+    54.757952836375544,
+    54.93981736111037,
+    55.05571047765028,
+    54.93937355635085,
+    55.01334089627577,
+    55.06235816364275
    ],
    "hottest_cell_index": 5,
    "hottest_cell_rc": [
     1,
     2
    ],
-   "hottest_peak_c": 55.05425253145389,
+   "hottest_peak_c": 55.06235816364275,
    "ok": true,
    "pack_current_a": [
     0.0,
@@ -1048,12 +1065,12 @@
     250.0
    ],
    "peak_temp_c": [
-    54.76010724668488,
-    54.93566668131818,
-    55.047811223408885,
-    54.935234527145695,
-    55.00678163501909,
-    55.05425253145389
+    54.757952836375544,
+    54.93981736111037,
+    55.05571047765028,
+    54.93937355635085,
+    55.01334089627577,
+    55.06235816364275
    ],
    "synthesized": true,
    "time_s": [
@@ -1080,7 +1097,9 @@
     6.0,
     6.0
    ],
-   "warnings": []
+   "warnings": [
+    "Fan-draught airflow map: a geometric estimate, not benchmarked. Against three tube-bank correlations for air pushed through a pack it was off by up to 95 % and cooled the wrong end; for a ducted pack use the duct mode."
+   ]
   }
  },
  "study": [
@@ -1094,7 +1113,7 @@
      "y_mm": 20.0
     }
    ],
-   90.22612528147025,
+   90.22688509826983,
    [
     1,
     0
@@ -1104,19 +1123,19 @@
     "any_cell_breached_limit": true,
     "breach_count": 6,
     "final_temp_c": [
-     90.22516509622375,
-     90.21051401661445,
-     90.20704121909596,
-     90.22612528147025,
-     90.21163898043865,
-     90.20820538852337
+     90.22588940466017,
+     90.21069445542548,
+     90.2070921838201,
+     90.22688509826983,
+     90.21186131593424,
+     90.20829978146845
     ],
     "hottest_cell_index": 3,
     "hottest_cell_rc": [
      1,
      0
     ],
-    "hottest_peak_c": 90.22612528147025,
+    "hottest_peak_c": 90.22688509826983,
     "ok": true,
     "pack_current_a": [
      0.0,
@@ -1135,12 +1154,12 @@
      0.0
     ],
     "peak_temp_c": [
-     90.22516509622375,
-     90.21051401661445,
-     90.20704121909596,
-     90.22612528147025,
-     90.21163898043865,
-     90.20820538852337
+     90.22588940466017,
+     90.21069445542548,
+     90.2070921838201,
+     90.22688509826983,
+     90.21186131593424,
+     90.20829978146845
     ],
     "synthesized": true,
     "time_s": [
@@ -1175,7 +1194,9 @@
      0.2,
      0.2
     ],
-    "warnings": []
+    "warnings": [
+     "Fan-draught airflow map: a geometric estimate, not benchmarked. Against three tube-bank correlations for air pushed through a pack it was off by up to 95 % and cooled the wrong end; for a ducted pack use the duct mode."
+    ]
    }
   ],
   [
@@ -1188,7 +1209,7 @@
      "y_mm": 10.0
     }
    ],
-   90.31011479533636,
+   90.3139079486774,
    [
     1,
     2
@@ -1198,19 +1219,19 @@
     "any_cell_breached_limit": true,
     "breach_count": 6,
     "final_temp_c": [
-     90.17957070607814,
-     90.25604160108774,
-     90.30718040547347,
-     90.25597430949175,
-     90.28824078024464,
-     90.31011479533636
+     90.1785971996096,
+     90.25788570056764,
+     90.31086876502681,
+     90.25781602072114,
+     90.29125006210623,
+     90.3139079486774
     ],
     "hottest_cell_index": 5,
     "hottest_cell_rc": [
      1,
      2
     ],
-    "hottest_peak_c": 90.31011479533636,
+    "hottest_peak_c": 90.3139079486774,
     "ok": true,
     "pack_current_a": [
      0.0,
@@ -1229,12 +1250,12 @@
      0.0
     ],
     "peak_temp_c": [
-     90.17957070607814,
-     90.25604160108774,
-     90.30718040547347,
-     90.25597430949175,
-     90.28824078024464,
-     90.31011479533636
+     90.1785971996096,
+     90.25788570056764,
+     90.31086876502681,
+     90.25781602072114,
+     90.29125006210623,
+     90.3139079486774
     ],
     "synthesized": true,
     "time_s": [
@@ -1269,12 +1290,14 @@
      0.2,
      0.2
     ],
-    "warnings": []
+    "warnings": [
+     "Fan-draught airflow map: a geometric estimate, not benchmarked. Against three tube-bank correlations for air pushed through a pack it was off by up to 95 % and cooled the wrong end; for a ducted pack use the duct mode."
+    ]
    }
   ],
   [
    [],
-   90.31188126395786,
+   90.31584853712299,
    [
     0,
     0
@@ -1284,19 +1307,19 @@
     "any_cell_breached_limit": true,
     "breach_count": 6,
     "final_temp_c": [
-     90.31188126395786,
-     90.31188126395786,
-     90.31188126395786,
-     90.31188126395786,
-     90.31188126395786,
-     90.31188126395786
+     90.31584853712299,
+     90.31584853712299,
+     90.31584853712299,
+     90.31584853712299,
+     90.31584853712299,
+     90.31584853712299
     ],
     "hottest_cell_index": 0,
     "hottest_cell_rc": [
      0,
      0
     ],
-    "hottest_peak_c": 90.31188126395786,
+    "hottest_peak_c": 90.31584853712299,
     "ok": true,
     "pack_current_a": [
      0.0,
@@ -1315,12 +1338,12 @@
      0.0
     ],
     "peak_temp_c": [
-     90.31188126395786,
-     90.31188126395786,
-     90.31188126395786,
-     90.31188126395786,
-     90.31188126395786,
-     90.31188126395786
+     90.31584853712299,
+     90.31584853712299,
+     90.31584853712299,
+     90.31584853712299,
+     90.31584853712299,
+     90.31584853712299
     ],
     "synthesized": true,
     "time_s": [
@@ -1360,7 +1383,9 @@
   ],
   true,
   "SYNTHESIZED: per-cell temperatures are physically-shaped estimates from an uncalibrated lumped network + geometric airflow proxy. Trustworthy for RANKING layouts and locating the hot corner; absolute °C needs calibrated=True on both the cell and the airflow map.",
-  []
+  [
+   "Fan-draught airflow map: a geometric estimate, not benchmarked. Against three tube-bank correlations for air pushed through a pack it was off by up to 95 % and cooled the wrong end; for a ducted pack use the duct mode."
+  ]
  ],
  "trace": [
   [

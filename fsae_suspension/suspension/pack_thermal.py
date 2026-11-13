@@ -229,7 +229,10 @@ class AirflowParams:
     CFD — it captures the only thing that matters for placement decisions: cells
     near a fan in its throw are well-cooled, cells in dead air are not.
     """
-    h_floor: float = 8.0                # W/(m²·K) still-air natural convection
+    #  Still-air natural convection, W/(m²·K): the correlations' value for a 21 mm can at a 10 K rise in 30 °C air
+    #  (Churchill-Chu horizontal 5.3, vertical 5.6), rounded. The old 8.0 was up to 78 % optimistic against them
+    #  (docs/ACCUMULATOR_HARNESS_BENCHMARK_PLAN.md, C1); 5.5 is within 30 % of both from a 5 to a 40 K rise.
+    h_floor: float = 5.5
     h_peak: float = 75.0               # W/(m²·K) directly in a ~120 cfm draught
     ref_cfm: float = 120.0             # cfm that produces h_peak at the fan face
     # cross-cell shadowing: a cell downstream of many cooled cells gets warmer air
@@ -247,10 +250,16 @@ class AirflowParams:
     air_k_w_mk: float = 0.02662         # air at 30 °C, 1 atm (CoolProp): conductivity, W/(m·K)
     air_nu_m2_s: float = 1.6046e-5      # kinematic viscosity, m²/s
     air_pr: float = 0.7067              # Prandtl number (unitless)
+    #  Multiplies every cooling coefficient (unitless). The correlations scatter about ±15-25 % against the
+    #  measurements behind them, so a result is reported with this at 0.8 and 1.2 as a band (C2).
+    h_scale: float = 1.0
 
     def h_field(self, positions_mm: np.ndarray, fans: Sequence[Fan]) -> np.ndarray:
         """Per-cell convective coefficient h (W/m²·K) from all fans, or from the duct flow in "duct" mode.
         Never raises."""
+        return self._h_field(positions_mm, fans) * self.h_scale
+
+    def _h_field(self, positions_mm: np.ndarray, fans: Sequence[Fan]) -> np.ndarray:
         if self.mode == "duct":
             return self.duct_h_field(positions_mm, fans)
         try:
@@ -580,6 +589,14 @@ class PackThermalModel:
 
             positions = lay.positions_mm()
             h_cell = self.airflow.h_field(positions, self.fans)        # (n,)
+            if self.fans and self.airflow.mode != "duct":
+                self._warn("Fan-draught airflow map: a geometric estimate, not benchmarked. Against three "
+                           "tube-bank correlations for air pushed through a pack it was off by up to 95 % and "
+                           "cooled the wrong end; for a ducted pack use the duct mode.")
+            if self.airflow.mode == "duct" and cell.pitch_mm < 1.25 * self.airflow.cell_diameter_mm:
+                self._warn(f"Cell pitch {cell.pitch_mm:g} mm is under 1.25 x the {self.airflow.cell_diameter_mm:g} mm "
+                           "can: the tube-bank correlation behind the duct mode was fitted to wider gaps, so its "
+                           "cooling here is an extrapolation.")
             if self.airflow.enable_wake_warming:
                 air_offset = self._wake_air_offset(h_cell)             # (n,)
             else:
@@ -738,6 +755,29 @@ class PackThermalModel:
 # --------------------------------------------------------------------------- #
 #  Driver: virtual lap → per-cell hot map (the headline entry point)
 # --------------------------------------------------------------------------- #
+def cooling_band(layout: PackLayout, time_s, pack_current_a, *, fans: Sequence[Fan] | None = None,
+                 airflow: AirflowParams | None = None, k_cell_cell: float = _K_CELL_CELL, n_laps: int = 1,
+                 spread: float = 0.2) -> dict:
+    """The run at the given cooling and at (1 ± spread) x every cooling coefficient, so a reported temperature
+    carries the correlations' own scatter (about ±15-25 % against measurements; C2). Returns {"result": the
+    nominal PackThermalResult, "peak_c", "peak_low_c" (cooling x (1 + spread)), "peak_high_c" (x (1 - spread))},
+    all °C, the peaks NaN where a run failed. Never raises."""
+    from dataclasses import replace as _replace
+    base = airflow or AirflowParams()
+    out = {}
+    for key, scale in (("result", 1.0), ("low", 1.0 + spread), ("high", 1.0 - spread)):
+        air = _replace(base, h_scale=base.h_scale * scale)
+        res = PackThermalModel(layout=layout, fans=fans, airflow=air, k_cell_cell=k_cell_cell).simulate(
+            time_s, pack_current_a, n_laps=n_laps)
+        #  A failed run carries NaN peaks; the guard only keeps an empty peak array from raising.
+        peak = float(np.max(res.peak_temp_c)) if np.size(res.peak_temp_c) else float("nan")  # pragma: no mutate
+        if key == "result":
+            out["result"], out["peak_c"] = res, peak
+        else:
+            out[f"peak_{key}_c"] = peak
+    return out
+
+
 def simulate_pack_thermal(lap,
                           lap_params,
                           layout: PackLayout | None = None,

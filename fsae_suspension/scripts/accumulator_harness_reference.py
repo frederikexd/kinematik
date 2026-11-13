@@ -12,6 +12,7 @@
   a3   liionpack: a 140s3p pack network, cell by cell, with interconnects           -> a3_liionpack_network.json
   a4   ngspice:   the per-cell pack thermal network (addendum 1)                    -> a4_ngspice_pack_network.json
   b1   ht:        per-row h of a ducted cell bank, three correlations (addendum 2)  -> b1_ht_tube_bank.json
+  c1   ht:        still-air h of a cell, horizontal and vertical (addendum 3)      -> c1_ht_still_air.json
 
 Nothing here imports KinematiK except a4, which takes the per-cell convection coefficients from KinematiK's airflow
 proxy as recorded inputs (the proxy is not under test there; the network solve is). Needs ngspice on PATH
@@ -203,7 +204,7 @@ def a4_inputs():
                       r_tempco_per_c=0.0, surface_area_m2=A4["surface_m2"], pitch_mm=A4["pitch_mm"])
     lay = PackLayout(rows=A4["rows"], cols=A4["cols"], parallel=A4["parallel"], cell=cell, ambient_c=A4["ambient_c"])
     fans = [Fan(**f) for f in A4["fans"]]
-    h = AirflowParams(enable_wake_warming=False).h_field(lay.positions_mm(), fans)
+    h = AirflowParams(enable_wake_warming=False, h_floor=8.0).h_field(lay.positions_mm(), fans)   # as recorded
     return cur, [float(x) for x in h]
 
 
@@ -288,8 +289,31 @@ def b1():
         "flows": out})
 
 
+def c1():
+    import CoolProp
+    import ht
+    from CoolProp.CoolProp import PropsSI
+    from ht import conv_free_immersed as fi
+    d, length, air_k = 0.021, 0.070, 303.15
+    rows = []
+    for rise in (5.0, 10.0, 20.0, 40.0):
+        tf = air_k + rise / 2.0
+        rho, mu = PropsSI("D", "T", tf, "P", 101325.0, "Air"), PropsSI("V", "T", tf, "P", 101325.0, "Air")
+        k, cp = PropsSI("L", "T", tf, "P", 101325.0, "Air"), PropsSI("C", "T", tf, "P", 101325.0, "Air")
+        pr, nu = cp * mu / k, mu / rho
+        gr_d = 9.80665 * (1.0 / tf) * rise * d ** 3 / nu ** 2
+        gr_l = 9.80665 * (1.0 / tf) * rise * length ** 3 / nu ** 2
+        rows.append({"rise_k": rise,
+                     "h_horizontal_w_m2k": fi.Nu_horizontal_cylinder_Churchill_Chu(pr, gr_d) * k / d,
+                     "h_vertical_w_m2k": fi.Nu_vertical_cylinder(pr, gr_l, L=length, D=d) * k / length})
+    _write("c1_ht_still_air.json", {
+        "tool": f"ht {ht.__version__} (Churchill-Chu horizontal; default vertical method), CoolProp "
+                f"{CoolProp.__version__}",
+        "inputs": {"d_m": d, "length_m": length, "air_c": air_k - 273.15}, "rows": rows})
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("steps", nargs="*", default=["h1", "a1", "a2", "a3", "a4", "b1"])
+    ap.add_argument("steps", nargs="*", default=["h1", "a1", "a2", "a3", "a4", "b1", "c1"])
     for step in ap.parse_args().steps:
-        {"h1": h1, "a1": a1, "a2": a2, "a3": a3, "a4": a4, "b1": b1}[step]()
+        {"h1": h1, "a1": a1, "a2": a2, "a3": a3, "a4": a4, "b1": b1, "c1": c1}[step]()
