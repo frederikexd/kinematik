@@ -240,3 +240,10 @@ def test_edges():
         res["ref_" + k] = ft.refine_from_pilot(g)
         res["ref50_" + k] = ft.refine_from_pilot(g, pilot_n=50)
     check("fuse_edges", res)
+
+
+def test_awg_area_is_the_gauge_definition():
+    #  ASTM B258: d = 0.127 mm x 92^((36 - n)/39). 36 AWG is 0.127 mm by definition; 0 AWG is 8.2515 mm.
+    assert ft.awg_area_mm2(36) == pytest.approx(math.pi * 0.127 ** 2 / 4.0, rel=1e-12)
+    assert ft.awg_area_mm2(0) == pytest.approx(53.4751, rel=1e-5)
+    assert ft.awg_area_mm2(22) == pytest.approx(0.325534, rel=1e-5)
