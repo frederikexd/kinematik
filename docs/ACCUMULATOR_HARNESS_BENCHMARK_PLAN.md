@@ -68,3 +68,26 @@ Limit: every cell within 0.2 K at every second.
 
 The airflow proxy itself is not benchmarked here: that needs CFD or a measured pack, and stays flagged
 "synthesized" until calibrated.
+
+## Addendum 2 (2026-11-13, registered before any airflow reference was generated)
+
+### B1. The airflow proxy against tube-bank correlations (ht)
+
+Case: a ducted, in-line bank of 21700 cells (D = 21 mm, 70 mm long), 27 mm pitch both ways, 6 rows along the flow and
+4 across, air at 30 °C, a fan at the middle of the inlet face pushing 20, 40 and 80 cfm through the 108 x 70 mm duct.
+KinematiK: `AirflowParams().h_field` with that fan. Reference: the three tube-bank correlations in the open-source
+`ht` library (Zukauskas-Bejan, Grimison, ESDU 73031), air properties from CoolProp, the row-by-row coefficient taken
+from the bank averages (row k = k x mean of k rows - (k - 1) x mean of k - 1 rows).
+
+Limits: every cell within 30 % of the three correlations' mean for its row; the ratio of mean h at 80 cfm to 20 cfm
+within 15 % of the correlations'.
+
+### B2. A correlation-based duct mode, if B1 misses
+
+If the proxy misses, a duct mode computes each row's h from the Zukauskas in-line and staggered correlations
+(Incropera's tables, with the row correction) from the duct flow. Limits: within 2 % of `ht`'s Zukauskas-Bejan
+(the same correlation: an implementation check), and within the spread of the three correlations at every row and
+flow (agreement with the other two is not a test of the physics, which the correlations' own scatter, about
+±15-25 % against the measurements they were fitted to, bounds).
+
+Neither B1 nor B2 replaces a measured pack: absolute temperatures stay flagged "synthesized" until calibrated.
