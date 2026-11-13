@@ -10,6 +10,8 @@ import pytest
 
 from suspension import pack_thermal as pt
 
+PROXY = pt.AirflowParams(mode="proxy")      # the recorded characterization predates the duct default
+
 
 def test_the_cell_and_the_layout():
     c = pt.CellParams()
@@ -33,7 +35,7 @@ def test_the_cell_and_the_layout():
 
 
 def test_the_airflow_field():
-    a = pt.AirflowParams()
+    a = pt.AirflowParams(mode="proxy")
     assert (a.h_floor, a.h_peak, a.ref_cfm, a.enable_wake_warming, a.wake_warm_per_cell_c, a.calibrated) == (
         5.5, 75.0, 120.0, True, 0.15, False)
     pos = np.array([[0.0, 0.0], [30.0, 40.0], [100.0, 0.0]])
@@ -51,10 +53,10 @@ def test_the_airflow_field():
     assert tiny[0] == pytest.approx(75.0) and tiny[1] == pytest.approx(5.5)
     bad = a.h_field(pos, [pt.Fan("x", 0), pt.Fan(100.0, 0.0)])                # a broken fan is skipped
     assert bad == pytest.approx(want - 69.5 * 0.5 * np.exp(-(pos[:, 0] ** 2 + pos[:, 1] ** 2) / 2500.0), rel=1e-12)
-    assert pt.AirflowParams(ref_cfm=0.0).h_field(pos[:1], [pt.Fan(0, 0, cfm=1e-6)])[0] == pytest.approx(75.0)
-    sunk = pt.AirflowParams(h_peak=1.0).h_field(pos, [pt.Fan(0, 0)])
+    assert pt.AirflowParams(mode="proxy", ref_cfm=0.0).h_field(pos[:1], [pt.Fan(0, 0, cfm=1e-6)])[0] == pytest.approx(75.0)
+    sunk = pt.AirflowParams(mode="proxy", h_peak=1.0).h_field(pos, [pt.Fan(0, 0)])
     assert sunk.tolist() == [5.5] * 3                                          # clipped at the floor
-    assert pt.AirflowParams().h_field(np.zeros((4, 1)), []).tolist() == [5.5] * 4
+    assert pt.AirflowParams(mode="proxy").h_field(np.zeros((4, 1)), []).tolist() == [5.5] * 4
 
 
 def _lap(d, v, lg):
@@ -326,7 +328,7 @@ def test_the_fan_study(monkeypatch):
         "  4. peak   30.0°C  hot cell r0c1  breaches=2  fans=[(3,0)mm]"]
     calls.clear()
     d = pt.optimize_fan_placement("lap", "params", None)
-    assert len(d.candidates) == 1 and calls[0][0] == pt.PackLayout() and calls[0][1] == pt.AirflowParams()
+    assert len(d.candidates) == 1 and calls[0][0] == pt.PackLayout() and calls[0][1] == pt.AirflowParams(mode="proxy")
     peaks[()] = (40.0, 0)
     syn = pt.FanPlacementStudy(candidates=d.candidates, synthesized=True, provenance="")
     assert syn.summary().endswith("\n  NOTE: temperatures are SYNTHESIZED (uncalibrated); the RANKING is the "
@@ -352,7 +354,7 @@ def test_the_default_fan_grid():
 
 
 def _capped(lay, fans):
-    m = pt.PackThermalModel(lay, fans, k_cell_cell=500.0)
+    m = pt.PackThermalModel(lay, fans, PROXY, k_cell_cell=500.0)
     h = m.airflow.h_field(lay.positions_mm(), fans)
     dt_stable = 0.5 * lay.cell.mass_kg * lay.cell.cp / (h.max() * lay.cell.surface_area_m2 + 2000.0)
     return m.simulate([0.0, 5001.5 * dt_stable], [0.0, 900.0], init_temp_c=50.0)
@@ -361,7 +363,7 @@ def _capped(lay, fans):
 def test_characterized_runs():
     from tests._golden import check
     res = {}
-    a = pt.AirflowParams()
+    a = PROXY
     pos = np.array([[0.0, 0.0], [10.0, 30.0], [40.0, 10.0], [0.4, 0.0]])
     res["h"] = [a.h_field(pos, [pt.Fan(10.0, 25.0, throw_mm=20.0)]), a.h_field(pos, [pt.Fan(0.0, 0.0, throw_mm=0.5)]),
                 a.h_field([["a", "b", "c"], ["d", "e", "f"]], [])]
@@ -388,10 +390,10 @@ def test_characterized_runs():
                                            "time_to_limit_s", "pack_current_a", "hottest_cell_index",
                                            "hottest_cell_rc", "hottest_peak_c", "any_cell_breached_limit",
                                            "breach_count", "synthesized", "warnings")}
-    runs = {"lay": pt.PackThermalModel(lay, fans).simulate(t, cur),
-            "hot2": pt.PackThermalModel(hot, fans, k_cell_cell=0.1).simulate(t, cur * 3, n_laps=2),
-            "hot3": pt.PackThermalModel(hot, fans).simulate(t, cur * 3, init_temp_c=55.0, n_laps=3),
-            "ent": pt.PackThermalModel(ent, fans).simulate(t, cur),
+    runs = {"lay": pt.PackThermalModel(lay, fans, PROXY).simulate(t, cur),
+            "hot2": pt.PackThermalModel(hot, fans, PROXY, k_cell_cell=0.1).simulate(t, cur * 3, n_laps=2),
+            "hot3": pt.PackThermalModel(hot, fans, PROXY).simulate(t, cur * 3, init_temp_c=55.0, n_laps=3),
+            "ent": pt.PackThermalModel(ent, fans, PROXY).simulate(t, cur),
             "cap": _capped(lay, fans)}
     res["runs"] = {k: short(r) for k, r in runs.items()}
     res["hist"] = runs["lay"].temp_history_c
@@ -399,15 +401,15 @@ def test_characterized_runs():
     laps = {"bare": lap, "meta2": NS(distance=d, speed=v, long_g=lg, meta={"laps": 2}),
             "meta0": NS(distance=d, speed=v, long_g=lg, meta={"laps": 0}),
             "metax": NS(distance=d, speed=v, long_g=lg, meta={})}
-    res["drv"] = {k: short(pt.simulate_pack_thermal(lp, odd, layout=hot, fans=fans)) for k, lp in laps.items()}
-    res["drv_ev"] = short(pt.simulate_pack_thermal(lap, odd, layout=hot, fans=fans, ev=ev, init_temp_c=40.0,
+    res["drv"] = {k: short(pt.simulate_pack_thermal(lp, odd, layout=hot, fans=fans, airflow=PROXY)) for k, lp in laps.items()}
+    res["drv_ev"] = short(pt.simulate_pack_thermal(lap, odd, layout=hot, fans=fans, airflow=PROXY, ev=ev, init_temp_c=40.0,
                                                    n_laps=2))
     res["drv_dflt"] = short(pt.simulate_pack_thermal(lap, odd, layout=hot))
     st = pt.optimize_fan_placement(lap, odd, [[], fans, [pt.Fan(50.0, 20.0)]], layout=hot)
     res["study"] = [[c.fans, c.hottest_peak_c, c.hottest_cell_rc, c.breach_count, short(c.result)]
                     for c in st.candidates] + [st.synthesized, st.provenance, st.warnings]
     cal = pt.optimize_fan_placement(lap, odd, None, layout=pt.PackLayout(rows=1, cols=2, cell=pt.CellParams(
-        calibrated=True)), airflow=pt.AirflowParams(calibrated=True), ev=ev, k_cell_cell=0.9, n_laps=2)
+        calibrated=True)), airflow=pt.AirflowParams(mode="proxy", calibrated=True), ev=ev, k_cell_cell=0.9, n_laps=2)
     res["cal"] = [short(cal.best.result), cal.synthesized, cal.provenance]
     check("pack_thermal_runs", res)
 
@@ -440,7 +442,7 @@ def test_zukauskas_defaults_are_inline_square():
 
 def test_airflow_duct_defaults():
     a = pt.AirflowParams()
-    assert (a.mode, a.duct_cfm, a.cell_diameter_mm, a.cell_length_mm, a.staggered) == ("proxy", 0.0, 21.0, 70.0, False)
+    assert (a.mode, a.duct_cfm, a.cell_diameter_mm, a.cell_length_mm, a.staggered) == ("duct", 0.0, 21.0, 70.0, False)
     assert (a.air_k_w_mk, a.air_nu_m2_s, a.air_pr, a.h_scale, a.h_floor) == (0.02662, 1.6046e-5, 0.7067, 1.0, 5.5)
 
 
@@ -459,8 +461,9 @@ def test_fan_draught_warning_only_with_fans_outside_duct_mode():
     msg = ("Fan-draught airflow map: a geometric estimate, not benchmarked. Against three tube-bank correlations "
            "for air pushed through a pack it was off by up to 95 % and cooled the wrong end; for a ducted pack "
            "use the duct mode.")
-    assert msg in pt.PackThermalModel(layout=lay, fans=fans).simulate(t, cur).warnings
-    assert msg not in pt.PackThermalModel(layout=lay).simulate(t, cur).warnings
+    assert msg in pt.PackThermalModel(layout=lay, fans=fans, airflow=PROXY).simulate(t, cur).warnings
+    assert msg not in pt.PackThermalModel(layout=lay, airflow=PROXY).simulate(t, cur).warnings
+    assert msg not in pt.PackThermalModel(layout=lay, fans=fans).simulate(t, cur).warnings      # default: duct
     assert msg not in pt.PackThermalModel(layout=lay, fans=fans,
                                           airflow=pt.AirflowParams(mode="duct")).simulate(t, cur).warnings
 
@@ -522,6 +525,8 @@ def test_duct_falls_back_to_the_floor():
     assert np.all(pt.AirflowParams(mode="duct", duct_cfm=10.0, cell_length_mm=0.0).duct_h_field(pos) == floor)
     assert np.all(pt.AirflowParams(mode="duct", duct_cfm=1e-4).duct_h_field(pos) == floor)       # floor clamps
     assert pt.AirflowParams(mode="duct", duct_cfm=10.0).duct_h_field(np.zeros(3)).size == 0
+    junk = pt.AirflowParams(mode="duct", duct_cfm=10.0).duct_h_field([["a", "b"], ["c", "d"], ["e", "f"]])
+    assert junk.tolist() == [floor] * 3
     bad = pt.AirflowParams(mode="duct", duct_cfm=10.0, air_nu_m2_s=0.0)                         # raises inside
     assert np.all(bad.duct_h_field(pos) == floor)
 
@@ -582,7 +587,8 @@ def test_duct_gap_warning_below_one_and_a_quarter_diameters():
            "fitted to wider gaps, so its cooling here is an extrapolation.")
     assert msg in warns(26.0)
     assert not any("Cell pitch" in w for w in warns(26.25))                  # exactly 1.25 x is inside the range
-    assert not any("Cell pitch" in w for w in warns(26.0, pt.AirflowParams()))
+    assert not any("Cell pitch" in w for w in warns(26.0, pt.AirflowParams(mode="proxy")))
+    assert not any("Cell pitch" in w for w in warns(26.0, pt.AirflowParams()))      # duct, but no flow
 
 
 def test_cooling_band_runs_at_one_plus_and_minus_the_spread():

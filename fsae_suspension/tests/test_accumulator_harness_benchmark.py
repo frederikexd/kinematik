@@ -104,7 +104,7 @@ def test_pack_thermal_network_matches_ngspice():
                       r_tempco_per_c=0.0, surface_area_m2=x["surface_m2"], pitch_mm=x["pitch_mm"])
     lay = PackLayout(rows=x["rows"], cols=x["cols"], parallel=x["parallel"], cell=cell, ambient_c=x["ambient_c"])
     fans = [Fan(**f) for f in x["fans"]]
-    air = AirflowParams(enable_wake_warming=False, h_floor=8.0)     # the still-air value when A4 was recorded
+    air = AirflowParams(mode="proxy", enable_wake_warming=False, h_floor=8.0)     # the still-air value when A4 was recorded
     assert np.allclose(air.h_field(lay.positions_mm(), fans), x["h_w_m2k"], rtol=0, atol=1e-9)   # same inputs
     res = PackThermalModel(layout=lay, fans=fans, airflow=air, k_cell_cell=x["k_cell_cell_w_k"]).simulate(
         np.array(d["t_s"]), np.array(x["pack_current_a"]))
@@ -135,7 +135,7 @@ def test_airflow_proxy_misses_the_tube_bank_correlations():
     worst = 0.0
     for cfm, flow in d["flows"].items():
         fan = Fan(x_mm=0.0, y_mm=x["cells_across"] * x["pitch_m"] * 500.0, cfm=float(cfm))
-        h = AirflowParams().h_field(lay.positions_mm(), [fan]).reshape(x["cells_across"], x["rows_along_flow"])
+        h = AirflowParams(mode="proxy").h_field(lay.positions_mm(), [fan]).reshape(x["cells_across"], x["rows_along_flow"])
         ref = _corr(flow).mean(axis=0)
         worst = max(worst, float(np.max(np.abs(h / ref - 1.0))))
         mean_h[cfm] = (h.mean(), ref.mean())

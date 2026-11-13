@@ -9655,10 +9655,14 @@ for _ck, _cem, _clab in _cats_nonempty:
             _ax_active_ids.add(_id)
 
 @st.cache_data(show_spinner=False, max_entries=8)
-def _pcm_cooling_band(rows, cols, series, par, ambient_c, pitch_mm, ducted, cfm, peak_a):
+def _pcm_cooling_band(rows, cols, series, par, ambient_c, pitch_mm, ducted, cfm, peak_a, cell_name="", r_dc_ohm=0.0):
     """The PCM tab's pack run at nominal, 1.2x and 0.8x cooling (three runs, so cached on the inputs)."""
-    cell = pack_mod.default_cell_params()
-    cell.pitch_mm = pitch_mm
+    from suspension import cell_library as _cl
+    if cell_name in _cl.CELL_LIBRARY:
+        cell, _ = _cl.cell_params(cell_name, r_dc_ohm=r_dc_ohm or None, pitch_mm=pitch_mm)
+    else:
+        cell = pack_mod.default_cell_params()
+        cell.pitch_mm = pitch_mm
     layout = pack_mod.PackLayout(rows=rows, cols=cols, series=series, parallel=par, cell=cell, ambient_c=ambient_c)
     t = np.linspace(0, 120, 800)
     cur = 0.4 * peak_a + peak_a * np.clip(np.sin(2 * np.pi * t / 8), 0, 1)
@@ -33841,7 +33845,12 @@ with tab_tractive:
                    "natural-convection correlations, both benchmarked (BENCHMARK.md). Neither is a "
                    "measured pack, so the hottest cell is shown with a ±20 % cooling band.")
           _ducted = _cool.startswith("Ducted")
+          from suspension import cell_library as _cl
           _wc3 = st.columns(4)
+          _cell_name = _wc3[2].selectbox("Cell (datasheet)", ["Generic 21700 (defaults)", *_cl.CELL_LIBRARY],
+                                         key="pcm_cell")
+          _r_meas = _wc3[3].number_input("Measured DC resistance (mΩ, 0 = datasheet)", 0.0, 200.0, 0.0,
+                                         key="pcm_rdc") / 1000.0
           _pitch = unum(_wc3[0], "Cell pitch (mm)", 10.0, 80.0, 27.0, 'mm', key="pcm_pitch")
           _cfm = (_wc3[1].number_input("Duct airflow (cfm)", 1.0, 1000.0, 40.0, key="pcm_cfm")
                   if _ducted else 0.0)
@@ -33859,7 +33868,13 @@ with tab_tractive:
               _t = np.linspace(0, 120, 800)
               _cur = 0.4 * _peakA + _peakA * np.clip(np.sin(2 * np.pi * _t / 8), 0, 1)
               _band = _pcm_cooling_band(_rows, _cols, int(_series), int(_par), float(_ambient),
-                                        float(_pitch), _ducted, float(_cfm), float(_peakA))
+                                        float(_pitch), _ducted, float(_cfm), float(_peakA), _cell_name, _r_meas)
+              _spec = _cl.CELL_LIBRARY.get(_cell_name)
+              _defaults = (_cl.cell_params(_cell_name, r_dc_ohm=_r_meas or None)[1] if _spec
+                           else ["every cell property (generic 21700)"])
+              if _defaults:
+                  st.caption("Not from a datasheet or a measurement, so left at KinematiK's generic value: "
+                             + ", ".join(_defaults) + ".")
               _res = _band["result"]
               from suspension.provenance import graded as _graded
               st.metric("Hottest cell, 3 laps",
@@ -33869,10 +33884,12 @@ with tab_tractive:
                          "measurements): " + _graded(_band["peak_low_c"], "estimate", "°C", digits=3) + " to "
                          + _graded(_band["peak_high_c"], "estimate", "°C", digits=3) + ".")
               _icell = float(np.max(_cur)) / max(int(_par), 1)
-              if _icell > 45.0:
+              _rating = _spec.max_continuous_a if _spec else 45.0
+              if _rating and _icell > _rating:
                   st.caption("⚠ " + _graded(_icell, "modelled", "A", digits=3) + " per cell at the peak is past "
-                             "what a 21700 cell is rated for (about 45 A): check the pack current or the parallel "
-                             "count before reading the temperatures.")
+                             "the cell's continuous rating (" + _graded(_rating, "measured" if _spec else "estimate", "A", digits=3)
+                             + (", datasheet" if _spec else ", typical 21700") + "): check the pack current or "
+                             "the parallel count before reading the temperatures.")
               for _w in _res.warnings:
                   st.caption(f"⚠ {_w}")
               _mat = pcm_mod.PCMMaterial(t_melt_c=_tmelt, latent_heat_j_per_g=_lheat)

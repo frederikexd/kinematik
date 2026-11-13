@@ -242,7 +242,9 @@ class AirflowParams:
     #  "proxy" is the geometric fan-draught field above. It missed ducted flow by up to 95 % against three tube-bank
     #  correlations (docs/ACCUMULATOR_HARNESS_BENCHMARK_PLAN.md, B1): it decays downstream, where real banks rise to
     #  a plateau. "duct" takes each row's h from the Zukauskas correlation for the duct flow (B2).
-    mode: str = "proxy"
+    #  The default is the benchmarked one: with no flow (no duct_cfm, no fans) it is still air at h_floor, the
+    #  same as before; with fans their total airflow is pushed through the pack. "proxy" is opt-in and warns.
+    mode: str = "duct"
     duct_cfm: float = 0.0               # airflow through the duct, cfm; 0 -> the sum of the fans' cfm
     cell_diameter_mm: float = 21.0      # 21700 can
     cell_length_mm: float = 70.0        # the can length, which with the across-flow width sets the duct face
@@ -290,7 +292,10 @@ class AirflowParams:
         the bank averages (row k = k x mean of k rows - (k - 1) x mean of k - 1 rows), so the first rows run cooler
         than the plateau behind them. Checked against ht's Zukauskas-Bejan, Grimison and ESDU 73031 (B2). Falls
         back to h_floor where there is no flow. Never raises."""
-        pos = _vec(positions_mm)
+        try:
+            pos = _vec(positions_mm)
+        except (TypeError, ValueError):                       # not numbers: still air for every row given
+            return np.full(len(positions_mm), float(self.h_floor))
         n = int(pos.shape[0]) if pos.ndim == 2 else 0
         try:
             xs = np.unique(np.round(pos[:, 0], 6))   # pragma: no mutate (grid positions are far coarser than 1e-6 mm)
@@ -593,7 +598,8 @@ class PackThermalModel:
                 self._warn("Fan-draught airflow map: a geometric estimate, not benchmarked. Against three "
                            "tube-bank correlations for air pushed through a pack it was off by up to 95 % and "
                            "cooled the wrong end; for a ducted pack use the duct mode.")
-            if self.airflow.mode == "duct" and cell.pitch_mm < 1.25 * self.airflow.cell_diameter_mm:
+            if (self.airflow.mode == "duct" and (self.airflow.duct_cfm > 0 or self.fans)
+                    and cell.pitch_mm < 1.25 * self.airflow.cell_diameter_mm):
                 self._warn(f"Cell pitch {cell.pitch_mm:g} mm is under 1.25 x the {self.airflow.cell_diameter_mm:g} mm "
                            "can: the tube-bank correlation behind the duct mode was fitted to wider gaps, so its "
                            "cooling here is an extrapolation.")
@@ -884,7 +890,8 @@ def optimize_fan_placement(lap,
     compare "one big fan centre" vs "two small fans at the ends".
     """
     layout = layout or PackLayout()
-    airflow = airflow or AirflowParams()
+    #  Placement only matters to the position-dependent proxy, so the study uses it (and its results warn).
+    airflow = airflow or AirflowParams(mode="proxy")
     cands: list[FanPlacementCandidate] = []
     warnings: list[str] = []
     for fan_set in candidate_fan_sets or [[]]:

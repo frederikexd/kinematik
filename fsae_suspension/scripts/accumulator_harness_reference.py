@@ -204,7 +204,7 @@ def a4_inputs():
                       r_tempco_per_c=0.0, surface_area_m2=A4["surface_m2"], pitch_mm=A4["pitch_mm"])
     lay = PackLayout(rows=A4["rows"], cols=A4["cols"], parallel=A4["parallel"], cell=cell, ambient_c=A4["ambient_c"])
     fans = [Fan(**f) for f in A4["fans"]]
-    h = AirflowParams(enable_wake_warming=False, h_floor=8.0).h_field(lay.positions_mm(), fans)   # as recorded
+    h = AirflowParams(mode="proxy", enable_wake_warming=False, h_floor=8.0).h_field(lay.positions_mm(), fans)   # as recorded
     return cur, [float(x) for x in h]
 
 
