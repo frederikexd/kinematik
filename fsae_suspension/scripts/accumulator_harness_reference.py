@@ -11,10 +11,11 @@
   a2   PyBaMM:    lumped pack temperature with cooling over 30 minutes              -> a2_pybamm_pack_thermal.json
   a3   liionpack: a 140s3p pack network, cell by cell, with interconnects           -> a3_liionpack_network.json
   a4   ngspice:   the per-cell pack thermal network (addendum 1)                    -> a4_ngspice_pack_network.json
+  b1   ht:        per-row h of a ducted cell bank, three correlations (addendum 2)  -> b1_ht_tube_bank.json
 
 Nothing here imports KinematiK except a4, which takes the per-cell convection coefficients from KinematiK's airflow
 proxy as recorded inputs (the proxy is not under test there; the network solve is). Needs ngspice on PATH
-and `pip install pybamm liionpack`. tests/test_accumulator_harness_benchmark.py checks KinematiK against the JSON.
+and `pip install pybamm liionpack ht CoolProp`. tests/test_accumulator_harness_benchmark.py checks KinematiK against the JSON.
 """
 import argparse
 import json
@@ -248,8 +249,47 @@ def a4():
         "t_s": grid.tolist(), "temp_c": ref.round(6).tolist()})
 
 
+B1 = {"d_m": 0.021, "length_m": 0.070, "pitch_m": 0.027, "rows_along_flow": 6, "cells_across": 4,
+      "air_c": 30.0, "cfm": [20.0, 40.0, 80.0]}
+
+
+def b1():
+    import CoolProp
+    import ht
+    from CoolProp.CoolProp import PropsSI
+    from ht import conv_tube_bank as tb
+    t_k, p_pa = B1["air_c"] + 273.15, 101325.0
+    rho = PropsSI("D", "T", t_k, "P", p_pa, "Air")
+    mu = PropsSI("V", "T", t_k, "P", p_pa, "Air")
+    k = PropsSI("L", "T", t_k, "P", p_pa, "Air")
+    pr = PropsSI("Prandtl", "T", t_k, "P", p_pa, "Air")
+    d, s_ = B1["d_m"], B1["pitch_m"]
+    face = B1["cells_across"] * s_ * B1["length_m"]
+    out = {}
+    for cfm in B1["cfm"]:
+        v_face = cfm * 0.000471947443 / face
+        v_max = v_face * s_ / (s_ - d)                   # in-line bank: the gap between cells sets the peak speed
+        re = rho * v_max * d / mu
+
+        def mean_h(fn, n):
+            if fn is tb.Nu_Grimison_tube_bank:
+                return fn(re, pr, d, n, s_, s_) * k / d
+            return fn(re, pr, n, s_, s_) * k / d
+
+        rows = {}
+        for name, fn in (("zukauskas_bejan", tb.Nu_Zukauskas_Bejan), ("grimison", tb.Nu_Grimison_tube_bank),
+                         ("esdu_73031", tb.Nu_ESDU_73031)):
+            means = [mean_h(fn, n) for n in range(1, B1["rows_along_flow"] + 1)]
+            rows[name] = [means[0]] + [(n + 1) * means[n] - n * means[n - 1] for n in range(1, len(means))]
+        out[str(int(cfm))] = {"v_face_m_s": v_face, "v_max_m_s": v_max, "re": re, "h_row_w_m2k": rows}
+    _write("b1_ht_tube_bank.json", {
+        "tool": f"ht {ht.__version__} (tube-bank correlations), CoolProp {CoolProp.__version__} (air)",
+        "inputs": {**B1, "air": {"rho": rho, "mu": mu, "k": k, "pr": pr}, "re_basis": "maximum velocity, D"},
+        "flows": out})
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("steps", nargs="*", default=["h1", "a1", "a2", "a3", "a4"])
+    ap.add_argument("steps", nargs="*", default=["h1", "a1", "a2", "a3", "a4", "b1"])
     for step in ap.parse_args().steps:
-        {"h1": h1, "a1": a1, "a2": a2, "a3": a3, "a4": a4}[step]()
+        {"h1": h1, "a1": a1, "a2": a2, "a3": a3, "a4": a4, "b1": b1}[step]()

@@ -410,3 +410,141 @@ def test_characterized_runs():
         calibrated=True)), airflow=pt.AirflowParams(calibrated=True), ev=ev, k_cell_cell=0.9, n_laps=2)
     res["cal"] = [short(cal.best.result), cal.synthesized, cal.provenance]
     check("pack_thermal_runs", res)
+
+
+# ------------------------------------------------------------- duct mode: the Zukauskas tube-bank correlation -- #
+def _nu(c, m, re, pr, corr):
+    return c * re ** m * pr ** 0.36 * corr
+
+
+@pytest.mark.parametrize("re, rows, ratio, stag, c, m, corr", [
+    (50.0, 1, 1.0, False, 0.80, 0.4, 0.6768),
+    (50.0, 1, 1.0, True, 0.90, 0.4, 0.6273),
+    (100.0, 3, 1.0, False, 0.51, 0.5, 0.8687),          # the 100 boundary belongs to the middle range
+    (500.0, 2, 1.0, True, 0.51, 0.5, 0.7689),
+    (1000.0, 20, 1.0, False, 0.27, 0.63, 1.0),          # the 1000 boundary belongs to the bank range
+    (5000.0, 6, 1.0, False, 0.27, 0.63, 0.9465),
+    (5000.0, 25, 1.5, True, 0.35 * 1.5 ** 0.2, 0.6, 1.0),
+    (5000.0, 19, 2.0, True, 0.40, 0.6, 0.9986),         # st/sl = 2 takes the constant 0.40
+    (5000.0, 10, 2.5, True, 0.40, 0.6, 0.9765),
+    (2e5, 4, 1.0, False, 0.021, 0.84, 0.9054),          # the 2e5 boundary belongs to the high range
+    (3e5, 5, 1.0, True, 0.022, 0.84, 0.9254),
+])
+def test_zukauskas_branches(re, rows, ratio, stag, c, m, corr):
+    assert pt.zukauskas_nu(re, 0.7, rows, ratio, stag) == pytest.approx(_nu(c, m, re, 0.7, corr), rel=1e-12)
+
+
+def test_zukauskas_defaults_are_inline_square():
+    assert pt.zukauskas_nu(5000.0, 0.7, 4) == pytest.approx(_nu(0.27, 0.63, 5000.0, 0.7, 0.9054), rel=1e-12)
+
+
+def test_airflow_duct_defaults():
+    a = pt.AirflowParams()
+    assert (a.mode, a.duct_cfm, a.cell_diameter_mm, a.cell_length_mm, a.staggered) == ("proxy", 0.0, 21.0, 70.0, False)
+    assert (a.air_k_w_mk, a.air_nu_m2_s, a.air_pr) == (0.02662, 1.6046e-5, 0.7067)
+
+
+def _grid(sx_mm, sy_mm, nx, ny):
+    gx, gy = np.meshgrid((np.arange(nx) + 0.5) * sx_mm, (np.arange(ny) + 0.5) * sy_mm)
+    return np.column_stack([gx.ravel(), gy.ravel()])
+
+
+def _expected_rows(a, sx, sy, nx, ny, cfm, stag=False):
+    d, s_l, s_t = a.cell_diameter_mm * 1e-3, sx * 1e-3, sy * 1e-3
+    v = cfm * 0.000471947443 / (ny * s_t * a.cell_length_mm * 1e-3)
+    vmax = v * s_t / (s_t - d)
+    if stag:
+        s_d = math.hypot(s_l, s_t / 2.0)
+        if 2.0 * (s_d - d) < s_t - d:
+            vmax = v * s_t / (2.0 * (s_d - d))
+    re = vmax * d / a.air_nu_m2_s
+    means = [pt.zukauskas_nu(re, a.air_pr, k, s_t / s_l, stag) * a.air_k_w_mk / d for k in range(1, nx + 1)]
+    rows = [means[0]] + [(k + 1) * means[k] - k * means[k - 1] for k in range(1, nx)]
+    return np.maximum(np.array(rows), a.h_floor)
+
+
+def test_duct_rows_on_a_grid():
+    a = pt.AirflowParams(mode="duct", duct_cfm=40.0)
+    h = a.h_field(_grid(27.0, 27.0, 6, 4), []).reshape(4, 6)
+    assert np.allclose(h, _expected_rows(a, 27.0, 27.0, 6, 4, 40.0)[None, :], rtol=1e-12, atol=0)
+    assert h[0, 0] < h[0, 2] and h[1, 3] == h[0, 3]                   # first rows cooler; rows across alike
+
+
+def test_duct_flow_from_the_fans_when_not_given():
+    pos = _grid(27.0, 27.0, 5, 3)
+    fans = [pt.Fan(x_mm=0.0, y_mm=0.0, cfm=30.0), pt.Fan(x_mm=0.0, y_mm=50.0, cfm=10.0), pt.Fan(0.0, 0.0, cfm=-5.0)]
+    a = pt.AirflowParams(mode="duct")
+    assert np.allclose(a.duct_h_field(pos, fans), pt.AirflowParams(mode="duct", duct_cfm=40.0).duct_h_field(pos),
+                       rtol=1e-12, atol=0)
+
+
+def test_duct_staggered_both_gap_cases():
+    for sx, sy in ((15.0, 40.0), (40.0, 30.0)):                      # diagonal gap tightest / transverse tightest
+        a = pt.AirflowParams(mode="duct", duct_cfm=25.0, staggered=True)
+        h = a.duct_h_field(_grid(sx, sy, 4, 3)).reshape(3, 4)[0]
+        assert np.allclose(h, _expected_rows(a, sx, sy, 4, 3, 25.0, stag=True), rtol=1e-12, atol=0)
+
+
+def test_duct_single_row_or_column_uses_two_diameters():
+    a = pt.AirflowParams(mode="duct", duct_cfm=10.0)
+    one_col = a.duct_h_field(_grid(27.0, 30.0, 1, 3))
+    assert np.allclose(one_col, _expected_rows(a, 42.0, 30.0, 1, 3, 10.0)[0], rtol=1e-12, atol=0)
+    one_row = a.duct_h_field(_grid(30.0, 27.0, 3, 1))
+    assert np.allclose(one_row, _expected_rows(a, 30.0, 42.0, 3, 1, 10.0), rtol=1e-12, atol=0)
+
+
+def test_duct_falls_back_to_the_floor():
+    pos = _grid(27.0, 27.0, 3, 2)
+    floor = pt.AirflowParams().h_floor
+    assert np.all(pt.AirflowParams(mode="duct").duct_h_field(pos) == floor)                     # no flow
+    assert np.all(pt.AirflowParams(mode="duct", duct_cfm=10.0, cell_diameter_mm=27.0).duct_h_field(pos) == floor)
+    assert np.all(pt.AirflowParams(mode="duct", duct_cfm=10.0, cell_length_mm=0.0).duct_h_field(pos) == floor)
+    assert np.all(pt.AirflowParams(mode="duct", duct_cfm=1e-4).duct_h_field(pos) == floor)       # floor clamps
+    assert pt.AirflowParams(mode="duct", duct_cfm=10.0).duct_h_field(np.zeros(3)).size == 0
+    bad = pt.AirflowParams(mode="duct", duct_cfm=10.0, air_nu_m2_s=0.0)                         # raises inside
+    assert np.all(bad.duct_h_field(pos) == floor)
+
+
+def test_zukauskas_default_ratio_is_one():
+    assert pt.zukauskas_nu(5000.0, 0.7, 4, staggered=True) == pytest.approx(_nu(0.35, 0.6, 5000.0, 0.7, 0.8942),
+                                                                            rel=1e-12)
+
+
+def test_duct_staggered_gap_between_two_and_three_diagonals():
+    #  2 (s_d - d) = 8 mm < s_t - d = 10 mm < 3 (s_d - d) = 12 mm: the diagonal gap sets the speed
+    sx = math.sqrt(25.0 ** 2 - 15.5 ** 2)
+    a = pt.AirflowParams(mode="duct", duct_cfm=25.0, staggered=True)
+    h = a.duct_h_field(_grid(sx, 31.0, 4, 3)).reshape(3, 4)[0]
+    assert np.allclose(h, _expected_rows(a, sx, 31.0, 4, 3, 25.0, stag=True), rtol=1e-6, atol=0)   # x to 1e-6 mm
+
+
+def test_duct_staggered_one_or_two_columns_still_use_the_pitch_ratio():
+    a = pt.AirflowParams(mode="duct", duct_cfm=20.0, staggered=True)
+    one = a.duct_h_field(_grid(27.0, 30.0, 1, 3))
+    assert np.allclose(one, _expected_rows(a, 42.0, 30.0, 1, 3, 20.0, stag=True)[0], rtol=1e-12, atol=0)
+    two = a.duct_h_field(_grid(50.0, 30.0, 2, 3)).reshape(3, 2)[0]
+    assert np.allclose(two, _expected_rows(a, 50.0, 30.0, 2, 3, 20.0, stag=True), rtol=1e-12, atol=0)
+
+
+def test_duct_small_given_flow_beats_the_fans():
+    pos = _grid(27.0, 27.0, 3, 2)
+    fans = [pt.Fan(x_mm=0.0, y_mm=0.0, cfm=60.0)]
+    a = pt.AirflowParams(mode="duct", duct_cfm=0.5)
+    assert np.allclose(a.duct_h_field(pos, fans), pt.AirflowParams(mode="duct", duct_cfm=0.5).duct_h_field(pos),
+                       rtol=1e-12, atol=0)
+    assert not np.allclose(a.duct_h_field(pos, fans), pt.AirflowParams(mode="duct").duct_h_field(pos, fans))
+
+
+def test_duct_mode_dispatch_passes_the_fans():
+    pos = _grid(27.0, 27.0, 3, 2)
+    fans = [pt.Fan(x_mm=0.0, y_mm=0.0, cfm=40.0)]
+    a = pt.AirflowParams(mode="duct")
+    assert np.array_equal(a.h_field(pos, fans), a.duct_h_field(pos, fans))
+    assert a.h_field(pos, fans)[0] > a.h_floor
+
+
+def test_duct_floor_has_one_value_per_cell():
+    pos = _grid(27.0, 27.0, 3, 2)
+    for a in (pt.AirflowParams(mode="duct"), pt.AirflowParams(mode="duct", duct_cfm=10.0, air_nu_m2_s=0.0)):
+        h = a.duct_h_field(pos)
+        assert h.shape == (6,) and h.dtype == float and np.all(h == 8.0)

@@ -236,9 +236,23 @@ class AirflowParams:
     enable_wake_warming: bool = True
     wake_warm_per_cell_c: float = 0.15  # air temp rise per upstream cell it passed, °C
     calibrated: bool = False            # set True only with measured airflow map
+    #  "proxy" is the geometric fan-draught field above. It missed ducted flow by up to 95 % against three tube-bank
+    #  correlations (docs/ACCUMULATOR_HARNESS_BENCHMARK_PLAN.md, B1): it decays downstream, where real banks rise to
+    #  a plateau. "duct" takes each row's h from the Zukauskas correlation for the duct flow (B2).
+    mode: str = "proxy"
+    duct_cfm: float = 0.0               # airflow through the duct, cfm; 0 -> the sum of the fans' cfm
+    cell_diameter_mm: float = 21.0      # 21700 can
+    cell_length_mm: float = 70.0        # the can length, which with the across-flow width sets the duct face
+    staggered: bool = False             # False: cells in line along the flow (a plain grid)
+    air_k_w_mk: float = 0.02662         # air at 30 °C, 1 atm (CoolProp): conductivity, W/(m·K)
+    air_nu_m2_s: float = 1.6046e-5      # kinematic viscosity, m²/s
+    air_pr: float = 0.7067              # Prandtl number (unitless)
 
     def h_field(self, positions_mm: np.ndarray, fans: Sequence[Fan]) -> np.ndarray:
-        """Per-cell convective coefficient h (W/m²·K) from all fans. Never raises."""
+        """Per-cell convective coefficient h (W/m²·K) from all fans, or from the duct flow in "duct" mode.
+        Never raises."""
+        if self.mode == "duct":
+            return self.duct_h_field(positions_mm, fans)
         try:
             pos = _vec(positions_mm)
             n = pos.shape[0]
@@ -259,6 +273,72 @@ class AirflowParams:
                            self.h_floor, None)
         except Exception:
             return np.full(int(np.asarray(positions_mm).shape[0]), self.h_floor)
+
+
+    def duct_h_field(self, positions_mm: np.ndarray, fans: Sequence[Fan] = ()) -> np.ndarray:
+        """h (W/m²·K) per cell for air pushed along +x through a duct around the grid: the Zukauskas tube-bank
+        correlation (Incropera Table 7.5, Zukauskas' row curve) on the maximum velocity in the gaps, each row's own h taken from
+        the bank averages (row k = k x mean of k rows - (k - 1) x mean of k - 1 rows), so the first rows run cooler
+        than the plateau behind them. Checked against ht's Zukauskas-Bejan, Grimison and ESDU 73031 (B2). Falls
+        back to h_floor where there is no flow. Never raises."""
+        pos = _vec(positions_mm)
+        n = int(pos.shape[0]) if pos.ndim == 2 else 0
+        try:
+            xs = np.unique(np.round(pos[:, 0], 6))   # pragma: no mutate (grid positions are far coarser than 1e-6 mm)
+            ys = np.unique(np.round(pos[:, 1], 6))   # pragma: no mutate (as above)
+            d = self.cell_diameter_mm * 1e-3
+            s_l = float(np.min(np.diff(xs))) * 1e-3 if xs.size > 1 else 2.0 * d
+            s_t = float(np.min(np.diff(ys))) * 1e-3 if ys.size > 1 else 2.0 * d
+            cfm = self.duct_cfm if self.duct_cfm > 0 else sum(max(float(f.cfm), 0.0) for f in (fans or []))
+            face = ys.size * s_t * self.cell_length_mm * 1e-3
+            #  Each of these also ends at the floor without the guard (zero flow gives zero h; a zero face or gap
+            #  divides by zero into the except below), so the guard is for clarity, not behaviour.
+            if cfm <= 0 or face <= 0 or s_t <= d:  # pragma: no mutate
+                return np.full(n, float(self.h_floor))
+            v_face = cfm * 0.000471947443 / face
+            v_max = v_face * s_t / (s_t - d)
+            if self.staggered:
+                s_d = math.hypot(s_l, s_t / 2.0)
+                if 2.0 * (s_d - d) < s_t - d:  # pragma: no mutate (at equality both gaps give the same speed)
+                    v_max = v_face * s_t / (2.0 * (s_d - d))
+            re = v_max * d / self.air_nu_m2_s
+            means = [zukauskas_nu(re, self.air_pr, k, s_t / s_l, self.staggered) * self.air_k_w_mk / d
+                     for k in range(1, xs.size + 1)]  # pragma: no mutate (an extra row's mean is never read)
+            row_h = [means[0]] + [(k + 1) * means[k] - k * means[k - 1] for k in range(1, len(means))]
+            col = np.searchsorted(xs, np.round(pos[:, 0], 6))   # pragma: no mutate (as above)
+            return np.maximum(np.asarray(row_h)[col], self.h_floor)
+        except Exception:
+            return np.full(n, float(self.h_floor))
+
+
+#: The mean Nu of a bank of N rows over that of a deep bank (N >= 20), Re_max > 1000, N = 1..20: Zukauskas' 1972
+#: curve as digitized in the open-source `ht` library (MIT). Round 1 used Incropera Table 7.6's nine points with
+#: linear steps between them and missed the registered 2 % against ht by 4.35 % (B2); the per-N curve is the source.
+_ROW_N = tuple(range(1, 21))
+_ROW_INLINE = (0.6768, 0.8089, 0.8687, 0.9054, 0.9303, 0.9465, 0.9569, 0.9647, 0.9712, 0.9766,
+               0.9811, 0.9847, 0.9877, 0.99, 0.992, 0.9937, 0.9953, 0.9969, 0.9986, 1.0)
+_ROW_STAGGERED = (0.6273, 0.7689, 0.8473, 0.8942, 0.9254, 0.945, 0.957, 0.9652, 0.9716, 0.9765,
+                  0.9803, 0.9834, 0.9862, 0.989, 0.9918, 0.9943, 0.9965, 0.998, 0.9986, 1.0)
+
+
+def zukauskas_nu(re: float, pr: float, rows: int, st_over_sl: float = 1.0, staggered: bool = False) -> float:
+    """Mean Nusselt number (unitless) of a bank of `rows` cylinders in cross-flow, Zukauskas (Incropera Table 7.5),
+    Re on the maximum velocity and the diameter, the wall-Prandtl factor taken as 1 (air), times the row factor of
+    Zukauskas' curve (1 from 20 rows on)."""
+    if re < 100:
+        c, m = (0.90 if staggered else 0.80), 0.4
+    elif re < 1000:
+        c, m = 0.51, 0.5                     # Incropera: treat as a single cylinder in this range
+    elif re < 2e5:
+        if staggered:
+            c, m = (0.35 * st_over_sl ** 0.2, 0.6) if st_over_sl < 2 else (0.40, 0.6)
+        else:
+            c, m = 0.27, 0.63
+    else:
+        c, m = (0.022 if staggered else 0.021), 0.84
+    nu = c * re ** m * pr ** 0.36
+    corr = float(np.interp(rows, _ROW_N, _ROW_STAGGERED if staggered else _ROW_INLINE))
+    return nu * corr
 
 
 # --------------------------------------------------------------------------- #
