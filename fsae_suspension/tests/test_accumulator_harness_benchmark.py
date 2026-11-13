@@ -95,6 +95,25 @@ def test_lumped_pack_matches_the_network(case, cell_limit, volt_limit):
     assert abs(lumped - c["terminal_v"]) / c["terminal_v"] <= volt_limit
 
 
+# ---------------------------------------------------- A4. ngspice: the per-cell pack thermal network (add. 1) -- #
+def test_pack_thermal_network_matches_ngspice():
+    from suspension.pack_thermal import AirflowParams, CellParams, Fan, PackLayout, PackThermalModel
+    d = _ref("a4_ngspice_pack_network.json")
+    x = d["inputs"]
+    cell = CellParams(mass_kg=x["cell_mass_kg"], cp=x["cell_cp_j_kgk"], r_internal_ohm=x["r_cell_ohm"],
+                      r_tempco_per_c=0.0, surface_area_m2=x["surface_m2"], pitch_mm=x["pitch_mm"])
+    lay = PackLayout(rows=x["rows"], cols=x["cols"], parallel=x["parallel"], cell=cell, ambient_c=x["ambient_c"])
+    fans = [Fan(**f) for f in x["fans"]]
+    air = AirflowParams(enable_wake_warming=False)
+    assert np.allclose(air.h_field(lay.positions_mm(), fans), x["h_w_m2k"], rtol=0, atol=1e-9)   # same inputs
+    res = PackThermalModel(layout=lay, fans=fans, airflow=air, k_cell_cell=x["k_cell_cell_w_k"]).simulate(
+        np.array(d["t_s"]), np.array(x["pack_current_a"]))
+    ref = np.array(d["temp_c"])
+    assert res.ok and res.temp_history_c.shape == ref.shape == (1201, 24)
+    assert np.ptp(ref[-1]) > 1.0                                      # the fans make the cells differ
+    assert np.max(np.abs(res.temp_history_c - ref)) <= 0.2           # registered: 0.2 K
+
+
 def test_the_references_are_the_registered_ones():
     plan = (ROOT.parent / "docs" / "ACCUMULATOR_HARNESS_BENCHMARK_PLAN.md").read_text(encoding="utf-8")
     for tool in ("ngspice", "PyBaMM", "liionpack"):

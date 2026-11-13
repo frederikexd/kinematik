@@ -307,6 +307,22 @@ def test_refined_net_resistance_held_out_on_kicad9_boards():
     assert not [o for o in rows if o["source"] == "1-D" and o["copper2d_ohm"]]
 
 
+def test_shipped_net_resistance_on_the_held_out_nets():
+    """What a report actually uses, scored on the same 92 held-out nets (a re-scoring of recorded data, no new limit):
+    the sheet solve where the net fits the shipped size limit (78 nets), the 1-D model otherwise (14). The 1-D
+    fallbacks all read high, so the brown-out check never under-reads, and 91 of 92 shipped values are within 2 %."""
+    from suspension.pcb_doctor import NET_R_UPPER_FACTOR
+    d = json.loads((REF / "kicad9" / "net_resistance_refined.json").read_text(encoding="utf-8"))
+    rows = [o for o in d["held_out"]["nets"] if o["source"] == "sheet solve" and o["copper2d_ohm"]]
+    shipped = [(o["kinematik_refined_ohm"] if o["source_at_shipped_limit"] == "sheet solve" else o["kinematik_1d_ohm"])
+               / o["copper2d_ohm"] for o in rows]
+    fallback = [o["kinematik_1d_ohm"] / o["copper2d_ohm"] for o in rows
+                if o["source_at_shipped_limit"] != "sheet solve"]
+    assert len(shipped) == 92 and len(fallback) == 14
+    assert sum(abs(r - 1.0) <= 0.02 for r in shipped) == 91 and max(abs(r - 1.0) for r in shipped) < 0.022
+    assert min(fallback) >= 1.0 and min(fallback) * NET_R_UPPER_FACTOR >= 1.09
+
+
 def test_pour_round4_grid_check_results():
     """Plan addenda 9-11. Round 3 on the larger held-out nets, and round 4 (grid check) where it marks itself
     converged and the reference converges too. Pinned as scored; the misses stay visible."""
