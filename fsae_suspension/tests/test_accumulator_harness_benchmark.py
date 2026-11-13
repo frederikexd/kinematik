@@ -104,7 +104,7 @@ def test_pack_thermal_network_matches_ngspice():
                       r_tempco_per_c=0.0, surface_area_m2=x["surface_m2"], pitch_mm=x["pitch_mm"])
     lay = PackLayout(rows=x["rows"], cols=x["cols"], parallel=x["parallel"], cell=cell, ambient_c=x["ambient_c"])
     fans = [Fan(**f) for f in x["fans"]]
-    air = AirflowParams(enable_wake_warming=False)
+    air = AirflowParams(enable_wake_warming=False, h_floor=8.0)     # the still-air value when A4 was recorded
     assert np.allclose(air.h_field(lay.positions_mm(), fans), x["h_w_m2k"], rtol=0, atol=1e-9)   # same inputs
     res = PackThermalModel(layout=lay, fans=fans, airflow=air, k_cell_cell=x["k_cell_cell_w_k"]).simulate(
         np.array(d["t_s"]), np.array(x["pack_current_a"]))
@@ -163,6 +163,22 @@ def test_duct_mode_matches_the_tube_bank_correlations():
         assert np.max(np.abs(h / corr[0] - 1.0)) <= 0.02                    # registered: 2 % against ht's Zukauskas
         assert np.max(np.abs(h / corr.mean(axis=0) - 1.0)) <= 0.30          # B1's 30 % against all three
         assert np.all(h >= corr.min(axis=0) * 0.999) and np.all(h <= corr.max(axis=0) * 1.001)
+
+
+# ---------------------------------------------------------- C1. ht: still-air natural convection (add. 3) -- #
+def _still_air_err(h):
+    rows = _ref("c1_ht_still_air.json")["rows"]
+    return max(abs(h / r[k] - 1.0) for r in rows for k in ("h_horizontal_w_m2k", "h_vertical_w_m2k"))
+
+
+def test_still_air_round1_was_optimistic_and_is_kept():
+    assert 0.7 < _still_air_err(8.0) < 0.8                    # the old 8 W/m²K: up to 78 % more cooling than air gives
+
+
+def test_still_air_cooling_matches_natural_convection():
+    from suspension.pack_thermal import AirflowParams
+    assert AirflowParams().h_floor == 5.5
+    assert _still_air_err(AirflowParams().h_floor) <= 0.30    # registered: 30 % of both, 5 to 40 K rise
 
 
 def test_the_references_are_the_registered_ones():

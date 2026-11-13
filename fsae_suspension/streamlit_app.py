@@ -9654,6 +9654,18 @@ for _ck, _cem, _clab in _cats_nonempty:
         if getattr(_id_to_container.get(_id), "open", None):
             _ax_active_ids.add(_id)
 
+@st.cache_data(show_spinner=False, max_entries=8)
+def _pcm_cooling_band(rows, cols, series, par, ambient_c, pitch_mm, ducted, cfm, peak_a):
+    """The PCM tab's pack run at nominal, 1.2x and 0.8x cooling (three runs, so cached on the inputs)."""
+    cell = pack_mod.default_cell_params()
+    cell.pitch_mm = pitch_mm
+    layout = pack_mod.PackLayout(rows=rows, cols=cols, series=series, parallel=par, cell=cell, ambient_c=ambient_c)
+    t = np.linspace(0, 120, 800)
+    cur = 0.4 * peak_a + peak_a * np.clip(np.sin(2 * np.pi * t / 8), 0, 1)
+    air = pack_mod.AirflowParams(mode="duct", duct_cfm=cfm) if ducted else pack_mod.AirflowParams()
+    return pack_mod.cooling_band(layout, t, cur, airflow=air, n_laps=3)
+
+
 def _tab_should_run(feature: str, seeds=()) -> bool:
     """Should this tab body execute on this script-run?
 
@@ -33822,20 +33834,47 @@ with tab_tractive:
           _peakA = _wc2[3].number_input("Pack current peak (A)", 10.0, 800.0, 300.0,
                                         key="pcm_a")
 
+          _cool = st.radio(
+              "Cooling air", ["Ducted fan: air pushed through the pack", "Still air: no fan"],
+              horizontal=True, key="pcm_cool",
+              help="Ducted cooling comes from the Zukauskas tube-bank correlation and still air from "
+                   "natural-convection correlations, both benchmarked (BENCHMARK.md). Neither is a "
+                   "measured pack, so the hottest cell is shown with a ±20 % cooling band.")
+          _ducted = _cool.startswith("Ducted")
+          _wc3 = st.columns(4)
+          _pitch = unum(_wc3[0], "Cell pitch (mm)", 10.0, 80.0, 27.0, 'mm', key="pcm_pitch")
+          _cfm = (_wc3[1].number_input("Duct airflow (cfm)", 1.0, 1000.0, 40.0, key="pcm_cfm")
+                  if _ducted else 0.0)
+
           _ncells = int(_series) * int(_par)
           # square-ish packaging grid for the n cells
           _rows = max(int(round(_ncells ** 0.5)), 1)
           _cols = max(int(round(_ncells / _rows)), 1)
           try:
               _cell = pack_mod.default_cell_params()
+              _cell.pitch_mm = float(_pitch)
               _layout = pack_mod.PackLayout(rows=_rows, cols=_cols,
                                             series=int(_series), parallel=int(_par),
                                             cell=_cell, ambient_c=_ambient)
               _t = np.linspace(0, 120, 800)
               _cur = 0.4 * _peakA + _peakA * np.clip(np.sin(2 * np.pi * _t / 8), 0, 1)
-              _model = pack_mod.PackThermalModel(layout=_layout, fans=[],
-                                                 airflow=pack_mod.AirflowParams())
-              _res = _model.simulate(_t, _cur, n_laps=3)
+              _band = _pcm_cooling_band(_rows, _cols, int(_series), int(_par), float(_ambient),
+                                        float(_pitch), _ducted, float(_cfm), float(_peakA))
+              _res = _band["result"]
+              from suspension.provenance import graded as _graded
+              st.metric("Hottest cell, 3 laps",
+                        _graded(_band["peak_c"], "estimate", "°C", digits=3, limited_by="cooling correlation"),
+                        help="Cooling from benchmarked correlations, not a measured pack.")
+              st.caption("Range for cooling at 1.2x to 0.8x (the correlations' own scatter against "
+                         "measurements): " + _graded(_band["peak_low_c"], "estimate", "°C", digits=3) + " to "
+                         + _graded(_band["peak_high_c"], "estimate", "°C", digits=3) + ".")
+              _icell = float(np.max(_cur)) / max(int(_par), 1)
+              if _icell > 45.0:
+                  st.caption("⚠ " + _graded(_icell, "modelled", "A", digits=3) + " per cell at the peak is past "
+                             "what a 21700 cell is rated for (about 45 A): check the pack current or the parallel "
+                             "count before reading the temperatures.")
+              for _w in _res.warnings:
+                  st.caption(f"⚠ {_w}")
               _mat = pcm_mod.PCMMaterial(t_melt_c=_tmelt, latent_heat_j_per_g=_lheat)
               _alloc = pcm_mod.PCMAllocation(material=_mat, mass_per_cell_g=_mass_g,
                                              set_by="cooling")
