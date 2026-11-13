@@ -21,7 +21,9 @@ concurrency:
 jobs:
   analyze:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # The 30k-line app plus the test suite pushed analysis past 30 min (run #146); tests and fixtures are not
+    # shipped code, so they are left out of the scan and the limit has headroom.
+    timeout-minutes: 60
     permissions:
       actions: read
       contents: read
@@ -32,6 +34,13 @@ jobs:
         with:
           languages: python
           build-mode: none
+          config: |
+            paths-ignore:
+              - '**/tests/**'
+              - '**/_attic/**'
+              - '**/benchmarks/**'
+              - 'notebooks/**'
+              - 'docs/**'
       - uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066  # v4.39.3
         with:
           category: /language:python
