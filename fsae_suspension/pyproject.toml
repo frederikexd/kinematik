@@ -29,6 +29,10 @@ dependencies = [
     "defusedxml>=0.7",
 ]
 
+[project.scripts]
+# Offline: declared loads vs the electrical hardware, as a reproducible report (suspension/consistency_check.py).
+kinematik-check = "suspension.consistency_check:main"
+
 [project.optional-dependencies]
 # Each extra unlocks one lazily-imported feature; the app boots without them.
 excel = ["openpyxl>=3.1"]  # xlcalculator dropped: unused, pinned numpy<2  # ev_electrical_check, ev_excel_roundtrip

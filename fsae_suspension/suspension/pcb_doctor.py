@@ -2330,6 +2330,17 @@ def diagnose(board: PcbBoard, assignments: dict,
                     continue
                 break
 
+    # ---------- copper of two nets touching: a short ----------------------------- #
+    #  Tracks and vias of different nets whose copper overlaps on one layer are a dead short (the fixed file would
+    #  carry it too). Checked with a coarse grid so a 6,000-track board stays fast; pads and pours are left to the
+    #  layout tool's DRC, whose exact pad shapes and pour clearances this screen does not model.
+    for (na, nb, layer, at, gap) in _copper_shorts(board):
+        F.append(Finding(
+            check=f"copper short — {na} / {nb}", severity=Severity.FAIL, subsystems=["electrics"],
+            message=(f"'{na}' and '{nb}' copper overlaps by {-gap:.2f} mm on {layer} near "
+                     f"({at[0]:.1f}, {at[1]:.1f}) mm: the two nets are shorted on the board as drawn. FIX: reroute one "
+                     f"of them so the copper keeps the net-class clearance, then re-run DRC in the layout tool.")))
+
     # ---------- component-level real-life derating ------------------------------- #
     fuse_re = re.compile(r"([\d.]+)\s*A", re.I)
     for fp in board.footprints:
@@ -2407,6 +2418,45 @@ def diagnose(board: PcbBoard, assignments: dict,
 #  Copper-to-copper spacing (mm) a widened trace must keep to every other net on its layer. KiCad's own default
 #  clearance; a board's rules may be tighter, never looser for a fix this tool makes on its own.
 FIX_MIN_CLEARANCE_MM = 0.2
+
+
+def _copper_shorts(board: PcbBoard, cell_mm: float = 5.0, limit: int = 50) -> list:
+    """Pairs of different-net tracks or vias whose copper overlaps on one layer, one entry per net pair and layer:
+    (net a, net b, layer, a point near the overlap (x, y) mm, gap mm < 0). At most `limit` pairs are returned."""
+    items = []                                              # (net, layer, a0, a1, half width)
+    for sg in board.segments:
+        if sg.net:
+            items.append((sg.net, sg.layer, sg.start, sg.end, sg.width_mm / 2.0))
+    for v in board.vias:
+        if v.net:
+            for ly in (v.layers or ("F.Cu", "B.Cu")):
+                items.append((v.net, ly, v.at, v.at, v.size_mm / 2.0))
+    grid: dict = {}
+    for k, (net, ly, a0, a1, hw) in enumerate(items):
+        x0, x1 = sorted((a0[0], a1[0]))
+        y0, y1 = sorted((a0[1], a1[1]))
+        for gx in range(int(math.floor((x0 - hw) / cell_mm)), int(math.floor((x1 + hw) / cell_mm)) + 1):
+            for gy in range(int(math.floor((y0 - hw) / cell_mm)), int(math.floor((y1 + hw) / cell_mm)) + 1):
+                grid.setdefault((ly, gx, gy), []).append(k)
+    seen, out = set(), []
+    for cell in grid.values():
+        for i, ka in enumerate(cell):
+            na, la, a0, a1, ha = items[ka]
+            for kb in cell[i + 1:]:
+                nb, lb, b0, b1, hb = items[kb]
+                if na == nb or la != lb:
+                    continue
+                key = (min(na, nb), max(na, nb), la)
+                if key in seen:
+                    continue
+                gap = _seg_seg_mm(a0, a1, b0, b1) - ha - hb
+                if gap < -1e-3:
+                    seen.add(key)
+                    mid = ((a0[0] + a1[0] + b0[0] + b1[0]) / 4.0, (a0[1] + a1[1] + b0[1] + b1[1]) / 4.0)
+                    out.append((board.net_name(key[0]), board.net_name(key[1]), la, mid, gap))
+                    if len(out) >= limit:
+                        return out
+    return out
 
 
 def _seg_seg_mm(a0, a1, b0, b1) -> float:

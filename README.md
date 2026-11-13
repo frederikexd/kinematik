@@ -13,6 +13,8 @@
 [![mutation](https://github.com/frederikexd/kinematik/actions/workflows/mutation.yml/badge.svg?branch=main)](https://github.com/frederikexd/kinematik/actions/workflows/mutation.yml)
 [![DOI](https://zenodo.org/badge/1264704197.svg)](https://doi.org/10.5281/zenodo.23450788)
 
+**KinematiK catches the problems that fall between teams, starting with the one that blows fuses: powertrain current versus electrical hardware.**
+
 The hour before SolidWorks, ANSYS or ADAMS/Car: KinematiK pre-validates Formula Student and Formula student EV design ideas, catching cross-subsystem mistakes in real time and documenting as it goes, reducing the garbage in garbage out effect when using established tools.
 
 **[Open the app](https://kinematik-ijzpvutb92x7n3yzo7sdqc.streamlit.app/)** · Free for student teams · No install needed
@@ -173,6 +175,28 @@ streamlit run fsae_suspension/streamlit_app.py
 ```
 
 Python 3.12 or newer. The hosted app needs no install.
+
+## Check a board offline
+
+No upload, no account: the check runs on your machine and writes a report another engineer can reproduce from the
+same two files (both are hashed in the report).
+
+```bash
+cd kinematik/fsae_suspension
+pip install -e .
+kinematik-check my_board.kicad_pcb --loads loads.csv --report report.md --json report.json
+```
+
+`loads.csv` is what the powertrain or systems side declares, one row per powered net:
+
+```csv
+net,current_a,voltage_v,owner
+STATOR_PWR,25,12,powertrain
+```
+
+It checks each declared current against the fuses, traces and copper that carry it, flags declared loads that are
+not on the board and board nets nobody declared, and states the evidence behind every result. Exit status is 1 on
+any FAIL (or WARN with `--fail-on warning`), so it can gate a CI run. KiCad and Altium boards.
 
 ---
 
