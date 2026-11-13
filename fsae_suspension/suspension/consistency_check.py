@@ -88,8 +88,8 @@ class DeclaredLoad:
 
 
 def parse_loads_csv(text: str) -> list[DeclaredLoad]:
-    """Read ``net,current_a[,voltage_v][,owner]``. Raises ValueError naming the line, since a bad number here
-    silently becomes a wrong verdict."""
+    """Read ``net,current_a[,voltage_v][,owner]``: current in amps (A), voltage in volts (V). Raises ValueError
+    naming the line, since a bad number here silently becomes a wrong verdict."""
     rows = list(csv.DictReader(io.StringIO(text.lstrip("﻿"))))
     if not rows:
         raise ValueError("loads file is empty: expected a header 'net,current_a' and one row per powered net")
@@ -137,12 +137,14 @@ class CheckResult:
     boundary: list = field(default_factory=list)   # [{net, owner, current_a, fuses: [(ref, rating, verdict)]}]
 
     def counts(self) -> dict:
+        """Results per status: unitless counts."""
         c = dict.fromkeys(_ORDER, 0)
         for f in self.findings:
             c[f.severity.value] += 1
         return c
 
     def worst_hits(self, fail_on: str) -> int:
+        """How many results sit at or above ``fail_on``: a unitless count."""
         levels = _FAIL_ON[fail_on]
         return sum(1 for f in self.findings if f.severity.value in levels)
 
@@ -150,6 +152,8 @@ class CheckResult:
 def run_check(board_data, board_name: str, loads_data, loads_name: str = "loads.csv",
               rail_v: float = 5.0, brownout_v: float = 4.5, ambient_c: float = 40.0,
               max_temp_c: float = 105.0) -> CheckResult:
+    """Check declared load currents (A) against the board's fuses (A), traces and copper. ``rail_v`` and
+    ``brownout_v`` in volts (V), ``ambient_c`` and ``max_temp_c`` in °C."""
     from . import pcb_doctor as pd
 
     raw = board_data.encode("utf-8") if isinstance(board_data, str) else bytes(board_data)
@@ -264,6 +268,7 @@ def render_markdown(res: CheckResult) -> str:
 
 
 def to_json(res: CheckResult) -> dict:
+    """The report as plain data: currents and fuse ratings in amps (A), voltages in volts (V)."""
     return {"tool": "kinematik-check", "version": res.version,
             "inputs": {"board": {"file": res.board_file, "sha256": res.board_sha256},
                        "loads": {"file": res.loads_file, "sha256": res.loads_sha256}},
@@ -276,6 +281,8 @@ def to_json(res: CheckResult) -> dict:
 
 
 def main(argv=None) -> int:
+    """Command-line entry point. Returns the exit status, a unitless code: 0 clean, 1 at or above --fail-on,
+    2 input error."""
     ap = argparse.ArgumentParser(
         prog="kinematik-check",
         description="Check the currents one team declares against the board another team drew. Runs offline.")
