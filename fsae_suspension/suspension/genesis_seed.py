@@ -100,7 +100,9 @@ def seed_cost(hp, targets, volume, clearance_target_mm: float = 2.0,
                 why.append(item)
     em = volume.envelope_margin(hp)
     if em is not None and em < clearance_target_mm:
-        pen += min((clearance_target_mm - em) / clearance_target_mm, 10.0)
+        #  Shortfall over the target; with a 0 mm target (walls_broken: the wall itself) over 1 mm, which divided by
+        #  zero the moment a start sat inside the wheel (a 16-inch tyre on a corner drawn for a 18-inch one).
+        pen += min((clearance_target_mm - em) / (clearance_target_mm if clearance_target_mm > 0.0 else 1.0), 10.0)
         why.append(f"clearance {em:.2f} mm")
     return band + pen, {"band": band, "penalty": pen, "violated": why,
                         "clearance_mm": em}

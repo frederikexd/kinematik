@@ -99,3 +99,33 @@ def test_the_declared_start_search_repeats_the_earlier_two_stage_record(name, ol
         assert (ca["yield_frac"] is None) == (cb["yield_frac"] is None)
         assert ca["yield_frac"] is None or abs(ca["yield_frac"] - cb["yield_frac"]) <= 1e-9
         assert np.max(np.abs(np.subtract(ca["shift_vec"], cb["shift_vec"]))) <= 1e-6
+
+
+def test_a_start_inside_the_wheel_is_reported_not_divided_by_zero():
+    """walls_broken asks for a 0 mm clearance target; a start inside the wheel (margin below 0) divided by it."""
+    from suspension import genesis_seed as gs
+
+    class _Targets:
+        def residual(self, hp):
+            return [0.2], True
+
+    class _Volume:
+        min_clearance_mm = 2.0
+
+        def keepout_violations(self, hp):
+            return []
+
+        def has_property_bounds(self):
+            return False
+
+        def has_wheel_envelope(self):
+            return False
+
+        def envelope_margin(self, hp):
+            return -3.0
+
+    assert gs.walls_broken(None, _Targets(), _Volume()) == ["clearance -3.00 mm"]
+    c, d = gs.seed_cost(None, _Targets(), _Volume(), clearance_target_mm=0.0)
+    assert d["penalty"] == 3.0 and abs(c - 3.2) < 1e-12
+    c2, d2 = gs.seed_cost(None, _Targets(), _Volume(), clearance_target_mm=2.0)
+    assert d2["penalty"] == 2.5                                   # unchanged: (2 - -3) / 2
