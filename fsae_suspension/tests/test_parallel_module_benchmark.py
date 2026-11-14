@@ -99,6 +99,31 @@ def test_ladder_against_currents_scaled_to_the_cycler_total_disclosed_not_scored
     assert np.median(_by("mix", "Mixed", scaled)) > np.median(_by("mix", "NMC", scaled))   # mixed cells worst
 
 
+def test_ladder_nearest_cell_current_found_after_registration_disclosed():
+    #  Not a registered limit: the nearest cell, which the app reports, over the 36 resistive-link modules.
+    e = np.array([_ladder(t)[0] / t["i_cell_10s_a"][0] - 1.0 for t in TESTS if t["r_interconnect_mohm"] > 0])
+    assert e.size == 36 and -0.04 < np.median(e) < -0.02 and -0.21 < e.min() < -0.19 and e.max() < 0.22
+
+
+def test_pack_model_uses_the_ladder_when_links_have_resistance():
+    cell = pt.default_cell_params()
+    stiff = pt.PackLayout(rows=1, cols=4, series=1, parallel=4, cell=cell)
+    assert stiff.cell_current_share() is None
+    lay = pt.PackLayout(rows=1, cols=8, series=2, parallel=4, cell=cell, r_interconnect_ohm=0.003)
+    share = lay.cell_current_share()
+    group = ladder_currents([cell.r_internal_ohm] * 4, 0.003, 1.0)
+    assert np.allclose(share, np.tile(group, 2)) and np.isclose(share[:4].sum(), 1.0) and share[0] > 0.25
+    t, cur = np.linspace(0, 600, 601), np.full(601, 40.0)
+    hot = pt.PackThermalModel(layout=lay, airflow=pt.AirflowParams(mode="duct", duct_cfm=0.0),
+                              k_cell_cell=0.0).simulate(t, cur)
+    even = pt.PackThermalModel(layout=replace(lay, r_interconnect_ohm=0.0),
+                               airflow=pt.AirflowParams(mode="duct", duct_cfm=0.0), k_cell_cell=0.0).simulate(t, cur)
+    rise_hot, rise_even = hot.temp_history_c[-1] - lay.ambient_c, even.temp_history_c[-1] - lay.ambient_c
+    assert np.allclose(rise_even, rise_even[0])                              # equal split: every cell the same
+    assert rise_hot[0] > 1.5 * rise_even[0] and rise_hot[3] < rise_even[3]   # the nearest cell runs hotter
+    assert np.allclose(rise_hot[:4], rise_hot[4:])                           # every group alike
+
+
 # ------------------------------------------------------------------- D3. still air is conservative (check) -- #
 def test_still_air_never_under_predicts_the_measured_rise():
     base = pt.default_cell_params()
