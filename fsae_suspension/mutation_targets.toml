@@ -382,6 +382,7 @@ files = ["suspension/pack_thermal.py"]
 tests = [
     "tests/test_pack_thermal.py",
     "tests/test_mutation_pack_thermal.py",
+    "tests/test_parallel_module_benchmark.py",
 ]
 deselect = []
 
