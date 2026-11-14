@@ -386,6 +386,14 @@ tests = [
 deselect = []
 
 [[group]]
+name = "parallel_split"
+files = ["suspension/parallel_split.py"]
+tests = [
+    "tests/test_parallel_module_benchmark.py",
+]
+deselect = []
+
+[[group]]
 name = "ice_powertrain"
 files = ["suspension/ice_powertrain.py"]
 tests = [
