@@ -2926,7 +2926,14 @@ def bridge_risk_pairs(board: PcbBoard, max_gap_mm: float = BRIDGE_GAP_MM, cell_m
                 side = first[3] if first[3] != "*" else second[3]
                 out.append({"pins": (first[0], second[0]), "nets": (first[2], second[2]), "gap_mm": gap,
                             "kind": label[r], "rank": r, "side": "both" if side == "*" else side})
-    out.sort(key=lambda d: (d["rank"], d["gap_mm"], d["pins"]))
+    #  A part can carry several pads with one number (a power package's split tab): one row per pin pair, the
+    #  smallest gap.
+    best: dict = {}
+    for d in out:
+        k = (d["pins"], d["side"])
+        if k not in best or d["gap_mm"] < best[k]["gap_mm"]:
+            best[k] = d
+    out = sorted(best.values(), key=lambda d: (d["rank"], d["gap_mm"], d["pins"]))
     return out
 
 
