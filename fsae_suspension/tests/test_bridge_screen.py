@@ -112,3 +112,65 @@ def test_report_sections():
     assert sheet.startswith("# Bring-up sheet") and "Solder-bridge check" in sheet
     many = [(str(i), "GND" if i % 2 else "+5V", 0.0, 0.5 * i, 1.0, 0.3, {"shape": "rect"}) for i in range(50)]
     assert "more, all lower priority or wider" in "\n".join(D.bridge_check_md(_board(many), limit=10))
+
+
+# ------------------------------------------------- addendum 17: native Altium boards via KiCad's importer -- #
+ALT = json.loads((ROOT / "benchmarks" / "electrical" / "bridge_gaps" / "kicad7_altium_pad_gaps.json").read_text("utf-8"))
+
+
+@pytest.mark.parametrize("name", sorted(ALT["boards"]))
+def test_altium_gap_screen_matches_kicads_importer(name):
+    ref = {}
+    for r in ALT["boards"][name]:
+        ref[tuple(r["pins"])] = min(ref.get(tuple(r["pins"]), 9.0), r["gap_mm"])
+    mine = {tuple(r["pins"]): r["gap_mm"] for r in ALT["kinematik"][name]}
+    assert not [k for k, g in ref.items() if g < 0.34 and k not in mine]
+    assert not [k for k in mine if ref.get(k, 9.0) > 0.36]
+    assert all(abs(g - ref[k]) <= 0.01 for k, g in mine.items())
+
+
+def test_altium_reference_covers_the_six_native_boards():
+    assert len(ALT["boards"]) == 6 and sum(len(v) for v in ALT["kinematik"].values()) == 168
+
+
+def test_altium_recorded_pairs_are_what_the_reader_gives_now():
+    """Set KK_ALTIUM_KIT to the kit folder (<board>.PcbDoc) to re-read the boards here."""
+    import os
+    kit = os.environ.get("KK_ALTIUM_KIT")
+    if not kit:
+        pytest.skip("KK_ALTIUM_KIT not set")
+    for name, rows in ALT["kinematik"].items():
+        p = Path(kit) / f"{name}.PcbDoc"
+        got = [list(r["pins"]) for r in D.bridge_risk_pairs(D.parse_board(p.read_bytes(), p.name))]
+        assert got == [r["pins"] for r in rows], name
+
+
+# ------------------------------------------------------------------- supplies, and joined track ends -- #
+def test_auto_named_supply_found_by_its_decoupling():
+    b = _board([("1", "NetC21_1", 0.0, 0.0, 1.0, 0.3, {"shape": "rect"}), ("2", "GND", 0.0, 0.5, 1.0, 0.3, {"shape": "rect"})])
+    ids = {n: i for i, n in b.nets.items()}
+    for k in (1, 2):
+        b.footprints.append(D.PcbFootprint(ref=f"C{k}", value="100n", layer="F.Cu", at=(10.0 * k, 10.0), pads=[
+            D.PcbPad(number="1", net=ids["NetC21_1"], net_name="NetC21_1", at=(10.0 * k, 10.0)),
+            D.PcbPad(number="2", net=ids["GND"], net_name="GND", at=(10.0 * k, 12.0))]))
+    assert D._net_classes(b)[ids["NetC21_1"]] == "supply"
+    assert D.bridge_risk_pairs(b)[0]["kind"] == "supply to ground"
+    b.footprints.pop()
+    assert D._net_classes(b)[ids["NetC21_1"]] == "signal"                      # one capacitor is not a rail
+    assert D.bridge_risk_pairs(b)[0]["kind"] == "signal to ground"
+
+
+def _two_pad_net(segs):
+    pads = ('(pad "1" smd rect (at 0 0) (size 1 1) (net 1 "SIG"))', '(pad "1" smd rect (at 20 0) (size 1 1) (net 1 "SIG"))')
+    text = ('(kicad_pcb (version 20221018) (general (thickness 1.6)) (layers (0 "F.Cu" signal) (31 "B.Cu" signal))'
+            ' (net 0 "") (net 1 "SIG")\n'
+            f' (footprint "a" (layer "F.Cu") (at 0 0) (property "Reference" "R1") {pads[0]})\n'
+            f' (footprint "b" (layer "F.Cu") (at 0 0) (property "Reference" "R2") {pads[1]})\n' + segs + ')')
+    b = D.parse_kicad_pcb(text)
+    return D.analyze_net(b, b.net_id("SIG"))
+
+
+def test_overlapping_track_ends_are_joined_and_real_gaps_stay_open():
+    seg = ' (segment (start {} 0) (end {} 0) (width 0.254) (layer "F.Cu") (net 1))\n'
+    assert not _two_pad_net(seg.format(0, 10) + seg.format(10.065, 20))["open_groups"]   # 0.065 mm: overlapping
+    assert _two_pad_net(seg.format(0, 10) + seg.format(10.3, 20))["open_groups"]         # 0.3 mm: a real gap

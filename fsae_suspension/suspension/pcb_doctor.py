@@ -1208,6 +1208,46 @@ def _weld_nodes(node_fn, keyed: dict, tol: float = NODE_WELD_MM, joined: set = f
     return out
 
 
+def _weld_overlapping_ends(node_fn, segs, joined: set) -> list:
+    """Zero-ohm edges between track ends of one layer that sit closer than the smaller track's half-width (mm):
+    their round end caps overlap by at least that radius, so the copper is one piece. A native Altium board joined
+    two 0.254 mm tracks with ends 0.065 mm apart, past the 50 um weld, and the net read "copper open"; KiCad's
+    own rule is copper overlap. Never welds ends that do not overlap, so a real gap stays open."""
+    degree: dict = {}
+    for s in segs:
+        for e_ in (s.start, s.end):
+            degree[_node_key(s.layer, e_)] = degree.get(_node_key(s.layer, e_), 0) + 1
+    ends = []
+    for s in segs:
+        hw = s.width_mm / 2.0
+        for e_ in (s.start, s.end):
+            ends.append((_node_key(s.layer, e_), e_, hw, degree[_node_key(s.layer, e_)] == 1 and s.length_mm > hw))
+    cell = max([e[2] for e in ends] + [NODE_WELD_MM])
+    #  Only a dead end (one track, longer than its half-width) is welded: inside a run of short arc chords every
+    #  node is shared by two tracks, and welding across chords would short the arc out.
+    grid: dict = {}
+    for k, (key, pt, hw, _dead) in enumerate(ends):
+        grid.setdefault((key[0], int(pt[0] // cell), int(pt[1] // cell)), []).append(k)
+    out, seen = [], set()
+    for (layer, cx, cy), members in grid.items():
+        near = [j for dx in (-1, 0, 1) for dy in (-1, 0, 1) for j in grid.get((layer, cx + dx, cy + dy), ())]
+        for i in members:
+            ka, pa, ha, dead = ends[i]
+            if not dead:
+                continue
+            for j in near:
+                kb, pb, hb, _d = ends[j]
+                if ka == kb:
+                    continue
+                pair = (ka, kb) if ka < kb else (kb, ka)
+                if pair in seen or pair in joined:
+                    continue
+                if math.hypot(pa[0] - pb[0], pa[1] - pb[1]) <= min(ha, hb):
+                    seen.add(pair)
+                    out.append((node_fn(ka), node_fn(kb), 1e-9))
+    return out
+
+
 def analyze_net(board: PcbBoard, nid: int, ambient_c: float = 40.0) -> dict:
     """Build the resistor mesh of a net's real copper (segments + via barrels),
     then report: bottleneck segment, per-layer routed length, connectivity of
@@ -1298,6 +1338,7 @@ def analyze_net(board: PcbBoard, nid: int, ambient_c: float = 40.0) -> dict:
     # Weld coincident-but-not-identical endpoints before the pads are attached,
     # so a pad reaching either side of a joint reaches the whole net.
     edges.extend(_weld_nodes(node, keyed, joined=_joined))
+    edges.extend(_weld_overlapping_ends(node, segs, _joined))
 
     #  A track does not have to hit a via's exact centre to be connected to it.
     #  A via is an annulus of copper, and routers habitually end a track a little
@@ -2752,6 +2793,25 @@ def _net_class(name: str) -> str:
     return "supply" if _PWR_RE.match(leaf) else "signal"
 
 
+def _net_classes(board: PcbBoard) -> dict:
+    """Each net's class ('ground', 'supply', 'signal'; unitless labels) by name, and, for the auto-named nets an
+    Altium or KiCad netlist leaves (NetC21_1), by what decouples it: a net with two or more capacitors to ground is
+    a supply rail."""
+    cls = {nid: _net_class(name) for nid, name in board.nets.items()}
+    caps: dict = {}
+    for fp in board.footprints:
+        if not re.match(r"^C\d", fp.ref or "") or len(fp.pads) != 2:
+            continue
+        a, b = (p.net for p in fp.pads)
+        for x, y in ((a, b), (b, a)):
+            if x and y and cls.get(y) == "ground" and cls.get(x) == "signal":
+                caps[x] = caps.get(x, 0) + 1
+    for nid, n in caps.items():
+        if n >= 2:
+            cls[nid] = "supply"
+    return cls
+
+
 def _pad_outline(pad, n_arc: int = 8) -> list:
     """A pad's copper outline as board points (mm): a rectangle, a roundrect, or a stadium for a round pad."""
     w, h = (float(x) for x in pad.size)
@@ -2764,7 +2824,7 @@ def _pad_outline(pad, n_arc: int = 8) -> list:
                   c[1] + r * math.sin(math.radians(a0 + 180.0 * k / n_arc)))
                  for c, a0 in ends for k in range(n_arc + 1)]
     else:
-        rad = (pad.rratio or 0.25) * min(w, h) if shape == "roundrect" else 0.0
+        rad = (0.25 if pad.rratio is None else pad.rratio) * min(w, h) if shape == "roundrect" else 0.0
         ax, ay = w / 2.0 - rad, h / 2.0 - rad
         corners = [((ax, ay), 0.0), ((-ax, ay), 90.0), ((-ax, -ay), 180.0), ((ax, -ay), 270.0)]
         local = ([(cx + rad * math.cos(math.radians(a0 + 90.0 * k / n_arc)),
@@ -2820,7 +2880,8 @@ def bridge_risk_pairs(board: PcbBoard, max_gap_mm: float = BRIDGE_GAP_MM, cell_m
     """Different-net pads on the same side closer than `max_gap_mm` (mm): where in-house reflow most often leaves a
     solder bridge. Each row: the two pins (ref.pad), their nets, the gap (mm), the kind of pair, and the side.
     Ordered by harm, then gap: supply to ground first (a bridge there shorts the rail and can fry parts), then two
-    supplies, a supply to a signal, two signals. Through-hole pads count on both sides; unconnected pads are
+    supplies, a supply to a signal, a signal to ground, two signals. Supplies are found by name or, for auto-named
+    nets, by their decoupling capacitors (`_net_classes`). Through-hole pads count on both sides; unconnected pads are
     skipped. The board file has no paste or mask aperture data here, so the list is a gap screen, not a bridge
     prediction: continuity-check it on the built board before first power-up."""
     pads = []
@@ -2839,9 +2900,10 @@ def bridge_risk_pairs(board: PcbBoard, max_gap_mm: float = BRIDGE_GAP_MM, cell_m
     grid: dict = {}
     for k, row in enumerate(pads):
         grid.setdefault((int(math.floor(row[5][0] / cell_mm)), int(math.floor(row[5][1] / cell_mm))), []).append(k)
-    rank = {("ground", "supply"): 0, ("supply", "supply"): 1, ("signal", "supply"): 2, ("signal", "signal"): 3,
-            ("ground", "signal"): 3, ("ground", "ground"): 3}
-    label = {0: "supply to ground", 1: "two supplies", 2: "supply to signal", 3: "two signals"}
+    rank = {("ground", "supply"): 0, ("supply", "supply"): 1, ("signal", "supply"): 2, ("ground", "signal"): 3,
+            ("signal", "signal"): 4, ("ground", "ground"): 4}
+    label = {0: "supply to ground", 1: "two supplies", 2: "supply to signal", 3: "signal to ground", 4: "two signals"}
+    classes = _net_classes(board)
     out, seen = [], set()
     for (gx, gy), members in grid.items():
         near = [k for dx in (-1, 0, 1) for dy in (-1, 0, 1) for k in grid.get((gx + dx, gy + dy), ())]
@@ -2859,7 +2921,7 @@ def bridge_risk_pairs(board: PcbBoard, max_gap_mm: float = BRIDGE_GAP_MM, cell_m
                 gap = min(_outline_gap_mm(a, b) for a in pa[4] for b in pb[4])
                 if gap >= max_gap_mm:
                     continue
-                r = rank[tuple(sorted((_net_class(pa[2]), _net_class(pb[2]))))]
+                r = rank[tuple(sorted((classes.get(pa[1], "signal"), classes.get(pb[1], "signal"))))]
                 first, second = sorted((pa, pb), key=lambda x: x[0])
                 side = first[3] if first[3] != "*" else second[3]
                 out.append({"pins": (first[0], second[0]), "nets": (first[2], second[2]), "gap_mm": gap,
@@ -2889,10 +2951,14 @@ def bridge_check_md(board: PcbBoard, rows: list | None = None, limit: int = 40) 
 
 
 def bringup_sheet_md(board: PcbBoard, nets=None) -> str:
-    """A one-page bring-up sheet: the solder-bridge check, then the power-net resistances (Markdown)."""
+    """A one-page bring-up sheet: the solder-bridge check, then the resistance of each supply rail (Markdown; every
+    routed net when no rail is recognised)."""
     L = ["# Bring-up sheet", "", f"Board: **{board.fmt_label}**, {sum(1 for f in board.footprints if f.ref != '?')} "
          "components. Unpowered checks, in order.", ""]
     L += bridge_check_md(board)
+    if nets is None:                                    # the supply rails: where a high reading starves a load
+        cls = _net_classes(board)
+        nets = [n for n in sorted({s.net for s in board.segments if s.net}) if cls.get(n) == "supply"] or None
     plan = bringup_measurements(board, nets)
     if plan:
         L += ["## Power-net resistance (4-wire milliohm meter, board unpowered)",
