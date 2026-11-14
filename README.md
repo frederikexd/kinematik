@@ -85,11 +85,12 @@ cd fsae_suspension
 ```
 
 Electrical benchmarks (PCB Doctor, SPICE, impedance, heating; accumulator and harness against ngspice, PyBaMM and
-liionpack):
+liionpack; the parallel split against 54 measured modules):
 
 ```bash
 pytest tests/test_electrical_benchmark.py tests/test_pcb_doctor.py tests/test_ev_electrical_check.py \
-       tests/test_pcb_upload_fuzz.py tests/test_accumulator_harness_benchmark.py
+       tests/test_pcb_upload_fuzz.py tests/test_accumulator_harness_benchmark.py \
+       tests/test_parallel_module_benchmark.py
 ```
 
 EV/ICE powertrain benchmarks:

@@ -147,7 +147,9 @@ class PackLayout:
     Electrically the pack is `series` groups of `parallel` cells (sNpP). Pack
     current splits evenly across the `parallel` cells of a group, and the same
     series current flows through every group — so the PER-CELL current that does
-    the I²R heating is pack_current / parallel. The grid shape (rows, cols) is a
+    the I²R heating is pack_current / parallel. Measured (BENCHMARK.md, parallel split): that holds within 10 %
+    only with stiff busbars and matched cells; with 1-3 mΩ between cells the worst cell is a median 37-63 % off
+    its share, the one nearest the terminals carrying more (`suspension.parallel_split.ladder_currents` estimates it). The grid shape (rows, cols) is a
     PACKAGING choice independent of the electrical sNpP; by default we lay the
     n_cells = series*parallel cells into the grid row-major.
     """
