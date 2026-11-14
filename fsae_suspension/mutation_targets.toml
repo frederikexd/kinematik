@@ -382,6 +382,15 @@ files = ["suspension/pack_thermal.py"]
 tests = [
     "tests/test_pack_thermal.py",
     "tests/test_mutation_pack_thermal.py",
+    "tests/test_parallel_module_benchmark.py",
+]
+deselect = []
+
+[[group]]
+name = "parallel_split"
+files = ["suspension/parallel_split.py"]
+tests = [
+    "tests/test_parallel_module_benchmark.py",
 ]
 deselect = []
 

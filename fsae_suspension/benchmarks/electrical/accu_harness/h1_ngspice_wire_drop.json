@@ -1,0 +1,322 @@
+{
+ "tool": "ngspice-42",
+ "rho_ohm_m": 1.7241e-08,
+ "tc1_per_k": 0.00393,
+ "rows": [
+  {
+   "awg": 22,
+   "length_m": 0.5,
+   "temp_c": 20.0,
+   "current_a": 10.0,
+   "drop_v": 0.2648111
+  },
+  {
+   "awg": 22,
+   "length_m": 0.5,
+   "temp_c": 60.0,
+   "current_a": 10.0,
+   "drop_v": 0.3064394
+  },
+  {
+   "awg": 22,
+   "length_m": 0.5,
+   "temp_c": 105.0,
+   "current_a": 10.0,
+   "drop_v": 0.3532712
+  },
+  {
+   "awg": 22,
+   "length_m": 2.0,
+   "temp_c": 20.0,
+   "current_a": 10.0,
+   "drop_v": 1.059244
+  },
+  {
+   "awg": 22,
+   "length_m": 2.0,
+   "temp_c": 60.0,
+   "current_a": 10.0,
+   "drop_v": 1.225758
+  },
+  {
+   "awg": 22,
+   "length_m": 2.0,
+   "temp_c": 105.0,
+   "current_a": 10.0,
+   "drop_v": 1.413085
+  },
+  {
+   "awg": 22,
+   "length_m": 5.0,
+   "temp_c": 20.0,
+   "current_a": 10.0,
+   "drop_v": 2.648111
+  },
+  {
+   "awg": 22,
+   "length_m": 5.0,
+   "temp_c": 60.0,
+   "current_a": 10.0,
+   "drop_v": 3.064394
+  },
+  {
+   "awg": 22,
+   "length_m": 5.0,
+   "temp_c": 105.0,
+   "current_a": 10.0,
+   "drop_v": 3.532712
+  },
+  {
+   "awg": 18,
+   "length_m": 0.5,
+   "temp_c": 20.0,
+   "current_a": 10.0,
+   "drop_v": 0.1047389
+  },
+  {
+   "awg": 18,
+   "length_m": 0.5,
+   "temp_c": 60.0,
+   "current_a": 10.0,
+   "drop_v": 0.1212038
+  },
+  {
+   "awg": 18,
+   "length_m": 0.5,
+   "temp_c": 105.0,
+   "current_a": 10.0,
+   "drop_v": 0.1397269
+  },
+  {
+   "awg": 18,
+   "length_m": 2.0,
+   "temp_c": 20.0,
+   "current_a": 10.0,
+   "drop_v": 0.4189555
+  },
+  {
+   "awg": 18,
+   "length_m": 2.0,
+   "temp_c": 60.0,
+   "current_a": 10.0,
+   "drop_v": 0.4848153
+  },
+  {
+   "awg": 18,
+   "length_m": 2.0,
+   "temp_c": 105.0,
+   "current_a": 10.0,
+   "drop_v": 0.5589076
+  },
+  {
+   "awg": 18,
+   "length_m": 5.0,
+   "temp_c": 20.0,
+   "current_a": 10.0,
+   "drop_v": 1.047389
+  },
+  {
+   "awg": 18,
+   "length_m": 5.0,
+   "temp_c": 60.0,
+   "current_a": 10.0,
+   "drop_v": 1.212038
+  },
+  {
+   "awg": 18,
+   "length_m": 5.0,
+   "temp_c": 105.0,
+   "current_a": 10.0,
+   "drop_v": 1.397269
+  },
+  {
+   "awg": 14,
+   "length_m": 0.5,
+   "temp_c": 20.0,
+   "current_a": 10.0,
+   "drop_v": 0.04142663
+  },
+  {
+   "awg": 14,
+   "length_m": 0.5,
+   "temp_c": 60.0,
+   "current_a": 10.0,
+   "drop_v": 0.0479389
+  },
+  {
+   "awg": 14,
+   "length_m": 0.5,
+   "temp_c": 105.0,
+   "current_a": 10.0,
+   "drop_v": 0.0552652
+  },
+  {
+   "awg": 14,
+   "length_m": 2.0,
+   "temp_c": 20.0,
+   "current_a": 10.0,
+   "drop_v": 0.1657065
+  },
+  {
+   "awg": 14,
+   "length_m": 2.0,
+   "temp_c": 60.0,
+   "current_a": 10.0,
+   "drop_v": 0.1917556
+  },
+  {
+   "awg": 14,
+   "length_m": 2.0,
+   "temp_c": 105.0,
+   "current_a": 10.0,
+   "drop_v": 0.2210608
+  },
+  {
+   "awg": 14,
+   "length_m": 5.0,
+   "temp_c": 20.0,
+   "current_a": 10.0,
+   "drop_v": 0.4142663
+  },
+  {
+   "awg": 14,
+   "length_m": 5.0,
+   "temp_c": 60.0,
+   "current_a": 10.0,
+   "drop_v": 0.479389
+  },
+  {
+   "awg": 14,
+   "length_m": 5.0,
+   "temp_c": 105.0,
+   "current_a": 10.0,
+   "drop_v": 0.552652
+  },
+  {
+   "awg": 10,
+   "length_m": 0.5,
+   "temp_c": 20.0,
+   "current_a": 10.0,
+   "drop_v": 0.01638519
+  },
+  {
+   "awg": 10,
+   "length_m": 0.5,
+   "temp_c": 60.0,
+   "current_a": 10.0,
+   "drop_v": 0.01896094
+  },
+  {
+   "awg": 10,
+   "length_m": 0.5,
+   "temp_c": 105.0,
+   "current_a": 10.0,
+   "drop_v": 0.02185866
+  },
+  {
+   "awg": 10,
+   "length_m": 2.0,
+   "temp_c": 20.0,
+   "current_a": 10.0,
+   "drop_v": 0.06554074
+  },
+  {
+   "awg": 10,
+   "length_m": 2.0,
+   "temp_c": 60.0,
+   "current_a": 10.0,
+   "drop_v": 0.07584375
+  },
+  {
+   "awg": 10,
+   "length_m": 2.0,
+   "temp_c": 105.0,
+   "current_a": 10.0,
+   "drop_v": 0.08743463
+  },
+  {
+   "awg": 10,
+   "length_m": 5.0,
+   "temp_c": 20.0,
+   "current_a": 10.0,
+   "drop_v": 0.1638519
+  },
+  {
+   "awg": 10,
+   "length_m": 5.0,
+   "temp_c": 60.0,
+   "current_a": 10.0,
+   "drop_v": 0.1896094
+  },
+  {
+   "awg": 10,
+   "length_m": 5.0,
+   "temp_c": 105.0,
+   "current_a": 10.0,
+   "drop_v": 0.2185866
+  },
+  {
+   "awg": 6,
+   "length_m": 0.5,
+   "temp_c": 20.0,
+   "current_a": 10.0,
+   "drop_v": 0.006480718
+  },
+  {
+   "awg": 6,
+   "length_m": 0.5,
+   "temp_c": 60.0,
+   "current_a": 10.0,
+   "drop_v": 0.007499486
+  },
+  {
+   "awg": 6,
+   "length_m": 0.5,
+   "temp_c": 105.0,
+   "current_a": 10.0,
+   "drop_v": 0.008645601
+  },
+  {
+   "awg": 6,
+   "length_m": 2.0,
+   "temp_c": 20.0,
+   "current_a": 10.0,
+   "drop_v": 0.02592287
+  },
+  {
+   "awg": 6,
+   "length_m": 2.0,
+   "temp_c": 60.0,
+   "current_a": 10.0,
+   "drop_v": 0.02999795
+  },
+  {
+   "awg": 6,
+   "length_m": 2.0,
+   "temp_c": 105.0,
+   "current_a": 10.0,
+   "drop_v": 0.0345824
+  },
+  {
+   "awg": 6,
+   "length_m": 5.0,
+   "temp_c": 20.0,
+   "current_a": 10.0,
+   "drop_v": 0.06480718
+  },
+  {
+   "awg": 6,
+   "length_m": 5.0,
+   "temp_c": 60.0,
+   "current_a": 10.0,
+   "drop_v": 0.07499486
+  },
+  {
+   "awg": 6,
+   "length_m": 5.0,
+   "temp_c": 105.0,
+   "current_a": 10.0,
+   "drop_v": 0.08645601
+  }
+ ]
+}

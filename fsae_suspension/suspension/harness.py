@@ -119,13 +119,13 @@ AWG_NOMINAL_OD_MM = {
 
 
 def awg_area_mm2(awg: int) -> float:
-    """Conductor cross-section (mm^2) for an AWG, interpolated in the log-area
-    domain for gauges not in the table (the AWG scale is geometric)."""
-    if awg in AWG_AREA_MM2:
-        return AWG_AREA_MM2[awg]
-    # AWG area halves roughly every 3 gauges: A(awg) = A_ref * 2^((ref-awg)/3)
-    ref = 10
-    return AWG_AREA_MM2[ref] * (2.0 ** ((ref - awg) / 3.0))
+    """Conductor cross-section (mm^2) for an AWG from the gauge's definition (ASTM B258):
+    d = 0.127 mm x 92^((36 - n)/39), A = pi d^2 / 4, for every gauge (0 AWG is n = 0).
+
+    The rounded table and a "halves every 3 gauges" rule were 0.15 % off at 22 AWG and 0.33 % at 6 AWG against
+    ngspice (docs/ACCUMULATOR_HARNESS_BENCHMARK_PLAN.md, H1 round 1); the definition is exact."""
+    d = 0.127 * 92.0 ** ((36 - awg) / 39.0)
+    return math.pi * d * d / 4.0
 
 
 def awg_nominal_od_mm(awg: int) -> float:

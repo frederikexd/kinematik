@@ -111,10 +111,9 @@ AWG_AREA_MM2: dict[int, float] = {
 
 
 def awg_area_mm2(awg: int) -> float:
-    """Conductor cross-section for an AWG, geometric between tabled gauges."""
-    if awg in AWG_AREA_MM2:
-        return AWG_AREA_MM2[awg]
-    return AWG_AREA_MM2[10] * (2.0 ** ((10 - awg) / 3.0))
+    """Conductor cross-section (mm^2) for an AWG from the gauge's definition (ASTM B258), the same as harness.py."""
+    d = 0.127 * 92.0 ** ((36 - awg) / 39.0)
+    return math.pi * d * d / 4.0
 
 
 def adiabatic_k(material: str, t_initial_c: float, t_final_c: float) -> float:

@@ -1,0 +1,30 @@
+{
+ "tool": "ht 1.2.0 (Churchill-Chu horizontal; default vertical method), CoolProp 8.0.0",
+ "inputs": {
+  "d_m": 0.021,
+  "length_m": 0.07,
+  "air_c": 30.0
+ },
+ "rows": [
+  {
+   "rise_k": 5.0,
+   "h_horizontal_w_m2k": 4.498152049900358,
+   "h_vertical_w_m2k": 4.885014586704299
+  },
+  {
+   "rise_k": 10.0,
+   "h_horizontal_w_m2k": 5.268375918798392,
+   "h_vertical_w_m2k": 5.629078571904133
+  },
+  {
+   "rise_k": 20.0,
+   "h_horizontal_w_m2k": 6.187470759650114,
+   "h_vertical_w_m2k": 6.526452929598833
+  },
+  {
+   "rise_k": 40.0,
+   "h_horizontal_w_m2k": 7.263245698330812,
+   "h_vertical_w_m2k": 7.587775489007594
+  }
+ ]
+}

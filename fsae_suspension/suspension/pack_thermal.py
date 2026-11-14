@@ -147,7 +147,9 @@ class PackLayout:
     Electrically the pack is `series` groups of `parallel` cells (sNpP). Pack
     current splits evenly across the `parallel` cells of a group, and the same
     series current flows through every group — so the PER-CELL current that does
-    the I²R heating is pack_current / parallel. The grid shape (rows, cols) is a
+    the I²R heating is pack_current / parallel. Measured (BENCHMARK.md, parallel split): that holds within 10 %
+    only with stiff busbars and matched cells; with 1-3 mΩ between cells the worst cell is a median 37-63 % off
+    its share, the one nearest the terminals carrying more (`suspension.parallel_split.ladder_currents` estimates it). The grid shape (rows, cols) is a
     PACKAGING choice independent of the electrical sNpP; by default we lay the
     n_cells = series*parallel cells into the grid row-major.
     """
@@ -158,6 +160,10 @@ class PackLayout:
     cell: CellParams = field(default_factory=default_cell_params)
     ambient_c: float = 30.0             # cooling-air inlet temperature, °C (hot tent day)
     ambient_is_local: bool = False      # True = ignore the car-level inlet temp
+    # Resistance between neighbouring cells of a parallel group (Ω), on each busbar (nickel strip, links).
+    # 0 = stiff busbars: an equal split. Above 0 the cells nearest the terminals carry more
+    # (`cell_current_share`), as 54 measured modules show (BENCHMARK.md, parallel split).
+    r_interconnect_ohm: float = 0.0
     # `ambient_c` here is the air ENTERING the pack duct, not the air the car sits
     # in — a duct fed from behind the radiator runs hotter. It therefore inherits
     # the ledger's 'cooling_inlet' channel, which falls back to ambient when the
@@ -166,8 +172,8 @@ class PackLayout:
     # The rows×cols grid is the MODULE we visualise thermally; the whole pack may
     # contain several such modules in series. `series` is the full-pack series
     # count (it sets pack voltage and therefore the current the lap demands);
-    # `parallel` is how many cells share that current. Per-cell current is always
-    # pack_current / parallel, independent of how many cells we draw in the grid.
+    # `parallel` is how many cells share that current: pack_current / parallel each with stiff busbars, or the
+    # ladder's share with `r_interconnect_ohm` set, independent of how many cells we draw in the grid.
 
     def __post_init__(self):
         self.rows = max(int(self.rows), 1)
@@ -178,6 +184,19 @@ class PackLayout:
     @property
     def n_cells(self) -> int:
         return self.rows * self.cols
+
+    def cell_current_share(self):
+        """Each cell's fraction of the pack current (unitless), row-major; None for an equal split.
+
+        Cells of a parallel group sit next to each other in the row-major order, the first nearest the terminals,
+        and the group is solved as a resistive ladder (`suspension.parallel_split`) with every cell at the nominal
+        resistance. Tested against measured modules: it halves the equal split's error but misses its registered
+        limit (median 14 % of a cell's share), so treat the nearest cell's current as an estimate."""
+        if self.r_interconnect_ohm <= 0.0:
+            return None
+        from .parallel_split import ladder_currents
+        group = ladder_currents([self.cell.r_internal_ohm] * self.parallel, self.r_interconnect_ohm, 1.0)
+        return group[np.arange(self.n_cells) % self.parallel]
 
     @property
     def pack_nominal_v(self) -> float:
@@ -229,16 +248,41 @@ class AirflowParams:
     CFD — it captures the only thing that matters for placement decisions: cells
     near a fan in its throw are well-cooled, cells in dead air are not.
     """
-    h_floor: float = 8.0                # W/(m²·K) still-air natural convection
+    #  Still-air natural convection, W/(m²·K): the correlations' value for a 21 mm can at a 10 K rise in 30 °C air
+    #  (Churchill-Chu horizontal 5.3, vertical 5.6), rounded. The old 8.0 was up to 78 % optimistic against them
+    #  (docs/ACCUMULATOR_HARNESS_BENCHMARK_PLAN.md, C1); 5.5 is within 30 % of both from a 5 to a 40 K rise.
+    h_floor: float = 5.5
     h_peak: float = 75.0               # W/(m²·K) directly in a ~120 cfm draught
     ref_cfm: float = 120.0             # cfm that produces h_peak at the fan face
     # cross-cell shadowing: a cell downstream of many cooled cells gets warmer air
     enable_wake_warming: bool = True
     wake_warm_per_cell_c: float = 0.15  # air temp rise per upstream cell it passed, °C
     calibrated: bool = False            # set True only with measured airflow map
+    #  "proxy" is the geometric fan-draught field above. It missed ducted flow by up to 95 % against three tube-bank
+    #  correlations (docs/ACCUMULATOR_HARNESS_BENCHMARK_PLAN.md, B1): it decays downstream, where real banks rise to
+    #  a plateau. "duct" takes each row's h from the Zukauskas correlation for the duct flow (B2).
+    #  The default is the benchmarked one: with no flow (no duct_cfm, no fans) it is still air at h_floor, the
+    #  same as before; with fans their total airflow is pushed through the pack. "proxy" is opt-in and warns.
+    mode: str = "duct"
+    duct_cfm: float = 0.0               # airflow through the duct, cfm; 0 -> the sum of the fans' cfm
+    cell_diameter_mm: float = 21.0      # 21700 can
+    cell_length_mm: float = 70.0        # the can length, which with the across-flow width sets the duct face
+    staggered: bool = False             # False: cells in line along the flow (a plain grid)
+    air_k_w_mk: float = 0.02662         # air at 30 °C, 1 atm (CoolProp): conductivity, W/(m·K)
+    air_nu_m2_s: float = 1.6046e-5      # kinematic viscosity, m²/s
+    air_pr: float = 0.7067              # Prandtl number (unitless)
+    #  Multiplies every cooling coefficient (unitless). The correlations scatter about ±15-25 % against the
+    #  measurements behind them, so a result is reported with this at 0.8 and 1.2 as a band (C2).
+    h_scale: float = 1.0
 
     def h_field(self, positions_mm: np.ndarray, fans: Sequence[Fan]) -> np.ndarray:
-        """Per-cell convective coefficient h (W/m²·K) from all fans. Never raises."""
+        """Per-cell convective coefficient h (W/m²·K) from all fans, or from the duct flow in "duct" mode.
+        Never raises."""
+        return self._h_field(positions_mm, fans) * self.h_scale
+
+    def _h_field(self, positions_mm: np.ndarray, fans: Sequence[Fan]) -> np.ndarray:
+        if self.mode == "duct":
+            return self.duct_h_field(positions_mm, fans)
         try:
             pos = _vec(positions_mm)
             n = pos.shape[0]
@@ -259,6 +303,75 @@ class AirflowParams:
                            self.h_floor, None)
         except Exception:
             return np.full(int(np.asarray(positions_mm).shape[0]), self.h_floor)
+
+
+    def duct_h_field(self, positions_mm: np.ndarray, fans: Sequence[Fan] = ()) -> np.ndarray:
+        """h (W/m²·K) per cell for air pushed along +x through a duct around the grid: the Zukauskas tube-bank
+        correlation (Incropera Table 7.5, Zukauskas' row curve) on the maximum velocity in the gaps, each row's own h taken from
+        the bank averages (row k = k x mean of k rows - (k - 1) x mean of k - 1 rows), so the first rows run cooler
+        than the plateau behind them. Checked against ht's Zukauskas-Bejan, Grimison and ESDU 73031 (B2). Falls
+        back to h_floor where there is no flow. Never raises."""
+        try:
+            pos = _vec(positions_mm)
+        except (TypeError, ValueError):                       # not numbers: still air for every row given
+            return np.full(len(positions_mm), float(self.h_floor))
+        n = int(pos.shape[0]) if pos.ndim == 2 else 0
+        try:
+            xs = np.unique(np.round(pos[:, 0], 6))   # pragma: no mutate (grid positions are far coarser than 1e-6 mm)
+            ys = np.unique(np.round(pos[:, 1], 6))   # pragma: no mutate (as above)
+            d = self.cell_diameter_mm * 1e-3
+            s_l = float(np.min(np.diff(xs))) * 1e-3 if xs.size > 1 else 2.0 * d
+            s_t = float(np.min(np.diff(ys))) * 1e-3 if ys.size > 1 else 2.0 * d
+            cfm = self.duct_cfm if self.duct_cfm > 0 else sum(max(float(f.cfm), 0.0) for f in (fans or []))
+            face = ys.size * s_t * self.cell_length_mm * 1e-3
+            #  Each of these also ends at the floor without the guard (zero flow gives zero h; a zero face or gap
+            #  divides by zero into the except below), so the guard is for clarity, not behaviour.
+            if cfm <= 0 or face <= 0 or s_t <= d:  # pragma: no mutate
+                return np.full(n, float(self.h_floor))
+            v_face = cfm * 0.000471947443 / face
+            v_max = v_face * s_t / (s_t - d)
+            if self.staggered:
+                s_d = math.hypot(s_l, s_t / 2.0)
+                if 2.0 * (s_d - d) < s_t - d:  # pragma: no mutate (at equality both gaps give the same speed)
+                    v_max = v_face * s_t / (2.0 * (s_d - d))
+            re = v_max * d / self.air_nu_m2_s
+            means = [zukauskas_nu(re, self.air_pr, k, s_t / s_l, self.staggered) * self.air_k_w_mk / d
+                     for k in range(1, xs.size + 1)]  # pragma: no mutate (an extra row's mean is never read)
+            row_h = [means[0]] + [(k + 1) * means[k] - k * means[k - 1] for k in range(1, len(means))]
+            col = np.searchsorted(xs, np.round(pos[:, 0], 6))   # pragma: no mutate (as above)
+            return np.maximum(np.asarray(row_h)[col], self.h_floor)
+        except Exception:
+            return np.full(n, float(self.h_floor))
+
+
+#: The mean Nu of a bank of N rows over that of a deep bank (N >= 20), Re_max > 1000, N = 1..20: Zukauskas' 1972
+#: curve as digitized in the open-source `ht` library (MIT). Round 1 used Incropera Table 7.6's nine points with
+#: linear steps between them and missed the registered 2 % against ht by 4.35 % (B2); the per-N curve is the source.
+_ROW_N = tuple(range(1, 21))
+_ROW_INLINE = (0.6768, 0.8089, 0.8687, 0.9054, 0.9303, 0.9465, 0.9569, 0.9647, 0.9712, 0.9766,
+               0.9811, 0.9847, 0.9877, 0.99, 0.992, 0.9937, 0.9953, 0.9969, 0.9986, 1.0)
+_ROW_STAGGERED = (0.6273, 0.7689, 0.8473, 0.8942, 0.9254, 0.945, 0.957, 0.9652, 0.9716, 0.9765,
+                  0.9803, 0.9834, 0.9862, 0.989, 0.9918, 0.9943, 0.9965, 0.998, 0.9986, 1.0)
+
+
+def zukauskas_nu(re: float, pr: float, rows: int, st_over_sl: float = 1.0, staggered: bool = False) -> float:
+    """Mean Nusselt number (unitless) of a bank of `rows` cylinders in cross-flow, Zukauskas (Incropera Table 7.5),
+    Re on the maximum velocity and the diameter, the wall-Prandtl factor taken as 1 (air), times the row factor of
+    Zukauskas' curve (1 from 20 rows on)."""
+    if re < 100:
+        c, m = (0.90 if staggered else 0.80), 0.4
+    elif re < 1000:
+        c, m = 0.51, 0.5                     # Incropera: treat as a single cylinder in this range
+    elif re < 2e5:
+        if staggered:
+            c, m = (0.35 * st_over_sl ** 0.2, 0.6) if st_over_sl < 2 else (0.40, 0.6)
+        else:
+            c, m = 0.27, 0.63
+    else:
+        c, m = (0.022 if staggered else 0.021), 0.84
+    nu = c * re ** m * pr ** 0.36
+    corr = float(np.interp(rows, _ROW_N, _ROW_STAGGERED if staggered else _ROW_INLINE))
+    return nu * corr
 
 
 # --------------------------------------------------------------------------- #
@@ -500,6 +613,15 @@ class PackThermalModel:
 
             positions = lay.positions_mm()
             h_cell = self.airflow.h_field(positions, self.fans)        # (n,)
+            if self.fans and self.airflow.mode != "duct":
+                self._warn("Fan-draught airflow map: a geometric estimate, not benchmarked. Against three "
+                           "tube-bank correlations for air pushed through a pack it was off by up to 95 % and "
+                           "cooled the wrong end; for a ducted pack use the duct mode.")
+            if (self.airflow.mode == "duct" and (self.airflow.duct_cfm > 0 or self.fans)
+                    and cell.pitch_mm < 1.25 * self.airflow.cell_diameter_mm):
+                self._warn(f"Cell pitch {cell.pitch_mm:g} mm is under 1.25 x the {self.airflow.cell_diameter_mm:g} mm "
+                           "can: the tube-bank correlation behind the duct mode was fitted to wider gaps, so its "
+                           "cooling here is an extrapolation.")
             if self.airflow.enable_wake_warming:
                 air_offset = self._wake_air_offset(h_cell)             # (n,)
             else:
@@ -525,8 +647,9 @@ class PackThermalModel:
             t_warn = np.full(n, np.nan)
             t_limit = np.full(n, np.nan)
 
-            # per-cell current = pack current / parallel strings
+            # per-cell current = pack current / parallel strings, or the ladder's share with resistive links
             par = max(lay.parallel, 1)
+            share = lay.cell_current_share()
 
             # forward-Euler with adaptive sub-steps for stability
             # stability needs dt < C / (Σ conductances out of a node)
@@ -538,7 +661,7 @@ class PackThermalModel:
             for step in range(1, n_t):  # pragma: no mutate (step 0 wraps to a negative dt and is skipped)
                 dt_macro = max(t_in[step] - t_in[step - 1], 0.0)
                 I_pack = i_in[step]
-                I_cell = I_pack / par
+                I_cell = I_pack / par if share is None else I_pack * share
                 if dt_macro <= 0.0:  # pragma: no mutate (a zero step leaves T unchanged anyway)
                     temp_hist[step] = T
                     continue
@@ -658,6 +781,29 @@ class PackThermalModel:
 # --------------------------------------------------------------------------- #
 #  Driver: virtual lap → per-cell hot map (the headline entry point)
 # --------------------------------------------------------------------------- #
+def cooling_band(layout: PackLayout, time_s, pack_current_a, *, fans: Sequence[Fan] | None = None,
+                 airflow: AirflowParams | None = None, k_cell_cell: float = _K_CELL_CELL, n_laps: int = 1,
+                 spread: float = 0.2) -> dict:
+    """The run at the given cooling and at (1 ± spread) x every cooling coefficient, so a reported temperature
+    carries the correlations' own scatter (about ±15-25 % against measurements; C2). Returns {"result": the
+    nominal PackThermalResult, "peak_c", "peak_low_c" (cooling x (1 + spread)), "peak_high_c" (x (1 - spread))},
+    all °C, the peaks NaN where a run failed. Never raises."""
+    from dataclasses import replace as _replace
+    base = airflow or AirflowParams()
+    out = {}
+    for key, scale in (("result", 1.0), ("low", 1.0 + spread), ("high", 1.0 - spread)):
+        air = _replace(base, h_scale=base.h_scale * scale)
+        res = PackThermalModel(layout=layout, fans=fans, airflow=air, k_cell_cell=k_cell_cell).simulate(
+            time_s, pack_current_a, n_laps=n_laps)
+        #  A failed run carries NaN peaks; the guard only keeps an empty peak array from raising.
+        peak = float(np.max(res.peak_temp_c)) if np.size(res.peak_temp_c) else float("nan")  # pragma: no mutate
+        if key == "result":
+            out["result"], out["peak_c"] = res, peak
+        else:
+            out[f"peak_{key}_c"] = peak
+    return out
+
+
 def simulate_pack_thermal(lap,
                           lap_params,
                           layout: PackLayout | None = None,
@@ -764,7 +910,8 @@ def optimize_fan_placement(lap,
     compare "one big fan centre" vs "two small fans at the ends".
     """
     layout = layout or PackLayout()
-    airflow = airflow or AirflowParams()
+    #  Placement only matters to the position-dependent proxy, so the study uses it (and its results warn).
+    airflow = airflow or AirflowParams(mode="proxy")
     cands: list[FanPlacementCandidate] = []
     warnings: list[str] = []
     for fan_set in candidate_fan_sets or [[]]:
