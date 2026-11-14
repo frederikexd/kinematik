@@ -6,6 +6,9 @@
 """Addendum 16's reference: pad-to-pad gaps on different nets from KiCad 7's own pad polygons (pcbnew).
 
     python3 scripts/bridge_gap_reference.py <board.kicad_pcb> ...
+    python3 scripts/bridge_gap_reference.py --out kicad7_altium_pad_gaps.json <label>=<board.PcbDoc> ...
+
+A .PcbDoc is imported with KiCad's own Altium importer (addendum 17).
 
 Writes benchmarks/electrical/bridge_gaps/kicad7_pad_gaps.json: for each board, every different-net pad pair on a
 shared copper side closer than 0.5 mm, measured edge to edge on KiCad's polygons (0.001 mm error).
@@ -41,7 +44,10 @@ def _poly(pad, layer):
 
 
 def board_gaps(path):
-    b = pcbnew.LoadBoard(path)
+    if str(path).lower().endswith(".pcbdoc"):
+        b = pcbnew.IO_MGR.Load(pcbnew.IO_MGR.ALTIUM_DESIGNER, str(path))
+    else:
+        b = pcbnew.LoadBoard(path)
     rows = []
     pads = []
     for fp in b.GetFootprints():
@@ -76,8 +82,13 @@ def board_gaps(path):
 
 
 if __name__ == "__main__":  # pragma: no cover
+    args = sys.argv[1:]
+    dest = OUT
+    if args[:1] == ["--out"]:
+        dest, args = OUT.with_name(args[1]), args[2:]
     out = {"tool": f"KiCad {pcbnew.Version()} pcbnew pad polygons", "boards": {}}
-    for f in sys.argv[1:]:
-        out["boards"][Path(f).stem] = board_gaps(f)
-        print(Path(f).stem, len(out["boards"][Path(f).stem]))
-    OUT.write_text(json.dumps(out, indent=0), encoding="utf-8")
+    for a in args:
+        label, _, f = a.rpartition("=") if "=" in a else (Path(a).stem, "", a)
+        out["boards"][label] = board_gaps(f)
+        print(label, len(out["boards"][label]))
+    dest.write_text(json.dumps(out, indent=0), encoding="utf-8")

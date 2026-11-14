@@ -386,6 +386,17 @@ def parse_altium_binary(data: bytes) -> PcbBoard:
         c.size_xy()                                 # midsize
         c.size_xy()                                 # botsize
         hole = c.mm()
+        #  Then the three layer shapes (u8) and the pad's rotation (f64 degrees, CCW), as in KiCad's own Altium
+        #  importer (APAD6). Without the rotation a part turned 90 degrees reads its pads across the pin row, so
+        #  neighbouring pins overlap: the solder-bridge screen showed every fine-pitch pin pair touching.
+        shape, angle = "", 0.0
+        if c.pos + 11 <= e5:
+            top_shape = c.u8()
+            c.skip(2)
+            angle = c.f64()
+            if not (math.isfinite(angle) and -720.0 <= angle <= 720.0):  # pragma: no mutate (corrupt-record guard)
+                angle = 0.0
+            shape = {1: "round", 2: "rect", 3: "rect"}.get(top_shape, "")
         #  A real pad has a positive size under 100 mm, a hole under 20 mm and a
         #  position on a board (Altium's limit is 2540 mm). The record signature
         #  alone let bytes inside other records through as pads with sizes of
@@ -394,15 +405,22 @@ def parse_altium_binary(data: bytes) -> PcbBoard:
                 and all(math.isfinite(v) and abs(v) < 2540 for v in at)):
             return None
         end = e5
+        rratio = 0.25
         if end + 4 <= n_:                           # pad-mode subrecord(s) follow; skip one if it frames cleanly
             m = struct.unpack_from("<I", pbuf, end)[0]
             if end + 4 + m <= n_ and (end + 4 + m == n_ or pbuf[end + 4 + m] == 2):
+                #  The size-and-shape stack (596 bytes or more, as KiCad's APAD6 reads it): the top layer's
+                #  alternative shape sits at 532 and its corner radius (percent of half the shorter side) at 564.
+                #  A rounded rectangle is stored as ROUND plus alternative shape 9.
+                if m >= 596 and pbuf[end + 4 + 532] == 9:
+                    shape, rratio = "roundrect", min(pbuf[end + 4 + 564], 100) / 200.0
                 end += 4 + m
         layer = layer_from_code(code)
         through = (layer == MULTILAYER) or hole > 0.0
         pad = PcbPad(number=name, net=nid, net_name=board.nets.get(nid, ""),
                      at=at, size=topsize, through=through,
-                     layer=(layer if layer in ("F.Cu", "B.Cu") else ""))
+                     layer=(layer if layer in ("F.Cu", "B.Cu") else ""), shape=shape, angle_deg=angle % 360.0,
+                     rratio=rratio)
         return pad, comp_i, end, layer
 
     i = 0

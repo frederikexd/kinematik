@@ -513,3 +513,7 @@ Reference: the six native Formula SAE Altium boards of addendum 7 (Queen's FSAE)
 importer (`IO_MGR.ALTIUM_DESIGNER`) and measured on KiCad's pad polygons as in addendum 16. Same limits: every
 listed gap within 0.01 mm of KiCad's, none under 0.34 mm missing, none above 0.36 mm listed. Pads KiCad's importer
 names or places differently from KinematiK's reader are reported, not dropped.
+
+Result (recorded after the runs): the six Queen's boards pass, 168 pairs, none missed or extra, worst 0.00001 mm.
+Disclosed: rounded-rectangle pads (Altium's size-and-shape stack) were added after a team's own board, which is not
+published, missed 12 pairs around one exposed pad; the six registered boards passed before and after that change.
