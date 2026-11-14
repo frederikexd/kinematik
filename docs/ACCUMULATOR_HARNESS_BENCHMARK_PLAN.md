@@ -111,3 +111,41 @@ re-scored.
 The correlations scatter by about ±15-25 % against the measurements behind them, and none of this replaces a
 measured pack. The app therefore reports the hottest cell with the cooling coefficient at 0.8x and 1.2x as a band,
 and labels the fan-draught proxy as unbenchmarked wherever fans are placed.
+
+## Addendum 4 (2026-11-13, registered before any comparison with the measurements was computed)
+
+### D. Measured parallel modules (Stanford Energy Control Lab dataset)
+
+Data: Piombo et al., "Full factorial design of experiments dataset for parallel-connected lithium-ion cells
+imbalanced performance investigation", Data in Brief (2024), Mendeley Data doi:10.17632/zh58byr53c.1, CC BY 4.0.
+54 tests of a four-cell parallel ladder (terminals on one side, position 1 nearest), Samsung INR21700-50E (NCA) and
+LG INR21700-M50T (NMC) cells, unaged/aged/mixed, interconnection resistance 0, 1 and 3 mΩ, thermal chamber at 10, 25
+and 40 °C, 0.75C constant-current discharge after a CC-CV charge. Per-cell branch currents from calibrated Hall
+sensors, T-type thermocouples on each can, 1 s logging. Separately, each cell's HPPC test at 23 °C.
+
+Disclosure: before writing this, the file structure, column names, the test table and a few rows at the start
+(rest) and end (charge) of one test were seen. No discharge-step current or temperature was compared with anything.
+
+The discharge step is the constant-current step at about 0.75C of the module; "at 10 s" is the mean of the samples
+between 9 and 11 s into that step.
+
+**D1. The even split KinematiK ships.** The lap check and the pack thermal model give every cell of a parallel
+group pack current / parallel. Limit: every cell within 10 % of that, at 10 s and averaged over the step. Scored per
+test; reported by interconnection resistance, chemistry mix and ageing. A miss is published as where the even split
+stops holding.
+
+**D2. A resistive ladder for the split.** New `suspension.parallel_split.ladder_currents`: nodal solution of the
+ladder with each cell as its own resistance and the interconnection resistance between neighbouring cells on both
+busbars (the dataset does not say whether one or both rails carry the resistor; both is registered as primary, the
+one-rail result is shown as a disclosed sensitivity, not scored). Inputs, none fitted to the module data: each cell's
+own 10 s discharge-pulse resistance from its HPPC test at the highest state of charge pulsed, scaled to the chamber
+temperature with KinematiK's default temperature coefficient (-0.1 %/K); the nominal interconnection resistance;
+0 mΩ as no resistance. Limit: every cell within 10 % of pack current / 4 of its measured current at 10 s, in at least
+90 % of the tests. The ladder is resistive only (no state of charge or open-circuit voltage divergence), so the
+later split is not scored.
+
+**D3. Cell temperature rise (supporting, not scored as validation).** The chamber's airflow is not stated, so no
+cooling coefficient can be set without fitting. KinematiK's still-air cell model (duct mode, no flow), driven by each
+cell's measured current and HPPC resistance from the chamber's ambient thermocouple, is the least-cooled case and
+should be conservative. Check: model peak rise not below the measured peak rise minus 1 K, for every cell. A failure
+would mean the model under-predicts heating even with the least cooling it offers.
