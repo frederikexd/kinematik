@@ -485,3 +485,16 @@ model keeps the default radius, since benchmarks B5 and B6 were scored with it.
 **Addendum 16, held out for the fix:** on the same 42 boards, the next up to 3 pour nets of each board in the same
 registered order (`random.Random(20261115)`), after those addendum 15 examined, under the same rules and reference.
 KinematiK frozen at the commit that adds this text. Pass: every scored net within 2 %.
+
+## Addendum 16, the solder-bridge gap screen (written before any comparison with KiCad)
+
+`pcb_doctor.bridge_risk_pairs` lists pads on different nets, on the same side, closer than 0.35 mm, for a continuity
+check on the built board. It builds each pad's outline itself. Reference: KiCad 7's own pad geometry
+(`pcbnew`, `PAD.TransformShapeToPolygon` on the pad's copper layer, 0.001 mm error), on the three KiCad demo boards
+already used for board reading (StickHub, pic_programmer, video). Every pad pair on different nets whose centres are
+within reach is measured edge to edge on KiCad's polygons.
+
+Limits: every listed pair's gap within 0.01 mm of KiCad's; no pair KiCad puts under 0.34 mm missing from the list,
+and no listed pair KiCad puts above 0.36 mm (pairs within 0.01 mm of the threshold may fall either side). A miss is
+published. This checks the geometry only: whether a listed gap actually bridges depends on paste, stencil and
+reflow, which no board file records.
