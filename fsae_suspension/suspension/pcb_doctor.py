@@ -2737,6 +2737,174 @@ def bringup_measurements(board: PcbBoard, nets=None, room_c: float = 22.0,
     return rows
 
 
+#: Different-net pads closer than this (mm) are listed for a solder-bridge check: hand stencils and in-house reflow
+#: bridge fine-pitch gaps (0.5 mm pitch parts leave about 0.2-0.25 mm between pads).
+BRIDGE_GAP_MM = 0.35
+_GND_RE = re.compile(r"^(?:[ADPS]?GND|VSS|VEE|0V|GROUND|CHASSIS|EARTH)", re.I)
+_PWR_RE = re.compile(r"^(?:\+|V(?:CC|DD|BAT|IN|BUS|SYS|MOT|PP|LOGIC|IO)|PWR|\d+V\d*\b|\d+V\d+|V\d)", re.I)
+
+
+def _net_class(name: str) -> str:
+    """'ground', 'supply' or 'signal' from a net's name (unitless label)."""
+    leaf = (name or "").rstrip("/").split("/")[-1]
+    if _GND_RE.match(leaf):
+        return "ground"
+    return "supply" if _PWR_RE.match(leaf) else "signal"
+
+
+def _pad_outline(pad, n_arc: int = 8) -> list:
+    """A pad's copper outline as board points (mm): a rectangle, a roundrect, or a stadium for a round pad."""
+    w, h = (float(x) for x in pad.size)
+    shape = (pad.shape or "").lower()
+    if shape in ("circle", "round", "oval"):
+        r = min(w, h) / 2.0
+        half = (max(w, h) - min(w, h)) / 2.0
+        ends = [((half, 0.0), -90.0), ((-half, 0.0), 90.0)] if w >= h else [((0.0, half), 0.0), ((0.0, -half), 180.0)]
+        local = [(c[0] + r * math.cos(math.radians(a0 + 180.0 * k / n_arc)),
+                  c[1] + r * math.sin(math.radians(a0 + 180.0 * k / n_arc)))
+                 for c, a0 in ends for k in range(n_arc + 1)]
+    else:
+        rad = (pad.rratio or 0.25) * min(w, h) if shape == "roundrect" else 0.0
+        ax, ay = w / 2.0 - rad, h / 2.0 - rad
+        corners = [((ax, ay), 0.0), ((-ax, ay), 90.0), ((-ax, -ay), 180.0), ((ax, -ay), 270.0)]
+        local = ([(cx + rad * math.cos(math.radians(a0 + 90.0 * k / n_arc)),
+                   cy + rad * math.sin(math.radians(a0 + 90.0 * k / n_arc)))
+                  for (cx, cy), a0 in corners for k in range(n_arc + 1)] if rad > 0
+                 else [c for c, _ in corners])
+    th = math.radians(pad.angle_deg or 0.0)
+    ox, oy = pad.copper_offset or (0.0, 0.0)
+    cx, cy = pad.at[0] + ox, pad.at[1] + oy
+    return [(cx + u * math.cos(th) + v * math.sin(th), cy - u * math.sin(th) + v * math.cos(th)) for u, v in local]
+
+
+def _capsule_outline(x0, y0, x1, y1, r, n_arc: int = 8) -> list:
+    """A stroke of half-width r (mm) from (x0, y0) to (x1, y1) as a stadium outline in board mm."""
+    a = math.atan2(y1 - y0, x1 - x0)
+    pts = [(x1 + r * math.cos(a - math.pi / 2 + math.pi * k / n_arc), y1 + r * math.sin(a - math.pi / 2 + math.pi * k / n_arc))
+           for k in range(n_arc + 1)]
+    return pts + [(x0 + r * math.cos(a + math.pi / 2 + math.pi * k / n_arc),
+                   y0 + r * math.sin(a + math.pi / 2 + math.pi * k / n_arc)) for k in range(n_arc + 1)]
+
+
+def _pad_copper(pad) -> list:
+    """Every outline of a pad's copper (board mm): the anchor, plus a custom pad's polygons and strokes."""
+    out = [_pad_outline(pad)]
+    for kind, geo in pad.primitives or ():
+        if kind == "poly" and len(geo) >= 3:
+            out.append(list(geo))
+        elif kind == "capsule":
+            out.append(_capsule_outline(*geo))
+    return out
+
+
+def _inside(pt, poly) -> bool:
+    x, y = pt
+    inside, j = False, len(poly) - 1
+    for i in range(len(poly)):
+        (xi, yi), (xj, yj) = poly[i], poly[j]
+        if (yi > y) != (yj > y) and x < xi + (y - yi) * (xj - xi) / ((yj - yi) or 1e-12):
+            inside = not inside
+        j = i
+    return inside
+
+
+def _outline_gap_mm(a: list, b: list) -> float:
+    """Edge-to-edge gap (mm) between two pad outlines; 0 when they touch or overlap."""
+    if _inside(a[0], b) or _inside(b[0], a):
+        return 0.0
+    ea, eb = list(zip(a, a[1:] + a[:1])), list(zip(b, b[1:] + b[:1]))
+    return max(min(_seg_seg_mm(p, q, r, t) for p, q in ea for r, t in eb), 0.0)
+
+
+def bridge_risk_pairs(board: PcbBoard, max_gap_mm: float = BRIDGE_GAP_MM, cell_mm: float = 5.0) -> list:
+    """Different-net pads on the same side closer than `max_gap_mm` (mm): where in-house reflow most often leaves a
+    solder bridge. Each row: the two pins (ref.pad), their nets, the gap (mm), the kind of pair, and the side.
+    Ordered by harm, then gap: supply to ground first (a bridge there shorts the rail and can fry parts), then two
+    supplies, a supply to a signal, two signals. Through-hole pads count on both sides; unconnected pads are
+    skipped. The board file has no paste or mask aperture data here, so the list is a gap screen, not a bridge
+    prediction: continuity-check it on the built board before first power-up."""
+    pads = []
+    for fp in board.footprints:
+        for p in fp.pads:
+            name = board.net_name(p.net) if p.net else ""
+            if not p.net or not name or name.lower().startswith("unconnected"):
+                continue
+            side = "*" if p.through else (p.layer or fp.layer or "F.Cu")
+            outline = _pad_copper(p)
+            pts = [q for o in outline for q in o]
+            cx = sum(q[0] for q in pts) / len(pts)
+            cy = sum(q[1] for q in pts) / len(pts)
+            reach = max(math.hypot(q[0] - cx, q[1] - cy) for q in pts)
+            pads.append((f"{fp.ref}.{p.number}", p.net, name, side, outline, (cx, cy), reach))
+    grid: dict = {}
+    for k, row in enumerate(pads):
+        grid.setdefault((int(math.floor(row[5][0] / cell_mm)), int(math.floor(row[5][1] / cell_mm))), []).append(k)
+    rank = {("ground", "supply"): 0, ("supply", "supply"): 1, ("signal", "supply"): 2, ("signal", "signal"): 3,
+            ("ground", "signal"): 3, ("ground", "ground"): 3}
+    label = {0: "supply to ground", 1: "two supplies", 2: "supply to signal", 3: "two signals"}
+    out, seen = [], set()
+    for (gx, gy), members in grid.items():
+        near = [k for dx in (-1, 0, 1) for dy in (-1, 0, 1) for k in grid.get((gx + dx, gy + dy), ())]
+        for ka in members:
+            pa = pads[ka]
+            for kb in near:
+                pb = pads[kb]
+                if kb == ka or (min(ka, kb), max(ka, kb)) in seen or pa[1] == pb[1]:
+                    continue
+                if pa[3] != pb[3] and "*" not in (pa[3], pb[3]):
+                    continue
+                if math.hypot(pa[5][0] - pb[5][0], pa[5][1] - pb[5][1]) > pa[6] + pb[6] + max_gap_mm:
+                    continue
+                seen.add((min(ka, kb), max(ka, kb)))
+                gap = min(_outline_gap_mm(a, b) for a in pa[4] for b in pb[4])
+                if gap >= max_gap_mm:
+                    continue
+                r = rank[tuple(sorted((_net_class(pa[2]), _net_class(pb[2]))))]
+                first, second = sorted((pa, pb), key=lambda x: x[0])
+                side = first[3] if first[3] != "*" else second[3]
+                out.append({"pins": (first[0], second[0]), "nets": (first[2], second[2]), "gap_mm": gap,
+                            "kind": label[r], "rank": r, "side": "both" if side == "*" else side})
+    out.sort(key=lambda d: (d["rank"], d["gap_mm"], d["pins"]))
+    return out
+
+
+def bridge_check_md(board: PcbBoard, rows: list | None = None, limit: int = 40) -> list:
+    """The solder-bridge section of a hand-off document (Markdown lines); gaps in mm."""
+    rows = bridge_risk_pairs(board) if rows is None else rows
+    L = ["## Solder-bridge check (built board, before first power-up)"]
+    if not rows:
+        return L + [f"No pads on different nets are closer than {BRIDGE_GAP_MM:g} mm on this board.", ""]
+    L += [f"{len(rows)} pin pairs on different nets sit closer than {BRIDGE_GAP_MM:g} mm, where in-house reflow most "
+          "often bridges. Board unpowered, multimeter on continuity, probe each pair: a beep is a bridge until proven "
+          "otherwise. A reading that starts low and climbs is a capacitor charging, not a bridge. Supply-to-ground "
+          "pairs first: a bridge there shorts the rail. This is a gap screen from the layout, not a prediction: the "
+          "file carries no paste or mask apertures.", "",
+          "| # | Pins | Nets | Gap | Pair | Side |", "|---|---|---|---|---|---|"]
+    for i, r in enumerate(rows[:limit], start=1):
+        L.append(f"| {i} | {r['pins'][0]} – {r['pins'][1]} | `{r['nets'][0]}` – `{r['nets'][1]}` | "
+                 f"{r['gap_mm']:.2f} mm | {r['kind']} | {r['side']} |")
+    if len(rows) > limit:
+        L.append(f"| | {len(rows) - limit} more, all lower priority or wider | | | | |")
+    return L + [""]
+
+
+def bringup_sheet_md(board: PcbBoard, nets=None) -> str:
+    """A one-page bring-up sheet: the solder-bridge check, then the power-net resistances (Markdown)."""
+    L = ["# Bring-up sheet", "", f"Board: **{board.fmt_label}**, {sum(1 for f in board.footprints if f.ref != '?')} "
+         "components. Unpowered checks, in order.", ""]
+    L += bridge_check_md(board)
+    plan = bringup_measurements(board, nets)
+    if plan:
+        L += ["## Power-net resistance (4-wire milliohm meter, board unpowered)",
+              "Above the band: thin copper, a cracked joint or a wrong track. Below it: harmless.", "",
+              "| Net | Measure between | Expected at 22 °C | Good board |", "|---|---|---|---|"]
+        for r_ in plan:
+            lo, hi = r_["band_mohm"]
+            L.append(f"| `{r_['net']}` | {r_['pads'][0]} – {r_['pads'][1]} | {r_['expected_mohm']:.1f} mΩ | "
+                     f"{lo:.1f}–{hi:.1f} mΩ |")
+    return "\n".join(L) + "\n"
+
+
 def fix_report_md(board: PcbBoard, report: DoctorReport, applied: list,
                   assignments: dict) -> str:
     """A hand-off document: what was wrong, why it fails in real life, what was
@@ -2788,6 +2956,7 @@ def fix_report_md(board: PcbBoard, report: DoctorReport, applied: list,
             lo, hi = r_["band_mohm"]
             lines.append(f"| `{r_['net']}` | {r_['pads'][0]} – {r_['pads'][1]} | {r_['expected_mohm']:.1f} mΩ | "
                          f"{lo:.1f}–{hi:.1f} mΩ |")
+    lines += [""] + bridge_check_md(board)
     lines += ["", "---",
               "Analytic screening (IPC-2221 heating, Onderdonk fusing, nodal "
               "IR-drop, B4 clearance). Heating assumes an isolated trace in still air on a board at the ambient you "

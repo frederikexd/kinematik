@@ -498,3 +498,9 @@ Limits: every listed pair's gap within 0.01 mm of KiCad's; no pair KiCad puts un
 and no listed pair KiCad puts above 0.36 mm (pairs within 0.01 mm of the threshold may fall either side). A miss is
 published. This checks the geometry only: whether a listed gap actually bridges depends on paste, stencil and
 reflow, which no board file records.
+
+Result (recorded after the runs): round 1 missed the limit on two pairs, the custom-shaped solder-jumper pads JP1 on
+StickHub (0.15 mm) and pic_programmer (0.25 mm), because only each pad's anchor was built. With custom pad copper
+included, the three registered boards pass (714 pairs, none missed or extra, worst 0.0067 mm). The same limits were
+then run on all 14 KiCad demo boards, which the fix was not made against: 866 pairs, none missed or extra, worst
+0.0067 mm.

@@ -26363,6 +26363,20 @@ def render_pcb_doctor():
                 file_name="pcb_doctor_prescriptions.md",
                 mime="text/markdown", key="pdr_dl_rx")
 
+    # ---------------- solder-bridge screen + bring-up sheet --------------------- #
+    with st.expander("🔍 Before first power-up: solder-bridge check and bring-up sheet", expanded=False):
+        try:
+            _br = pdr_mod.bridge_risk_pairs(pboard)
+            st.markdown("\n".join(pdr_mod.bridge_check_md(pboard, _br, limit=25)))
+            st.caption("Pad gaps match KiCad 7's own pad geometry on its 14 demo boards (866 pairs, worst "
+                       "0.007 mm; BENCHMARK.md). Whether a gap actually bridges depends on paste, stencil and "
+                       "reflow, which the file does not record: check the list with a multimeter.")
+            st.download_button("⬇ Bring-up sheet (.md): bridge check + power-net resistances",
+                               data=pdr_mod.bringup_sheet_md(pboard), file_name="bringup_sheet.md",
+                               mime="text/markdown", key="pdr_dl_bringup")
+        except Exception as _e:
+            st.warning(f"The bridge check couldn't run on this board: {_e}")
+
     # ---------------- board viewer — failing copper glows red ------------------ #
     with st.expander("🗺️ Board viewer (copper by layer, every pad drawn — "
                      "segments the fixed file widens glow white)", expanded=False):
