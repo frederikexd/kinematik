@@ -26364,15 +26364,15 @@ def render_pcb_doctor():
                 mime="text/markdown", key="pdr_dl_rx")
 
     # ---------------- solder-bridge screen + bring-up sheet --------------------- #
-    with st.expander("🔍 Before first power-up: solder-bridge check and bring-up sheet", expanded=False):
+    with st.expander("🔍 Before first power-up: solder-bridge hit-list and bring-up sheet", expanded=False):
         try:
             _br = pdr_mod.bridge_risk_pairs(pboard)
-            st.markdown("\n".join(pdr_mod.bridge_check_md(pboard, _br, limit=25)))
+            st.markdown("\n".join(pdr_mod.bridge_check_md(pboard, _br)))
             st.caption("Pad gaps match KiCad 7's own pad geometry on its 14 demo boards (866 pairs, worst "
                        "0.007 mm; BENCHMARK.md). Whether a gap actually bridges depends on paste, stencil and "
                        "reflow, which the file does not record: check the list with a multimeter.")
             #  The sheet solves every supply rail, so it is built on request, not on every rerun.
-            if st.button("Prepare the bring-up sheet (bridge check + supply-rail resistances)", key="pdr_mk_bringup"):
+            if st.button("Prepare the bring-up sheet (bridge hit-list + supply-rail resistances)", key="pdr_mk_bringup"):
                 st.session_state["pdr_bringup_md"] = pdr_mod.bringup_sheet_md(pboard)
             if st.session_state.get("pdr_bringup_md"):
                 st.download_button("⬇ Bring-up sheet (.md)", data=st.session_state["pdr_bringup_md"],

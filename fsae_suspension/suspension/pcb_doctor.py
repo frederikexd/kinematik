@@ -2937,24 +2937,64 @@ def bridge_risk_pairs(board: PcbBoard, max_gap_mm: float = BRIDGE_GAP_MM, cell_m
     return out
 
 
-def bridge_check_md(board: PcbBoard, rows: list | None = None, limit: int = 40) -> list:
-    """The solder-bridge section of a hand-off document (Markdown lines); gaps in mm."""
+#: How many places the solder-bridge hit-list names: a short list gets probed, a long one gets skimmed.
+HITLIST_ZONES = 15
+
+
+def _natural(pin: str) -> tuple:
+    """Sort key that puts U1.9 before U1.10 (unitless)."""
+    return tuple((0, int(t)) if t.isdigit() else (1, t) for t in re.split(r"(\d+)", pin))
+
+
+def _ref_of(pin: str) -> str:
+    return pin.rsplit(".", 1)[0]
+
+
+def bridge_hitlist(rows: list, limit: int = HITLIST_ZONES, probe: int = 4) -> list:
+    """The places most likely to bridge, one per part (a pair across two parts is its own place): the worst kind
+    of pair there, its tightest gap (mm), how many close pairs it has, up to `probe` pairs of the worst kind to
+    check first and how many more of that kind there are. Ordered by the worst kind, then the tightest gap of that
+    kind, then the most pairs."""
+    zones: dict = {}
+    for r in rows:
+        refs = sorted({_ref_of(p) for p in r["pins"]})
+        zones.setdefault(" / ".join(refs), []).append(r)
+    out = []
+    for where, rs in zones.items():
+        rs = sorted(rs, key=lambda d: (d["rank"], d["gap_mm"], tuple(_natural(p) for p in d["pins"])))
+        worst = rs[0]
+        same = [d for d in rs if d["rank"] == worst["rank"]]
+        out.append({"where": where, "kind": worst["kind"], "rank": worst["rank"], "gap_mm": worst["gap_mm"],
+                    "pairs": len(rs), "probe": [d["pins"] for d in same[:probe]], "more": max(len(same) - probe, 0),
+                    "nets": sorted({n for d in rs for n in d["nets"]})})
+    out.sort(key=lambda z: (z["rank"], z["gap_mm"], -z["pairs"], z["where"]))
+    return out[:limit]
+
+
+def bridge_check_md(board: PcbBoard, rows: list | None = None, limit: int = HITLIST_ZONES) -> list:
+    """The solder-bridge hit-list of a hand-off document (Markdown lines); gaps in mm."""
     rows = bridge_risk_pairs(board) if rows is None else rows
-    L = ["## Solder-bridge check (built board, before first power-up)"]
+    L = ["## Solder-bridge hit-list (built board, before first power-up)"]
     if not rows:
         return L + [f"No pads on different nets are closer than {BRIDGE_GAP_MM:g} mm on this board.", ""]
-    L += [f"{len(rows)} pin pairs on different nets sit closer than {BRIDGE_GAP_MM:g} mm, where in-house reflow most "
-          "often bridges. Board unpowered, multimeter on continuity, probe each pair: a beep is a bridge until proven "
-          "otherwise. A reading that starts low and climbs is a capacitor charging, not a bridge. Supply-to-ground "
-          "pairs first: a bridge there shorts the rail. This is a gap screen from the layout, not a prediction: the "
-          "file carries no paste or mask apertures.", "",
-          "| # | Pins | Nets | Gap | Pair | Side |", "|---|---|---|---|---|---|"]
-    for i, r in enumerate(rows[:limit], start=1):
-        L.append(f"| {i} | {r['pins'][0]} – {r['pins'][1]} | `{r['nets'][0]}` – `{r['nets'][1]}` | "
-                 f"{r['gap_mm']:.2f} mm | {r['kind']} | {r['side']} |")
-    if len(rows) > limit:
-        L.append(f"| | {len(rows) - limit} more, all lower priority or wider | | | | |")
-    return L + [""]
+    zones = bridge_hitlist(rows, limit)
+    n_all = len({z for r in rows for z in [" / ".join(sorted({_ref_of(p) for p in r["pins"]}))]})
+    lead = "The place" if len(zones) == 1 else f"The {len(zones)} places"
+    L += [f"{lead} most likely to bridge after in-house reflow, worst first: supply to ground at the "
+          "top, where a bridge shorts a rail and can fry parts. Board unpowered, multimeter on continuity, probe the "
+          "pins listed: a beep is a bridge until proven otherwise; a reading that starts low and climbs is a "
+          "capacitor charging. A pin under a part's exposed pad can't be probed once soldered: measure that rail to "
+          "ground instead.", "",
+          "| # | Where | Risk | Tightest gap | Close pairs | Probe first |", "|---|---|---|---|---|---|"]
+    for i, z in enumerate(zones, start=1):
+        pins = ", ".join("–".join(sorted(pair, key=_natural)) for pair in z["probe"]) + (f" (+{z['more']} more {z['kind']})" if z["more"] else "")
+        L.append(f"| {i} | {z['where']} | {z['kind']} | {z['gap_mm']:.2f} mm | {z['pairs']} | {pins} |")
+    rest = n_all - len(zones)
+    L += ["", f"From {len(rows)} pin pair{'s' if len(rows) != 1 else ''} closer than {BRIDGE_GAP_MM:g} mm across "
+          f"{n_all} place{'s' if n_all != 1 else ''}"
+          + (f"; the other {rest} places are lower risk." if rest > 0 else ".")
+          + " A gap screen from the layout, not a prediction: the file has no paste or stencil data.", ""]
+    return L
 
 
 def bringup_sheet_md(board: PcbBoard, nets=None) -> str:

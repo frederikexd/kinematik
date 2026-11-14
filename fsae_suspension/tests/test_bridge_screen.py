@@ -106,12 +106,39 @@ def test_net_classes():
 def test_report_sections():
     b = _board([("1", "GND", 0.0, 0.0, 1.0, 0.3, {"shape": "rect"}), ("2", "+5V", 0.0, 0.5, 1.0, 0.3, {"shape": "rect"})])
     md = "\n".join(D.bridge_check_md(b))
-    assert "1 pin pairs" in md and "| 1 | U1.1 – U1.2 | `GND` – `+5V` | 0.20 mm | supply to ground | F.Cu |" in md
+    assert "| 1 | U1 | supply to ground | 0.20 mm | 1 | U1.1–U1.2 |" in md and "From 1 pin pair closer than 0.35 mm across 1 place." in md
     assert "No pads on different nets" in "\n".join(D.bridge_check_md(_board([("1", "GND", 0.0, 0.0, 1.0, 1.0, {})])))
     sheet = D.bringup_sheet_md(b)
-    assert sheet.startswith("# Bring-up sheet") and "Solder-bridge check" in sheet
-    many = [(str(i), "GND" if i % 2 else "+5V", 0.0, 0.5 * i, 1.0, 0.3, {"shape": "rect"}) for i in range(50)]
-    assert "more, all lower priority or wider" in "\n".join(D.bridge_check_md(_board(many), limit=10))
+    assert sheet.startswith("# Bring-up sheet") and "Solder-bridge hit-list" in sheet
+
+
+def _pair(a, b, kind, rank, gap):
+    return {"pins": (a, b), "nets": ("N" + a, "N" + b), "gap_mm": gap, "kind": kind, "rank": rank, "side": "F.Cu"}
+
+
+def test_hitlist_groups_by_part_and_keeps_the_worst_first():
+    rows = [_pair("U1.9", "U1.10", "supply to ground", 0, 0.20), _pair("U1.3", "U1.4", "two signals", 4, 0.15),
+            _pair("U1.11", "U1.12", "supply to ground", 0, 0.25), _pair("C4.1", "C4.2", "supply to ground", 0, 0.15),
+            _pair("R1.1", "U1.5", "supply to signal", 2, 0.10), _pair("U2.1", "U2.2", "two signals", 4, 0.12)]
+    z = D.bridge_hitlist(rows)
+    assert [x["where"] for x in z] == ["C4", "U1", "R1 / U1", "U2"]
+    u1 = z[1]
+    assert u1["kind"] == "supply to ground" and u1["gap_mm"] == 0.20 and u1["pairs"] == 3
+    assert u1["probe"] == [("U1.9", "U1.10"), ("U1.11", "U1.12")] and u1["more"] == 0
+    assert [x["where"] for x in D.bridge_hitlist(rows, limit=2)] == ["C4", "U1"]
+    many = [_pair(f"U5.{i}", f"U5.{i + 1}", "supply to ground", 0, 0.2) for i in range(1, 12)]
+    big = D.bridge_hitlist(many)[0]
+    assert len(big["probe"]) == 4 and big["more"] == 7
+
+
+def test_hitlist_report_is_short_and_counts_the_rest():
+    rows = [_pair(f"U{i}.1", f"U{i}.2", "two signals", 4, 0.2) for i in range(1, 31)]
+    b = _board([("1", "GND", 0.0, 0.0, 1.0, 1.0, {})])
+    md = D.bridge_check_md(b, rows)
+    assert sum(1 for line in md if line.startswith("| ") and not line.startswith("| #")) == 15
+    assert any("From 30 pin pairs" in line and "the other 15 places are lower risk" in line for line in md)
+    many = [_pair(f"U5.{i}", f"U5.{i + 1}", "supply to ground", 0, 0.2) for i in range(8, 20)]
+    assert "U5.8–U5.9, U5.9–U5.10, U5.10–U5.11, U5.11–U5.12 (+8 more supply to ground)" in "\n".join(D.bridge_check_md(b, many))
 
 
 # ------------------------------------------------- addendum 17: native Altium boards via KiCad's importer -- #
