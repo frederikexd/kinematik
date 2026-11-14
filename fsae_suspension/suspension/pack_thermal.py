@@ -160,6 +160,10 @@ class PackLayout:
     cell: CellParams = field(default_factory=default_cell_params)
     ambient_c: float = 30.0             # cooling-air inlet temperature, °C (hot tent day)
     ambient_is_local: bool = False      # True = ignore the car-level inlet temp
+    # Resistance between neighbouring cells of a parallel group (Ω), on each busbar (nickel strip, links).
+    # 0 = stiff busbars: an equal split. Above 0 the cells nearest the terminals carry more
+    # (`cell_current_share`), as 54 measured modules show (BENCHMARK.md, parallel split).
+    r_interconnect_ohm: float = 0.0
     # `ambient_c` here is the air ENTERING the pack duct, not the air the car sits
     # in — a duct fed from behind the radiator runs hotter. It therefore inherits
     # the ledger's 'cooling_inlet' channel, which falls back to ambient when the
@@ -168,8 +172,8 @@ class PackLayout:
     # The rows×cols grid is the MODULE we visualise thermally; the whole pack may
     # contain several such modules in series. `series` is the full-pack series
     # count (it sets pack voltage and therefore the current the lap demands);
-    # `parallel` is how many cells share that current. Per-cell current is always
-    # pack_current / parallel, independent of how many cells we draw in the grid.
+    # `parallel` is how many cells share that current: pack_current / parallel each with stiff busbars, or the
+    # ladder's share with `r_interconnect_ohm` set, independent of how many cells we draw in the grid.
 
     def __post_init__(self):
         self.rows = max(int(self.rows), 1)
@@ -180,6 +184,19 @@ class PackLayout:
     @property
     def n_cells(self) -> int:
         return self.rows * self.cols
+
+    def cell_current_share(self):
+        """Each cell's fraction of the pack current (unitless), row-major; None for an equal split.
+
+        Cells of a parallel group sit next to each other in the row-major order, the first nearest the terminals,
+        and the group is solved as a resistive ladder (`suspension.parallel_split`) with every cell at the nominal
+        resistance. Tested against measured modules: it halves the equal split's error but misses its registered
+        limit (median 14 % of a cell's share), so treat the nearest cell's current as an estimate."""
+        if self.r_interconnect_ohm <= 0.0:
+            return None
+        from .parallel_split import ladder_currents
+        group = ladder_currents([self.cell.r_internal_ohm] * self.parallel, self.r_interconnect_ohm, 1.0)
+        return group[np.arange(self.n_cells) % self.parallel]
 
     @property
     def pack_nominal_v(self) -> float:
@@ -630,8 +647,9 @@ class PackThermalModel:
             t_warn = np.full(n, np.nan)
             t_limit = np.full(n, np.nan)
 
-            # per-cell current = pack current / parallel strings
+            # per-cell current = pack current / parallel strings, or the ladder's share with resistive links
             par = max(lay.parallel, 1)
+            share = lay.cell_current_share()
 
             # forward-Euler with adaptive sub-steps for stability
             # stability needs dt < C / (Σ conductances out of a node)
@@ -643,7 +661,7 @@ class PackThermalModel:
             for step in range(1, n_t):  # pragma: no mutate (step 0 wraps to a negative dt and is skipped)
                 dt_macro = max(t_in[step] - t_in[step - 1], 0.0)
                 I_pack = i_in[step]
-                I_cell = I_pack / par
+                I_cell = I_pack / par if share is None else I_pack * share
                 if dt_macro <= 0.0:  # pragma: no mutate (a zero step leaves T unchanged anyway)
                     temp_hist[step] = T
                     continue
