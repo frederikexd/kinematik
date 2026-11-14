@@ -26371,9 +26371,12 @@ def render_pcb_doctor():
             st.caption("Pad gaps match KiCad 7's own pad geometry on its 14 demo boards (866 pairs, worst "
                        "0.007 mm; BENCHMARK.md). Whether a gap actually bridges depends on paste, stencil and "
                        "reflow, which the file does not record: check the list with a multimeter.")
-            st.download_button("⬇ Bring-up sheet (.md): bridge check + power-net resistances",
-                               data=pdr_mod.bringup_sheet_md(pboard), file_name="bringup_sheet.md",
-                               mime="text/markdown", key="pdr_dl_bringup")
+            #  The sheet solves every supply rail, so it is built on request, not on every rerun.
+            if st.button("Prepare the bring-up sheet (bridge check + supply-rail resistances)", key="pdr_mk_bringup"):
+                st.session_state["pdr_bringup_md"] = pdr_mod.bringup_sheet_md(pboard)
+            if st.session_state.get("pdr_bringup_md"):
+                st.download_button("⬇ Bring-up sheet (.md)", data=st.session_state["pdr_bringup_md"],
+                                   file_name="bringup_sheet.md", mime="text/markdown", key="pdr_dl_bringup")
         except Exception as _e:
             st.warning(f"The bridge check couldn't run on this board: {_e}")
 

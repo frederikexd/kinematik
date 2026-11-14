@@ -63,7 +63,7 @@ sys.path.insert(0, {root!r})
 import importlib
 from streamlit.testing.v1 import AppTest
 
-_APP = {root!r} + "/_ui_probe_app.py"
+_APP = {root!r} + "/_ui_probe_app_{case}.py"      # one file per scenario: parallel runs must not share it
 with open(_APP, "w") as fh:
     fh.write("import sys\\nsys.path.insert(0, {root!r})\\n"
              "import importlib\\nimportlib.import_module('streamlit_app')\\n")
@@ -130,7 +130,7 @@ def _render(case: str) -> dict:
         [sys.executable, "-c", textwrap.dedent(_HARNESS).format(
             root=_ROOT, case=case)],
         capture_output=True, text=True, timeout=1800, cwd=_ROOT)
-    probe = os.path.join(_ROOT, "_ui_probe_app.py")
+    probe = os.path.join(_ROOT, f"_ui_probe_app_{case}.py")
     if os.path.exists(probe):
         os.remove(probe)          # never leave scratch behind in the repo
     for line in out.stdout.splitlines():
