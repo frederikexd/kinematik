@@ -504,3 +504,12 @@ StickHub (0.15 mm) and pic_programmer (0.25 mm), because only each pad's anchor 
 included, the three registered boards pass (714 pairs, none missed or extra, worst 0.0067 mm). The same limits were
 then run on all 14 KiCad demo boards, which the fix was not made against: 866 pairs, none missed or extra, worst
 0.0067 mm.
+
+## Addendum 17, the bridge screen on native Altium boards (written before any comparison)
+
+Running the screen on a team's native binary Altium board listed every fine-pitch pin pair as touching: the binary
+reader did not read the pad's rotation or shape. It now reads them where KiCad's own Altium importer (APAD6) does.
+Reference: the six native Formula SAE Altium boards of addendum 7 (Queen's FSAE), imported by KiCad 7's Altium
+importer (`IO_MGR.ALTIUM_DESIGNER`) and measured on KiCad's pad polygons as in addendum 16. Same limits: every
+listed gap within 0.01 mm of KiCad's, none under 0.34 mm missing, none above 0.36 mm listed. Pads KiCad's importer
+names or places differently from KinematiK's reader are reported, not dropped.
