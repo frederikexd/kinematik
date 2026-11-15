@@ -352,14 +352,14 @@ function extForce(mdl, F, name, force, torque)
 h = blk(mdl, 'sm_lib/Forces and Torques/External Force and Torque', ['F_' name]);
 ph0 = get_param(h, 'PortHandles');
 link(mdl, F, framePort(h));
-setFlag(h, '^(Cartesian)?Force(Flag|Cartesian)?$|ForceFlag|CartesianForce');
-setEnum(h, 'Force.*Resolution|ForceFrame', 'world');
+setFlag(h, '^EnableForce$');            % R2025b: one 3-vector force input
+setEnum(h, '^ForceResolutionFrame$', 'world');
 ph1 = get_param(h, 'PortHandles');
 pf = setdiff([ph1.LConn ph1.RConn], [ph0.LConn ph0.RConn]);
 fromConst(mdl, [name '_F'], force, 'N', pf);
 if ~isempty(torque)
-    setFlag(h, '^(Cartesian)?Torque(Flag|Cartesian)?$|TorqueFlag|CartesianTorque');
-    setEnum(h, 'Torque.*Resolution|TorqueFrame', 'world');
+    setFlag(h, '^EnableTorque$');
+    setEnum(h, '^TorqueResolutionFrame$', 'world');
     ph2 = get_param(h, 'PortHandles');
     pt = setdiff([ph2.LConn ph2.RConn], [ph1.LConn ph1.RConn]);
     fromConst(mdl, [name '_T'], torque, 'N*m', pt);
