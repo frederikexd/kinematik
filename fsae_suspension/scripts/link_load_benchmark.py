@@ -13,8 +13,10 @@ position. Load cases and limits: benchmarks/link_loads/limits.json, registered b
                and Hooke at the chassis, so the model has zero degrees of freedom; the four load cases are applied one
                per output step (time 0, 1, 2, 3) and the axial force in each link is a measure. compare() reads the
                table exported from the PostProcessor (same export as the kinematics benchmark): <corner>.tab.
-  lotus, ard   results entered by hand from Lotus Suspension Analysis and Applied Racing Dynamics into
-               benchmarks/link_loads/<tool>_results.csv (template written by --write), + tension, N.
+  ard          results entered by hand from Applied Racing Dynamics into benchmarks/link_loads/ard_results.csv
+               (template written by --write), + tension, N.
+  Lotus is registered in limits.json but has no run: no licence, and the paper used for the Lotus kinematics
+  benchmark does not hold usable member forces (scripts/arevalo_link_load_check.py).
 
 A tool with no result file is reported as NOT RUN, never as passed.
 
@@ -46,7 +48,7 @@ REG = json.loads((BENCH / "limits.json").read_text())
 CASES = REG["load_cases"]
 LIMITS = REG["limits"]
 MEMBERS = ind.MEMBERS
-TOOLS = ("independent", "adams_view", "lotus", "ard")
+TOOLS = ("independent", "adams_view", "ard")
 
 
 def _winner(name):
@@ -196,7 +198,7 @@ def main(argv):
     if "--write" in argv:
         for n in CORNERS:
             (BENCH / f"{n}.cmd").write_text(command_file(n))
-        for t in ("lotus", "ard"):
+        for t in ("ard",):
             p = BENCH / f"{t}_results.csv"
             if not p.exists():
                 p.write_text(csv_template(t))

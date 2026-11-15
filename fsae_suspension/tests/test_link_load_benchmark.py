@@ -54,10 +54,10 @@ def test_adams_command_file_is_generated_from_the_manifest(name):
     assert (llb.BENCH / f"{name}.cmd").read_text() == llb.command_file(name)
 
 
-@pytest.mark.parametrize("tool", ["adams_view", "lotus", "ard"])
+@pytest.mark.parametrize("tool", ["adams_view", "ard"])
 def test_a_tool_without_results_is_not_run_not_passed(tool, tmp_path, monkeypatch):
     monkeypatch.setattr(llb, "BENCH", tmp_path)
-    (tmp_path / "lotus_results.csv").write_text(llb.csv_template("lotus"))      # empty template
+    (tmp_path / "ard_results.csv").write_text(llb.csv_template("ard"))          # empty template
     assert llb.compare(tool, "front_v11_final")["status"] == "NOT RUN"
 
 
@@ -80,3 +80,9 @@ def test_an_adams_table_from_the_wrong_model_is_refused(tmp_path, monkeypatch):
     (tmp_path / "front_v11_final.tab").write_text('"rear_v11_final_loads_v1"\n\n"Time"\t"T_UF"\n0\t1\n')
     with pytest.raises(ValueError, match="rear_v11_final"):
         llb.compare("adams_view", "front_v11_final")
+
+
+def test_the_arevalo_tables_do_not_balance_their_own_geometry():
+    """The paper's obstacle row is a vertical wheel-centre load; no reading of its conventions makes it one."""
+    import arevalo_link_load_check as ar
+    assert ar.recovered_loads("front")[0][0] > 0.1 and ar.recovered_loads("rear")[0][0] > 0.3
