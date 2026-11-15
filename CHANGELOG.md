@@ -1,7 +1,17 @@
 # Changelog
 
 
-## Unreleased
+## 1.6.0 (2026-11-15)
+
+**Link loads benchmarked against three multibody solvers.**
+- Member forces (wishbone legs, tie rod, pushrod) on front_v11_final, rear_v11_final and front_v11_joints50 under four load cases, against limits registered before any run (0.5 N + 0.1 %).
+- Adams View 2026.1: within 8.8e-4 N. MATLAB Simscape Multibody R2025b and Project Chrono 9.0.1: within 4.6e-7 N. An independent displacement-method solve: within 0.017 N.
+- Lotus: no licence; the Arevalo et al. (2018) member forces were checked and do not balance their own geometry, so they are not used. MotionSolve and ARD are registered, not run.
+
+**Direct-acting dampers.**
+- InverseGenesis and InverseGenesis-FullCar let each corner use a rocker assembly or a direct-acting damper (on the lower or upper wishbone or the upright).
+- The motion ratio comes from the damper's own length change, and the damper force enters the member-force solve; both checked against virtual work on all three mounting bodies.
+- Benchmarked on two corners: damper length over ±25 mm and member forces agree with Adams View (9.2e-5 mm, 1.0e-3 N), MATLAB Simscape Multibody and Project Chrono, against limits set before the runs.
 
 **Electrics: loads typed once.**
 - Each subsystem's peak current, voltage and power draw are entered in the electrics module (PCB Doctor, "Subsystem loads") and written straight into the integration ledger.

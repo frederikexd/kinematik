@@ -34,6 +34,17 @@ The suspension kinematics solver has been checked against three established tool
 
 These check the kinematics solver, not a built car; what has not been checked yet is listed in [VALIDATION.md](VALIDATION.md).
 
+Link loads and direct-acting dampers have been checked against three multibody solvers and an independent solve, again with the limits set before each run ([link loads](fsae_suspension/benchmarks/link_loads/README.md), [direct-acting](fsae_suspension/benchmarks/direct_acting/README.md)).
+
+| Checked against | Link loads: member forces, 3 corners × 4 load cases (limit 0.5 N + 0.1 %) | Direct-acting damper, 2 corners: damper length over ±25 mm (limit 0.01 mm) and member forces |
+|---|---|---|
+| Adams View 2026.1 | Within 0.0009 N | Within 0.0001 mm and 0.001 N |
+| MATLAB Simscape Multibody R2025b | Within 0.0000005 N | Within 0.000005 mm and 0.0000005 N |
+| Project Chrono 9.0.1 (open source) | Within 0.0000005 N | Within 0.000008 mm and 0.0000005 N |
+| Independent static solve | Within 0.017 N | Damper length within 1e-13 mm; forces on the upright-mounted corner within 0.008 N |
+
+These are rigid-link statics on the design geometry: they show the member forces and motion ratio are computed correctly, not the loads on a built car, where bushing compliance and real tyre loads come in.
+
 The EV and combustion powertrain logic has been checked against four independent references
 ([details](docs/POWERTRAIN_VALIDATION.md)). The blind rounds were sealed and pushed to GitHub before they ran.
 
@@ -103,7 +114,8 @@ pytest tests/test_fastsim_benchmark.py tests/test_gt_suite_benchmark.py tests/te
 Suspension benchmarks: 
 
 ```bash
-pytest tests/test_adams_view_benchmark.py tests/test_lotus_benchmark.py tests/test_invariants_property.py
+pytest tests/test_adams_view_benchmark.py tests/test_lotus_benchmark.py tests/test_invariants_property.py \
+       tests/test_link_load_benchmark.py tests/test_direct_acting_benchmark.py tests/test_direct_acting.py
 python scripts/verify_run.py manifests/rear_v11_final.recorded.genesis.json   # re-solves a final corner, about 4 min
 ```
 
@@ -205,7 +217,8 @@ any FAIL (or WARN with `--fail-on warning`), so it can gate a CI run. KiCad and 
 ## Known limitations
 
 - **Not correlated with a measured car.** The kinematics agree with Adams View,
-  Lotus Suspension Analysis and Applied Racing Dynamics, and the synthesis reproduces
+  Lotus Suspension Analysis and Applied Racing Dynamics, the link loads and direct-acting
+  dampers agree with Adams View, MATLAB Simscape Multibody and Project Chrono, and the synthesis reproduces
   on other teams' machines ([VALIDATION.md](VALIDATION.md)), but nothing has been
   compared with an instrumented vehicle, a K&C rig or a wind tunnel. Treat every
   number as a starting point for your own test day.
