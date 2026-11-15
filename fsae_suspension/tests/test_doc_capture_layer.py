@@ -799,3 +799,21 @@ def test_inverse_genesis_analysis_reaches_the_report_named_and_without_the_examp
     assert cap["_CAPTURE_PAUSED_KEY"] not in st.session_state
     vals = uig._review_values(v, out, "front")
     assert "bracket_fos" not in vals and vals["wheel_rate_spread"] > 25.0
+
+
+
+def test_a_long_cell_and_a_long_finding_reach_the_report_whole(cap):
+    """The report cut every cell at 60 characters (half of each 'why it matters') and dropped any banner over 400
+    characters without a trace."""
+    import pandas as pd
+    _open_feature(cap, "genesis")
+    why = ("Toe change over bumps makes the car dart and costs tyre life; keep the tie-rod inner on the line "
+           "through the wishbone instant axis.")
+    cap["_ax_wrap_table"](lambda *a, **k: None, "table")(pd.DataFrame({"check": ["Bump steer"], "why": [why]}))
+    cap["_ax_wrap_table"](lambda *a, **k: None, "table")(pd.DataFrame({f"c{i}": [i] for i in range(14)}))
+    long_line = "A finding the reader needs in full. " * 15
+    cap["capture_verdict"](long_line, "warning")
+    got = cap["get_feature_results"]("genesis")
+    assert got["artifacts"][0]["table"]["rows"][0][1] == why
+    assert len(got["artifacts"][1]["table"]["header"]) == 14
+    assert any(long_line.strip() in v["text"] for v in got["verdicts"])

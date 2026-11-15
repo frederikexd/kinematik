@@ -750,7 +750,8 @@ _MAX_CAPTURED_VERDICTS = 24
 # one the cap dropped.
 _MAX_CAPTURED_ARTIFACTS = 48
 _VERDICT_MIN_CHARS = 12          # skip one-word chrome like "Saved"
-_VERDICT_MAX_CHARS = 400
+# 1000, not 400: a finding longer than the cap was dropped whole and silently, which is worse than a long line.
+_VERDICT_MAX_CHARS = 1000
 
 # The container class, captured at patch time. Used to tell a bound-class call
 # (`col.plotly_chart(fig)` -> args are (self, fig)) from an already-bound module
@@ -1169,7 +1170,10 @@ def _ax_table_summary(data):
 #: a table silently showing its first 60 of 300 rows is worse than one that
 #: says so, because the reader cannot tell.
 _MAX_TABLE_ROWS = 60
-_MAX_TABLE_COLS = 12
+_MAX_TABLE_COLS = 16
+#: A cell longer than this is cut, and the cut is marked. 60 cut the review's "why it matters" and "what to change"
+#: sentences, and a property label, mid-word in every report: a judge read half a reason.
+_MAX_CELL_CHARS = 400
 
 
 def _ax_cell(v):
@@ -1197,7 +1201,7 @@ def _ax_cell(v):
         s = str(v)
         # Pipes would split the cell; newlines would break the row.
         s = s.replace("|", "/").replace("\n", " ").replace("\r", " ")
-        return s if len(s) <= 60 else s[:57] + "…"
+        return s if len(s) <= _MAX_CELL_CHARS else s[:_MAX_CELL_CHARS - 1] + "…"
     except Exception:
         return ""
 

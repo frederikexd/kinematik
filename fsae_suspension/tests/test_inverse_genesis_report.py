@@ -272,7 +272,7 @@ def test_an_example_block_is_reported_only_while_it_holds_the_users_own_values(t
                                             if k.startswith("Design review"))["rows"]}
     _run(st, uig)
     assert not {link, bands, brk} & set(_tables(ns)) and "4799" not in _report(ns)
-    assert review()["Bracket factor of safety, as drawn"][0] == "⚪"
+    assert review()["Bracket factor of safety, as drawn"][0] == "⚪ N/A"
 
     ss["ig_cmp_F"] = 3200.0
     _run(st, uig)
@@ -288,10 +288,10 @@ def test_an_example_block_is_reported_only_while_it_holds_the_users_own_values(t
     st.editors["ig_brk"] = shorter
     _run(st, uig)
     row = review()["Bracket factor of safety, as drawn"]
-    assert brk in _tables(ns) and row[0] != "⚪" and float(row[2]) == pytest.approx(float(_tables(ns)[brk]["rows"][0][5]))
+    assert brk in _tables(ns) and row[0] != "⚪ N/A" and float(row[2]) == pytest.approx(float(_tables(ns)[brk]["rows"][0][5]))
     del st.editors["ig_brk"]                                  # the edit undone, with no other input changed
     _run(st, uig)
-    assert brk not in _tables(ns) and review()["Bracket factor of safety, as drawn"][0] == "⚪"
+    assert brk not in _tables(ns) and review()["Bracket factor of safety, as drawn"][0] == "⚪ N/A"
 
 
 def test_loading_the_recorded_result_reports_the_replay_and_never_a_re_sample(tab):
@@ -396,7 +396,7 @@ def test_a_loaded_manifest_is_reviewed_with_the_car_it_declared(tab):
     prompt = [x for x in _verdicts(ns) if "Red is a prompt" in x]
     assert prompt and "these ranges are generic starting points (" in prompt[0]
     assert "Anti-dive" not in prompt[0] and "Steering ratio needed" in prompt[0]   # only the generic ranges are named
-    assert review[0] == "🟢" and review[4] == "63.6 … 70"
+    assert review[0] == "🟢 PASS" and review[4] == "63.6 … 70"
     v_lines = _verdicts(ns)
     assert any("Section 5 set from the car `front_v11_final`" in x for x in v_lines)
     assert any("steering rack (81 mm per revolution" in x and "aligning moment" in x for x in v_lines)
@@ -457,7 +457,7 @@ def test_a_judge_can_see_where_every_input_came_from_and_what_the_result_does_no
     assert any("motion ratio falls in bump (0.8043 at ride height, 0.7509 at full bump)" in x for x in v)
     assert any("only in the kerb strike case" in x for x in v)
     review = {r[1]: r for k, x in t.items() if k.startswith("Design review") for r in x["rows"]}
-    assert review["Wheel rate does not fall in bump"][:5] == ["🔴", "Wheel rate does not fall in bump", "no", "", "must be yes"]
+    assert review["Wheel rate does not fall in bump"][:5] == ["🔴 FAIL", "Wheel rate does not fall in bump", "no", "", "must be yes"]
     steer = t["Steering effort at the design lateral acceleration"]
     with_mz, trail_only = float(_cell(steer, "ratio needed for the target")), float(
         _cell(steer, "ratio needed from trail alone, no aligning moment"))
@@ -541,7 +541,7 @@ def test_the_report_closes_the_loops_a_judge_would_try_to_close(tab):
     ratio = float(_cell(steer, "steering ratio of the declared rack, at lock"))
     assert ratio == pytest.approx(118.9 / 25.6, abs=2e-3)
     assert float(_cell(steer, "steering-wheel torque at the rack's ratio, trail alone")) == pytest.approx(31.895 / ratio, abs=5e-3)
-    assert float(_cell(steer, "…and with the declared aligning moments")) == pytest.approx(87.895 / ratio, abs=5e-3)
+    assert float(_cell(steer, "steering-wheel torque at the rack's ratio, with the declared aligning moments")) == pytest.approx(87.895 / ratio, abs=5e-3)
     assert any("its own structural load cases (4, such as braking 1.8 g) and pickup flexibility" in x for x in v)
     assert any(x.startswith("- ⚠️ Scope: one corner, solved as rigid links") for x in v)
     assert any("The curves are reached inside every declared wall, and the geometry is RESILIENT" in x for x in v)
@@ -577,3 +577,72 @@ def test_the_build_stamp_changes_when_any_source_file_does(tmp_path):
     two = ns["_source_fingerprint"](str(tmp_path))
     (tmp_path / "suspension" / "core.py").write_text("y = 2")
     assert len({one, two, ns["_source_fingerprint"](str(tmp_path))}) == 3
+
+
+def test_a_green_check_says_which_defaults_it_rests_on_and_thin_bounds_are_named(tab):
+    """Third reading as a judge: 'static clearance 31.5 mm' and 'wheelbase margin 105 mm' were green from the tool's
+    default axle stations and ground plane; the 100 % yield said nothing about caster at 0.006° from its bound; ride
+    frequencies left out the tyre."""
+    st, ns, uig = tab
+    _run(st, uig)
+    st.session_state["ig_manifest_up"] = _Upload((ROOT / "manifests" / "front_v11_final.recorded.genesis.json").read_text())
+    _run(st, uig)
+    _run(st, uig, clicks={"ig_manifest_load"})
+    t, v = _tables(ns), _verdicts(ns)
+    review = next(x for k, x in t.items() if k.startswith("Design review"))
+    col = review["header"].index("rests on defaults")
+    rests = {r[1]: r[col] for r in review["rows"]}
+    assert rests["Static clearance under frame"] == "ground plane, lowest frame member"
+    assert rests["Wheelbase margin to rules"] == "axle stations"
+    assert rests["Damper stroke used"] == "damper stroke"
+    assert rests["Camber gain"] == "" and rests["Anti-dive / anti-squat"] == ""          # geometry and manifest only
+    assert any("rest on the tool's defaults" in x and "Static clearance under frame" in x for x in v)
+    thin = next(x for x in v if x.startswith("- ⚠️ Build yield prices the camber, toe and roll-centre curves only"))
+    assert "caster 0.006 deg" in thin and "Ackermann at the declared lock 0.273 %" in thin and len(thin) <= 402
+    ride = [r[0] for r in t["Actuation and ride, front corner (solved from the linkage)"]["rows"] if r[0].startswith("ride")]
+    assert ride and all("no tyre in series" in r for r in ride)
+
+    for f in ("ground_y_mm", "lowest_member_y_mm"):                       # the team declares its frame
+        uig._veh(st.session_state)[f] = uig._veh(st.session_state)[f] + 1.0
+    _run(st, uig)
+    review = next(x for k, x in _tables(ns).items() if k.startswith("Design review"))
+    assert {r[1]: r[col] for r in review["rows"]}["Static clearance under frame"] == ""
+
+
+def test_as_built_unpriced_and_defaults_behind():
+    from types import SimpleNamespace as NS
+    from ui import inverse_genesis as uig
+    inf = float("inf")
+    bounds = [NS(prop="caster_deg", lo=3.65, hi=8.0, margin=lambda x: min(x - 3.65, 8.0 - x)),
+              NS(prop="kpi_deg", lo=0.0, hi=10.0, margin=lambda x: min(x, 10.0 - x)),
+              NS(prop="link_fos_min", lo=2.0, hi=inf, margin=lambda x: x - 2.0)]
+    res = NS(winner=NS(properties={"caster_deg": 3.656, "kpi_deg": 7.3, "link_fos_min": 2.05}),
+             property_bounds=NS(bounds=bounds))
+    got = dict(uig.as_built_unpriced(res))
+    assert set(got) == {"caster (deg)", "lowest link buckling/yield factor under the shock cases (-)"}
+    assert uig.as_built_unpriced(NS(winner=None, property_bounds=None)) == []
+    rows = [{"key": "stroke_used"}, {"key": "camber_gain_deg_per_mm"}]
+    srcs = [{"input": "Damper stroke (mm)", "source": "default"}]
+    assert uig.defaults_behind(rows, srcs) == {"stroke_used": "damper stroke"}
+    assert uig.defaults_behind(rows, [{"input": "Damper stroke (mm)", "source": "manifest"}]) == {}
+
+
+def test_the_pdf_keeps_every_number_whole_and_every_status_readable(tab, tmp_path):
+    """The PDF the judge reads, not the markdown: its font has no colour emoji, so the review's status column printed
+    empty; and narrow columns broke numbers across lines ('3.656' as '3.65' over '6')."""
+    pytest.importorskip("reportlab")
+    pypdf = pytest.importorskip("pypdf")
+    from suspension import project
+    st, ns, uig = tab
+    _run(st, uig)
+    st.session_state["ig_manifest_up"] = _Upload((ROOT / "manifests" / "front_v11_final.recorded.genesis.json").read_text())
+    _run(st, uig)
+    _run(st, uig, clicks={"ig_manifest_load"})
+    out = tmp_path / "r.pdf"
+    project.render_pdf("# Sample\n\n" + _report(ns), str(out))
+    text = "\n".join(p.extract_text() for p in pypdf.PdfReader(str(out)).pages)
+    lines = [ln.strip() for ln in text.splitlines()]
+    for status in ("FAIL", "WATCH", "PASS", "N/A"):
+        assert any(ln.startswith(status) or f" {status} " in f" {ln} " for ln in lines), status
+    for number in ("3.656", "68.935", "0.7024", "6.21e-05", "52.813", "1.282", "17.159"):
+        assert number in text, number                         # never split across two lines

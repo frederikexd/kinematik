@@ -37,6 +37,9 @@
 - Second reading as a judge: every result table is named, the hardpoints with their frame and units; a bound prints as "63.6 … 70" or "≥ 2", where the report cut the old label off before the number; the steering table gives the declared rack's own ratio and the steering-wheel torque at it; the report says the manifest's own load cases and pickup flexibility are why its link factor and compliance steer differ from the review's; the scope of the analysis is stated; one candidate is no longer described as "the most buildable".
 - The build stamp in report headers covers streamlit_app.py and every source file under ui/, suspension/ and powertrain/. It hashed streamlit_app.py alone and did not change across six updates to the other two.
 
+- Third reading as a judge: each review row names the tool's defaults it rests on (static clearance and the wheelbase margin were green from default axle stations and ground plane); bounded properties with little margin are named, since the build yield prices the curves only (caster 0.006° from its bound); ride frequencies say the tyre is not in series.
+- The report no longer cuts text: table cells up to 400 characters (was 60, which halved every "why it matters"), findings up to 1000 (was 400, and a longer one was dropped without a trace), 16 columns (was 12). In the PDF a column is never narrower than its longest word, so no number is split across lines, and the review's status is printed in words (FAIL, WATCH, PASS, N/A) beside the icon, which the PDF font cannot draw.
+
 **Design review.**
 - A value outside its range is red. Amber now means inside the range but within 10 % of a limit.
 - Bump steer limit 0.002 deg/mm (was 0.01), so it agrees with the 0.1 deg toe-change limit over ±25 mm: one curve could pass one and fail the other.

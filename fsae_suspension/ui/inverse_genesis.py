@@ -712,6 +712,17 @@ def _results_panel(st, pd, np, ss, run):
             (st.success if res.ok else st.warning)(res.reason)
         for caveat in result_caveats(res, man, fld):
             st.warning(caveat)
+        thin = as_built_unpriced(res)
+        if thin:
+            # one line under the report's 400-character banner limit, however many properties are thin
+            items = [f"{lab.split(' (')[0]} {_cell(round(m, 3))} {lab.split('(')[-1].rstrip(')')}"
+                     if "(" in lab else f"{lab} {_cell(round(m, 3))}" for lab, m in thin]
+            head = "Build yield prices the camber, toe and roll-centre curves only. Met at nominal, unchecked across builds, little margin: "
+            tail = ". Tolerances can take these out of bounds."
+            while items and len(head + "; ".join(items) + tail) > 395:
+                items = items[:-1]
+            more = len(thin) - len(items)
+            st.warning(head + "; ".join(items) + (f"; {more} more" if more else "") + tail)
         m1, m2, m3, m4 = st.columns(4)
         if w.yield_frac is not None:
             m1.metric("Build yield", _g(w.yield_frac * 100, "%", _TOL))
@@ -737,10 +748,8 @@ def _results_panel(st, pd, np, ss, run):
                           if c.yield_frac is not None else "—"),
           "governed by": c.worst_row, "iterations": c.iterations,
           "clamped to box face": ", ".join(c.clamped) or "—",
-          "refused: keep-out": c.keepout_rejections,
-          "refused: property": c.property_rejections,
-          "refused: wheel": c.envelope_rejections,
-          "refused: node": c.node_rejections,
+          "steps refused by keep-out / property / wheel / node":
+              f"{c.keepout_rejections} / {c.property_rejections} / {c.envelope_rejections} / {c.node_rejections}",
           "wheel clearance beyond the required gap (mm)": (round(c.envelope_margin_mm, 2)
                                                            if c.envelope_margin_mm is not None
                                                            else "—")}
@@ -2404,7 +2413,7 @@ def _sec_steering(st, pd, v, front_hp, rear_hp, key, rack_ratio=None):
                ("steering ratio of the declared rack, at lock", rack_ratio),
                ("steering-wheel torque at the rack's ratio, trail alone (N·m)",
                 (s["road_wheel_total_Nm"] - v["aligning_outer_Nm"] - v["aligning_inner_Nm"]) / rack_ratio),
-               ("…and with the declared aligning moments (N·m)",
+               ("steering-wheel torque at the rack's ratio, with the declared aligning moments (N·m)",
                 s["road_wheel_total_Nm"] / rack_ratio)]),
            ["quantity", "value"], title="Steering effort at the design lateral acceleration")
     _table(st, pd, s["rows"], title="Steering-wheel torque by steering ratio")
@@ -2442,9 +2451,9 @@ def _sec_actuation(st, pd, v, corner, axle):
             ("fraction of stroke used", a.get("stroke_fraction_used")),
             ("motion-ratio spread (%)", a["mr_spread_pct"]),
             ("wheel-rate spread (%)", a["wheel_rate_spread_pct"]),
-            ("ride frequency, droop (Hz)", a["ride_hz_droop"]),
-            ("ride frequency, static (Hz)", a["ride_hz_static"]),
-            ("ride frequency, bump (Hz)", a["ride_hz_bump"])],
+            ("ride frequency, droop, wheel rate only, no tyre in series (Hz)", a["ride_hz_droop"]),
+            ("ride frequency, static, wheel rate only, no tyre in series (Hz)", a["ride_hz_static"]),
+            ("ride frequency, bump, wheel rate only, no tyre in series (Hz)", a["ride_hz_bump"])],
             ["quantity", "value"], title="Actuation and ride, " + axle + " corner (solved from the linkage)")
         st.line_chart(pd.DataFrame({"motion ratio": a["motion_ratio"]},
                                    index=pd.Index(a["travel_mm"],
@@ -2465,9 +2474,9 @@ def _sec_actuation(st, pd, v, corner, axle):
             ("rate character", dm["rate_character"]),
             ("motion-ratio spread (%)", dm["mr_spread_pct"]),
             ("wheel-rate spread (%)", dm["wheel_rate_spread_pct"]),
-            ("ride frequency, droop (Hz)", dm["ride_hz_droop"]),
-            ("ride frequency, static (Hz)", dm["ride_hz_static"]),
-            ("ride frequency, bump (Hz)", dm["ride_hz_bump"])],
+            ("ride frequency, droop, wheel rate only, no tyre in series (Hz)", dm["ride_hz_droop"]),
+            ("ride frequency, static, wheel rate only, no tyre in series (Hz)", dm["ride_hz_static"]),
+            ("ride frequency, bump, wheel rate only, no tyre in series (Hz)", dm["ride_hz_bump"])],
             ["quantity", "value"], title="Actuation and ride, " + axle + " corner (DECLARED motion ratio)")
         a = dict(a, wheel_rate_spread_pct=dm["wheel_rate_spread_pct"])
     solved = mr is not None
@@ -3057,6 +3066,9 @@ def _review_values(v, out, axle):
 
 
 _STATUS_ICON = {"pass": "🟢", "watch": "🟡", "fail": "🔴", "n/a": "⚪"}
+#: The status in words beside the icon: the PDF's font has no colour emoji, and a review whose status column printed
+#: empty told a reader nothing.
+_STATUS_WORD = {"pass": "PASS", "watch": "WATCH", "fail": "FAIL", "n/a": "N/A"}
 
 
 #: Review checks whose value is a yes or a no.
@@ -3131,6 +3143,73 @@ def _inputs_table(st, pd, ss, v, run, corner, axle):
                    "steering-effort numbers below are only as good as those: enter the car's own in section 5.")
 
 
+#: Section-5 inputs each review check reads, by the short name the review prints. Checks not listed read only the
+#: geometry, or inputs a manifest always declares.
+_CHECK_INPUTS = {
+    "steering_ratio_needed": {"aligning_outer_Nm": "aligning torque", "aligning_inner_Nm": "aligning torque",
+                              "lateral_mu": "lateral µ", "lateral_g": "design g", "weight_dist_front": "weight split",
+                              "tire_radius_mm": "tyre radius"},
+    "worst_fos": {"lateral_g": "design g", "roll_share_front": "roll share", "weight_dist_front": "weight split",
+                  "aligning_outer_Nm": "aligning torque"},
+    "toe_band_share": {"lateral_g": "design g", "roll_share_front": "roll share", "weight_dist_front": "weight split",
+                       "aligning_outer_Nm": "aligning torque"},
+    "stroke_used": {"damper_stroke_mm": "damper stroke"},
+    "joints_in_rim": {"rim_offset_mm": "ball-joint offset limit"},
+    "bracket_fos": {"bracket_kt": "bracket Kt", "bracket_plates": "bracket plates"},
+    "wheelbase_margin_mm": {"front_station_mm": "axle stations", "rear_station_mm": "axle stations"},
+    "ground_clearance_mm": {"ground_y_mm": "ground plane", "lowest_member_y_mm": "lowest frame member"},
+}
+
+
+def _review_corner(ss, run):
+    """The corner the review is about (the run's winner, else the seed), for input_sources."""
+    from suspension import genesis_repro as gr
+    from suspension.kinematics import Hardpoints
+    if run is not None and run["result"].winner_hp is not None:
+        return run["result"].winner_hp
+    seed = ss.get("ig_seed_hp")
+    return gr.hp_from_dict(seed) if seed else Hardpoints.default()
+
+
+def defaults_behind(rows, sources):
+    """{check key: 'design g, roll share, …'}: the tool's default inputs each review check rests on, by short name,
+    from the inputs table's sources. Empty for a check that reads none."""
+    by_label = {r["input"]: r["source"] for r in sources}
+    label_of = {f: label for _, fields in _VEH_FIELDS for f, label, *_ in fields}
+    out = {}
+    for r in rows:
+        names = []
+        for f, short in _CHECK_INPUTS.get(r["key"], {}).items():
+            if by_label.get(label_of.get(f)) == "default" and short not in names:
+                names.append(short)
+        if names:
+            out[r["key"]] = ", ".join(names)
+    return out
+
+
+def as_built_unpriced(res, frac=0.05):
+    """Bounded properties the winner meets with less than ``frac`` of the bound's own scale to spare: [(label,
+    margin)]. The build yield prices the curve channels only; these are met by the nominal geometry and not checked
+    across builds, so the tolerances can take them out of their bounds."""
+    import math
+    w = getattr(res, "winner", None)
+    pb = getattr(res, "property_bounds", None)
+    if w is None or pb is None or not w.properties:
+        return []
+    from suspension import inverse_genesis as ig
+    out = []
+    for b in pb.bounds:
+        val = w.properties.get(b.prop)
+        if val is None or not math.isfinite(float(val)):
+            continue
+        m = float(b.margin(val))
+        ends = [abs(float(x)) for x in (b.lo, b.hi) if x is not None and math.isfinite(float(x))]
+        scale = max(ends + [abs(float(val)), 1e-9])
+        if 0.0 <= m < frac * scale:
+            out.append((ig._PROPERTY_LABELS[b.prop], m))
+    return out
+
+
 def self_graded(rows, ranges, generic):
     """Review rows judged against a range the manifest declared, whose value is outside the tool's generic starting
     range for the same check: [(row, generic lo, generic hi)]. Passing a bound you set yourself is not evidence the
@@ -3168,19 +3247,26 @@ def _render_review(st, pd, ss, v, out, axle, note, run):
         st.markdown(head)
         order = {"fail": 0, "watch": 1, "pass": 2, "n/a": 3}
         show = sorted(rows, key=lambda r: order[r["status"]])
-        _table(st, pd, [{"": _STATUS_ICON[r["status"]], "check": r["check"],
+        defaults = defaults_behind(rows, input_sources(ss, v, run, _review_corner(ss, run), axle))
+        _table(st, pd, [{"status": _STATUS_ICON[r["status"]] + " " + _STATUS_WORD[r["status"]], "check": r["check"],
                          "value": ("yes" if r["value"] == 1.0 else "no")
                          if r["key"] in _YES_NO_CHECKS
                          and r["value"] is not None else r["value"],
                          "unit": r["unit"], "range": _range_text(r),
+                         "rests on defaults": defaults.get(r["key"], ""),
                          "why it matters": r["why"],
                          "what to change": r["fix"]
                          if r["status"] in ("fail", "watch") else ""}
                         for r in show],
-               title="Design review: 🔴 outside its range, 🟡 inside but within 10 % of a limit, "
-                     "🟢 inside, ⚪ not available")
+               title="Design review: FAIL outside its range, WATCH inside but within 10 % of a limit, "
+                     "PASS inside, N/A not available")
         vm_ranges = ((ss.get("ig_veh_from_manifest") or {}).get("ranges") or {}) \
             if run is not None and run.get("source") == "manifest" else {}
+        on_defaults = [r["check"] for r in rows if defaults.get(r["key"]) and r["status"] in ("pass", "watch", "fail")]
+        if on_defaults:
+            st.warning("These review results rest on the tool's defaults, not this car's values (the 'rests on "
+                       "defaults' column names which): " + "; ".join(on_defaults)
+                       + ". Their colour is only as good as those inputs.")
         for r, glo, ghi in self_graded(rows, vm_ranges, ga.DEFAULT_REVIEW_LIMITS):
             st.warning(f"{r['check']}: {_cell(r['value'])} {r['unit']} is inside the range the manifest declared "
                        f"({_range_text(r)}) but outside the generic starting range "

@@ -1565,8 +1565,25 @@ def render_pdf(markdown_text: str, out_path: str, figures=None):
             # ~4.6 pt per character at 8 pt in a proportional face, so a column
             # never gets less room than its own longest word needs.
             colw = [2 * _PAD + max(w * 4.6, avail * w / total) for w in widths]
+            # Per-column floor: the column's longest single word, so a number or a unit is never broken across
+            # lines ("3.656" printed as "3.65" over "6" reads as two values). Capped so one long token cannot
+            # starve the rest of the table.
+            words = [max([len(tok) for r in raw if c < len(r) for tok in str(r[c]).split()] or [1])
+                     for c in range(ncols)]
+            floors = [2 * _PAD + max(_MIN_TEXT, min(wd, 18) * 4.6) for wd in words]
             floor = 2 * _PAD + _MIN_TEXT
-            if floor * ncols > _frame_w:
+            if sum(floors) <= _frame_w:
+                colw = [max(w, f) for w, f in zip(colw, floors)]
+                for _ in range(12):
+                    excess = sum(colw) - _frame_w
+                    if excess <= 1e-6:
+                        break
+                    slack = sum(w - f for w, f in zip(colw, floors) if w > f)
+                    if slack <= 1e-6:
+                        break
+                    take = min(1.0, excess / slack)
+                    colw = [w - (w - f) * take if w > f else w for w, f in zip(colw, floors)]
+            elif floor * ncols > _frame_w:
                 # More columns than the page can hold even at one character
                 # each. Give every column an equal slice and let the cells
                 # wrap; a cramped table still beats no document.
