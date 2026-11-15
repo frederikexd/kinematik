@@ -53,6 +53,7 @@ measure create function measure_name=.direct_lower_loads_v1.T_PR function="FX(.d
 default model model_name=.direct_lower_loads_v1
 simulation single_run reset
 simulation single_run transient type=kinematic end_time=3.0 number_of_steps=3 model_name=.direct_lower_loads_v1 initial_static=no
+defaults command_file on_error=abort echo_commands=on
 file spread_sheet write file_name="direct_lower_loads__T_UF.tab" result_set_name=.direct_lower_loads_v1.Last_Run.T_UF
 file spread_sheet write file_name="direct_lower_loads__T_UR.tab" result_set_name=.direct_lower_loads_v1.Last_Run.T_UR
 file spread_sheet write file_name="direct_lower_loads__T_TR.tab" result_set_name=.direct_lower_loads_v1.Last_Run.T_TR

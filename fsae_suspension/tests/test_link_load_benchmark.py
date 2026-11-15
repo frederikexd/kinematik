@@ -132,3 +132,10 @@ def test_adams_spreadsheet_exports_are_read_and_compared(tmp_path, monkeypatch):
     (tmp_path / "adams" / "front_v11_final__T_TR.tab").write_text(
         _spreadsheet("front_v11_final_loads_v1", "T_TR", range(4), [kk_ok[c]["TR"] for c in llb.CASES]))
     assert llb.compare("adams_view", "front_v11_final")["status"] == "PASS"
+
+
+@pytest.mark.parametrize("name", llb.CORNERS)
+def test_kinematik_agrees_with_adams_view(name):
+    """benchmarks/link_loads/adams/<corner>__T_xx.tab are Adams View 2026.1 Spread Sheet exports of the author's runs
+    of the generated command files."""
+    assert llb.compare("adams_view", name)["status"] == "PASS"

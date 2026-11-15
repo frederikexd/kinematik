@@ -50,5 +50,6 @@ measure create function measure_name=.direct_upright_mr_v4.damper_len function="
 default model model_name=.direct_upright_mr_v4
 simulation single_run reset
 simulation single_run transient type=kinematic end_time=1.0 number_of_steps=50 model_name=.direct_upright_mr_v4 initial_static=no
+defaults command_file on_error=abort echo_commands=on
 file spread_sheet write file_name="direct_upright_mr__travel.tab" result_set_name=.direct_upright_mr_v4.Last_Run.travel
 file spread_sheet write file_name="direct_upright_mr__damper_len.tab" result_set_name=.direct_upright_mr_v4.Last_Run.damper_len

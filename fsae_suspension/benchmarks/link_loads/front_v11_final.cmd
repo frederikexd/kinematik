@@ -63,6 +63,7 @@ default model model_name=.front_v11_final_loads_v1
 simulation single_run reset
 simulation single_run transient type=kinematic end_time=3.0 number_of_steps=3 model_name=.front_v11_final_loads_v1 initial_static=no
 ! Write each measure to <corner>__T_xx.tab in Adams' working directory.
+defaults command_file on_error=abort echo_commands=on
 file spread_sheet write file_name="front_v11_final__T_UF.tab" result_set_name=.front_v11_final_loads_v1.Last_Run.T_UF
 file spread_sheet write file_name="front_v11_final__T_UR.tab" result_set_name=.front_v11_final_loads_v1.Last_Run.T_UR
 file spread_sheet write file_name="front_v11_final__T_LF.tab" result_set_name=.front_v11_final_loads_v1.Last_Run.T_LF

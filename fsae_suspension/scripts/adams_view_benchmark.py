@@ -92,8 +92,11 @@ def read_spreadsheet(path: Path) -> tuple[str, str, np.ndarray, np.ndarray]:
 def export_commands(model: str, measures, prefix: str) -> list[str]:
     """Adams View commands that write each measure of the last run to <prefix>__<measure>.tab (the Spread Sheet
     export of File > Export), in Adams' working directory."""
-    return [f'file spread_sheet write file_name="{prefix}__{m}.tab" result_set_name=.{model}.Last_Run.{m}'
-            for m in measures]
+    # Adams View imports a command file with on_error=ignore_command and echo off, so a failing export would be
+    # skipped in silence; switch errors back on for these lines.
+    return (["defaults command_file on_error=abort echo_commands=on"]
+            + [f'file spread_sheet write file_name="{prefix}__{m}.tab" result_set_name=.{model}.Last_Run.{m}'
+               for m in measures])
 
 
 def compare(name: str) -> dict:
