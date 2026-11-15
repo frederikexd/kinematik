@@ -179,16 +179,29 @@ def test_report_text_is_readable_when_empty():
 def test_overhead_when_disabled_is_negligible():
     """40 tabs per rerun must not cost a measurable fraction of a frame.
 
-    Best of 5 runs: a single timed loop on a shared CI runner (the full suite runs in parallel) measures the
-    neighbours as much as the code, and failed once at 5.29 µs. The fastest run is the code's own cost; the bound
-    stays 5 µs."""
+    A wall-clock bound measured the shared CI runner as much as the code (it failed at 5.29 and then 5.07 µs while
+    the same loop takes 0.14 µs on a quiet machine). So the disabled enter/exit pair is timed interleaved with two
+    bare function calls on the same runner, best of 7, and must cost no more than 5x that baseline: a ratio the
+    runner's load cancels out of. A disabled pair that did real work (a clock read, a dict write) breaks it."""
+    def _enter(ss, name):
+        return None
+
+    def _exit(ss, tok):
+        return None
+
     ss = {}
     n = 20000
-    runs = []
-    for _rep in range(5):
+
+    def timed(enter, exit_):
         t0 = time.perf_counter()
         for _ in range(n):
-            perf.exit(ss, perf.enter(ss, "brakes"))
-        runs.append((time.perf_counter() - t0) / n * 1e6)
-    per_tab_us = min(runs)
-    assert per_tab_us < 5.0, f"{per_tab_us:.2f} µs per tab when disabled (best of 5: {runs})"
+            exit_(ss, enter(ss, "brakes"))
+        return (time.perf_counter() - t0) / n * 1e6
+
+    runs, base = [], []
+    for _rep in range(7):
+        runs.append(timed(perf.enter, perf.exit))
+        base.append(timed(_enter, _exit))
+    per_tab_us, base_us = min(runs), min(base)
+    assert per_tab_us < 5.0 * base_us, (f"{per_tab_us:.3f} µs per tab when disabled vs {base_us:.3f} µs for two "
+                                        f"bare calls (runs {runs}, baseline {base})")
