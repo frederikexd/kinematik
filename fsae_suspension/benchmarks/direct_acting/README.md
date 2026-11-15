@@ -21,7 +21,7 @@ Two quantities, limits in `limits.json`, registered on 14 Nov 2026 before any co
 | Independent (no shared code) | 0.001 mm | 0.5 N + 0.1 % | **Pass**: damper 1e-13 mm, forces 0.008 N | **Pass**: damper 1e-13 mm; forces not run (checked against virtual work in `tests/test_direct_acting.py`) |
 | Project Chrono 9.0.1 (`scripts/chrono_benchmark.py`) | 0.01 mm | 0.5 N + 0.1 % | **Pass**: damper 1.1e-6 mm, forces 4.7e-7 N | **Pass**: damper 7.2e-6 mm, forces 4.1e-7 N |
 | Adams View 2026.1 | 0.01 mm | 0.5 N + 0.1 % | Not run yet | Not run yet |
-| MATLAB Simscape Multibody R2025b (`scripts/matlab/kk_bench_simscape.m`) | 0.01 mm | 0.5 N + 0.1 % | Not run yet | Not run yet |
+| MATLAB Simscape Multibody R2025b (`scripts/matlab/kk_bench_simscape.m`, run by the author) | 0.01 mm | 0.5 N + 0.1 % | **Pass**: damper 9.4e-7 mm, forces 4.7e-7 N | **Pass**: damper 4.3e-6 mm, forces 4.1e-7 N |
 | Altair MotionSolve | 0.01 mm | 0.5 N + 0.1 % | Not run yet | Not run yet |
 | Applied Racing Dynamics | 0.05 mm | 2 N + 0.5 % | Not run yet | Not run yet |
 
@@ -45,5 +45,8 @@ None of the decks has been run in Adams or MotionSolve yet. If a tool rejects a 
 What this shows when complete: the motion ratio and damper force of a direct-acting corner agree with independent
 solvers on the same rigid-link idealisation. What it does not show: damper friction, bushing compliance, or that a built
 car matches its hardpoints.
+
+
+MATLAB note: the Simscape script needed several fixes before its first complete run, all in how it built the models or read their outputs, none to the limits: unique block names, R2025b parameter names, a custom inertia, reading the sensed constraint force as a vector (the first run kept only its vertical component, which itself matched KinematiK's forces times each link's vertical direction to six digits), frame-port paths for the Kinematics Solver, driving wheel-centre height directly, and revolute pivots that cannot depend on Simscape's Rigid Transform conventions. Each fix is a separate commit.
 
 Re-run: `python scripts/direct_acting_benchmark.py` and `pytest tests/test_direct_acting_benchmark.py`.

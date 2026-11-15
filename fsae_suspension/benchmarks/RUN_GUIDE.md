@@ -91,4 +91,6 @@ Each prints PASS, FAIL or NOT RUN per tool and corner. A FAIL is published like 
 - Independent solve, direct-acting: motion ratio pass on both corners (1e-13 mm); loads pass on direct_upright (0.008 N).
 - Project Chrono 9.0.1 (run here, `scripts/chrono_benchmark.py`): pass on all three benchmarks, including the
   lower-wishbone direct-acting loads (forces within 5e-7 N, damper within 7e-6 mm).
+- MATLAB Simscape Multibody R2025b (run by the author): pass on all three benchmarks (forces within 5e-7 N, damper
+  within 5e-6 mm).
 - Lotus: no licence; Arevalo et al. (2018) member forces checked and not usable (`scripts/arevalo_link_load_check.py`).

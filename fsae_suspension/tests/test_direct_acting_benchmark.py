@@ -84,3 +84,11 @@ def test_kinematik_agrees_with_project_chrono(name):
     Chrono also covers the two-body direct_lower statics the independent solve does not."""
     r = dab.compare("chrono", name)
     assert r["damper"] == "PASS" and r["loads"] == "PASS", r
+
+
+@pytest.mark.parametrize("name", dab.CORNERS)
+def test_kinematik_agrees_with_simscape_multibody(name):
+    """matlab_damper.csv and matlab_loads.csv are the output of scripts/matlab/kk_bench_simscape.m (MATLAB Simscape
+    Multibody), run by the author."""
+    r = dab.compare("matlab", name)
+    assert r["damper"] == "PASS" and r["loads"] == "PASS", r
