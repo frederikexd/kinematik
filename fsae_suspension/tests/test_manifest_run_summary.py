@@ -32,7 +32,9 @@ def test_the_grade_yield_and_record_match_are_shown():
     st = _St()
     uig._manifest_run_summary(st, run, m)
     text = " ".join(t for _, t in st.out)
-    assert "RESILIENT" in text and "build yield" in text and "Matches the recorded outputs" in text
+    assert "RESILIENT" in text and "build yield" in text
+    # the line that reaches the feature report names the run and its verdict, so it cannot be read as another run's
+    assert "This run of `rear_v11_final` (RESILIENT) matches the recorded outputs" in text
     assert "Recorded in the manifest: RESILIENT" in text
 
 
@@ -44,7 +46,8 @@ def test_no_fit_and_a_mismatch_are_said_plainly():
     st = _St()
     uig._manifest_run_summary(st, run, m)
     text = " ".join(t for _, t in st.out)
-    assert "NO_FIT" in text and "964 evaluations" in text and "Differs from the recorded outputs" in text
+    assert "NO_FIT" in text and "964 evaluations" in text
+    assert "This run of `rear_v11_final` (NO_FIT) differs from the recorded outputs in 1 place(s)" in text
 
 
 def test_the_recorded_verdict_is_shown_as_soon_as_a_manifest_is_loaded():
