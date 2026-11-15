@@ -805,6 +805,10 @@ DEFAULT_REVIEW_LIMITS = [
             "means the ride frequency changes through the travel.",
      "fix": "Move the rocker or damper mounts until the motion ratio is "
             "nearly constant."},
+    {"key": "rate_not_falling", "check": "Wheel rate does not fall in bump",
+     "unit": "", "lo": 1.0, "hi": 1.0,
+     "why": "A motion ratio that falls in bump softens the wheel rate as the suspension compresses.",
+     "fix": "Move the rocker or damper mounts until the motion ratio is flat or rising in bump."},
     {"key": "bracket_fos", "check": "Bracket factor of safety, as drawn",
      "unit": "", "lo": 1.5, "hi": 1e9,
      "why": "A clevis that yields at its root lets the pickup move under "

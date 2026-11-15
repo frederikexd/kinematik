@@ -1392,8 +1392,12 @@ def structural_screening(hp: Hardpoints, tube: TubeSpec | None = None,
                          fos_min: float = 1.5, axle: str = "front",
                          halfshaft=None, wheel_radius_mm: float = 228.0,
                          rod_end: dict | None = None,
+                         tubes: dict | None = None,
                          **load_case_kw) -> dict:
     """Member axial forces (N) and factors of safety (dimensionless) across a set of load cases.
+
+    ``tubes`` maps a member (UF, UR, LF, LR, TR) to its own TubeSpec; members not in it use ``tube``. With it each
+    row also names the tube it was screened with (od × wall, mm).
 
     If ``load_cases`` is None, uses ``vehicle_load_cases(**load_case_kw)``.
     Screening is tension yield and pinned-pinned Euler buckling, the correct
@@ -1416,14 +1420,17 @@ def structural_screening(hp: Hardpoints, tube: TubeSpec | None = None,
         p_out, p_in = pts[m]
         return float(np.linalg.norm(np.array(p_out) - np.array(p_in)))
 
-    def _fos(F, L):
+    tubes = dict(tubes or {})
+
+    def _fos(F, L, m=None):
+        t = tubes.get(m, tube)
         if abs(F) < 0.01:
             return math.inf
         if F < 0:
-            f_cr = math.pi ** 2 * tube.E_gpa * 1e3 * tube.I / L ** 2
-            f_y = tube.yield_mpa * tube.area
+            f_cr = math.pi ** 2 * t.E_gpa * 1e3 * t.I / L ** 2
+            f_y = t.yield_mpa * t.area
             return min(f_y, f_cr) / abs(F)
-        return tube.yield_mpa * tube.area / F
+        return t.yield_mpa * t.area / F
 
     members = [m for m in _lp.MEMBERS if m != "PR" and m in pts]
     lengths = {m: _length(m) for m in members}
@@ -1439,12 +1446,15 @@ def structural_screening(hp: Hardpoints, tube: TubeSpec | None = None,
             L = lengths[m]
             if not math.isfinite(L):
                 continue
-            f = _fos(F, L)
+            f = _fos(F, L, m)
             rows.append({"load_case": lc.name, "member": m,
                          "force_N": round(F, 1), "length_mm": round(L, 1),
                          "fos": round(f, 2),
                          "mode": "compression" if F < 0 else "tension",
                          "passes": f >= fos_min})
+            if tubes:
+                t = tubes.get(m, tube)
+                rows[-1]["tube_mm"] = f"{t.od_mm:g} × {t.wall_mm:g}"
             if f < worst_fos[m]:
                 worst_fos[m] = f
                 governing[m] = lc.name
@@ -1491,8 +1501,11 @@ def compliance_budget(hp: Hardpoints, axle: str = "front",
                       od_mm: float = 15.88, wall_mm: float = 0.889,
                       rod_end_lash_mm: float = 0.025,
                       lateral_g: float = 1.5,
+                      tubes: dict | None = None,
                       **car_kw) -> dict:
     """Compliance steer and camber change at one load level.
+
+    ``tubes`` maps a member to its own (od_mm, wall_mm); members not in it use ``od_mm`` × ``wall_mm``.
 
     Uses the compliance module's uniform-tube path (axial stiffness only —
     a partial budget). Reports each as a fraction of the
@@ -1531,6 +1544,11 @@ def compliance_budget(hp: Hardpoints, axle: str = "front",
     kerb_load = WheelLoad(Fx=fx_kerb, Fy=fy_kerb, Fz=fz_kerb, Mz=0)
 
     cc = CompliantCorner.uniform_tube(hp, od_mm=od_mm, wall_mm=wall_mm)
+    if tubes:
+        from .compliance import MemberStiffness
+        cc = CompliantCorner(hp, {m: MemberStiffness(material="Steel 4130", od_mm=float(tubes.get(m, (od_mm, wall_mm))[0]),
+                                                     wall_mm=float(tubes.get(m, (od_mm, wall_mm))[1]))
+                                  for m in ("UF", "UR", "LF", "LR", "TR")})
 
     results = {}
     for name, load in (("cornering", corner_load), ("kerb strike", kerb_load)):
