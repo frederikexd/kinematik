@@ -183,7 +183,12 @@ def test_table12_delivered_front(front):
     assert round(d["contact_patch_rise_per_mm"], 2) == 1.01
     assert abs(d["side_view_ic_x_mm"] - 1196) < 1
     assert abs(d["side_view_ic_z_mm"] - 236) < 1
-    assert round(d["anti_dive_pct"]) == 69
+    assert round(d["anti_dive_svic_pct"]) == 69       # Table 12: the side-view-IC tangent form the paper used
+    # The reported anti-dive is the kinematic core's virtual-work form, the one the search's anti-dive bound uses:
+    # 68 here, 1 point under the tangent form, so the review and the bound print one number for one car.
+    from suspension.kinematics import SuspensionKinematics
+    core = SuspensionKinematics(front).anti_dive_pct(280, 1630, 0.60)
+    assert d["anti_dive_pct"] == pytest.approx(core, abs=1e-9) and round(core) == 68
 
 
 def test_table12_delivered_rear(rear):
