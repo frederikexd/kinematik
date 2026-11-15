@@ -91,16 +91,25 @@ class Hardpoints:
     rocker_spring: np.ndarray | None = None     # spring/damper attachment on the rocker
     spring_inner: np.ndarray | None = None      # spring/damper chassis mount
     pushrod_attach: str = "lower"               # "lower" | "upper" | "upright"
+    #  `actuation` picks the spring/damper layout. "rocker": pushrod to a bell-crank, as above. "direct": a
+    #  direct-acting damper, no rocker — the damper itself runs from `pushrod_outer` (on the `pushrod_attach` body)
+    #  straight to the chassis mount `spring_inner`; the rocker points are ignored.
+    actuation: str = "rocker"                   # "rocker" | "direct"
     # Design intent at static ride height (deg). These set the wheel spin-axis
     # orientation, which the linkage then carries rigidly through travel & steer.
     static_camber: float = -1.5
     static_toe: float = 0.0
 
     def has_rocker(self) -> bool:
-        """True iff a complete pushrod/rocker linkage is defined."""
-        return all(getattr(self, k) is not None for k in (
+        """True iff a complete pushrod/rocker linkage is defined (and the corner is not direct-acting)."""
+        return self.actuation != "direct" and all(getattr(self, k) is not None for k in (
             "pushrod_outer", "rocker_pivot", "rocker_axis",
             "rocker_pushrod", "rocker_spring", "spring_inner"))
+
+    def has_direct_damper(self) -> bool:
+        """True iff the corner is direct-acting with both damper ends defined."""
+        return (self.actuation == "direct" and self.pushrod_outer is not None
+                and self.spring_inner is not None)
 
     @staticmethod
     def default() -> Hardpoints:
@@ -351,7 +360,8 @@ class SuspensionKinematics:
         #  rigidly as the wheel travels, then recover its position each solve.
         # ------------------------------------------------------------------ #
         self._has_rocker = hp.has_rocker()
-        if self._has_rocker:
+        self._has_direct = hp.has_direct_damper()
+        if self._has_rocker or self._has_direct:
             attach = hp.pushrod_attach
             if attach == "upright":
                 self._pushrod_body = "upright"
@@ -360,6 +370,7 @@ class SuspensionKinematics:
                 self._pushrod_body = attach  # "lower" | "upper"
                 Rw0, ow0 = self._wishbone_pose_static(attach)
                 self._pushrod_local = Rw0.T @ (hp.pushrod_outer - ow0)
+        if self._has_rocker:
             # The pushrod is the one rocker link the solver enforces; the rocker
             # arms are rigid by construction (points rotated about the pivot).
             self.L_pushrod = np.linalg.norm(hp.rocker_pushrod - hp.pushrod_outer)
@@ -394,8 +405,8 @@ class SuspensionKinematics:
         return R, origin
 
     def _pushrod_outer_at(self, lo, uo, tro):
-        """Position of the pushrod outer in the solved configuration."""
-        if not self._has_rocker:
+        """Position of the pushrod outer (direct-acting: the damper outer) in the solved configuration."""
+        if not (self._has_rocker or self._has_direct):
             return None
         if self._pushrod_body == "upright":
             R, o = self._upright_pose(lo, uo, tro)
@@ -659,13 +670,16 @@ class SuspensionKinematics:
         """
         Installed spring/damper length (mm) at a solved corner state, by driving
         the real pushrod→rocker→spring chain. Returns (length, rocker_angle, ok).
-        Requires a defined rocker; raises otherwise.
+        Direct-acting: the damper length itself, rocker angle 0. Requires a
+        defined rocker or direct-acting damper; raises otherwise.
         """
-        if not self._has_rocker:
-            raise ValueError("No pushrod/rocker geometry defined on these hardpoints.")
+        if not (self._has_rocker or self._has_direct):
+            raise ValueError("No pushrod/rocker or direct-acting damper defined on these hardpoints.")
         hp = self.hp
         # from the solved joints, so a state built by hand (no pushrod_outer) works too
         pro = self._pushrod_outer_at(state.lower_outer, state.upper_outer, state.tie_rod_outer)
+        if self._has_direct:
+            return float(np.linalg.norm(_vec(hp.spring_inner) - pro)), 0.0, True
         theta, err = self._solve_rocker_angle(pro, seed=seed)
         rs = self._rotate_about_axis(_vec(hp.rocker_spring), theta)
         length = float(np.linalg.norm(rs - _vec(hp.spring_inner)))
@@ -715,8 +729,8 @@ class SuspensionKinematics:
         if abs(wheel_disp) < 1e-9:  # pragma: no mutate (float threshold: < and <= differ only on exact equality)
             return np.nan
 
-        if self._has_rocker:
-            # Real rocker: change in installed spring length per wheel travel.
+        if self._has_rocker or self._has_direct:
+            # Real linkage: change in installed spring length per wheel travel.
             l_up, th_up, ok_up = self.spring_length_at(s_up)
             l_dn, th_dn, ok_dn = self.spring_length_at(s_dn, seed=th_up)
             spring_disp = l_up - l_dn
@@ -741,8 +755,17 @@ class SuspensionKinematics:
         return abs(spring_disp / wheel_disp)
 
     def motion_ratio_is_real(self) -> bool:
-        """True when motion_ratio() uses the actual rocker linkage (not the proxy)."""
-        return bool(self._has_rocker)
+        """True when motion_ratio() uses the actual linkage, rocker or direct-acting (not the proxy)."""
+        return bool(self._has_rocker or self._has_direct)
+
+    def actuation_inner(self):
+        """Chassis-side end of the link the pushrod outer drives: the rocker's pushrod point, or for a
+        direct-acting damper its chassis mount. None when neither is defined."""
+        if self._has_direct:
+            return _vec(self.hp.spring_inner)
+        if self._has_rocker:
+            return _vec(self.hp.rocker_pushrod)
+        return None
 
     def wheel_rate(self, spring_rate_N_per_mm: float) -> float:
         """
@@ -765,7 +788,7 @@ class SuspensionKinematics:
         warm-started central difference so the rocker stays on one branch.
         """
         travels = np.linspace(travel_min, travel_max, n)
-        if not self._has_rocker:
+        if not (self._has_rocker or self._has_direct):
             return list(travels), [self.motion_ratio()] * n  # proxy: ~constant
         h = 1.0
         out = []

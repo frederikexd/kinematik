@@ -1230,7 +1230,8 @@ class DeclaredCar:
                 mr_flags[ax] = "no geometry"
             else:
                 solved = bool(kin.motion_ratio_is_real())
-                mr_flags[ax] = ("solved from rocker" if solved
+                mr_flags[ax] = (("solved from direct-acting damper" if kin._has_direct
+                                 else "solved from rocker") if solved
                                 else "PROXY (no rocker defined)")
         return {
             "grip_model": v.grip_model_name(),

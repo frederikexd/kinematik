@@ -125,7 +125,8 @@ def _declared_car_panel(st, pd, np, ss, fc):
     from suspension.kinematics import Hardpoints
     from ui.inverse_genesis import (_vehicle_editor, _declared_car, _table,
                                     _floats, _sec_tyre, _sec_steering,
-                                    _sec_actuation, _parse_hardpoints_text)
+                                    _sec_actuation, _parse_hardpoints_text,
+                                    _actuation_selector)
     from ui.inverse_genesis import _hint
     _hint(st, ss, "The vehicle & build declaration below is the same one the "
                   "InverseGenesis tab uses — enter a number once and both "
@@ -204,6 +205,12 @@ def _declared_car_panel(st, pd, np, ss, fc):
                 col.caption(note)
         if waiting:
             return
+        a_cols = st.columns(2)
+        for col, axle in zip(a_cols, ("front", "rear")):
+            if corners.get(axle) is not None:
+                with col:
+                    corners[axle] = _actuation_selector(st, corners[axle], f"dc_{axle}",
+                                                        title=f"{axle.title()} actuation")
         car = _declared_car(v, corners["front"], corners["rear"])
         st.markdown("**Lap sensitivity**")
         c = st.columns(2)

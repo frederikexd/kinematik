@@ -575,6 +575,35 @@ def ride_frequency_hz(spring_rate_N_mm: float, motion_ratio: float,
     return math.sqrt(k_n_m / sprung_corner_mass_kg) / (2 * math.pi)
 
 
+def default_direct_damper(hp: Hardpoints) -> tuple[np.ndarray, np.ndarray]:
+    """A starting direct-acting damper to edit, not a design: outer end on the lower wishbone 75 % of the way from
+    its pivot axis to the ball joint and 15 mm above it; chassis mount 150 mm inboard of and 260 mm above that. mm."""
+    fi, ri, bj = (_vec(getattr(hp, k)) for k in ("lower_front_inner", "lower_rear_inner", "lower_outer"))
+    mid = 0.5 * (fi + ri)
+    outer = mid + 0.75 * (bj - mid) + np.array([0.0, 0.0, 15.0])
+    return outer, outer + np.array([0.0, -150.0, 260.0])
+
+
+def carry_actuation_point(seed_hp: Hardpoints, new_hp: Hardpoints, name: str = "pushrod_outer"):
+    """The seed corner's actuation point (bolted to its ``pushrod_attach`` body) moved onto the same body of the new
+    corner, at the same position in that body's frame: a search that moves the wishbone takes the damper or pushrod
+    mount with it. None when the seed has no such point. mm."""
+    p = getattr(seed_hp, name, None)
+    if p is None:
+        return None
+    body = getattr(seed_hp, "pushrod_attach", "lower")
+
+    def pose(hp):
+        if body == "upright":
+            return SuspensionKinematics._upright_pose(None, _vec(hp.lower_outer), _vec(hp.upper_outer),
+                                                      _vec(hp.tie_rod_outer))
+        return SuspensionKinematics._wishbone_pose(getattr(hp, f"{body}_front_inner"),
+                                                   getattr(hp, f"{body}_rear_inner"), getattr(hp, f"{body}_outer"))
+    Rs, o_s = pose(seed_hp)
+    Rn, o_n = pose(new_hp)
+    return o_n + Rn @ (Rs.T @ (_vec(p) - o_s))
+
+
 def actuation_summary(hp: Hardpoints, travel_mm: float = 25.0, n: int = 11,
                       spring_rate_N_mm: float | None = None,
                       sprung_corner_mass_kg: float | None = None,
@@ -587,9 +616,11 @@ def actuation_summary(hp: Hardpoints, travel_mm: float = 25.0, n: int = 11,
     kin = SuspensionKinematics(hp)
     if not kin.motion_ratio_is_real():
         return {"ok": False,
-                "reason": "pushrod_outer, rocker_pivot, rocker_axis, "
-                          "rocker_pushrod, rocker_spring and spring_inner "
-                          "must all be defined"}
+                "reason": ("pushrod_outer (damper outer) and spring_inner (damper chassis mount) must be defined"
+                           if getattr(hp, "actuation", "rocker") == "direct" else
+                           "pushrod_outer, rocker_pivot, rocker_axis, "
+                           "rocker_pushrod, rocker_spring and spring_inner "
+                           "must all be defined")}
     trv, mr = kin.motion_ratio_curve(-travel_mm, travel_mm, n)
     mr = _vec(mr)
     i0 = int(np.argmin(np.abs(np.asarray(trv))))
@@ -602,7 +633,7 @@ def actuation_summary(hp: Hardpoints, travel_mm: float = 25.0, n: int = 11,
     lengths = np.asarray(lengths)
     pro = _vec(s0.pushrod_outer if s0.pushrod_outer is not None
                      else hp.pushrod_outer)
-    push_len = float(np.linalg.norm(np.asarray(hp.rocker_pushrod) - pro))
+    push_len = float(np.linalg.norm(kin.actuation_inner() - pro))   # direct-acting: the damper at static
     body = getattr(hp, "pushrod_attach", "lower")
     if body in ("lower", "upper"):
         fi = _vec(getattr(hp, f"{body}_front_inner"))
@@ -623,6 +654,7 @@ def actuation_summary(hp: Hardpoints, travel_mm: float = 25.0, n: int = 11,
                               else "falling" if mr[-1] < mr[i0] < mr[0]
                               else "peaks/dips at ride height"),
            "pushrod_length_mm": push_len,
+           "actuation": "direct" if kin._has_direct else "rocker",
            "pushrod_attach": body,
            "attachment_fraction": frac,
            "damper_static_mm": float(lengths[i0]),

@@ -141,9 +141,8 @@ def _member_geometry(kin, state):
         "LR": (state.lower_outer, _vec(hp.lower_rear_inner)),
         "TR": (state.tie_rod_outer, _vec(hp.tie_rod_inner)),
     }
-    if kin._has_rocker and state.pushrod_outer is not None:
-        g["PR"] = (_vec(state.pushrod_outer),
-                   _vec(hp.rocker_pushrod))
+    if kin.actuation_inner() is not None and state.pushrod_outer is not None:
+        g["PR"] = (_vec(state.pushrod_outer), kin.actuation_inner())   # direct-acting: PR is the damper
     return g
 
 
@@ -158,7 +157,7 @@ def solve_member_forces(kin, state, load: WheelLoad) -> MemberForces:
     Returns MemberForces. When no pushrod is defined, a vertical strut proxy from
     the lower ball joint carries the vertical path and `has_pushrod` is False.
     """
-    if (kin._has_rocker and state.pushrod_outer is not None
+    if (kin.actuation_inner() is not None and state.pushrod_outer is not None
             and kin._pushrod_body in ("lower", "upper")):
         return _solve_wishbone_pushrod(kin, state, load)
     geom = _member_geometry(kin, state)
@@ -277,7 +276,7 @@ def _solve_wishbone_pushrod(kin, state, load: WheelLoad) -> MemberForces:
     x = np.linalg.solve(A, b)
     B = x[3:]                                              # force of the wishbone on the upright, at the ball joint
     P = _vec(state.pushrod_outer)
-    u_pr = _unit(_vec(hp.rocker_pushrod) - P)
+    u_pr = _unit(kin.actuation_inner() - P)
     ax = _unit(ri - fi)
     T_pr = -float(ax @ np.cross(bj - fi, -B)) / float(ax @ np.cross(P - fi, u_pr))
     # wishbone: -B at the ball joint, T_pr u_pr at the mount, pivot reactions RF at fi and RR at ri
