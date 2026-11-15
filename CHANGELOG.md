@@ -17,6 +17,12 @@
 - Fixed: a loaded or generated result could leave the feature report empty ("Nothing captured yet"). Capture waited for a tab-open signal that can be missing on the hosted app; a result the user made in the tab now counts as that signal, and a capture pause left set by an interrupted run is cleared before any tab renders.
 - The manifest panel no longer says a run takes a few minutes: the published ones take 20 minutes or more.
 
+**A manifest is reviewed with the car it declared.**
+- Loading or running a manifest sets section 5 to the car it declares (mass, CG, wheelbase, track, brake bias, link tube and material, steering torque target), and the review takes the manifest's own bounds as its ranges (anti-dive, KPI, scrub, caster). On front_v11_final the review read the default car and a generic range: anti-dive 68.9 % passed the search's bound and 57.8 % failed the review, for one geometry.
+- What a manifest declares that section 5 cannot hold (per-link tubes, the steering rack) is listed in the report, with which way it moves the numbers.
+- Anti-dive in the analysis is the kinematic core's virtual-work form, the one the search uses; the side-view-IC tangent form is kept as `anti_dive_svic_pct` for the paper's Table 12, 1 point higher.
+- The replay caveat appears once in the report.
+
 **Design review.**
 - A value outside its range is red. Amber now means inside the range but within 10 % of a limit.
 - Bump steer limit 0.002 deg/mm (was 0.01), so it agrees with the 0.1 deg toe-change limit over ±25 mm: one curve could pass one and fail the other.

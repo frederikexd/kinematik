@@ -924,7 +924,12 @@ def _results_panel(st, pd, np, ss, run):
                    "swept-volume check to fill the clearance column.")
 
     for wmsg in res.warnings:
-        st.warning(wmsg)
+        if wmsg == gr.REPLAY_NOTE:
+            from suspension import report_capture as rc
+            with rc.unreported(ss):          # the run summary already says it, once, in the report
+                st.warning(wmsg)
+        else:
+            st.warning(wmsg)
     if res.ok and st.button("Apply the generated geometry to the live "
                             "hardpoints", key="ig_apply"):
         ss["hardpoints"] = whp
@@ -1147,6 +1152,7 @@ def _render_generate():
                     ver = man.verify(res) if man.recorded else None
                     if not man.recorded:
                         man.record(res)
+                    apply_manifest_vehicle(ss, man, man.context.get("axle") or "front")
                     ss["ig_run"] = {"manifest_json": man.to_json(),
                                     "result": res, "verify": ver, "replayed": bool(load and not run),
                                     "source": "manifest", "inputs_sha256": man.inputs_sha256,
@@ -2046,6 +2052,77 @@ def _veh(ss):
     return v
 
 
+def manifest_vehicle(man, axle="front"):
+    """What a manifest declared about the car, as section-5 fields, and what it declared that section 5 cannot hold.
+
+    Returns (fields, not_held): fields maps section-5 field names to the manifest's values (mm, kg, fraction, MPa,
+    GPa, N·m); not_held lists sentences for declarations the analysis sections have no field for. A manifest's
+    solved-property bounds are computed from these values; the review sections below a run read section 5, so
+    without them the same car passed a bound in the search and failed the matching review row."""
+    props = ((man.volume or {}).get("properties") or {}) if isinstance(man.volume, dict) else {}
+    out, missing = {}, []
+    brake = props.get("brake") or {}
+    for f, val in (("cg_height_mm", props.get("cg_height_mm", brake.get("cg_height_mm"))),
+                   ("wheelbase_mm", props.get("wheelbase_mm", brake.get("wheelbase_mm"))),
+                   (f"track_{axle}_mm", props.get("track_mm", brake.get("track_mm"))),
+                   ("brake_bias_front", props.get("brake_bias_front")),
+                   ("mass_kg", brake.get("mass_kg"))):
+        if val is not None:
+            out[f] = float(val)
+    st_ = props.get("structure") or {}
+    for f, k in (("tube_od_mm", "od_mm"), ("tube_wall_mm", "wall_mm"), ("yield_mpa", "sy_mpa")):
+        if st_.get(k) is not None:
+            out[f] = float(st_[k])
+    if st_.get("e_mpa") is not None:
+        out["E_gpa"] = float(st_["e_mpa"]) / 1000.0
+    per = st_.get("per_member") or {}
+    if per:
+        sizes = ", ".join(f"{m} {od:g} × {w:g} mm" for m, (od, w) in sorted(per.items()))
+        missing.append(f"per-link tubes ({sizes}): section 5 holds one tube for every link, so the link factors of "
+                       f"safety, stretch and compliance below use {st_.get('od_mm', '?'):g} × {st_.get('wall_mm', '?'):g} mm for "
+                       f"all of them, the thinnest the manifest declares: conservative for "
+                       f"{', '.join(sorted(per))}")
+    se = props.get("steer_effort") or {}
+    if se.get("effort_limit_nm") is not None:
+        out["steering_target_Nm"] = float(se["effort_limit_nm"])
+    if se.get("rack_c_mm_per_rev") is not None:
+        missing.append(f"the steering rack ({se['rack_c_mm_per_rev']:g} mm per revolution) and lock "
+                       f"({se.get('lock_road_wheel_deg', '?')}°): the search bounded the effort margin of that "
+                       "rack; the review's 'steering ratio needed' row is the ratio the torque target would need "
+                       "with no rack declared, a different question")
+    return out, missing
+
+
+def apply_manifest_vehicle(ss, man, axle="front"):
+    """Set section 5 to the car a manifest declared (see manifest_vehicle) and remember what was applied and what
+    could not be, for the review to say. Returns (fields, not_held)."""
+    from suspension import genesis_analysis as ga
+    fields, missing = manifest_vehicle(man, axle)
+    v = _veh(ss)
+    for f, val in fields.items():
+        v[f] = val
+        for p in _VEH_PREFIXES:
+            ss[f"{p}_{f}"] = val
+    # A bound the manifest declared is the team's range for that check: the review judges the delivered value
+    # against it, not against the generic starting range, or the same number passes the search and fails the review.
+    review_key = {"caster_deg": "caster_deg", "kpi_deg": "kpi_deg", "scrub_static_mm": "scrub_mm",
+                  ("anti_dive_pct" if axle == "front" else "anti_squat_pct"): "anti_pct"}
+    limits = ss.get("ig_review_limits") or [dict(r) for r in ga.DEFAULT_REVIEW_LIMITS]
+    by_key = {r["key"]: r for r in limits}
+    ranges = {}
+    props = ((man.volume or {}).get("properties") or {}) if isinstance(man.volume, dict) else {}
+    for b in props.get("bounds") or []:
+        k = review_key.get(b.get("prop"))
+        if k in by_key:
+            lo = -1e9 if b.get("lo") is None else float(b["lo"])
+            hi = 1e9 if b.get("hi") is None else float(b["hi"])
+            by_key[k]["lo"], by_key[k]["hi"] = lo, hi
+            ranges[by_key[k]["check"]] = (b.get("lo"), b.get("hi"))
+    ss["ig_review_limits"] = limits
+    ss["ig_veh_from_manifest"] = {"name": man.name, "fields": fields, "not_held": missing, "ranges": ranges}
+    return fields, missing
+
+
 def _veh_sync(field, key):
     import streamlit as st
     ss = st.session_state
@@ -2774,6 +2851,18 @@ def _render_analysis(st, pd, np, ss):
                   "summarises it against editable starting ranges; the "
                   "sections below show the working.")
     st.caption(f"For {note}, {axle} axle, with the declaration above.")
+    vm = ss.get("ig_veh_from_manifest")
+    if run is not None and vm and run.get("source") == "manifest":
+        applied = ", ".join(f"{k} = {_cell(x)}" for k, x in vm["fields"].items())
+        rng = "; ".join(f"{c} {'' if lo is None else _cell(lo)} … {'' if hi is None else _cell(hi)}".replace("  ", " ")
+                        for c, (lo, hi) in (vm.get("ranges") or {}).items())
+        # One line each: the report keeps a banner only up to 400 characters, so one long one was dropped whole.
+        st.success(f"ℹ️ Section 5 set from the car `{vm['name']}` declares, so this review reads the car the search "
+                   f"was bounded with: {applied}.")
+        if rng:
+            st.success(f"ℹ️ Review ranges taken from the manifest's own bounds: {rng}.")
+        for item in vm["not_held"]:
+            st.warning(f"Declared in `{vm['name']}` but not held by section 5: {item}.")
     if run is None or run["result"].winner_hp is None:
         st.warning("No generated geometry yet: every number in this review "
                    "and the sections under it describes the seed geometry "

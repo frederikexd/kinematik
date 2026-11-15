@@ -985,7 +985,13 @@ def corner_diagnostics(hp: Hardpoints, *, travel_mm: float = 25.0,
         k = tan_sv * wheelbase_mm / cg_height_mm
         if axle == "front":
             if brake_bias_front is not None:
-                out["anti_dive_pct"] = 100.0 * k * float(brake_bias_front)
+                # The side-view-IC tangent form, kept for the paper's Table 12, which was computed with it.
+                out["anti_dive_svic_pct"] = 100.0 * k * float(brake_bias_front)
+                # The kinematic core's virtual-work form (the contact patch's own path slope), as the rear uses
+                # below and as the search's anti-dive bound does: the side-view-IC tangent above disagreed with
+                # it by 1.4 points on front_v11_final, so one car passed its bound and showed another number here.
+                out["anti_dive_pct"] = float(kin.anti_dive_pct(
+                    cg_height_mm, wheelbase_mm, float(brake_bias_front), state=s0))
         else:
             # x is REARWARD, so the anti sense at the rear (SVIC forward of
             # and above the reference) is a NEGATIVE dx. The front branch's

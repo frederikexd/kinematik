@@ -367,3 +367,39 @@ def test_a_loaded_result_is_reported_without_the_tab_open_signal_or_after_a_stal
     ns["get_feature_results"](FEATURE)["artifacts"].clear()
     _run(st, uig)
     assert "Kinematics and anti-geometry, front corner" in _tables(ns)
+
+
+def test_a_loaded_manifest_is_reviewed_with_the_car_it_declared(tab):
+    """front_v11_final's search bounded anti-dive at 63.6–70 % with its own car (brake bias 0.73); the review read the
+    default car (0.60) and a generic 0–50 % range, so the same geometry showed 68.9 % passing in one table and 57.8 %
+    failing in the next. Section 5 now takes the manifest's car, the review takes its bounds, and both tables print
+    the one number."""
+    st, ns, uig = tab
+    _run(st, uig)
+    st.session_state["ig_manifest_up"] = _Upload((ROOT / "manifests" / "front_v11_final.recorded.genesis.json").read_text())
+    _run(st, uig)
+    _run(st, uig, clicks={"ig_manifest_load"})
+    v = uig._veh(st.session_state)
+    assert v["brake_bias_front"] == 0.73 and v["tube_wall_mm"] == 0.889 and v["yield_mpa"] == 435.0
+    assert st.session_state["ig_v_brake_bias_front"] == 0.73          # the editor shows what the review reads
+    t = _tables(ns)
+    bound = next(r for r in t["13 rows x 4 cols · property, bound, delivered, margin"]["rows"] if r[0].startswith("anti-dive"))
+    review = next(r for k, x in t.items() if k.startswith("Design review") for r in x["rows"] if r[1].startswith("Anti"))
+    assert bound[2] == review[2] == _cell(t["Kinematics and anti-geometry, front corner"], "anti-dive") == "68.935"
+    assert review[0] == "🟢" and review[4] == "63.6 … 70"
+    v_lines = _verdicts(ns)
+    assert any("Section 5 set from the car `front_v11_final`" in x for x in v_lines)
+    assert any("per-link tubes (LF 15.875 × 1.245 mm" in x for x in v_lines)
+    assert any("steering rack (81 mm per revolution)" in x for x in v_lines)
+    assert sum("Replayed from the recorded outputs" in x for x in v_lines) == 0   # said once, in the replay line
+
+
+def test_manifest_vehicle_reads_only_what_was_declared():
+    from suspension import genesis_repro as gr
+    from ui import inverse_genesis as uig
+    man = gr.GenesisManifest.from_json((ROOT / "manifests" / "table7_control.recorded.genesis.json").read_text())
+    fields, missing = uig.manifest_vehicle(man)
+    props = (man.volume or {}).get("properties") or {}
+    assert ("brake_bias_front" in fields) == (props.get("brake_bias_front") is not None)
+    man.volume = {}
+    assert uig.manifest_vehicle(man) == ({}, [])
