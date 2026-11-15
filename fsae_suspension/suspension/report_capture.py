@@ -47,6 +47,22 @@ def unreported(ss, active: bool = True):
             ss.pop(PAUSED_KEY, None)
 
 
+def engage(ss, feature=None) -> None:
+    """Mark the rendering tab as used this session, so the capture layer records it. The layer captures a tab only
+    once it knows the user was there; the tab-open signal it relies on can be missing (a deployment where the tab
+    container never reports open, or the open event failing to log), and then a tab showing a result its user
+    produced captured nothing and its report was empty. A tab holding a result the user made is proof enough."""
+    f = feature or ss.get(RENDERING_KEY)
+    if f:
+        ss[f"_ax_engaged_{f}"] = True
+
+
+def clear_stale_pause(ss) -> None:
+    """Drop a pause left over from a script run that ended inside ``unreported`` without unwinding it. Called where
+    no pause can legitimately be open: before any tab body, and at the top of a tab body that pauses."""
+    ss.pop(PAUSED_KEY, None)
+
+
 def heading(ss, text) -> None:
     """Name the table or chart rendered next."""
     if text:

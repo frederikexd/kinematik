@@ -14,6 +14,7 @@
 - ⏩ Load the recorded result: a manifest's recorded result in seconds. Every recorded candidate is placed at its recorded coordinates and its curves, fits and solved properties are recomputed with this build and checked against the record; build yields are the recorded ones, and the result says they were not re-sampled (`GenesisManifest.replay()`).
 - On the hosted app the form opens as a quick search: 1 start (the seed geometry) and N = 500 sampled builds, seconds instead of 20 minutes or more. Each random start after the first is drawn until it clears every declared wall, which was the cost: 2 starts took 220 s on front_v11_final, 1 start 5 s with the same winner. A result below 6 starts or N = 2000 says what it left out and how precise its yield is.
 - Fixed: 🧬 Generate crashed after a run (the RC-height field shadowed the report module).
+- Fixed: a loaded or generated result could leave the feature report empty ("Nothing captured yet"). Capture waited for a tab-open signal that can be missing on the hosted app; a result the user made in the tab now counts as that signal, and a capture pause left set by an interrupted run is cleared before any tab renders.
 - The manifest panel no longer says a run takes a few minutes: the published ones take 20 minutes or more.
 
 **Design review.**

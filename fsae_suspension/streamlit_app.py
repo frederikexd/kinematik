@@ -9677,6 +9677,9 @@ if _hidden_ids:
 # outer "⋯ More tools" wrapper is ALSO the selected top tab. So we gate the
 # inner-tab .open readings on the wrapper being open.
 _ax_active_ids = set()
+# No tab body has run yet in this script run, so no capture pause can be open: one still set was left by a run that
+# ended without unwinding it, and would silently stop every tab from documenting anything.
+st.session_state.pop(_CAPTURE_PAUSED_KEY, None)
 # Timing harness (suspension/perf.py). Opened here because this is the last
 # point before any tab body executes, and closed at the very bottom of the
 # file. Off by default — toggle it in Analytics. When off, begin_run/enter/

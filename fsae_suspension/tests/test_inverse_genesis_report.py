@@ -347,3 +347,23 @@ def test_the_form_run_completes(tab):
     _run(st, uig, clicks={"ig_run_btn"})
     assert st.session_state.get("ig_run") is not None
     assert not any("No generated geometry yet" in x for x in _verdicts(ns))
+
+
+def test_a_loaded_result_is_reported_without_the_tab_open_signal_or_after_a_stale_pause(tab):
+    """In the hosted app a replayed result was on screen and the report said 'Nothing captured yet': capture waits for
+    a signal that the user was in the tab, and that signal can be missing. A result the user made is that signal; and
+    a capture pause left set by an interrupted run must not silence the tab."""
+    st, ns, uig = tab
+    ss = st.session_state
+    del ss[f"_ax_open_{FEATURE}"]                             # no open signal at all
+    _run(st, uig)
+    assert _tables(ns) == {}                                  # without it, nothing is captured: the layer's own rule
+    ss["ig_manifest_up"] = _Upload((ROOT / "manifests" / "front_v11_final.recorded.genesis.json").read_text())
+    _run(st, uig)
+    _run(st, uig, clicks={"ig_manifest_load"})
+    assert ss.get(f"_ax_engaged_{FEATURE}") is True
+    assert "Kinematics and anti-geometry, front corner" in _tables(ns)
+    ss["_ax_capture_paused"] = True                           # left behind by an interrupted run
+    ns["get_feature_results"](FEATURE)["artifacts"].clear()
+    _run(st, uig)
+    assert "Kinematics and anti-geometry, front corner" in _tables(ns)
