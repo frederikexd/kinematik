@@ -235,7 +235,14 @@ link(mdl, framePort(W), framePort(sc));
 end
 
 function h = blk(mdl, lib, name)
-h = add_block(lib, [mdl '/' name]);
+% Add a library block; if the name is taken, add a numeric suffix so two helpers can never collide.
+path = [mdl '/' name];
+k = 1;
+while getSimulinkBlockHandle(path) ~= -1
+    k = k + 1;
+    path = sprintf('%s/%s_%d', mdl, name, k);
+end
+h = add_block(lib, path);
 end
 
 function p = framePort(h)
@@ -324,7 +331,7 @@ end
 end
 
 function extForce(mdl, F, name, force, torque)
-h = blk(mdl, 'sm_lib/Forces and Torques/External Force and Torque', name);
+h = blk(mdl, 'sm_lib/Forces and Torques/External Force and Torque', ['F_' name]);
 ph0 = get_param(h, 'PortHandles');
 link(mdl, F, framePort(h));
 setFlag(h, '^(Cartesian)?Force(Flag|Cartesian)?$|ForceFlag|CartesianForce');
