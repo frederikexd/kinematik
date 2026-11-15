@@ -52,7 +52,17 @@ CSV.
 | `direct_acting/motionsolve/<corner>_mr.acf` (2) | REQUEST damper: F2 = travel, F3 = damper length, every step | `direct_acting/motionsolve_damper.csv` |
 | `direct_acting/motionsolve/<corner>_loads.acf` (2) | REQUEST T_*, F2, at time 0–3 | `direct_acting/motionsolve_loads.csv` |
 
-## 3. Applied Racing Dynamics (by hand)
+## 3. MATLAB Simscape Multibody (one command, R2025b)
+
+1. Apply the patch to the repo (`git am …`), so `scripts/matlab/kinematik_simscape_benchmark.m` sits in the repo.
+2. In MATLAB: `cd` to `fsae_suspension/scripts/matlab`, then run `kinematik_simscape_benchmark`.
+   (From anywhere else: `kinematik_simscape_benchmark('<path to fsae_suspension>')`.)
+3. It checks a closed-form case first, then builds and solves every corner. It writes
+   `link_loads/matlab_results.csv`, `direct_acting/matlab_damper.csv` and `matlab_loads.csv` itself: nothing to copy.
+4. If it stops with an error, send the whole message. When a block parameter name differs in R2025b, the error
+   lists every parameter that block has, which is what's needed to fix it.
+
+## 4. Applied Racing Dynamics (by hand)
 
 Build the corners from the inputs sheets, apply the loads, and type the results into the CSVs (N, + tension; mm).
 
@@ -64,9 +74,9 @@ Build the corners from the inputs sheets, apply the loads, and type the results 
 Watch ARD's sign convention: these sheets are + tension. If ARD cannot output member forces or damper length, leave
 the sheet blank: it reports NOT RUN, which is the honest result.
 
-## 4. Send back
+## 5. Send back
 
-The `.tab` files and filled CSVs. Then in the repo:
+The `.tab` files and filled CSVs (MATLAB writes its own CSVs into the repo: commit them or send them). Then in the repo:
 
 ```
 python scripts/link_load_benchmark.py

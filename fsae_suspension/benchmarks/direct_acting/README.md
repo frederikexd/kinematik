@@ -21,6 +21,7 @@ Two quantities, limits in `limits.json`, registered on 14 Nov 2026 before any co
 | Independent (no shared code) | 0.001 mm | 0.5 N + 0.1 % | **Pass**: damper 1e-13 mm, forces 0.008 N | **Pass**: damper 1e-13 mm; forces not run (checked against virtual work in `tests/test_direct_acting.py`) |
 | Project Chrono 9.0.1 (`scripts/chrono_benchmark.py`) | 0.01 mm | 0.5 N + 0.1 % | **Pass**: damper 1.1e-6 mm, forces 4.7e-7 N | **Pass**: damper 7.2e-6 mm, forces 4.1e-7 N |
 | Adams View 2026.1 | 0.01 mm | 0.5 N + 0.1 % | Not run yet | Not run yet |
+| MATLAB Simscape Multibody R2025b (`scripts/matlab/kinematik_simscape_benchmark.m`) | 0.01 mm | 0.5 N + 0.1 % | Not run yet | Not run yet |
 | Altair MotionSolve | 0.01 mm | 0.5 N + 0.1 % | Not run yet | Not run yet |
 | Applied Racing Dynamics | 0.05 mm | 2 N + 0.5 % | Not run yet | Not run yet |
 
