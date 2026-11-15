@@ -306,3 +306,13 @@ def test_a_quick_search_says_what_it_left_out():
     assert "1 start (the seed geometry only)" in hosted and "sampled builds" in hosted
     assert "2 starts instead of 6" in uig.yield_precision_note(None, 2000, 2)
     assert uig.HOSTED_N_YIELD < uig.FULL_N_YIELD and uig.HOSTED_N_STARTS < uig.FULL_N_STARTS
+
+
+def test_engage_marks_the_rendering_tab_and_a_stale_pause_is_cleared():
+    ss = {rc.RENDERING_KEY: "genesis", rc.PAUSED_KEY: True}
+    rc.engage(ss)
+    assert ss["_ax_engaged_genesis"] is True
+    rc.engage({})                                              # nothing rendering: nothing marked, no error
+    rc.clear_stale_pause(ss)
+    assert rc.PAUSED_KEY not in ss
+    rc.clear_stale_pause(ss)                                   # idempotent

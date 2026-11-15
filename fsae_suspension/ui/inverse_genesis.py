@@ -949,7 +949,10 @@ def render():
     for k in ("ig_ok_geom", "ig_ok_targets", "ig_ok_volume", "ig_ok_review"):
         ss[k] = False
     from suspension import report_capture as rc
+    rc.clear_stale_pause(ss)
     pending = manifest_pending(ss)
+    if ss.get("ig_run") is not None:
+        rc.engage(ss)                         # a result the user made here: report it, whatever the open signal said
     rc.reset_on_change(ss, "ig_report_identity", report_identity(ss, pending))
     if pending:
         st.warning("A manifest is loaded but has not been run, so nothing in "
