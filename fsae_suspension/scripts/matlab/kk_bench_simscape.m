@@ -126,8 +126,8 @@ for i = 1:size(ENDS, 1)
 end
 if onLca
     [lca, piv, R] = revoluteBody(mdl, W, 'lca', P.lower_front_inner, P.lower_rear_inner - P.lower_front_inner);
-    sph(mdl, 'lbj', at(mdl, lca, 'lca_lo', R' * (P.lower_outer - piv)'), at(mdl, up, 'up_lo', P.lower_outer));
-    links(end+1, :) = {'PR', lca, P.pushrod_outer, prIn, {piv, R}};
+    sph(mdl, 'lbj', at(mdl, lca, 'lca_lo', P.lower_outer - piv), at(mdl, up, 'up_lo', P.lower_outer));
+    links(end+1, :) = {'PR', lca, P.pushrod_outer, prIn, {piv}};
 else
     links(end+1, :) = {'PR', up, P.pushrod_outer, prIn, [0 0 0]};
 end
@@ -135,7 +135,7 @@ names = cell(1, size(links, 1));
 axes_ = cell(1, size(links, 1));
 for i = 1:size(links, 1)
     [nm, body, po, pin, ref] = links{i, :};
-    if iscell(ref), local = (ref{2}' * (po - ref{1})')'; else, local = po; end
+    if iscell(ref), local = po - ref{1}; else, local = po; end
     a = at(mdl, body, ['o_' nm], local);
     b = at(mdl, W, ['i_' nm], pin);
     distance(mdl, ['D_' nm], a, b, norm(pin - po), ['T_' nm]);
@@ -204,12 +204,12 @@ function [trav, L] = damperCurve(P, onLca)
 up = freeBody(mdl, W, 'upright');
 [lca, pl, Rl] = revoluteBody(mdl, W, 'lca', P.lower_front_inner, P.lower_rear_inner - P.lower_front_inner);
 [uca, pu, Ru] = revoluteBody(mdl, W, 'uca', P.upper_front_inner, P.upper_rear_inner - P.upper_front_inner);
-sph(mdl, 'lbj', at(mdl, lca, 'lca_lo', Rl' * (P.lower_outer - pl)'), at(mdl, up, 'up_lo', P.lower_outer));
-sph(mdl, 'ubj', at(mdl, uca, 'uca_uo', Ru' * (P.upper_outer - pu)'), at(mdl, up, 'up_uo', P.upper_outer));
+sph(mdl, 'lbj', at(mdl, lca, 'lca_lo', P.lower_outer - pl), at(mdl, up, 'up_lo', P.lower_outer));
+sph(mdl, 'ubj', at(mdl, uca, 'uca_uo', P.upper_outer - pu), at(mdl, up, 'up_uo', P.upper_outer));
 distance(mdl, 'D_TR', at(mdl, up, 'o_TR', P.tie_rod_outer), at(mdl, W, 'i_TR', P.tie_rod_inner), ...
          norm(P.tie_rod_inner - P.tie_rod_outer), '');
 if onLca
-    dout = at(mdl, lca, 'dmp_o', Rl' * (P.pushrod_outer - pl)');
+    dout = at(mdl, lca, 'dmp_o', P.pushrod_outer - pl);
 else
     dout = at(mdl, up, 'dmp_o', P.pushrod_outer);
 end
@@ -312,18 +312,31 @@ inertia(mdl, [name '_m'], F);
 end
 
 function [F, piv, R] = revoluteBody(mdl, W, name, piv, axis)
-% A body on a revolute pivot through piv about axis. Its frame is at piv with z along the axis, so a point
-% p on the body sits at R' * (p - piv) in that frame.
-z = axis(:) / norm(axis);
-if abs(z(3)) < 0.9, x = cross([0;0;1], z); else, x = cross([1;0;0], z); end
-x = x / norm(x); y = cross(z, x);
-R = [x y z];
-b = at(mdl, framePort(W), [name '_pivB'], piv, R);
+% A body on a revolute pivot through piv about axis. Built so no Simscape convention can matter: translation and
+% rotation sit in separate Rigid Transforms, and the rotation is the half-turn R = 2nn' - I with n midway between
+% world z and the axis, so R is its own transpose and inverse and takes z onto the axis either way it is read. A
+% second R after the joint turns the body frame back to world-aligned at piv: a point p on the body is at p - piv.
+a = axis(:) / norm(axis);
+n = [0; 0; 1] + a;
+n = n / norm(n);
+R = 2 * (n * n') - eye(3);
+b = rot(mdl, at(mdl, W, [name '_pivT'], piv), [name '_pivR'], R);
 j = blk(mdl, 'sm_lib/Joints/Revolute Joint', [name '_rev']);
 ph = get_param(j, 'PortHandles');
 link(mdl, b, ph.LConn(1));
-F = ph.RConn(1);
+F = rot(mdl, ph.RConn(1), [name '_back'], R);
 inertia(mdl, [name '_m'], F);
+end
+
+function F = rot(mdl, base, name, R)
+% A Rigid Transform holding only a rotation.
+h = blk(mdl, 'sm_lib/Frames and Transforms/Rigid Transform', name);
+setEnum(h, 'RotationMethod', 'matrix');
+setNum(h, 'RotationMatrix', mat2str(R, 17), '');
+setEnum(h, 'TranslationMethod', 'none');
+ph = get_param(h, 'PortHandles');
+link(mdl, base, ph.LConn(1));
+F = ph.RConn(1);
 end
 
 function inertia(mdl, name, F)
@@ -334,16 +347,12 @@ setNum(h, 'MomentsOfInertia', '[1 1 1]', 'kg*m^2');
 link(mdl, F, framePort(h));
 end
 
-function F = at(mdl, base, name, p, R)
-% A Rigid Transform from base: translation p (mm, in base's frame), optional rotation matrix R.
+function F = at(mdl, base, name, p)
+% A Rigid Transform from base holding only a translation p (mm).
 if strcmp(get_param(base, 'Type'), 'block'), base = framePort(base); end   % World Frame block or a frame port
 h = blk(mdl, 'sm_lib/Frames and Transforms/Rigid Transform', name);
 setEnum(h, 'TranslationMethod', 'cartesian');
 setNum(h, 'TranslationCartesianOffset', mat2str(p(:)', 17), 'mm');
-if nargin > 4
-    setEnum(h, 'RotationMethod', 'matrix');
-    setNum(h, 'RotationMatrix', mat2str(R, 17), '');
-end
 ph = get_param(h, 'PortHandles');
 link(mdl, base, ph.LConn(1));
 F = ph.RConn(1);

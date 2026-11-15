@@ -100,3 +100,10 @@ def test_motionsolve_dataset_and_inputs_sheet_are_generated_from_the_manifest(na
 def test_kinematik_agrees_with_project_chrono(name):
     """benchmarks/link_loads/chrono_results.csv is the output of scripts/chrono_benchmark.py (Project Chrono 9.0.1)."""
     assert llb.compare("chrono", name)["status"] == "PASS"
+
+
+@pytest.mark.parametrize("name", llb.CORNERS)
+def test_kinematik_agrees_with_simscape_multibody(name):
+    """benchmarks/link_loads/matlab_results.csv is the output of scripts/matlab/kk_bench_simscape.m (MATLAB Simscape
+    Multibody), run by the author."""
+    assert llb.compare("matlab", name)["status"] == "PASS"
