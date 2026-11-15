@@ -107,3 +107,28 @@ def test_kinematik_agrees_with_simscape_multibody(name):
     """benchmarks/link_loads/matlab_results.csv is the output of scripts/matlab/kk_bench_simscape.m (MATLAB Simscape
     Multibody), run by the author."""
     assert llb.compare("matlab", name)["status"] == "PASS"
+
+
+def _spreadsheet(model, rs, times, values):
+    """An Adams View Spread Sheet export, as Adams 2026.1 writes it."""
+    head = f'"(No Title)"\n\t"2026-11-"\t"5 10:25:14"\n\n" Result ID"\t"Result Type"\n"      {rs}"\t"  Variable"\n\n'
+    head += f'".{model}.Last_Run.{rs}.TIME"\t".{model}.Last_Run.{rs}.Q"\n'
+    return head + "".join(f"{t:.6e}\t{v:.6e}\n" for t, v in zip(times, values)) + "\n\n"
+
+
+def test_adams_spreadsheet_exports_are_read_and_compared(tmp_path, monkeypatch):
+    """The per-measure files the command file writes (adams/<corner>__T_xx.tab) are read; KinematiK's own numbers at
+    Adams' 7 significant digits pass, one member off by 5 N fails."""
+    kk = llb.kinematik("front_v11_final")
+    (tmp_path / "adams").mkdir()
+    for m in llb.MEMBERS:
+        vals = [kk[c][m] + (5.0 if (m == "TR" and c == "brake") else 0.0) for c in llb.CASES]
+        (tmp_path / "adams" / f"front_v11_final__T_{m}.tab").write_text(
+            _spreadsheet("front_v11_final_loads_v1", f"T_{m}", range(4), vals))
+    monkeypatch.setattr(llb, "BENCH", tmp_path)
+    r = llb.compare("adams_view", "front_v11_final")
+    assert r["status"] == "FAIL" and r["where"] == ("brake", "TR")
+    kk_ok = {c: dict(kk[c]) for c in kk}
+    (tmp_path / "adams" / "front_v11_final__T_TR.tab").write_text(
+        _spreadsheet("front_v11_final_loads_v1", "T_TR", range(4), [kk_ok[c]["TR"] for c in llb.CASES]))
+    assert llb.compare("adams_view", "front_v11_final")["status"] == "PASS"

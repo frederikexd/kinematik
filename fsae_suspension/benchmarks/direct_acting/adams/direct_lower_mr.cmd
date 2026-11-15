@@ -1,4 +1,4 @@
-! KinematiK direct-acting corner direct_lower: damper length over wheel travel -25 to +25 mm. Damper outer on the lca, chassis mount fixed. Export travel and damper_len as direct_lower_mr.tab.
+! KinematiK direct-acting corner direct_lower: damper length over wheel travel -25 to +25 mm. Damper outer on the lca, chassis mount fixed. Writes direct_lower_mr__travel.tab and direct_lower_mr__damper_len.tab.
 ! KinematiK corner direct_lower_mr (inputs SHA-256 b89522ff6360) for Adams View: kinematic benchmark, parallel wheel travel -25 to +25 mm.
 ! No masses: a kinematic sweep does not use them.
 ! Frame: x rearward, y outboard (right-hand corner), z up from the ground; mm and degrees.
@@ -50,3 +50,5 @@ measure create function measure_name=.direct_lower_mr_v4.damper_len function="DM
 default model model_name=.direct_lower_mr_v4
 simulation single_run reset
 simulation single_run transient type=kinematic end_time=1.0 number_of_steps=50 model_name=.direct_lower_mr_v4 initial_static=no
+file spread_sheet write file_name="direct_lower_mr__travel.tab" result_set_name=.direct_lower_mr_v4.Last_Run.travel
+file spread_sheet write file_name="direct_lower_mr__damper_len.tab" result_set_name=.direct_lower_mr_v4.Last_Run.damper_len

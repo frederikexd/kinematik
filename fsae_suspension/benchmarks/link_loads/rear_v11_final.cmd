@@ -62,3 +62,10 @@ measure create function measure_name=.rear_v11_final_loads_v1.T_PR function="FX(
 default model model_name=.rear_v11_final_loads_v1
 simulation single_run reset
 simulation single_run transient type=kinematic end_time=3.0 number_of_steps=3 model_name=.rear_v11_final_loads_v1 initial_static=no
+! Write each measure to <corner>__T_xx.tab in Adams' working directory.
+file spread_sheet write file_name="rear_v11_final__T_UF.tab" result_set_name=.rear_v11_final_loads_v1.Last_Run.T_UF
+file spread_sheet write file_name="rear_v11_final__T_UR.tab" result_set_name=.rear_v11_final_loads_v1.Last_Run.T_UR
+file spread_sheet write file_name="rear_v11_final__T_LF.tab" result_set_name=.rear_v11_final_loads_v1.Last_Run.T_LF
+file spread_sheet write file_name="rear_v11_final__T_LR.tab" result_set_name=.rear_v11_final_loads_v1.Last_Run.T_LR
+file spread_sheet write file_name="rear_v11_final__T_TR.tab" result_set_name=.rear_v11_final_loads_v1.Last_Run.T_TR
+file spread_sheet write file_name="rear_v11_final__T_PR.tab" result_set_name=.rear_v11_final_loads_v1.Last_Run.T_PR

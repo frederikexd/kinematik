@@ -77,6 +77,25 @@ def read_table(path: Path) -> tuple[str, dict[str, np.ndarray]]:
     return model, {h: data[:, i] for i, h in enumerate(heads)}
 
 
+def read_spreadsheet(path: Path) -> tuple[str, str, np.ndarray, np.ndarray]:
+    """One Adams View File > Export > Spread Sheet file (tab-delimited, one result set): (model, result set, time,
+    value). The header row names the components, e.g. ".model.Last_Run.T_PR.TIME" and ".model.Last_Run.T_PR.Q"."""
+    lines = path.read_text().splitlines()
+    k = next(i for i, ln in enumerate(lines) if ".TIME" in ln and ln.lstrip().startswith('"'))
+    head = [h.strip().strip('"') for h in lines[k].split("\t") if h.strip()]
+    parts = head[0].split(".")                   # ['', model, run, result_set, 'TIME']
+    rows = [[float(x) for x in ln.split()] for ln in lines[k + 1:] if ln.strip()]
+    data = np.array(rows)
+    return parts[1], parts[3], data[:, 0], data[:, 1]
+
+
+def export_commands(model: str, measures, prefix: str) -> list[str]:
+    """Adams View commands that write each measure of the last run to <prefix>__<measure>.tab (the Spread Sheet
+    export of File > Export), in Adams' working directory."""
+    return [f'file spread_sheet write file_name="{prefix}__{m}.tab" result_set_name=.{model}.Last_Run.{m}'
+            for m in measures]
+
+
 def compare(name: str) -> dict:
     model, adams = read_table(BENCH / f"{name}.tab")
     if not model.startswith(name):

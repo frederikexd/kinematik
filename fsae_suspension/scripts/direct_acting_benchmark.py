@@ -173,11 +173,18 @@ def tool_damper(tool: str, name: str):
     if tool == "independent":
         return TRAVEL, independent_damper(name)
     if tool == "adams_view":
-        p = BENCH / "adams" / f"{name}_mr.tab"
-        if not p.exists():
-            return None
-        t = _table(p, name)
-        trv, L = np.round(t["travel"], 6), t["damper_len"]
+        ft, fl = (BENCH / "adams" / f"{name}_mr__{q}.tab" for q in ("travel", "damper_len"))
+        if ft.exists() and fl.exists():
+            (m1, _, t1, trv), (m2, _, t2, L) = avb.read_spreadsheet(ft), avb.read_spreadsheet(fl)
+            if not (m1.startswith(name) and m2.startswith(name)) or not np.allclose(t1, t2):
+                raise ValueError(f"{name}: Adams travel and damper files do not belong together")
+            trv = np.round(trv, 6)
+        else:
+            p = BENCH / "adams" / f"{name}_mr.tab"
+            if not p.exists():
+                return None
+            t = _table(p, name)
+            trv, L = np.round(t["travel"], 6), t["damper_len"]
     else:
         rows = _csv_rows(BENCH / f"{tool}_damper.csv", name)
         if not rows or any(not r["damper_mm"].strip() for r in rows):
@@ -194,6 +201,16 @@ def tool_loads(tool: str, name: str):
     if tool == "independent":
         return independent_loads(name)
     if tool == "adams_view":
+        files = {m: BENCH / "adams" / f"{name}_loads__T_{m}.tab" for m in mem}
+        if all(f.exists() for f in files.values()):
+            out = {}
+            for m, f in files.items():
+                model, rs, tt, q = avb.read_spreadsheet(f)
+                if not model.startswith(name) or rs != f"T_{m}":
+                    raise ValueError(f"{f.name} holds {model}.{rs}, not {name} T_{m}")
+                for i, c in enumerate(CASES):
+                    out.setdefault(c, {})[m] = float(q[int(np.argmin(np.abs(tt - i)))])
+            return out
         p = BENCH / "adams" / f"{name}_loads.tab"
         if not p.exists():
             return None
@@ -243,8 +260,9 @@ def mr_command_file(name: str) -> str:
                                           ("ground", "g_dmp", w["spring_inner"])],
                            extra_measures=[("damper_len", f"DM({{M}}.{part}.dmp_out,{{M}}.ground.g_dmp)")])
     head = (f"! KinematiK direct-acting corner {name}: damper length over wheel travel -25 to +25 mm. Damper outer on "
-            f"the {part}, chassis mount fixed. Export travel and damper_len as {name}_mr.tab.\n")
-    return head + txt
+            f"the {part}, chassis mount fixed. Writes {name}_mr__travel.tab and {name}_mr__damper_len.tab.\n")
+    tail = "\n".join(avb.export_commands(f"{name}_mr_v4", ["travel", "damper_len"], f"{name}_mr")) + "\n"
+    return head + txt + tail
 
 
 def _links(w: dict, name: str):
@@ -326,6 +344,7 @@ def loads_command_file(name: str) -> str:
     L += [f"default model model_name={M}", "simulation single_run reset",
           f"simulation single_run transient type=kinematic end_time=3.0 number_of_steps=3 model_name={M} "
           "initial_static=no"]
+    L += avb.export_commands(m, [f"T_{x[0]}" for x in links], f"{name}_loads")
     return "\n".join(L) + "\n"
 
 

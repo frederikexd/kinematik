@@ -75,6 +75,18 @@ def independent(name: str) -> dict:
 
 
 def read_adams(name: str) -> dict | None:
+    """Adams View results: the per-measure Spread Sheet files adams/<corner>__T_xx.tab the command file writes, or
+    one PostProcessor table <corner>.tab."""
+    files = {m: BENCH / "adams" / f"{name}__T_{m}.tab" for m in MEMBERS}
+    if all(f.exists() for f in files.values()):
+        out = {}
+        for m, f in files.items():
+            model, rs, tt, q = avb.read_spreadsheet(f)
+            if not model.startswith(name) or rs != f"T_{m}":
+                raise ValueError(f"{f.name} holds {model}.{rs}, not {name} T_{m}")
+            for c in CASES:
+                out.setdefault(c, {})[m] = float(q[int(np.argmin(np.abs(tt - list(CASES).index(c))))])
+        return out
     p = BENCH / f"{name}.tab"
     if not p.exists():
         return None
@@ -184,6 +196,8 @@ def command_file(name: str) -> str:
     L += [f"default model model_name={M}", "simulation single_run reset",
           f"simulation single_run transient type=kinematic end_time=3.0 number_of_steps=3 model_name={M} "
           "initial_static=no"]
+    L += ["! Write each measure to <corner>__T_xx.tab in Adams' working directory."]
+    L += avb.export_commands(m, [f"T_{x}" for x in MEMBERS], name)
     return "\n".join(L) + "\n"
 
 
