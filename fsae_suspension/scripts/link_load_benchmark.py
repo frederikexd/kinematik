@@ -50,7 +50,7 @@ REG = json.loads((BENCH / "limits.json").read_text())
 CASES = REG["load_cases"]
 LIMITS = REG["limits"]
 MEMBERS = ind.MEMBERS
-TOOLS = ("independent", "adams_view", "motionsolve", "ard")
+TOOLS = ("independent", "adams_view", "motionsolve", "chrono", "matlab", "ard")
 
 
 def _winner(name):

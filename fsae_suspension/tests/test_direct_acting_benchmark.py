@@ -76,3 +76,11 @@ def test_a_wrong_hand_entered_damper_length_fails(tmp_path, monkeypatch):
     (tmp_path / "ard_damper.csv").write_text("\n".join(rows) + "\n")
     monkeypatch.setattr(dab, "BENCH", tmp_path)
     assert dab.compare("ard", "direct_lower")["damper"] == "FAIL"
+
+
+@pytest.mark.parametrize("name", dab.CORNERS)
+def test_kinematik_agrees_with_project_chrono(name):
+    """chrono_damper.csv and chrono_loads.csv are the output of scripts/chrono_benchmark.py (Project Chrono 9.0.1);
+    Chrono also covers the two-body direct_lower statics the independent solve does not."""
+    r = dab.compare("chrono", name)
+    assert r["damper"] == "PASS" and r["loads"] == "PASS", r

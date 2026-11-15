@@ -94,3 +94,9 @@ def test_motionsolve_dataset_and_inputs_sheet_are_generated_from_the_manifest(na
     assert (llb.BENCH / "motionsolve" / f"{name}.adm").read_text() == llb.adm_file(name)
     assert (llb.BENCH / "motionsolve" / f"{name}.acf").read_text() == llb.acf_file(name)
     assert (llb.BENCH / "inputs.csv").read_text() == llb.inputs_sheet()
+
+
+@pytest.mark.parametrize("name", llb.CORNERS)
+def test_kinematik_agrees_with_project_chrono(name):
+    """benchmarks/link_loads/chrono_results.csv is the output of scripts/chrono_benchmark.py (Project Chrono 9.0.1)."""
+    assert llb.compare("chrono", name)["status"] == "PASS"

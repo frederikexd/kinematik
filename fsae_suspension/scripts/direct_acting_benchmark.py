@@ -59,7 +59,7 @@ LIMITS = REG["limits"]
 CASES = llb.CASES
 TRAVEL = np.arange(-25.0, 26.0, 1.0)
 HAND_TRAVEL = np.arange(-25.0, 26.0, 5.0)
-TOOLS = ("independent", "adams_view", "motionsolve", "ard")
+TOOLS = ("independent", "adams_view", "motionsolve", "chrono", "matlab", "ard")
 ALL6 = ("UF", "UR", "LF", "LR", "TR", "PR")
 LOAD_MEMBERS = {"direct_upright": ALL6, "direct_lower": ("UF", "UR", "TR", "PR")}
 
