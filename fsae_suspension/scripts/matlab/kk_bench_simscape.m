@@ -235,7 +235,9 @@ function [mdl, W] = newModel()
 mdl = sprintf('kk_bench_%09d', randi(999999999));
 while bdIsLoaded(mdl), mdl = sprintf('kk_bench_%09d', randi(999999999)); end
 new_system(mdl);
-try, set_param(mdl, 'SimMechanicsOpenEditorOnUpdate', 'off'); catch, end
+for opt = {'SimMechanicsOpenEditorOnUpdate', 'SimscapeMultibodyOpenEditorOnUpdate', 'OpenMultibodyExplorerOnUpdate'}
+    try, set_param(mdl, opt{1}, 'off'); catch, end      % no Multibody Explorer window per model
+end
 set_param(mdl, 'Solver', 'daessc', 'StopTime', '0.01');
 W = blk(mdl, 'sm_lib/Frames and Transforms/World Frame', 'W');
 mc = blk(mdl, 'sm_lib/Utilities/Mechanism Configuration', 'MC');
@@ -292,6 +294,7 @@ end
 
 function inertia(mdl, name, F)
 h = blk(mdl, 'sm_lib/Body Elements/Inertia', name);
+setEnum(h, 'InertiaType|^Type$', 'custom');      % default is a point mass: no rotational inertia, degenerate
 setNum(h, '^Mass$', '1', 'kg');
 setNum(h, 'MomentsOfInertia', '[1 1 1]', 'kg*m^2');
 link(mdl, F, framePort(h));
