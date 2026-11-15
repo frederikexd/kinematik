@@ -760,7 +760,7 @@ class SuspensionKinematics:
 
     def actuation_inner(self):
         """Chassis-side end of the link the pushrod outer drives: the rocker's pushrod point, or for a
-        direct-acting damper its chassis mount. None when neither is defined."""
+        direct-acting damper its chassis mount, in mm (corner frame). None when neither is defined."""
         if self._has_direct:
             return _vec(self.hp.spring_inner)
         if self._has_rocker:

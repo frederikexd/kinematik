@@ -593,14 +593,14 @@ def carry_actuation_point(seed_hp: Hardpoints, new_hp: Hardpoints, name: str = "
         return None
     body = getattr(seed_hp, "pushrod_attach", "lower")
 
-    def pose(hp):
+    def _pose(hp):
         if body == "upright":
             return SuspensionKinematics._upright_pose(None, _vec(hp.lower_outer), _vec(hp.upper_outer),
                                                       _vec(hp.tie_rod_outer))
         return SuspensionKinematics._wishbone_pose(getattr(hp, f"{body}_front_inner"),
                                                    getattr(hp, f"{body}_rear_inner"), getattr(hp, f"{body}_outer"))
-    Rs, o_s = pose(seed_hp)
-    Rn, o_n = pose(new_hp)
+    Rs, o_s = _pose(seed_hp)
+    Rn, o_n = _pose(new_hp)
     return o_n + Rn @ (Rs.T @ (_vec(p) - o_s))
 
 
