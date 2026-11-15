@@ -691,3 +691,111 @@ def test_marker_helper_respects_existing_glyphs(cap):
     assert cap["_mark_for"]("✗ failed", "fail") == ""
     assert cap["_mark_for"]("plain text", "ok") == "✅"
     assert cap["_mark_for"]("", "warning") == "⚠️"
+
+
+# --------------------------------------------------------------------------- #
+#  What a tab tells the layer: pause, and name the next table
+#
+#  A feature report printed the example link and example bracket a tab opens
+#  with as results of the design, and a 15-row motion-ratio table where the
+#  15-row kinematics table belonged: a table was known only by its shape, so
+#  the later of two same-shaped tables replaced the earlier.
+# --------------------------------------------------------------------------- #
+def _frame(rows, label="quantity"):
+    import pandas as pd
+    return pd.DataFrame({label: [f"q{i}" for i in range(rows)],
+                         "value": [str(i) for i in range(rows)]})
+
+
+def test_a_paused_tab_captures_nothing(cap):
+    _open_feature(cap, "genesis")
+    cap["_st"].session_state[cap["_CAPTURE_PAUSED_KEY"]] = True
+    cap["capture_metric"]("Yield", "100 %")
+    cap["capture_verdict"]("Recorded result: RESILIENT, build yield 100 %", "ok")
+    cap["_ax_wrap_table"](lambda *a, **k: None, "table")(_frame(3))
+    assert cap["get_feature_results"]("genesis") == EMPTY
+    del cap["_st"].session_state[cap["_CAPTURE_PAUSED_KEY"]]
+    cap["capture_metric"]("Yield", "100 %")
+    assert cap["get_feature_results"]("genesis")["metrics"]
+
+
+def test_two_tables_of_one_shape_are_two_tables_when_they_are_named(cap):
+    _open_feature(cap, "genesis")
+    ss = cap["_st"].session_state
+    table = cap["_ax_wrap_table"](lambda *a, **k: None, "table")
+    for name in ("Kinematics and anti-geometry", "Actuation and ride"):
+        ss[cap["_CAPTURE_HEADING_KEY"]] = name
+        table(_frame(15))
+    got = cap["get_feature_results"]("genesis")["artifacts"]
+    assert [r["heading"] for r in got] == ["Kinematics and anti-geometry", "Actuation and ride"]
+    assert got[0]["title"] == got[1]["title"]                 # the same shape line: what used to make them one row
+    ss[cap["_CAPTURE_HEADING_KEY"]] = "Actuation and ride"   # a rerun, now with 14 rows
+    table(_frame(14))
+    got = cap["get_feature_results"]("genesis")["artifacts"]
+    assert len(got) == 2 and len(got[1]["table"]["rows"]) == 14 and "14 rows" in got[1]["title"]
+    table(_frame(15))                                         # an unnamed table never replaces a named one
+    assert len(cap["get_feature_results"]("genesis")["artifacts"]) == 3
+    body = "\n".join(l for _, lines in cap["_captured_result_sections"]("genesis") for l in lines)
+    assert body.index("**Kinematics and anti-geometry**") < body.index("**Actuation and ride**")
+    assert body.count("| quantity | value |") == 3
+
+
+def test_a_heading_is_used_once_even_when_nothing_is_captured(cap):
+    _open_feature(cap, "genesis")
+    ss = cap["_st"].session_state
+    table = cap["_ax_wrap_table"](lambda *a, **k: None, "table")
+    ss[cap["_CAPTURE_PAUSED_KEY"]] = True
+    ss[cap["_CAPTURE_HEADING_KEY"]] = "An example nobody replaced"
+    table(_frame(4))
+    del ss[cap["_CAPTURE_PAUSED_KEY"]]
+    assert cap["_CAPTURE_HEADING_KEY"] not in ss
+    table(_frame(4))                                          # the next table must not inherit that name
+    got = cap["get_feature_results"]("genesis")["artifacts"]
+    assert len(got) == 1 and "heading" not in got[0]
+
+
+def test_an_untitled_chart_takes_the_heading_the_tab_gave_it(cap):
+    _open_feature(cap, "genesis")
+    cap["_st"].session_state[cap["_CAPTURE_HEADING_KEY"]] = "Frame tube centrelines read from frame.step"
+    cap["_ax_wrap_chart"](lambda *a, **k: None)(_FakeFig("", "", "", 121))
+    got = cap["get_feature_results"]("genesis")["artifacts"]
+    assert got[0]["title"] == "Frame tube centrelines read from frame.step" and "121 series" in got[0]["detail"]
+
+
+def test_inverse_genesis_analysis_reaches_the_report_named_and_without_the_examples(cap):
+    """The tab's analysis sections drawn through the real wrappers, then the report built from what they left."""
+    pd = pytest.importorskip("pandas")
+    from suspension.kinematics import Hardpoints
+    from ui import inverse_genesis as uig
+
+    _open_feature(cap, "genesis")
+    noop = lambda *a, **k: None                               # noqa: E731
+    st = types.SimpleNamespace(
+        session_state=cap["_st"].session_state,
+        dataframe=cap["_ax_wrap_table"](noop, "table"),
+        success=cap["_ax_wrap_alert"](noop, "ok"), error=cap["_ax_wrap_alert"](noop, "fail"),
+        warning=cap["_ax_wrap_alert"](noop, "warning"),
+        caption=noop, markdown=noop, info=noop, line_chart=noop,
+        number_input=lambda label, lo, hi, value, step, **k: value,
+        data_editor=lambda df, **k: df)
+    st.columns = lambda n: [st] * n
+    v, hp = uig._veh({}), Hardpoints.default()
+    out = {"kin": uig._sec_kinematics(st, pd, v, hp, "front", 25.0),
+           "act": uig._sec_actuation(st, pd, v, hp, "front"),
+           "steer": uig._sec_steering(st, pd, v, hp, hp, "k"),
+           "sc": uig._sec_structural(st, pd, v, hp, "front")}
+    out["comp"] = uig._sec_compliance(st, pd, v, hp, "front", out["sc"], {"camber": 0.3, "toe": 0.08})
+    out["brk"] = uig._sec_brackets(st, pd, v, out["sc"], "k")
+    out["pack"] = uig._sec_packaging(st, pd, v, hp)
+
+    arts = cap["get_feature_results"]("genesis")["artifacts"]
+    heads = [a.get("heading") for a in arts]
+    assert len(arts) == 12 and all(heads) and len(set(heads)) == 12, heads
+    body = "\n".join(l for _, lines in cap["_captured_result_sections"]("genesis") for l in lines)
+    assert "**Kinematics and anti-geometry, front corner**" in body and "| camber gain, LSQ |" in body
+    assert "| motion ratio, static |" in body and body.count("| motion ratio, static |") == 1
+    for example in ("4799", "unexplained part", "as drawn", "Stated link", "Bracket screening"):
+        assert example not in body, example
+    assert cap["_CAPTURE_PAUSED_KEY"] not in st.session_state
+    vals = uig._review_values(v, out, "front")
+    assert "bracket_fos" not in vals and vals["wheel_rate_spread"] > 25.0
