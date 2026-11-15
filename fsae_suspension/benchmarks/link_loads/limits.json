@@ -57,6 +57,16 @@
       "abs_N": 0.5,
       "rel": 0.001,
       "why": "same idealisation, independent commercial multibody solver: agreement to solver tolerance (added 2026-11-14, before any MotionSolve run)"
+    },
+    "chrono": {
+      "abs_N": 0.5,
+      "rel": 0.001,
+      "why": "Project Chrono (open-source multibody), run in the repo: agreement to solver tolerance (added 2026-11-15, before any Chrono run)"
+    },
+    "matlab": {
+      "abs_N": 0.5,
+      "rel": 0.001,
+      "why": "MATLAB Simscape Multibody: agreement to solver tolerance (added 2026-11-15, before any MATLAB run)"
     }
   },
   "pass_rule": "every member, every load case, every corner: |KinematiK - tool| <= abs_N + rel * |tool|"

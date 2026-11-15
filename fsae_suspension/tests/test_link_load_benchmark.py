@@ -21,7 +21,7 @@ def test_limits_are_the_registered_ones():
     reg = json.loads((llb.BENCH / "limits.json").read_text())
     got = {t: (v["abs_N"], v["rel"]) for t, v in reg["limits"].items()}
     assert got == {"independent": (0.5, 0.001), "adams_view": (0.5, 0.001), "lotus": (2.0, 0.005), "ard": (2.0, 0.005),
-                   "motionsolve": (0.5, 0.001)}
+                   "motionsolve": (0.5, 0.001), "chrono": (0.5, 0.001), "matlab": (0.5, 0.001)}
     assert list(reg["load_cases"]) == ["bump", "corner", "brake", "corner_drive"]
 
 

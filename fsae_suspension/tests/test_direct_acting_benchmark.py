@@ -18,7 +18,8 @@ import direct_acting_benchmark as dab                                     # noqa
 def test_limits_are_the_registered_ones():
     got = {t: (v["damper_mm"], v["abs_N"], v["rel"]) for t, v in dab.LIMITS.items()}
     assert got == {"independent": (0.001, 0.5, 0.001), "adams_view": (0.01, 0.5, 0.001),
-                   "motionsolve": (0.01, 0.5, 0.001), "ard": (0.05, 2.0, 0.005)}
+                   "motionsolve": (0.01, 0.5, 0.001), "ard": (0.05, 2.0, 0.005),
+                   "chrono": (0.01, 0.5, 0.001), "matlab": (0.01, 0.5, 0.001)}
 
 
 @pytest.mark.parametrize("name", dab.CORNERS)

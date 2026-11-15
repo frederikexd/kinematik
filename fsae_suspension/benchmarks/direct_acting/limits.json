@@ -4,10 +4,42 @@
   "sign": "mm; N, + tension",
   "load_cases": "same as benchmarks/link_loads/limits.json",
   "limits": {
-    "independent": {"damper_mm": 0.001, "abs_N": 0.5, "rel": 0.001, "why": "same idealisation, different formulation and code"},
-    "adams_view":  {"damper_mm": 0.01,  "abs_N": 0.5, "rel": 0.001, "why": "commercial multibody solver; kinematics limits were 0.05 mm on the wheel centre, the damper is a single length"},
-    "motionsolve": {"damper_mm": 0.01,  "abs_N": 0.5, "rel": 0.001, "why": "commercial multibody solver"},
-    "ard":         {"damper_mm": 0.05,  "abs_N": 2.0, "rel": 0.005, "why": "values read off the ARD output by hand"}
+    "independent": {
+      "damper_mm": 0.001,
+      "abs_N": 0.5,
+      "rel": 0.001,
+      "why": "same idealisation, different formulation and code"
+    },
+    "adams_view": {
+      "damper_mm": 0.01,
+      "abs_N": 0.5,
+      "rel": 0.001,
+      "why": "commercial multibody solver; kinematics limits were 0.05 mm on the wheel centre, the damper is a single length"
+    },
+    "motionsolve": {
+      "damper_mm": 0.01,
+      "abs_N": 0.5,
+      "rel": 0.001,
+      "why": "commercial multibody solver"
+    },
+    "ard": {
+      "damper_mm": 0.05,
+      "abs_N": 2.0,
+      "rel": 0.005,
+      "why": "values read off the ARD output by hand"
+    },
+    "chrono": {
+      "damper_mm": 0.01,
+      "abs_N": 0.5,
+      "rel": 0.001,
+      "why": "Project Chrono (open-source multibody), run in the repo: agreement to solver tolerance (added 2026-11-15, before any Chrono run)"
+    },
+    "matlab": {
+      "damper_mm": 0.01,
+      "abs_N": 0.5,
+      "rel": 0.001,
+      "why": "MATLAB Simscape Multibody: agreement to solver tolerance (added 2026-11-15, before any MATLAB run)"
+    }
   },
   "pass_rule": "every travel point: |KinematiK - tool| <= damper_mm; every member, case and corner: |KinematiK - tool| <= abs_N + rel * |tool|"
 }
