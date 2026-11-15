@@ -352,6 +352,7 @@
   ],
   "r": {
    "hp": {
+    "actuation": "rocker",
     "contact_patch": [
      0.0,
      605.0,
@@ -521,6 +522,7 @@
   "log": [],
   "r": {
    "hp": {
+    "actuation": "rocker",
     "contact_patch": [
      0.0,
      605.0,
@@ -766,6 +768,7 @@
   ],
   "r": {
    "hp": {
+    "actuation": "rocker",
     "contact_patch": [
      0.0,
      605.0,
@@ -1129,6 +1132,7 @@
   ],
   "r": {
    "hp": {
+    "actuation": "rocker",
     "contact_patch": [
      0.0,
      605.0,
@@ -1390,6 +1394,7 @@
   ],
   "r": {
    "hp": {
+    "actuation": "rocker",
     "contact_patch": [
      0.0,
      605.0,
@@ -1563,6 +1568,7 @@
   "log": [],
   "r": {
    "hp": {
+    "actuation": "rocker",
     "contact_patch": [
      0.0,
      605.0,
@@ -1808,6 +1814,7 @@
   ],
   "r": {
    "hp": {
+    "actuation": "rocker",
     "contact_patch": [
      0.0,
      605.0,
@@ -2065,6 +2072,7 @@
   ],
   "r": {
    "hp": {
+    "actuation": "rocker",
     "contact_patch": [
      0.0,
      605.0,
@@ -2322,6 +2330,7 @@
   ],
   "r": {
    "hp": {
+    "actuation": "rocker",
     "contact_patch": [
      0.0,
      605.0,
