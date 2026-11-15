@@ -286,3 +286,23 @@ def test_a_declared_motion_ratio_still_reports_its_wheel_rate_spread():
     a = uig._sec_actuation(st, pd, v, hp, "front")
     assert not a.get("ok") and a["wheel_rate_spread_pct"] is not None
     assert any("DECLARED" in (t["heading"] or "") for t in st.tables)
+
+
+# ---- the hosted app -----------------------------------------------------------
+def test_hosted_is_decided_by_the_flag_then_by_the_cloud_mount(tmp_path):
+    assert uig.hosted({"KINEMATIK_HOSTED": "1"}, mount="/nonexistent") is True
+    assert uig.hosted({"KINEMATIK_HOSTED": "0"}, mount=str(tmp_path)) is False   # the flag wins over the mount
+    assert uig.hosted({}, mount=str(tmp_path)) is True
+    assert uig.hosted({}, mount=str(tmp_path / "missing")) is False
+
+
+def test_a_quick_search_says_what_it_left_out():
+    assert uig.yield_precision_note(0.9, 2000, 6) is None and uig.yield_precision_note(None, 500, 6) is None
+    note = uig.yield_precision_note(0.9, 500, 6)
+    assert "500 sampled builds" in note and "±2.7 points" in note and "start (" not in note  # 2·sqrt(0.09/500)
+    assert "at least 99.4 %" in uig.yield_precision_note(1.0, 500, 6)           # rule of three: 1 − 3/500
+    assert "at most 0.6 %" in uig.yield_precision_note(0.0, 500, 6)
+    hosted = uig.yield_precision_note(1.0, uig.HOSTED_N_YIELD, uig.HOSTED_N_STARTS)
+    assert "1 start (the seed geometry only)" in hosted and "sampled builds" in hosted
+    assert "2 starts instead of 6" in uig.yield_precision_note(None, 2000, 2)
+    assert uig.HOSTED_N_YIELD < uig.FULL_N_YIELD and uig.HOSTED_N_STARTS < uig.FULL_N_STARTS

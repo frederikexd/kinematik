@@ -291,3 +291,59 @@ def test_an_example_block_is_reported_only_while_it_holds_the_users_own_values(t
     del st.editors["ig_brk"]                                  # the edit undone, with no other input changed
     _run(st, uig)
     assert brk not in _tables(ns) and review()["Bracket factor of safety, as drawn"][0] == "⚪"
+
+
+def test_loading_the_recorded_result_reports_the_replay_and_never_a_re_sample(tab):
+    st, ns, uig = tab
+    text = (ROOT / "manifests" / "front_v11_final.recorded.genesis.json").read_text()
+    _run(st, uig)
+    st.session_state["ig_manifest_up"] = _Upload(text)
+    _run(st, uig)
+    _run(st, uig, clicks={"ig_manifest_load"})
+    rep, v = _report(ns), _verdicts(ns)
+    assert st.session_state["ig_run"]["replayed"] is True and st.session_state["ig_run"]["verify"][0] is True
+    assert sum("Replay of `front_v11_final` (RESILIENT)" in x for x in v) == 1
+    assert "not re-sampled" in rep and "yields to 1e-9" not in rep and NOTICE not in rep
+    assert "Quick search" not in rep                          # the recorded yield is the full N = 2000 one
+    assert _cell(_tables(ns)["Kinematics and anti-geometry, front corner"], "camber gain, LSQ") == "-0.035"
+    st.session_state["ig_run"] = dict(st.session_state["ig_run"], replayed=False)   # as if then fully re-run
+    _run(st, uig)
+    assert not any("Replay of" in x for x in _verdicts(ns))   # the replay line does not outlive the replay
+
+
+def test_the_hosted_form_opens_as_a_quick_search(tab, monkeypatch):
+    st, ns, uig = tab
+    monkeypatch.setenv("KINEMATIK_HOSTED", "1")
+    _run(st, uig)
+    assert (st.session_state["ig_nstarts"], st.session_state["ig_nyield"]) == (uig.HOSTED_N_STARTS, uig.HOSTED_N_YIELD)
+    monkeypatch.setenv("KINEMATIK_HOSTED", "0")
+    st.session_state.pop("ig_nyield")
+    st.session_state.pop("ig_nstarts")
+    _run(st, uig)
+    assert (st.session_state["ig_nstarts"], st.session_state["ig_nyield"]) == (6, 4000)
+
+
+def test_the_hosted_quick_search_finishes_in_seconds_and_says_it_is_quick(tab, monkeypatch):
+    """The hosted defaults, run through the tab's own Generate button on its default corner: a result, in well
+    under the time a hosted app allows, labelled quick in the report."""
+    import time
+    st, ns, uig = tab
+    monkeypatch.setenv("KINEMATIK_HOSTED", "1")
+    _run(st, uig)
+    t = time.perf_counter()
+    _run(st, uig, clicks={"ig_run_btn"})
+    took = time.perf_counter() - t
+    run = st.session_state.get("ig_run")
+    assert run is not None and took < 60, took
+    assert run["result"].winner is not None                   # the default corner gets a graded winner
+    assert any("Quick search: 1 start (the seed geometry only)" in x for x in _verdicts(ns))
+
+
+def test_the_form_run_completes(tab):
+    """🧬 Generate from the form: the RC-height field once shadowed the report module and crashed every form run."""
+    st, ns, uig = tab
+    st.session_state["ig_nstarts"] = 1
+    _run(st, uig)
+    _run(st, uig, clicks={"ig_run_btn"})
+    assert st.session_state.get("ig_run") is not None
+    assert not any("No generated geometry yet" in x for x in _verdicts(ns))

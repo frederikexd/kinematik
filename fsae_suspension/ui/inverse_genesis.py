@@ -218,6 +218,58 @@ _PRESETS = {
 }
 
 
+#: The hosted app's quick search. Measured on front_v11_final (one core): pricing the yield is seconds at any N, but
+#: every random start after the first is drawn until it clears every declared wall, up to 200 draws of about a
+#: second each, so 2 starts took 220 s and 6 took 21 minutes. One start (the seed itself) took 5 s and returned the
+#: same RESILIENT winner. The shared hosted CPU throttles a run of minutes before it finishes.
+HOSTED_N_STARTS = 1
+HOSTED_N_YIELD = 500
+#: Below these a result is labelled a quick search: the published manifests all use 6 starts and N = 2000.
+FULL_N_STARTS = 6
+FULL_N_YIELD = 2000
+
+
+def hosted(env=None, mount="/mount/src") -> bool:
+    """True on the hosted app. KINEMATIK_HOSTED=1/0 decides when set; otherwise Streamlit Community Cloud is
+    recognised by the folder it mounts the repository in."""
+    import os
+    env = os.environ if env is None else env
+    flag = str(env.get("KINEMATIK_HOSTED", "")).strip().lower()
+    if flag in ("1", "true", "yes"):
+        return True
+    if flag in ("0", "false", "no"):
+        return False
+    return os.path.isdir(mount)
+
+
+def yield_precision_note(yield_frac, n, n_starts=FULL_N_STARTS) -> str | None:
+    """What a quick search left out, for a search below FULL_N_STARTS starts or FULL_N_YIELD sampled builds; None
+    for a full one. The yield's precision is in percentage points; a yield of 0 or 1 gets the one-sided 95 % bound
+    (rule of three)."""
+    few_starts = n_starts is not None and int(n_starts) < FULL_N_STARTS
+    few_builds = yield_frac is not None and n is not None and int(n) < FULL_N_YIELD
+    if not (few_starts or few_builds):
+        return None
+    parts = []
+    if few_starts:
+        parts.append(f"{int(n_starts)} start{'s' if int(n_starts) != 1 else ''} "
+                     + ("(the seed geometry only), so other basins of the legal volume were not explored and a "
+                        "more buildable geometry may exist" if int(n_starts) == 1
+                        else "instead of " + str(FULL_N_STARTS) + ", so fewer basins of the legal volume were explored"))
+    if few_builds:
+        k = max(int(n), 1)
+        p = float(yield_frac)
+        if p >= 1.0:
+            what = f"at least {round(100 * (1 - 3 / k), 1)} % (95 % confidence)"
+        elif p <= 0.0:
+            what = f"at most {round(100 * 3 / k, 1)} % (95 % confidence)"
+        else:
+            what = f"±{round(200 * (p * (1 - p) / k) ** 0.5, 1)} points (95 % confidence)"
+        parts.append(f"the build yield is from {k} sampled builds, so it is {what}")
+    return ("Quick search: " + "; ".join(parts) + f". Before quoting it, run {FULL_N_STARTS} starts and "
+            f"N = {FULL_N_YIELD} or more on your own machine.")
+
+
 def _apply_preset(name):
     import streamlit as st
     ss = st.session_state
@@ -505,7 +557,8 @@ def _manifest_run_summary(st, run, man):
     res, ver = run["result"], run.get("verify")
     w = getattr(res, "winner", None)
     rec = man.recorded or {}
-    st.markdown("###### Result of this run")
+    replayed = bool(run.get("replayed"))
+    st.markdown("###### Recorded result, replayed" if replayed else "###### Result of this run")
     if w is not None:
         badge, _ = _VERDICT_BLURB.get(w.verdict, ("", ""))
         y = f" — build yield {_g(w.yield_frac * 100, '%', _TOL)}" if w.yield_frac is not None else ""
@@ -528,10 +581,20 @@ def _manifest_run_summary(st, run, man):
                    + ("every wall holds." if ok else "walls still broken: " + ", ".join(rep.get("final_violated") or []) + "."))
     if ver is not None:
         same, diffs = ver
-        what = f"This run of `{man.name}`" + (f" ({w.verdict})" if w is not None else " (NO_FIT)")
-        (st.success if same else st.error)(
-            f"✅ {what} matches the recorded outputs (coordinates to 1e-6 mm, fits and yields to 1e-9)." if same
-            else f"❌ {what} differs from the recorded outputs in {len(diffs)} place(s); details in the results below.")
+        real = [d for d in diffs if not d.startswith("(note)")]
+        verdict = f" ({w.verdict})" if w is not None else " (NO_FIT)"
+        if replayed:
+            (st.success if same else st.error)(
+                f"✅ Replay of `{man.name}`{verdict}: the recorded geometry reproduces its recorded fits with this "
+                "build (coordinates to 1e-6 mm, fits to 1e-9). Build yields are the recorded ones, not re-sampled: "
+                "▶ Run this manifest re-samples them." if same
+                else f"❌ Replay of `{man.name}`{verdict}: with this build the recorded geometry no longer gives its "
+                     f"recorded fits, in {len(real)} place(s); details in the results below.")
+        else:
+            what = f"This run of `{man.name}`" + verdict
+            (st.success if same else st.error)(
+                f"✅ {what} matches the recorded outputs (coordinates to 1e-6 mm, fits and yields to 1e-9)." if same
+                else f"❌ {what} differs from the recorded outputs in {len(diffs)} place(s); details in the results below.")
     st.caption("The candidate table, solved properties and diagnostics are in the results panel at the bottom of "
                "this tab.")
 
@@ -549,7 +612,14 @@ def _results_panel(st, pd, np, ss, run):
 
     if run.get("verify") is not None:
         same, diffs = run["verify"]
-        if same:
+        if run.get("replayed"):
+            from suspension import report_capture as rc
+            with rc.unreported(ss):             # said once, in the run summary at the top of the tab
+                (st.success if same else st.error)(
+                    "✅ Replayed from the recorded outputs: geometry and fits reproduce with this build; build "
+                    "yields as recorded, not re-sampled." if same
+                    else "❌ The recorded geometry no longer reproduces its recorded fits with this build.")
+        elif same:
             st.success("✅ Re-run reproduces the recorded outputs: every candidate's "
                        "coordinates to 1e-6 mm, fits and yields to 1e-9"
                        + (", and the start search's moves" if run.get("result") is not None
@@ -585,6 +655,10 @@ def _results_panel(st, pd, np, ss, run):
             if w.yield_frac is not None else ""
         st.markdown(f"## {badge} {w.verdict}{ytxt}")
         st.caption(blurb)
+        quick = None if run.get("replayed") else yield_precision_note(w.yield_frac, man.search.n_yield,
+                                                                      man.search.n_starts)
+        if quick:
+            st.warning("⚡ " + quick)
         (st.success if res.ok else st.warning)(res.reason)
         m1, m2, m3, m4 = st.columns(4)
         if w.yield_frac is not None:
@@ -925,7 +999,7 @@ def report_identity(ss, pending: bool) -> str:
             sha = gr.GenesisManifest.from_json(run["manifest_json"]).inputs_sha256
         except Exception:                     # noqa: BLE001
             sha = "unreadable"
-    return "run " + str(sha) + " | " + analysis_inputs_digest(ss)
+    return ("replay " if run.get("replayed") else "run ") + str(sha) + " | " + analysis_inputs_digest(ss)
 
 
 #: Session keys the analysis sections read besides the run and the vehicle declaration.
@@ -964,8 +1038,8 @@ def _manifest_summary(st, ig, man):
     line = recorded_verdict_line(man)
     if line:
         badge, _ = _VERDICT_BLURB.get((man.recorded or {}).get("winner_verdict") or "", ("", ""))
-        st.success(f"{badge} **{line}**. Press ▶ Run this manifest to re-run it and check it reproduces; the run "
-                   "takes a few minutes (longer for searches with a start search) and the result appears here.")
+        st.success(f"{badge} **{line}**. ⏩ Load the recorded result shows it in seconds; ▶ Run this manifest "
+                   "repeats the whole search and checks it reproduces, which can take 20 minutes or more.")
     try:
         hp, targets, volume, fld = man.objects()
     except (ValueError, KeyError, TypeError) as e:
@@ -1048,15 +1122,30 @@ def _render_generate():
                 st.info("Press the button below — **not** 🧬 Generate the "
                         "geometry further down, which runs the form instead "
                         "and will ignore this file.")
-                if st.button("▶ Run this manifest", key="ig_manifest_run",
-                             type="primary"):
-                    with st.spinner("Re-running the manifest…"):
-                        res = man.run()
+                b_load, b_run = st.columns(2)
+                load = b_load.button(
+                    "⏩ Load the recorded result", key="ig_manifest_load", type="primary",
+                    disabled=not man.recorded,
+                    help="Seconds. Places every recorded candidate at its recorded coordinates and recomputes its "
+                         "curves and fits with this build; the build yields are the recorded ones, not re-sampled.")
+                run = b_run.button(
+                    "▶ Run this manifest", key="ig_manifest_run",
+                    help="Repeats the whole search, re-sampling every build yield, and checks it reproduces the "
+                         "recorded outputs. 20 minutes or more for the published manifests.")
+                if hosted():
+                    b_run.caption("On the hosted app a full run can be throttled before it finishes. Load the "
+                                  "recorded result here, or run KinematiK on your own machine to re-sample.")
+                if load or run:
+                    if run:
+                        with st.spinner("Re-running the manifest (20 minutes or more)…"):
+                            res = man.run()
+                    else:
+                        res = man.replay()
                     ver = man.verify(res) if man.recorded else None
                     if not man.recorded:
                         man.record(res)
                     ss["ig_run"] = {"manifest_json": man.to_json(),
-                                    "result": res, "verify": ver,
+                                    "result": res, "verify": ver, "replayed": bool(load and not run),
                                     "source": "manifest", "inputs_sha256": man.inputs_sha256,
                                     **{k: man.context.get(k) for k in
                                        ("axle", "axle_station", "ground_y")
@@ -1198,7 +1287,7 @@ def _render_generate():
                                 help=_HELP["ig_f_tb"], key="ig_f_tb")
         h1, h2, h3, _ = st.columns(4)
         use_r = h1.checkbox("RC height", True, key="ig_f_r")
-        rc = h2.number_input("RC height (mm)", -200.0, 300.0, 55.0, 0.5,
+        rc_mm = h2.number_input("RC height (mm)", -200.0, 300.0, 55.0, 0.5,
                              help=_HELP["ig_f_rc"], key="ig_f_rc")
         rband = h3.number_input("± band (mm)", 0.01, 200.0, 18.0, 0.5,
                                 help=_HELP["ig_f_rb"], key="ig_f_rb")
@@ -1213,7 +1302,7 @@ def _render_generate():
                 stations, static_camber=hp.static_camber,
                 camber_gain=gain if use_c else None, camber_band=cband,
                 toe=toe if use_t else None, toe_band=tband,
-                rc_height=rc if use_r else None, rc_band=rband,
+                rc_height=rc_mm if use_r else None, rc_band=rband,
                 scrub=scrub if use_s else None, scrub_band=sband,
                 track_mm=track)
         except ValueError as e:
@@ -1638,9 +1727,20 @@ def _render_generate():
 
     r1, r2, r3, r4 = st.columns(4)
     seed = int(r1.number_input("Seed s", 0, 2**31 - 1, 0, 1, help=_HELP["ig_seed"], key="ig_seed"))
-    n_starts = int(r2.number_input("Starts", 1, 64, 6, 1, help=_HELP["ig_nstarts"], key="ig_nstarts"))
-    n_yield = int(r3.number_input("Sampled builds N", 100, 50000, 4000, 100,
+    _hosted = hosted()
+    n_starts = int(r2.number_input("Starts", 1, 64, HOSTED_N_STARTS if _hosted else 6, 1,
+                                   help=_HELP["ig_nstarts"], key="ig_nstarts"))
+    n_yield = int(r3.number_input("Sampled builds N", 100, 50000, HOSTED_N_YIELD if _hosted else 4000, 100,
                                   help=_HELP["ig_nyield"], key="ig_nyield"))
+    if _hosted:
+        st.caption(f"⚡ Hosted app: a quick search by default ({HOSTED_N_STARTS} start, the seed geometry, and "
+                   f"N = {HOSTED_N_YIELD} sampled builds): seconds, where the full {FULL_N_STARTS}-start search "
+                   f"takes 20 minutes or more and the shared CPU throttles it before it finishes. The result is "
+                   f"labelled quick and says what it left out; for a result you will quote, run KinematiK on your "
+                   f"own machine with {FULL_N_STARTS} starts and N = {FULL_N_YIELD}.")
+        if n_starts > HOSTED_N_STARTS:
+            st.warning("Each start after the first is drawn until it clears every declared wall, which can take "
+                       "minutes per start: on the hosted app this search may be throttled before it finishes.")
     n_verify = int(r4.number_input("Full-solve verification", 0, 2000, 0,
                                    10, help=_HELP["ig_nverify"], key="ig_nverify"))
     with st.expander("Solver constants"):
