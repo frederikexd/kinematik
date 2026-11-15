@@ -172,12 +172,21 @@ sgn = sign(t(1));     % + tension = sgn * sensed force along the outer-to-inner 
 end
 
 function a = axial(v, u)
-% The constraint's sensed force at the last step: a 3-vector (force between the two frames, both world-aligned
-% here) projected on the link axis u, or a scalar signed force as it is.
-last = v(end, :);
+% The constraint's sensed force at the last time step, projected on the link axis u (both frames are world-aligned
+% here). To Workspace logs a 3-vector signal as 3x1xN (time along the third dimension) or as Nx3; a scalar signed
+% force as Nx1 or 1x1xN.
+if ndims(v) == 3
+    last = reshape(v(:, :, end), 1, []);
+elseif size(v, 2) == 3 || size(v, 2) == 1
+    last = v(end, :);
+elseif size(v, 1) == 3
+    last = v(:, end)';
+else
+    error('Unexpected sensed force of size %s', mat2str(size(v)));
+end
 if numel(last) == 3
-    a = last(:)' * u(:);
-elseif numel(last) == 1
+    a = last * u(:);
+elseif isscalar(last)
     a = last;
 else
     error('Unexpected sensed force of size %s', mat2str(size(v)));
