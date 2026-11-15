@@ -93,4 +93,6 @@ Each prints PASS, FAIL or NOT RUN per tool and corner. A FAIL is published like 
   lower-wishbone direct-acting loads (forces within 5e-7 N, damper within 7e-6 mm).
 - MATLAB Simscape Multibody R2025b (run by the author): pass on all three benchmarks (forces within 5e-7 N, damper
   within 5e-6 mm).
+- Adams View 2026.1 (run by the author): pass on all three benchmarks (forces within 1e-3 N, damper within 1e-4 mm,
+  the resolution of Adams' 7-digit Spread Sheet output).
 - Lotus: no licence; Arevalo et al. (2018) member forces checked and not usable (`scripts/arevalo_link_load_check.py`).

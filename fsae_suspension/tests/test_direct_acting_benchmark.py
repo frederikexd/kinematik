@@ -92,3 +92,11 @@ def test_kinematik_agrees_with_simscape_multibody(name):
     Multibody), run by the author."""
     r = dab.compare("matlab", name)
     assert r["damper"] == "PASS" and r["loads"] == "PASS", r
+
+
+@pytest.mark.parametrize("name", dab.CORNERS)
+def test_kinematik_agrees_with_adams_view(name):
+    """adams/<corner>_loads__T_xx.tab and <corner>_mr__{travel,damper_len}.tab are Adams View 2026.1 Spread Sheet
+    exports of the author's runs of the generated command files."""
+    r = dab.compare("adams_view", name)
+    assert r["damper"] == "PASS" and r["loads"] == "PASS", r
