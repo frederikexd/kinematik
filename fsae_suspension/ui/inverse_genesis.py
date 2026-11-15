@@ -375,6 +375,62 @@ _ROCKER_PTS = ("pushrod_outer", "rocker_pivot", "rocker_axis",
                "rocker_pushrod", "rocker_spring", "spring_inner")
 
 
+_ACT_LABELS = ("Rocker assembly (pushrod + bell-crank)", "Direct-acting damper (no rocker)")
+_ATTACH_LABELS = {"lower wishbone": "lower", "upper wishbone": "upper", "upright": "upright"}
+
+
+def _actuation_selector(st, hp, key: str, title: str = "Spring/damper actuation"):
+    """Choose rocker assembly or direct-acting damper for a corner; returns a copy of hp set up for the choice.
+
+    Direct-acting: the damper runs from a point on the lower or upper wishbone or the upright straight to a chassis
+    mount, and its length change gives the real motion ratio and its axial force the real damper load. Rocker: the
+    pushrod/rocker points the corner already carries are used (or designed in the actuation stage)."""
+    import numpy as np
+    from suspension import genesis_analysis as ga
+    hp = hp.copy()
+    cur = 1 if getattr(hp, "actuation", "rocker") == "direct" else 0
+    choice = st.radio(title, _ACT_LABELS, index=cur, horizontal=True, key=f"{key}_act_kind",
+                      help="Rocker: pushrod to a bell-crank, spring/damper across the rocker. Direct-acting: the "
+                           "damper mounts on the wishbone or upright and runs straight to the chassis, no rocker.")
+    if choice == _ACT_LABELS[0]:
+        hp.actuation = "rocker"
+        if not hp.has_rocker():
+            st.caption("No complete rocker on this corner yet: the motion ratio falls back to the declared curve "
+                       "until the pushrod/rocker points are pasted or designed in the actuation stage.")
+        return hp
+    hp.actuation = "direct"
+    if cur == 1 and hp.pushrod_outer is not None and hp.spring_inner is not None:   # already direct: keep its ends
+        out0, in0 = np.asarray(hp.pushrod_outer, float), np.asarray(hp.spring_inner, float)
+    else:
+        out0, in0 = ga.default_direct_damper(hp)
+        hp.pushrod_attach = "lower"
+    labels = list(_ATTACH_LABELS)
+    body = st.selectbox("Damper outer end is on the", labels,
+                        index=list(_ATTACH_LABELS.values()).index(getattr(hp, "pushrod_attach", "lower")),
+                        key=f"{key}_act_body")
+    hp.pushrod_attach = _ATTACH_LABELS[body]
+    pts = {}
+    for name, label, v0 in (("pushrod_outer", "Damper outer end (on the " + body + ")", out0),
+                            ("spring_inner", "Damper chassis mount", in0)):
+        c = st.columns(3)
+        pts[name] = np.array([float(c[i].number_input(f"{label} {a} (mm)", -5000.0, 5000.0, float(v0[i]), 0.1,
+                                                       key=f"{key}_act_{name}_{a}"))
+                              for i, a in enumerate("xyz")])
+    hp.pushrod_outer, hp.spring_inner = pts["pushrod_outer"], pts["spring_inner"]
+    try:
+        from suspension.kinematics import SuspensionKinematics
+        mr = SuspensionKinematics(hp).motion_ratio()
+        L0 = float(np.linalg.norm(pts["spring_inner"] - pts["pushrod_outer"]))
+        if np.isfinite(mr):
+            st.caption(f"Direct-acting damper: motion ratio {mr:.3f} (damper / wheel travel), "
+                       f"static length {L0:.1f} mm. Frame: x rearward, y outboard, z up from the ground.")
+        else:
+            st.warning("The damper does not change length with wheel travel here; move its ends.")
+    except Exception as e:                  # noqa: BLE001
+        st.warning(f"Could not solve the corner with this damper: {e}")
+    return hp
+
+
 def _parse_hardpoints_text(text: str, base):
     """JSON (manifest-style dict) or CSV ``point,x,y,z`` → Hardpoints.
 
@@ -1018,6 +1074,7 @@ def _render_generate():
     hp.static_toe = float(a2.number_input(
         "Static toe δ₀ (deg) — declared input", -3.0, 3.0,
         float(hp.static_toe), 0.01, key="ig_delta0"))
+    hp = _actuation_selector(st, hp, "ig")
     ss["ig_seed_hp"] = gr.hp_to_dict(hp)
 
     # ================= 1 · targets ========================================
@@ -1627,6 +1684,9 @@ def _actuation_panel(st, pd, np, ss, run):
     res = run.get("result")
     if res is None or res.winner_hp is None:
         return
+    if getattr(res.winner_hp, "actuation", "rocker") == "direct":
+        _direct_damper_panel(st, pd, np, ss, res)
+        return
     from suspension import actuation as _ac
     with st.expander("\u2699\ufe0f Actuation synthesis \u2014 design the pushrod, rocker "
                      "and spring for this corner"):
@@ -1677,6 +1737,42 @@ def _actuation_panel(st, pd, np, ss, run):
                                        "ride frequency (Hz)": r.ride_frequency_hz,
                                        "spring rate (N/mm)": [r.spring_rate_N_per_mm] * len(m.travel)}),
                          hide_index=True, width="stretch")
+
+
+def _direct_damper_panel(st, pd, np, ss, res):
+    """Second stage for a direct-acting corner: the damper rides with the body it is bolted to, so its outer end is
+    carried onto the returned corner's wishbone (or upright); the user can then move either end."""
+    from suspension import genesis_analysis as ga
+    from suspension import genesis_repro as gr
+    with st.expander("\u2699\ufe0f Direct-acting damper \u2014 place the damper on this corner"):
+        whp = res.winner_hp.copy()
+        seed = ss.get("ig_seed_hp")
+        if seed is not None:
+            carried = ga.carry_actuation_point(gr.hp_from_dict(seed), whp)
+            if carried is not None:
+                whp.pushrod_outer = carried
+        st.caption("The damper's outer end keeps its position on the " + whp.pushrod_attach + (
+            " wishbone" if whp.pushrod_attach != "upright" else "") + " as the search moved it; the chassis mount "
+            "stays where it was declared. Edit either end below.")
+        whp = _actuation_selector(st, whp, "ig_dd", title="Actuation of the returned corner")
+        if getattr(whp, "actuation", "rocker") != "direct":
+            st.info("Switched to a rocker: design it with the rocker synthesis after rerunning with a rocker "
+                    "selected in step 1.")
+            return
+        a = ga.actuation_summary(whp)
+        if not a.get("ok"):
+            st.warning(a["reason"])
+            return
+        _table(st, pd, [("motion ratio, static", a["mr_static"]), ("motion ratio, droop", a["mr_droop"]),
+                        ("motion ratio, bump", a["mr_bump"]), ("rate character", a["rate_character"]),
+                        ("damper static length (mm)", a["damper_static_mm"]),
+                        ("damper travel used (mm)", a["damper_travel_used_mm"]),
+                        ("motion-ratio spread (%)", a["mr_spread_pct"])], ["quantity", "value"])
+        rows = [{"point": p, "x": getattr(whp, p)[0], "y": getattr(whp, p)[1], "z": getattr(whp, p)[2]}
+                for p in ("pushrod_outer", "spring_inner")]
+        st.dataframe(pd.DataFrame(rows).replace({"pushrod_outer": "damper_outer", "spring_inner": "damper_inner"}),
+                     hide_index=True, width="stretch")
+        ss["ig_direct_hp"] = gr.hp_to_dict(whp)
 
 
 # =========================================================================== #
@@ -1978,7 +2074,10 @@ def _sec_actuation(st, pd, v, corner, axle):
             ("motion ratio, droop", a["mr_droop"]),
             ("motion ratio, bump", a["mr_bump"]),
             ("rate character", a["rate_character"]),
-            ("pushrod length (mm)", a["pushrod_length_mm"]),
+            ("actuation", "direct-acting damper" if a.get("actuation") == "direct"
+             else "pushrod + rocker"),
+            ("pushrod length (mm)" if a.get("actuation") != "direct"
+             else "damper length at static (mm)", a["pushrod_length_mm"]),
             ("attachment, fraction out along the " + a["pushrod_attach"]
              + " arm", a["attachment_fraction"]),
             ("damper static length (mm)", a["damper_static_mm"]),
@@ -1995,7 +2094,7 @@ def _sec_actuation(st, pd, v, corner, axle):
                                                   name="travel (mm)")),
                       height=180)
     else:
-        st.warning("No complete pushrod/rocker on this corner ("
+        st.warning("No complete actuation on this corner ("
                    + a["reason"] + "). Using the DECLARED motion-ratio curve "
                    "from the vehicle & build declaration — pushrod and damper "
                    "lengths need the rocker points.")

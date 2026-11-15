@@ -222,6 +222,8 @@ def hp_to_dict(hp: Hardpoints) -> dict:
         if v is not None:
             d[p] = [float(x) for x in np.asarray(v)]
     d["pushrod_attach"] = getattr(hp, "pushrod_attach", "lower")
+    if getattr(hp, "actuation", "rocker") != "rocker":     # written only when direct, so rocker manifests keep their hash
+        d["actuation"] = hp.actuation
     d["static_camber"] = float(hp.static_camber)
     d["static_toe"] = float(hp.static_toe)
     return d
@@ -235,7 +237,7 @@ def hp_from_dict(d: dict) -> Hardpoints:
             kw[k] = None if v is None else _vec(v)
         elif k in ("static_camber", "static_toe"):
             kw[k] = float(v)
-        elif k == "pushrod_attach":
+        elif k in ("pushrod_attach", "actuation"):
             kw[k] = str(v)
     missing = [p for p in _HP_POINTS if p not in kw]
     if missing:

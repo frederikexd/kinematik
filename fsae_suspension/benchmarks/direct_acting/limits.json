@@ -1,0 +1,45 @@
+{
+  "registered": "2026-11-14, before any direct-acting comparison was run",
+  "scope": "Direct-acting dampers (no rocker) on front_v11_final: damper on the upright (direct_upright) and on the lower wishbone (direct_lower). (1) Damper length change from static at every 1 mm of wheel-centre travel, -25 to +25 mm (every 5 mm for hand-entered tools): the motion ratio. (2) Axial member forces at the design position under the four link-load cases: all six members for direct_upright; the statically determinate ones (UF, UR, TR and the damper, PR) for direct_lower, where the lower wishbone carries the damper and its two leg forces depend on how the pivot reaction is split.",
+  "sign": "mm; N, + tension",
+  "load_cases": "same as benchmarks/link_loads/limits.json",
+  "limits": {
+    "independent": {
+      "damper_mm": 0.001,
+      "abs_N": 0.5,
+      "rel": 0.001,
+      "why": "same idealisation, different formulation and code"
+    },
+    "adams_view": {
+      "damper_mm": 0.01,
+      "abs_N": 0.5,
+      "rel": 0.001,
+      "why": "commercial multibody solver; kinematics limits were 0.05 mm on the wheel centre, the damper is a single length"
+    },
+    "motionsolve": {
+      "damper_mm": 0.01,
+      "abs_N": 0.5,
+      "rel": 0.001,
+      "why": "commercial multibody solver"
+    },
+    "ard": {
+      "damper_mm": 0.05,
+      "abs_N": 2.0,
+      "rel": 0.005,
+      "why": "values read off the ARD output by hand"
+    },
+    "chrono": {
+      "damper_mm": 0.01,
+      "abs_N": 0.5,
+      "rel": 0.001,
+      "why": "Project Chrono (open-source multibody), run in the repo: agreement to solver tolerance (added 2026-11-15, before any Chrono run)"
+    },
+    "matlab": {
+      "damper_mm": 0.01,
+      "abs_N": 0.5,
+      "rel": 0.001,
+      "why": "MATLAB Simscape Multibody: agreement to solver tolerance (added 2026-11-15, before any MATLAB run)"
+    }
+  },
+  "pass_rule": "every travel point: |KinematiK - tool| <= damper_mm; every member, case and corner: |KinematiK - tool| <= abs_N + rel * |tool|"
+}

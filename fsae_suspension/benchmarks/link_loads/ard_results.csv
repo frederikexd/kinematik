@@ -1,0 +1,14 @@
+# ard: axial force per member, N, + tension, at the design position. Hardpoints from manifests/<corner>.recorded.genesis.json; loads from limits.json (contact patch, Fx_wc at the wheel centre, Mz about z). Fill every cell for a corner or leave the corner blank.
+corner,case,UF,UR,LF,LR,TR,PR
+front_v11_final,bump,,,,,,
+front_v11_final,corner,,,,,,
+front_v11_final,brake,,,,,,
+front_v11_final,corner_drive,,,,,,
+rear_v11_final,bump,,,,,,
+rear_v11_final,corner,,,,,,
+rear_v11_final,brake,,,,,,
+rear_v11_final,corner_drive,,,,,,
+front_v11_joints50,bump,,,,,,
+front_v11_joints50,corner,,,,,,
+front_v11_joints50,brake,,,,,,
+front_v11_joints50,corner_drive,,,,,,

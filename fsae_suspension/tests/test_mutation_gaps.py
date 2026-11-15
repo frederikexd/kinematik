@@ -333,7 +333,7 @@ def test_spring_length_follows_the_pushrod_through_the_rocker(kin):
     assert kin.spring_length_at(st, seed=0.3)[1] == pytest.approx(theta, abs=1e-6)
     hp = Hardpoints.default()
     hp.pushrod_outer = None
-    with pytest.raises(ValueError, match="^No pushrod/rocker geometry defined on these hardpoints.$"):
+    with pytest.raises(ValueError, match="^No pushrod/rocker or direct-acting damper defined on these hardpoints.$"):
         SuspensionKinematics(hp).spring_length_at(SuspensionKinematics(hp).static)
 
 

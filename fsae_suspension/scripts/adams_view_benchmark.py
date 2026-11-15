@@ -77,6 +77,28 @@ def read_table(path: Path) -> tuple[str, dict[str, np.ndarray]]:
     return model, {h: data[:, i] for i, h in enumerate(heads)}
 
 
+def read_spreadsheet(path: Path) -> tuple[str, str, np.ndarray, np.ndarray]:
+    """One Adams View File > Export > Spread Sheet file (tab-delimited, one result set): (model, result set, time,
+    value). The header row names the components, e.g. ".model.Last_Run.T_PR.TIME" and ".model.Last_Run.T_PR.Q"."""
+    lines = path.read_text().splitlines()
+    k = next(i for i, ln in enumerate(lines) if ".TIME" in ln and ln.lstrip().startswith('"'))
+    head = [h.strip().strip('"') for h in lines[k].split("\t") if h.strip()]
+    parts = head[0].split(".")                   # ['', model, run, result_set, 'TIME']
+    rows = [[float(x) for x in ln.split()] for ln in lines[k + 1:] if ln.strip()]
+    data = np.array(rows)
+    return parts[1], parts[3], data[:, 0], data[:, 1]
+
+
+def export_commands(model: str, measures, prefix: str) -> list[str]:
+    """Adams View commands that write each measure of the last run to <prefix>__<measure>.tab (the Spread Sheet
+    export of File > Export), in Adams' working directory."""
+    # Adams View imports a command file with on_error=ignore_command and echo off, so a failing export would be
+    # skipped in silence; switch errors back on for these lines.
+    return (["defaults command_file on_error=abort echo_commands=on"]
+            + [f'file spread_sheet write file_name="{prefix}__{m}.tab" result_set_name=.{model}.Last_Run.{m}'
+               for m in measures])
+
+
 def compare(name: str) -> dict:
     model, adams = read_table(BENCH / f"{name}.tab")
     if not model.startswith(name):
@@ -114,8 +136,12 @@ def _f(v) -> str:
     return ", ".join(f"{c:.4f}" for c in v)
 
 
-def command_file(name: str) -> str:
-    w, sha = _winner(name)
+def command_file(name: str, w: dict | None = None, sha: str | None = None, extra_markers=(),
+                 extra_measures=()) -> str:
+    """The kinematic command file. w/sha default to the manifest's; extra_markers are (part, name, location) and
+    extra_measures (name, function) with {M} for the model path, both added after the standard ones."""
+    if w is None:
+        w, sha = _winner(name)
     P = {k: np.array(w[k], float) for k in POINTS}
     cam, toe = math.radians(w.get("static_camber", 0.0)), math.radians(w.get("static_toe", 0.0))
     spin = np.array([math.sin(toe), math.cos(toe) * math.cos(cam), -math.sin(cam)])  # static spin axis, outboard
@@ -156,6 +182,8 @@ def command_file(name: str) -> str:
     mk("upright", "u_wc", P["wheel_center"]); mk("upright", "u_tip", tip)                                      # noqa: E702
     mk("ground", "g_wc0", P["wheel_center"]); mk("jack", "j_pad", P["wheel_center"])                           # noqa: E702
     mk("jack", "j_slide", P["wheel_center"]); mk("ground", "g_jack", P["wheel_center"])                        # noqa: E702
+    for part, mname, loc in extra_markers:
+        mk(part, mname, loc)
     L += [f"constraint create joint revolute joint_name={M}.lca_rev i_marker_name={M}.lca.lca_piv j_marker_name={M}.ground.g_lca",
           f"constraint create joint revolute joint_name={M}.uca_rev i_marker_name={M}.uca.uca_piv j_marker_name={M}.ground.g_uca",
           f"constraint create joint spherical joint_name={M}.lbj i_marker_name={M}.upright.u_lbj j_marker_name={M}.lca.lca_out",
@@ -177,6 +205,8 @@ def command_file(name: str) -> str:
                       ("wc_dx", f"DX({W},{M}.ground.g_wc0)"),
                       ("wc_dy", f"DY({W},{M}.ground.g_wc0)")):
         L.append(f'measure create function measure_name={M}.{mname} function="{fn}"')
+    for mname, fn in extra_measures:
+        L.append(f'measure create function measure_name={M}.{mname} function="{fn.format(M=M)}"')
     L += [f"default model model_name={M}", "simulation single_run reset",
           f"simulation single_run transient type=kinematic end_time=1.0 number_of_steps=50 model_name={M} "
           "initial_static=no"]

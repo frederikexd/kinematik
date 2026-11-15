@@ -1,0 +1,46 @@
+# Hardpoints (mm; x rearward, y outboard, z up from the ground) and load cases (N, N*mm; + tension out).
+# Pushrod: from pushrod_outer on the upright to a FIXED chassis point at rocker_pushrod.
+# Loads: Fx Fy Fz at the contact patch, Fx_wc at the wheel centre, Mz about vertical.
+corner,point,x,y,z
+front_v11_final,upper_front_inner,-91.2342,220.2605,280.9244
+front_v11_final,upper_rear_inner,91.0146,324.2000,265.1950
+front_v11_final,upper_outer,6.5000,560.5000,300.0000
+front_v11_final,lower_front_inner,-90.3834,155.0542,122.7397
+front_v11_final,lower_rear_inner,75.1195,175.5091,129.5244
+front_v11_final,lower_outer,-5.0000,583.6000,120.0000
+front_v11_final,tie_rod_inner,-23.7661,167.2894,147.1171
+front_v11_final,tie_rod_outer,53.3754,540.5729,148.2487
+front_v11_final,pushrod_outer,8.2200,522.8100,132.8400
+front_v11_final,rocker_pushrod,13.5000,435.4000,360.8700
+front_v11_final,wheel_center,0.0000,600.0000,228.0000
+front_v11_final,contact_patch,0.0000,605.0000,0.0000
+rear_v11_final,upper_front_inner,-330.4000,337.3884,381.7560
+rear_v11_final,upper_rear_inner,-112.3068,206.4000,305.7968
+rear_v11_final,upper_outer,3.0000,546.0000,300.0000
+rear_v11_final,lower_front_inner,-264.2220,183.9600,97.8845
+rear_v11_final,lower_rear_inner,23.4217,85.0000,143.8859
+rear_v11_final,lower_outer,-5.0000,570.2000,140.0000
+rear_v11_final,tie_rod_inner,-40.6917,341.5715,146.3011
+rear_v11_final,tie_rod_outer,78.0000,564.2000,162.0000
+rear_v11_final,pushrod_outer,29.0926,540.9097,154.2929
+rear_v11_final,rocker_pushrod,67.6641,403.7393,322.4686
+rear_v11_final,wheel_center,0.0000,600.0000,228.0000
+rear_v11_final,contact_patch,0.0000,605.0000,0.0000
+front_v11_joints50,upper_front_inner,-111.2342,232.2605,280.9244
+front_v11_joints50,upper_rear_inner,91.0146,318.2000,265.1950
+front_v11_joints50,upper_outer,6.5000,560.5000,300.0000
+front_v11_joints50,lower_front_inner,-90.3834,187.0542,122.7397
+front_v11_joints50,lower_rear_inner,59.1195,175.5091,129.5244
+front_v11_joints50,lower_outer,-5.0000,583.6000,120.0000
+front_v11_joints50,tie_rod_inner,-7.7661,183.2894,147.1171
+front_v11_joints50,tie_rod_outer,53.3754,540.5729,148.2487
+front_v11_joints50,pushrod_outer,8.2200,522.8100,132.8400
+front_v11_joints50,rocker_pushrod,13.5000,435.4000,360.8700
+front_v11_joints50,wheel_center,0.0000,600.0000,228.0000
+front_v11_joints50,contact_patch,0.0000,605.0000,0.0000
+
+case,Fx,Fy,Fz,Fx_wc,Mz
+bump,0.0,0.0,1200.0,0.0,0.0
+corner,0.0,-1800.0,1200.0,0.0,-47000.0
+brake,1933.0,0.0,1161.0,0.0,0.0
+corner_drive,0.0,-1400.0,1300.0,-1560.0,-37000.0
