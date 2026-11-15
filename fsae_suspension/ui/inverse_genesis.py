@@ -528,9 +528,10 @@ def _manifest_run_summary(st, run, man):
                    + ("every wall holds." if ok else "walls still broken: " + ", ".join(rep.get("final_violated") or []) + "."))
     if ver is not None:
         same, diffs = ver
+        what = f"This run of `{man.name}`" + (f" ({w.verdict})" if w is not None else " (NO_FIT)")
         (st.success if same else st.error)(
-            "✅ Matches the recorded outputs (coordinates to 1e-6 mm, fits and yields to 1e-9)." if same
-            else f"❌ Differs from the recorded outputs in {len(diffs)} place(s); details in the results below.")
+            f"✅ {what} matches the recorded outputs (coordinates to 1e-6 mm, fits and yields to 1e-9)." if same
+            else f"❌ {what} differs from the recorded outputs in {len(diffs)} place(s); details in the results below.")
     st.caption("The candidate table, solved properties and diagnostics are in the results panel at the bottom of "
                "this tab.")
 
@@ -873,9 +874,72 @@ def render():
     bar = st.container()
     for k in ("ig_ok_geom", "ig_ok_targets", "ig_ok_volume", "ig_ok_review"):
         ss[k] = False
-    _render_generate()
-    _render_analysis(st, pd, np, ss)
+    from suspension import report_capture as rc
+    pending = manifest_pending(ss)
+    rc.reset_on_change(ss, "ig_report_identity", report_identity(ss, pending))
+    if pending:
+        st.warning("A manifest is loaded but has not been run, so nothing in "
+                   "this tab is reported: the tables below describe the form "
+                   "and the seed geometry, not the manifest. Press ▶ Run "
+                   "this manifest, or remove the file.")
+    with rc.unreported(ss, pending):
+        _render_generate()
+        _render_analysis(st, pd, np, ss)
     _progress(st, ss, bar)
+
+
+def manifest_pending(ss) -> bool:
+    """True while an uploaded manifest has not been run in this session: the
+    tab then shows the manifest's recorded verdict above tables computed from
+    something else, and a report of that reads as one design."""
+    up = ss.get("ig_manifest_up")
+    if up is None:
+        return False
+    run = ss.get("ig_run")
+    if not run or run.get("source") != "manifest":
+        return True
+    try:
+        from suspension import genesis_repro as gr
+        sha = gr.GenesisManifest.from_json(up.getvalue().decode()).inputs_sha256
+    except Exception:                         # noqa: BLE001  (an unreadable file has not been run)
+        return True
+    return run.get("inputs_sha256") != sha
+
+
+def report_identity(ss, pending: bool) -> str:
+    """What this tab's report is about: the run's inputs hash (or the seed
+    geometry), then a digest of every declaration the analysis reads. When
+    either changes, what was recorded for the old one is dropped: a table is
+    replaced by its next drawing anyway, but a warning that no longer applies
+    is simply not drawn again, and stayed in the report beside the numbers
+    that had cleared it."""
+    if pending:
+        return "manifest loaded, not run"
+    run = ss.get("ig_run")
+    if not run:
+        return "seed | " + analysis_inputs_digest(ss)
+    sha = run.get("inputs_sha256")
+    if sha is None:
+        try:
+            from suspension import genesis_repro as gr
+            sha = gr.GenesisManifest.from_json(run["manifest_json"]).inputs_sha256
+        except Exception:                     # noqa: BLE001
+            sha = "unreadable"
+    return "run " + str(sha) + " | " + analysis_inputs_digest(ss)
+
+
+#: Session keys the analysis sections read besides the run and the vehicle declaration.
+_ANALYSIS_INPUT_KEYS = ("ig_seed_hp", "ig_axle", "ig_travel", "ig_review_limits", "genesis_corners", "ig_brk",
+                        "ig_cmp_F", "ig_cmp_L", "ig_cmp_rep", "ig_cmp_dcam", "ig_cmp_dtoe")
+
+
+def analysis_inputs_digest(ss) -> str:
+    """Twelve hex digits of the SHA-1 of the vehicle & build declaration and the other inputs of the analysis
+    sections, as they stand at the start of a script run."""
+    import hashlib
+    import json
+    state = {"vehicle": _veh(ss), **{k: ss.get(k) for k in _ANALYSIS_INPUT_KEYS}}
+    return hashlib.sha1(json.dumps(state, sort_keys=True, default=str).encode()).hexdigest()[:12]
 
 
 def recorded_verdict_line(man) -> str | None:
@@ -947,6 +1011,7 @@ def _render_generate():
     from suspension import inverse_genesis as ig
     from suspension import kinematik_stochastic as ks
     from suspension import genesis_repro as gr
+    from suspension import report_capture as rc
 
     ss = st.session_state
 
@@ -976,7 +1041,8 @@ def _render_generate():
                            f"KinematiK {man.kinematik_version} · "
                            + ("has recorded outputs" if man.recorded
                               else "no recorded outputs"))
-                _manifest_summary(st, ig, man)
+                with rc.unreported(ss):       # what the file says, not what a run returned
+                    _manifest_summary(st, ig, man)
                 if man.context:
                     st.json(man.context, expanded=False)
                 st.info("Press the button below — **not** 🧬 Generate the "
@@ -995,6 +1061,7 @@ def _render_generate():
                                     **{k: man.context.get(k) for k in
                                        ("axle", "axle_station", "ground_y")
                                        if man.context.get(k) is not None}}
+                    st.rerun()                # draw (and report) the whole tab for the run, not half of it
                 _run = ss.get("ig_run")
                 if _run and _run.get("source") == "manifest" and _run.get("inputs_sha256") == man.inputs_sha256:
                     _manifest_run_summary(st, _run, man)
@@ -1002,10 +1069,11 @@ def _render_generate():
                 st.error(f"Manifest refused: {e}")
 
     if _man_loaded:
-        st.warning("A manifest is loaded above. The fields below are **not** "
-                   "what it will run — use ▶ Run this manifest inside that "
-                   "section. Remove the file to go back to filling the form "
-                   "in yourself.")
+        with rc.unreported(ss):               # a note about the tab, not a finding about the car
+            st.warning("A manifest is loaded above. The fields below are **not** "
+                       "what it will run — use ▶ Run this manifest inside that "
+                       "section. Remove the file to go back to filling the form "
+                       "in yourself.")
 
     # ================= geometry ===========================================
     st.markdown("###### 1 · Starting geometry")
@@ -1648,7 +1716,9 @@ def _render_generate():
                 return
         man.record(res)
         ss["ig_run"] = {"manifest_json": man.to_json(), "result": res,
-                        "verify": None, **ctx}
+                        "verify": None, "inputs_sha256": man.inputs_sha256, **ctx}
+        rc.reset(ss)                          # the report is about this run from here on
+        ss["ig_report_identity"] = report_identity(ss, False)
         _log_run(ss, man, res)
         if res.winner_hp is not None:
             ss.setdefault("genesis_corners", {})[axle] = gr.hp_to_dict(
@@ -1970,9 +2040,15 @@ def _split_unit(label):
     return label, ""
 
 
-def _table(st, pd, rows, cols=None):
+def _table(st, pd, rows, cols=None, title=None):
     """Render rows with readable numbers. A two-column quantity/value table
-    gets its units split into their own column."""
+    gets its units split into their own column. ``title`` names the table in
+    the feature report, where it is printed above it: without one a table is
+    known there only by its shape, and two of one shape are one."""
+    ss = getattr(st, "session_state", None)
+    if title and ss is not None:
+        from suspension import report_capture as rc
+        rc.heading(ss, title)
     df = pd.DataFrame(rows, columns=cols) if cols else pd.DataFrame(rows)
     if len(df.columns) == 2 and str(df.columns[1]).startswith("value"):
         q = [_split_unit(x) for x in df.iloc[:, 0]]
@@ -2049,12 +2125,15 @@ def _sec_steering(st, pd, v, front_hp, rear_hp, key):
                     ("mechanical trail (mm)", s["trail_mm"]),
                     ("outer Fy (N)", s["fy_outer_N"]),
                     ("outer trail torque (N·m)", s["trail_torque_outer_Nm"]),
-                    ("outer kingpin torque (N·m)", s["outer_Nm"]),
-                    ("inner kingpin torque (N·m)", s["inner_Nm"]),
+                    ("outer tyre aligning moment, declared (N·m)", v["aligning_outer_Nm"]),
+                    ("inner tyre aligning moment, declared (N·m)", v["aligning_inner_Nm"]),
+                    ("outer kingpin torque, trail + aligning (N·m)", s["outer_Nm"]),
+                    ("inner kingpin torque, trail + aligning (N·m)", s["inner_Nm"]),
                     ("road-wheel total (N·m)", s["road_wheel_total_Nm"]),
+                    ("steering-wheel torque target, declared (N·m)", v["steering_target_Nm"]),
                     ("ratio needed for the target", s["ratio_needed_for_target"])],
-           ["quantity", "value"])
-    _table(st, pd, s["rows"])
+           ["quantity", "value"], title="Steering effort at the design lateral acceleration")
+    _table(st, pd, s["rows"], title="Steering-wheel torque by steering ratio")
     return s
 
 
@@ -2088,7 +2167,7 @@ def _sec_actuation(st, pd, v, corner, axle):
             ("ride frequency, droop (Hz)", a["ride_hz_droop"]),
             ("ride frequency, static (Hz)", a["ride_hz_static"]),
             ("ride frequency, bump (Hz)", a["ride_hz_bump"])],
-            ["quantity", "value"])
+            ["quantity", "value"], title="Actuation and ride, " + axle + " corner (solved from the linkage)")
         st.line_chart(pd.DataFrame({"motion ratio": a["motion_ratio"]},
                                    index=pd.Index(a["travel_mm"],
                                                   name="travel (mm)")),
@@ -2111,7 +2190,8 @@ def _sec_actuation(st, pd, v, corner, axle):
             ("ride frequency, droop (Hz)", dm["ride_hz_droop"]),
             ("ride frequency, static (Hz)", dm["ride_hz_static"]),
             ("ride frequency, bump (Hz)", dm["ride_hz_bump"])],
-            ["quantity", "value"])
+            ["quantity", "value"], title="Actuation and ride, " + axle + " corner (DECLARED motion ratio)")
+        a = dict(a, wheel_rate_spread_pct=dm["wheel_rate_spread_pct"])
     solved = mr is not None
     mr_used = mr if solved else float(v[f"mr_{axle}_static"])
     rs = ga.roll_stiffness_from_spring(k, mr_used, trk)
@@ -2122,7 +2202,7 @@ def _sec_actuation(st, pd, v, corner, axle):
         ("spring roll stiffness (N·m/deg)", rs["roll_stiffness_Nm_deg"]),
         ("same with MR = 1.0 placeholder (N·m/deg)", rs["placeholder_Nm_deg"]),
         ("placeholder error (%)", rs["placeholder_error_pct"])],
-        ["quantity", "value"])
+        ["quantity", "value"], title="Wheel rate and spring roll stiffness, " + axle + " axle")
     return a
 
 
@@ -2146,8 +2226,9 @@ def _sec_structural(st, pd, v, corner, axle):
         f"{_g(sc['worst_fos_overall'], digits=3, limited_by='declared material')}")
     _table(st, pd, [{"member": m, "worst FoS": f,
                      "governing case": sc["governing_case"][m]}
-                    for m, f in sc["worst_fos_per_member"].items()])
-    _table(st, pd, sc["rows"])
+                    for m, f in sc["worst_fos_per_member"].items()],
+           title="Link factor of safety, worst case per member")
+    _table(st, pd, sc["rows"], title="Link forces and factor of safety, every load case (N, + tension)")
     return sc
 
 
@@ -2178,7 +2259,7 @@ def _sec_compliance(st, pd, v, corner, axle, sc, bands):
                      "compliance steer (deg)": r["compliance_toe_deg"],
                      "share of toe band (%)": 100 * fr.get("toe", 0),
                      "max link extension (mm)": r["max_link_extension_mm"]})
-    _table(st, pd, rows)
+    _table(st, pd, rows, title="Compliance camber and steer against the tolerance bands")
     st.caption(f"Bands: camber ±{bands['camber']}°, toe ±{bands['toe']}° "
                "(from the run's targets when there is one). "
                + cb.get("note", ""))
@@ -2195,35 +2276,51 @@ def _sec_compliance(st, pd, v, corner, axle, sc, bands):
                             v["rod_end_lash_mm"], 2)
         lrows.append({"member": m, "worst force (N)": r["force_N"],
                       "case": r["load_case"], "length (mm)": r["length_mm"],
-                      "axial strain (mm)": b["axial_strain_mm"],
+                      "axial stretch (mm)": b["axial_strain_mm"],
                       "rod-end lash (mm)": b["lash_mm"],
                       "total (mm)": b["sum_mm"]})
-    _table(st, pd, lrows)
+    _table(st, pd, lrows, title="Link stretch at each member's worst force (axial stretch + rod-end lash)")
 
     st.markdown("**Check a stated link and stated deflections**")
     c = st.columns(3)
-    F = c[0].number_input("Link force (N)", 0.0, 100000.0, 4799.0, 1.0,
+    F = c[0].number_input("Link force (N)", 0.0, 100000.0, _STATED_EXAMPLE[0], 1.0,
                           key="ig_cmp_F")
-    L = c[1].number_input("Link length (mm)", 1.0, 5000.0, 485.0, 1.0,
+    L = c[1].number_input("Link length (mm)", 1.0, 5000.0, _STATED_EXAMPLE[1], 1.0,
                           key="ig_cmp_L")
-    rep = c[2].number_input("Reported max extension (mm)", 0.0, 50.0, 0.60,
+    rep = c[2].number_input("Reported max extension (mm)", 0.0, 50.0, _STATED_EXAMPLE[2],
                             0.01, key="ig_cmp_rep")
-    b = ga.axial_budget(F, L, v["tube_od_mm"], v["tube_wall_mm"], v["E_gpa"],
-                        v["rod_end_lash_mm"], 2, rep)
-    _table(st, pd, [("tube area (mm²)", b["area_mm2"]),
-                    ("axial strain (mm)", b["axial_strain_mm"]),
-                    ("rod-end lash, two joints (mm)", b["lash_mm"]),
-                    ("strain + lash (mm)", b["sum_mm"]),
-                    ("unexplained part of the reported extension (mm)",
-                     b["unexplained_mm"])], ["quantity", "value"])
     c = st.columns(2)
-    dcam = c[0].number_input("Stated camber loss (deg)", 0.0, 10.0, 0.116,
+    dcam = c[0].number_input("Stated camber loss (deg)", 0.0, 10.0, _STATED_EXAMPLE[3],
                              0.001, format="%.3f", key="ig_cmp_dcam")
     dtoe = c[1].number_input("Stated compliance steer (deg)", 0.0, 10.0,
-                             0.074, 0.001, format="%.3f", key="ig_cmp_dtoe")
-    fr = ga.band_fractions({"camber": dcam, "toe": dtoe}, bands)
-    _table(st, pd, [{"channel": ch, "band (± deg)": bands[ch],
-                     "share of band (%)": 100 * x} for ch, x in fr.items()])
+                             _STATED_EXAMPLE[4], 0.001, format="%.3f", key="ig_cmp_dtoe")
+    stated = is_declared((F, L, rep, dcam, dtoe), _STATED_EXAMPLE)
+    if not stated:
+        st.caption("These are example values, not this corner's: the two tables "
+                   "under them are left out of the report until you enter a "
+                   "link and deflections of your own.")
+    from suspension import report_capture as rc
+    _ss = getattr(st, "session_state", {})
+    if not stated:
+        rc.forget(_ss, _STATED_LINK_TITLE, _STATED_BANDS_TITLE)
+    with rc.unreported(_ss, not stated):
+        b = ga.axial_budget(F, L, v["tube_od_mm"], v["tube_wall_mm"], v["E_gpa"],
+                            v["rod_end_lash_mm"], 2, rep)
+        _table(st, pd, [("stated link force (N)", F),
+                        ("stated link length (mm)", L),
+                        ("reported extension (mm)", rep),
+                        ("tube area (mm²)", b["area_mm2"]),
+                        ("axial stretch (mm)", b["axial_strain_mm"]),
+                        ("rod-end lash, two joints (mm)", b["lash_mm"]),
+                        ("stretch + lash (mm)", b["sum_mm"]),
+                        ("unexplained part of the reported extension (mm)",
+                         b["unexplained_mm"])], ["quantity", "value"],
+               title=_STATED_LINK_TITLE)
+        fr = ga.band_fractions({"camber": dcam, "toe": dtoe}, bands)
+        _table(st, pd, [{"channel": ch, "stated deflection (deg)": {"camber": dcam, "toe": dtoe}[ch],
+                         "band (± deg)": bands[ch],
+                         "share of band (%)": 100 * x} for ch, x in fr.items()],
+               title=_STATED_BANDS_TITLE)
     return rows
 
 
@@ -2236,12 +2333,19 @@ def _sec_brackets(st, pd, v, sc, key):
                "variables — shortening the reach is usually worth more than "
                "thickening the plate.")
     F0 = float(abs(worst["force_N"]))
-    cases = st.data_editor(pd.DataFrame(
+    example = pd.DataFrame(
         {"case": ["as drawn", "thicker plates", "shorter reach"],
-         "load (N)": [F0] * 3, "reach (mm)": [27.9, 27.9, 10.0],
-         "plate width (mm)": [30.0, 40.0, 30.0],
-         "plate thickness (mm)": [5.0, 6.0, 5.0]}),
-        num_rows="dynamic", key=key, hide_index=True)
+         "load (N)": [F0] * 3, "reach (mm)": list(_BRACKET_EXAMPLE["reach (mm)"]),
+         "plate width (mm)": list(_BRACKET_EXAMPLE["plate width (mm)"]),
+         "plate thickness (mm)": list(_BRACKET_EXAMPLE["plate thickness (mm)"])})
+    cases = st.data_editor(example, num_rows="dynamic", key=key, hide_index=True)
+    declared = bracket_is_declared(cases)
+    if not declared:
+        st.caption("The three rows are an example bracket, not yours: row 1 "
+                   "is the bracket as drawn, the others are alternatives. "
+                   "Until you change the reach or plate size the table is "
+                   "left out of the report and the review shows the bracket "
+                   "check as not available.")
     rows = []
     for _, r in cases.iterrows():
         try:
@@ -2250,12 +2354,48 @@ def _sec_brackets(st, pd, v, sc, key):
                                float(r["plate thickness (mm)"]),
                                int(v["bracket_plates"]), v["yield_mpa"],
                                v["bracket_kt"])
-            rows.append({"case": r["case"], "stress (MPa)": b["stress_mpa"],
+            rows.append({"case": r["case"], "load (N)": float(r["load (N)"]),
+                         "reach (mm)": float(r["reach (mm)"]),
+                         "plate (mm)": _cell(float(r["plate width (mm)"])) + " × "
+                         + _cell(float(r["plate thickness (mm)"])),
+                         "stress (MPa)": b["stress_mpa"],
                          "FoS": b["fos"],
                          "meets required FoS": b["fos"] >= v["fos_min"]})
         except (TypeError, ValueError, ZeroDivisionError):
             continue
-    _table(st, pd, rows)
+    from suspension import report_capture as rc
+    _ss = getattr(st, "session_state", {})
+    if not declared:
+        rc.forget(_ss, _BRACKET_TITLE)
+    with rc.unreported(_ss, not declared):
+        _table(st, pd, rows, title=_BRACKET_TITLE)
+    return {"declared": declared, "fos_as_drawn": rows[0]["FoS"] if rows else None}
+
+
+#: The values the two example blocks open with. Numbers a user has not replaced are not results of their design, so
+#: the report leaves those blocks out until they differ from these.
+_STATED_EXAMPLE = (4799.0, 485.0, 0.60, 0.116, 0.074)
+_STATED_LINK_TITLE = "Stated link: how much of the reported extension stretch and lash explain"
+_STATED_BANDS_TITLE = "Stated deflections against the tolerance bands"
+_BRACKET_TITLE = "Bracket screening, double-shear clevis root bending"
+_BRACKET_EXAMPLE = {"reach (mm)": (27.9, 27.9, 10.0), "plate width (mm)": (30.0, 40.0, 30.0),
+                    "plate thickness (mm)": (5.0, 6.0, 5.0)}
+
+
+def is_declared(values, example) -> bool:
+    """True when any entered value differs from the example the field opens with."""
+    return any(abs(float(a) - float(b)) > 1e-9 for a, b in zip(values, example))
+
+
+def bracket_is_declared(cases) -> bool:
+    """True when the bracket table is no longer the example: a row added or removed, or any reach or plate size
+    changed. The load column follows the worst link force, so it does not count."""
+    try:
+        if len(cases) != 3:
+            return True
+        return any(is_declared(list(cases[col]), ex) for col, ex in _BRACKET_EXAMPLE.items())
+    except (KeyError, TypeError, ValueError):
+        return True
 
 
 def _sec_packaging(st, pd, v, corner):
@@ -2273,7 +2413,7 @@ def _sec_packaging(st, pd, v, corner):
         ("upper ball joint above wheel centre (mm)", e["upper_above_wc_mm"]),
         ("lower ball joint below wheel centre (mm)", e["lower_below_wc_mm"]),
         ("both joints inside the rim envelope", e["inside"])],
-        ["quantity", "value"])
+        ["quantity", "value"], title="Packaging: wheelbase, ground clearance, rim envelope")
     if abs(w["wheelbase_mm"] - v["wheelbase_mm"]) > 0.5:
         st.warning("The declared wheelbase differs from the axle stations.")
     return {"wheelbase": w, "clearance": cl, "envelope": e}
@@ -2314,12 +2454,13 @@ def _sec_kinematics(st, pd, v, corner, axle, travel):
     if "anti_lift_pct" in d:
         rows.append(("anti-lift, outboard rear brakes (%)",
                      d["anti_lift_pct"]))
-    _table(st, pd, rows, ["quantity", "value"])
+    _table(st, pd, rows, ["quantity", "value"], title="Kinematics and anti-geometry, " + axle + " corner")
     _table(st, pd, [{"travel (mm)": t, "camber (deg)": a, "toe (deg)": b,
                      "RC height (mm)": r, "scrub (mm)": sc}
                     for t, a, b, r, sc in zip(
                         d["stations_mm"], d["camber_deg"], d["toe_deg"],
-                        d["rc_height_mm"], d["scrub_mm"])])
+                        d["rc_height_mm"], d["scrub_mm"])],
+           title="Camber, toe, roll-centre height and scrub over wheel travel")
     ctr = gr.camber_to_road(corner.static_camber,
                             d["camber_gain_deg_per_mm"], v["body_roll_deg"],
                             trk, v["tyre_optimum_camber"])
@@ -2333,7 +2474,7 @@ def _sec_kinematics(st, pd, v, corner, axle, travel):
              "ratio_to_delivered": "needed ÷ delivered gain (×)",
              "error_from_optimum_deg": "distance from the tyre optimum (deg)"}
     _table(st, pd, [(names.get(k, k), x) for k, x in ctr.items()],
-           ["quantity", "value"])
+           ["quantity", "value"], title="Loaded tyre camber relative to the road (outside wheel at the declared roll)")
     st.caption("None of these is a channel — the solver is indifferent to "
                "all of them, so check them on every corner.")
     return d
@@ -2475,6 +2616,8 @@ def _sec_frame_from_step(st, pd, np, ss, v, key):
                                      xaxis_title="X right (mm)",
                                      yaxis_title="Z forward (mm)",
                                      zaxis_title="Y up (mm)"))
+        from suspension import report_capture as rc
+        rc.heading(ss, "Frame tube centrelines read from " + str(fname))
         st.plotly_chart(fig, key=f"{key}_fig")
     except Exception:                            # noqa: BLE001
         pass
@@ -2528,6 +2671,10 @@ def _render_analysis(st, pd, np, ss):
                   "summarises it against editable starting ranges; the "
                   "sections below show the working.")
     st.caption(f"For {note}, {axle} axle, with the declaration above.")
+    if run is None or run["result"].winner_hp is None:
+        st.warning("No generated geometry yet: every number in this review "
+                   "and the sections under it describes the seed geometry "
+                   "the search would start from, not a result of it.")
     front_hp, rear_hp = _corner_pair(ss, corner, axle)
     review_box = st.container()
 
@@ -2548,7 +2695,7 @@ def _render_analysis(st, pd, np, ss):
         out["comp"] = _sec_compliance(st, pd, v, corner, axle, out["sc"],
                                       bands)
     with st.expander("🪝 Bracket screening"):
-        _sec_brackets(st, pd, v, out["sc"], "ig_brk")
+        out["brk"] = _sec_brackets(st, pd, v, out["sc"], "ig_brk")
     with st.expander("📦 Packaging — wheelbase, ground clearance, rim "
                      "envelope"):
         out["pack"] = _sec_packaging(st, pd, v, corner)
@@ -2584,6 +2731,11 @@ def _review_values(v, out, axle):
     if stq:
         vals["steering_ratio_needed"] = stq["ratio_needed_for_target"]
     a = out.get("act") or {}
+    if a.get("wheel_rate_spread_pct") is not None:
+        vals["wheel_rate_spread"] = a["wheel_rate_spread_pct"]
+    brk = out.get("brk") or {}
+    if brk.get("declared") and brk.get("fos_as_drawn") is not None:
+        vals["bracket_fos"] = brk["fos_as_drawn"]
     vals["mr_solved"] = 1.0 if a.get("ok") else 0.0
     if a.get("stroke_fraction_used") is not None:
         vals["stroke_used"] = a["stroke_fraction_used"]
@@ -2603,7 +2755,7 @@ def _range_text(r):
     if hi >= 1e8:
         return "≥ " + _cell(lo)
     if lo == 0 and r["key"].endswith(("_abs", "used", "share", "change_deg",
-                                     "needed")):
+                                     "needed", "spread")):
         return "≤ " + _cell(hi)
     return _cell(lo) + " … " + _cell(hi)
 
@@ -2615,7 +2767,7 @@ def _render_review(st, pd, ss, v, out, axle, note, run):
     if limits is None:
         limits = [dict(r) for r in ga.DEFAULT_REVIEW_LIMITS]
         for r in limits:
-            if r["key"] == "worst_fos":
+            if r["key"] in ("worst_fos", "bracket_fos"):
                 r["lo"] = float(v["fos_min"])
         ss["ig_review_limits"] = limits
     rows = ga.design_review(_review_values(v, out, axle), limits)
@@ -2639,7 +2791,9 @@ def _render_review(st, pd, ss, v, out, axle, note, run):
                          "why it matters": r["why"],
                          "what to change": r["fix"]
                          if r["status"] in ("fail", "watch") else ""}
-                        for r in show])
+                        for r in show],
+               title="Design review: 🔴 outside its range, 🟡 inside but within 10 % of a limit, "
+                     "🟢 inside, ⚪ not available")
         if _guided(ss) and counts["fail"]:
             st.warning("Red is a prompt, not a verdict: the ranges are "
                        "generic starting points. Either change the design "

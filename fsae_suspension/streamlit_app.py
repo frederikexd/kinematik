@@ -745,7 +745,10 @@ if not getattr(st, "_ax_spinner_patched", False):
 _FEATURE_RESULTS_KEY = "_kinematik_feature_results"
 _MAX_CAPTURED_METRICS = 40
 _MAX_CAPTURED_VERDICTS = 24
-_MAX_CAPTURED_ARTIFACTS = 24
+# 48, not 24: InverseGenesis after a run draws about 26 tables, and the design
+# review is drawn last, so at 24 the one table a reviewer reads first was the
+# one the cap dropped.
+_MAX_CAPTURED_ARTIFACTS = 48
 _VERDICT_MIN_CHARS = 12          # skip one-word chrome like "Saved"
 _VERDICT_MAX_CHARS = 400
 
@@ -774,9 +777,31 @@ def _ax_positional_args_obj(args):
     return _a
 
 
+#: Session keys a tab body sets to steer capture (see suspension/report_capture.py,
+#: which holds the same strings for the tabs; tests pin that the two agree).
+_CAPTURE_PAUSED_KEY = "_ax_capture_paused"
+_CAPTURE_HEADING_KEY = "_ax_next_heading"
+
+
+def _ax_take_heading():
+    """The heading a tab set for the table or chart it renders next, taken so
+    it cannot land on a later one. '' when none was set."""
+    try:
+        return " ".join(str(st.session_state.pop(_CAPTURE_HEADING_KEY, "")
+                            or "").split())[:120]
+    except Exception:
+        return ""
+
+
 def _ax_capture_feature():
     """The feature whose body is rendering right now, if it may be captured."""
     try:
+        # A tab pauses capture around what it shows but does not report: an
+        # example a user has not replaced with their own numbers, or a whole
+        # body while a loaded file has not been run. Without this, every table
+        # on screen is a result in the document, whoever's numbers it holds.
+        if st.session_state.get(_CAPTURE_PAUSED_KEY):
+            return None
         _f = st.session_state.get("_ax_rendering_tab")
         if not _f:
             return None
@@ -892,7 +917,7 @@ def capture_verdict(text, severity="info", *, feature=None):
 
 
 def capture_artifact(kind, title, detail="", *, feature=None, figure=None,
-                     table=None):
+                     table=None, heading=""):
     """Record that a feature produced a chart / table / other visual result.
 
     Many features' real output is a plot or a table, not a metric — a lap-time
@@ -914,6 +939,13 @@ def capture_artifact(kind, title, detail="", *, feature=None, figure=None,
 
     Deduped on (kind, title): a chart re-renders on every rerun, and the report
     wants the latest version of each chart, so a repeat refreshes the spec.
+
+    A table's title is its shape line, so two different tables of the same
+    shape used to be one row: the later one replaced the earlier, and a
+    15-row motion-ratio table was printed where the 15-row kinematics table
+    belonged. A ``heading`` names the table; headed artifacts dedupe on
+    (kind, heading) and never match an unheaded one, and the heading is
+    printed above the table in the report.
     """
     try:
         _f = feature or _ax_capture_feature()
@@ -929,9 +961,13 @@ def capture_artifact(kind, title, detail="", *, feature=None, figure=None,
                 _spec = _rfg.compact_spec(figure)
             except Exception:
                 _spec = None       # a chart with no spec still gets its name
+        _h = " ".join(str(heading or "").split())[:120]
         _rows = _ax_store(_f, "artifacts")
         for _r in _rows:
-            if _r.get("kind") == kind and _r.get("title") == _t:
+            if _r.get("kind") == kind and (
+                    _r.get("heading") == _h if (_h or _r.get("heading"))
+                    else _r.get("title") == _t):
+                _r["title"] = _t
                 if detail:
                     _r["detail"] = str(detail)[:200]
                 if _spec is not None:
@@ -943,6 +979,8 @@ def capture_artifact(kind, title, detail="", *, feature=None, figure=None,
             return
         _row = {"kind": str(kind), "title": _t,
                 "detail": str(detail)[:200] if detail else ""}
+        if _h:
+            _row["heading"] = _h
         if _spec is not None:
             _row["spec"] = _spec
         if table is not None:
@@ -1076,15 +1114,16 @@ def _ax_plot_summary(fig):
 def _ax_wrap_chart(_orig):
     def _wrapped(*args, **kwargs):
         try:
+            _h = _ax_take_heading()
             _a = _ax_positional_args_obj(args)
             _fig = kwargs.get("figure_or_data", _a[0] if _a else None)
             if _fig is not None:
                 _title, _shape = _ax_plot_summary(_fig)
                 # A plot with neither a title nor labelled axes still evidences
                 # that work was done, so record it rather than dropping it.
-                if _title or _shape:
-                    capture_artifact("chart", _title or "(untitled chart)",
-                                     _shape, figure=_fig)
+                if _title or _shape or _h:
+                    capture_artifact("chart", _title or _h or "(untitled chart)",
+                                     _shape, figure=_fig, heading=_h)
         except Exception:
             pass
         return _orig(*args, **kwargs)
@@ -1232,12 +1271,14 @@ def _ax_table_rows(data):
 def _ax_wrap_table(_orig, kind="table"):
     def _wrapped(*args, **kwargs):
         try:
+            _h = _ax_take_heading()
             _a = _ax_positional_args_obj(args)
             _data = kwargs.get("data", _a[0] if _a else None)
             if _data is not None:
                 _sum = _ax_table_summary(_data)
                 if _sum:
-                    capture_artifact(kind, _sum, table=_ax_table_rows(_data))
+                    capture_artifact(kind, _sum, table=_ax_table_rows(_data),
+                                     heading=_h)
         except Exception:
             pass
         return _orig(*args, **kwargs)
@@ -14827,7 +14868,13 @@ def _captured_result_sections(feature):
                 _lines.append(f"![{_cap}]({_FIG_SCHEME}"
                               f"{figure_ref(feature, _i)})")
             elif _tbl and _tbl.get("header") and _tbl.get("rows"):
-                # No heading above the table. The captured "title" for a table
+                # A heading the tab gave the table goes above it: fourteen
+                # unlabelled quantity/value tables in a row cannot be told
+                # apart by a reader, or checked by one.
+                if _r.get("heading"):
+                    _lines.append(f"**{_r['heading']}**")
+                    _lines.append("")
+                # No shape line above the table. The captured "title" for a table
                 # is its shape line ("40 rows x 7 cols · Message, ID, …"),
                 # which is a fine DESCRIPTION and a terrible heading to put
                 # directly above the same column names. It goes underneath as

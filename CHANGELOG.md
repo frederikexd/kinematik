@@ -1,6 +1,21 @@
 # Changelog
 
 
+## Unreleased
+
+**InverseGenesis feature report: only what was designed.**
+- A manifest that is loaded but not run reports nothing. Before, its recorded verdict was printed above tables computed from the form's seed geometry.
+- The example link (4799 N, 485 mm) and the example bracket are left out of the report until they are replaced with the team's own values. The bracket check is in the design review, as not available until then.
+- Every table has a heading, and tables are told apart by it. Before, a table was known by its shape, so a 15-row motion-ratio table replaced the 15-row kinematics table.
+- What was recorded for one run is dropped when another run, or the seed, is being reported, and when a declaration the analysis reads changes: a warning that had been cleared stayed in the report.
+- The seed geometry is flagged as such; the steering table names the declared tyre aligning moment.
+
+**Design review.**
+- A value outside its range is red. Amber now means inside the range but within 10 % of a limit.
+- Bump steer limit 0.002 deg/mm (was 0.01), so it agrees with the 0.1 deg toe-change limit over ±25 mm: one curve could pass one and fail the other.
+- New checks: wheel-rate spread over travel (25 %) and the bracket factor of safety.
+
+
 ## 1.6.0 (2026-11-15)
 
 **Link loads benchmarked against three multibody solvers.**

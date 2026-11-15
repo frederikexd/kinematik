@@ -756,7 +756,7 @@ DEFAULT_REVIEW_LIMITS = [
      "why": "Negative gain keeps the outside tyre upright as the body rolls.",
      "fix": "Make the upper arm shorter or more inclined than the lower."},
     {"key": "bump_steer_abs", "check": "Bump steer (magnitude)",
-     "unit": "deg/mm", "lo": 0.0, "hi": 0.01,
+     "unit": "deg/mm", "lo": 0.0, "hi": 0.002,
      "why": "Toe change over bumps makes the car dart and costs tyre life.",
      "fix": "Put the tie-rod inner on the line of the wishbone instant axis."},
     {"key": "toe_change_deg", "check": "Toe change over travel",
@@ -799,6 +799,17 @@ DEFAULT_REVIEW_LIMITS = [
      "why": "An assumed motion ratio makes every roll-stiffness number "
             "provisional.",
      "fix": "Add pushrod and rocker points to the corner."},
+    {"key": "wheel_rate_spread", "check": "Wheel-rate spread over travel",
+     "unit": "%", "lo": 0.0, "hi": 25.0,
+     "why": "The wheel rate follows the motion ratio squared: a large spread "
+            "means the ride frequency changes through the travel.",
+     "fix": "Move the rocker or damper mounts until the motion ratio is "
+            "nearly constant."},
+    {"key": "bracket_fos", "check": "Bracket factor of safety, as drawn",
+     "unit": "", "lo": 1.5, "hi": 1e9,
+     "why": "A clevis that yields at its root lets the pickup move under "
+            "load. Not available until you enter your own bracket.",
+     "fix": "Shorten the reach or thicken the plates."},
     {"key": "toe_band_share", "check": "Compliance steer, share of toe band",
      "unit": "fraction", "lo": 0.0, "hi": 0.5,
      "why": "Deflection under load uses the same band as build scatter.",
@@ -818,9 +829,14 @@ def design_review(values: dict, limits=None, margin: float = 0.10) -> list:
     """Compare each available value (units as named in the limit rows: deg,
     mm, deg/mm, %, dimensionless fractions) with its range.
 
-    Status is "pass" inside [lo, hi], "watch" outside by at most ``margin``
-    of the span (or of the bound for one-sided ranges), "fail" beyond, and
-    "n/a" when the value is missing. Boolean checks use lo = hi = 1.
+    Status is "fail" outside [lo, hi], "watch" inside but within ``margin``
+    of the span (or of the bound for one-sided ranges) of a limit, "pass"
+    otherwise, and "n/a" when the value is missing. A lower limit of 0 is the
+    floor of a magnitude, not a limit to stay away from. Boolean checks use
+    lo = hi = 1.
+
+    A value outside its range is never "watch": the range printed beside it
+    says it fails, and an amber mark there contradicted the row it sat in.
     """
     out = []
     for lim in (limits if limits is not None else DEFAULT_REVIEW_LIMITS):
@@ -834,15 +850,16 @@ def design_review(values: dict, limits=None, margin: float = 0.10) -> list:
             continue
         v = float(v)
         lo, hi = float(lim["lo"]), float(lim["hi"])
-        if lo <= v <= hi:
-            row["status"] = "pass"
-        elif lo == hi:
+        if not lo <= v <= hi:
             row["status"] = "fail"
+        elif lo == hi:
+            row["status"] = "pass"
         else:
             finite = [b for b in (lo, hi) if abs(b) < 1e8]
             span = (hi - lo) if len(finite) == 2 else max(abs(finite[0]), 1.0)
-            miss = (lo - v) if v < lo else (v - hi)
-            row["status"] = "watch" if miss <= margin * span else "fail"
+            near = [abs(v - b) for b in finite if not (b == lo and lo == 0.0)]
+            row["status"] = ("watch" if near and min(near) <= margin * span
+                             else "pass")
         out.append(row)
     return out
 

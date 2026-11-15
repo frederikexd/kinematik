@@ -214,18 +214,34 @@ def test_ball_joint_envelope():
 # ---- design review ---------------------------------------------------------- #
 def test_design_review_statuses():
     rows = {r["key"]: r for r in pt.design_review({
-        "caster_deg": 5.0,            # inside 2..8
-        "kpi_deg": 10.4,              # 0.4 over a 10-wide span -> watch
-        "scrub_mm": 80.0,             # far outside -> fail
+        "caster_deg": 5.0,            # inside 2..8, clear of both limits
+        "kpi_deg": 10.4,              # 0.4 over the limit: outside is a fail, however small the miss
+        "scrub_mm": 28.0,             # inside -5..30, within 10 % of the span of the upper limit -> watch
         "joints_in_rim": 0.0,         # boolean -> fail
-        "worst_fos": 1.45,            # one-sided >= 1.5, small miss -> watch
+        "worst_fos": 1.6,             # one-sided >= 1.5, inside by under 10 % of the bound -> watch
+        "rc_height_mm": 2.0,          # 0..100: a lower limit of 0 is a floor, not a limit to stay away from
+        "toe_change_deg": 0.4439,     # the report that showed this red beside a green bump steer
+        "bump_steer_abs": 0.0089,     # the same curve: 0.0089 deg/mm over 50 mm is 0.44 deg, so it fails too
+        "wheel_rate_spread": 191.5,
     })}
     assert rows["caster_deg"]["status"] == "pass"
-    assert rows["kpi_deg"]["status"] == "watch"
-    assert rows["scrub_mm"]["status"] == "fail"
+    assert rows["kpi_deg"]["status"] == "fail"
+    assert rows["scrub_mm"]["status"] == "watch"
     assert rows["joints_in_rim"]["status"] == "fail"
     assert rows["worst_fos"]["status"] == "watch"
-    assert rows["bump_steer_abs"]["status"] == "n/a"
+    assert rows["rc_height_mm"]["status"] == "pass"
+    assert rows["toe_change_deg"]["status"] == rows["bump_steer_abs"]["status"] == "fail"
+    assert rows["wheel_rate_spread"]["status"] == "fail"
+    assert rows["bracket_fos"]["status"] == "n/a"
+    low = {r["key"]: r for r in pt.design_review({"worst_fos": 1.45})}
+    assert low["worst_fos"]["status"] == "fail"                # a small miss of a one-sided limit is still a miss
+
+
+def test_bump_steer_and_toe_change_limits_agree():
+    """The bump-steer limit times the default +/-25 mm travel is the toe-change limit: one curve cannot pass one
+    and fail the other by the limits alone."""
+    lim = {r["key"]: r for r in pt.DEFAULT_REVIEW_LIMITS}
+    assert lim["bump_steer_abs"]["hi"] * 50.0 == pytest.approx(lim["toe_change_deg"]["hi"])
 
 
 def test_design_review_custom_limits():
