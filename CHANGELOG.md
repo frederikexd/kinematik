@@ -26,6 +26,14 @@
 - "Red is a prompt" names only the checks still on generic ranges, not those the manifest set.
 - InverseGenesis starts its report afresh on every render: a line an earlier run drew and this one does not (after an input change, or an app update in a live session) no longer stays in the report.
 
+**The report answers a design judge's first questions.**
+- Inputs table: every section-5 input the review reads, with its source (manifest, entered, or the tool's default), and a count of the defaults the ride, roll-stiffness, loaded-camber and steering numbers rest on.
+- A bound the manifest set itself is flagged when the delivered value is outside the generic range for that check (front_v11_final: anti-dive 68.9 % inside its own 63.6–70, outside 0–50), with a request for the reason.
+- Result caveats: a build yield priced against a shop preset is not a measurement; a search that returned one candidate compared it with nothing; a winner that did not move was verified, not generated.
+- Wheel envelope: the line states the distance to the rim and tire and the gap required (3.49 mm, 3 mm required), where it printed only the 0.49 mm margin; a small gap with no running clearance declared is a warning.
+- Links are screened with their own tubes when the manifest sizes them individually (strength, stretch and compliance): front_v11_final's weakest link is 3.47, not 2.16 with one thin tube for all.
+- A motion ratio that falls in bump is a warning and a review row. The steering table shows the effort from trail alone beside the total with the declared aligning moments. The compliance section names the case that takes the toe band. The rocker axis is labelled a unit vector.
+
 **Design review.**
 - A value outside its range is red. Amber now means inside the range but within 10 % of a limit.
 - Bump steer limit 0.002 deg/mm (was 0.01), so it agrees with the 0.1 deg toe-change limit over ±25 mm: one curve could pass one and fail the other.

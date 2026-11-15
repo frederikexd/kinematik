@@ -223,7 +223,7 @@ def test_a_manifest_that_is_loaded_but_not_run_reports_nothing_but_that(tab):
     del st.session_state["ig_manifest_up"]                    # file removed: back to the seed, said to be the seed
     _run(st, uig)
     assert NOTICE not in _report(ns) and any("No generated geometry yet" in v for v in _verdicts(ns))
-    assert len(_tables(ns)) == len(st.drawn) == 13
+    assert len(_tables(ns)) == len(st.drawn) == 14
 
 
 def test_every_table_drawn_is_reported_once_and_reruns_change_nothing(tab):
@@ -398,8 +398,14 @@ def test_a_loaded_manifest_is_reviewed_with_the_car_it_declared(tab):
     assert review[0] == "🟢" and review[4] == "63.6 … 70"
     v_lines = _verdicts(ns)
     assert any("Section 5 set from the car `front_v11_final`" in x for x in v_lines)
-    assert any("per-link tubes (LF 15.875 × 1.245 mm" in x for x in v_lines)
-    assert any("steering rack (81 mm per revolution)" in x for x in v_lines)
+    assert any("steering rack (81 mm per revolution" in x and "aligning moment" in x for x in v_lines)
+    # the manifest's per-link tubes are what the strength, stretch and compliance tables use
+    loads = t["Link forces and factor of safety, every load case (N, + tension)"]
+    assert {r[1]: r[-1] for r in loads["rows"]} == {"UF": "15.875 × 0.889", "UR": "15.875 × 0.889",
+                                                   "LF": "15.875 × 1.245", "LR": "15.875 × 1.651",
+                                                   "TR": "19.05 × 2.108"}
+    assert next(r for k, x in t.items() if k.startswith("Design review") for r in x["rows"]
+                if r[1] == "Worst link factor of safety")[2] == "3.47"
     assert sum("Replayed from the recorded outputs" in x for x in v_lines) == 0   # said once, in the replay line
 
 
@@ -407,11 +413,11 @@ def test_manifest_vehicle_reads_only_what_was_declared():
     from suspension import genesis_repro as gr
     from ui import inverse_genesis as uig
     man = gr.GenesisManifest.from_json((ROOT / "manifests" / "table7_control.recorded.genesis.json").read_text())
-    fields, missing = uig.manifest_vehicle(man)
+    fields, missing, _tubes = uig.manifest_vehicle(man)
     props = (man.volume or {}).get("properties") or {}
     assert ("brake_bias_front" in fields) == (props.get("brake_bias_front") is not None)
     man.volume = {}
-    assert uig.manifest_vehicle(man) == ({}, [])
+    assert uig.manifest_vehicle(man) == ({}, [], {})
 
 
 def test_a_line_no_longer_drawn_leaves_the_report_even_when_nothing_changed(tab):
@@ -423,3 +429,90 @@ def test_a_line_no_longer_drawn_leaves_the_report_even_when_nothing_changed(tab)
     _run(st, uig)
     assert not any("older build" in x for x in _verdicts(ns))
     assert _tables(ns)                                           # the redraw itself is all there
+
+
+def test_a_judge_can_see_where_every_input_came_from_and_what_the_result_does_not_show(tab):
+    """The questions a design judge asks first, answered in the report itself: which inputs are this car's and which
+    are the tool's defaults; whether the yield is measured; whether the search compared anything; whether it
+    generated the geometry; how close the links run to the wheel; and whether a bound the team set itself agrees
+    with the generic range."""
+    st, ns, uig = tab
+    _run(st, uig)
+    st.session_state["ig_manifest_up"] = _Upload((ROOT / "manifests" / "front_v11_final.recorded.genesis.json").read_text())
+    _run(st, uig)
+    _run(st, uig, clicks={"ig_manifest_load"})
+    t, v = _tables(ns), _verdicts(ns)
+    src = {r[0]: r[2] for r in t["Inputs to this review, and where each came from"]["rows"]}
+    assert src["Front brake bias"] == "manifest" and src["Coil rate front (lb/in)"] == "default"
+    assert src["Link tube LR, od × wall (mm)"] == "manifest" and "Coil rate rear (lb/in)" not in src
+    n_default = sum(x == "default" for x in src.values())
+    assert any(f"{n_default} of the {len(src)} inputs to this review are the tool's defaults" in x for x in v)
+    assert any("priced against shop preset 'jig_weld'" in x and "Measure your own parts" in x for x in v)
+    assert any("One candidate only: 1 of the 6 starts" in x for x in v)
+    assert any("No pickup moved" in x and "did not generate it" in x for x in v)
+    assert any("3.49 mm from the nearest link" in x and "3 mm required, 0.49 mm to spare" in x for x in v)
+    assert any("Anti-dive / anti-squat: 68.935 % is inside the range the manifest declared (63.6 … 70) but outside "
+               "the generic starting range (0 … 50)" in x for x in v)
+    assert any("motion ratio falls in bump (0.8043 at ride height, 0.7509 at full bump)" in x for x in v)
+    assert any("only in the kerb strike case" in x for x in v)
+    review = {r[1]: r for k, x in t.items() if k.startswith("Design review") for r in x["rows"]}
+    assert review["Wheel rate does not fall in bump"][:5] == ["🔴", "Wheel rate does not fall in bump", "no", "", "must be yes"]
+    steer = t["Steering effort at the design lateral acceleration"]
+    with_mz, trail_only = float(_cell(steer, "ratio needed for the target")), float(
+        _cell(steer, "ratio needed from trail alone, no aligning moment"))
+    assert with_mz == pytest.approx(8.79) and trail_only == pytest.approx((87.895 - 56.0) / 10.0, abs=1e-3)
+    points = [r[0] for r in t["16 rows x 5 cols · point, x, y, z, designed"]["rows"]]
+    assert "rocker_axis (unit vector, not mm)" in points and "rocker_axis" not in points
+    assert all(len(x) <= 402 for x in v)                       # nothing was cut by the report's banner limit
+
+    st.session_state["ig_v_spring_front_lbin"] = 350.0        # the team enters its spring
+    uig._veh(st.session_state)["spring_front_lbin"] = 350.0
+    _run(st, uig)
+    src = {r[0]: r[2] for r in _tables(ns)["Inputs to this review, and where each came from"]["rows"]}
+    assert src["Coil rate front (lb/in)"] == "entered"
+    assert any(f"{n_default - 1} of the {len(src)} inputs" in x for x in _verdicts(ns))
+
+
+def test_result_caveats_and_self_graded_say_nothing_when_there_is_nothing_to_say():
+    from types import SimpleNamespace as NS
+    import numpy as np
+    from ui import inverse_genesis as uig
+    moved = NS(yield_frac=0.97, shift_vec=np.array([0.0, 2.5]))
+    res = NS(winner=moved, candidates=[moved, moved], n_starts=6)
+    man = NS(search=NS(n_starts=6))
+    assert uig.result_caveats(res, man, NS(calibrated=True, provenance="inspection data")) == []
+    assert uig.result_caveats(NS(winner=None, candidates=[], n_starts=0), man, None) == []
+    still = NS(yield_frac=None, shift_vec=np.zeros(2))
+    got = uig.result_caveats(NS(winner=still, candidates=[still], n_starts=1), man, None)
+    assert len(got) == 2 and "1 of the 6 starts" in got[0] and "No pickup moved" in got[1]
+    row = {"check": "Caster", "key": "caster_deg", "value": 3.656}
+    generic = [{"check": "Caster", "lo": 2.0, "hi": 8.0}]
+    assert uig.self_graded([row], {"Caster": (3.65, 8.0)}, generic) == []     # inside both ranges
+    assert uig.self_graded([dict(row, value=9.0)], {"Caster": (3.65, 12.0)}, generic) == [(dict(row, value=9.0), 2.0, 8.0)]
+    assert uig.self_graded([dict(row, value=9.0)], {}, generic) == []         # not a manifest range
+    assert uig.self_graded([dict(row, value=None)], {"Caster": (3.65, 8.0)}, generic) == []
+
+
+def test_the_wheel_envelope_line_says_what_the_clearance_is_measured_beyond(tab):
+    """0.49 mm 'worst clearance' read as half a millimetre from the rim; it was the margin beyond a 3 mm gap."""
+    from types import SimpleNamespace as NS
+    st, ns, uig = tab
+    lines = []
+    fake = NS(success=lambda t: lines.append(("ok", t)), warning=lambda t: lines.append(("warn", t)),
+              error=lambda t: lines.append(("fail", t)))
+
+    def line(margin, gap):
+        lines.clear()
+        src = (ROOT / "ui" / "inverse_genesis.py").read_text(encoding="utf-8")
+        a = src.index("        m = res.winner.envelope_margin_mm")
+        b = src.index("    if res.winner_hp is None:", a)
+        import textwrap
+        exec(textwrap.dedent(src[a:b]), {"res": NS(winner=NS(envelope_margin_mm=margin),
+                                                    wheel_envelope=NS(clearance_mm=gap, rack_travel_mm=27.0)),
+                                         "st": fake, "_cell": uig._cell,
+                                         "_MIN_RUNNING_CLEARANCE_MM": uig._MIN_RUNNING_CLEARANCE_MM})
+        return lines[0]
+    assert line(0.49, 3.0)[0] == "ok" and "3 mm required, 0.49 mm to spare" in line(0.49, 3.0)[1]
+    assert line(0.49, 0.0)[0] == "warn" and "no running clearance was declared" in line(0.49, 0.0)[1]
+    assert line(6.0, 0.0)[0] == "ok"
+    assert line(-0.2, 3.0)[0] == "fail" and "closer to it than the 3 mm required" in line(-0.2, 3.0)[1]

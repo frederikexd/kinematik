@@ -222,6 +222,8 @@ _PRESETS = {
 #: every random start after the first is drawn until it clears every declared wall, up to 200 draws of about a
 #: second each, so 2 starts took 220 s and 6 took 21 minutes. One start (the seed itself) took 5 s and returned the
 #: same RESILIENT winner. The shared hosted CPU throttles a run of minutes before it finishes.
+#: Below this gap to the rim or tire, with no running clearance declared, the envelope result is a warning.
+_MIN_RUNNING_CLEARANCE_MM = 3.0
 HOSTED_N_STARTS = 1
 HOSTED_N_YIELD = 500
 #: Below these a result is labelled a quick search: the published manifests all use 6 starts and N = 2000.
@@ -551,6 +553,28 @@ def _g(value, unit="", limited_by="", digits=4):
 _TOL = "declared tolerance field"
 
 
+def result_caveats(res, man, fld) -> list:
+    """What a reader must know before quoting a result, each as one sentence: a build yield priced against a shop
+    preset is not a measurement; a search that returned one candidate compared it with nothing; a winner that did
+    not move was verified, not generated."""
+    import numpy as _np
+    out = []
+    w = res.winner
+    if w is not None and w.yield_frac is not None and fld is not None and not getattr(fld, "calibrated", True):
+        out.append("The build yield is priced against " + str(fld.provenance).split(". ")[0].rstrip(".")
+                   + ": it is the yield if your shop holds those tolerances. Measure your own parts before quoting it.")
+    asked = int(getattr(man.search, "n_starts", 0) or 0)
+    if w is not None and asked > 1 and len(res.candidates) <= 1:
+        got = int(getattr(res, "n_starts", 0) or 0)
+        out.append(f"One candidate only: {got} of the {asked} starts asked for produced a geometry (the others were "
+                   "never drawn clear of the declared walls). 'Most buildable' compares it with nothing, and no "
+                   "other region of the legal volume was explored.")
+    if w is not None and _np.max(_np.abs(_np.asarray(w.shift_vec, float)), initial=0.0) < 1e-6:
+        out.append("No pickup moved: the starting geometry already met every curve and bound. This run verified "
+                   "that geometry and priced its build yield; it did not generate it.")
+    return out
+
+
 def _manifest_run_summary(st, run, man):
     """The outcome of a manifest re-run, shown beside its Run button: the grade, build yield and fit the run returned,
     whether they match the recorded ones, and what the start search did. Yield in %, fit as a fraction of the band."""
@@ -660,6 +684,8 @@ def _results_panel(st, pd, np, ss, run):
         if quick:
             st.warning("⚡ " + quick)
         (st.success if res.ok else st.warning)(res.reason)
+        for caveat in result_caveats(res, man, fld):
+            st.warning(caveat)
         m1, m2, m3, m4 = st.columns(4)
         if w.yield_frac is not None:
             m1.metric("Build yield", _g(w.yield_frac * 100, "%", _TOL))
@@ -729,11 +755,22 @@ def _results_panel(st, pd, np, ss, run):
     if res.wheel_envelope is not None and res.winner is not None \
             and res.winner.envelope_margin_mm is not None:
         m = res.winner.envelope_margin_mm
-        (st.success if m >= 0 else st.error)(
-            f"Wheel envelope: worst clearance {m:+.2f} mm over the declared "
-            "travel" + (" and both steering locks"
-                        if res.wheel_envelope.rack_travel_mm else "")
-            + ". No link or outboard pickup enters the rim or tire.")
+        gap = float(getattr(res.wheel_envelope, "clearance_mm", 0.0) or 0.0)
+        where = "over the declared travel" + (" and both steering locks" if res.wheel_envelope.rack_travel_mm else "")
+        if m < 0:
+            st.error(f"Wheel envelope: worst clearance {m:+.2f} mm {where}: a link or outboard pickup is inside "
+                     "the rim or tire" + (f", or closer to it than the {_cell(gap)} mm required" if gap else "") + ".")
+        elif gap > 0:
+            st.success(f"Wheel envelope: {_cell(round(m + gap, 2))} mm from the nearest link or outboard pickup to "
+                       f"the rim and tire {where}: {_cell(gap)} mm required, {_cell(round(m, 2))} mm to spare.")
+        elif m < _MIN_RUNNING_CLEARANCE_MM:
+            st.warning(f"Wheel envelope: nothing enters the rim or tire {where}, but the nearest link is "
+                       f"{_cell(round(m, 2))} mm from it and no running clearance was declared: rim run-out and "
+                       f"link deflection can use that up. Declare a gap ({_MIN_RUNNING_CLEARANCE_MM:g} mm or more) "
+                       "in the wheel envelope.")
+        else:
+            st.success(f"Wheel envelope: {_cell(round(m, 2))} mm from the nearest link or outboard pickup to the "
+                       f"rim and tire {where}.")
 
     if res.winner_hp is None:
         return
@@ -745,7 +782,8 @@ def _results_panel(st, pd, np, ss, run):
     whd = gr.hp_to_dict(whp)
     _ALL_ROWS = _POINT_ROWS + tuple(q for q in _ROCKER_PTS if q in whd)
     st.dataframe(pd.DataFrame(
-        [{"point": p, "x": whd[p][0], "y": whd[p][1], "z": whd[p][2],
+        [{"point": p + (" (unit vector, not mm)" if p == "rocker_axis" else ""),
+          "x": whd[p][0], "y": whd[p][1], "z": whd[p][2],
           "designed": p in volume.boxes} for p in _ALL_ROWS]),
         hide_index=True, width="stretch",
         column_config={a: st.column_config.NumberColumn(format="%.6f")
@@ -958,6 +996,8 @@ def render():
     pending = manifest_pending(ss)
     if ss.get("ig_run") is not None:
         rc.engage(ss)                         # a result the user made here: report it, whatever the open signal said
+    if (ss.get("ig_run") or {}).get("source") != "manifest":
+        _veh(ss).pop("link_tubes", None)      # per-link tubes belong to the manifest that declared them
     # Every run redraws everything this tab reports, so it starts from nothing: a line an earlier run drew and this
     # one does not (an input since changed, or an older build of this code in the same session) must leave the
     # report, and clearing on a change of inputs alone left the second kind in.
@@ -2059,8 +2099,9 @@ def _veh(ss):
 def manifest_vehicle(man, axle="front"):
     """What a manifest declared about the car, as section-5 fields, and what it declared that section 5 cannot hold.
 
-    Returns (fields, not_held): fields maps section-5 field names to the manifest's values (mm, kg, fraction, MPa,
-    GPa, N·m); not_held lists sentences for declarations the analysis sections have no field for. A manifest's
+    Returns (fields, not_held, link_tubes): fields maps section-5 field names to the manifest's values (mm, kg,
+    fraction, MPa, GPa, N·m); not_held lists sentences for declarations the analysis sections have no field for;
+    link_tubes maps a link to its own (od, wall) in mm where the manifest sizes links individually. A manifest's
     solved-property bounds are computed from these values; the review sections below a run read section 5, so
     without them the same car passed a bound in the search and failed the matching review row."""
     props = ((man.volume or {}).get("properties") or {}) if isinstance(man.volume, dict) else {}
@@ -2079,30 +2120,28 @@ def manifest_vehicle(man, axle="front"):
             out[f] = float(st_[k])
     if st_.get("e_mpa") is not None:
         out["E_gpa"] = float(st_["e_mpa"]) / 1000.0
-    per = st_.get("per_member") or {}
-    if per:
-        sizes = ", ".join(f"{m} {od:g} × {w:g} mm" for m, (od, w) in sorted(per.items()))
-        missing.append(f"per-link tubes ({sizes}): section 5 holds one tube for every link, so the link factors of "
-                       f"safety, stretch and compliance below use {st_.get('od_mm', '?'):g} × {st_.get('wall_mm', '?'):g} mm for "
-                       f"all of them, the thinnest the manifest declares: conservative for "
-                       f"{', '.join(sorted(per))}")
+    per = {m: (float(od), float(w)) for m, (od, w) in (st_.get("per_member") or {}).items()}
     se = props.get("steer_effort") or {}
     if se.get("effort_limit_nm") is not None:
         out["steering_target_Nm"] = float(se["effort_limit_nm"])
     if se.get("rack_c_mm_per_rev") is not None:
-        missing.append(f"the steering rack ({se['rack_c_mm_per_rev']:g} mm per revolution) and lock "
-                       f"({se.get('lock_road_wheel_deg', '?')}°): the search bounded the effort margin of that "
-                       "rack; the review's 'steering ratio needed' row is the ratio the torque target would need "
-                       "with no rack declared, a different question")
-    return out, missing
+        missing.append(f"the steering rack ({se['rack_c_mm_per_rev']:g} mm per revolution, lock "
+                       f"{se.get('lock_road_wheel_deg', '?')}°). The search bounded that rack's effort margin from "
+                       "trail alone; the review's 'steering ratio needed' also adds the tyre aligning moment of "
+                       "section 5, a default unless you entered it, which is most of the difference between them")
+    return out, missing, per
 
 
 def apply_manifest_vehicle(ss, man, axle="front"):
     """Set section 5 to the car a manifest declared (see manifest_vehicle) and remember what was applied and what
     could not be, for the review to say. Returns (fields, not_held)."""
     from suspension import genesis_analysis as ga
-    fields, missing = manifest_vehicle(man, axle)
+    fields, missing, per = manifest_vehicle(man, axle)
     v = _veh(ss)
+    if per:
+        v["link_tubes"] = {m: list(t) for m, t in per.items()}
+    else:
+        v.pop("link_tubes", None)
     for f, val in fields.items():
         v[f] = val
         for p in _VEH_PREFIXES:
@@ -2123,7 +2162,8 @@ def apply_manifest_vehicle(ss, man, axle="front"):
             by_key[k]["lo"], by_key[k]["hi"] = lo, hi
             ranges[by_key[k]["check"]] = (b.get("lo"), b.get("hi"))
     ss["ig_review_limits"] = limits
-    ss["ig_veh_from_manifest"] = {"name": man.name, "fields": fields, "not_held": missing, "ranges": ranges}
+    ss["ig_veh_from_manifest"] = {"name": man.name, "fields": fields, "not_held": missing, "ranges": ranges,
+                                  "link_tubes": {m: list(t) for m, t in per.items()}}
     return fields, missing
 
 
@@ -2315,7 +2355,12 @@ def _sec_steering(st, pd, v, front_hp, rear_hp, key):
                     ("inner kingpin torque, trail + aligning (N·m)", s["inner_Nm"]),
                     ("road-wheel total (N·m)", s["road_wheel_total_Nm"]),
                     ("steering-wheel torque target, declared (N·m)", v["steering_target_Nm"]),
-                    ("ratio needed for the target", s["ratio_needed_for_target"])],
+                    ("ratio needed for the target", s["ratio_needed_for_target"]),
+                    ("road-wheel total from trail alone, no aligning moment (N·m)",
+                     s["road_wheel_total_Nm"] - v["aligning_outer_Nm"] - v["aligning_inner_Nm"]),
+                    ("ratio needed from trail alone, no aligning moment",
+                     (s["road_wheel_total_Nm"] - v["aligning_outer_Nm"] - v["aligning_inner_Nm"])
+                     / v["steering_target_Nm"])],
            ["quantity", "value"], title="Steering effort at the design lateral acceleration")
     _table(st, pd, s["rows"], title="Steering-wheel torque by steering ratio")
     return s
@@ -2330,6 +2375,10 @@ def _sec_actuation(st, pd, v, corner, axle):
                              sprung_corner_mass_kg=m,
                              damper_stroke_mm=v["damper_stroke_mm"])
     mr = None
+    if a.get("ok") and a.get("rate_character") == "falling":
+        st.warning(f"The motion ratio falls in bump ({_cell(a['mr_static'])} at ride height, {_cell(a['mr_bump'])} at "
+                   "full bump): the wheel rate drops as the suspension compresses, the opposite of what resists "
+                   "bottoming. Give the reason, or move the rocker or damper mounts until it is flat or rising.")
     if a.get("ok"):
         mr = a["mr_static"]
         _table(st, pd, [
@@ -2394,8 +2443,10 @@ def _sec_structural(st, pd, v, corner, axle):
     from suspension import genesis_repro as gr
     tube = gr.TubeSpec(od_mm=v["tube_od_mm"], wall_mm=v["tube_wall_mm"],
                        yield_mpa=v["yield_mpa"], E_gpa=v["E_gpa"])
+    tubes = {m: gr.TubeSpec(od_mm=od, wall_mm=w, yield_mpa=v["yield_mpa"], E_gpa=v["E_gpa"])
+             for m, (od, w) in (v.get("link_tubes") or {}).items()}
     sc = gr.structural_screening(
-        corner, tube=tube, fos_min=v["fos_min"], axle=axle,
+        corner, tube=tube, tubes=tubes or None, fos_min=v["fos_min"], axle=axle,
         mass_kg=v["mass_kg"], weight_dist_front=v["weight_dist_front"],
         cg_height_mm=v["cg_height_mm"], track_mm=v[f"track_{axle}_mm"],
         wheelbase_mm=v["wheelbase_mm"],
@@ -2419,8 +2470,9 @@ def _sec_structural(st, pd, v, corner, axle):
 def _sec_compliance(st, pd, v, corner, axle, sc, bands):
     from suspension import genesis_repro as gr
     from suspension import genesis_analysis as ga
+    link_tubes = {m: tuple(t) for m, t in (v.get("link_tubes") or {}).items()}
     cb = gr.compliance_budget(corner, axle=axle, od_mm=v["tube_od_mm"],
-                              wall_mm=v["tube_wall_mm"],
+                              wall_mm=v["tube_wall_mm"], tubes=link_tubes or None,
                               lateral_g=v["lateral_g"], mass_kg=v["mass_kg"],
                               weight_dist_front=v["weight_dist_front"],
                               cg_height_mm=v["cg_height_mm"],
@@ -2444,6 +2496,14 @@ def _sec_compliance(st, pd, v, corner, axle, sc, bands):
                      "share of toe band (%)": 100 * fr.get("toe", 0),
                      "max link extension (mm)": r["max_link_extension_mm"]})
     _table(st, pd, rows, title="Compliance camber and steer against the tolerance bands")
+    over = [r for r in rows if r["share of toe band (%)"] > 50.0]
+    if over and len(over) < len(rows):
+        calm = next(r for r in rows if r not in over)
+        st.warning(f"Compliance steer is over half the toe band only in the {over[0]['case']} case "
+                   f"({_cell(over[0]['compliance steer (deg)'])}°, {_cell(over[0]['share of toe band (%)'])} % of "
+                   f"the band); in {calm['case']} it is {_cell(calm['compliance steer (deg)'])}° "
+                   f"({_cell(calm['share of toe band (%)'])} %). The review row takes the larger. Link stiffness "
+                   "only: brackets, chassis and upright add to it.")
     st.caption(f"Bands: camber ±{bands['camber']}°, toe ±{bands['toe']}° "
                "(from the run's targets when there is one). "
                + cb.get("note", ""))
@@ -2455,10 +2515,11 @@ def _sec_compliance(st, pd, v, corner, axle, sc, bands):
                                    ["force_N"]):
             worst[r["member"]] = r
     for m, r in worst.items():
-        b = ga.axial_budget(abs(r["force_N"]), r["length_mm"],
-                            v["tube_od_mm"], v["tube_wall_mm"], v["E_gpa"],
+        od, wall = link_tubes.get(m, (v["tube_od_mm"], v["tube_wall_mm"]))
+        b = ga.axial_budget(abs(r["force_N"]), r["length_mm"], od, wall, v["E_gpa"],
                             v["rod_end_lash_mm"], 2)
-        lrows.append({"member": m, "worst force (N)": r["force_N"],
+        lrows.append({"member": m, "tube od × wall (mm)": _cell(od) + " × " + _cell(wall),
+                      "worst force (N)": r["force_N"],
                       "case": r["load_case"], "length (mm)": r["length_mm"],
                       "axial stretch (mm)": b["axial_strain_mm"],
                       "rod-end lash (mm)": b["lash_mm"],
@@ -2877,6 +2938,7 @@ def _render_analysis(st, pd, np, ss):
                    "and the sections under it describes the seed geometry "
                    "the search would start from, not a result of it.")
     front_hp, rear_hp = _corner_pair(ss, corner, axle)
+    _inputs_table(st, pd, ss, v, run, corner, axle)
     review_box = st.container()
 
     out = {}
@@ -2934,6 +2996,8 @@ def _review_values(v, out, axle):
     a = out.get("act") or {}
     if a.get("wheel_rate_spread_pct") is not None:
         vals["wheel_rate_spread"] = a["wheel_rate_spread_pct"]
+    if a.get("rate_character"):
+        vals["rate_not_falling"] = 0.0 if a["rate_character"] == "falling" else 1.0
     brk = out.get("brk") or {}
     if brk.get("declared") and brk.get("fos_as_drawn") is not None:
         vals["bracket_fos"] = brk["fos_as_drawn"]
@@ -2949,9 +3013,13 @@ def _review_values(v, out, axle):
 _STATUS_ICON = {"pass": "🟢", "watch": "🟡", "fail": "🔴", "n/a": "⚪"}
 
 
+#: Review checks whose value is a yes or a no.
+_YES_NO_CHECKS = ("joints_in_rim", "mr_solved", "rate_not_falling")
+
+
 def _range_text(r):
     lo, hi = r["lo"], r["hi"]
-    if r["key"] in ("joints_in_rim", "mr_solved"):
+    if r["key"] in _YES_NO_CHECKS:
         return "must be yes"
     if hi >= 1e8:
         return "≥ " + _cell(lo)
@@ -2959,6 +3027,57 @@ def _range_text(r):
                                      "needed", "spread")):
         return "≤ " + _cell(hi)
     return _cell(lo) + " … " + _cell(hi)
+
+
+def input_sources(ss, v, run, corner, axle):
+    """Every section-5 input the analysis of this corner reads, with where its value came from: 'manifest' (the
+    loaded manifest declared it), 'entered' (it differs from the tool's default) or 'default' (nobody declared it
+    for this car). Rows are {input, value, source}; values in the units of their labels."""
+    vm = ss.get("ig_veh_from_manifest") if run is not None and run.get("source") == "manifest" else None
+    from_man = set((vm or {}).get("fields") or {})
+    other = "rear" if axle == "front" else "front"
+    linkage = corner.has_rocker() or corner.has_direct_damper()
+    rows = []
+    for group, fields in _VEH_FIELDS:
+        if group == "Powertrain & aero" or (linkage and group.startswith("Motion ratio when")):
+            continue
+        for f, label, _lo, _hi, _step, default in fields:
+            if f.endswith(f"_{other}_lbin") or f.endswith(f"_{other}_kg") or f.endswith(f"_{other}") \
+                    or f.startswith(f"mr_{other}_"):
+                continue
+            src = ("manifest" if f in from_man else
+                   "default" if abs(float(v[f]) - float(default)) < 1e-12 else "entered")
+            rows.append({"input": label, "value": v[f], "source": src})
+    for m, (od, w) in sorted((v.get("link_tubes") or {}).items()):
+        rows.append({"input": f"Link tube {m}, od × wall (mm)", "value": _cell(od) + " × " + _cell(w),
+                     "source": "manifest"})
+    return rows
+
+
+def _inputs_table(st, pd, ss, v, run, corner, axle):
+    """The first table of the review: its inputs and their sources, and how many are still defaults."""
+    rows = input_sources(ss, v, run, corner, axle)
+    with st.expander("📥 Inputs to this review and where each came from"):
+        _table(st, pd, rows, title="Inputs to this review, and where each came from")
+    n = sum(r["source"] == "default" for r in rows)
+    if n:
+        st.warning(f"{n} of the {len(rows)} inputs to this review are the tool's defaults, not values declared for "
+                   "this car (marked 'default' in the inputs table). The ride, roll-stiffness, loaded-camber and "
+                   "steering-effort numbers below are only as good as those: enter the car's own in section 5.")
+
+
+def self_graded(rows, ranges, generic):
+    """Review rows judged against a range the manifest declared, whose value is outside the tool's generic starting
+    range for the same check: [(row, generic lo, generic hi)]. Passing a bound you set yourself is not evidence the
+    number is a good one, so the report says the generic range disagrees and asks for the reason."""
+    out = []
+    by_check = {g["check"]: g for g in generic}
+    for r in rows:
+        g = by_check.get(r["check"])
+        if r["check"] in ranges and g is not None and r.get("value") is not None \
+                and not g["lo"] <= float(r["value"]) <= g["hi"]:
+            out.append((r, g["lo"], g["hi"]))
+    return out
 
 
 def _render_review(st, pd, ss, v, out, axle, note, run):
@@ -2986,7 +3105,7 @@ def _render_review(st, pd, ss, v, out, axle, note, run):
         show = sorted(rows, key=lambda r: order[r["status"]])
         _table(st, pd, [{"": _STATUS_ICON[r["status"]], "check": r["check"],
                          "value": ("yes" if r["value"] == 1.0 else "no")
-                         if r["key"] in ("joints_in_rim", "mr_solved")
+                         if r["key"] in _YES_NO_CHECKS
                          and r["value"] is not None else r["value"],
                          "unit": r["unit"], "range": _range_text(r),
                          "why it matters": r["why"],
@@ -2995,9 +3114,15 @@ def _render_review(st, pd, ss, v, out, axle, note, run):
                         for r in show],
                title="Design review: 🔴 outside its range, 🟡 inside but within 10 % of a limit, "
                      "🟢 inside, ⚪ not available")
+        vm_ranges = ((ss.get("ig_veh_from_manifest") or {}).get("ranges") or {}) \
+            if run is not None and run.get("source") == "manifest" else {}
+        for r, glo, ghi in self_graded(rows, vm_ranges, ga.DEFAULT_REVIEW_LIMITS):
+            st.warning(f"{r['check']}: {_cell(r['value'])} {r['unit']} is inside the range the manifest declared "
+                       f"({_range_text(r)}) but outside the generic starting range "
+                       f"({_range_text({'key': r['key'], 'lo': glo, 'hi': ghi})}). The manifest does not say why "
+                       "this car wants it: give the reason in 'Why did you run this?'.")
         if _guided(ss) and counts["fail"]:
-            from_manifest = set((ss.get("ig_veh_from_manifest") or {}).get("ranges") or {}) \
-                if run is not None and run.get("source") == "manifest" else set()
+            from_manifest = set(vm_ranges)
             red_generic = [r["check"] for r in rows if r["status"] == "fail" and r["check"] not in from_manifest]
             if red_generic:
                 st.warning("Red is a prompt, not a verdict: "

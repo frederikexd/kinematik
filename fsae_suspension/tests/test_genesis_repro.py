@@ -285,3 +285,25 @@ def test_declared_car_uses_mf52_and_real_corners(front, rear):
     sens = fc.lap_sensitivity(car, "cg_height_mm", [240, 320])
     assert sens["track_length_m"] == 334.0
     assert sens["spread_s"] > 0
+
+
+def test_links_are_screened_with_their_own_tubes(front):
+    """A manifest that sizes its links individually was screened with one tube for all of them: the thicker lower
+    legs and tie rod were reported weaker than they are."""
+    base = gr.TubeSpec(15.875, 0.889, 435.0, 205.0)
+    one = gr.structural_screening(front, tube=base)
+    own = gr.structural_screening(front, tube=base, tubes={"LR": gr.TubeSpec(15.875, 1.651, 435.0, 205.0)})
+    assert own["worst_fos_per_member"]["LR"] > one["worst_fos_per_member"]["LR"]
+    assert {m: own["worst_fos_per_member"][m] for m in ("UF", "UR", "LF", "TR")} == \
+        {m: one["worst_fos_per_member"][m] for m in ("UF", "UR", "LF", "TR")}
+    assert {r["tube_mm"] for r in own["rows"] if r["member"] == "LR"} == {"15.875 × 1.651"}
+    assert {r["tube_mm"] for r in own["rows"] if r["member"] == "UF"} == {"15.875 × 0.889"}
+    assert "tube_mm" not in one["rows"][0]                      # unchanged when every link shares the tube
+
+    same = gr.compliance_budget(front, od_mm=15.875, wall_mm=0.889,
+                                tubes={m: (15.875, 0.889) for m in ("UF", "UR", "LF", "LR", "TR")})
+    plain = gr.compliance_budget(front, od_mm=15.875, wall_mm=0.889)
+    stiff = gr.compliance_budget(front, od_mm=15.875, wall_mm=0.889,
+                                 tubes={m: (19.05, 2.108) for m in ("UF", "UR", "LF", "LR", "TR")})
+    assert same["kerb strike"]["compliance_toe_deg"] == plain["kerb strike"]["compliance_toe_deg"]
+    assert stiff["kerb strike"]["max_link_extension_mm"] < plain["kerb strike"]["max_link_extension_mm"]
