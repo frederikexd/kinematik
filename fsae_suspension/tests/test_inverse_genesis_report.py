@@ -233,7 +233,7 @@ def test_every_table_drawn_is_reported_once_and_reruns_change_nothing(tab):
     assert len(first) == len(st.drawn) and all(st.drawn) and len(set(st.drawn)) == len(st.drawn)
     kin = _tables(ns)["Kinematics and anti-geometry, front corner"]
     act = _tables(ns)["Actuation and ride, front corner (solved from the linkage)"]
-    assert len(kin["rows"]) == len(act["rows"]) == 15         # the pair that used to be one row in the store
+    assert (len(kin["rows"]), len(act["rows"])) == (16, 15)  # the pair that collided at 15 rows each
     assert kin["rows"][0][0] == "camber gain, LSQ" and act["rows"][0][0] == "motion ratio, static"
     for _ in range(4):
         _run(st, uig)
@@ -385,7 +385,16 @@ def test_a_loaded_manifest_is_reviewed_with_the_car_it_declared(tab):
     t = _tables(ns)
     bound = next(r for r in t["13 rows x 4 cols · property, bound, delivered, margin"]["rows"] if r[0].startswith("anti-dive"))
     review = next(r for k, x in t.items() if k.startswith("Design review") for r in x["rows"] if r[1].startswith("Anti"))
-    assert bound[2] == review[2] == _cell(t["Kinematics and anti-geometry, front corner"], "anti-dive") == "68.935"
+    kin = t["Kinematics and anti-geometry, front corner"]
+    assert bound[2] == review[2] == _cell(kin, "anti-dive, from the contact patch's path (virtual work)") == "68.935"
+    # The tangent row is labelled as the other form and is exactly tan × L/h × bias of the row above it, so a reader
+    # who multiplies it out gets the number printed beside it, not a contradiction.
+    tan = float(_cell(kin, "tan swing arm, referenced to the contact patch"))
+    svic = float(_cell(kin, "anti-dive, side-view IC tangent form, for comparison"))
+    assert svic == pytest.approx(100 * tan * 1630 / 280 * 0.73, rel=1e-3) and svic != 68.935
+    prompt = [x for x in _verdicts(ns) if "Red is a prompt" in x]
+    assert prompt and "these ranges are generic starting points (" in prompt[0]
+    assert "Anti-dive" not in prompt[0] and "Steering ratio needed" in prompt[0]   # only the generic ranges are named
     assert review[0] == "🟢" and review[4] == "63.6 … 70"
     v_lines = _verdicts(ns)
     assert any("Section 5 set from the car `front_v11_final`" in x for x in v_lines)

@@ -22,6 +22,8 @@
 - What a manifest declares that section 5 cannot hold (per-link tubes, the steering rack) is listed in the report, with which way it moves the numbers.
 - Anti-dive in the analysis is the kinematic core's virtual-work form, the one the search uses; the side-view-IC tangent form is kept as `anti_dive_svic_pct` for the paper's Table 12, 1 point higher.
 - The replay caveat appears once in the report.
+- The kinematics table labels anti-dive as the contact-patch path (virtual work) form and lists the side-view-IC tangent form beside it, so tan × L/h × bias of the table's own row reproduces a number in the table.
+- "Red is a prompt" names only the checks still on generic ranges, not those the manifest set.
 
 **Design review.**
 - A value outside its range is red. Amber now means inside the range but within 10 % of a limit.
