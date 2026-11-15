@@ -1,0 +1,10 @@
+# ard: axial force per member, N, + tension, design position. direct_lower: UF, UR, TR and the damper PR only (leave LF, LR blank). Fill every needed cell of a corner or leave it blank.
+corner,case,UF,UR,LF,LR,TR,PR
+direct_upright,bump,,,,,,
+direct_upright,corner,,,,,,
+direct_upright,brake,,,,,,
+direct_upright,corner_drive,,,,,,
+direct_lower,bump,,,,,,
+direct_lower,corner,,,,,,
+direct_lower,brake,,,,,,
+direct_lower,corner_drive,,,,,,

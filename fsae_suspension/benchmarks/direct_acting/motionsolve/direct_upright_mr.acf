@@ -1,0 +1,4 @@
+direct_upright_mr.adm
+direct_upright_mr
+SIMULATE/KINEMATICS, END=1.0, STEPS=50
+STOP

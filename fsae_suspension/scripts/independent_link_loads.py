@@ -42,20 +42,24 @@ def _rot(r):
 
 
 def member_forces(hp: dict, case: dict) -> dict:
-    """Axial force (N, + tension) in each member for one load case; hp is a manifest's winner_hardpoints."""
+    """Axial force (N, + tension) in each member for one load case; hp is a manifest's winner_hardpoints. A
+    direct-acting corner (actuation "direct") has the damper as PR, running to its chassis mount spring_inner."""
     if hp.get("pushrod_attach", "upright") != "upright":
         raise ValueError("this check covers the pushrod on the upright (six two-force members)")
+    ends = dict(ENDS)
+    if hp.get("actuation") == "direct":
+        ends["PR"] = ("pushrod_outer", "spring_inner")
     P = {k: np.asarray(v, float) for k, v in hp.items() if isinstance(v, list) and len(v) == 3}
     ref = P["wheel_center"]                               # the upright rotates about the wheel centre
     loads = [(P["contact_patch"], np.array([case["Fx"], case["Fy"], case["Fz"]], float)),
              (P["wheel_center"], np.array([case.get("Fx_wc", 0.0), 0.0, 0.0]))]
     torque = np.array([0.0, 0.0, case.get("Mz", 0.0)])
-    L0 = {m: np.linalg.norm(P[i] - P[o]) for m, (o, i) in ENDS.items()}
+    L0 = {m: np.linalg.norm(P[i] - P[o]) for m, (o, i) in ends.items()}
 
     def tensions(q):
         R, t = _rot(q[3:] * 1e-4), q[:3] * 1e-4            # scaled unknowns: 0.1 micron and 0.1 milliradian
         out = {}
-        for m, (o, i) in ENDS.items():
+        for m, (o, i) in ends.items():
             po = ref + R @ (P[o] - ref) + t
             d = P[i] - po
             L = np.linalg.norm(d)

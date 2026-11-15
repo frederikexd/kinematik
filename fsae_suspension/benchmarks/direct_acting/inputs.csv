@@ -1,0 +1,37 @@
+# Direct-acting corners. mm; x rearward, y outboard, z up from the ground. No rocker.
+# damper_outer is on the body named in damper_on; damper_inner is the chassis mount.
+corner,point,x,y,z
+direct_upright,upper_front_inner,-91.2342,220.2605,280.9244
+direct_upright,upper_rear_inner,91.0146,324.2000,265.1950
+direct_upright,upper_outer,6.5000,560.5000,300.0000
+direct_upright,lower_front_inner,-90.3834,155.0542,122.7397
+direct_upright,lower_rear_inner,75.1195,175.5091,129.5244
+direct_upright,lower_outer,-5.0000,583.6000,120.0000
+direct_upright,tie_rod_inner,-23.7661,167.2894,147.1171
+direct_upright,tie_rod_outer,53.3754,540.5729,148.2487
+direct_upright,wheel_center,0.0000,600.0000,228.0000
+direct_upright,contact_patch,0.0000,605.0000,0.0000
+direct_upright,damper_outer,8.2200,522.8100,132.8400
+direct_upright,damper_inner,8.2200,332.8100,372.8400
+direct_lower,upper_front_inner,-91.2342,220.2605,280.9244
+direct_lower,upper_rear_inner,91.0146,324.2000,265.1950
+direct_lower,upper_outer,6.5000,560.5000,300.0000
+direct_lower,lower_front_inner,-90.3834,155.0542,122.7397
+direct_lower,lower_rear_inner,75.1195,175.5091,129.5244
+direct_lower,lower_outer,-5.0000,583.6000,120.0000
+direct_lower,tie_rod_inner,-23.7661,167.2894,147.1171
+direct_lower,tie_rod_outer,53.3754,540.5729,148.2487
+direct_lower,wheel_center,0.0000,600.0000,228.0000
+direct_lower,contact_patch,0.0000,605.0000,0.0000
+direct_lower,damper_outer,-5.6580,479.0204,136.5330
+direct_lower,damper_inner,-5.6580,329.0204,396.5330
+
+corner,damper_on,static_camber,static_toe
+direct_upright,upright,-2.5,0.0
+direct_lower,lower wishbone,-2.5,0.0
+
+case,Fx,Fy,Fz,Fx_wc,Mz
+bump,0.0,0.0,1200.0,0.0,0.0
+corner,0.0,-1800.0,1200.0,0.0,-47000.0
+brake,1933.0,0.0,1161.0,0.0,0.0
+corner_drive,0.0,-1400.0,1300.0,-1560.0,-37000.0

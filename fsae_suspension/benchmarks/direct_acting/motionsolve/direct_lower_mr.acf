@@ -1,0 +1,4 @@
+direct_lower_mr.adm
+direct_lower_mr
+SIMULATE/KINEMATICS, END=1.0, STEPS=50
+STOP

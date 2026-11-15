@@ -1,0 +1,4 @@
+direct_lower_loads.adm
+direct_lower_loads
+SIMULATE/KINEMATICS, END=3.0, STEPS=3
+STOP
