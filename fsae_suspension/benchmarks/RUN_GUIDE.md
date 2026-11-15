@@ -54,9 +54,9 @@ CSV.
 
 ## 3. MATLAB Simscape Multibody (one command, R2025b)
 
-1. Apply the patch to the repo (`git am …`), so `scripts/matlab/kinematik_simscape_benchmark.m` sits in the repo.
-2. In MATLAB: `cd` to `fsae_suspension/scripts/matlab`, then run `kinematik_simscape_benchmark`.
-   (From anywhere else: `kinematik_simscape_benchmark('<path to fsae_suspension>')`.)
+1. Apply the patch to the repo (`git am …`), so `scripts/matlab/kk_bench_simscape.m` sits in the repo.
+2. In MATLAB: `cd` to `fsae_suspension/scripts/matlab`, then run `kk_bench_simscape`.
+   (From anywhere else: `kk_bench_simscape('<path to fsae_suspension>')`.)
 3. It checks a closed-form case first, then builds and solves every corner. It writes
    `link_loads/matlab_results.csv`, `direct_acting/matlab_damper.csv` and `matlab_loads.csv` itself: nothing to copy.
 4. If it stops with an error, send the whole message. When a block parameter name differs in R2025b, the error

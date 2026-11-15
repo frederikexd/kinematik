@@ -1,8 +1,9 @@
-function kinematik_simscape_benchmark(root)
-%KINEMATIK_SIMSCAPE_BENCHMARK  Link-load and direct-acting benchmarks in Simscape Multibody (R2025b).
+function kk_bench_simscape(root)
+%KK_BENCH_SIMSCAPE  Link-load and direct-acting benchmarks in Simscape Multibody (R2025b).
 %
-%   kinematik_simscape_benchmark            % run from anywhere; finds the repo from this file's location
-%   kinematik_simscape_benchmark(root)      % root = the fsae_suspension folder
+%   kk_bench_simscape            % finds the inputs: the repo around this file, the current folder, or
+%                                % a kinematik_matlab_standalone folder in it or in MATLAB Drive
+%   kk_bench_simscape(root)      % root = the folder holding manifests/ and benchmarks/
 %
 %   Shares no code with KinematiK: reads only the hardpoints (manifests, benchmarks/direct_acting/corners) and
 %   the load cases (benchmarks/link_loads/limits.json), builds each corner as a Simscape Multibody model, and
@@ -23,8 +24,18 @@ function kinematik_simscape_benchmark(root)
 %   If a block parameter is not found, the error lists the parameter names this release has: send that back.
 
 if nargin < 1
-    root = fileparts(fileparts(fileparts(mfilename('fullpath'))));
+    here = fileparts(mfilename('fullpath'));
+    cand = {fileparts(fileparts(here)), here, pwd, fullfile(pwd, 'kinematik_matlab_standalone'), ...
+            fullfile(fileparts(pwd), 'kinematik_matlab_standalone'), '/MATLAB Drive/kinematik_matlab_standalone'};
+    root = '';
+    for i = 1:numel(cand)
+        if isfile(fullfile(cand{i}, 'benchmarks', 'link_loads', 'limits.json')), root = cand{i}; break; end
+    end
+    if isempty(root)
+        error('Could not find the input folder. Run kk_bench_simscape(''<path to kinematik_matlab_standalone>'').');
+    end
 end
+fprintf('Inputs from %s\n', root);
 LL = fullfile(root, 'benchmarks', 'link_loads');
 DA = fullfile(root, 'benchmarks', 'direct_acting');
 reg = jsondecode(fileread(fullfile(LL, 'limits.json')));
@@ -38,7 +49,7 @@ fprintf('Calibration passed (signed-force sign %+d).\n', sgn);
 % ---- link loads ---------------------------------------------------------------------------------------
 llCorners = {'front_v11_final','rear_v11_final','front_v11_joints50'};
 fid = fopen(fullfile(LL, 'matlab_results.csv'), 'w');
-fprintf(fid, '# matlab: Simscape Multibody %s, scripts/matlab/kinematik_simscape_benchmark.m. Axial force, N, + tension.\n', version);
+fprintf(fid, '# matlab: Simscape Multibody %s, scripts/matlab/kk_bench_simscape.m. Axial force, N, + tension.\n', version);
 fprintf(fid, 'corner,case,%s\n', strjoin(ALL6, ','));
 for k = 1:numel(llCorners)
     m = jsondecode(fileread(fullfile(root, 'manifests', [llCorners{k} '.recorded.genesis.json'])));
@@ -145,7 +156,7 @@ for i = 1:6
     distance(mdl, sprintf('D%d', i), at(mdl, b, sprintf('o%d', i), spec{i,1}), at(mdl, W, sprintf('i%d', i), spec{i,2}), ...
              norm(spec{i,2} - spec{i,1}), sprintf('T%d', i));
 end
-extForce(mdl, at(mdl, b, 'load', [0 0 0]), 'load', [0 0 -100], []);
+extForce(mdl, at(mdl, b, 'RT_load', [0 0 0]), 'load', [0 0 -100], []);
 out = sim(mdl, 'StopTime', '0.01', 'ReturnWorkspaceOutputs', 'on');
 t = zeros(1, 6);
 for i = 1:6, v = out.get(sprintf('T%d', i)); t(i) = v(end); end
@@ -171,10 +182,10 @@ if onLca
 else
     dout = at(mdl, up, 'dmp_o', P.pushrod_outer);
 end
-refFrame(mdl, 'FR_dmp_out', dout);
-refFrame(mdl, 'FR_dmp_in', at(mdl, W, 'dmp_i', P.spring_inner));
-refFrame(mdl, 'FR_wc', at(mdl, up, 'wc', P.wheel_center));
-refFrame(mdl, 'FR_wc0', at(mdl, W, 'wc0', P.wheel_center));
+fDo = refFrame(mdl, 'FR_dmp_out', dout);
+fDi = refFrame(mdl, 'FR_dmp_in', at(mdl, W, 'dmp_i', P.spring_inner));
+fWc = refFrame(mdl, 'FR_wc', at(mdl, up, 'wc', P.wheel_center));
+fW0 = refFrame(mdl, 'FR_wc0', at(mdl, W, 'wc0', P.wheel_center));
 save_system(mdl, fullfile(tempdir, [mdl '.slx']));
 
 ks = simscape.multibody.KinematicsSolver(mdl);
@@ -182,8 +193,8 @@ jp = jointPositionVariables(ks);
 tid = jp.ID(contains(jp.BlockPath, 'lca_rev'));
 if numel(tid) ~= 1, error('Could not find the lower wishbone joint variable:\n%s', evalc('disp(jp)')); end
 addTargetVariables(ks, tid);
-addFrameVariables(ks, 'dmp', 'Translation', [mdl '/FR_dmp_in'], [mdl '/FR_dmp_out']);
-addFrameVariables(ks, 'wc', 'Translation', [mdl '/FR_wc0'], [mdl '/FR_wc']);
+addFrameVariables(ks, 'dmp', 'Translation', fDi, fDo);
+addFrameVariables(ks, 'wc', 'Translation', fW0, fWc);
 fv = frameVariables(ks);
 addOutputVariables(ks, fv.ID);
 ov = outputVariables(ks);
@@ -308,9 +319,16 @@ link(mdl, a, ph.LConn(1));
 link(mdl, b, ph.RConn(1));
 end
 
-function refFrame(mdl, name, F)
-h = blk(mdl, 'sm_lib/Frames and Transforms/Reference Frame', name);
-link(mdl, F, framePort(h));
+function path = refFrame(mdl, name, F)
+% A named frame for the Kinematics Solver: a Reference Frame block, or if this release has none, the Rigid
+% Transform's own follower port.
+try
+    h = blk(mdl, 'sm_lib/Frames and Transforms/Reference Frame', name);
+    link(mdl, F, framePort(h));
+    path = getfullname(h);
+catch
+    path = [get_param(F, 'Parent') '/F'];
+end
 end
 
 function distance(mdl, name, a, b, d, outVar)

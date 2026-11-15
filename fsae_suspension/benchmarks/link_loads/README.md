@@ -13,7 +13,7 @@ member, every case, every corner, |KinematiK − tool| ≤ abs_N + rel·|tool|.
 | Independent static solve (`scripts/independent_link_loads.py`, SciPy `fsolve`, no shared code) | 0.5 N + 0.1 % | **Pass**, all 3 corners | 0.017 N (rear, brake, UR); 1.1 % of the limit |
 | Project Chrono 9.0.1 (`scripts/chrono_benchmark.py`, open source, rerun by anyone) | 0.5 N + 0.1 % | **Pass**, all 3 corners | 4.6e-7 N |
 | Adams View 2026.1 | 0.5 N + 0.1 % | Not run yet | |
-| MATLAB Simscape Multibody R2025b (`scripts/matlab/kinematik_simscape_benchmark.m`) | 0.5 N + 0.1 % | Not run yet | |
+| MATLAB Simscape Multibody R2025b (`scripts/matlab/kk_bench_simscape.m`) | 0.5 N + 0.1 % | Not run yet | |
 | Altair MotionSolve | 0.5 N + 0.1 % | Not run yet | |
 | Lotus Suspension Analysis | 2 N + 0.5 % | Not available (no licence); see below | |
 | Applied Racing Dynamics | 2 N + 0.5 % | Not run yet | |
