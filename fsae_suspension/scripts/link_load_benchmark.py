@@ -13,6 +13,8 @@ position. Load cases and limits: benchmarks/link_loads/limits.json, registered b
                and Hooke at the chassis, so the model has zero degrees of freedom; the four load cases are applied one
                per output step (time 0, 1, 2, 3) and the axial force in each link is a measure. compare() reads the
                table exported from the PostProcessor (same export as the kinematics benchmark): <corner>.tab.
+  motionsolve  adm_file()/acf_file(): the same model as an Adams Solver dataset, which MotionSolve runs (or MotionView
+               imports as a solver deck). Results go into benchmarks/link_loads/motionsolve_results.csv.
   ard          results entered by hand from Applied Racing Dynamics into benchmarks/link_loads/ard_results.csv
                (template written by --write), + tension, N.
   Lotus is registered in limits.json but has no run: no licence, and the paper used for the Lotus kinematics
@@ -48,7 +50,7 @@ REG = json.loads((BENCH / "limits.json").read_text())
 CASES = REG["load_cases"]
 LIMITS = REG["limits"]
 MEMBERS = ind.MEMBERS
-TOOLS = ("independent", "adams_view", "ard")
+TOOLS = ("independent", "adams_view", "motionsolve", "ard")
 
 
 def _winner(name):
@@ -185,6 +187,83 @@ def command_file(name: str) -> str:
     return "\n".join(L) + "\n"
 
 
+# ---------------------------------------------------------------- Adams Solver dataset (MotionSolve)
+def adm_file(name: str) -> str:
+    """The link-load model as an Adams Solver dataset: ground, upright, six links (spherical at the upright, Hooke at
+    the chassis), the four load cases one per step, and one REQUEST per member whose F2 is the axial force."""
+    w = _winner(name)
+    P = {k: np.asarray(v, float) for k, v in w.items() if isinstance(v, list) and len(v) == 3}
+    f = avb._f
+    deg = lambda o: ", ".join(f"{a:.4f}D" for a in o)                                   # noqa: E731
+    L = [f"KinematiK {name} link-load benchmark (Adams Solver dataset, runs in MotionSolve)",
+         "! Frame: x rearward, y outboard (right-hand corner), z up from the ground; mm, N, N*mm.",
+         "! Load cases one per step, by time: " + ", ".join(f"{i}={c}" for i, c in enumerate(CASES)) + ".",
+         "UNITS/FORCE=NEWTON, MASS=KILOGRAM, LENGTH=MILLIMETER, TIME=SECOND",
+         "PART/1, GROUND",
+         "MARKER/1, PART=1, QP=0, 0, 0",
+         "MARKER/2, PART=1, FLOATING",
+         "MARKER/3, PART=1, FLOATING",
+         "MARKER/4, PART=1, FLOATING",
+         "PART/2",
+         f"MARKER/20, PART=2, QP={f(P['contact_patch'])}",
+         f"MARKER/21, PART=2, QP={f(P['wheel_center'])}"]
+    joints, reqs = [], []
+    for k, mem in enumerate(MEMBERS):
+        o, i = ind.ENDS[mem]
+        po, pi = P[o], P[i]
+        r = (pi - po) / np.linalg.norm(pi - po)
+        a = np.cross(r, [0, 0, 1.0]); a /= np.linalg.norm(a)                                    # noqa: E702
+        b = np.cross(r, a)
+        oi = avb._euler_from(np.column_stack([a, np.cross(r, a), r]))
+        oj = avb._euler_from(np.column_stack([np.cross(b, r), b, r]))
+        pid, base = 3 + k, 100 + 10 * k
+        L += [f"PART/{pid}",
+              f"MARKER/{base}, PART=2, QP={f(po)}",
+              f"MARKER/{base + 1}, PART={pid}, QP={f(po)}",
+              f"MARKER/{base + 2}, PART={pid}, QP={f(pi)}, REULER={deg(oi)}",
+              f"MARKER/{base + 3}, PART=1, QP={f(pi)}, REULER={deg(oj)}"]
+        joints += [f"JOINT/{base}, SPHERICAL, I={base}, J={base + 1}",
+                   f"JOINT/{base + 1}, HOOKE, I={base + 2}, J={base + 3}"]
+        I, J = base, base + 1
+        reqs += [f"REQUEST/{k + 1}, TITLE=T_{mem}",
+                 f", F2 = FX({I},{J})*({r[0]:.9f}) + FY({I},{J})*({r[1]:.9f}) + FZ({I},{J})*({r[2]:.9f})"]
+
+    def sched(key):
+        v = [CASES[c][key] for c in CASES]
+        return f"IF(time-0.5: {v[0]}, {v[0]}, IF(time-1.5: {v[1]}, {v[1]}, IF(time-2.5: {v[2]}, {v[2]}, {v[3]})))"
+    L += joints
+    L += ["VFORCE/1, I=20, JFLOAT=2, RM=1",
+          f", FX = {sched('Fx')}\\", f", FY = {sched('Fy')}\\", f", FZ = {sched('Fz')}",
+          "VFORCE/2, I=21, JFLOAT=3, RM=1",
+          f", FX = {sched('Fx_wc')}\\", ", FY = 0\\", ", FZ = 0",
+          "VTORQUE/1, I=20, JFLOAT=4, RM=1",
+          ", TX = 0\\", ", TY = 0\\", f", TZ = {sched('Mz')}"]
+    L += reqs
+    L += ["OUTPUT/REQSAVE", "END"]
+    return "\n".join(L) + "\n"
+
+
+def acf_file(name: str) -> str:
+    return f"{name}.adm\n{name}\nSIMULATE/KINEMATICS, END=3.0, STEPS=3\nSTOP\n"
+
+
+def inputs_sheet() -> str:
+    """Hardpoints and load cases in one sheet, for entering the corners into ARD (or any other tool) by hand."""
+    pts = ["upper_front_inner", "upper_rear_inner", "upper_outer", "lower_front_inner", "lower_rear_inner",
+           "lower_outer", "tie_rod_inner", "tie_rod_outer", "pushrod_outer", "rocker_pushrod", "wheel_center",
+           "contact_patch"]
+    rows = ["# Hardpoints (mm; x rearward, y outboard, z up from the ground) and load cases (N, N*mm; + tension out).",
+            "# Pushrod: from pushrod_outer on the upright to a FIXED chassis point at rocker_pushrod.",
+            "# Loads: Fx Fy Fz at the contact patch, Fx_wc at the wheel centre, Mz about vertical.",
+            "corner,point,x,y,z"]
+    for n in CORNERS:
+        w = _winner(n)
+        rows += [f"{n},{p}," + ",".join(f"{c:.4f}" for c in w[p]) for p in pts]
+    rows += ["", "case,Fx,Fy,Fz,Fx_wc,Mz"]
+    rows += [f"{c},{d['Fx']},{d['Fy']},{d['Fz']},{d['Fx_wc']},{d['Mz']}" for c, d in CASES.items()]
+    return "\n".join(rows) + "\n"
+
+
 def csv_template(tool: str) -> str:
     head = (f"# {tool}: axial force per member, N, + tension, at the design position. Hardpoints from "
             "manifests/<corner>.recorded.genesis.json; loads from limits.json (contact patch, Fx_wc at the wheel "
@@ -196,9 +275,13 @@ def csv_template(tool: str) -> str:
 
 def main(argv):
     if "--write" in argv:
+        (BENCH / "motionsolve").mkdir(exist_ok=True)
         for n in CORNERS:
             (BENCH / f"{n}.cmd").write_text(command_file(n))
-        for t in ("ard",):
+            (BENCH / "motionsolve" / f"{n}.adm").write_text(adm_file(n))
+            (BENCH / "motionsolve" / f"{n}.acf").write_text(acf_file(n))
+        (BENCH / "inputs.csv").write_text(inputs_sheet())
+        for t in ("motionsolve", "ard"):
             p = BENCH / f"{t}_results.csv"
             if not p.exists():
                 p.write_text(csv_template(t))

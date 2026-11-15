@@ -3,16 +3,61 @@
   "scope": "Axial force in the six members (UF, UR, LF, LR, TR, PR) of front_v11_final, rear_v11_final and front_v11_joints50 at the design position (zero travel), under the four wheel loads below. Rigid links, pin-jointed two-force members, pushrod on the upright.",
   "sign": "N, + tension",
   "load_cases": {
-    "bump":           {"Fx": 0.0,    "Fy": 0.0,     "Fz": 1200.0, "Mz": 0.0,      "Fx_wc": 0.0},
-    "corner":         {"Fx": 0.0,    "Fy": -1800.0, "Fz": 1200.0, "Mz": -47000.0, "Fx_wc": 0.0},
-    "brake":          {"Fx": 1933.0, "Fy": 0.0,     "Fz": 1161.0, "Mz": 0.0,      "Fx_wc": 0.0},
-    "corner_drive":   {"Fx": 0.0,    "Fy": -1400.0, "Fz": 1300.0, "Mz": -37000.0, "Fx_wc": -1560.0}
+    "bump": {
+      "Fx": 0.0,
+      "Fy": 0.0,
+      "Fz": 1200.0,
+      "Mz": 0.0,
+      "Fx_wc": 0.0
+    },
+    "corner": {
+      "Fx": 0.0,
+      "Fy": -1800.0,
+      "Fz": 1200.0,
+      "Mz": -47000.0,
+      "Fx_wc": 0.0
+    },
+    "brake": {
+      "Fx": 1933.0,
+      "Fy": 0.0,
+      "Fz": 1161.0,
+      "Mz": 0.0,
+      "Fx_wc": 0.0
+    },
+    "corner_drive": {
+      "Fx": 0.0,
+      "Fy": -1400.0,
+      "Fz": 1300.0,
+      "Mz": -37000.0,
+      "Fx_wc": -1560.0
+    }
   },
   "limits": {
-    "independent": {"abs_N": 0.5, "rel": 0.001, "why": "same idealisation, different formulation and code: agreement to solver precision"},
-    "adams_view":  {"abs_N": 0.5, "rel": 0.001, "why": "same idealisation, commercial multibody solver: agreement to solver tolerance"},
-    "lotus":       {"abs_N": 2.0, "rel": 0.005, "why": "values read off the Lotus loads report, displayed to 1 N"},
-    "ard":         {"abs_N": 2.0, "rel": 0.005, "why": "values read off the ARD output, displayed to 1 N"}
+    "independent": {
+      "abs_N": 0.5,
+      "rel": 0.001,
+      "why": "same idealisation, different formulation and code: agreement to solver precision"
+    },
+    "adams_view": {
+      "abs_N": 0.5,
+      "rel": 0.001,
+      "why": "same idealisation, commercial multibody solver: agreement to solver tolerance"
+    },
+    "lotus": {
+      "abs_N": 2.0,
+      "rel": 0.005,
+      "why": "values read off the Lotus loads report, displayed to 1 N"
+    },
+    "ard": {
+      "abs_N": 2.0,
+      "rel": 0.005,
+      "why": "values read off the ARD output, displayed to 1 N"
+    },
+    "motionsolve": {
+      "abs_N": 0.5,
+      "rel": 0.001,
+      "why": "same idealisation, independent commercial multibody solver: agreement to solver tolerance (added 2026-11-14, before any MotionSolve run)"
+    }
   },
   "pass_rule": "every member, every load case, every corner: |KinematiK - tool| <= abs_N + rel * |tool|"
 }

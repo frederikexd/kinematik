@@ -20,7 +20,8 @@ import link_load_benchmark as llb                                           # no
 def test_limits_are_the_registered_ones():
     reg = json.loads((llb.BENCH / "limits.json").read_text())
     got = {t: (v["abs_N"], v["rel"]) for t, v in reg["limits"].items()}
-    assert got == {"independent": (0.5, 0.001), "adams_view": (0.5, 0.001), "lotus": (2.0, 0.005), "ard": (2.0, 0.005)}
+    assert got == {"independent": (0.5, 0.001), "adams_view": (0.5, 0.001), "lotus": (2.0, 0.005), "ard": (2.0, 0.005),
+                   "motionsolve": (0.5, 0.001)}
     assert list(reg["load_cases"]) == ["bump", "corner", "brake", "corner_drive"]
 
 
@@ -54,7 +55,7 @@ def test_adams_command_file_is_generated_from_the_manifest(name):
     assert (llb.BENCH / f"{name}.cmd").read_text() == llb.command_file(name)
 
 
-@pytest.mark.parametrize("tool", ["adams_view", "ard"])
+@pytest.mark.parametrize("tool", ["adams_view", "motionsolve", "ard"])
 def test_a_tool_without_results_is_not_run_not_passed(tool, tmp_path, monkeypatch):
     monkeypatch.setattr(llb, "BENCH", tmp_path)
     (tmp_path / "ard_results.csv").write_text(llb.csv_template("ard"))          # empty template
@@ -86,3 +87,10 @@ def test_the_arevalo_tables_do_not_balance_their_own_geometry():
     """The paper's obstacle row is a vertical wheel-centre load; no reading of its conventions makes it one."""
     import arevalo_link_load_check as ar
     assert ar.recovered_loads("front")[0][0] > 0.1 and ar.recovered_loads("rear")[0][0] > 0.3
+
+
+@pytest.mark.parametrize("name", llb.CORNERS)
+def test_motionsolve_dataset_and_inputs_sheet_are_generated_from_the_manifest(name):
+    assert (llb.BENCH / "motionsolve" / f"{name}.adm").read_text() == llb.adm_file(name)
+    assert (llb.BENCH / "motionsolve" / f"{name}.acf").read_text() == llb.acf_file(name)
+    assert (llb.BENCH / "inputs.csv").read_text() == llb.inputs_sheet()
