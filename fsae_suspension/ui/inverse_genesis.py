@@ -934,12 +934,12 @@ _ANALYSIS_INPUT_KEYS = ("ig_seed_hp", "ig_axle", "ig_travel", "ig_review_limits"
 
 
 def analysis_inputs_digest(ss) -> str:
-    """Twelve hex digits of the SHA-1 of the vehicle & build declaration and the other inputs of the analysis
+    """Twelve hex digits of the SHA-256 of the vehicle & build declaration and the other inputs of the analysis
     sections, as they stand at the start of a script run."""
     import hashlib
     import json
     state = {"vehicle": _veh(ss), **{k: ss.get(k) for k in _ANALYSIS_INPUT_KEYS}}
-    return hashlib.sha1(json.dumps(state, sort_keys=True, default=str).encode()).hexdigest()[:12]
+    return hashlib.sha256(json.dumps(state, sort_keys=True, default=str).encode()).hexdigest()[:12]
 
 
 def recorded_verdict_line(man) -> str | None:
