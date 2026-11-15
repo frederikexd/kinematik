@@ -553,6 +553,26 @@ def _g(value, unit="", limited_by="", digits=4):
 _TOL = "declared tolerance field"
 
 
+def _name_next(ss, title) -> bool:
+    """Name the table drawn next for the report (see report_capture.heading). True, so it can sit in an expression."""
+    from suspension import report_capture as rc
+    rc.heading(ss, title)
+    return True
+
+
+def bound_text(lo, hi) -> str:
+    """A bound as a reader checks it: '63.6 … 70', '≥ 2' or '≤ 120'. The table used to repeat the property's whole
+    label here, which the report cut off before the number on the longer ones."""
+    import math
+    has_lo = lo is not None and math.isfinite(float(lo))
+    has_hi = hi is not None and math.isfinite(float(hi))
+    if has_lo and has_hi:
+        return _cell(lo) + " … " + _cell(hi)
+    if has_lo:
+        return "≥ " + _cell(lo)
+    return ("≤ " + _cell(hi)) if has_hi else "unbounded"
+
+
 def result_caveats(res, man, fld) -> list:
     """What a reader must know before quoting a result, each as one sentence: a build yield priced against a shop
     preset is not a measurement; a search that returned one candidate compared it with nothing; a winner that did
@@ -683,7 +703,13 @@ def _results_panel(st, pd, np, ss, run):
                                                                       man.search.n_starts)
         if quick:
             st.warning("⚡ " + quick)
-        (st.success if res.ok else st.warning)(res.reason)
+        if res.ok and len(res.candidates) <= 1:
+            # the engine's sentence compares the winner with the other candidates; with one there is no comparison
+            st.success("The curves are reached inside every declared wall"
+                       + (f", and the geometry is {w.verdict} at the declared tolerances "
+                          f"({_cell(round(100 * w.yield_frac, 1))} % build yield)." if w.yield_frac is not None else "."))
+        else:
+            (st.success if res.ok else st.warning)(res.reason)
         for caveat in result_caveats(res, man, fld):
             st.warning(caveat)
         m1, m2, m3, m4 = st.columns(4)
@@ -715,10 +741,11 @@ def _results_panel(st, pd, np, ss, run):
           "refused: property": c.property_rejections,
           "refused: wheel": c.envelope_rejections,
           "refused: node": c.node_rejections,
-          "wheel clearance (mm)": (round(c.envelope_margin_mm, 2)
-                                   if c.envelope_margin_mm is not None
-                                   else "—")}
-         for i, c in enumerate(res.candidates)]),
+          "wheel clearance beyond the required gap (mm)": (round(c.envelope_margin_mm, 2)
+                                                           if c.envelope_margin_mm is not None
+                                                           else "—")}
+         for i, c in enumerate(res.candidates)])
+        if _name_next(ss, "Candidates the search returned, best first") else None,
         hide_index=True, width="stretch")
 
     # ---- solved properties the search bounded ----------------------------- #
@@ -731,8 +758,9 @@ def _results_panel(st, pd, np, ss, run):
                    "These bound the nominal corner, not every as-built one: "
                    "the build-yield stage still prices only the four curve "
                    "channels.")
+        _name_next(ss, "Solved properties the search bounded: the bound, the value delivered, the margin left")
         st.dataframe(pd.DataFrame(
-            [{"property": ig._PROPERTY_LABELS[b.prop], "bound": b.label,
+            [{"property": ig._PROPERTY_LABELS[b.prop], "bound": bound_text(b.lo, b.hi),
               "delivered": round(res.winner.properties.get(b.prop,
                                                            float("nan")), 3),
               "margin": round(b.margin(res.winner.properties.get(
@@ -781,6 +809,8 @@ def _results_panel(st, pd, np, ss, run):
                 "deliverable)")
     whd = gr.hp_to_dict(whp)
     _ALL_ROWS = _POINT_ROWS + tuple(q for q in _ROCKER_PTS if q in whd)
+    _name_next(ss, "Hardpoints (mm): x rearward of the wheel centre, y outboard of the centreline, z above ground; "
+                   "designed = free to move")
     st.dataframe(pd.DataFrame(
         [{"point": p + (" (unit vector, not mm)" if p == "rocker_axis" else ""),
           "x": whd[p][0], "y": whd[p][1], "z": whd[p][2],
@@ -826,6 +856,7 @@ def _results_panel(st, pd, np, ss, run):
                                     seed=man.search.seed,
                                     step_mm=man.search.step_mm)
             if yb.get("ok"):
+                _name_next(ss, f"Sampled builds failing each channel (N = {n}, sampled now with this build)")
                 st.dataframe(pd.DataFrame(
                     [{"channel": k, "builds failing (%)": 100 * v}
                      for k, v in yb["per_channel_fail_frac"].items()]
@@ -2129,6 +2160,12 @@ def manifest_vehicle(man, axle="front"):
                        f"{se.get('lock_road_wheel_deg', '?')}°). The search bounded that rack's effort margin from "
                        "trail alone; the review's 'steering ratio needed' also adds the tyre aligning moment of "
                        "section 5, a default unless you entered it, which is most of the difference between them")
+    cases = list(st_.get("cases") or {})
+    if cases or props.get("elasto"):
+        missing.append("its own structural load cases" + (f" ({len(cases)}, such as {cases[0]})" if cases else "")
+                       + " and pickup flexibility. The bounds table's link factor and compliance steer come from "
+                         "those; the review's link and compliance tables use five generic load cases and link "
+                         "stiffness only, so the two differ")
     return out, missing, per
 
 
@@ -2162,8 +2199,10 @@ def apply_manifest_vehicle(ss, man, axle="front"):
             by_key[k]["lo"], by_key[k]["hi"] = lo, hi
             ranges[by_key[k]["check"]] = (b.get("lo"), b.get("hi"))
     ss["ig_review_limits"] = limits
+    se = props.get("steer_effort") or {}
     ss["ig_veh_from_manifest"] = {"name": man.name, "fields": fields, "not_held": missing, "ranges": ranges,
-                                  "link_tubes": {m: list(t) for m, t in per.items()}}
+                                  "link_tubes": {m: list(t) for m, t in per.items()},
+                                  "lock_road_wheel_deg": se.get("lock_road_wheel_deg")}
     return fields, missing
 
 
@@ -2323,7 +2362,7 @@ def _corner_pair(ss, corner, axle):
 # =========================================================================== #
 #  Analysis sections (each takes a corner + the declaration)
 # =========================================================================== #
-def _sec_steering(st, pd, v, front_hp, rear_hp, key):
+def _sec_steering(st, pd, v, front_hp, rear_hp, key, rack_ratio=None):
     from suspension import genesis_analysis as ga
     from suspension.kinematics import SuspensionKinematics
     st.caption("Kingpin torque from mechanical trail and aligning torque, "
@@ -2360,7 +2399,13 @@ def _sec_steering(st, pd, v, front_hp, rear_hp, key):
                      s["road_wheel_total_Nm"] - v["aligning_outer_Nm"] - v["aligning_inner_Nm"]),
                     ("ratio needed from trail alone, no aligning moment",
                      (s["road_wheel_total_Nm"] - v["aligning_outer_Nm"] - v["aligning_inner_Nm"])
-                     / v["steering_target_Nm"])],
+                     / v["steering_target_Nm"])]
+           + ([] if not rack_ratio else [
+               ("steering ratio of the declared rack, at lock", rack_ratio),
+               ("steering-wheel torque at the rack's ratio, trail alone (N·m)",
+                (s["road_wheel_total_Nm"] - v["aligning_outer_Nm"] - v["aligning_inner_Nm"]) / rack_ratio),
+               ("…and with the declared aligning moments (N·m)",
+                s["road_wheel_total_Nm"] / rack_ratio)]),
            ["quantity", "value"], title="Steering effort at the design lateral acceleration")
     _table(st, pd, s["rows"], title="Steering-wheel torque by steering ratio")
     return s
@@ -2938,6 +2983,7 @@ def _render_analysis(st, pd, np, ss):
                    "and the sections under it describes the seed geometry "
                    "the search would start from, not a result of it.")
     front_hp, rear_hp = _corner_pair(ss, corner, axle)
+    st.warning(_SCOPE)
     _inputs_table(st, pd, ss, v, run, corner, axle)
     review_box = st.container()
 
@@ -2951,7 +2997,7 @@ def _render_analysis(st, pd, np, ss):
             st.caption("Uses the front corner — shown with the front corner "
                        "from an earlier run, or the default.")
         out["steer"] = _sec_steering(st, pd, v, front_hp, rear_hp,
-                                     "ig_steer")
+                                     "ig_steer", rack_ratio=declared_rack_ratio(ss, run, axle))
     with st.expander("🔩 Structural screening of the links"):
         out["sc"] = _sec_structural(st, pd, v, corner, axle)
     with st.expander("⚙️ Compliance budget — link strain, lash and band use"):
@@ -3027,6 +3073,25 @@ def _range_text(r):
                                      "needed", "spread")):
         return "≤ " + _cell(hi)
     return _cell(lo) + " … " + _cell(hi)
+
+
+def declared_rack_ratio(ss, run, axle):
+    """The steering ratio of the rack a manifest declared: the steering-wheel angle the search solved for the
+    declared lock, over that road-wheel lock (both deg, so dimensionless). None without a manifest front run that
+    bounded the lock."""
+    vm = ss.get("ig_veh_from_manifest") or {}
+    if run is None or run.get("source") != "manifest" or axle != "front" or not vm.get("lock_road_wheel_deg"):
+        return None
+    w = getattr(run["result"], "winner", None)
+    sw = (getattr(w, "properties", None) or {}).get("lock_sw_deg") if w is not None else None
+    return None if not sw else float(sw) / float(vm["lock_road_wheel_deg"])
+
+
+#: What every number in the review is, and is not. A judge asks; the report says.
+_SCOPE = ("Scope: one corner, solved as rigid links on spherical joints, at ride height and over the declared wheel "
+          "travel. Not in it: the whole car in roll or pitch (no roll-centre lateral migration), a tyre model, "
+          "dynamics, and bracket, upright or chassis flexibility unless a table says so. Check the result in "
+          "full-vehicle simulation and on the car.")
 
 
 def input_sources(ss, v, run, corner, axle):

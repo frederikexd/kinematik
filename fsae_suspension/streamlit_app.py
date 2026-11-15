@@ -11371,8 +11371,30 @@ def _feature_activity_sections(feature):
 _BUILD_STAMP = None
 
 
+def _source_fingerprint(root):
+    """Eight hex digits over streamlit_app.py and every .py under ui/, suspension/ and powertrain/ (paths and
+    contents, in sorted order).
+
+    The stamp used to hash streamlit_app.py alone. Six updates to ui/ and suspension/ then changed what a report
+    said while its header kept the same 'build b5b6f170': the one line meant to tell an old deployment from a new
+    one could not.
+    """
+    import hashlib
+    h = hashlib.sha256()
+    files = [os.path.join(root, "streamlit_app.py")]
+    for sub in ("ui", "suspension", "powertrain"):
+        for d, _dirs, names in os.walk(os.path.join(root, sub)):
+            files += [os.path.join(d, n) for n in names if n.endswith(".py")]
+    for path in sorted(files):
+        if os.path.isfile(path):
+            h.update(os.path.relpath(path, root).replace(os.sep, "/").encode())
+            with open(path, "rb") as fh:
+                h.update(fh.read())
+    return h.hexdigest()[:8]
+
+
 def _build_stamp():
-    """A short fingerprint of the running streamlit_app.py, for report headers.
+    """A short fingerprint of the running source (see _source_fingerprint), for report headers.
 
     Exists because a report that LOOKS out of date and a deployment that IS out
     of date are indistinguishable from the PDF alone. A DAQ export arrived
@@ -11391,11 +11413,8 @@ def _build_stamp():
         return _BUILD_STAMP
     _BUILD_STAMP = ""
     try:
-        import hashlib
-        _p = os.path.abspath(__file__)
-        with open(_p, "rb") as _fh:
-            _BUILD_STAMP = "build " + hashlib.sha256(
-                _fh.read()).hexdigest()[:8]
+        _BUILD_STAMP = "build " + _source_fingerprint(
+            os.path.dirname(os.path.abspath(__file__)))
     except Exception:
         try:
             _BUILD_STAMP = "build " + _dt.datetime.fromtimestamp(

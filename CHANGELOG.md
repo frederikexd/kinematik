@@ -34,6 +34,9 @@
 - Links are screened with their own tubes when the manifest sizes them individually (strength, stretch and compliance): front_v11_final's weakest link is 3.47, not 2.16 with one thin tube for all.
 - A motion ratio that falls in bump is a warning and a review row. The steering table shows the effort from trail alone beside the total with the declared aligning moments. The compliance section names the case that takes the toe band. The rocker axis is labelled a unit vector.
 
+- Second reading as a judge: every result table is named, the hardpoints with their frame and units; a bound prints as "63.6 … 70" or "≥ 2", where the report cut the old label off before the number; the steering table gives the declared rack's own ratio and the steering-wheel torque at it; the report says the manifest's own load cases and pickup flexibility are why its link factor and compliance steer differ from the review's; the scope of the analysis is stated; one candidate is no longer described as "the most buildable".
+- The build stamp in report headers covers streamlit_app.py and every source file under ui/, suspension/ and powertrain/. It hashed streamlit_app.py alone and did not change across six updates to the other two.
+
 **Design review.**
 - A value outside its range is red. Amber now means inside the range but within 10 % of a limit.
 - Bump steer limit 0.002 deg/mm (was 0.01), so it agrees with the 0.1 deg toe-change limit over ±25 mm: one curve could pass one and fail the other.

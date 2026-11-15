@@ -26,6 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 APP = ROOT / "streamlit_app.py"
 FEATURE = "genesis"
 NOTICE = "loaded but has not been run"
+BOUNDS = "Solved properties the search bounded: the bound, the value delivered, the margin left"
 
 
 class Rerun(Exception):
@@ -383,7 +384,7 @@ def test_a_loaded_manifest_is_reviewed_with_the_car_it_declared(tab):
     assert v["brake_bias_front"] == 0.73 and v["tube_wall_mm"] == 0.889 and v["yield_mpa"] == 435.0
     assert st.session_state["ig_v_brake_bias_front"] == 0.73          # the editor shows what the review reads
     t = _tables(ns)
-    bound = next(r for r in t["13 rows x 4 cols · property, bound, delivered, margin"]["rows"] if r[0].startswith("anti-dive"))
+    bound = next(r for r in t[BOUNDS]["rows"] if r[0].startswith("anti-dive"))
     review = next(r for k, x in t.items() if k.startswith("Design review") for r in x["rows"] if r[1].startswith("Anti"))
     kin = t["Kinematics and anti-geometry, front corner"]
     assert bound[2] == review[2] == _cell(kin, "anti-dive, from the contact patch's path (virtual work)") == "68.935"
@@ -461,7 +462,7 @@ def test_a_judge_can_see_where_every_input_came_from_and_what_the_result_does_no
     with_mz, trail_only = float(_cell(steer, "ratio needed for the target")), float(
         _cell(steer, "ratio needed from trail alone, no aligning moment"))
     assert with_mz == pytest.approx(8.79) and trail_only == pytest.approx((87.895 - 56.0) / 10.0, abs=1e-3)
-    points = [r[0] for r in t["16 rows x 5 cols · point, x, y, z, designed"]["rows"]]
+    points = [r[0] for r in next(x for k, x in t.items() if k.startswith("Hardpoints (mm): x rearward"))["rows"]]
     assert "rocker_axis (unit vector, not mm)" in points and "rocker_axis" not in points
     assert all(len(x) <= 402 for x in v)                       # nothing was cut by the report's banner limit
 
@@ -516,3 +517,63 @@ def test_the_wheel_envelope_line_says_what_the_clearance_is_measured_beyond(tab)
     assert line(0.49, 0.0)[0] == "warn" and "no running clearance was declared" in line(0.49, 0.0)[1]
     assert line(6.0, 0.0)[0] == "ok"
     assert line(-0.2, 3.0)[0] == "fail" and "closer to it than the 3 mm required" in line(-0.2, 3.0)[1]
+
+
+def test_the_report_closes_the_loops_a_judge_would_try_to_close(tab):
+    """Second reading as a judge: every table is named (the hardpoints with their frame and units); a bound prints
+    as a number, not a label cut off before it; the car's own steering ratio is there to compare the 'ratio needed'
+    with; the two link factors and two compliance numbers in one report are explained; the scope is stated; and one
+    candidate is not called 'the most buildable'."""
+    st, ns, uig = tab
+    _run(st, uig)
+    st.session_state["ig_manifest_up"] = _Upload((ROOT / "manifests" / "front_v11_final.recorded.genesis.json").read_text())
+    _run(st, uig)
+    _run(st, uig, clicks={"ig_manifest_load"})
+    t, v = _tables(ns), _verdicts(ns)
+    assert not [k for k in t if " rows x " in k or " row x " in k]             # no table known only by its shape
+    assert any(k.startswith("Hardpoints (mm): x rearward of the wheel centre, y outboard of the centreline, z above ground")
+               for k in t)
+    bounds = {r[0]: r[1] for r in t[BOUNDS]["rows"]}
+    assert bounds["anti-dive, front (%)"] == "63.6 … 70" and bounds["caster (deg)"] == "3.65 … 8"
+    assert bounds["lowest link buckling/yield factor under the shock cases (-)"] == "≥ 2"
+    assert bounds["steering-wheel angle to reach lock (deg)"] == "≤ 120"
+    steer = t["Steering effort at the design lateral acceleration"]
+    ratio = float(_cell(steer, "steering ratio of the declared rack, at lock"))
+    assert ratio == pytest.approx(118.9 / 25.6, abs=2e-3)
+    assert float(_cell(steer, "steering-wheel torque at the rack's ratio, trail alone")) == pytest.approx(31.895 / ratio, abs=5e-3)
+    assert float(_cell(steer, "…and with the declared aligning moments")) == pytest.approx(87.895 / ratio, abs=5e-3)
+    assert any("its own structural load cases (4, such as braking 1.8 g) and pickup flexibility" in x for x in v)
+    assert any(x.startswith("- ⚠️ Scope: one corner, solved as rigid links") for x in v)
+    assert any("The curves are reached inside every declared wall, and the geometry is RESILIENT" in x for x in v)
+    assert not any("the best fit is also the most buildable" in x for x in v)
+    assert all(len(x) <= 402 for x in v)
+
+
+def test_bound_text():
+    from ui import inverse_genesis as uig
+    inf = float("inf")
+    assert [uig.bound_text(lo, hi) for lo, hi in ((63.6, 70.0), (2.0, inf), (None, 120.0), (-inf, 120.0), (None, None))] \
+        == ["63.6 … 70", "≥ 2", "≤ 120", "≤ 120", "unbounded"]
+
+
+def test_the_build_stamp_changes_when_any_source_file_does(tmp_path):
+    """Six updates to ui/ and suspension/ changed what a report said while its header kept one build stamp: it hashed
+    streamlit_app.py alone."""
+    src = APP.read_text(encoding="utf-8")
+    a = src.index("def _source_fingerprint(root):")
+    ns = {"os": os}
+    exec(src[a:src.index("def _build_stamp():", a)], ns)
+    (tmp_path / "ui").mkdir()
+    (tmp_path / "suspension").mkdir()
+    (tmp_path / "streamlit_app.py").write_text("app")
+    (tmp_path / "ui" / "tab.py").write_text("x = 1")
+    (tmp_path / "suspension" / "core.py").write_text("y = 1")
+    (tmp_path / "ui" / "notes.txt").write_text("not source")
+    one = ns["_source_fingerprint"](str(tmp_path))
+    assert len(one) == 8 and ns["_source_fingerprint"](str(tmp_path)) == one
+    (tmp_path / "ui" / "notes.txt").write_text("still not source")
+    assert ns["_source_fingerprint"](str(tmp_path)) == one
+    (tmp_path / "ui" / "tab.py").write_text("x = 2")
+    two = ns["_source_fingerprint"](str(tmp_path))
+    (tmp_path / "suspension" / "core.py").write_text("y = 2")
+    assert len({one, two, ns["_source_fingerprint"](str(tmp_path))}) == 3
