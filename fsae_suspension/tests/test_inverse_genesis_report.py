@@ -412,3 +412,14 @@ def test_manifest_vehicle_reads_only_what_was_declared():
     assert ("brake_bias_front" in fields) == (props.get("brake_bias_front") is not None)
     man.volume = {}
     assert uig.manifest_vehicle(man) == ({}, [])
+
+
+def test_a_line_no_longer_drawn_leaves_the_report_even_when_nothing_changed(tab):
+    """A session that outlived an app update kept the old build's 'ranges are generic' line beside the new one: the
+    report was cleared only when the run or its inputs changed. Every render now starts the tab's report afresh."""
+    st, ns, uig = tab
+    _run(st, uig)
+    ns["get_feature_results"](FEATURE)["verdicts"].append({"text": "a line an older build drew", "severity": "warning"})
+    _run(st, uig)
+    assert not any("older build" in x for x in _verdicts(ns))
+    assert _tables(ns)                                           # the redraw itself is all there

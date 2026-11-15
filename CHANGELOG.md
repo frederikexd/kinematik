@@ -24,6 +24,7 @@
 - The replay caveat appears once in the report.
 - The kinematics table labels anti-dive as the contact-patch path (virtual work) form and lists the side-view-IC tangent form beside it, so tan × L/h × bias of the table's own row reproduces a number in the table.
 - "Red is a prompt" names only the checks still on generic ranges, not those the manifest set.
+- InverseGenesis starts its report afresh on every render: a line an earlier run drew and this one does not (after an input change, or an app update in a live session) no longer stays in the report.
 
 **Design review.**
 - A value outside its range is red. Amber now means inside the range but within 10 % of a limit.

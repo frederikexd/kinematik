@@ -958,7 +958,11 @@ def render():
     pending = manifest_pending(ss)
     if ss.get("ig_run") is not None:
         rc.engage(ss)                         # a result the user made here: report it, whatever the open signal said
-    rc.reset_on_change(ss, "ig_report_identity", report_identity(ss, pending))
+    # Every run redraws everything this tab reports, so it starts from nothing: a line an earlier run drew and this
+    # one does not (an input since changed, or an older build of this code in the same session) must leave the
+    # report, and clearing on a change of inputs alone left the second kind in.
+    rc.reset(ss)
+    ss["ig_report_identity"] = report_identity(ss, pending)
     if pending:
         st.warning("A manifest is loaded but has not been run, so nothing in "
                    "this tab is reported: the tables below describe the form "
