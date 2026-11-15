@@ -1,9 +1,10 @@
-function kk_bench_simscape(root)
+function kk_bench_simscape(root, part)
 %KK_BENCH_SIMSCAPE  Link-load and direct-acting benchmarks in Simscape Multibody (R2025b).
 %
 %   kk_bench_simscape            % finds the inputs: the repo around this file, the current folder, or
 %                                % a kinematik_matlab_standalone folder in it or in MATLAB Drive
 %   kk_bench_simscape(root)      % root = the folder holding manifests/ and benchmarks/
+%   kk_bench_simscape(root, 'direct')   % only the direct-acting corners (link loads already written)
 %
 %   Shares no code with KinematiK: reads only the hardpoints (manifests, benchmarks/direct_acting/corners) and
 %   the load cases (benchmarks/link_loads/limits.json), builds each corner as a Simscape Multibody model, and
@@ -23,7 +24,8 @@ function kk_bench_simscape(root)
 %
 %   If a block parameter is not found, the error lists the parameter names this release has: send that back.
 
-if nargin < 1
+if nargin < 2, part = 'all'; end
+if nargin < 1 || isempty(root)
     here = fileparts(mfilename('fullpath'));
     cand = {fileparts(fileparts(here)), here, pwd, fullfile(pwd, 'kinematik_matlab_standalone'), ...
             fullfile(fileparts(pwd), 'kinematik_matlab_standalone'), '/MATLAB Drive/kinematik_matlab_standalone'};
@@ -48,6 +50,8 @@ fprintf('Calibration passed (signed-force sign %+d).\n', sgn);
 
 % ---- link loads ---------------------------------------------------------------------------------------
 llCorners = {'front_v11_final','rear_v11_final','front_v11_joints50'};
+if strcmp(part, 'direct'), llCorners = {}; end
+if ~isempty(llCorners)
 fid = fopen(fullfile(LL, 'matlab_results.csv'), 'w');
 fprintf(fid, '# matlab: Simscape Multibody %s, scripts/matlab/kk_bench_simscape.m. Axial force, N, + tension.\n', version);
 fprintf(fid, 'corner,case,%s\n', strjoin(ALL6, ','));
@@ -61,6 +65,7 @@ for k = 1:numel(llCorners)
     fprintf('link loads: %s done\n', llCorners{k});
 end
 fclose(fid);
+end
 
 % ---- direct-acting ------------------------------------------------------------------------------------
 daCorners = {'direct_upright','direct_lower'};
@@ -216,38 +221,38 @@ save_system(mdl, fullfile(tempdir, [mdl '.slx']));
 
 ks = simscape.multibody.KinematicsSolver(mdl);
 jp = jointPositionVariables(ks);
-tid = jp.ID(contains(jp.BlockPath, 'lca_rev'));
-if numel(tid) ~= 1, error('Could not find the lower wishbone joint variable:\n%s', evalc('disp(jp)')); end
-addTargetVariables(ks, tid);
+jid = jp.ID(contains(jp.BlockPath, 'lca_rev'));
+if numel(jid) ~= 1, error('Could not find the lower wishbone joint variable:\n%s', evalc('disp(jp)')); end
 addFrameVariables(ks, 'dmp', 'Translation', fDi, fDo);
 addFrameVariables(ks, 'wc', 'Translation', fW0, fWc);
-fv = frameVariables(ks);
-addOutputVariables(ks, fv.ID);
+% Drive the wheel-centre height itself (no interpolation), warm-starting each step from the last wishbone angle.
+addTargetVariables(ks, "wc.Translation.z");
+addInitialGuessVariables(ks, jid);
+addOutputVariables(ks, ["dmp.Translation.x", "dmp.Translation.y", "dmp.Translation.z", "wc.Translation.z", string(jid)]);
+tv = targetVariables(ks);
+zUnit = unitToMm(char(string(tv.Unit(1))));                 % mm per target unit
 ov = outputVariables(ks);
-toMm = cellfun(@unitToMm, cellstr(string(ov.Unit)));
-tu = string(targetVariables(ks).Unit);
-ang = linspace(-15, 15, 301);
-if strcmp(tu, "rad"), ang = deg2rad(ang); end
-dz = zeros(size(ang)); Ld = dz;
 ids = string(ov.ID);
-need = ["dmp.Translation.x","dmp.Translation.y","dmp.Translation.z","wc.Translation.z"];
-if ~all(ismember(need, ids)), error('Unexpected output variable IDs: %s', strjoin(ids, ', ')); end
-for i = 1:numel(ang)
-    [o, flag] = solve(ks, ang(i));
-    if flag ~= 1, error('Kinematics Solver did not converge at %g', ang(i)); end
-    o = o(:)' .* toMm;
-    v = [o(ids == "dmp.Translation.x"), o(ids == "dmp.Translation.y"), o(ids == "dmp.Translation.z")];
-    Ld(i) = norm(v);
-    dz(i) = o(ids == "wc.Translation.z");
-end
-close_system(mdl, 0);
-[dz, s] = sort(dz); Ld = Ld(s);
-if dz(1) > -25 || dz(end) < 25
-    error('Sweep covers %.3f..%.3f mm of wheel travel (needs -25..+25). Target unit %s; output units %s.', ...
-          dz(1), dz(end), tu, strjoin(cellstr(string(ov.Unit)), ' '));
+k = zeros(1, numel(ids));
+for i = 1:numel(ids)
+    if startsWith(ids(i), ["dmp.", "wc."]), k(i) = unitToMm(char(string(ov.Unit(i)))); else, k(i) = 1; end
 end
 trav = -25:25;
-L = interp1(dz, Ld, trav);
+L = nan(size(trav));
+i0 = find(trav == 0);
+for dirn = [1, -1]                                           % walk out from ride height, bump then droop
+    guess = 0;
+    for i = i0:dirn:(i0 + dirn * 25)
+        [o, flag] = solve(ks, trav(i) / zUnit, guess);
+        o = o(:)' .* k;
+        if flag ~= 1 || abs(o(ids == "wc.Translation.z") - trav(i)) > 1e-6
+            error('Kinematics Solver failed at %g mm of wheel travel (status %d).', trav(i), flag);
+        end
+        guess = o(ids == string(jid));
+        L(i) = norm([o(ids == "dmp.Translation.x"), o(ids == "dmp.Translation.y"), o(ids == "dmp.Translation.z")]);
+    end
+end
+close_system(mdl, 0);
 end
 
 function k = unitToMm(u)
