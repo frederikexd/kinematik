@@ -422,8 +422,8 @@ def _actuation_selector(st, hp, key: str, title: str = "Spring/damper actuation"
         mr = SuspensionKinematics(hp).motion_ratio()
         L0 = float(np.linalg.norm(pts["spring_inner"] - pts["pushrod_outer"]))
         if np.isfinite(mr):
-            st.caption(f"Direct-acting damper: motion ratio {mr:.3f} (damper / wheel travel), "
-                       f"static length {L0:.1f} mm. Frame: x rearward, y outboard, z up from the ground.")
+            st.caption(f"Direct-acting damper: motion ratio {_g(mr, digits=3)} (damper / wheel travel), "
+                       f"static length {_g(L0, 'mm', digits=4)}. Frame: x rearward, y outboard, z up from the ground.")
         else:
             st.warning("The damper does not change length with wheel travel here; move its ends.")
     except Exception as e:                  # noqa: BLE001
