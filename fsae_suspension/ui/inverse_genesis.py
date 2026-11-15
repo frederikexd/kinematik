@@ -2628,7 +2628,12 @@ def _sec_kinematics(st, pd, v, corner, axle, travel):
             ("tan swing arm, referenced to the " + d["side_view_reference"],
              d["side_view_tan"])]
     if "anti_dive_pct" in d:
-        rows.append(("anti-dive (%)", d["anti_dive_pct"]))
+        # Not tan × L/h × bias of the row above: that is the side-view-IC form, and this is the contact patch's own
+        # path slope (virtual work), the form the search's anti-dive bound uses. Say so, or the arithmetic a reader
+        # does on the table disagrees with the table.
+        rows.append(("anti-dive, from the contact patch's path (virtual work) (%)", d["anti_dive_pct"]))
+        if d.get("anti_dive_svic_pct") is not None:
+            rows.append(("anti-dive, side-view IC tangent form, for comparison (%)", d["anti_dive_svic_pct"]))
     if "anti_squat_pct" in d:
         rows.append(("anti-squat (%)", d["anti_squat_pct"]))
     if "anti_lift_pct" in d:
@@ -2987,10 +2992,15 @@ def _render_review(st, pd, ss, v, out, axle, note, run):
                title="Design review: 🔴 outside its range, 🟡 inside but within 10 % of a limit, "
                      "🟢 inside, ⚪ not available")
         if _guided(ss) and counts["fail"]:
-            st.warning("Red is a prompt, not a verdict: the ranges are "
-                       "generic starting points. Either change the design "
-                       "(see 'what to change') or set the range to your "
-                       "team's target and write down why.")
+            from_manifest = set((ss.get("ig_veh_from_manifest") or {}).get("ranges") or {}) \
+                if run is not None and run.get("source") == "manifest" else set()
+            red_generic = [r["check"] for r in rows if r["status"] == "fail" and r["check"] not in from_manifest]
+            if red_generic:
+                st.warning("Red is a prompt, not a verdict: "
+                           + ("these ranges are" if from_manifest else "the ranges are")
+                           + " generic starting points" + (f" ({', '.join(red_generic)})" if from_manifest else "")
+                           + ". Either change the design (see 'what to change') or set the range to your team's "
+                             "target and write down why.")
         with st.expander("Edit review ranges (your team's targets)"):
             ed = st.data_editor(
                 pd.DataFrame([{"check": r["check"], "unit": r["unit"],
