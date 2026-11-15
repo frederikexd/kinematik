@@ -646,3 +646,43 @@ def test_the_pdf_keeps_every_number_whole_and_every_status_readable(tab, tmp_pat
         assert any(ln.startswith(status) or f" {status} " in f" {ln} " for ln in lines), status
     for number in ("3.656", "68.935", "0.7024", "6.21e-05", "52.813", "1.282", "17.159"):
         assert number in text, number                         # never split across two lines
+
+
+def test_the_judge_summary_is_built_from_the_review_with_the_teams_reasons_and_its_figure(tab, monkeypatch, tmp_path):
+    """The Design Event summary from a loaded result: the yes/no checks read as yes/no, a written reason replaces the
+    gap, an answer follows its question, and the PDF carries the curves figure. Nothing of it enters the report."""
+    from suspension import judge_summary as js
+    st, ns, uig = tab
+    got = {}
+    real = uig.judge_summary_inputs
+
+    def spy(*a, **k):
+        got["kw"], got["fig"] = r = real(*a, **k)
+        return r
+    monkeypatch.setattr(uig, "judge_summary_inputs", spy)
+    _run(st, uig)
+    st.session_state["ig_manifest_up"] = _Upload((ROOT / "manifests" / "front_v11_final.recorded.genesis.json").read_text())
+    _run(st, uig)
+    _run(st, uig, clicks={"ig_manifest_load"})
+    before = _report(ns)
+    st.session_state["ig_rat_anti_dive_why"] = "Front holds the rear's peak mu at 73 % bias."
+    st.session_state[js.answer_key("Caster: x")] = "Shimmed on the built car."
+    _run(st, uig)
+    assert _report(ns) == before                                          # the panel adds nothing to the report
+    kw, fig = got["kw"], got["fig"]
+    pts = [q for q, _ in kw["questions"]]
+    assert "Wheel rate does not fall in bump: no" in pts
+    md = js.build(**kw)
+    assert "Front holds the rear's peak mu at 73 % bias." in md and "Team answer: Shimmed on the built car." in md
+    assert "| Ackermann at the declared lock (%) | ≥ 75 | 75.27 | yes |" in md
+    pytest.importorskip("matplotlib")
+    assert fig[:8] == b"\x89PNG\r\n\x1a\n"
+    pytest.importorskip("reportlab")
+    pypdf = pytest.importorskip("pypdf")
+    from suspension import project
+    out = tmp_path / "j.pdf"
+    project.render_pdf(md, str(out), figures={"judge_curves": fig})
+    reader = pypdf.PdfReader(str(out))
+    assert any(p.images for p in reader.pages)
+    text = "\n".join(p.extract_text() for p in reader.pages)
+    assert "Why this design, and from what alternatives" in text and "75.27" in text

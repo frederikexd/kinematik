@@ -3301,6 +3301,189 @@ def _render_review(st, pd, ss, v, out, axle, note, run):
                            _report_md(v, out, rows, axle, note, run),
                            file_name="design_report_" + axle + ".md",
                            mime="text/markdown", key="ig_report_dl")
+    _judge_summary_panel(st, ss, v, out, rows, axle, run, defaults)
+
+
+def judge_summary_inputs(ss, v, out, rows, axle, run, defaults):
+    """Everything judge_summary.build needs, from what the tab already computed. Returns (kwargs, figure png or
+    None). Pure apart from reading ``ss``; no Streamlit calls."""
+    import numpy as np
+    from suspension import genesis_repro as gr
+    from suspension import judge_summary as js
+
+    d = out.get("kin") or {}
+    res = run["result"] if run is not None else None
+    man = gr.GenesisManifest.from_json(run["manifest_json"]) if run is not None else None
+    tg = man.objects()[1] if man is not None else None
+    w = getattr(res, "winner", None)
+    stations = list(d.get("stations_mm") or [])
+    i0 = int(np.argmin(np.abs(np.asarray(stations)))) if stations else None
+
+    targets, bands = [], {}
+    for c in (tg.curves if tg is not None else []):
+        tr, tv, bd = (np.asarray(x, float) for x in (c.travel_mm, c.target, c.band))
+        j = int(np.argmin(np.abs(tr)))
+        series = d.get(c.channel) if c.channel in ("camber_deg", "toe_deg", "rc_height_mm", "scrub_mm") else None
+        targets.append({"channel": c.channel, "target_at": float(tv[j]), "band": float(bd[j]),
+                        "delivered": None if series is None or i0 is None else float(series[i0])})
+        bands[c.channel] = (tr, tv, bd)
+    props = []
+    if res is not None and getattr(res, "property_bounds", None) is not None and w is not None and w.properties:
+        from suspension import inverse_genesis as ig
+        for b in res.property_bounds.bounds:
+            props.append({"label": ig._PROPERTY_LABELS[b.prop], "lo": b.lo, "hi": b.hi,
+                          "value": w.properties.get(b.prop)})
+    specs = js.specification_rows(targets, d, props)
+
+    def g(key, digits=4):
+        return js._num(d.get(key), digits)
+    act = out.get("act") or {}
+    steer = out.get("steer") or {}
+    sc = out.get("sc") or {}
+    decisions = {
+        "camber": {"target": next((f"{js._num(t['target_at'])}° ± {js._num(t['band'])}° at ride height, curve over "
+                                   f"±{js._num(max(abs(x) for x in stations) if stations else 0)} mm"
+                                   for t in targets if t["channel"] == "camber_deg"), ""),
+                   "result": f"gain {g('camber_gain_deg_per_mm')} deg/mm; static {js._num(d['camber_deg'][i0]) if i0 is not None else '—'}°",
+                   "evidence": "camber curve in the figure; loaded camber to road in the appendix"},
+        "roll_centre": {"target": next((f"{js._num(t['target_at'])} ± {js._num(t['band'])} mm"
+                                        for t in targets if t["channel"] == "rc_height_mm"), ""),
+                        "result": f"{g('rc_height_static_mm')} mm at ride height; migration "
+                                  f"{g('rc_migration_chassis_mm_per_mm')} mm/mm in the chassis frame",
+                        "evidence": "roll-centre curve in the figure"},
+        "toe": {"target": next((f"{js._num(t['target_at'])}° ± {js._num(t['band'])}°"
+                                for t in targets if t["channel"] == "toe_deg"), ""),
+                "result": f"bump steer {g('bump_steer_deg_per_mm')} deg/mm; {g('toe_change_deg')}° over the travel",
+                "evidence": "toe curve in the figure"},
+        "anti_dive": {"result": f"{g('anti_dive_pct')} % at brake bias {js._num(v['brake_bias_front'])} "
+                                f"(contact-patch path, virtual work)"},
+        "steering": {"result": f"caster {g('caster_deg')}°, kingpin inclination {g('kpi_deg')}°, scrub "
+                               f"{g('scrub_static_mm')} mm, mechanical trail {js._num(steer.get('trail_mm'))} mm"},
+        "ride": {"result": (f"motion ratio {js._num(act.get('mr_static'))} at ride height "
+                            f"({js._num(act.get('mr_droop'))} droop, {js._num(act.get('mr_bump'))} bump, "
+                            f"{act.get('rate_character', '—')}); ride frequency {js._num(act.get('ride_hz_static'), 3)} Hz "
+                            "from wheel rate only") if act.get("ok") else ""},
+        "loads": {"result": (f"weakest link {sc.get('governing_member', '—')}, factor of safety "
+                             f"{js._num(sc.get('worst_fos_overall'), 3)}") if sc else "",
+                  "evidence": "five load cases, every link force and factor of safety in the appendix"},
+        "safety": {},
+    }
+    for k, r in (("anti_dive", "anti_pct"), ("steering", "caster_deg")):
+        row = next((x for x in rows if x["key"] == r), None)
+        if row is not None:
+            decisions[k]["target"] = f"{_range_text(row)} {row['unit']}".strip()
+
+    vm = ss.get("ig_veh_from_manifest") or {}
+    srcs = input_sources(ss, v, run, _review_corner(ss, run), axle)
+    n_def = sum(r["source"] == "default" for r in srcs)
+    tools = ["Kinematics and link loads from KinematiK's rigid-link corner solver, benchmarked against Adams View, "
+             "MATLAB Simscape Multibody and Project Chrono on published corners (link forces within 1e-3 N).",
+             "Geometry found by InverseGenesis from the stated targets and pickup zones, and priced for build yield "
+             "against the declared shop tolerances; the run is reproducible from its manifest"
+             + (f" `{man.name}` (inputs sha256 {man.inputs_sha256[:12]})" if man is not None else "") + "."]
+    evidence = [f"{len(srcs) - n_def} of {len(srcs)} analysis inputs are declared for this car; {n_def} are tool "
+                "defaults, each named in the appendix's inputs table."]
+    loads = [(m, f, sc.get("governing_case", {}).get(m, "")) for m, f in (sc.get("worst_fos_per_member") or {}).items()]
+    safety = []
+    if sc:
+        safety.append(f"Every link at or above factor of safety {js._num(v['fos_min'])} in every load case: weakest "
+                      f"{sc.get('governing_member')} at {js._num(sc.get('worst_fos_overall'), 3)} (tension yield and "
+                      "pinned-pinned Euler buckling).")
+    env = getattr(res, "wheel_envelope", None) if res is not None else None
+    if w is not None and env is not None and w.envelope_margin_mm is not None:
+        gap = float(getattr(env, "clearance_mm", 0.0) or 0.0)
+        safety.append(f"Nearest link or outboard pickup {js._num(w.envelope_margin_mm + gap, 3)} mm from the rim "
+                      f"and tyre over the travel and both steering locks ({js._num(gap)} mm required).")
+    thin = [(lab.split(" (")[0], js._num(m, 3)) for lab, m in (as_built_unpriced(res) if res is not None else [])]
+    if res is not None and w is not None and w.yield_frac is not None:
+        safety.append(f"Build yield {js._num(100 * w.yield_frac, 3)} % at the declared shop tolerances (camber, toe "
+                      "and roll-centre curves); measure the built parts before quoting it.")
+    vm_ranges = vm.get("ranges") or {} if run is not None and run.get("source") == "manifest" else {}
+    from suspension import genesis_analysis as ga
+    sg = [(r["check"], f"{js._num(r['value'])} {r['unit']}".strip(),
+           _range_text({"key": r["key"], "lo": lo, "hi": hi}))
+          for r, lo, hi in self_graded(rows, vm_ranges, ga.DEFAULT_REVIEW_LIMITS)]
+    review = [dict(r, range=_range_text(r),
+                   value=("yes" if r["value"] == 1.0 else "no") if r["key"] in _YES_NO_CHECKS and r["value"] is not None
+                   else r["value"]) for r in rows]
+    questions = js.open_questions(review, thin, sg, n_def, len(srcs))
+
+    fig = None
+    if stations and d:
+        series = {k: d[k] for k in ("camber_deg", "toe_deg", "rc_height_mm") if k in d}
+        try:
+            fig = js.curves_png(stations, series, bands)
+        except Exception:                     # noqa: BLE001  (a figure must never cost the summary)
+            fig = None
+    rationale = {k: {f: ss.get(f"ig_rat_{k}_{f}", "") or "" for f in ("why", "alternatives", "trade_off")}
+                 for k, *_ in js.DECISIONS}
+    answers = {q: ss.get(js.answer_key(q), "") or "" for q, _ in questions}
+    return dict(title="Suspension design summary", team=str(ss.get("ig_js_team", "") or ""),
+                corner_name=man.name if man is not None else "seed geometry", axle=axle, specs=specs,
+                decisions=decisions, rationale=rationale, evidence=evidence, tools=tools, loads=loads,
+                safety=safety, questions=questions, answers=answers,
+                figure_ref="judge_curves" if fig else None,
+                appendix_name="the InverseGenesis feature report"), fig
+
+
+def _judge_summary_panel(st, ss, v, out, rows, axle, run, defaults):
+    """Where the team writes its reasons, and the summary a judge reads: a separate document, not part of the
+    feature report, so nothing here is captured into it."""
+    from suspension import judge_summary as js
+    from suspension import report_capture as rc
+    if run is None:
+        return
+    with rc.unreported(ss), st.expander("🧑‍⚖️ Judge summary: your design, as the Design Event scores it"):
+        st.caption("Two pages for the Design Event, structured to the FS score sheet (area B: specifications, use of "
+                   "design tools & analysis, load cases and load path, safety). The tool fills the facts and data; "
+                   "the reasons are yours. Anything you leave blank prints as 'Team to state', so a judge never "
+                   "reads a reason you did not give.")
+        up = st.file_uploader("Load saved reasons (.json)", type=["json"], key="ig_js_load")
+        if up is not None:
+            import hashlib
+            import json
+            raw = up.getvalue()
+            tag = hashlib.sha256(raw).hexdigest()
+            if ss.get("_ig_js_loaded") != tag:        # apply once, so later edits are not overwritten
+                try:
+                    data = json.loads(raw.decode("utf-8"))
+                    ss.update(js.reasons_payload(data if isinstance(data, dict) else {}))
+                    ss["_ig_js_loaded"] = tag
+                except (ValueError, UnicodeDecodeError) as e:
+                    st.warning(f"Could not read the saved reasons: {e}")
+        st.text_input("Team name (printed in the header)", key="ig_js_team")
+        for key, label, question in js.DECISIONS:
+            st.markdown(f"**{label}**")
+            st.caption(question)
+            c = st.columns(3)
+            c[0].text_area("Why", key=f"ig_rat_{key}_why", height=90)
+            c[1].text_area("Alternatives considered", key=f"ig_rat_{key}_alternatives", height=90)
+            c[2].text_area("Trade-off accepted", key=f"ig_rat_{key}_trade_off", height=90)
+        kw, fig = judge_summary_inputs(ss, v, out, rows, axle, run, defaults)
+        if kw["questions"]:
+            st.markdown("**Questions a judge will ask**")
+            for q, why in kw["questions"]:
+                st.text_area(q, key=js.answer_key(q), height=70, help=why)
+            kw, fig = judge_summary_inputs(ss, v, out, rows, axle, run, defaults)
+        md = js.build(**kw)
+        import json as _json
+        c1, c2, c3 = st.columns(3)
+        c3.download_button("⬇ Save your reasons (.json)", _json.dumps(js.reasons_payload(ss), indent=1),
+                           file_name=f"judge_reasons_{axle}.json", mime="application/json", key="ig_js_save")
+        c1.download_button("⬇ Judge summary (.md)", md, file_name=f"judge_summary_{axle}.md",
+                           mime="text/markdown", key="ig_js_md")
+        if c2.button("🖨 Build judge summary PDF", key="ig_js_pdf_build"):
+            try:
+                import os
+                import tempfile
+                from suspension import project
+                path = os.path.join(tempfile.gettempdir(), f"judge_summary_{axle}.pdf")
+                project.render_pdf(md, path, figures={"judge_curves": fig} if fig else None)
+                with open(path, "rb") as fh:
+                    c2.download_button("⬇ Judge summary (.pdf)", fh.read(), file_name=f"judge_summary_{axle}.pdf",
+                                       mime="application/pdf", key="ig_js_pdf")
+            except Exception as e:                # noqa: BLE001
+                c2.warning(f"PDF unavailable: {e}")
 
 
 def _report_md(v, out, rows, axle, note, run):

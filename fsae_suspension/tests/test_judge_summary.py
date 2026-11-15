@@ -1,0 +1,74 @@
+# ============================================================================
+#  KinematiK — Formula SAE suspension & vehicle dynamics toolkit
+#  Created by Frederik Thio. Copyright (c) 2026 Frederik Thio.
+#  Open source. Original author: Frederik Thio, creator of KinematiK.
+# ============================================================================
+"""The judge summary: structured to the FS design score sheet, and never writes a reason the team did not give."""
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+from suspension import judge_summary as js                       # noqa: E402
+
+
+def _kw(**over):
+    kw = dict(title="Suspension design summary", team="", corner_name="c", axle="front",
+              specs=js.specification_rows([{"channel": "camber_deg", "target_at": -2.5, "band": 0.3,
+                                            "delivered": -2.5}],
+                                          {}, [{"label": "caster (deg)", "lo": 3.65, "hi": 8.0, "value": 3.0}]),
+              decisions={"camber": {"target": "-2.5 deg", "result": "gain -0.035 deg/mm"}},
+              rationale={}, evidence=["e"], tools=["t"], loads=[("LR", 3.47, "1.5g braking")], safety=["s"],
+              questions=[("Caster: 3 deg", "outside the range 3.65 … 8.")], answers={})
+    kw.update(over)
+    return kw
+
+
+def test_every_score_sheet_heading_is_there_and_a_missing_reason_is_said_not_filled():
+    md = js.build(**_kw())
+    for h in ("## 1. What we set out to achieve", "## 2. Why this design, and from what alternatives",
+              "## 3. Use of design tools and analysis", "## 4. Load cases and load path",
+              "## 5. Safety considerations", "## 6. Questions a judge will ask"):
+        assert h in md
+    assert "Score-sheet area B" in md
+    for _key, label, question in js.DECISIONS:              # every decision asked, its question printed with the gap
+        assert f"### {label}" in md and question in md
+    assert md.count(js.MISSING) == 2 * len(js.DECISIONS) + 1   # why + alternatives each, and the one answer
+
+
+def test_the_teams_words_replace_the_gap_and_nothing_else_does():
+    rat = {"camber": {"why": "Tyre optimum at 1.5 g.", "alternatives": "More gain.", "trade_off": "0.07 deg short."}}
+    md = js.build(**_kw(rationale=rat, answers={"Caster: 3 deg": "Shimmed on the car."}))
+    assert "Tyre optimum at 1.5 g." in md and "More gain." in md and "0.07 deg short." in md
+    assert "Team answer: Shimmed on the car." in md
+    assert md.count(js.MISSING) == 2 * (len(js.DECISIONS) - 1)
+
+
+def test_specification_rows_mark_met_by_the_bounds():
+    rows = js.specification_rows([{"channel": "toe_deg", "target_at": 0, "band": 0.08, "delivered": 0.1}], {},
+                                 [{"label": "a", "lo": 0, "hi": None, "value": 1},
+                                  {"label": "b", "lo": None, "hi": 120, "value": 118.9},
+                                  {"label": "c", "lo": 63.6, "hi": 70, "value": 70.1}])
+    assert [r[3] for r in rows] == [False, True, True, False]
+    assert rows[1][1] == "≥ 0" and rows[2][1] == "≤ 120" and rows[3][1] == "63.6 … 70"
+
+
+def test_open_questions_raise_every_red_amber_self_graded_thin_and_default():
+    q = js.open_questions([{"check": "Caster", "value": 3.656, "unit": "deg", "status": "watch", "range": "3.65 … 8"},
+                           {"check": "Camber gain", "value": -0.035, "unit": "deg/mm", "status": "pass",
+                            "range": "x"},
+                           {"check": "Wheel rate does not fall in bump", "value": "no", "unit": "", "status": "fail",
+                            "range": "yes"}],
+                          [("caster", "0.006")], [("Anti-dive", "68.9 %", "0 … 50")], 25, 38)
+    pts = [p for p, _ in q]
+    assert pts[0] == "Caster: 3.656 deg" and pts[1] == "Wheel rate does not fall in bump: no"
+    assert any(p.startswith("Anti-dive") for p in pts) and any("little margin" in p for p in pts)
+    assert pts[-1] == "25 of 38 analysis inputs are tool defaults" and len(pts) == 5
+
+
+def test_an_answer_stays_with_its_question_when_the_numbers_change():
+    assert js.answer_key("Caster: 3.656 deg") == js.answer_key("Caster: 3.71 deg") == "ig_ans_caster"
+    assert js.answer_key("25 of 38 analysis inputs are tool defaults") == \
+        js.answer_key("12 of 38 analysis inputs are tool defaults")
+    ss = {"ig_rat_camber_why": "w", js.answer_key("Caster: 3"): "a", "ig_js_team": "T", "ig_other": "x", "k": 1}
+    assert js.reasons_payload(ss) == {"ig_rat_camber_why": "w", "ig_ans_caster": "a", "ig_js_team": "T"}

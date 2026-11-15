@@ -3,6 +3,14 @@
 
 ## Unreleased
 
+**Judge summary: the design argued the way the Design Event scores it.**
+- A new "Judge summary" panel under the InverseGenesis review builds a separate document structured to the FS design judging score sheet (area B: specifications, use of design tools and analysis, load cases and load path, safety), plus "why this design, and from what alternatives".
+- For each decision (camber, roll centre, bump steer, anti-dive, steering, ride, loads, safety) it prints the target, the result and the evidence from the analysis, and the team's own reason, alternatives and trade-off. A reason the team has not written prints as "Team to state" with the question a judge will ask; the tool never writes one.
+- Every red or amber check, self-graded range, thin margin and default input becomes a question a judge will ask, with a space for the team's answer. Answers follow their question when the numbers change.
+- The reasons save to and load from a .json file. Markdown and PDF downloads, with the camber, toe and roll-centre curves drawn against their target bands.
+- The panel adds nothing to the feature report, which stays the appendix.
+- `test_perf`: the disabled-timer bound is now a ratio to a same-runner baseline, so a loaded CI runner no longer fails it.
+
 **InverseGenesis feature report: only what was designed.**
 - A manifest that is loaded but not run reports nothing. Before, its recorded verdict was printed above tables computed from the form's seed geometry.
 - The example link (4799 N, 485 mm) and the example bracket are left out of the report until they are replaced with the team's own values. The bracket check is in the design review, as not available until then.
