@@ -127,6 +127,7 @@ else
     links(end+1, :) = {'PR', up, P.pushrod_outer, prIn, [0 0 0]};
 end
 names = cell(1, size(links, 1));
+axes_ = cell(1, size(links, 1));
 for i = 1:size(links, 1)
     [nm, body, po, pin, ref] = links{i, :};
     if iscell(ref), local = (ref{2}' * (po - ref{1})')'; else, local = po; end
@@ -134,14 +135,14 @@ for i = 1:size(links, 1)
     b = at(mdl, W, ['i_' nm], pin);
     distance(mdl, ['D_' nm], a, b, norm(pin - po), ['T_' nm]);
     names{i} = nm;
+    axes_{i} = (pin - po) / norm(pin - po);
 end
 extForce(mdl, at(mdl, up, 'cp', P.contact_patch), 'patch', [cs.Fx cs.Fy cs.Fz], [0 0 cs.Mz / 1000]);
 extForce(mdl, at(mdl, up, 'wc', P.wheel_center), 'shaft', [cs.Fx_wc 0 0], []);
 out = sim(mdl, 'StopTime', '0.01', 'ReturnWorkspaceOutputs', 'on');
 f = struct();
 for i = 1:numel(names)
-    v = out.get(['T_' names{i}]);
-    f.(names{i}) = sgn * v(end);
+    f.(names{i}) = sgn * axial(out.get(['T_' names{i}]), axes_{i});
 end
 close_system(mdl, 0);
 end
@@ -159,12 +160,28 @@ end
 extForce(mdl, at(mdl, b, 'RT_load', [0 0 0]), 'load', [0 0 -100], []);
 out = sim(mdl, 'StopTime', '0.01', 'ReturnWorkspaceOutputs', 'on');
 t = zeros(1, 6);
-for i = 1:6, v = out.get(sprintf('T%d', i)); t(i) = v(end); end
+for i = 1:6
+    u = (spec{i,2} - spec{i,1}) / norm(spec{i,2} - spec{i,1});
+    t(i) = axial(out.get(sprintf('T%d', i)), u);
+end
 close_system(mdl, 0);
 if abs(abs(t(1)) - 100) > 1e-6 || max(abs(t(2:6))) > 1e-6
     error('Calibration failed: signed forces %s', mat2str(t, 6));
 end
-sgn = sign(t(1));     % + tension = sgn * signed force
+sgn = sign(t(1));     % + tension = sgn * sensed force along the outer-to-inner axis
+end
+
+function a = axial(v, u)
+% The constraint's sensed force at the last step: a 3-vector (force between the two frames, both world-aligned
+% here) projected on the link axis u, or a scalar signed force as it is.
+last = v(end, :);
+if numel(last) == 3
+    a = last(:)' * u(:);
+elseif numel(last) == 1
+    a = last;
+else
+    error('Unexpected sensed force of size %s', mat2str(size(v)));
+end
 end
 
 % ------------------------------------------------------------------------------------------- damper
@@ -200,7 +217,7 @@ addOutputVariables(ks, fv.ID);
 ov = outputVariables(ks);
 toMm = cellfun(@unitToMm, cellstr(string(ov.Unit)));
 tu = string(targetVariables(ks).Unit);
-ang = linspace(-7, 7, 281);
+ang = linspace(-15, 15, 301);
 if strcmp(tu, "rad"), ang = deg2rad(ang); end
 dz = zeros(size(ang)); Ld = dz;
 ids = string(ov.ID);
@@ -216,7 +233,10 @@ for i = 1:numel(ang)
 end
 close_system(mdl, 0);
 [dz, s] = sort(dz); Ld = Ld(s);
-if dz(1) > -25 || dz(end) < 25, error('Sweep does not cover -25..+25 mm of wheel travel.'); end
+if dz(1) > -25 || dz(end) < 25
+    error('Sweep covers %.3f..%.3f mm of wheel travel (needs -25..+25). Target unit %s; output units %s.', ...
+          dz(1), dz(end), tu, strjoin(cellstr(string(ov.Unit)), ' '));
+end
 trav = -25:25;
 L = interp1(dz, Ld, trav);
 end
