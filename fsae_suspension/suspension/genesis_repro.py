@@ -722,6 +722,46 @@ class GenesisManifest:
         res.start_search = start
         return res
 
+    def replay(self) -> ig.GenesisResult:
+        """The recorded result rebuilt without the search, in seconds.
+
+        Every recorded candidate is placed at its recorded coordinates (mm, from ``search_start()``) and its curves,
+        fit and solved properties are recomputed with this build; the build yields and verdicts are the recorded
+        ones, not re-sampled. ``verify()`` of a replay therefore checks the geometry and the fits against the record
+        and nothing about the yields: only ``run()`` re-samples those. Raises ValueError without recorded outputs."""
+        rec = self.recorded
+        if not rec:
+            raise ValueError("This manifest has no recorded outputs to replay: run it instead.")
+        _, tg, vol, _ = self.objects()
+        start = self.search_start()
+        cands = []
+        for c in rec.get("candidates") or []:
+            k = ig.genesis_solve(start, tg, vol, start_shift=np.asarray(c["shift_vec"], float), max_iter=0,
+                                 step_mm=self.search.step_mm)
+            k.yield_frac, k.verdict = c.get("yield_frac"), c.get("verdict") or ""
+            k.iterations, k.clamped = int(c.get("iterations", 0)), list(c.get("clamped") or [])
+            k.keepout_rejections = int(c.get("keepout_rejections", 0))
+            cands.append(k)
+        whp = rec.get("winner_hardpoints")
+        winner = None
+        if whp is not None and rec.get("winner_verdict") is not None:      # a NO_FIT records its best fit, no winner
+            for k in cands:
+                d = hp_to_dict(ig._shifted(start, vol, k.shift_vec))
+                if all(np.max(np.abs(np.asarray(d[p]) - np.asarray(whp[p]))) <= 1e-6 for p in _HP_POINTS):
+                    winner = k
+                    break
+        fits = [k for k in cands if k.ok]
+        res = ig.GenesisResult(
+            ok=bool(rec.get("ok")), reason=str(rec.get("reason") or ""), candidates=cands, winner=winner,
+            winner_hp=None if whp is None else hp_from_dict(whp),
+            best_fit=min(fits, key=lambda k: k.max_band_frac) if fits else None,
+            resilience_premium=rec.get("resilience_premium"), n_starts=int(rec.get("n_starts", 0)),
+            seed=int(self.search.seed), verify_yield=None, verify_agreement=None,
+            thresholds=self.search.thresholds(), warnings=[REPLAY_NOTE], property_bounds=vol.properties,
+            wheel_envelope=vol.wheel_envelope)
+        res.start_search = rec.get("start_search")
+        return res
+
     def summarise(self, res: ig.GenesisResult) -> dict:
         """Outputs as a dict: hardpoints in mm, fit in band fractions and yields as dimensionless fractions."""
         _, _, vol, _ = self.objects()
@@ -815,6 +855,11 @@ class GenesisManifest:
                          f"{b.get('kinematik_version')}")
         real = [d for d in diffs if not d.startswith("(note)")]
         return (not real), diffs
+
+
+#: The warning a replayed result carries, so no reader takes its yields for a fresh sample.
+REPLAY_NOTE = ("Replayed from the recorded outputs: geometry, curves and fits recomputed with this build; build "
+               "yields and verdicts are the recorded ones, not re-sampled. ▶ Run this manifest re-samples them.")
 
 
 def _start_report(r: dict) -> dict:

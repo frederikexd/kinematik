@@ -10,6 +10,12 @@
 - What was recorded for one run is dropped when another run, or the seed, is being reported, and when a declaration the analysis reads changes: a warning that had been cleared stayed in the report.
 - The seed geometry is flagged as such; the steering table names the declared tyre aligning moment.
 
+**InverseGenesis on the hosted app.**
+- ⏩ Load the recorded result: a manifest's recorded result in seconds. Every recorded candidate is placed at its recorded coordinates and its curves, fits and solved properties are recomputed with this build and checked against the record; build yields are the recorded ones, and the result says they were not re-sampled (`GenesisManifest.replay()`).
+- On the hosted app the form opens as a quick search: 1 start (the seed geometry) and N = 500 sampled builds, seconds instead of 20 minutes or more. Each random start after the first is drawn until it clears every declared wall, which was the cost: 2 starts took 220 s on front_v11_final, 1 start 5 s with the same winner. A result below 6 starts or N = 2000 says what it left out and how precise its yield is.
+- Fixed: 🧬 Generate crashed after a run (the RC-height field shadowed the report module).
+- The manifest panel no longer says a run takes a few minutes: the published ones take 20 minutes or more.
+
 **Design review.**
 - A value outside its range is red. Amber now means inside the range but within 10 % of a limit.
 - Bump steer limit 0.002 deg/mm (was 0.01), so it agrees with the 0.1 deg toe-change limit over ±25 mm: one curve could pass one and fail the other.
