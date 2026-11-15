@@ -323,15 +323,14 @@ link(mdl, b, ph.RConn(1));
 end
 
 function path = refFrame(mdl, name, F)
-% A named frame for the Kinematics Solver: a Reference Frame block, or if this release has none, the Rigid
-% Transform's own follower port.
+% The Kinematics Solver wants the full path of a frame PORT: the Rigid Transform's follower port 'F'. A Reference
+% Frame block is attached as well, so that port connects to two Simscape Multibody blocks.
 try
     h = blk(mdl, 'sm_lib/Frames and Transforms/Reference Frame', name);
     link(mdl, F, framePort(h));
-    path = getfullname(h);
 catch
-    path = [get_param(F, 'Parent') '/F'];
 end
+path = [get_param(F, 'Parent') '/F'];
 end
 
 function distance(mdl, name, a, b, d, outVar)
