@@ -3,6 +3,8 @@
 
 ## Unreleased
 
+**Judge summary: one level up the V.** After feedback from an FS design judge: the summary now shows where each target came from (design lateral acceleration from the tyre's friction, camber gain from the tyre's optimum camber and the body roll, the anti-dive floor from the ride frequency and jounce budget, each marked when it rests on a tool default), how the trade-offs were weighted (in the team's words, or 'Team to state'), and how the design got here (every run of the session and every input edit).
+
 **MathWorks' quarter-car K&C rig (Simscape Vehicle Templates), with MathWorks' own metric definitions.**
 - Everything the rig measures directly passes on both corners. Caster, KPI and trail fail on both, scrub on the rear: they are MathWorks' estimates from the steering test. KinematiK reproduces the steering test itself to 2e-7° of toe and 4e-5 mm, and MathWorks' formulas applied to KinematiK's motion give back the rig's caster, hub offsets and trail. MathWorks' trail formula appears to add the hub offset where the geometry subtracts it. The fails are kept. Runs 1 and 2 were not of these corners (the rig reloads its own corner on load); disclosed in the README.
 - Camber in steer has two definitions in use: KinematiK and Lotus print the front-view projection, MathWorks' rig measures the ISO 8855 inclination; 0.06° apart at 12° of steer. New `camber_inclination(camber, toe)` gives the inclination. Making it the default was tried and reverted: it broke the Lotus steer-camber match (0.05° → 0.77°) and the recorded designs built on the projection.

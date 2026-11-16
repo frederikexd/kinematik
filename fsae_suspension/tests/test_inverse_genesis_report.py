@@ -681,6 +681,10 @@ def test_the_judge_summary_is_built_from_the_review_with_the_teams_reasons_and_i
     assert "Wheel rate does not fall in bump: no" in pts
     md = js.build(**kw)
     assert "Front holds the rear's peak mu at 73 % bias." in md and "Team answer: Shimmed on the built car." in md
+    # one level up the V: the targets derived from the car's requirements, not left to the team to reconstruct
+    assert kw["target_chain"] and [r[0] for r in kw["target_chain"]][:3] == [
+        "Design lateral acceleration", "Camber gain", "Camber gain delivered"]
+    assert "| Camber gain |" in md
     assert "| Ackermann at the declared lock (%) | ≥ 75 | 75.27 | yes |" in md
     assert "**Where the link loads go**" in md and "| Upright arm to the lower ball joint | bending at the root |" in md
     assert "| Link weld, LF | fatigue, IIW FAT 71 |" in md and "Rod-end shank" in md and "Hub bearing" in md

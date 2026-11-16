@@ -93,6 +93,44 @@ def specification_rows(targets, kin, props):
     return rows
 
 
+def target_chain(*, track_mm, body_roll_deg, tyre_optimum_camber_deg, static_camber_deg, camber_gain_deg_per_mm,
+                 lateral_mu, mass_kg, cg_height_mm, wheelbase_mm, sprung_corner_kg, ride_hz=None, anti_pct=None,
+                 axle="front", sources=None):
+    """One level up the V: each kinematic target derived from the car's requirements (suspension.target_derivation),
+    as [(target, what it follows from, how, value)]. Angles in deg, lengths in mm, masses in kg, frequency in Hz,
+    anti in %. ``sources`` maps an input name to 'declared' or 'default', printed next to it so a judge sees which
+    requirements are the team's own."""
+    from . import target_derivation as td
+    src = sources or {}
+
+    def tag(*names):
+        d = [n for n in names if src.get(n) == "default"]
+        return f" (tool default: {', '.join(d)})" if d else ""
+    veh = td.Vehicle(mass_kg=mass_kg, cg_height_mm=cg_height_mm, wheelbase_mm=wheelbase_mm, track_mm=track_mm,
+                     sprung_corner_front_kg=sprung_corner_kg, sprung_corner_rear_kg=sprung_corner_kg)
+    tyre = td.Tire(camber_opt_deg=tyre_optimum_camber_deg, peak_mu=lateral_mu)
+    acc = td.design_accelerations(tyre)
+    z = 0.5 * track_mm * math.tan(math.radians(body_roll_deg))
+    gain = (tyre_optimum_camber_deg - body_roll_deg - static_camber_deg) / z if z else float("nan")
+    rows = [("Design lateral acceleration", "the tyre's peak friction" + tag("lateral_mu"),
+             f"{_num(td.LAT_REF_G)} g scaled by µ {_num(lateral_mu)} / {_num(td.MU_REF)}", f"{_num(acc['lateral'], 3)} g"),
+            ("Camber gain", "keep the outside tyre at its optimum camber at that acceleration"
+             + tag("tyre_optimum_camber", "body_roll_deg"),
+             f"(optimum {_num(tyre_optimum_camber_deg)}° − roll {_num(body_roll_deg)}° − static "
+             f"{_num(static_camber_deg)}°) / outside-wheel bump {_num(z, 3)} mm", f"{_num(gain)} deg/mm"),
+            ("Camber gain delivered", "the geometry", "from the kinematics", f"{_num(camber_gain_deg_per_mm)} deg/mm")]
+    if ride_hz:
+        fl = td.anti_floor_pct(veh, ride_hz, acc["combined"], acc["combined"], axle)
+        rows.append(("Minimum anti-" + ("dive" if axle == "front" else "squat"),
+                     "keep combined braking and cornering inside the jounce budget"
+                     + tag("mass_kg", "cg_height_mm", "wheelbase_mm"),
+                     f"ride frequency {_num(ride_hz, 3)} Hz, {_num(acc['combined'], 3)} g combined, "
+                     f"{_num(veh.jounce_budget_mm)} mm jounce budget", f"{_num(max(fl, 0.0), 3)} %"))
+        if anti_pct is not None:
+            rows.append(("Anti delivered", "the geometry", "contact-patch path", f"{_num(anti_pct, 3)} %"))
+    return rows
+
+
 def answer_key(question):
     """A stable widget key for a question's answer: its check name, not its position or its value, so an answer
     stays with its question when the design (and so the list or the numbers in it) changes. Text only, unitless."""
@@ -103,7 +141,8 @@ def answer_key(question):
 def reasons_payload(ss):
     """The team's written reasons and answers in session state, as a dict that can be saved and loaded back. Text only, unitless."""
     return {k: v for k, v in ss.items()
-            if isinstance(k, str) and isinstance(v, str) and k.startswith(("ig_rat_", "ig_ans_", "ig_js_team"))}
+            if isinstance(k, str) and isinstance(v, str)
+            and k.startswith(("ig_rat_", "ig_ans_", "ig_js_team", "ig_js_weighting"))}
 
 
 def open_questions(review_rows, thin, self_graded, defaults_count, inputs_count):
@@ -130,7 +169,8 @@ def open_questions(review_rows, thin, self_graded, defaults_count, inputs_count)
 
 
 def build(*, title, team, corner_name, axle, specs, decisions, rationale, evidence, tools, loads, safety,
-          questions, answers, figure_ref=None, appendix_name=None, not_checked=None, parts=None):
+          questions, answers, figure_ref=None, appendix_name=None, not_checked=None, parts=None,
+          target_chain=None, iterations=None, weighting=""):
     """The judge summary as Markdown (angles in deg, lengths in mm, factors of safety dimensionless).
 
     ``decisions`` maps a DECISIONS key to {"target", "result", "evidence"} (strings the tool fills from the
@@ -141,7 +181,10 @@ def build(*, title, team, corner_name, axle, specs, decisions, rationale, eviden
     to the team's answer. ``figure_ref`` names the curves figure for render_pdf. ``not_checked`` lists what the
     pre-validation does not cover, printed as its own section so a judge reads the limits from the team first.
     ``parts`` is [(part, check, factor of safety or None, what it needs, governing case)] for the parts the links
-    load: brackets, upright, hub bearings, and fatigue of welds and rod ends."""
+    load: brackets, upright, hub bearings, and fatigue of welds and rod ends. ``target_chain`` is [(target, what it
+    follows from, how, value)] from target_chain(): where the targets came from, one level up the V. ``iterations``
+    is [(step, what changed, outcome)]: how the design got here. ``weighting`` is the team's own account of how the
+    trade-offs were weighted against each other."""
     from .project import FIGURE_SCHEME
     head = f"{title}" + (f" · {team}" if team else "")
     L = [f"# {head}", "",
@@ -157,6 +200,12 @@ def build(*, title, team, corner_name, axle, specs, decisions, rationale, eviden
     for name, tgt, got, ok in specs:
         L.append(f"| {name} | {tgt} | {got} | {'yes' if ok else 'no' if ok is not None else '—'} |")
     L.append("")
+    L += ["### Where the targets came from", ""]
+    if target_chain:
+        L += ["| target | follows from | how | value |", "|---|---|---|---|"]
+        L += [f"| {t} | {f} | {h} | {v} |" for t, f, h, v in target_chain] + [""]
+    else:
+        L += [f"{MISSING} How each target follows from the car's requirements (one level up the V).", ""]
     if figure_ref:
         L += [f"![Camber, toe and roll-centre height over wheel travel, against the target bands]"
               f"({FIGURE_SCHEME}{figure_ref})", ""]
@@ -177,6 +226,16 @@ def build(*, title, team, corner_name, axle, specs, decisions, rationale, eviden
         if r.get("trade_off", "").strip() or d.get("trade_off"):
             L.append(f"- **Trade-off accepted:** {r.get('trade_off', '').strip() or d.get('trade_off')}")
         L.append("")
+
+    L += ["### How the trade-offs were weighted", "",
+          (weighting or "").strip() or f"{MISSING} Which requirement won where two pulled against each other, and "
+          "why (for example lap time, points per event, or driver feedback).", ""]
+    L += ["### How the design got here", ""]
+    if iterations:
+        L += ["| step | what changed | outcome |", "|---|---|---|"]
+        L += [f"| {s} | {c} | {o} |" for s, c, o in iterations] + [""]
+    else:
+        L += [f"{MISSING} The iterations: what was tried, what it showed, and what changed as a result.", ""]
 
     L += ["## 3. Use of design tools and analysis", ""] + [f"- {s}" for s in tools + evidence] + [""]
 

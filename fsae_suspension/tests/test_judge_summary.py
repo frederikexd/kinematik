@@ -34,7 +34,8 @@ def test_every_score_sheet_heading_is_there_and_a_missing_reason_is_said_not_fil
     assert "Score-sheet area B" in md
     for _key, label, question in js.DECISIONS:              # every decision asked, its question printed with the gap
         assert f"### {label}" in md and question in md
-    assert md.count(js.MISSING) == 2 * len(js.DECISIONS) + 1   # why + alternatives each, and the one answer
+    # why + alternatives each, the one answer, and the target chain, weighting and iterations not given
+    assert md.count(js.MISSING) == 2 * len(js.DECISIONS) + 1 + 3
 
 
 def test_the_teams_words_replace_the_gap_and_nothing_else_does():
@@ -42,7 +43,7 @@ def test_the_teams_words_replace_the_gap_and_nothing_else_does():
     md = js.build(**_kw(rationale=rat, answers={"Caster: 3 deg": "Shimmed on the car."}))
     assert "Tyre optimum at 1.5 g." in md and "More gain." in md and "0.07 deg short." in md
     assert "Team answer: Shimmed on the car." in md
-    assert md.count(js.MISSING) == 2 * (len(js.DECISIONS) - 1)
+    assert md.count(js.MISSING) == 2 * (len(js.DECISIONS) - 1) + 3     # + target chain, weighting, iterations
 
 
 def test_specification_rows_mark_met_by_the_bounds():
@@ -73,3 +74,36 @@ def test_an_answer_stays_with_its_question_when_the_numbers_change():
         js.answer_key("12 of 38 analysis inputs are tool defaults")
     ss = {"ig_rat_camber_why": "w", js.answer_key("Caster: 3"): "a", "ig_js_team": "T", "ig_other": "x", "k": 1}
     assert js.reasons_payload(ss) == {"ig_rat_camber_why": "w", "ig_ans_caster": "a", "ig_js_team": "T"}
+
+
+# ---- one level up the V, the iterations and the weighting (Dan Jones, FS design judge, Nov 2026) ----------------
+def _min_build(**extra):
+    from suspension import judge_summary as js
+    return js.build(title="t", team="", corner_name="c", axle="front", specs=[], decisions={}, rationale={},
+                    evidence=[], tools=[], loads=[], safety=[], questions=[], answers={}, **extra)
+
+
+def test_without_them_the_summary_asks_the_team_for_targets_iterations_and_weighting():
+    md = _min_build()
+    for head in ("### Where the targets came from", "### How the trade-offs were weighted", "### How the design got here"):
+        i = md.index(head)
+        assert "Team to state" in md[i:i + 300]
+
+
+def test_the_target_chain_derives_camber_gain_from_tyre_optimum_and_roll():
+    import math
+    from suspension import judge_summary as js
+    rows = js.target_chain(track_mm=1100, body_roll_deg=1.18, tyre_optimum_camber_deg=-1.83, static_camber_deg=-2.0,
+                           camber_gain_deg_per_mm=-0.0764, lateral_mu=1.55, mass_kg=300, cg_height_mm=280,
+                           wheelbase_mm=1550, sprung_corner_kg=60.1, ride_hz=3.1, anti_pct=1.1,
+                           sources={"tyre_optimum_camber": "default", "wheelbase_mm": "declared"})
+    z = 550 * math.tan(math.radians(1.18))
+    gain = next(r for r in rows if r[0] == "Camber gain")
+    assert gain[3] == f"{js._num((-1.83 - 1.18 + 2.0) / z)} deg/mm"
+    assert "tool default: tyre_optimum_camber" in gain[1]
+    assert [r[0] for r in rows] == ["Design lateral acceleration", "Camber gain", "Camber gain delivered",
+                                    "Minimum anti-dive", "Anti delivered"]
+    md = _min_build(target_chain=rows, iterations=[("run 1", "worst station 1.15× band", "NO_FIT")],
+                    weighting="Lap time first.")
+    assert "| Camber gain |" in md and "| run 1 | worst station 1.15× band | NO_FIT |" in md
+    assert "Lap time first." in md

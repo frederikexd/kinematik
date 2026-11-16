@@ -3578,13 +3578,36 @@ def judge_summary_inputs(ss, v, out, rows, axle, run, defaults):
     rationale = {k: {f: ss.get(f"ig_rat_{k}_{f}", "") or "" for f in ("why", "alternatives", "trade_off")}
                  for k, *_ in js.DECISIONS}
     answers = {q: ss.get(js.answer_key(q), "") or "" for q, _ in questions}
+    chain = None
+    try:
+        static = float(d["camber_deg"][i0]) if i0 is not None else float(ss.get("ig_gamma0", -2.0))
+        chain = js.target_chain(
+            track_mm=float(v[f"track_{axle}_mm"]), body_roll_deg=float(v["body_roll_deg"]),
+            tyre_optimum_camber_deg=float(v["tyre_optimum_camber"]), static_camber_deg=static,
+            camber_gain_deg_per_mm=float(d.get("camber_gain_deg_per_mm")), lateral_mu=float(v["lateral_mu"]),
+            mass_kg=float(v["mass_kg"]), cg_height_mm=float(v["cg_height_mm"]), wheelbase_mm=float(v["wheelbase_mm"]),
+            sprung_corner_kg=float(v[f"sprung_{axle}_kg"]), ride_hz=(act.get("ride_hz_static") if act.get("ok") else None),
+            anti_pct=d.get("anti_dive_pct" if axle == "front" else "anti_squat_pct"), axle=axle,
+            sources={f: ("default" if abs(float(v[f]) - float(dflt)) < 1e-12 else "declared")
+                     for _g, fields in _VEH_FIELDS for f, _l, _lo, _hi, _st, dflt in fields
+                     if f in ("lateral_mu", "tyre_optimum_camber", "body_roll_deg", "mass_kg", "cg_height_mm",
+                              "wheelbase_mm")})
+    except (KeyError, TypeError, ValueError, ZeroDivisionError):
+        chain = None
+    from suspension import rationale as _rat
+    iterations = [(r.get("declaration", "run"), f"worst station {r.get('worst station (× band)')}× band, binding "
+                   f"{r.get('binding row') or '—'}", str(r.get("verdict", "")))
+                  for r in (ss.get("ig_log") or [])]
+    iterations += [("input edit", f"{c['label']}: {c['from']} → {c['to']}", "")
+                   for c in _rat.changes_for(ss, "genesis")]
     return dict(title="Suspension design summary", team=str(ss.get("ig_js_team", "") or ""),
                 corner_name=man.name if man is not None else "seed geometry", axle=axle, specs=specs,
                 decisions=decisions, rationale=rationale, evidence=evidence, tools=tools, loads=loads,
                 safety=safety, questions=questions, answers=answers, not_checked=not_covered(rows, parts),
                 parts=parts_rows,
                 figure_ref="judge_curves" if fig else None,
-                appendix_name="the InverseGenesis feature report"), fig
+                appendix_name="the InverseGenesis feature report",
+                target_chain=chain, iterations=iterations, weighting=str(ss.get("ig_js_weighting", "") or "")), fig
 
 
 def not_covered(rows, parts=None):
@@ -3644,6 +3667,10 @@ def _judge_summary_panel(st, ss, v, out, rows, axle, run, defaults):
             c[0].text_area("Why", key=f"ig_rat_{key}_why", height=90)
             c[1].text_area("Alternatives considered", key=f"ig_rat_{key}_alternatives", height=90)
             c[2].text_area("Trade-off accepted", key=f"ig_rat_{key}_trade_off", height=90)
+        st.markdown("**How the trade-offs were weighted**")
+        st.caption("Which requirement won where two pulled against each other, and why: lap time, points per event, "
+                   "driver feedback. Judges ask this after the targets.")
+        st.text_area("Weighting", key="ig_js_weighting", height=90)
         kw, fig = judge_summary_inputs(ss, v, out, rows, axle, run, defaults)
         if kw["questions"]:
             st.markdown("**Questions a judge will ask**")
