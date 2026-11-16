@@ -2566,7 +2566,7 @@ def _sec_parts(st, pd, ss, v, corner, axle, sc, brk):
         roll_share_front=v["roll_share_front"], aligning_torque_Nm=v["aligning_outer_Nm"])
     loads = cp.upright_loads(corner, cases)
     _table(st, pd, [{"load case": r["load_case"], "joint": r["joint"], "Fx (N)": r["F"][0], "Fy (N)": r["F"][1],
-                     "Fz (N)": r["F"][2], "|F| (N)": float(np.linalg.norm(r["F"]))} for r in loads],
+                     "Fz (N)": r["F"][2], "magnitude (N)": float(np.linalg.norm(r["F"]))} for r in loads],
            title="Upright joint loads, every load case (N, corner axes; the FEA load set)")
     resid = max((r["residual_N"] for r in loads), default=0.0)
     arms = cp.upright_arms(loads, corner.wheel_center, val["ig_parts_upright_yield"],
