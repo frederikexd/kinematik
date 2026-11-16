@@ -137,9 +137,10 @@ def _f(v) -> str:
 
 
 def command_file(name: str, w: dict | None = None, sha: str | None = None, extra_markers=(),
-                 extra_measures=()) -> str:
-    """The kinematic command file. w/sha default to the manifest's; extra_markers are (part, name, location) and
-    extra_measures (name, function) with {M} for the model path, both added after the standard ones."""
+                 extra_measures=(), extra_parts=(), extra_constraints=()) -> str:
+    """The kinematic command file. w/sha default to the manifest's; extra_markers are (part, name, location[,
+    orientation]), extra_measures (name, function) and extra_constraints (command) with {M} for the model path,
+    extra_parts part names; all added after the standard ones. Lengths in mm, angles in deg."""
     if w is None:
         w, sha = _winner(name)
     P = {k: np.array(w[k], float) for k in POINTS}
@@ -167,7 +168,7 @@ def command_file(name: str, w: dict | None = None, sha: str | None = None, extra
          "drives wheel-centre height through an inplane primitive, leaving the wheel centre free in x and y.",
          "default units length=mm mass=kg force=newton time=second angle=degrees",
          f"model create model_name={m}"]
-    for part in ("lca", "uca", "upright", "tierod", "jack"):
+    for part in ("lca", "uca", "upright", "tierod", "jack", *extra_parts):
         L.append(f"part create rigid_body name_and_position part_name={M}.{part} "
                  "location=0.0, 0.0, 0.0 orientation=0.0, 0.0, 0.0")
 
@@ -182,8 +183,8 @@ def command_file(name: str, w: dict | None = None, sha: str | None = None, extra
     mk("upright", "u_wc", P["wheel_center"]); mk("upright", "u_tip", tip)                                      # noqa: E702
     mk("ground", "g_wc0", P["wheel_center"]); mk("jack", "j_pad", P["wheel_center"])                           # noqa: E702
     mk("jack", "j_slide", P["wheel_center"]); mk("ground", "g_jack", P["wheel_center"])                        # noqa: E702
-    for part, mname, loc in extra_markers:
-        mk(part, mname, loc)
+    for part, mname, loc, *ori in extra_markers:
+        mk(part, mname, loc, *ori)
     L += [f"constraint create joint revolute joint_name={M}.lca_rev i_marker_name={M}.lca.lca_piv j_marker_name={M}.ground.g_lca",
           f"constraint create joint revolute joint_name={M}.uca_rev i_marker_name={M}.uca.uca_piv j_marker_name={M}.ground.g_uca",
           f"constraint create joint spherical joint_name={M}.lbj i_marker_name={M}.upright.u_lbj j_marker_name={M}.lca.lca_out",
@@ -196,6 +197,7 @@ def command_file(name: str, w: dict | None = None, sha: str | None = None, extra
           f"j_marker_name={M}.jack.j_pad",
           f"constraint create motion_generator motion_name={M}.jack_motion joint_name={M}.jack_trans "
           'time_derivative=displacement function="50.0*time - 25.0"']
+    L += [c.format(M=M) for c in extra_constraints]
     T, W, U, G = f"{M}.upright.u_tip", f"{M}.upright.u_wc", f"{M}.upright.u_ubj", f"{M}.upright.u_lbj"
     for mname, fn in (("travel", f"DZ({W},{M}.ground.g_wc0)"),
                       ("camber", f"-RTOD*ATAN(DZ({T},{W})/DY({T},{W}))"),
