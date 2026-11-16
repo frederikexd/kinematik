@@ -33,3 +33,9 @@ def test_compare_waits_for_the_adams_run():
     for n in agb.CORNERS:
         if not (agb.BENCH / f"{n}_geo__travel.tab").exists():
             assert agb.compare(n) is None
+
+
+@pytest.mark.parametrize("name", agb.CORNERS)
+def test_project_chrono_agrees_within_the_limits_set_for_adams(name):
+    r = agb.compare(name, "chrono")
+    assert r is not None and r["passed"], r

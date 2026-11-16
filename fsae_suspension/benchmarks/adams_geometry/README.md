@@ -13,6 +13,7 @@ and length, 0.1 percentage point on the anti-geometry at ride height.
    Each builds the model, runs the kinematic sweep and writes `<corner>_geo__<measure>.tab` for travel, cp_dx, cp_dz,
    scrub, trail and damper_len in Adams' working directory.
 2. Copy the 12 `.tab` files here, unedited.
-3. `python scripts/adams_geometry_benchmark.py` prints the worst difference per measure and PASS/FAIL.
+3. `python scripts/adams_geometry_benchmark.py` prints the worst difference per measure and PASS/FAIL, for Adams and
+   for Project Chrono (`chrono_geometry.csv`, written by `scripts/chrono_geometry_benchmark.py`, already run).
 
 Regenerate the command files with `python scripts/adams_geometry_benchmark.py --write`.

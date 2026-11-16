@@ -152,13 +152,29 @@ def adams_curves(name: str) -> dict[str, np.ndarray] | None:
     return out
 
 
-def compare(name: str) -> dict | None:
-    adams = adams_curves(name)
+def chrono_curves(name: str) -> dict[str, np.ndarray] | None:
+    """Project Chrono's side (scripts/chrono_geometry_benchmark.py, chrono_geometry.csv) at TRAVEL; None if not run."""
+    f = BENCH / "chrono_geometry.csv"
+    if not f.exists():
+        return None
+    rows = [ln.split(",") for ln in f.read_text().splitlines()[1:] if ln.startswith(name + ",")]
+    if not rows:
+        return None
+    a = np.array([[float(x) for x in r[1:]] for r in rows])
+    if not np.allclose(a[:, 0], TRAVEL):
+        raise ValueError(f"chrono_geometry.csv does not hold {name} at -25..+25 mm in 1 mm steps")
+    out = dict(zip(("cp_dx", "cp_dz", "scrub", "trail", "damper_len"), a[:, 1:].T))
+    out["anti_pct"] = np.array([anti_from_path(out["cp_dx"], out["cp_dz"])])
+    return out
+
+
+def compare(name: str, tool: str = "adams") -> dict | None:
+    adams = adams_curves(name) if tool == "adams" else chrono_curves(name)
     if adams is None:
         return None
     kk = kinematik_curves(name)
     worst = {q: float(np.max(np.abs(adams[q] - kk[q]))) for q in LIMITS}
-    return {"corner": name, "worst": worst, "passed": all(worst[q] <= LIMITS[q] for q in LIMITS)}
+    return {"corner": name, "tool": tool, "worst": worst, "passed": all(worst[q] <= LIMITS[q] for q in LIMITS)}
 
 
 def main(argv: list[str]) -> int:
@@ -170,16 +186,19 @@ def main(argv: list[str]) -> int:
         return 0
     ok, ran = True, 0
     qs = list(LIMITS)
-    print(f"{'corner':20s}" + "".join(f"{q + ' (' + UNITS[q] + ')':>18s}" for q in qs))
-    print(f"{'limit':20s}" + "".join(f"{LIMITS[q]:18.3f}" for q in qs))
-    for n in CORNERS:
-        r = compare(n)
-        if r is None:
-            print(f"{n:20s}  not run in Adams yet")
-            continue
-        ran += 1
-        ok &= r["passed"]
-        print(f"{n:20s}" + "".join(f"{r['worst'][q]:18.6f}" for q in qs) + ("  PASS" if r["passed"] else "  FAIL"))
+    print(f"{'corner':28s}" + "".join(f"{q + ' (' + UNITS[q] + ')':>18s}" for q in qs))
+    print(f"{'limit':28s}" + "".join(f"{LIMITS[q]:18.3f}" for q in qs))
+    for tool in ("adams", "chrono"):
+        for n in CORNERS:
+            r = compare(n, tool)
+            label = f"{n} {tool}"
+            if r is None:
+                print(f"{label:28s}  not run yet")
+                continue
+            ran += 1
+            ok &= r["passed"]
+            print(f"{label:28s}" + "".join(f"{r['worst'][q]:18.6f}" for q in qs)
+                  + ("  PASS" if r["passed"] else "  FAIL"))
     return 0 if ok and ran else (1 if ran else 0)
 
 
