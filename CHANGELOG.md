@@ -5,6 +5,7 @@
 
 **Benchmarks on geometry nobody chose, and on another tool's definitions.**
 - 500 random corners against Project Chrono: every measure within 0.000025° and 0.00013 mm.
+- Fixed, found by that benchmark: the rocker solve failed where a sweep crossed the static rocker angle (a ~1e-17 rad seed made MINPACK's relative finite-difference step noise), so some valid corners showed as unsolvable in the damper-length and motion-ratio sweeps. No wrong number was ever printed; a failed solve returned "not solved" or NaN.
 - Two published Lotus SHARK studies: camber and toe pass; caster, KPI, damper ratio and one paper's +30 mm values fail, kept as fails. Chrono solves the published hardpoints as KinematiK does, so the misses are rows where the papers' tables don't follow from their own hardpoints.
 
 **Geometry and steering benchmarks: MATLAB Simscape Multibody as a third tool.**

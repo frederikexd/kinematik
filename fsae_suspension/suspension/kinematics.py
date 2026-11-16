@@ -660,11 +660,14 @@ class SuspensionKinematics:
             rp = self._rotate_about_axis(rp0, theta)
             return np.linalg.norm(rp - _vec(pushrod_outer)) - self.L_pushrod
 
+        # Solved for the offset from the seed, starting at exactly 0: MINPACK's finite-difference step is relative to
+        # the variable (and absolute only at exactly 0), so a warm seed of ~1e-17 rad, where a sweep crosses the static
+        # rocker angle, gave a ~1e-25 rad step, a noise Jacobian, and a failed solve.
         # pragma: no mutate start (solver settings: the solve converges well inside them)
-        sol = least_squares(lambda t: [resid(t[0])], [seed],
+        sol = least_squares(lambda d: [resid(seed + d[0])], [0.0],
                             method="lm", max_nfev=200, xtol=1e-12, ftol=1e-12)
         # pragma: no mutate end
-        return float(sol.x[0]), float(abs(sol.fun[0]))
+        return float(seed + sol.x[0]), float(abs(sol.fun[0]))
 
     def spring_length_at(self, state: CornerState, seed=0.0):
         """

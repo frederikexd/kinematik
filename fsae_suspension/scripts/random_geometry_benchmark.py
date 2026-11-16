@@ -105,7 +105,7 @@ def kinematik_curves(w):
 def draw(n):
     rng = np.random.default_rng(SEED)
     OUT.mkdir(parents=True, exist_ok=True)
-    corners, curves, rejected = [], [], 0
+    corners, curves, rejected, bad = [], [], 0, []
     i = 0
     while len(corners) < n:
         base = _base(BASES[i % len(BASES)])
@@ -117,6 +117,7 @@ def draw(n):
         c = kinematik_curves(w)
         if c is None:
             rejected += 1
+            bad.append(w)
             continue
         w["_base"] = BASES[(i - 1) % len(BASES)]
         corners.append(w)
@@ -124,6 +125,7 @@ def draw(n):
     (OUT / "corners.json").write_text(json.dumps(corners))
     (OUT / "kinematik.json").write_text(json.dumps(curves))
     (OUT / "rejected.json").write_text(json.dumps(rejected))
+    (OUT / "rejected_corners.json").write_text(json.dumps(bad))      # check these in Chrono before calling it a pass
     print(f"{n} corners drawn ({rejected} rejected: did not solve over ±25 mm in KinematiK)")
 
 

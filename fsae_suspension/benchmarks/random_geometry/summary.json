@@ -12,18 +12,18 @@
   "trail": 2.3820016572528857e-05,
   "cp_dx": 3.93096894057976e-05,
   "cp_dz": 0.00012156292599740937,
-  "damper_len": 0.00012480024906835752
+  "damper_len": 0.00012480024909677923
  },
  "worst_corner": {
-  "camber": 433,
-  "toe_in": 433,
-  "caster": 325,
-  "kpi": 433,
-  "scrub": 433,
-  "trail": 325,
-  "cp_dx": 433,
-  "cp_dz": 433,
-  "damper_len": 420
+  "camber": 443,
+  "toe_in": 443,
+  "caster": 333,
+  "kpi": 443,
+  "scrub": 443,
+  "trail": 333,
+  "cp_dx": 443,
+  "cp_dz": 443,
+  "damper_len": 429
  },
  "passed": true,
  "seed": 20261116,
@@ -56,5 +56,5 @@
   -25,
   25
  ],
- "kinematik_rejected": 12
+ "kinematik_rejected": 0
 }

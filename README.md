@@ -32,7 +32,7 @@ The suspension kinematics solver has been checked against three established tool
 | Applied Racing Dynamics | Front and rear corners, static and ±20 mm | Static caster, KPI, scrub and motion ratio to ARD's display precision; camber change within 0.014°; larger differences traced to definitions |
 | Independent rigid-body solve | Three corners | Camber and toe within 1e-12° |
 | Two more published Lotus SHARK studies | Two FSAE front corners from other teams | Camber within 0.003° and toe within 0.007° (**pass**); caster, KPI, damper ratio and one paper's +30 mm values **miss**. Chrono solves the published hardpoints exactly as KinematiK does, so those rows don't follow from the papers' own hardpoints ([details](fsae_suspension/benchmarks/published_lotus/README.md)) |
-| Project Chrono, random corners | 500 corners, every pickup moved up to ±20 mm | All measures within 0.000025° and 0.00013 mm |
+| Project Chrono, random corners | 500 corners, every pickup moved up to ±20 mm | All measures within 0.000025° and 0.00013 mm. The first run found a rocker-solve bug in KinematiK (fixed) |
 
 These check the kinematics solver, not a built car; what has not been checked yet is listed in [VALIDATION.md](VALIDATION.md).
 

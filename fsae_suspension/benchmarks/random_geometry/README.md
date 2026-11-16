@@ -16,9 +16,17 @@ wheel-centre travel, against the limits set for Adams View before any run (0.005
 Pass on all 500. Worst: angles 0.000025°, lengths 0.00013 mm. `summary.json` is the record; the curves (about 10 MB)
 are regenerated from the seed.
 
+## A bug it found
+
+The first run drew 512 corners: 12 did not solve over ±25 mm in KinematiK and were set aside. Chrono solved all 12. The
+cause was in KinematiK: where a warm-started sweep crosses the static rocker angle, the rocker solve was seeded with
+about 1e-17 rad, and MINPACK's finite-difference step is relative to the variable, so the Jacobian was noise and the solve
+failed. It never printed a wrong number (a failed solve returns "not solved" or NaN), but valid corners could show as
+unsolvable. The solve now starts from an offset of exactly 0 about the seed. On those 12 corners KinematiK now agrees with
+Chrono within 0.00007 mm, and `tests/test_rocker_seed_regression.py` pins one of them
+(`rocker_seed_regression.json`). The rerun above drew 500 corners with none set aside.
+
 ## What it does not show
 
 Both sides use KinematiK's definitions from the same hardpoints, so this finds solver and implementation errors on
-geometries nobody chose, not a wrong definition (see benchmarks/published_lotus for another tool's definitions). Of the
-512 corners drawn, 12 did not solve over ±25 mm in KinematiK and were replaced; whether Chrono solves them has not been
-checked yet.
+geometries nobody chose, not a wrong definition (see benchmarks/published_lotus for another tool's definitions).
