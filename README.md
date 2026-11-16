@@ -31,6 +31,8 @@ The suspension kinematics solver has been checked against three established tool
 | Lotus Suspension Analysis | Two published corners (Arévalo et al., 2018) | Camber in bump 0.009°, toe in bump 0.0003°, camber in roll 0.008° (Lotus values read from the published figures) |
 | Applied Racing Dynamics | Front and rear corners, static and ±20 mm | Static caster, KPI, scrub and motion ratio to ARD's display precision; camber change within 0.014°; larger differences traced to definitions |
 | Independent rigid-body solve | Three corners | Camber and toe within 1e-12° |
+| Two more published Lotus SHARK studies | Two FSAE front corners from other teams | Camber within 0.003° and toe within 0.007° (**pass**); caster, KPI, damper ratio and one paper's +30 mm values **miss**. Chrono solves the published hardpoints exactly as KinematiK does, so those rows don't follow from the papers' own hardpoints ([details](fsae_suspension/benchmarks/published_lotus/README.md)) |
+| Project Chrono, random corners | 500 corners, every pickup moved up to ±20 mm | All measures within 0.000025° and 0.00013 mm |
 
 These check the kinematics solver, not a built car; what has not been checked yet is listed in [VALIDATION.md](VALIDATION.md).
 
@@ -130,7 +132,8 @@ Suspension benchmarks:
 ```bash
 pytest tests/test_adams_view_benchmark.py tests/test_lotus_benchmark.py tests/test_invariants_property.py \
        tests/test_link_load_benchmark.py tests/test_direct_acting_benchmark.py tests/test_direct_acting.py \
-       tests/test_adams_geometry_benchmark.py tests/test_adams_steering_benchmark.py
+       tests/test_adams_geometry_benchmark.py tests/test_adams_steering_benchmark.py \
+       tests/test_published_lotus_benchmark.py tests/test_random_geometry_benchmark.py
 python scripts/verify_run.py manifests/rear_v11_final.recorded.genesis.json   # re-solves a final corner, about 4 min
 ```
 

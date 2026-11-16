@@ -1,0 +1,60 @@
+{
+ "corners": 500,
+ "compared": 500,
+ "chrono_unsolved": [],
+ "failed": [],
+ "worst": {
+  "camber": 1.7521323316671555e-05,
+  "toe_in": 2.474618474379575e-05,
+  "caster": 2.2028613324565072e-05,
+  "kpi": 2.4550901560616012e-05,
+  "scrub": 1.3974151190865314e-05,
+  "trail": 2.3820016572528857e-05,
+  "cp_dx": 3.93096894057976e-05,
+  "cp_dz": 0.00012156292599740937,
+  "damper_len": 0.00012480024906835752
+ },
+ "worst_corner": {
+  "camber": 433,
+  "toe_in": 433,
+  "caster": 325,
+  "kpi": 433,
+  "scrub": 433,
+  "trail": 325,
+  "cp_dx": 433,
+  "cp_dz": 433,
+  "damper_len": 420
+ },
+ "passed": true,
+ "seed": 20261116,
+ "limits": {
+  "camber": 0.005,
+  "toe_in": 0.005,
+  "caster": 0.005,
+  "kpi": 0.005,
+  "scrub": 0.05,
+  "trail": 0.05,
+  "cp_dx": 0.05,
+  "cp_dz": 0.05,
+  "damper_len": 0.05
+ },
+ "spread_mm": {
+  "upper_front_inner": 20,
+  "upper_rear_inner": 20,
+  "lower_front_inner": 20,
+  "lower_rear_inner": 20,
+  "upper_outer": 15,
+  "lower_outer": 15,
+  "tie_rod_inner": 15,
+  "tie_rod_outer": 15,
+  "pushrod_outer": 10,
+  "rocker_pushrod": 10,
+  "rocker_spring": 10,
+  "spring_inner": 10
+ },
+ "travel_mm": [
+  -25,
+  25
+ ],
+ "kinematik_rejected": 12
+}

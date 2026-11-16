@@ -3,6 +3,10 @@
 
 ## Unreleased
 
+**Benchmarks on geometry nobody chose, and on another tool's definitions.**
+- 500 random corners against Project Chrono: every measure within 0.000025° and 0.00013 mm.
+- Two published Lotus SHARK studies: camber and toe pass; caster, KPI, damper ratio and one paper's +30 mm values fail, kept as fails. Chrono solves the published hardpoints as KinematiK does, so the misses are rows where the papers' tables don't follow from their own hardpoints.
+
 **Geometry and steering benchmarks: MATLAB Simscape Multibody as a third tool.**
 - `kk_bench_simscape(root, 'geometry')` builds both corners in Simscape Multibody (KinematicsSolver) and writes the contact-patch path, scrub, trail and damper length over ±25 mm and toe and camber over ±30 mm of rack. R2025b passes every limit set before the run: paths and lengths within 3e-5 mm, toe and camber within 2e-6°, lock and Ackermann as Chrono.
 

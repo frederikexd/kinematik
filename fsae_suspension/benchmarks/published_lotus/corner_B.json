@@ -1,0 +1,85 @@
+{
+ "upper_front_inner": [
+  -150.0,
+  242.2,
+  280.8
+ ],
+ "upper_rear_inner": [
+  150.0,
+  242.2,
+  280.8
+ ],
+ "lower_front_inner": [
+  -150.0,
+  213.8,
+  145.8
+ ],
+ "lower_rear_inner": [
+  150.0,
+  213.8,
+  145.8
+ ],
+ "upper_outer": [
+  5.79,
+  528.22,
+  311.4
+ ],
+ "lower_outer": [
+  -5.79,
+  539.8,
+  145.8
+ ],
+ "tie_rod_inner": [
+  80.0,
+  208.52,
+  178.5
+ ],
+ "tie_rod_outer": [
+  74.69,
+  508.85,
+  178.5
+ ],
+ "wheel_center": [
+  0.0,
+  592.02,
+  228.46
+ ],
+ "contact_patch": [
+  0.0,
+  592.02,
+  0.0
+ ],
+ "pushrod_outer": [
+  -5.0,
+  408.0,
+  120.0
+ ],
+ "rocker_pivot": [
+  -5.0,
+  360.0,
+  330.0
+ ],
+ "rocker_axis": [
+  1.0,
+  0.0,
+  0.0
+ ],
+ "rocker_pushrod": [
+  -5.0,
+  402.0,
+  308.0
+ ],
+ "rocker_spring": [
+  -5.0,
+  335.0,
+  360.0
+ ],
+ "spring_inner": [
+  -5.0,
+  196.7,
+  244.8
+ ],
+ "pushrod_attach": "lower",
+ "static_camber": -1.999835281019048,
+ "static_toe": 0.0
+}
