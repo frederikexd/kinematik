@@ -9,7 +9,6 @@ to the variable, so the Jacobian was noise. Project Chrono solved all 12; Kinema
 import json
 from pathlib import Path
 
-import numpy as np
 import pytest
 
 from suspension.genesis_repro import hp_from_dict

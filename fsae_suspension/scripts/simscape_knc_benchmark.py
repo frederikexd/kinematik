@@ -219,7 +219,7 @@ def _steered(name, racks_mm):
     return np.array(rows)
 
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def _rig_steer(name):
     """The rig's steering test (<corner>_steer.csv) and KinematiK at the same rack samples; None if not run."""
     f = BENCH / f"{name}_steer.csv"
