@@ -526,13 +526,16 @@ def steering_torque(caster_deg: float, tire_radius_mm: float,
                     fz_outer_N: float, fz_inner_N: float, mu: float,
                     mz_outer_Nm: float, mz_inner_Nm: float = 0.0,
                     ratios=(4.0, 5.0, 6.0, 8.0),
-                    target_Nm: float = 10.0) -> dict:
+                    target_Nm: float = 10.0, trail_mm: float | None = None) -> dict:
     """Mechanical trail (mm), kingpin torque per wheel (N·m), road-wheel total
     (N·m) and steering-wheel torque (N·m) per steering ratio (dimensionless).
 
-    trail = R · tan(caster); per wheel T = µ·Fz·trail + Mz.
+    Per wheel T = µ·Fz·trail + Mz. ``trail_mm`` is the corner's mechanical trail (mm), where its kingpin axis
+    meets the road (inverse_genesis.mechanical_trail_mm); without it, trail = R · tan(caster), which holds only
+    when the kingpin axis passes through the wheel centre in side view.
     """
-    trail = float(tire_radius_mm) * math.tan(math.radians(caster_deg))
+    trail = float(trail_mm) if trail_mm is not None and math.isfinite(trail_mm) else \
+        float(tire_radius_mm) * math.tan(math.radians(caster_deg))
     fy_o, fy_i = mu * fz_outer_N, mu * fz_inner_N
     t_o = fy_o * trail / 1000.0 + mz_outer_Nm
     t_i = fy_i * trail / 1000.0 + mz_inner_Nm

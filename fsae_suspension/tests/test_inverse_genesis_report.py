@@ -461,7 +461,11 @@ def test_a_judge_can_see_where_every_input_came_from_and_what_the_result_does_no
     steer = t["Steering effort at the design lateral acceleration"]
     with_mz, trail_only = float(_cell(steer, "ratio needed for the target")), float(
         _cell(steer, "ratio needed from trail alone, no aligning moment"))
-    assert with_mz == pytest.approx(8.79) and trail_only == pytest.approx((87.895 - 56.0) / 10.0, abs=1e-3)
+    trail = float(_cell(steer, "mechanical trail, kingpin axis at the road"))
+    assert trail == pytest.approx(12.667, abs=1e-3)             # kingpin meets the road ahead of the patch, not R·tan(caster)
+    fy = float(_cell(steer, "outer Fy")) + 1.55 * float(_cell(steer, "inner front Fz"))
+    assert trail_only == pytest.approx(fy * trail / 1000.0 / 10.0, abs=2e-3)
+    assert with_mz == pytest.approx(trail_only + 56.0 / 10.0, abs=2e-3)
     points = [r[0] for r in next(x for k, x in t.items() if k.startswith("Hardpoints (mm): x rearward"))["rows"]]
     assert "rocker_axis (unit vector, not mm)" in points and "rocker_axis" not in points
     assert all(len(x) <= 402 for x in v)                       # nothing was cut by the report's banner limit
@@ -540,8 +544,11 @@ def test_the_report_closes_the_loops_a_judge_would_try_to_close(tab):
     steer = t["Steering effort at the design lateral acceleration"]
     ratio = float(_cell(steer, "steering ratio of the declared rack, at lock"))
     assert ratio == pytest.approx(118.9 / 25.6, abs=2e-3)
-    assert float(_cell(steer, "steering-wheel torque at the rack's ratio, trail alone")) == pytest.approx(31.895 / ratio, abs=5e-3)
-    assert float(_cell(steer, "steering-wheel torque at the rack's ratio, with the declared aligning moments")) == pytest.approx(87.895 / ratio, abs=5e-3)
+    trail_total = (float(_cell(steer, "outer Fy")) + 1.55 * float(_cell(steer, "inner front Fz"))) \
+        * float(_cell(steer, "mechanical trail, kingpin axis at the road")) / 1000.0    # N·m, trail at the road
+    assert float(_cell(steer, "steering-wheel torque at the rack's ratio, trail alone")) == pytest.approx(trail_total / ratio, abs=5e-3)
+    assert float(_cell(steer, "steering-wheel torque at the rack's ratio, with the declared aligning moments")) == \
+        pytest.approx((trail_total + 56.0) / ratio, abs=5e-3)
     assert any("its own structural load cases (4, such as braking 1.8 g) and pickup flexibility" in x for x in v)
     assert any(x.startswith("- ⚠️ Scope: one corner, solved as rigid links") for x in v)
     assert any("The curves are reached inside every declared wall, and the geometry is RESILIENT" in x for x in v)

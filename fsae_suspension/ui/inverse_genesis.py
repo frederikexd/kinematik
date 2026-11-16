@@ -2374,15 +2374,17 @@ def _corner_pair(ss, corner, axle):
 def _sec_steering(st, pd, v, front_hp, rear_hp, key, rack_ratio=None):
     from suspension import genesis_analysis as ga
     from suspension.kinematics import SuspensionKinematics
-    st.caption("Kingpin torque from mechanical trail and aligning torque, "
+    st.caption("Kingpin torque from mechanical trail (where the kingpin axis meets the road) and aligning torque, "
                "with the corner loads taken from the declared vehicle at the "
                "design lateral acceleration.")
     try:
         car = _declared_car(v, front_hp, rear_hp)
         loads, _ = car.vehicle().lateral_load_transfer(v["lateral_g"])
         fz_in, fz_out = float(loads.fl), float(loads.fr)
-        caster = float(SuspensionKinematics(front_hp)
-                       .solve_at_travel(0.0).caster)
+        from suspension import inverse_genesis as ig
+        st0 = SuspensionKinematics(front_hp).solve_at_travel(0.0)
+        caster = float(st0.caster)
+        trail = float(ig.mechanical_trail_mm(st0))   # where the kingpin axis meets the road, not R·tan(caster)
     except Exception as e:                    # noqa: BLE001
         st.error(f"Vehicle model failed: {e}")
         return
@@ -2390,11 +2392,11 @@ def _sec_steering(st, pd, v, front_hp, rear_hp, key, rack_ratio=None):
     s = ga.steering_torque(caster, v["tire_radius_mm"], fz_out, fz_in,
                            v["lateral_mu"], v["aligning_outer_Nm"],
                            v["aligning_inner_Nm"], ratios,
-                           v["steering_target_Nm"])
+                           v["steering_target_Nm"], trail_mm=trail)
     _table(st, pd, [("caster, from the front corner (deg)", caster),
                     ("outer front Fz (N)", fz_out),
                     ("inner front Fz (N)", fz_in),
-                    ("mechanical trail (mm)", s["trail_mm"]),
+                    ("mechanical trail, kingpin axis at the road (mm)", s["trail_mm"]),
                     ("outer Fy (N)", s["fy_outer_N"]),
                     ("outer trail torque (N·m)", s["trail_torque_outer_Nm"]),
                     ("outer tyre aligning moment, declared (N·m)", v["aligning_outer_Nm"]),

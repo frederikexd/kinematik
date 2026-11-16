@@ -3,6 +3,9 @@
 
 ## Unreleased
 
+**Mechanical trail is where the kingpin axis meets the road.**
+- The review's steering-effort section took trail as tyre radius × tan(caster), which holds only when the kingpin axis passes through the wheel centre in side view. It now uses the corner's own kingpin axis on the road plane (the value the search bounds already used, and the one Adams View and Project Chrono now benchmark). On front_v11_final: 12.67 mm, not 14.57; the ratio the torque target needs falls from 8.79 to 8.37.
+
 **Judge summary: the design argued the way the Design Event scores it.**
 - A new "Judge summary" panel under the InverseGenesis review builds a separate document structured to the FS design judging score sheet (area B: specifications, use of design tools and analysis, load cases and load path, safety), plus "why this design, and from what alternatives".
 - For each decision (camber, roll centre, bump steer, anti-dive, steering, ride, loads, safety) it prints the target, the result and the evidence from the analysis, and the team's own reason, alternatives and trade-off. A reason the team has not written prints as "Team to state" with the question a judge will ask; the tool never writes one.
