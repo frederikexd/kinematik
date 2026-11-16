@@ -963,7 +963,7 @@ def _results_panel(st, pd, np, ss, run):
         st.caption("Re-runs these exact declarations once per shop class; "
                    "each row is ranked independently.")
         n6 = int(st.number_input("Sampled builds N per class", 100, 50000,
-                                 int(man.search.n_yield), 100,
+                                 max(100, int(man.search.n_yield)), 100,
                                  key="ig_t6_n"))
         if st.button("Run all shop classes", key="ig_t6_go"):
             import copy
