@@ -33,6 +33,7 @@ The suspension kinematics solver has been checked against three established tool
 | Independent rigid-body solve | Three corners | Camber and toe within 1e-12° |
 | Two more published Lotus SHARK studies | Two FSAE front corners from other teams | Camber within 0.003° and toe within 0.007° (**pass**); caster, KPI, damper ratio and one paper's +30 mm values **miss**. Chrono solves the published hardpoints exactly as KinematiK does, so those rows don't follow from the papers' own hardpoints ([details](fsae_suspension/benchmarks/published_lotus/README.md)) |
 | Project Chrono, random corners | 500 corners, every pickup moved up to ±20 mm | All measures within 0.000025° and 0.00013 mm. The first run found a rocker-solve bug in KinematiK (fixed) |
+| MathWorks' K&C rig (Simscape Vehicle Templates), MathWorks' own metrics | front_v11_final, rear_v11_final | Everything the rig measures directly passes: bump steer and camber, roll steer and camber, toe and camber curves, damper ratio. Caster, KPI and trail **miss** (and rear scrub): MathWorks estimates them from the steering test, and its formulas applied to KinematiK's motion give back its numbers. It showed that tools report camber in steer two ways (Lotus: front-view projection; MathWorks: ISO inclination, 0.06° apart at 12° of steer); KinematiK now gives both ([details](fsae_suspension/benchmarks/knc_simscape/README.md)) |
 
 These check the kinematics solver, not a built car; what has not been checked yet is listed in [VALIDATION.md](VALIDATION.md).
 

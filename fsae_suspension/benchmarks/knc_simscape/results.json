@@ -1,0 +1,238 @@
+{
+ "front_v11_final": {
+  "passed": false,
+  "rows": {
+   "Toe": {
+    "mathworks": 3.55116386113388e-14,
+    "kinematik": -0.0,
+    "diff": 3.55116386113388e-14,
+    "limit": 0.01,
+    "passed": true
+   },
+   "Camber": {
+    "mathworks": -2.49999999999999,
+    "kinematik": -2.5,
+    "diff": 1.021405182655144e-14,
+    "limit": 0.01,
+    "passed": true
+   },
+   "Caster": {
+    "mathworks": 3.57382983302871,
+    "kinematik": 3.6555953024940404,
+    "diff": 0.08176546946533048,
+    "limit": 0.05,
+    "passed": false
+   },
+   "KPI": {
+    "mathworks": 7.4080502206513,
+    "kinematik": 7.312986245004242,
+    "diff": 0.09506397564705793,
+    "limit": 0.05,
+    "passed": false
+   },
+   "Caster Trail": {
+    "mathworks": 16.3702724822739,
+    "kinematik": 13.00080555555556,
+    "diff": 3.3694669267183404,
+    "limit": 0.5,
+    "passed": false
+   },
+   "Scrub Radius": {
+    "mathworks": -0.168608812733314,
+    "kinematik": 0.3288166666666257,
+    "diff": 0.49742547939993964,
+    "limit": 0.5,
+    "passed": true,
+    "kinematik_printed": 6.0,
+    "definition_offset_mm": 5.0
+   },
+   "Bump Steer": {
+    "mathworks": -0.299629297057631,
+    "kinematik": -0.2996178086157546,
+    "diff": 1.148844187642828e-05,
+    "limit": 0.05,
+    "passed": true
+   },
+   "Bump Camber": {
+    "mathworks": -34.7312450614903,
+    "kinematik": -34.73123638891003,
+    "diff": 8.67258027170692e-06,
+    "limit": 0.05,
+    "passed": true
+   },
+   "Roll Steer": {
+    "mathworks": -0.00476967608838091,
+    "kinematik": -0.0047686329805883,
+    "diff": 1.0431077926099583e-06,
+    "limit": 0.01,
+    "passed": true
+   },
+   "Roll Camber": {
+    "mathworks": -1.45855718147569,
+    "kinematik": -1.4585577673156391,
+    "diff": 5.858399492186805e-07,
+    "limit": 0.01,
+    "passed": true
+   },
+   "Damper Ratio": {
+    "mathworks": 0.688029033386595,
+    "kinematik": 0.691420749279709,
+    "diff": 0.0033917158931139335,
+    "limit": 0.005,
+    "passed": true
+   },
+   "toe curve": {
+    "diff": 1.6294807977657033e-06,
+    "limit": 0.01,
+    "passed": true,
+    "range_mm": [
+     -39.9677795536334,
+     39.9677878903044
+    ]
+   },
+   "camber curve": {
+    "diff": 8.322722100384539e-06,
+    "limit": 0.01,
+    "passed": true,
+    "range_mm": [
+     -39.9677795536334,
+     39.9677878903044
+    ]
+   }
+  },
+  "steering_motion_worst": {
+   "toe_in": 1.5316120868238474e-07,
+   "camber": 1.500385161534723e-05,
+   "camber_front_view": 0.05833376972527127,
+   "wc_x": 2.77456464585768e-05,
+   "wc_y": 2.2449201082963555e-05,
+   "max_toe_deg": 12.2935836
+  },
+  "mathworks_formulas_on_kinematik": {
+   "Caster": 3.573822934337653,
+   "Hub Long Offset": 1.8036359921698941,
+   "Hub Lat Offset": 30.156072668806928,
+   "Caster Trail": 16.370247936857968,
+   "trail_geometric": 12.76297595251818,
+   "scrub_from_kpi": 0.22488933547356638
+  }
+ },
+ "rear_v11_final": {
+  "passed": false,
+  "rows": {
+   "Toe": {
+    "mathworks": -5.30971684370764e-14,
+    "kinematik": -0.0,
+    "diff": 5.30971684370764e-14,
+    "limit": 0.01,
+    "passed": true
+   },
+   "Camber": {
+    "mathworks": -2.60000000000002,
+    "kinematik": -2.6,
+    "diff": 1.9984014443252818e-14,
+    "limit": 0.01,
+    "passed": true
+   },
+   "Caster": {
+    "mathworks": 2.7759455087722,
+    "kinematik": 2.8624052261117474,
+    "diff": 0.08645971733954738,
+    "limit": 0.05,
+    "passed": false
+   },
+   "KPI": {
+    "mathworks": 8.95237006251404,
+    "kinematik": 8.600796473458374,
+    "diff": 0.3515735890556666,
+    "limit": 0.05,
+    "passed": false
+   },
+   "Caster Trail": {
+    "mathworks": 10.613412244553,
+    "kinematik": 12.261499999999993,
+    "diff": 1.6480877554469924,
+    "limit": 0.5,
+    "passed": false
+   },
+   "Scrub Radius": {
+    "mathworks": 6.31496278757345,
+    "kinematik": 7.8339624999998705,
+    "diff": 1.51899971242642,
+    "limit": 0.5,
+    "passed": false,
+    "kinematik_printed": 13.624999999999886,
+    "definition_offset_mm": 5.0
+   },
+   "Bump Steer": {
+    "mathworks": 0.213076674322269,
+    "kinematik": 0.2130466964145565,
+    "diff": 2.997790771250286e-05,
+    "limit": 0.05,
+    "passed": true
+   },
+   "Bump Camber": {
+    "mathworks": -28.8549527363598,
+    "kinematik": -28.854926637431678,
+    "diff": 2.6098928120887877e-05,
+    "limit": 0.05,
+    "passed": true
+   },
+   "Roll Steer": {
+    "mathworks": -0.0079832529713562,
+    "kinematik": -0.007984730434289473,
+    "diff": 1.477462933273041e-06,
+    "limit": 0.01,
+    "passed": true
+   },
+   "Roll Camber": {
+    "mathworks": -1.20160828432625,
+    "kinematik": -1.2016076363812402,
+    "diff": 6.479450098684225e-07,
+    "limit": 0.01,
+    "passed": true
+   },
+   "Damper Ratio": {
+    "mathworks": 0.691979419060593,
+    "kinematik": 0.6927917434388405,
+    "diff": 0.0008123243782475198,
+    "limit": 0.005,
+    "passed": true
+   },
+   "toe curve": {
+    "diff": 3.6363094488706116e-06,
+    "limit": 0.01,
+    "passed": true,
+    "range_mm": [
+     -39.9678150477455,
+     39.9677884240428
+    ]
+   },
+   "camber curve": {
+    "diff": 5.583573796874575e-06,
+    "limit": 0.01,
+    "passed": true,
+    "range_mm": [
+     -39.9678150477455,
+     39.9677884240428
+    ]
+   }
+  },
+  "steering_motion_worst": {
+   "toe_in": 1.433830010353969e-07,
+   "camber": 1.2510294330247973e-05,
+   "camber_front_view": 0.0390306663476081,
+   "wc_x": 3.4719894994594824e-05,
+   "wc_y": 2.0522086174423748e-05,
+   "max_toe_deg": 9.30580554
+  },
+  "mathworks_formulas_on_kinematik": {
+   "Caster": 2.7759439837810382,
+   "Hub Long Offset": -0.6952881804417618,
+   "Hub Lat Offset": 43.05620834066622,
+   "Caster Trail": 10.613406442726985,
+   "trail_geometric": 12.00398280361051,
+   "scrub_from_kpi": 7.780170840666152
+  }
+ }
+}

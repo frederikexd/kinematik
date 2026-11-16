@@ -58,6 +58,8 @@ camber = −arctan( s[z] / |s[y]| )   [degrees]
 
 where `s` is the unit wheel spin axis vector. Negative = top inboard (racing convention).
 
+This is the front-view projection, as Lotus reports camber. ISO 8855 and SAE J670 define camber as the inclination of the wheel plane, `−arcsin(s[z])`, which MathWorks' K&C rig measures. They are equal at zero toe and differ in steer (0.06° at 12° of steer on front_v11_final): `camber_inclination(camber, toe) = arctan(tan(camber)·cos(toe))` gives the inclination exactly ([benchmarks/knc_simscape](fsae_suspension/benchmarks/knc_simscape/README.md)).
+
 ### 1.3 Toe (Bump Steer)
 
 ```

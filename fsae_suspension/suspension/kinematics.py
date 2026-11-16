@@ -208,6 +208,14 @@ def _unit(v: np.ndarray) -> np.ndarray:
     return v / n if n > 1e-12 else v  # pragma: no mutate (float threshold: < and <= differ only on exact equality)
 
 
+def camber_inclination(camber_deg, toe_deg):
+    """Camber as the inclination of the wheel plane from vertical (ISO 8855, SAE J670: the spin axis's angle to the
+    ground), from KinematiK's camber, which is the front-view projection atan(s_z / |s_y|) as Lotus reports it.
+    tan(inclination) = tan(camber) * cos(toe), exactly. The two agree at zero toe and differ once the wheel is steered:
+    0.06 deg at 12 deg of steer on front_v11_final, against MathWorks' K&C rig, which measures the inclination."""
+    return np.degrees(np.arctan(np.tan(np.radians(camber_deg)) * np.cos(np.radians(toe_deg))))
+
+
 # --------------------------------------------------------------------------- #
 #  Solved corner state
 # --------------------------------------------------------------------------- #
@@ -507,6 +515,8 @@ class SuspensionKinematics:
 
     # ------------------------ kinematic outputs -------------------------- #
     def _camber(self, spin):
+        # The front-view projection, as Lotus reports camber (tests/test_lotus_benchmark.py, in steer). The ISO 8855
+        # inclination, which MathWorks' K&C rig measures, is camber_inclination(camber, toe).
         # Camber = lean of the wheel plane. Wheel plane normal = spin axis. The wheel
         # plane's tilt from vertical equals the spin axis tilt from horizontal in the
         # front (y-z) view. Top-inboard => negative camber (racing convention).
