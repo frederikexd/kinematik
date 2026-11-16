@@ -34,6 +34,14 @@ The suspension kinematics solver has been checked against three established tool
 
 These check the kinematics solver, not a built car; what has not been checked yet is listed in [VALIDATION.md](VALIDATION.md).
 
+The geometry and steering numbers a report prints have been checked against three multibody solvers on the v11 corners, with the limits set before each run ([geometry](fsae_suspension/benchmarks/adams_geometry/README.md), [steering](fsae_suspension/benchmarks/adams_steering/README.md)).
+
+| Checked against | Geometry, 2 corners over ±25 mm: contact-patch path (anti-dive, anti-squat), scrub radius, mechanical trail, damper length (limits 0.05 mm, 0.1 percentage point) | Steering, 2 corners over ±30 mm of rack: toe and camber, steering-wheel angle at lock, Ackermann at lock (limits 0.005°, 0.1°, 0.1 point) |
+|---|---|---|
+| Adams View 2026.1 | Within 0.00012 mm; anti-geometry within 0.0002 point | Toe and camber within 0.00005°; lock within 0.0002°; Ackermann within 0.0003 point |
+| MATLAB Simscape Multibody R2025b | Within 0.00003 mm; anti-geometry within 0.0006 point | Toe and camber within 0.000002°; lock within 0.00004°; Ackermann within 0.0003 point |
+| Project Chrono 9.0.1 (open source) | Within 0.00004 mm; anti-geometry within 0.0007 point | Toe and camber within 1e-9°; lock within 0.00004°; Ackermann within 0.0003 point |
+
 Link loads and direct-acting dampers have been checked against three multibody solvers and an independent solve, again with the limits set before each run ([link loads](fsae_suspension/benchmarks/link_loads/README.md), [direct-acting](fsae_suspension/benchmarks/direct_acting/README.md)).
 
 | Checked against | Link loads: member forces, 3 corners × 4 load cases (limit 0.5 N + 0.1 %) | Direct-acting damper, 2 corners: damper length over ±25 mm (limit 0.01 mm) and member forces |
@@ -82,6 +90,12 @@ Altium's impedance calculator, which can't run from this repo directly). Limits 
 | 2-D solve of KiCad 9's copper, net resistance held out | 100 nets, then 100 more for the fix | 1-D model: **miss**, 70 of 95 within 2 % (all within 10 %). Sheet-solve refinement, held out: **92 of 92 within 2 %**. What reports use at the shipped size limit: **91 of 92 within 2 %**, the rest reading high |
 | Nets with copper pours (pours up to ~100 mm²), held out | 204 fresh nets on 39 boards, registered random order | **203 of 204 within 2 %**; the miss (+3.1 %, roundrect corners) fixed and held out on 53 more: 53 of 53. Large planes (34–131 mm²): 7 of 7 within 2 %, opt-in because they are much slower to solve |
 | atlc field solver: microstrip impedance | 11 cases, then 10 unseen | IPC-2141 missed by up to 8.3 %; replaced by Hammerstad–Jensen, 10 of 10 unseen within 3.4 % |
+| KiCad 7's pad polygons (pcbnew): solder-bridge screen | 866 pad pairs on the 14 demo boards; 168 on six native Altium team boards | Round 1 **missed** two custom-shaped pads; now none missed or extra, worst gap 0.007 mm (limit 0.01 mm) |
+| SPICE: harness voltage drop | 45 wire runs, 22 to 6 AWG, 20 to 105 °C | Round 1 **missed** 0.1 % at 22 and 6 AWG; areas now from the AWG definition, 45 of 45 within 0.1 % |
+| SPICE: per-cell pack thermal network | 4 × 6 cells, two fans, 20 minutes | Within 0.005 K (limit 0.2 K) |
+| PyBaMM: pack over a lap, lumped pack temperature | A lap with regen; 30 minutes of mixed current with cooling | Voltage, current and charge within 1e-6 % (limit 0.5 %); temperature within 0.003 K (limit 0.2 K) |
+| liionpack: series-parallel lumping | A 140s3p pack | Within 0.002 % with ideal interconnects; with real interconnect resistance, terminal voltage 0.19 % high (the lumped model leaves them out) |
+| ht heat-transfer correlations: pack airflow and still air | A ducted 6-row 21700 bank at 20–80 cfm; a 21 mm can at a 5–40 K rise | The old fan-draught proxy and still-air value **missed** (up to 95 % and 78 % off); the new duct mode is within 12 % of the correlations' mean, still air within 28 % (limit 30 %). Correlations, not a measured pack |
 
 **Check it yourself**: copy and paste the commands below; each set takes a few minutes on a laptop. Think a result is
 wrong? [Break it](CHALLENGE.md).
@@ -115,7 +129,8 @@ Suspension benchmarks:
 
 ```bash
 pytest tests/test_adams_view_benchmark.py tests/test_lotus_benchmark.py tests/test_invariants_property.py \
-       tests/test_link_load_benchmark.py tests/test_direct_acting_benchmark.py tests/test_direct_acting.py
+       tests/test_link_load_benchmark.py tests/test_direct_acting_benchmark.py tests/test_direct_acting.py \
+       tests/test_adams_geometry_benchmark.py tests/test_adams_steering_benchmark.py
 python scripts/verify_run.py manifests/rear_v11_final.recorded.genesis.json   # re-solves a final corner, about 4 min
 ```
 
@@ -217,8 +232,8 @@ any FAIL (or WARN with `--fail-on warning`), so it can gate a CI run. KiCad and 
 ## Known limitations
 
 - **Not correlated with a measured car.** The kinematics agree with Adams View,
-  Lotus Suspension Analysis and Applied Racing Dynamics, the link loads and direct-acting
-  dampers agree with Adams View, MATLAB Simscape Multibody and Project Chrono, and the synthesis reproduces
+  Lotus Suspension Analysis and Applied Racing Dynamics, the geometry, steering, link loads and
+  direct-acting dampers agree with Adams View, MATLAB Simscape Multibody and Project Chrono, and the synthesis reproduces
   on other teams' machines ([VALIDATION.md](VALIDATION.md)), but nothing has been
   compared with an instrumented vehicle, a K&C rig or a wind tunnel. Treat every
   number as a starting point for your own test day.
