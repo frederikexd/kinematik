@@ -96,6 +96,51 @@ def geometry_curves(w: dict) -> dict[str, np.ndarray]:
     return out
 
 
+STEER_OUT = ROOT / "benchmarks" / "adams_steering" / "chrono_steering.csv"
+STEER_CORNERS = ("front_v11_final", "front_v11_joints50")
+RACK = np.round(np.arange(-30.0, 30.0001, 0.25), 6)
+
+
+def steering_curves(w: dict) -> dict[str, np.ndarray]:
+    """Toe-in and camber (deg) of the steered wheel at each RACK (mm), at ride height: the lower wishbone fixed at its
+    static angle, the upper on its revolute, the tie rod a distance link to its inner end moved by the rack in y."""
+    import math
+    P = {k: np.asarray(v, float) for k, v in w.items() if isinstance(v, list) and len(v) == 3}
+    cam, toe = math.radians(w.get("static_camber", 0.0)), math.radians(w.get("static_toe", 0.0))
+    spin = np.array([math.sin(toe), math.cos(toe) * math.cos(cam), -math.sin(cam)])
+    tip = P["wheel_center"] + 100.0 * spin / np.linalg.norm(spin)
+    toe_in, camber = [], []
+    for r in RACK:
+        s = cb._system()
+        ground = cb._body(s, fixed=True)
+        lca = cb._body(s, fixed=True)                  # held at its static angle, as at ride height
+        uca, up = cb._body(s), cb._body(s)
+        rev = ch.ChLinkLockRevolute()
+        rev.Initialize(uca, ground, cb._frame_z_along(P["upper_front_inner"],
+                                                      P["upper_rear_inner"] - P["upper_front_inner"]))
+        s1, s2 = ch.ChLinkLockSpherical(), ch.ChLinkLockSpherical()
+        s1.Initialize(up, lca, ch.ChFramed(cb.V(P["lower_outer"])))
+        s2.Initialize(up, uca, ch.ChFramed(cb.V(P["upper_outer"])))
+        for x in (rev, s1, s2):
+            s.Add(x)
+        tri = P["tie_rod_inner"] + np.array([0.0, float(r), 0.0])
+        lk = ch.ChLinkDistance()
+        lk.Initialize(up, ground, False, cb.V(P["tie_rod_outer"]), cb.V(tri), False,
+                      float(np.linalg.norm(P["tie_rod_outer"] - P["tie_rod_inner"])))
+        s.Add(lk)
+        for _ in range(3):
+            s.DoAssembly(ch.POSITION, 100, 1e-10, 1e-14, 1e-12)
+        q = cb.A(up.TransformPointLocalToParent(cb.V(P["tie_rod_outer"])))
+        err = abs(np.linalg.norm(q - tri) - np.linalg.norm(P["tie_rod_outer"] - P["tie_rod_inner"]))
+        if err > 1e-6:
+            raise RuntimeError(f"Chrono assembly did not close at rack {r} mm ({err:.2e} mm)")
+        wc = cb.A(up.TransformPointLocalToParent(cb.V(P["wheel_center"])))
+        d = cb.A(up.TransformPointLocalToParent(cb.V(tip))) - wc
+        toe_in.append(-math.degrees(math.atan(d[0] / d[1])))
+        camber.append(-math.degrees(math.atan(d[2] / d[1])))
+    return {"toe_in": np.array(toe_in), "camber": np.array(camber)}
+
+
 def main():
     cb.calibrate()
     rows = ["corner,travel_mm,cp_dx_mm,cp_dz_mm,scrub_mm,trail_mm,damper_len_mm"]
@@ -108,6 +153,14 @@ def main():
         print(f"{n}: trail at ride height {c['trail'][25]:.4f} mm, scrub {c['scrub'][25]:.4f} mm")
     OUT.write_text("\n".join(rows) + "\n")
     print(f"wrote {OUT.relative_to(ROOT)}")
+    rows = ["corner,rack_mm,toe_in_deg,camber_deg"]
+    for n in STEER_CORNERS:
+        w = json.loads((ROOT / "manifests" / f"{n}.recorded.genesis.json").read_text())["recorded"]["winner_hardpoints"]
+        c = steering_curves(w)
+        rows += [f"{n},{r:g},{c['toe_in'][i]:.9f},{c['camber'][i]:.9f}" for i, r in enumerate(RACK)]
+    STEER_OUT.parent.mkdir(parents=True, exist_ok=True)
+    STEER_OUT.write_text("\n".join(rows) + "\n")
+    print(f"wrote {STEER_OUT.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":
