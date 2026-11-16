@@ -675,6 +675,7 @@ def test_the_judge_summary_is_built_from_the_review_with_the_teams_reasons_and_i
     md = js.build(**kw)
     assert "Front holds the rear's peak mu at 73 % bias." in md and "Team answer: Shimmed on the built car." in md
     assert "| Ackermann at the declared lock (%) | ≥ 75 | 75.27 | yes |" in md
+    assert "Bracket factor of safety, as drawn: not evaluated." in md and "Fatigue, including rod-end shank bending:" in md
     pytest.importorskip("matplotlib")
     assert fig[:8] == b"\x89PNG\r\n\x1a\n"
     pytest.importorskip("reportlab")

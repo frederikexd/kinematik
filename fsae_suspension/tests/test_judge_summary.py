@@ -28,7 +28,8 @@ def test_every_score_sheet_heading_is_there_and_a_missing_reason_is_said_not_fil
     md = js.build(**_kw())
     for h in ("## 1. What we set out to achieve", "## 2. Why this design, and from what alternatives",
               "## 3. Use of design tools and analysis", "## 4. Load cases and load path",
-              "## 5. Safety considerations", "## 6. Questions a judge will ask"):
+              "## 5. Safety considerations", "## 6. Questions a judge will ask",
+              "## 7. What this pre-validation does not cover"):
         assert h in md
     assert "Score-sheet area B" in md
     for _key, label, question in js.DECISIONS:              # every decision asked, its question printed with the gap

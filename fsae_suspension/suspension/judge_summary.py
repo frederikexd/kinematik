@@ -88,7 +88,8 @@ def specification_rows(targets, kin, props):
         rng = (f"{_num(lo)} … {_num(hi)}" if has_lo and has_hi else
                f"≥ {_num(lo)}" if has_lo else f"≤ {_num(hi)}" if has_hi else "—")
         ok = None if v is None else ((not has_lo or float(v) >= float(lo)) and (not has_hi or float(v) <= float(hi)))
-        rows.append((p["label"], rng, _num(v), ok))
+        label = p["label"][:1].upper() + p["label"][1:]
+        rows.append((label, rng, _num(v), ok))
     return rows
 
 
@@ -129,7 +130,7 @@ def open_questions(review_rows, thin, self_graded, defaults_count, inputs_count)
 
 
 def build(*, title, team, corner_name, axle, specs, decisions, rationale, evidence, tools, loads, safety,
-          questions, answers, figure_ref=None, appendix_name=None):
+          questions, answers, figure_ref=None, appendix_name=None, not_checked=None):
     """The judge summary as Markdown (angles in deg, lengths in mm, factors of safety dimensionless).
 
     ``decisions`` maps a DECISIONS key to {"target", "result", "evidence"} (strings the tool fills from the
@@ -137,14 +138,17 @@ def build(*, title, team, corner_name, axle, specs, decisions, rationale, eviden
     missing or blank is printed as MISSING); ``evidence`` is a list of sentences on how the numbers were produced;
     ``tools`` is a list of sentences on the tools and their validation; ``loads`` is [(member, worst FoS,
     governing case)]; ``safety`` a list of sentences; ``questions`` from open_questions; ``answers`` maps a question
-    to the team's answer. ``figure_ref`` names the curves figure for render_pdf."""
+    to the team's answer. ``figure_ref`` names the curves figure for render_pdf. ``not_checked`` lists what the
+    pre-validation does not cover, printed as its own section so a judge reads the limits from the team first."""
     from .project import FIGURE_SCHEME
     head = f"{title}" + (f" · {team}" if team else "")
     L = [f"# {head}", "",
          f"Design summary of the {axle} suspension corner {corner_name}, for the Formula Student Design Event. "
          f"Score-sheet area {SCORE_SHEET_AREA}.", "",
          "The reasons, alternatives and trade-offs below are the team's own words. The tool supplies the facts "
-         "and data behind them; where a reason has not been written, the summary says so.", ""]
+         "and data behind them; where a reason has not been written, the summary says so.", "",
+         "This is a pre-validation: it checks the design before it is built and tested. Section 7 lists what it "
+         "does not cover.", ""]
 
     L += ["## 1. What we set out to achieve", "",
           "| parameter | target | delivered | met |", "|---|---|---|---|"]
@@ -176,7 +180,11 @@ def build(*, title, team, corner_name, axle, specs, decisions, rationale, eviden
 
     L += ["## 4. Load cases and load path", "",
           "| link | worst factor of safety | governing load case |", "|---|---|---|"]
-    L += [f"| {m} | {_num(f, 3)} | {c} |" for m, f, c in loads] + [""]
+    L += [f"| {m} | {_num(f)} | {c} |" for m, f, c in loads] + [""]
+    if loads:
+        L += ["Load path: tyre contact patch, upright, ball joints and rod ends, links (axial members on spherical "
+              "joints), chassis pickups. Every link force, per load case, is in the appendix; what is not checked "
+              "here is in section 7.", ""]
 
     L += ["## 5. Safety considerations", ""] + [f"- {s}" for s in safety] + [""]
 
@@ -187,6 +195,8 @@ def build(*, title, team, corner_name, axle, specs, decisions, rationale, eviden
         a = (answers or {}).get(q, "").strip()
         L += [f"- **{q}** ({why.strip()})", f"  - Team answer: {a or MISSING}"]
     L.append("")
+    L += ["## 7. What this pre-validation does not cover, and how the team will check it", ""]
+    L += [f"- {s}" for s in (not_checked or ["Nothing listed."])] + [""]
     if appendix_name:
         L += [f"Every number above is traced, with its inputs and their sources, in the appendix: {appendix_name}.",
               ""]

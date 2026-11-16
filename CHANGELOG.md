@@ -9,6 +9,7 @@
 - Every red or amber check, self-graded range, thin margin and default input becomes a question a judge will ask, with a space for the team's answer. Answers follow their question when the numbers change.
 - The reasons save to and load from a .json file. Markdown and PDF downloads, with the camber, toe and roll-centre curves drawn against their target bands.
 - The panel adds nothing to the feature report, which stays the appendix.
+- Judge summary, second pass: a section 7 on what the pre-validation does not cover (whole car, tyre model, bracket/upright/chassis strength and flexibility, fatigue, any check not evaluated); the load path stated; where the design's own load cases differ from the generic screening cases, both are named; benchmark claims quoted from BENCHMARK.md; thin margins carry their units; factors of safety at full precision.
 - `test_perf`: the disabled-timer bound is now a ratio to a same-runner baseline, so a loaded CI runner no longer fails it.
 
 **InverseGenesis feature report: only what was designed.**

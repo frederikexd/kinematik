@@ -3365,19 +3365,36 @@ def judge_summary_inputs(ss, v, out, rows, axle, run, defaults):
                             "from wheel rate only") if act.get("ok") else ""},
         "loads": {"result": (f"weakest link {sc.get('governing_member', '—')}, factor of safety "
                              f"{js._num(sc.get('worst_fos_overall'), 3)}") if sc else "",
-                  "evidence": "five load cases, every link force and factor of safety in the appendix"},
+                  },
         "safety": {},
     }
-    for k, r in (("anti_dive", "anti_pct"), ("steering", "caster_deg")):
+    for k, r, name in (("anti_dive", "anti_pct", "anti-dive"), ("steering", "caster_deg", "caster")):
         row = next((x for x in rows if x["key"] == r), None)
         if row is not None:
-            decisions[k]["target"] = f"{_range_text(row)} {row['unit']}".strip()
+            decisions[k]["target"] = f"{name} {_range_text(row)} {row['unit']}".strip()
+
+    # The manifest's own structural cases and pickup flexibility are what its bounds (section 1) were computed
+    # with; the review tables (section 4) use the generic cases and link stiffness only. Say so where both appear.
+    mprops = ((man.volume or {}).get("properties") or {}) if man is not None and isinstance(man.volume, dict) else {}
+    mcases = list((mprops.get("structure") or {}).get("cases") or {})
+    generic = list(dict.fromkeys(r["load_case"] for r in (sc.get("rows") or [])))
+    if sc:
+        decisions["loads"]["evidence"] = (
+            (f"section 1's link factor comes from the design's own {len(mcases)} load cases ({', '.join(mcases)}); "
+             if mcases else "")
+            + f"section 4 screens every link under {len(generic)} generic load cases ({', '.join(generic)}); every "
+              "link force and factor of safety is in the appendix")
+    if mcases or mprops.get("elasto"):
+        decisions["safety"]["evidence"] = (
+            "the compliance steer in section 1 comes from the design's own load cases and pickup flexibility; the "
+            "appendix's generic compliance table uses link stiffness only, so its kerb-strike value is larger")
 
     vm = ss.get("ig_veh_from_manifest") or {}
     srcs = input_sources(ss, v, run, _review_corner(ss, run), axle)
     n_def = sum(r["source"] == "default" for r in srcs)
-    tools = ["Kinematics and link loads from KinematiK's rigid-link corner solver, benchmarked against Adams View, "
-             "MATLAB Simscape Multibody and Project Chrono on published corners (link forces within 1e-3 N).",
+    tools = ["Kinematics and link loads from KinematiK's rigid-link corner solver. Its published benchmarks "
+             "(BENCHMARK.md): kinematics within 0.00003 deg and 0.00003 mm of Adams View 2026.1; link forces within "
+             "0.001 N of Adams View, MATLAB Simscape Multibody and Project Chrono 9.",
              "Geometry found by InverseGenesis from the stated targets and pickup zones, and priced for build yield "
              "against the declared shop tolerances; the run is reproducible from its manifest"
              + (f" `{man.name}` (inputs sha256 {man.inputs_sha256[:12]})" if man is not None else "") + "."]
@@ -3394,7 +3411,10 @@ def judge_summary_inputs(ss, v, out, rows, axle, run, defaults):
         gap = float(getattr(env, "clearance_mm", 0.0) or 0.0)
         safety.append(f"Nearest link or outboard pickup {js._num(w.envelope_margin_mm + gap, 3)} mm from the rim "
                       f"and tyre over the travel and both steering locks ({js._num(gap)} mm required).")
-    thin = [(lab.split(" (")[0], js._num(m, 3)) for lab, m in (as_built_unpriced(res) if res is not None else [])]
+    def _with_unit(lab, m):
+        unit = lab.rsplit(" (", 1)[1].rstrip(")") if lab.endswith(")") and " (" in lab else ""
+        return lab.rsplit(" (", 1)[0], (js._num(m, 3) + ("" if unit in ("", "-") else " " + unit))
+    thin = [_with_unit(lab, m) for lab, m in (as_built_unpriced(res) if res is not None else [])]
     if res is not None and w is not None and w.yield_frac is not None:
         safety.append(f"Build yield {js._num(100 * w.yield_frac, 3)} % at the declared shop tolerances (camber, toe "
                       "and roll-centre curves); measure the built parts before quoting it.")
@@ -3421,9 +3441,24 @@ def judge_summary_inputs(ss, v, out, rows, axle, run, defaults):
     return dict(title="Suspension design summary", team=str(ss.get("ig_js_team", "") or ""),
                 corner_name=man.name if man is not None else "seed geometry", axle=axle, specs=specs,
                 decisions=decisions, rationale=rationale, evidence=evidence, tools=tools, loads=loads,
-                safety=safety, questions=questions, answers=answers,
+                safety=safety, questions=questions, answers=answers, not_checked=not_covered(rows),
                 figure_ref="judge_curves" if fig else None,
                 appendix_name="the InverseGenesis feature report"), fig
+
+
+def not_covered(rows):
+    """What the pre-validation of one corner does not cover, for the judge summary: the solver's scope, every review
+    check that could not be evaluated, and the parts whose loads are produced but not checked. Text only, unitless."""
+    out = ["The whole car in roll or pitch (so no roll-centre lateral migration), a tyre model and vehicle dynamics: "
+           "check in full-vehicle simulation and on the car.",
+           "Bracket, upright and chassis flexibility: the appendix's compliance table uses link stretch and rod-end "
+           "lash only; a compliance bound in section 1 adds pickup flexibility only where the design declared it.",
+           "Upright, hub, bracket and chassis-node strength: the link forces in section 4 are the loads to check "
+           "them with.",
+           "Fatigue, including rod-end shank bending: the factors of safety are static, at the peak of each load "
+           "case."]
+    out += [f"{r['check']}: not evaluated. {r['why']}" for r in rows if r["status"] == "n/a"]
+    return out
 
 
 def _judge_summary_panel(st, ss, v, out, rows, axle, run, defaults):
