@@ -51,7 +51,7 @@ def test_specification_rows_mark_met_by_the_bounds():
                                   {"label": "b", "lo": None, "hi": 120, "value": 118.9},
                                   {"label": "c", "lo": 63.6, "hi": 70, "value": 70.1}])
     assert [r[3] for r in rows] == [False, True, True, False]
-    assert rows[1][1] == "≥ 0" and rows[2][1] == "≤ 120" and rows[3][1] == "63.6 … 70"
+    assert rows[1][1] == "≥ 0" and rows[2][1] == "≤ 120" and rows[3][1] == "63.6 to 70"
 
 
 def test_open_questions_raise_every_red_amber_self_graded_thin_and_default():

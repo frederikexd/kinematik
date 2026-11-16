@@ -561,13 +561,13 @@ def _name_next(ss, title) -> bool:
 
 
 def bound_text(lo, hi) -> str:
-    """A bound as a reader checks it: '63.6 … 70', '≥ 2' or '≤ 120'. The table used to repeat the property's whole
+    """A bound as a reader checks it: '63.6 to 70', '≥ 2' or '≤ 120'. The table used to repeat the property's whole
     label here, which the report cut off before the number on the longer ones."""
     import math
     has_lo = lo is not None and math.isfinite(float(lo))
     has_hi = hi is not None and math.isfinite(float(hi))
     if has_lo and has_hi:
-        return _cell(lo) + " … " + _cell(hi)
+        return _cell(lo) + " to " + _cell(hi)
     if has_lo:
         return "≥ " + _cell(lo)
     return ("≤ " + _cell(hi)) if has_hi else "unbounded"
@@ -2978,7 +2978,7 @@ def _render_analysis(st, pd, np, ss):
     vm = ss.get("ig_veh_from_manifest")
     if run is not None and vm and run.get("source") == "manifest":
         applied = ", ".join(f"{k} = {_cell(x)}" for k, x in vm["fields"].items())
-        rng = "; ".join(f"{c} {'' if lo is None else _cell(lo)} … {'' if hi is None else _cell(hi)}".replace("  ", " ")
+        rng = "; ".join(f"{c} {'' if lo is None else _cell(lo)} to {'' if hi is None else _cell(hi)}".replace("  ", " ")
                         for c, (lo, hi) in (vm.get("ranges") or {}).items())
         # One line each: the report keeps a banner only up to 400 characters, so one long one was dropped whole.
         st.success(f"ℹ️ Section 5 set from the car `{vm['name']}` declares, so this review reads the car the search "
@@ -3084,7 +3084,7 @@ def _range_text(r):
     if lo == 0 and r["key"].endswith(("_abs", "used", "share", "change_deg",
                                      "needed", "spread")):
         return "≤ " + _cell(hi)
-    return _cell(lo) + " … " + _cell(hi)
+    return _cell(lo) + " to " + _cell(hi)
 
 
 def declared_rack_ratio(ss, run, axle):

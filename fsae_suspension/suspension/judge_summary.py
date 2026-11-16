@@ -85,7 +85,7 @@ def specification_rows(targets, kin, props):
         lo, hi, v = p.get("lo"), p.get("hi"), p.get("value")
         has_lo = lo is not None and math.isfinite(float(lo))
         has_hi = hi is not None and math.isfinite(float(hi))
-        rng = (f"{_num(lo)} … {_num(hi)}" if has_lo and has_hi else
+        rng = (f"{_num(lo)} to {_num(hi)}" if has_lo and has_hi else
                f"≥ {_num(lo)}" if has_lo else f"≤ {_num(hi)}" if has_hi else "—")
         ok = None if v is None else ((not has_lo or float(v) >= float(lo)) and (not has_hi or float(v) <= float(hi)))
         label = p["label"][:1].upper() + p["label"][1:]

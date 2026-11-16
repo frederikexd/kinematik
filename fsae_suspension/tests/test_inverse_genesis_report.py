@@ -396,7 +396,7 @@ def test_a_loaded_manifest_is_reviewed_with_the_car_it_declared(tab):
     prompt = [x for x in _verdicts(ns) if "Red is a prompt" in x]
     assert prompt and "these ranges are generic starting points (" in prompt[0]
     assert "Anti-dive" not in prompt[0] and "Steering ratio needed" in prompt[0]   # only the generic ranges are named
-    assert review[0] == "🟢 PASS" and review[4] == "63.6 … 70"
+    assert review[0] == "🟢 PASS" and review[4] == "63.6 to 70"
     v_lines = _verdicts(ns)
     assert any("Section 5 set from the car `front_v11_final`" in x for x in v_lines)
     assert any("steering rack (81 mm per revolution" in x and "aligning moment" in x for x in v_lines)
@@ -452,8 +452,8 @@ def test_a_judge_can_see_where_every_input_came_from_and_what_the_result_does_no
     assert any("One candidate only: 1 of the 6 starts" in x for x in v)
     assert any("No pickup moved" in x and "did not generate it" in x for x in v)
     assert any("3.49 mm from the nearest link" in x and "3 mm required, 0.49 mm to spare" in x for x in v)
-    assert any("Anti-dive / anti-squat: 68.935 % is inside the range the manifest declared (63.6 … 70) but outside "
-               "the generic starting range (0 … 50)" in x for x in v)
+    assert any("Anti-dive / anti-squat: 68.935 % is inside the range the manifest declared (63.6 to 70) but outside "
+               "the generic starting range (0 to 50)" in x for x in v)
     assert any("motion ratio falls in bump (0.8043 at ride height, 0.7509 at full bump)" in x for x in v)
     assert any("only in the kerb strike case" in x for x in v)
     review = {r[1]: r for k, x in t.items() if k.startswith("Design review") for r in x["rows"]}
@@ -534,7 +534,7 @@ def test_the_report_closes_the_loops_a_judge_would_try_to_close(tab):
     assert any(k.startswith("Hardpoints (mm): x rearward of the wheel centre, y outboard of the centreline, z above ground")
                for k in t)
     bounds = {r[0]: r[1] for r in t[BOUNDS]["rows"]}
-    assert bounds["anti-dive, front (%)"] == "63.6 … 70" and bounds["caster (deg)"] == "3.65 … 8"
+    assert bounds["anti-dive, front (%)"] == "63.6 to 70" and bounds["caster (deg)"] == "3.65 to 8"
     assert bounds["lowest link buckling/yield factor under the shock cases (-)"] == "≥ 2"
     assert bounds["steering-wheel angle to reach lock (deg)"] == "≤ 120"
     steer = t["Steering effort at the design lateral acceleration"]
@@ -553,7 +553,7 @@ def test_bound_text():
     from ui import inverse_genesis as uig
     inf = float("inf")
     assert [uig.bound_text(lo, hi) for lo, hi in ((63.6, 70.0), (2.0, inf), (None, 120.0), (-inf, 120.0), (None, None))] \
-        == ["63.6 … 70", "≥ 2", "≤ 120", "≤ 120", "unbounded"]
+        == ["63.6 to 70", "≥ 2", "≤ 120", "≤ 120", "unbounded"]
 
 
 def test_the_build_stamp_changes_when_any_source_file_does(tmp_path):
