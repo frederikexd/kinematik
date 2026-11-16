@@ -1385,11 +1385,43 @@ def _ax_wrap_markdown(_orig):
     return _wrapped
 
 
+#: What the capture layer wraps, on the DeltaGenerator class and on the st module.
+_AX_PATCHED_NAMES = ("metric", "success", "warning", "error", "plotly_chart", "dataframe", "table", "markdown")
+
+
+def _ax_patch_id():
+    """Which source the wrappers on ``st`` were built from. Streamlit reruns this script on every interaction, but
+    ``st`` and its class outlive a redeploy: wrappers built by the old script kept its helpers (a report kept cutting
+    cells at the old 60 characters after the limit was raised to 400). A new id re-wraps from the originals."""
+    try:
+        s = os.stat(__file__)
+        return f"{s.st_mtime_ns}:{s.st_size}"
+    except Exception:
+        return "1"
+
+
+def _ax_unpatch():
+    """Put back the functions the capture layer wrapped, so the current source can wrap them afresh."""
+    from streamlit.delta_generator import DeltaGenerator as _dg
+    for (owner, nm), fn in (getattr(st, "_ax_capture_originals", None) or {}).items():
+        setattr(_dg if owner == "dg" else st, nm, fn)
+    st._ax_capture_patched = False
+
+
+if getattr(st, "_ax_capture_patched", False) and st._ax_capture_patched != _ax_patch_id():
+    try:
+        _ax_unpatch()
+    except Exception:
+        pass
 if not getattr(st, "_ax_capture_patched", False):
     try:
         from streamlit.delta_generator import DeltaGenerator as _AxCapDG
 
         _AX_DG_CLASS = _AxCapDG
+        if getattr(st, "_ax_capture_originals", None) is None:
+            st._ax_capture_originals = {(o, nm): getattr(obj, nm)
+                                        for o, obj in (("dg", _AxCapDG), ("st", st))
+                                        for nm in _AX_PATCHED_NAMES if hasattr(obj, nm)}
 
         if hasattr(_AxCapDG, "metric"):
             _AxCapDG.metric = _ax_wrap_metric(_AxCapDG.metric)
@@ -1424,7 +1456,7 @@ if not getattr(st, "_ax_capture_patched", False):
             _AxCapDG.markdown = _ax_wrap_markdown(_AxCapDG.markdown)
         if hasattr(st, "markdown"):
             st.markdown = _ax_wrap_markdown(st.markdown)
-        st._ax_capture_patched = True
+        st._ax_capture_patched = _ax_patch_id()
     except Exception:
         pass       # capture is best-effort; never block the app
 
