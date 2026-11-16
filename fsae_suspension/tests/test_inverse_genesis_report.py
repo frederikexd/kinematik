@@ -224,7 +224,7 @@ def test_a_manifest_that_is_loaded_but_not_run_reports_nothing_but_that(tab):
     del st.session_state["ig_manifest_up"]                    # file removed: back to the seed, said to be the seed
     _run(st, uig)
     assert NOTICE not in _report(ns) and any("No generated geometry yet" in v for v in _verdicts(ns))
-    assert len(_tables(ns)) == len(st.drawn) == 14
+    assert len(_tables(ns)) == len(st.drawn) == 21                     # 14, and the 7 of the parts screen
 
 
 def test_every_table_drawn_is_reported_once_and_reruns_change_nothing(tab):
@@ -682,7 +682,9 @@ def test_the_judge_summary_is_built_from_the_review_with_the_teams_reasons_and_i
     md = js.build(**kw)
     assert "Front holds the rear's peak mu at 73 % bias." in md and "Team answer: Shimmed on the built car." in md
     assert "| Ackermann at the declared lock (%) | ≥ 75 | 75.27 | yes |" in md
-    assert "Bracket factor of safety, as drawn: not evaluated." in md and "Fatigue, including rod-end shank bending:" in md
+    assert "**Where the link loads go**" in md and "| Upright arm to the lower ball joint | bending at the root |" in md
+    assert "| Link weld, LF | fatigue, IIW FAT 71 |" in md and "Rod-end shank" in md and "Hub bearing" in md
+    assert "Fatigue beyond the infinite-life screen" in md
     pytest.importorskip("matplotlib")
     assert fig[:8] == b"\x89PNG\r\n\x1a\n"
     pytest.importorskip("reportlab")

@@ -2523,6 +2523,94 @@ def _sec_structural(st, pd, v, corner, axle):
     return sc
 
 
+#: The parts inputs, with the value each opens with (a tool default until the team changes it).
+PARTS_INPUTS = (
+    ("ig_parts_upright_yield", "Upright material yield (MPa)", 50.0, 2000.0, 503.0,
+     "7075-T6 plate, a common machined upright"),
+    ("ig_parts_arm_z", "Upright arm section modulus at its root (mm³), 0 = not declared", 0.0, 1e6, 0.0, ""),
+    ("ig_parts_brg_spacing", "Hub bearing spacing along the spin axis (mm)", 5.0, 200.0, 40.0, ""),
+    ("ig_parts_brg_c0", "Hub bearing static load rating C0 (kN), 0 = not declared", 0.0, 500.0, 0.0, ""),
+    ("ig_parts_fat", "Link tube-to-insert weld, IIW detail class FAT (MPa)", 20.0, 200.0, 71.0,
+     "check your weld detail in the IIW table"),
+    ("ig_parts_cycles", "Fatigue design life, full-load service cycles (count)", 1e3, 1e9, 1e5,
+     "a season of hard braking and cornering with margin"),
+    ("ig_parts_re_mu", "Rod-end ball friction coefficient (-)", 0.01, 0.5, 0.1, "PTFE-lined"),
+    ("ig_parts_re_dia", "Rod-end shank nominal diameter (mm)", 3.0, 30.0, 9.525, "3/8 in"),
+    ("ig_parts_re_tpi", "Rod-end shank threads per inch (1/in)", 8.0, 80.0, 24.0, "3/8-24 UNF"),
+    ("ig_parts_re_ball", "Rod-end ball radius (mm)", 2.0, 30.0, 9.5, ""),
+)
+
+
+def _sec_parts(st, pd, ss, v, corner, axle, sc, brk):
+    """Brackets, upright, hub bearings and fatigue under the link screen's load cases (suspension/corner_parts.py).
+    Forces in N, lengths in mm, stresses in MPa, factors dimensionless."""
+    import numpy as np
+    from suspension import corner_parts as cp
+    from suspension import genesis_repro as gr
+    st.caption("Closes the load path from the tyre to the frame with hand calculations on the link screen's load "
+               "cases: the upright's joint loads (checked for equilibrium), its arms as cantilevers, the hub "
+               "bearings, the pickup brackets, and fatigue of the link welds and rod-end shanks. A screen ahead of "
+               "FEA, not a replacement: where a part is not declared it shows what the part must have.")
+    c = st.columns(4)
+    val = {}
+    for i, (key, label, lo, hi, default, _note) in enumerate(PARTS_INPUTS):
+        val[key] = float(c[i % 4].number_input(label, lo, hi, default, key=key))
+    _table(st, pd, [{"input": label, "value": val[key],
+                     "source": "entered" if abs(val[key] - default) > 1e-9 else
+                     ("default" + (f": {note}" if note else ""))}
+                    for key, label, lo, hi, default, note in PARTS_INPUTS],
+           title="Inputs to the parts screen, and where each came from")
+    cases = gr.vehicle_load_cases(
+        axle=axle, mass_kg=v["mass_kg"], weight_dist_front=v["weight_dist_front"], cg_height_mm=v["cg_height_mm"],
+        track_mm=v[f"track_{axle}_mm"], wheelbase_mm=v["wheelbase_mm"], brake_bias_front=v["brake_bias_front"],
+        roll_share_front=v["roll_share_front"], aligning_torque_Nm=v["aligning_outer_Nm"])
+    loads = cp.upright_loads(corner, cases)
+    _table(st, pd, [{"load case": r["load_case"], "joint": r["joint"], "Fx (N)": r["F"][0], "Fy (N)": r["F"][1],
+                     "Fz (N)": r["F"][2], "|F| (N)": float(np.linalg.norm(r["F"]))} for r in loads],
+           title="Upright joint loads, every load case (N, corner axes; the FEA load set)")
+    resid = max((r["residual_N"] for r in loads), default=0.0)
+    arms = cp.upright_arms(loads, corner.wheel_center, val["ig_parts_upright_yield"],
+                           {j: val["ig_parts_arm_z"] for j in cp.JOINTS} if val["ig_parts_arm_z"] > 0 else None,
+                           fos_target=v["fos_min"])
+    _table(st, pd, [{"arm": a["joint"], "length (mm)": a["arm_mm"], "worst moment (N·mm)": a["moment_Nmm"],
+                     "case": a["load_case"], "section modulus needed (mm³)": a["Z_required_mm3"],
+                     "FoS, declared section": a["fos"] if a["fos"] is not None else "not declared"} for a in arms],
+           title=f"Upright arms as cantilevers from the wheel centre (FoS {_cell(v['fos_min'])} on yield)")
+    off = float(corner.contact_patch[1] - corner.wheel_center[1])
+    brg = cp.hub_bearings(cases, v["tire_radius_mm"], val["ig_parts_brg_spacing"], off,
+                          c0_kN=val["ig_parts_brg_c0"] or None)
+    _table(st, pd, [{"load case": b["load_case"], "radial (N)": b["Fr_N"], "axial (N)": b["Fa_N"],
+                     "P0 (N)": b["P0_N"], "C0 needed for s0 = 2 (kN)": b["C0_required_kN"],
+                     "s0, declared bearing": b["s0"] if b["s0"] is not None else "not declared"} for b in brg],
+           title="Hub bearings: static load on the more loaded bearing (ISO 76)")
+    g = (brk or {}).get("as_drawn") or {"reach_mm": _BRACKET_EXAMPLE["reach (mm)"][0],
+                                        "plate_width_mm": _BRACKET_EXAMPLE["plate width (mm)"][0],
+                                        "plate_thickness_mm": _BRACKET_EXAMPLE["plate thickness (mm)"][0]}
+    bdecl = bool((brk or {}).get("declared"))
+    br = cp.brackets(sc["rows"], g["reach_mm"], g["plate_width_mm"], g["plate_thickness_mm"], v["bracket_plates"],
+                     v["yield_mpa"], v["bracket_kt"])
+    _table(st, pd, [{"member": b["member"], "force (N)": b["force_N"], "case": b["load_case"],
+                     "stress (MPa)": b["stress_mpa"], "FoS": b["fos"]} for b in br],
+           title=("Pickup brackets at each link's worst force, the bracket as drawn" if bdecl else
+                  "Pickup brackets at each link's worst force, the tool's example bracket (enter yours above)"))
+    tube = gr.TubeSpec(od_mm=v["tube_od_mm"], wall_mm=v["tube_wall_mm"], yield_mpa=v["yield_mpa"], E_gpa=v["E_gpa"])
+    areas = {m: gr.TubeSpec(od_mm=od, wall_mm=w).area for m, (od, w) in (v.get("link_tubes") or {}).items()}
+    areas = {m: areas.get(m, tube.area) for m in {r["member"] for r in sc["rows"]}}
+    weld = cp.link_weld_fatigue(sc["rows"], areas, val["ig_parts_fat"], val["ig_parts_cycles"])
+    _table(st, pd, [{"member": w["member"], "stress range (MPa)": w["range_MPa"],
+                     "allowable range at the design life (MPa)": w["limit_MPa"], "factor": w["fos"]}
+                    for w in weld],
+           title="Fatigue: link welds over the repeated service cases (IIW slope 3, at the design life)")
+    rod = cp.rod_end_fatigue(sc["rows"], val["ig_parts_re_dia"], val["ig_parts_re_tpi"], val["ig_parts_re_ball"],
+                             val["ig_parts_re_mu"], val["ig_parts_cycles"])
+    _table(st, pd, [{"member": r["member"], "service force (N)": r["force_N"],
+                     "stress amplitude (MPa)": r["stress_amp_MPa"],
+                     "allowable at the design life (MPa)": r["endurance_amp_MPa"], "factor": r["fos"]} for r in rod],
+           title="Fatigue: rod-end shank bending from ball friction (VDI 2230, at the design life)")
+    return {"residual_N": resid, "arms": arms, "bearings": brg, "brackets": br, "bracket_declared": bdecl,
+            "weld": weld, "rod": rod, "inputs": val, "cases": [lc.name for lc in cases]}
+
+
 def _sec_compliance(st, pd, v, corner, axle, sc, bands):
     from suspension import genesis_repro as gr
     from suspension import genesis_analysis as ga
@@ -2670,7 +2758,15 @@ def _sec_brackets(st, pd, v, sc, key):
         rc.forget(_ss, _BRACKET_TITLE)
     with rc.unreported(_ss, not declared):
         _table(st, pd, rows, title=_BRACKET_TITLE)
-    return {"declared": declared, "fos_as_drawn": rows[0]["FoS"] if rows else None}
+    first = cases.iloc[0] if len(cases) else None
+    geom = None
+    if first is not None:
+        try:
+            geom = {"reach_mm": float(first["reach (mm)"]), "plate_width_mm": float(first["plate width (mm)"]),
+                    "plate_thickness_mm": float(first["plate thickness (mm)"])}
+        except (TypeError, ValueError):
+            geom = None
+    return {"declared": declared, "fos_as_drawn": rows[0]["FoS"] if rows else None, "as_drawn": geom}
 
 
 #: The values the two example blocks open with. Numbers a user has not replaced are not results of their design, so
@@ -3019,6 +3115,8 @@ def _render_analysis(st, pd, np, ss):
     with st.expander("📦 Packaging — wheelbase, ground clearance, rim "
                      "envelope"):
         out["pack"] = _sec_packaging(st, pd, v, corner)
+    with st.expander("🧱 Where the link loads go: brackets, upright, hub bearings, fatigue"):
+        out["parts"] = _sec_parts(st, pd, ss, v, corner, axle, out["sc"], out["brk"])
 
     with review_box:
         _render_review(st, pd, ss, v, out, axle, note, run)
@@ -3430,6 +3528,46 @@ def judge_summary_inputs(ss, v, out, rows, axle, run, defaults):
                    else r["value"]) for r in rows]
     questions = js.open_questions(review, thin, sg, n_def, len(srcs))
 
+    parts = out.get("parts")
+    parts_rows = []
+    if parts:
+        pin = parts["inputs"]
+        fmin = float(v["fos_min"])
+        for a in parts["arms"]:
+            parts_rows.append((f"Upright arm to the {a['joint']}", "bending at the root",
+                               a["fos"], f"needs Z ≥ {js._num(a['Z_required_mm3'], 3)} mm³ for factor of safety "
+                                         f"{js._num(fmin)}", a["load_case"]))
+        b = max(parts["bearings"], key=lambda x: x["P0_N"])
+        parts_rows.append(("Hub bearing, more loaded", "static, ISO 76", b["s0"],
+                           f"needs C0 ≥ {js._num(b['C0_required_kN'], 3)} kN for s0 2 at "
+                           f"{js._num(pin['ig_parts_brg_spacing'])} mm spacing", b["load_case"]))
+        bw = min(parts["brackets"], key=lambda x: x["fos"])
+        parts_rows.append((f"Pickup bracket, {bw['member']}" + ("" if parts["bracket_declared"] else
+                                                                " (tool's example bracket)"),
+                           "clevis root bending", bw["fos"], "", bw["load_case"]))
+        ww = min(parts["weld"], key=lambda x: x["fos"])
+        life = f"{int(round(pin['ig_parts_cycles'])):,} cycles"
+        parts_rows.append((f"Link weld, {ww['member']}", f"fatigue, IIW FAT {js._num(pin['ig_parts_fat'])}",
+                           ww["fos"], life, "service cases"))
+        rw = min(parts["rod"], key=lambda x: x["fos"])
+        parts_rows.append((f"Rod-end shank, {rw['member']}", "fatigue, VDI 2230", rw["fos"],
+                           f"{life}; {js._num(pin['ig_parts_re_dia'])} mm, {js._num(pin['ig_parts_re_tpi'])} tpi",
+                           "service cases"))
+        for name, check, f, need, case in parts_rows:
+            fatigue = check.startswith("fatigue")
+            need_f = 1.0 if fatigue else fmin
+            if f is None:
+                questions.append((f"{name}: not declared",
+                                  f"{need}, in {case}; a judge will ask what the part has."))
+            elif f < need_f:
+                questions.append((f"{name}: factor {js._num(f, 3)}",
+                                  (f"below 1: at these loads it does not reach the {need.split(';')[0]} design life "
+                                   f"({check})." if fatigue else
+                                   f"below the required {js._num(fmin)} ({check}, {case}).")))
+        if parts["residual_N"] > 1.0:
+            questions.append(("Upright joint loads do not balance the tyre load",
+                              f"residual {js._num(parts['residual_N'], 3)} N."))
+
     fig = None
     if stations and d:
         series = {k: d[k] for k in ("camber_deg", "toe_deg", "rc_height_mm") if k in d}
@@ -3443,23 +3581,33 @@ def judge_summary_inputs(ss, v, out, rows, axle, run, defaults):
     return dict(title="Suspension design summary", team=str(ss.get("ig_js_team", "") or ""),
                 corner_name=man.name if man is not None else "seed geometry", axle=axle, specs=specs,
                 decisions=decisions, rationale=rationale, evidence=evidence, tools=tools, loads=loads,
-                safety=safety, questions=questions, answers=answers, not_checked=not_covered(rows),
+                safety=safety, questions=questions, answers=answers, not_checked=not_covered(rows, parts),
+                parts=parts_rows,
                 figure_ref="judge_curves" if fig else None,
                 appendix_name="the InverseGenesis feature report"), fig
 
 
-def not_covered(rows):
+def not_covered(rows, parts=None):
     """What the pre-validation of one corner does not cover, for the judge summary: the solver's scope, every review
-    check that could not be evaluated, and the parts whose loads are produced but not checked. Text only, unitless."""
+    check that could not be evaluated, and, without the parts screen, the parts whose loads are produced but not
+    checked. Text only, unitless."""
     out = ["The whole car in roll or pitch (so no roll-centre lateral migration), a tyre model and vehicle dynamics: "
            "check in full-vehicle simulation and on the car.",
            "Bracket, upright and chassis flexibility: the appendix's compliance table uses link stretch and rod-end "
            "lash only; a compliance bound in section 1 adds pickup flexibility only where the design declared it.",
-           "Upright, hub, bracket and chassis-node strength: the link forces in section 4 are the loads to check "
-           "them with.",
-           "Fatigue, including rod-end shank bending: the factors of safety are static, at the peak of each load "
-           "case."]
-    out += [f"{r['check']}: not evaluated. {r['why']}" for r in rows if r["status"] == "n/a"]
+           ]
+    if parts:
+        out += ["Upright, bracket and frame-node stresses beyond the hand calculations in section 4: the upright "
+                "joint loads per case (appendix) are the FEA load set for the upright and the frame nodes.",
+                "Fatigue beyond the infinite-life screen: the service cases stand in for a duty cycle; logged loads "
+                "from the car set the real one."]
+    else:
+        out += ["Upright, hub, bracket and chassis-node strength: the link forces in section 4 are the loads to "
+                "check them with.",
+                "Fatigue, including rod-end shank bending: the factors of safety are static, at the peak of each "
+                "load case."]
+    out += [f"{r['check']}: not evaluated. {r['why']}" for r in rows if r["status"] == "n/a"
+            and not (parts and r["key"] == "bracket_fos")]
     return out
 
 

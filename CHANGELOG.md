@@ -3,6 +3,11 @@
 
 ## Unreleased
 
+**Where the link loads go: brackets, upright, hub bearings, fatigue.**
+- A new InverseGenesis section screens the parts the links load, on the same load cases: the upright's joint loads per case (checked for equilibrium with the tyre load; the FEA load set), its arms as cantilevers, the hub bearings (ISO 76 static), the pickup brackets at each link's worst force, link-weld fatigue (IIW FAT, slope 3, at a declared design life) and rod-end shank fatigue (VDI 2230).
+- Where a part is not declared it shows what the part needs (section modulus, bearing C0) instead of a factor. The tool's example bracket is labelled as such.
+- The judge summary gets a "Where the link loads go" table; every part not declared or below its factor becomes a judge question; section 7 narrows to what the screen still leaves to FEA and logged loads.
+
 **Mechanical trail is where the kingpin axis meets the road.**
 - The review's steering-effort section took trail as tyre radius × tan(caster), which holds only when the kingpin axis passes through the wheel centre in side view. It now uses the corner's own kingpin axis on the road plane (the value the search bounds already used, and the one Adams View and Project Chrono now benchmark). On front_v11_final: 12.67 mm, not 14.57; the ratio the torque target needs falls from 8.79 to 8.37.
 

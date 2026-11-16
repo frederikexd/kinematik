@@ -130,7 +130,7 @@ def open_questions(review_rows, thin, self_graded, defaults_count, inputs_count)
 
 
 def build(*, title, team, corner_name, axle, specs, decisions, rationale, evidence, tools, loads, safety,
-          questions, answers, figure_ref=None, appendix_name=None, not_checked=None):
+          questions, answers, figure_ref=None, appendix_name=None, not_checked=None, parts=None):
     """The judge summary as Markdown (angles in deg, lengths in mm, factors of safety dimensionless).
 
     ``decisions`` maps a DECISIONS key to {"target", "result", "evidence"} (strings the tool fills from the
@@ -139,7 +139,9 @@ def build(*, title, team, corner_name, axle, specs, decisions, rationale, eviden
     ``tools`` is a list of sentences on the tools and their validation; ``loads`` is [(member, worst FoS,
     governing case)]; ``safety`` a list of sentences; ``questions`` from open_questions; ``answers`` maps a question
     to the team's answer. ``figure_ref`` names the curves figure for render_pdf. ``not_checked`` lists what the
-    pre-validation does not cover, printed as its own section so a judge reads the limits from the team first."""
+    pre-validation does not cover, printed as its own section so a judge reads the limits from the team first.
+    ``parts`` is [(part, check, factor of safety or None, what it needs, governing case)] for the parts the links
+    load: brackets, upright, hub bearings, and fatigue of welds and rod ends."""
     from .project import FIGURE_SCHEME
     head = f"{title}" + (f" · {team}" if team else "")
     L = [f"# {head}", "",
@@ -182,9 +184,14 @@ def build(*, title, team, corner_name, axle, specs, decisions, rationale, eviden
           "| link | worst factor of safety | governing load case |", "|---|---|---|"]
     L += [f"| {m} | {_num(f)} | {c} |" for m, f, c in loads] + [""]
     if loads:
-        L += ["Load path: tyre contact patch, upright, ball joints and rod ends, links (axial members on spherical "
-              "joints), chassis pickups. Every link force, per load case, is in the appendix; what is not checked "
-              "here is in section 7.", ""]
+        L += ["Load path: tyre contact patch, hub bearings, upright, ball joints and rod ends, links (axial members "
+              "on spherical joints), pickup brackets, frame. Every link force and upright joint load, per load "
+              "case, is in the appendix; what is not checked here is in section 7.", ""]
+    if parts:
+        L += ["**Where the link loads go**", "",
+              "| part | check | factor of safety | needs | governing case |", "|---|---|---|---|---|"]
+        L += [f"| {p} | {c} | {_num(f) if f is not None else 'not declared'} | {n or '—'} | {g} |"
+              for p, c, f, n, g in parts] + [""]
 
     L += ["## 5. Safety considerations", ""] + [f"- {s}" for s in safety] + [""]
 
