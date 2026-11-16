@@ -15,11 +15,13 @@ any result: 0.005 deg on toe and camber, 0.1 deg at the steering wheel, 0.1 perc
 3. If the tables are not there, import `export_both.cmd`, which writes them from the runs in the session.
 4. Copy them here and run `python scripts/adams_steering_benchmark.py`.
 
-Project Chrono (`chrono_steering.csv`) is written by `scripts/chrono_geometry_benchmark.py`.
+Project Chrono (`chrono_steering.csv`) is written by `scripts/chrono_geometry_benchmark.py`, MATLAB Simscape Multibody
+(`matlab_steering.csv`) by `kk_bench_simscape(root, 'geometry')` in `scripts/matlab/kk_bench_simscape.m`.
 
 ## Results
 
 Project Chrono 9.0.1: pass on both corners. Toe and camber within 1e-9 deg, steering-wheel angle at lock within
 0.00004 deg, Ackermann at lock within 0.0003 percentage point (front_v11_final: 118.9 deg, 75.27 %). Adams View 2026.1
 (run by the author): pass on both corners; toe and camber within 0.00005 deg, lock within 0.0002 deg, Ackermann within
-0.0003 point.
+0.0003 point. MATLAB Simscape Multibody R2025b: pass on both corners;
+toe and camber within 2e-6 deg, lock within 0.00004 deg, Ackermann within 0.0003 point.

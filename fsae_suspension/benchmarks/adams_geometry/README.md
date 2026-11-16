@@ -14,7 +14,8 @@ and length, 0.1 percentage point on the anti-geometry at ride height.
    scrub, trail and damper_len in Adams' working directory.
 2. Copy the 12 `.tab` files here, unedited.
 3. `python scripts/adams_geometry_benchmark.py` prints the worst difference per measure and PASS/FAIL, for Adams and
-   for Project Chrono (`chrono_geometry.csv`, written by `scripts/chrono_geometry_benchmark.py`, already run).
+   for Project Chrono (`chrono_geometry.csv`, written by `scripts/chrono_geometry_benchmark.py`, already run) and MATLAB Simscape Multibody (`matlab_geometry.csv`, written by
+   `kk_bench_simscape(root, 'geometry')` in `scripts/matlab/kk_bench_simscape.m`, already run).
 
 Regenerate the command files with `python scripts/adams_geometry_benchmark.py --write`.
 
@@ -22,4 +23,4 @@ If the tables do not appear, run both `_geo.cmd` files in one session, set File 
 
 ## Results
 
-Adams View 2026.1 (run by the author) and Project Chrono 9.0.1: pass on both corners. Worst against KinematiK: Adams 1.2e-4 mm (rear damper length; Adams' 7-digit output), Chrono 3.4e-5 mm; anti-geometry within 0.0007 percentage point.
+Adams View 2026.1 (run by the author), Project Chrono 9.0.1 and MATLAB Simscape Multibody R2025b: pass on both corners. Worst against KinematiK: Adams 1.2e-4 mm (rear damper length; Adams' 7-digit output), Chrono 3.4e-5 mm, Simscape Multibody R2025b 2.6e-5 mm; anti-geometry within 0.0007 percentage point.

@@ -5,6 +5,10 @@ function kk_bench_simscape(root, part)
 %                                % a kinematik_matlab_standalone folder in it or in MATLAB Drive
 %   kk_bench_simscape(root)      % root = the folder holding manifests/ and benchmarks/
 %   kk_bench_simscape(root, 'direct')   % only the direct-acting corners (link loads already written)
+%   kk_bench_simscape(root, 'geometry') % only the geometry and steering benchmarks:
+%                                       %   benchmarks/adams_geometry/matlab_geometry.csv (contact-patch path,
+%                                       %   scrub, trail, rocker damper length over wheel travel) and
+%                                       %   benchmarks/adams_steering/matlab_steering.csv (toe and camber over rack)
 %
 %   Shares no code with KinematiK: reads only the hardpoints (manifests, benchmarks/direct_acting/corners) and
 %   the load cases (benchmarks/link_loads/limits.json), builds each corner as a Simscape Multibody model, and
@@ -45,6 +49,10 @@ cases = reg.load_cases;
 caseNames = fieldnames(cases);
 ALL6 = {'UF','UR','LF','LR','TR','PR'};
 
+if strcmp(part, 'geometry')
+    geometryAndSteering(root);
+    return
+end
 sgn = calibrate();
 fprintf('Calibration passed (signed-force sign %+d).\n', sgn);
 
@@ -196,6 +204,177 @@ elseif isscalar(last)
 else
     error('Unexpected sensed force of size %s', mat2str(size(v)));
 end
+end
+
+% ------------------------------------------------------------------------------------------- geometry, steering
+function geometryAndSteering(root)
+geo = {'front_v11_final', 'rear_v11_final'};
+fg = fopen(fullfile(root, 'benchmarks', 'adams_geometry', 'matlab_geometry.csv'), 'w');
+fprintf(fg, 'corner,travel_mm,cp_dx_mm,cp_dz_mm,scrub_mm,trail_mm,damper_len_mm\n');
+for k = 1:numel(geo)
+    m = jsondecode(fileread(fullfile(root, 'manifests', [geo{k} '.recorded.genesis.json'])));
+    w = m.recorded.winner_hardpoints;
+    c = geometryCurve(points(w), ~isfield(w, 'pushrod_attach') || strcmp(w.pushrod_attach, 'upright'));
+    for i = 1:numel(c.trav)
+        fprintf(fg, '%s,%g,%.9f,%.9f,%.9f,%.9f,%.9f\n', geo{k}, c.trav(i), c.cp_dx(i), c.cp_dz(i), c.scrub(i), ...
+                c.trail(i), c.damper(i));
+    end
+    fprintf('geometry: %s done\n', geo{k});
+end
+fclose(fg);
+st = {'front_v11_final', 'front_v11_joints50'};
+fs = fopen(fullfile(root, 'benchmarks', 'adams_steering', 'matlab_steering.csv'), 'w');
+fprintf(fs, 'corner,rack_mm,toe_in_deg,camber_deg\n');
+for k = 1:numel(st)
+    m = jsondecode(fileread(fullfile(root, 'manifests', [st{k} '.recorded.genesis.json'])));
+    w = m.recorded.winner_hardpoints;
+    [rack, toeIn, camber] = steerCurve(points(w), w);
+    for i = 1:numel(rack)
+        fprintf(fs, '%s,%g,%.9f,%.9f\n', st{k}, rack(i), toeIn(i), camber(i));
+    end
+    fprintf('steering: %s done\n', st{k});
+end
+fclose(fs);
+fprintf('Wrote matlab_geometry.csv and matlab_steering.csv\n');
+end
+
+function c = geometryCurve(P, onUpright)
+% Contact-patch path, scrub and trail at the road plane through the contact patch, and the damper length from the
+% rocker's spring point to the chassis mount, at every mm of wheel-centre travel from -25 to +25.
+[mdl, W] = newModel();
+up = freeBody(mdl, W, 'upright');
+[lca, pl] = revoluteBody(mdl, W, 'lca', P.lower_front_inner, P.lower_rear_inner - P.lower_front_inner);
+[uca, pu] = revoluteBody(mdl, W, 'uca', P.upper_front_inner, P.upper_rear_inner - P.upper_front_inner);
+[rk, pr] = revoluteBody(mdl, W, 'rocker', P.rocker_pivot, P.rocker_axis);
+sph(mdl, 'lbj', at(mdl, lca, 'lca_lo', P.lower_outer - pl), at(mdl, up, 'up_lo', P.lower_outer));
+sph(mdl, 'ubj', at(mdl, uca, 'uca_uo', P.upper_outer - pu), at(mdl, up, 'up_uo', P.upper_outer));
+distance(mdl, 'D_TR', at(mdl, up, 'o_TR', P.tie_rod_outer), at(mdl, W, 'i_TR', P.tie_rod_inner), ...
+         norm(P.tie_rod_inner - P.tie_rod_outer), '');
+if onUpright, po = at(mdl, up, 'pr_o', P.pushrod_outer); else, po = at(mdl, lca, 'pr_o', P.pushrod_outer - pl); end
+distance(mdl, 'D_PR', po, at(mdl, rk, 'rk_pr', P.rocker_pushrod - pr), norm(P.rocker_pushrod - P.pushrod_outer), '');
+fO = refFrame(mdl, 'FR_o', at(mdl, W, 'origin', [0 0 0]));
+fCp = refFrame(mdl, 'FR_cp', at(mdl, up, 'cp', P.contact_patch));
+fLo = refFrame(mdl, 'FR_lo', at(mdl, up, 'lo', P.lower_outer));
+fUo = refFrame(mdl, 'FR_uo', at(mdl, up, 'uo', P.upper_outer));
+fRs = refFrame(mdl, 'FR_rs', at(mdl, rk, 'rs', P.rocker_spring - pr));
+fSi = refFrame(mdl, 'FR_si', at(mdl, W, 'si', P.spring_inner));
+fWc = refFrame(mdl, 'FR_wc', at(mdl, up, 'wc', P.wheel_center));
+fW0 = refFrame(mdl, 'FR_wc0', at(mdl, W, 'wc0', P.wheel_center));
+save_system(mdl, fullfile(tempdir, [mdl '.slx']));
+ks = simscape.multibody.KinematicsSolver(mdl);
+jp = jointPositionVariables(ks);
+jid = jp.ID(contains(jp.BlockPath, 'lca_rev'));
+rid = jp.ID(contains(jp.BlockPath, 'rocker_rev'));
+if numel(jid) ~= 1 || numel(rid) ~= 1, error('Could not find the joint variables:\n%s', evalc('disp(jp)')); end
+addFrameVariables(ks, 'cp', 'Translation', fO, fCp);
+addFrameVariables(ks, 'lo', 'Translation', fO, fLo);
+addFrameVariables(ks, 'uo', 'Translation', fO, fUo);
+addFrameVariables(ks, 'dmp', 'Translation', fSi, fRs);
+addFrameVariables(ks, 'wc', 'Translation', fW0, fWc);
+addTargetVariables(ks, "wc.Translation.z");
+addInitialGuessVariables(ks, [jid; rid]);
+names = ["cp", "lo", "uo", "dmp"] + ".Translation." + ["x"; "y"; "z"];
+addOutputVariables(ks, [names(:)', "wc.Translation.z", string(jid), string(rid)]);
+tv = targetVariables(ks);
+zUnit = unitToMm(char(string(tv.Unit(1))));
+ov = outputVariables(ks);
+ids = string(ov.ID);
+k = ones(1, numel(ids));
+for i = 1:numel(ids)
+    if contains(ids(i), ".Translation."), k(i) = unitToMm(char(string(ov.Unit(i)))); end
+end
+g = @(o, v) [o(ids == v + ".Translation.x"), o(ids == v + ".Translation.y"), o(ids == v + ".Translation.z")];
+trav = -25:25;
+c = struct('trav', trav, 'cp_dx', nan(size(trav)), 'cp_dz', nan(size(trav)), 'scrub', nan(size(trav)), ...
+           'trail', nan(size(trav)), 'damper', nan(size(trav)));
+i0 = find(trav == 0);
+for dirn = [1, -1]                                           % walk out from ride height, bump then droop
+    guess = [0, 0];
+    for i = i0:dirn:(i0 + dirn * 25)
+        [o, flag] = solve(ks, trav(i) / zUnit, guess);
+        o = o(:)' .* k;
+        if flag ~= 1 || abs(o(ids == "wc.Translation.z") - trav(i)) > 1e-6
+            error('Kinematics Solver failed at %g mm of wheel travel (status %d).', trav(i), flag);
+        end
+        guess = [o(ids == string(jid)), o(ids == string(rid))];
+        cp = g(o, "cp"); lo = g(o, "lo"); uo = g(o, "uo");
+        kp = uo - lo;
+        road = lo + (cp(3) - lo(3)) / kp(3) * kp;            % kingpin axis on the road plane through the patch
+        c.cp_dx(i) = cp(1) - P.contact_patch(1);
+        c.cp_dz(i) = cp(3) - P.contact_patch(3);
+        c.scrub(i) = cp(2) - road(2);
+        c.trail(i) = cp(1) - road(1);
+        c.damper(i) = norm(g(o, "dmp"));
+    end
+end
+c.damper = c.damper - c.damper(i0);
+close_system(mdl, 0);
+end
+
+function [rack, toeIn, camber] = steerCurve(P, w)
+% Toe-in and camber of the steered wheel at ride height (lower ball joint held where the static lower wishbone puts
+% it) as a rack moves the tie-rod inner end along y, -30 to +30 mm in 0.25 mm steps.
+[mdl, W] = newModel();
+up = freeBody(mdl, W, 'upright');
+[uca, pu] = revoluteBody(mdl, W, 'uca', P.upper_front_inner, P.upper_rear_inner - P.upper_front_inner);
+sph(mdl, 'lbj', at(mdl, W, 'w_lo', P.lower_outer), at(mdl, up, 'up_lo', P.lower_outer));
+sph(mdl, 'ubj', at(mdl, uca, 'uca_uo', P.upper_outer - pu), at(mdl, up, 'up_uo', P.upper_outer));
+n = [0; 0; 1] + [0; 1; 0]; n = n / norm(n);
+R = 2 * (n * n') - eye(3);                                   % takes z onto y, its own inverse
+b = rot(mdl, at(mdl, W, 'rack_T', P.tie_rod_inner), 'rack_R', R);
+j = blk(mdl, 'sm_lib/Joints/Prismatic Joint', 'rack_pri');
+ph = get_param(j, 'PortHandles');
+link(mdl, b, ph.LConn(1));
+rackF = rot(mdl, ph.RConn(1), 'rack_back', R);
+inertia(mdl, 'rack_m', rackF);
+distance(mdl, 'D_TR', at(mdl, up, 'o_TR', P.tie_rod_outer), rackF, norm(P.tie_rod_inner - P.tie_rod_outer), '');
+cam = deg2rad(0); toe = deg2rad(0);
+if isfield(w, 'static_camber'), cam = deg2rad(w.static_camber); end
+if isfield(w, 'static_toe'), toe = deg2rad(w.static_toe); end
+spin = [sin(toe), cos(toe) * cos(cam), -sin(cam)];
+tip = P.wheel_center + 100 * spin / norm(spin);
+fO = refFrame(mdl, 'FR_o', at(mdl, W, 'origin', [0 0 0]));
+fWc = refFrame(mdl, 'FR_wc', at(mdl, up, 'wc', P.wheel_center));
+fTip = refFrame(mdl, 'FR_tip', at(mdl, up, 'tip', tip));
+save_system(mdl, fullfile(tempdir, [mdl '.slx']));
+ks = simscape.multibody.KinematicsSolver(mdl);
+jp = jointPositionVariables(ks);
+rid = jp.ID(contains(jp.BlockPath, 'rack_pri'));
+uid = jp.ID(contains(jp.BlockPath, 'uca_rev'));
+if numel(rid) ~= 1 || numel(uid) ~= 1, error('Could not find the joint variables:\n%s', evalc('disp(jp)')); end
+addFrameVariables(ks, 'wc', 'Translation', fO, fWc);
+addFrameVariables(ks, 'tip', 'Translation', fO, fTip);
+addTargetVariables(ks, rid);
+addInitialGuessVariables(ks, uid);
+addOutputVariables(ks, ["wc.Translation.x", "wc.Translation.y", "wc.Translation.z", "tip.Translation.x", ...
+                        "tip.Translation.y", "tip.Translation.z", string(rid), string(uid)]);
+tv = targetVariables(ks);
+rUnit = unitToMm(char(string(tv.Unit(1))));
+ov = outputVariables(ks);
+ids = string(ov.ID);
+k = ones(1, numel(ids));
+for i = 1:numel(ids)
+    if contains(ids(i), ".Translation.") || ids(i) == string(rid), k(i) = unitToMm(char(string(ov.Unit(i)))); end
+end
+rack = -30:0.25:30;
+toeIn = nan(size(rack)); camber = nan(size(rack));
+i0 = find(rack == 0);
+for dirn = [1, -1]
+    guess = 0;
+    for i = i0:dirn:(dirn > 0) * numel(rack) + (dirn < 0)
+        [o, flag] = solve(ks, rack(i) / rUnit, guess);
+        o = o(:)' .* k;
+        if flag ~= 1 || abs(o(ids == string(rid)) - rack(i)) > 1e-6
+            error('Kinematics Solver failed at %g mm of rack (status %d).', rack(i), flag);
+        end
+        guess = o(ids == string(uid));
+        d = [o(ids == "tip.Translation.x"), o(ids == "tip.Translation.y"), o(ids == "tip.Translation.z")] - ...
+            [o(ids == "wc.Translation.x"), o(ids == "wc.Translation.y"), o(ids == "wc.Translation.z")];
+        toeIn(i) = -rad2deg(atan(d(1) / d(2)));
+        camber(i) = -rad2deg(atan(d(3) / d(2)));
+    end
+end
+close_system(mdl, 0);
 end
 
 % ------------------------------------------------------------------------------------------- damper

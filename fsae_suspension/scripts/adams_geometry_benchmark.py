@@ -162,9 +162,10 @@ def adams_curves(name: str) -> dict[str, np.ndarray] | None:
     return out
 
 
-def chrono_curves(name: str) -> dict[str, np.ndarray] | None:
-    """Project Chrono's side (scripts/chrono_geometry_benchmark.py, chrono_geometry.csv) at TRAVEL; None if not run."""
-    f = BENCH / "chrono_geometry.csv"
+def chrono_curves(name: str, tool: str = "chrono") -> dict[str, np.ndarray] | None:
+    """Project Chrono's side (scripts/chrono_geometry_benchmark.py, chrono_geometry.csv), or Simscape Multibody's
+    (scripts/matlab/kk_bench_simscape.m 'geometry', matlab_geometry.csv), at TRAVEL; None if not run."""
+    f = BENCH / f"{tool}_geometry.csv"
     if not f.exists():
         return None
     rows = [ln.split(",") for ln in f.read_text().splitlines()[1:] if ln.startswith(name + ",")]
@@ -172,14 +173,14 @@ def chrono_curves(name: str) -> dict[str, np.ndarray] | None:
         return None
     a = np.array([[float(x) for x in r[1:]] for r in rows])
     if not np.allclose(a[:, 0], TRAVEL):
-        raise ValueError(f"chrono_geometry.csv does not hold {name} at -25..+25 mm in 1 mm steps")
+        raise ValueError(f"{f.name} does not hold {name} at -25..+25 mm in 1 mm steps")
     out = dict(zip(("cp_dx", "cp_dz", "scrub", "trail", "damper_len"), a[:, 1:].T))
     out["anti_pct"] = np.array([anti_from_path(out["cp_dx"], out["cp_dz"])])
     return out
 
 
 def compare(name: str, tool: str = "adams") -> dict | None:
-    adams = adams_curves(name) if tool == "adams" else chrono_curves(name)
+    adams = adams_curves(name) if tool == "adams" else chrono_curves(name, tool)
     if adams is None:
         return None
     kk = kinematik_curves(name)
@@ -198,7 +199,7 @@ def main(argv: list[str]) -> int:
     qs = list(LIMITS)
     print(f"{'corner':28s}" + "".join(f"{q + ' (' + UNITS[q] + ')':>18s}" for q in qs))
     print(f"{'limit':28s}" + "".join(f"{LIMITS[q]:18.3f}" for q in qs))
-    for tool in ("adams", "chrono"):
+    for tool in ("adams", "chrono", "matlab"):
         for n in CORNERS:
             r = compare(n, tool)
             label = f"{n} {tool}"

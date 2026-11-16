@@ -171,8 +171,9 @@ def adams_curves(name: str) -> dict | None:
     return {q: np.interp(RACK, rack, v) for q, v in raw.items()}
 
 
-def chrono_curves(name: str) -> dict | None:
-    f = BENCH / "chrono_steering.csv"
+def chrono_curves(name: str, tool: str = "chrono") -> dict | None:
+    """Project Chrono's (chrono_steering.csv) or Simscape Multibody's (matlab_steering.csv) toe and camber."""
+    f = BENCH / f"{tool}_steering.csv"
     if not f.exists():
         return None
     rows = [ln.split(",") for ln in f.read_text().splitlines()[1:] if ln.startswith(name + ",")]
@@ -180,12 +181,12 @@ def chrono_curves(name: str) -> dict | None:
         return None
     a = np.array([[float(x) for x in r[1:]] for r in rows])
     if not np.allclose(a[:, 0], RACK):
-        raise ValueError(f"chrono_steering.csv does not hold {name} at the benchmark's rack stations")
+        raise ValueError(f"{f.name} does not hold {name} at the benchmark's rack stations")
     return {"toe_in": a[:, 1], "camber": a[:, 2]}
 
 
 def compare(name: str, tool: str = "adams") -> dict | None:
-    other = adams_curves(name) if tool == "adams" else chrono_curves(name)
+    other = adams_curves(name) if tool == "adams" else chrono_curves(name, tool)
     if other is None:
         return None
     kk = kinematik_curves(name)
@@ -207,7 +208,7 @@ def main(argv: list[str]) -> int:
     ok, ran = True, 0
     print(f"{'corner':30s}" + "".join(f"{q + ' (' + UNITS[q] + ')':>24s}" for q in LIMITS))
     print(f"{'limit':30s}" + "".join(f"{LIMITS[q]:24.3f}" for q in LIMITS))
-    for tool in ("adams", "chrono"):
+    for tool in ("adams", "chrono", "matlab"):
         for n in CORNERS:
             r = compare(n, tool)
             if r is None:

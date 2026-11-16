@@ -3,6 +3,9 @@
 
 ## Unreleased
 
+**Geometry and steering benchmarks: MATLAB Simscape Multibody as a third tool.**
+- `kk_bench_simscape(root, 'geometry')` builds both corners in Simscape Multibody (KinematicsSolver) and writes the contact-patch path, scrub, trail and damper length over ±25 mm and toe and camber over ±30 mm of rack. R2025b passes every limit set before the run: paths and lengths within 3e-5 mm, toe and camber within 2e-6°, lock and Ackermann as Chrono.
+
 **Where the link loads go: brackets, upright, hub bearings, fatigue.**
 - A new InverseGenesis section screens the parts the links load, on the same load cases: the upright's joint loads per case (checked for equilibrium with the tyre load; the FEA load set), its arms as cantilevers, the hub bearings (ISO 76 static), the pickup brackets at each link's worst force, link-weld fatigue (IIW FAT, slope 3, at a declared design life) and rod-end shank fatigue (VDI 2230).
 - Where a part is not declared it shows what the part needs (section modulus, bearing C0) instead of a factor. The tool's example bracket is labelled as such.

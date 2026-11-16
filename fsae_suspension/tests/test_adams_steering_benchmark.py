@@ -24,6 +24,12 @@ def test_project_chrono_agrees_within_the_limits_set_before_the_run(name):
     assert r is not None and r["passed"], r
 
 
+@pytest.mark.parametrize("name", asb.CORNERS)
+def test_simscape_multibody_agrees_within_the_limits_set_before_the_run(name):
+    r = asb.compare(name, "matlab")
+    assert r is not None and r["passed"], r
+
+
 def test_the_lock_read_off_a_curve_is_the_bounds_table_value():
     r = asb.compare("front_v11_final", "chrono")
     assert r["lock_sw_deg"] == pytest.approx(118.9, abs=0.01) and r["ackermann_lock_pct"] == pytest.approx(75.27, abs=0.01)

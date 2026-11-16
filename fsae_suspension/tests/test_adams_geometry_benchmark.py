@@ -42,6 +42,12 @@ def test_project_chrono_agrees_within_the_limits_set_for_adams(name):
 
 
 @pytest.mark.parametrize("name", agb.CORNERS)
+def test_simscape_multibody_agrees_within_the_limits_set_for_adams(name):
+    r = agb.compare(name, "matlab")
+    assert r is not None and r["passed"], r
+
+
+@pytest.mark.parametrize("name", agb.CORNERS)
 def test_adams_view_agrees_within_the_limits_set_before_the_run(name):
     r = agb.compare(name, "adams")
     assert r is not None and r["passed"], r
