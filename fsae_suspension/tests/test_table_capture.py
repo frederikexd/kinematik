@@ -26,7 +26,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
 _WANT_FN = ("_ax_cell", "_ax_table_rows", "_ax_plural", "_ax_table_summary")
-_WANT_C = ("_MAX_TABLE_ROWS", "_MAX_TABLE_COLS")
+_WANT_C = ("_MAX_TABLE_ROWS", "_MAX_TABLE_COLS", "_MAX_CELL_CHARS")
 
 
 @pytest.fixture(scope="module")
@@ -146,8 +146,10 @@ def test_non_finite_floats_do_not_leak_python_repr(mod):
 
 
 def test_very_long_cell_is_clipped(mod):
-    out = mod["_ax_cell"]("x" * 500)
-    assert len(out) <= 60 and out.endswith("…")
+    lim = mod["_MAX_CELL_CHARS"]
+    assert mod["_ax_cell"]("x" * lim) == "x" * lim             # a whole sentence fits
+    out = mod["_ax_cell"]("x" * (lim + 100))
+    assert len(out) == lim and out.endswith("…")
 
 
 # --- build stamp ----------------------------------------------------------
@@ -167,9 +169,11 @@ def test_build_stamp_is_content_derived_not_a_constant():
     """A version constant is something you have to remember to bump; the whole
     point is to survive someone forgetting."""
     src = open(os.path.join(ROOT, "streamlit_app.py"), encoding="utf-8").read()
-    fn = src[src.index("def _build_stamp("):]
-    fn = fn[:fn.index("\ndef ", 1)]
-    assert "hashlib" in fn and "sha256" in fn
+    def body(name):
+        fn = src[src.index(f"def {name}("):]
+        return fn[:fn.index("\ndef ", 1)]
+    assert "_source_fingerprint(" in body("_build_stamp")       # hashes every source file, not one
+    assert "hashlib" in body("_source_fingerprint") and "sha256" in body("_source_fingerprint")
 
 
 # --- PDF table layout ------------------------------------------------------
