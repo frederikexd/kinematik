@@ -9,10 +9,11 @@ and length, 0.1 percentage point on the anti-geometry at ride height.
 
 ## Run
 
-1. Adams View, File > Import > Adams View Command File: `front_v11_final_geo.cmd` (then `rear_v11_final_geo.cmd`).
+1. Adams View, File > Select Directory: this folder. Then File > Import > Adams View Command File: `run_all.cmd`
+   (it reads `front_v11_final_geo.cmd` and `rear_v11_final_geo.cmd` in turn).
    Each builds the model, runs the kinematic sweep and writes `<corner>_geo__<measure>.tab` for travel, cp_dx, cp_dz,
    scrub, trail and damper_len in Adams' working directory.
-2. Copy the 12 `.tab` files here, unedited.
+2. The 12 `.tab` files are written here, unedited; nothing to export by hand.
 3. `python scripts/adams_geometry_benchmark.py` prints the worst difference per measure and PASS/FAIL, for Adams and
    for Project Chrono (`chrono_geometry.csv`, written by `scripts/chrono_geometry_benchmark.py`, already run).
 
