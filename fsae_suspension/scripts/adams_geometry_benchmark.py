@@ -137,14 +137,24 @@ def command_file(name: str) -> str:
 def adams_curves(name: str) -> dict[str, np.ndarray] | None:
     """Adams' side, from the exported Spread Sheet files, at TRAVEL; None until the corner has been run."""
     files = {m: BENCH / f"{name}_geo__{m}.tab" for m in MEASURES}
-    if not all(f.exists() for f in files.values()):
-        return None
+    table = BENCH / f"{name}_geo.tab"            # or one PostProcessor table (File > Export > Table) of all six
     raw = {}
-    for m, f in files.items():
-        model, _rs, _t, v = avb.read_spreadsheet(f)
+    if all(f.exists() for f in files.values()):
+        for m, f in files.items():
+            model, _rs, _t, v = avb.read_spreadsheet(f)
+            if not model.startswith(f"{name}_geo"):
+                raise ValueError(f"{f.name} was exported from model {model!r}")
+            raw[m] = v
+    elif table.exists():
+        model, cols = avb.read_table(table)
         if not model.startswith(f"{name}_geo"):
-            raise ValueError(f"{f.name} was exported from model {model!r}")
-        raw[m] = v
+            raise ValueError(f"{table.name} was exported from model {model!r}")
+        missing = [m for m in MEASURES if m not in cols]
+        if missing:
+            raise ValueError(f"{table.name} lacks {', '.join(missing)}")
+        raw = {m: cols[m] for m in MEASURES}
+    else:
+        return None
     trav = raw.pop("travel")
     out = {m: np.interp(TRAVEL, trav, v) for m, v in raw.items()}
     out["damper_len"] = out["damper_len"] - out["damper_len"][TRAVEL == 0.0][0]

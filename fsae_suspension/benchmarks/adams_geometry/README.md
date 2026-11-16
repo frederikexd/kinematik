@@ -9,12 +9,17 @@ and length, 0.1 percentage point on the anti-geometry at ride height.
 
 ## Run
 
-1. Adams View, File > Select Directory: this folder. Then File > Import > Adams View Command File: `run_all.cmd`
-   (it reads `front_v11_final_geo.cmd` and `rear_v11_final_geo.cmd` in turn).
+1. Adams View, File > Import > Adams View Command File: `front_v11_final_geo.cmd` (then `rear_v11_final_geo.cmd`).
    Each builds the model, runs the kinematic sweep and writes `<corner>_geo__<measure>.tab` for travel, cp_dx, cp_dz,
    scrub, trail and damper_len in Adams' working directory.
-2. The 12 `.tab` files are written here, unedited; nothing to export by hand.
+2. Copy the 12 `.tab` files here, unedited.
 3. `python scripts/adams_geometry_benchmark.py` prints the worst difference per measure and PASS/FAIL, for Adams and
    for Project Chrono (`chrono_geometry.csv`, written by `scripts/chrono_geometry_benchmark.py`, already run).
 
 Regenerate the command files with `python scripts/adams_geometry_benchmark.py --write`.
+
+If the tables do not appear, run both `_geo.cmd` files in one session, set File > Select Directory to the folder you want them in and import `export_both.cmd`, which writes all 12. One PostProcessor table per corner (File > Export > Table, the six measures, saved as `<corner>_geo.tab`) is read too.
+
+## Results
+
+Adams View 2026.1 (run by the author) and Project Chrono 9.0.1: pass on both corners. Worst against KinematiK: Adams 1.2e-4 mm (rear damper length; Adams' 7-digit output), Chrono 3.4e-5 mm; anti-geometry within 0.0007 percentage point.

@@ -39,3 +39,9 @@ def test_compare_waits_for_the_adams_run():
 def test_project_chrono_agrees_within_the_limits_set_for_adams(name):
     r = agb.compare(name, "chrono")
     assert r is not None and r["passed"], r
+
+
+@pytest.mark.parametrize("name", agb.CORNERS)
+def test_adams_view_agrees_within_the_limits_set_before_the_run(name):
+    r = agb.compare(name, "adams")
+    assert r is not None and r["passed"], r
