@@ -213,3 +213,14 @@ def test_scrub_radius_is_measured_on_the_road():
         kp = (s.upper_outer - s.lower_outer) / np.linalg.norm(s.upper_outer - s.lower_outer)
         g = s.lower_outer + (s.contact_patch[2] - s.lower_outer[2]) / kp[2] * kp
         assert abs(s.scrub_radius - (s.contact_patch[1] - g[1])) < 1e-9
+
+
+def test_camber_inclination_is_the_spin_axis_angle_to_the_ground():
+    """camber_inclination turns KinematiK's front-view camber into the ISO 8855 inclination: equal at zero toe,
+    asin of the spin axis's vertical component otherwise."""
+    import math
+    from suspension.kinematics import camber_inclination
+    for c, t in ((-2.5, 0.0), (-2.5, 12.0), (1.0, -20.0)):
+        s = np.array([math.tan(math.radians(t)), 1.0, -math.tan(math.radians(c))])
+        s /= np.linalg.norm(s)
+        assert abs(camber_inclination(c, t) + math.degrees(math.asin(s[2]))) < 1e-12
