@@ -142,7 +142,7 @@ def reasons_payload(ss):
     """The team's written reasons and answers in session state, as a dict that can be saved and loaded back. Text only, unitless."""
     return {k: v for k, v in ss.items()
             if isinstance(k, str) and isinstance(v, str)
-            and k.startswith(("ig_rat_", "ig_ans_", "ig_js_team", "ig_js_weighting"))}
+            and k.startswith(("ig_rat_", "ig_ans_", "ig_js_team", "ig_js_weighting", "ig_js_requirements"))}
 
 
 def open_questions(review_rows, thin, self_graded, defaults_count, inputs_count):
@@ -170,7 +170,7 @@ def open_questions(review_rows, thin, self_graded, defaults_count, inputs_count)
 
 def build(*, title, team, corner_name, axle, specs, decisions, rationale, evidence, tools, loads, safety,
           questions, answers, figure_ref=None, appendix_name=None, not_checked=None, parts=None,
-          target_chain=None, iterations=None, weighting=""):
+          target_chain=None, iterations=None, weighting="", requirements=""):
     """The judge summary as Markdown (angles in deg, lengths in mm, factors of safety dimensionless).
 
     ``decisions`` maps a DECISIONS key to {"target", "result", "evidence"} (strings the tool fills from the
@@ -184,7 +184,9 @@ def build(*, title, team, corner_name, axle, specs, decisions, rationale, eviden
     load: brackets, upright, hub bearings, and fatigue of welds and rod ends. ``target_chain`` is [(target, what it
     follows from, how, value)] from target_chain(): where the targets came from, one level up the V. ``iterations``
     is [(step, what changed, outcome)]: how the design got here. ``weighting`` is the team's own account of how the
-    trade-offs were weighted against each other."""
+    trade-offs were weighted against each other. ``requirements`` is the team's account of where the car-level
+    requirements behind the chain came from (the tyre, the ride frequency, the design accelerations): two levels up
+    the V."""
     from .project import FIGURE_SCHEME
     head = f"{title}" + (f" · {team}" if team else "")
     L = [f"# {head}", "",
@@ -200,6 +202,10 @@ def build(*, title, team, corner_name, axle, specs, decisions, rationale, eviden
     for name, tgt, got, ok in specs:
         L.append(f"| {name} | {tgt} | {got} | {'yes' if ok else 'no' if ok is not None else '—'} |")
     L.append("")
+    L += ["### Where the car-level requirements came from", "",
+          (requirements or "").strip() or f"{MISSING} Why this tyre, this ride frequency and these design "
+          "accelerations: the top-level objectives (lap time, event points, driver feedback, rules) they follow "
+          "from (two levels up the V).", ""]
     L += ["### Where the targets came from", ""]
     if target_chain:
         L += ["| target | follows from | how | value |", "|---|---|---|---|"]

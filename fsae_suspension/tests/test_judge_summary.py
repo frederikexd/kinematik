@@ -35,7 +35,7 @@ def test_every_score_sheet_heading_is_there_and_a_missing_reason_is_said_not_fil
     for _key, label, question in js.DECISIONS:              # every decision asked, its question printed with the gap
         assert f"### {label}" in md and question in md
     # why + alternatives each, the one answer, and the target chain, weighting and iterations not given
-    assert md.count(js.MISSING) == 2 * len(js.DECISIONS) + 1 + 3
+    assert md.count(js.MISSING) == 2 * len(js.DECISIONS) + 1 + 4
 
 
 def test_the_teams_words_replace_the_gap_and_nothing_else_does():
@@ -43,7 +43,7 @@ def test_the_teams_words_replace_the_gap_and_nothing_else_does():
     md = js.build(**_kw(rationale=rat, answers={"Caster: 3 deg": "Shimmed on the car."}))
     assert "Tyre optimum at 1.5 g." in md and "More gain." in md and "0.07 deg short." in md
     assert "Team answer: Shimmed on the car." in md
-    assert md.count(js.MISSING) == 2 * (len(js.DECISIONS) - 1) + 3     # + target chain, weighting, iterations
+    assert md.count(js.MISSING) == 2 * (len(js.DECISIONS) - 1) + 4     # + requirements, chain, weighting, iterations
 
 
 def test_specification_rows_mark_met_by_the_bounds():
@@ -85,7 +85,8 @@ def _min_build(**extra):
 
 def test_without_them_the_summary_asks_the_team_for_targets_iterations_and_weighting():
     md = _min_build()
-    for head in ("### Where the targets came from", "### How the trade-offs were weighted", "### How the design got here"):
+    for head in ("### Where the car-level requirements came from", "### Where the targets came from",
+                 "### How the trade-offs were weighted", "### How the design got here"):
         i = md.index(head)
         assert "Team to state" in md[i:i + 300]
 
@@ -107,3 +108,11 @@ def test_the_target_chain_derives_camber_gain_from_tyre_optimum_and_roll():
                     weighting="Lap time first.")
     assert "| Camber gain |" in md and "| run 1 | worst station 1.15× band | NO_FIT |" in md
     assert "Lap time first." in md
+
+
+def test_two_levels_up_the_team_states_where_the_requirements_came_from():
+    from suspension import judge_summary as js
+    md = _min_build(requirements="Hoosier R20 for its camber window; 3.1 Hz from driver feedback on bumps.")
+    i, j = md.index("### Where the car-level requirements came from"), md.index("### Where the targets came from")
+    assert i < j and "Hoosier R20 for its camber window" in md[i:j] and js.MISSING not in md[i:j]
+    assert "ig_js_requirements" in js.reasons_payload({"ig_js_requirements": "x", "other": "y"})

@@ -3607,7 +3607,8 @@ def judge_summary_inputs(ss, v, out, rows, axle, run, defaults):
                 parts=parts_rows,
                 figure_ref="judge_curves" if fig else None,
                 appendix_name="the InverseGenesis feature report",
-                target_chain=chain, iterations=iterations, weighting=str(ss.get("ig_js_weighting", "") or "")), fig
+                target_chain=chain, iterations=iterations, weighting=str(ss.get("ig_js_weighting", "") or ""),
+                requirements=str(ss.get("ig_js_requirements", "") or "")), fig
 
 
 def not_covered(rows, parts=None):
@@ -3660,6 +3661,10 @@ def _judge_summary_panel(st, ss, v, out, rows, axle, run, defaults):
                 except (ValueError, UnicodeDecodeError) as e:
                     st.warning(f"Could not read the saved reasons: {e}")
         st.text_input("Team name (printed in the header)", key="ig_js_team")
+        st.markdown("**Where the car-level requirements came from**")
+        st.caption("Why this tyre, this ride frequency and these design accelerations: the lap-time, event-points, "
+                   "driver or rules objectives they follow from. The targets below are derived from them.")
+        st.text_area("Car-level requirements", key="ig_js_requirements", height=90)
         for key, label, question in js.DECISIONS:
             st.markdown(f"**{label}**")
             st.caption(question)
