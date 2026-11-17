@@ -1479,6 +1479,8 @@ def structural_screening(hp: Hardpoints, tube: TubeSpec | None = None,
     return {
         "ok": True,
         "rows": rows,
+        "member_points": {m: {"outboard": tuple(float(c) for c in pts[m][0]),
+                              "inboard": tuple(float(c) for c in pts[m][1])} for m in members},
         "worst_fos_per_member": {m: round(v, 2) for m, v in worst_fos.items()},
         "governing_case": governing,
         "worst_fos_overall": round(worst_overall, 2),
@@ -1572,3 +1574,31 @@ def compliance_budget(hp: Hardpoints, axle: str = "front",
                        "flex, chassis stiffness and upright compliance "
                        "are omitted and all act in the same direction.")
     return results
+
+
+def pickup_loads_csv(screen: dict, corner_name: str = "") -> str:
+    """The link screen as a CSV a chassis optimiser can read: one row per load case and member, with the inboard
+    (chassis) and outboard pickup in KinematiK's corner frame (x rearward, y outboard, z up from the ground, mm), the
+    axial force (N, + tension) and the force that member puts on the chassis at its inboard pickup (N, same axes):
+    F times the unit vector from the inboard to the outboard pickup, so a link in tension pulls the chassis outboard.
+    The pushrod and damper are not in it: their load is in the report's spring and damper section."""
+    import csv
+    import io
+    buf = io.StringIO()
+    buf.write(f"# KinematiK pickup loads{' for ' + corner_name if corner_name else ''}. Frame: x rearward, y outboard, "
+              "z up from the ground (mm). force_N: axial, + tension. chassis_F*: force on the chassis at the inboard "
+              "pickup (N). Pushrod and damper not included.\n")
+    w = csv.writer(buf)
+    w.writerow(["load_case", "member", "force_N", "inboard_x_mm", "inboard_y_mm", "inboard_z_mm",
+                "outboard_x_mm", "outboard_y_mm", "outboard_z_mm", "chassis_Fx_N", "chassis_Fy_N", "chassis_Fz_N"])
+    pts = screen.get("member_points") or {}
+    for r in screen.get("rows") or []:
+        p = pts.get(r["member"])
+        if p is None:
+            continue
+        a, b = np.array(p["inboard"]), np.array(p["outboard"])
+        u = (b - a) / np.linalg.norm(b - a)
+        f = float(r["force_N"]) * u
+        w.writerow([r["load_case"], r["member"], r["force_N"], *(round(c, 2) for c in a),
+                    *(round(c, 2) for c in b), *(round(c, 1) for c in f)])
+    return buf.getvalue()

@@ -3,6 +3,8 @@
 
 ## Unreleased
 
+**Pickup loads for a chassis model.** The InverseGenesis link screen downloads as a CSV: every load case and link, the inboard and outboard pickup in KinematiK's corner frame, the axial force, and the force each link puts on the chassis at its inboard pickup, so a chassis model or optimiser can read the loads directly. Pushrod and damper loads stay in the report's spring and damper section.
+
 **Judge summary: every target traced.** 'Where the targets came from' now has a row for every declared target, not only the three the tool derives: the team's one-line statement of the requirement it follows from (a box per target in the panel, saved with the reasons), or 'Team to state' with what usually sets that kind of target, so a judge sees which targets are traced one level up the V and which are not.
 
 **Writing is not a design change.** Editing the team name, a judge-summary reason or answer, or the 'Why did you run this?' note no longer appears as an input edit in 'How the design got here' or in the rationale prompt's 'I changed…'.

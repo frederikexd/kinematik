@@ -2520,6 +2520,11 @@ def _sec_structural(st, pd, v, corner, axle):
                     for m, f in sc["worst_fos_per_member"].items()],
            title="Link factor of safety, worst case per member")
     _table(st, pd, sc["rows"], title="Link forces and factor of safety, every load case (N, + tension)")
+    if sc.get("member_points"):
+        st.download_button("⬇ Pickup loads for a chassis model (.csv)", gr.pickup_loads_csv(sc, axle + " corner"),
+                           file_name=f"pickup_loads_{axle}.csv", mime="text/csv", key=f"ig_pickup_csv_{axle}",
+                           help="Every load case and link: inboard and outboard pickup, axial force, and the force "
+                                "on the chassis at the inboard pickup, in KinematiK's corner frame.")
     return sc
 
 
