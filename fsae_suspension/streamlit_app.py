@@ -26473,6 +26473,9 @@ def render_pcb_doctor():
         try:
             _br = pdr_mod.bridge_risk_pairs(pboard)
             st.markdown("\n".join(pdr_mod.bridge_check_md(pboard, _br)))
+            _sym = pdr_mod.bridge_symptom_md(_br)
+            if _sym:                                        # expanders can't nest: a plain section
+                st.markdown("\n".join(_sym))
             st.caption("Pad gaps match KiCad 7's own pad geometry on its 14 demo boards (866 pairs, worst "
                        "0.007 mm; BENCHMARK.md). Whether a gap actually bridges depends on paste, stencil and "
                        "reflow, which the file does not record: check the list with a multimeter.")

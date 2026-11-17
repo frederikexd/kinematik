@@ -2883,7 +2883,13 @@ def bridge_risk_pairs(board: PcbBoard, max_gap_mm: float = BRIDGE_GAP_MM, cell_m
     supplies, a supply to a signal, a signal to ground, two signals. Supplies are found by name or, for auto-named
     nets, by their decoupling capacitors (`_net_classes`). Through-hole pads count on both sides; unconnected pads are
     skipped. The board file has no paste or mask aperture data here, so the list is a gap screen, not a bridge
-    prediction: continuity-check it on the built board before first power-up."""
+    prediction: continuity-check it on the built board before first power-up.
+
+    Two markers, which leave the order alone: `exposed` names the pins of the pair that are a part's exposed
+    (thermal) pad, which can't be probed once soldered (`_exposed_pins`); `across` names the part when the pair is
+    its own two terminals and the part is an inductor or ferrite (L, FB), which a bridge only bypasses."""
+    exposed = _exposed_pins(board)
+    two_pad = {fp.ref for fp in board.footprints if len(fp.pads) == 2 and re.match(r"^(?:L|FB)\d", fp.ref or "")}
     pads = []
     for fp in board.footprints:
         for p in fp.pads:
@@ -2934,6 +2940,27 @@ def bridge_risk_pairs(board: PcbBoard, max_gap_mm: float = BRIDGE_GAP_MM, cell_m
         if k not in best or d["gap_mm"] < best[k]["gap_mm"]:
             best[k] = d
     out = sorted(best.values(), key=lambda d: (d["rank"], d["gap_mm"], d["pins"]))
+    for d in out:
+        d["exposed"] = tuple(p for p in d["pins"] if p in exposed)
+        refs = {_ref_of(p) for p in d["pins"]}
+        d["across"] = next(iter(refs)) if len(refs) == 1 and refs <= two_pad else None
+    return out
+
+
+def _poly_area(pts: list) -> float:
+    return abs(sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1) in zip(pts, pts[1:] + pts[:1]))) / 2.0
+
+
+def _exposed_pins(board: PcbBoard) -> set:
+    """Pins (ref.pad) that are a part's exposed or thermal pad: on a part with five or more pads, a pad with at least
+    four times the median pad's copper area. Once soldered it can't be probed; its rail is measured instead."""
+    out = set()
+    for fp in board.footprints:
+        if len(fp.pads) < 5:
+            continue
+        areas = [(_poly_area(_pad_outline(p)), p) for p in fp.pads]
+        med = sorted(a for a, _ in areas)[len(areas) // 2]
+        out |= {f"{fp.ref}.{p.number}" for a, p in areas if med > 0 and a >= 4.0 * med}
     return out
 
 
@@ -2950,13 +2977,30 @@ def _ref_of(pin: str) -> str:
     return pin.rsplit(".", 1)[0]
 
 
+#: Rank of a bridge across an inductor's or ferrite's own two terminals: it only bypasses the part, below every
+#: pair that shorts two nets the board keeps apart.
+ACROSS_RANK = 5
+
+
+def _effective(r: dict) -> dict:
+    """A pair as the hit-list ranks it: a bridge across an inductor's own terminals drops to `ACROSS_RANK`."""
+    if r.get("across"):
+        return dict(r, rank=ACROSS_RANK, kind=f"across {r['across']} (bypasses it)")
+    return r
+
+
+def _pair_text(pair) -> str:
+    return "–".join(sorted(pair, key=_natural))
+
+
 def bridge_hitlist(rows: list, limit: int = HITLIST_ZONES, probe: int = 4) -> list:
-    """The places most likely to bridge, one per part (a pair across two parts is its own place): the worst kind
-    of pair there, its tightest gap (mm), how many close pairs it has, up to `probe` pairs of the worst kind to
-    check first and how many more of that kind there are. Ordered by the worst kind, then the tightest gap of that
-    kind, then the most pairs."""
+    """The places where a bridge would do the most damage, one per part (a pair across two parts is its own place):
+    the worst kind of pair there, its tightest gap (mm), how many close pairs it has, up to `probe` pairs of the
+    worst kind to probe first, how many more of that kind there are, and, for pairs that touch an exposed pad, the
+    two nets to measure instead (`measure`). Ordered by the worst kind, then the tightest gap of that kind, then the
+    most pairs."""
     zones: dict = {}
-    for r in rows:
+    for r in map(_effective, rows):
         refs = sorted({_ref_of(p) for p in r["pins"]})
         zones.setdefault(" / ".join(refs), []).append(r)
     out = []
@@ -2964,11 +3008,19 @@ def bridge_hitlist(rows: list, limit: int = HITLIST_ZONES, probe: int = 4) -> li
         rs = sorted(rs, key=lambda d: (d["rank"], d["gap_mm"], tuple(_natural(p) for p in d["pins"])))
         worst = rs[0]
         same = [d for d in rs if d["rank"] == worst["rank"]]
+        open_ = [d for d in same if not d.get("exposed")]
+        under = [d for d in same if d.get("exposed")]
+        measure = sorted({tuple(n for p, n in zip(d["pins"], d["nets"]) if p not in d["exposed"])
+                          + tuple(n for p, n in zip(d["pins"], d["nets"]) if p in d["exposed"]) for d in under})
         out.append({"where": where, "kind": worst["kind"], "rank": worst["rank"], "gap_mm": worst["gap_mm"],
-                    "pairs": len(rs), "probe": [d["pins"] for d in same[:probe]], "more": max(len(same) - probe, 0),
-                    "nets": sorted({n for d in rs for n in d["nets"]})})
+                    "pairs": len(rs), "probe": [d["pins"] for d in open_[:probe]], "more": max(len(open_) - probe, 0),
+                    "measure": measure, "nets": sorted({n for d in rs for n in d["nets"]})})
     out.sort(key=lambda z: (z["rank"], z["gap_mm"], -z["pairs"], z["where"]))
     return out[:limit]
+
+
+def _measure_text(measure: list) -> str:
+    return "under the exposed pad: measure " + ", ".join(f"{a} to {b}" for a, b in measure)
 
 
 def bridge_check_md(board: PcbBoard, rows: list | None = None, limit: int = HITLIST_ZONES) -> list:
@@ -2980,15 +3032,20 @@ def bridge_check_md(board: PcbBoard, rows: list | None = None, limit: int = HITL
     zones = bridge_hitlist(rows, limit)
     n_all = len({z for r in rows for z in [" / ".join(sorted({_ref_of(p) for p in r["pins"]}))]})
     lead = "The place" if len(zones) == 1 else f"The {len(zones)} places"
-    L += [f"{lead} most likely to bridge after in-house reflow, worst first: supply to ground at the "
-          "top, where a bridge shorts a rail and can fry parts. Board unpowered, multimeter on continuity, probe the "
-          "pins listed: a beep is a bridge until proven otherwise; a reading that starts low and climbs is a "
-          "capacitor charging. A pin under a part's exposed pad can't be probed once soldered: measure that rail to "
-          "ground instead.", "",
-          "| # | Where | Risk | Tightest gap | Close pairs | Probe first |", "|---|---|---|---|---|---|"]
+    L += [f"{lead} where a bridge after in-house reflow would do the most damage, worst first, tightest gap first "
+          "within each risk: supply to ground at the top, where a bridge shorts a rail and can fry parts. Board "
+          "unpowered, multimeter on continuity, probe the pins listed: a beep is a bridge until proven otherwise; a "
+          "reading that starts low and climbs is a capacitor charging. A pin under a part's exposed pad can't be "
+          "probed once soldered, so the sheet names the two nets to measure instead.", "",
+          "| # | Where | Risk | Tightest gap at this risk | Close pairs | Probe first |", "|---|---|---|---|---|---|"]
     for i, z in enumerate(zones, start=1):
-        pins = ", ".join("–".join(sorted(pair, key=_natural)) for pair in z["probe"]) + (f" (+{z['more']} more {z['kind']})" if z["more"] else "")
-        L.append(f"| {i} | {z['where']} | {z['kind']} | {z['gap_mm']:.2f} mm | {z['pairs']} | {pins} |")
+        parts = []
+        if z["probe"]:
+            parts.append(", ".join(_pair_text(pair) for pair in z["probe"])
+                         + (f" (+{z['more']} more {z['kind']})" if z["more"] else ""))
+        if z.get("measure"):
+            parts.append(_measure_text(z["measure"]))
+        L.append(f"| {i} | {z['where']} | {z['kind']} | {z['gap_mm']:.2f} mm | {z['pairs']} | {'; '.join(parts)} |")
     rest = n_all - len(zones)
     L += ["", f"From {len(rows)} pin pair{'s' if len(rows) != 1 else ''} closer than {BRIDGE_GAP_MM:g} mm across "
           f"{n_all} place{'s' if n_all != 1 else ''}"
@@ -2997,12 +3054,60 @@ def bridge_check_md(board: PcbBoard, rows: list | None = None, limit: int = HITL
     return L
 
 
+def _where_text(d: dict) -> str:
+    if d.get("exposed"):
+        return f"{_pair_text(d['pins'])} (under {_ref_of(d['exposed'][0])}'s exposed pad: can't be probed)"
+    return f"{_pair_text(d['pins'])} ({d['gap_mm']:.2f} mm)"
+
+
+def _listed(ds: list, cap: int) -> str:
+    ds = sorted(ds, key=lambda d: (d["gap_mm"], tuple(_natural(p) for p in d["pins"])))
+    return ", ".join(_where_text(d) for d in ds[:cap]) + (f" (+{len(ds) - cap} more)" if len(ds) > cap else "")
+
+
+def bridge_symptom_md(rows: list, cap: int = 8) -> list:
+    """The same close pairs grouped by what the bench shows (Markdown lines): for a rail that reads shorted, the
+    places on it tightest gap first; for a part that misbehaves, its neighbouring signal pins. A bridge across an
+    inductor's own terminals is left out: the part already joins those nets."""
+    rows = [r for r in map(_effective, rows) if r["rank"] != ACROSS_RANK]
+    if not rows:
+        return []
+    L = ["## If a check fails: where to look",
+         "The same close pairs, grouped by what you see on the bench. Each list is tightest gap first.", ""]
+    rails: dict = {}
+    for r in rows:
+        if r["rank"] <= 1:
+            key = tuple(sorted(r["nets"], key=lambda n: (_net_class(n) == "ground", n)))
+            rails.setdefault(key, []).append(r)
+    if rails:
+        L += ["**A rail reads shorted** (continuity between the two nets, board unpowered):", "",
+              "| Shorted | Look here |", "|---|---|"]
+        for key, ds in sorted(rails.items(), key=lambda kv: (min(d["rank"] for d in kv[1]),
+                                                              min(d["gap_mm"] for d in kv[1]), kv[0])):
+            L.append(f"| {key[0]} to {key[1]} | {_listed(ds, cap)} |")
+        L.append("")
+    parts: dict = {}
+    for r in rows:
+        if r["rank"] >= 2:
+            parts.setdefault(" / ".join(sorted({_ref_of(p) for p in r["pins"]})), []).append(r)
+    if parts:
+        L += ["**A part or signal misbehaves** (a bridge here shorts a signal, so the rail checks above won't catch "
+              "it): its neighbouring pins on different nets.", "",
+              "| Part | Neighbouring pins to check |", "|---|---|"]
+        for where, ds in sorted(parts.items(), key=lambda kv: (min(d["gap_mm"] for d in kv[1]), kv[0])):
+            L.append(f"| {where} | {_listed(ds, cap)} |")
+        L.append("")
+    return L
+
+
 def bringup_sheet_md(board: PcbBoard, nets=None) -> str:
-    """A one-page bring-up sheet: the solder-bridge check, then the resistance of each supply rail (Markdown; every
-    routed net when no rail is recognised)."""
+    """A one-page bring-up sheet: the solder-bridge hit-list, the same pairs by symptom, then the resistance of each
+    supply rail (Markdown; every routed net when no rail is recognised)."""
     L = ["# Bring-up sheet", "", f"Board: **{board.fmt_label}**, {sum(1 for f in board.footprints if f.ref != '?')} "
          "components. Unpowered checks, in order.", ""]
-    L += bridge_check_md(board)
+    rows = bridge_risk_pairs(board)
+    L += bridge_check_md(board, rows)
+    L += bridge_symptom_md(rows)
     if nets is None:                                    # the supply rails: where a high reading starves a load
         cls = _net_classes(board)
         nets = [n for n in sorted({s.net for s in board.segments if s.net}) if cls.get(n) == "supply"] or None

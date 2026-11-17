@@ -201,3 +201,53 @@ def test_overlapping_track_ends_are_joined_and_real_gaps_stay_open():
     seg = ' (segment (start {} 0) (end {} 0) (width 0.254) (layer "F.Cu") (net 1))\n'
     assert not _two_pad_net(seg.format(0, 10) + seg.format(10.065, 20))["open_groups"]   # 0.065 mm: overlapping
     assert _two_pad_net(seg.format(0, 10) + seg.format(10.3, 20))["open_groups"]         # 0.3 mm: a real gap
+
+
+# --------------------------------------------- exposed pads, bridges across a part, and the symptom view -- #
+def _qfn():
+    """A five-pad part: four 0.3 x 0.8 mm pins and a 2 x 2 mm exposed pad on GND, 0.25 mm from pins 1 and 2."""
+    rect = {"shape": "rect"}
+    return _board([("1", "+5V", -0.4, 1.65, 0.3, 0.8, rect), ("2", "SDA", 0.4, 1.65, 0.3, 0.8, rect),
+                   ("3", "+3V3", 3.0, 0.0, 0.3, 0.8, rect), ("4", "SCL", 3.5, 0.0, 0.3, 0.8, rect),
+                   ("5", "GND", 0.0, 0.0, 2.0, 2.0, rect)])
+
+
+def test_exposed_pad_is_marked_and_measured_not_probed():
+    b = _qfn()
+    assert D._exposed_pins(b) == {"U1.5"}
+    rows = D.bridge_risk_pairs(b)
+    ep = [r for r in rows if r["pins"] == ("U1.1", "U1.5")][0]
+    assert ep["exposed"] == ("U1.5",) and ep["kind"] == "supply to ground" and ep["across"] is None
+    z = D.bridge_hitlist(rows)[0]
+    assert z["probe"] == [] and z["measure"] == [("+5V", "GND")]
+    md = "\n".join(D.bridge_check_md(b, rows))
+    assert "| 1 | U1 | supply to ground | 0.25 mm | 3 | under the exposed pad: measure +5V to GND |" in md
+    assert "Tightest gap at this risk" in md and "most likely" not in md
+
+
+def test_bridge_across_an_inductor_ranks_last_and_leaves_the_symptom_view():
+    rect = {"shape": "rect"}
+    b = _board([("1", "GND", 0.0, 0.0, 1.0, 0.3, rect), ("2", "+5V", 0.0, 0.5, 1.0, 0.3, rect)])
+    ids = {n: i for i, n in b.nets.items()}
+    b.nets[3] = "+3V3"
+    b.footprints.append(D.PcbFootprint(ref="L2", value="22u", layer="F.Cu", at=(10.0, 0.0), pads=[
+        D.PcbPad(number="1", net=ids["+5V"], net_name="+5V", at=(10.0, 0.0), size=(1.5, 1.5), shape="rect"),
+        D.PcbPad(number="2", net=3, net_name="+3V3", at=(11.7, 0.0), size=(1.5, 1.5), shape="rect")]))
+    rows = D.bridge_risk_pairs(b)
+    across = [r for r in rows if r["pins"] == ("L2.1", "L2.2")][0]
+    assert across["across"] == "L2" and across["kind"] == "two supplies"        # the row itself is unchanged
+    z = D.bridge_hitlist(rows)
+    assert [x["where"] for x in z] == ["U1", "L2"] and z[1]["kind"] == "across L2 (bypasses it)"
+    sym = "\n".join(D.bridge_symptom_md(rows))
+    assert "| +5V to GND | U1.1–U1.2 (0.20 mm) |" in sym and "L2" not in sym
+
+
+def test_symptom_view_splits_rails_from_signals():
+    b = _qfn()
+    sym = "\n".join(D.bridge_symptom_md(D.bridge_risk_pairs(b)))
+    assert "| +5V to GND | U1.1–U1.5 (under U1's exposed pad: can't be probed) |" in sym
+    assert "| SDA to GND |" not in sym and "**A part or signal misbehaves**" in sym
+    assert "| U1 | U1.3–U1.4 (0.20 mm), U1.2–U1.5 (under U1's exposed pad: can't be probed)" in sym
+    assert D.bridge_symptom_md([]) == []
+    sheet = D.bringup_sheet_md(b)
+    assert sheet.index("Solder-bridge hit-list") < sheet.index("If a check fails: where to look")
