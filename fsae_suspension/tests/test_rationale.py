@@ -187,3 +187,12 @@ def test_changed_clause_is_prefilled_from_real_edits():
     block = src[i:i + 4000]
     assert "_rat.describe_changes(" in block
     assert "value=_auto" in block, "the 'I changed' field is not prefilled"
+
+
+def test_the_teams_own_writing_is_not_logged_as_a_design_change():
+    from suspension import rationale as r
+    for k in ("ig_js_team", "ig_js_weighting", "ig_js_requirements", "ig_rat_camber_why", "ig_ans_caster",
+              "genesis_rat_changed", "genesis_rat_why", "", None):
+        assert not r.is_design_input(k), k
+    for k in ("ig_track_mm", "pcb_upload", "ride_height_front"):
+        assert r.is_design_input(k), k

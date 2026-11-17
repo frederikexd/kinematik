@@ -418,7 +418,7 @@ def _ax_engage_cb(_feature, _user_cb, _user_args, _user_kwargs,
             _new = st.session_state.get(_widget_key)
             _old = _prev.get(_widget_key)
             _prev[_widget_key] = _new
-            if _old is not None and _old != _new:
+            if _old is not None and _old != _new and _rat_l.is_design_input(_widget_key):
                 _rat_l.record_change(st.session_state, _feature, _label,
                                      _old, _new)
     except Exception:

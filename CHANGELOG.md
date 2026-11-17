@@ -3,6 +3,8 @@
 
 ## Unreleased
 
+**Writing is not a design change.** Editing the team name, a judge-summary reason or answer, or the 'Why did you run this?' note no longer appears as an input edit in 'How the design got here' or in the rationale prompt's 'I changed…'.
+
 **Bring-up sheet: where to look, by symptom.** After a team's first sheet: the same close pairs grouped by what the bench shows. A rail that reads shorted lists the places on that rail, tightest gap first; a part or signal that misbehaves lists its neighbouring pins, which the rail checks can't catch. Exposed pads are found (four times the median pad on a part of five or more pads) and named as the two nets to measure, not as pins to probe. A bridge across an inductor's own terminals now ranks last (it only bypasses the part) and stays out of the symptom view. The hit-list says what it ranks: the damage a bridge would do, then the gap, not how likely a bridge is.
 
 **Judge summary: one level up the V.** After feedback from an FS design judge: the summary now shows where each target came from (design lateral acceleration from the tyre's friction, camber gain from the tyre's optimum camber and the body roll, the anti-dive floor from the ride frequency and jounce budget, each marked when it rests on a tool default), how the trade-offs were weighted (in the team's words, or 'Team to state'), and how the design got here (every run of the session and every input edit). A second level up: where the car-level requirements behind those targets came from (the tyre, ride frequency and design accelerations, from the team's top-level objectives), in the team's words or 'Team to state'.

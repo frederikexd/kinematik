@@ -81,6 +81,17 @@ def _fmt(v):
         return "?"
 
 
+#: Widget keys that hold the team's own writing (judge-summary reasons and answers, the team name, the rationale
+#: note itself), not design inputs. Editing them is not a design change, so it is never logged as one.
+_WRITING_PREFIXES = ("ig_js_", "ig_rat_", "ig_ans_")
+
+
+def is_design_input(widget_key) -> bool:
+    """True when an edit to this widget is a design change worth logging; False for the team's own writing."""
+    k = str(widget_key or "")
+    return bool(k) and not k.startswith(_WRITING_PREFIXES) and "_rat_" not in k
+
+
 def record_change(store, feature, label, before, after):
     """Note that the member edited one input. Never raises.
 
