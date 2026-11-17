@@ -116,3 +116,30 @@ def test_two_levels_up_the_team_states_where_the_requirements_came_from():
     i, j = md.index("### Where the car-level requirements came from"), md.index("### Where the targets came from")
     assert i < j and "Hoosier R20 for its camber window" in md[i:j] and js.MISSING not in md[i:j]
     assert "ig_js_requirements" in js.reasons_payload({"ig_js_requirements": "x", "other": "y"})
+
+
+def test_every_target_gets_an_origin_row_stated_or_flagged():
+    from suspension import judge_summary as js
+    specs = [("Roll-centre height (mm)", "55 ± 18", "52.8", True), ("Caster (deg)", "3.65 to 8", "3.656", True),
+             ("Something unusual (-)", "≥ 1", "2", True)]
+    rows = js.target_origin_rows(specs, {"Caster (deg)": "self-centring at 1.5 g with the declared rack"})
+    assert rows[0][0] == "Roll-centre height (mm)" and rows[0][1].startswith(js.MISSING)
+    assert "front share of lateral load transfer" in rows[0][1]
+    assert rows[1] == ("Caster (deg)", "self-centring at 1.5 g with the declared rack", "stated by the team",
+                       "3.65 to 8")
+    assert rows[2][1] == js.MISSING                                  # no hint invented for an unknown target
+    assert js.origin_key("Roll-centre height (mm)") == "ig_js_from_roll_centre_height_mm"
+    assert js.origin_key("Roll-centre height (mm)") in js.reasons_payload({js.origin_key("Roll-centre height (mm)"): "x"})
+
+
+def test_origins_extend_the_chain_table_and_leave_old_callers_unchanged():
+    from suspension import judge_summary as js
+    specs = [("Caster (deg)", "3.65 to 8", "3.656", True)]
+
+    def b(**extra):
+        return js.build(title="t", team="", corner_name="c", axle="front", specs=specs, decisions={}, rationale={},
+                        evidence=[], tools=[], loads=[], safety=[], questions=[], answers={}, **extra)
+    md_old, md_new = b(), b(origins={"Caster (deg)": "self-centring"})
+    assert "the team's own statement of where each target came from" not in md_old
+    i = md_new.index("### Where the targets came from")
+    assert "| Caster (deg) | self-centring | stated by the team | 3.65 to 8 |" in md_new[i:]

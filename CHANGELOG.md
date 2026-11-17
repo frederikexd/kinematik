@@ -3,6 +3,8 @@
 
 ## Unreleased
 
+**Judge summary: every target traced.** 'Where the targets came from' now has a row for every declared target, not only the three the tool derives: the team's one-line statement of the requirement it follows from (a box per target in the panel, saved with the reasons), or 'Team to state' with what usually sets that kind of target, so a judge sees which targets are traced one level up the V and which are not.
+
 **Writing is not a design change.** Editing the team name, a judge-summary reason or answer, or the 'Why did you run this?' note no longer appears as an input edit in 'How the design got here' or in the rationale prompt's 'I changed…'.
 
 **Bring-up sheet: where to look, by symptom.** After a team's first sheet: the same close pairs grouped by what the bench shows. A rail that reads shorted lists the places on that rail, tightest gap first; a part or signal that misbehaves lists its neighbouring pins, which the rail checks can't catch. Exposed pads are found (four times the median pad on a part of five or more pads) and named as the two nets to measure, not as pins to probe. A bridge across an inductor's own terminals now ranks last (it only bypasses the part) and stays out of the symptom view. The hit-list says what it ranks: the damage a bridge would do, then the gap, not how likely a bridge is.

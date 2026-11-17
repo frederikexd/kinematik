@@ -3608,7 +3608,8 @@ def judge_summary_inputs(ss, v, out, rows, axle, run, defaults):
                 figure_ref="judge_curves" if fig else None,
                 appendix_name="the InverseGenesis feature report",
                 target_chain=chain, iterations=iterations, weighting=str(ss.get("ig_js_weighting", "") or ""),
-                requirements=str(ss.get("ig_js_requirements", "") or "")), fig
+                requirements=str(ss.get("ig_js_requirements", "") or ""),
+                origins={name: str(ss.get(js.origin_key(name), "") or "") for name, *_ in specs}), fig
 
 
 def not_covered(rows, parts=None):
@@ -3677,11 +3678,16 @@ def _judge_summary_panel(st, ss, v, out, rows, axle, run, defaults):
                    "driver feedback. Judges ask this after the targets.")
         st.text_area("Weighting", key="ig_js_weighting", height=90)
         kw, fig = judge_summary_inputs(ss, v, out, rows, axle, run, defaults)
+        st.markdown("**Where each target came from**")
+        st.caption("One line per target: the requirement it follows from, one level up the V. A blank prints as "
+                   "'Team to state' with what usually sets that kind of target.")
+        for name, tgt, *_ in kw["specs"]:
+            st.text_input(f"{name}, target {tgt}", key=js.origin_key(name))
         if kw["questions"]:
             st.markdown("**Questions a judge will ask**")
             for q, why in kw["questions"]:
                 st.text_area(q, key=js.answer_key(q), height=70, help=why)
-            kw, fig = judge_summary_inputs(ss, v, out, rows, axle, run, defaults)
+        kw, fig = judge_summary_inputs(ss, v, out, rows, axle, run, defaults)
         md = js.build(**kw)
         import json as _json
         c1, c2, c3 = st.columns(3)

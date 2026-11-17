@@ -131,6 +131,50 @@ def target_chain(*, track_mm, body_roll_deg, tyre_optimum_camber_deg, static_cam
     return rows
 
 
+#: What usually sets each kind of target, printed beside a target whose origin the team has not stated, so the gap
+#: says what a judge will ask. Matched as a substring of the target's name in lower case; the first match wins.
+ORIGIN_HINTS = (
+    ("camber at ride height", "the tyre's camber window, chosen together with the camber gain"),
+    ("toe at ride height", "straight-line stability against turn-in response, and the build tolerance on toe"),
+    ("roll-centre", "the front share of lateral load transfer the balance needs, and the jacking the car accepts"),
+    ("anti-dive", "pitch under braking against brake feel, from the brake bias and the jounce budget"),
+    ("anti-squat", "pitch under acceleration against traction feel, from the drive layout and the jounce budget"),
+    ("kingpin", "packaging the ball joints inside the rim, and the self-centring it adds with steer"),
+    ("scrub", "steering feedback and kickback from braking forces and kerbs"),
+    ("caster", "self-centring and steering weight at the design lateral acceleration"),
+    ("ratio", "the steering-wheel torque target and the driver's hand travel"),
+    ("steering-wheel angle", "the tightest corner's radius and the driver's hand travel"),
+    ("ackermann", "the tightest corner's radius and speed"),
+    ("deceleration", "the tyre's friction and the brake bias"),
+    ("buckling", "the team's factor-of-safety policy for the shock cases"),
+    ("safety factor", "the team's factor-of-safety policy"),
+    ("compliance steer", "the toe band left after build scatter"),
+    ("misalignment", "the rod ends' rated misalignment"),
+)
+
+
+def origin_key(target_name):
+    """A stable widget key for the team's statement of where a target came from: its name, not its position."""
+    import re
+    return "ig_js_from_" + (re.sub(r"[^a-z]+", "_", str(target_name).lower()).strip("_") or "t")
+
+
+def target_origin_rows(specs, origins):
+    """Every declared target as a row of the 'where the targets came from' table, [(target, follows from, how,
+    target value)]: the team's own statement from ``origins`` (target name -> text), or MISSING with what usually
+    sets that kind of target, so a judge sees which targets the team has traced one level up and which it has not.
+    Units are those printed in the target's name."""
+    rows = []
+    for name, tgt, _got, _ok in specs:
+        txt = str((origins or {}).get(name) or "").strip()
+        if txt:
+            rows.append((name, txt, "stated by the team", str(tgt)))
+        else:
+            hint = next((h for k, h in ORIGIN_HINTS if k in str(name).lower()), "")
+            rows.append((name, MISSING + (f" Usually set by {hint}." if hint else ""), "—", str(tgt)))
+    return rows
+
+
 def answer_key(question):
     """A stable widget key for a question's answer: its check name, not its position or its value, so an answer
     stays with its question when the design (and so the list or the numbers in it) changes. Text only, unitless."""
@@ -142,7 +186,8 @@ def reasons_payload(ss):
     """The team's written reasons and answers in session state, as a dict that can be saved and loaded back. Text only, unitless."""
     return {k: v for k, v in ss.items()
             if isinstance(k, str) and isinstance(v, str)
-            and k.startswith(("ig_rat_", "ig_ans_", "ig_js_team", "ig_js_weighting", "ig_js_requirements"))}
+            and k.startswith(("ig_rat_", "ig_ans_", "ig_js_team", "ig_js_weighting", "ig_js_requirements",
+                                       "ig_js_from_"))}
 
 
 def open_questions(review_rows, thin, self_graded, defaults_count, inputs_count):
@@ -170,7 +215,7 @@ def open_questions(review_rows, thin, self_graded, defaults_count, inputs_count)
 
 def build(*, title, team, corner_name, axle, specs, decisions, rationale, evidence, tools, loads, safety,
           questions, answers, figure_ref=None, appendix_name=None, not_checked=None, parts=None,
-          target_chain=None, iterations=None, weighting="", requirements=""):
+          target_chain=None, iterations=None, weighting="", requirements="", origins=None):
     """The judge summary as Markdown (angles in deg, lengths in mm, factors of safety dimensionless).
 
     ``decisions`` maps a DECISIONS key to {"target", "result", "evidence"} (strings the tool fills from the
@@ -186,7 +231,8 @@ def build(*, title, team, corner_name, axle, specs, decisions, rationale, eviden
     is [(step, what changed, outcome)]: how the design got here. ``weighting`` is the team's own account of how the
     trade-offs were weighted against each other. ``requirements`` is the team's account of where the car-level
     requirements behind the chain came from (the tyre, the ride frequency, the design accelerations): two levels up
-    the V."""
+    the V. ``origins`` maps a target's name to the team's statement of where it came from; when given, every target in
+    ``specs`` gets a row in the same table (target_origin_rows), so none is left without a stated origin unseen."""
     from .project import FIGURE_SCHEME
     head = f"{title}" + (f" · {team}" if team else "")
     L = [f"# {head}", "",
@@ -207,9 +253,13 @@ def build(*, title, team, corner_name, axle, specs, decisions, rationale, eviden
           "accelerations: the top-level objectives (lap time, event points, driver feedback, rules) they follow "
           "from (two levels up the V).", ""]
     L += ["### Where the targets came from", ""]
-    if target_chain:
+    chain_rows = list(target_chain or []) + (target_origin_rows(specs, origins) if origins is not None else [])
+    if origins is not None:
+        L += ["The first rows are derived by the tool from the car's requirements; the rest are the team's own "
+              "statement of where each target came from.", ""]
+    if chain_rows:
         L += ["| target | follows from | how | value |", "|---|---|---|---|"]
-        L += [f"| {t} | {f} | {h} | {v} |" for t, f, h, v in target_chain] + [""]
+        L += [f"| {t} | {f} | {h} | {v} |" for t, f, h, v in chain_rows] + [""]
     else:
         L += [f"{MISSING} How each target follows from the car's requirements (one level up the V).", ""]
     if figure_ref:
