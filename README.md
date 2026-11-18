@@ -214,7 +214,7 @@ any FAIL (or WARN with `--fail-on warning`), so it can gate a CI run. KiCad and 
   Compare designs at matched settings rather than quoting one absolute figure.
 - **Brackets are screened, not simulated.** Bolt bearing, tear-out and weld throat are hand calculations without an
   outside benchmark, and a fully fixed root sees more stress than the hand value.
-- **Not peer reviewed yet.** A manuscript is in preparation.
+- **Not peer reviewed yet.** The manuscript has had technical reviews from industry engineers, credited in its acknowledgments, and is being prepared for journal submission.
 
 ## Acknowledgments
 
