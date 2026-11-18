@@ -1,0 +1,49 @@
+{
+ "rows": [
+  {
+   "h_mm": 1.0,
+   "elements_across": 10,
+   "axial_mm": 0.011006409854194401,
+   "axial_closed_mm": 0.01097560975609756,
+   "axial_rel": 0.0028062311599343914,
+   "transverse_mm": 3.564103842688219,
+   "transverse_closed_mm": 3.5903414634146342,
+   "transverse_rel": 0.007307834364439936,
+   "stress_MPa": -611.2942912778377,
+   "stress_closed_MPa": -614.25,
+   "stress_rel": 0.004811898611578824
+  },
+  {
+   "h_mm": 0.5,
+   "elements_across": 20,
+   "axial_mm": 0.011025528851661859,
+   "axial_closed_mm": 0.01097560975609756,
+   "axial_rel": 0.004548184262525012,
+   "transverse_mm": 3.5780692669722036,
+   "transverse_closed_mm": 3.5903414634146342,
+   "transverse_rel": 0.0034181140060028925,
+   "stress_MPa": -636.9175992974403,
+   "stress_closed_MPa": -637.6875,
+   "stress_rel": 0.0012073322788350715
+  },
+  {
+   "h_mm": 0.25,
+   "elements_across": 40,
+   "axial_mm": 0.011045677682666679,
+   "axial_closed_mm": 0.01097560975609756,
+   "axial_rel": 0.006383966642964145,
+   "transverse_mm": 3.5817466407297465,
+   "transverse_closed_mm": 3.5903414634146342,
+   "transverse_rel": 0.0023938733327926176,
+   "stress_MPa": -656.0986021989978,
+   "stress_closed_MPa": -656.296875,
+   "stress_rel": 0.0003021084033079102
+  }
+ ],
+ "passes": {
+  "axial": true,
+  "transverse": true,
+  "stress": true,
+  "converges": true
+ }
+}

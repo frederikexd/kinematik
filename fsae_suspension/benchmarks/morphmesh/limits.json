@@ -1,0 +1,10 @@
+{
+  "registered": "2026-11-18, before any comparison was run",
+  "case": "Steel strip 10 mm wide, 4 mm thick, clamped along y=0, load spread over the boss ring at height 90 mm; full material (no topology step); element sizes 1.0, 0.5, 0.25 mm",
+  "limits_at_finest_mesh": {
+    "axial_displacement_rel": 0.02,
+    "transverse_displacement_rel": 0.03,
+    "bending_stress_rel": 0.03
+  },
+  "convergence": "transverse displacement error must shrink at each refinement"
+}

@@ -84,7 +84,7 @@ InverseGenesis, InverseGenesis-FullCar, MorphMesh, OmniCore, Setup Optimiser, Tr
 | InverseGenesis | Known-answer recovery: hidden geometries with up to six moved pickups, recovered from their curves | Known answer | `scripts/method_benchmarks.py`, `tests/test_method_benchmarks.py::test_known_answer_recovery_meets_the_curves_not_the_pickups` |
 | | Target curves agree with the forward solver | Cross-check | `tests/test_inverse_genesis.py::test_camber_curve_agrees_with_direct_solver` |
 | InverseGenesis-FullCar | No benchmark beyond InverseGenesis | | `tests/test_inverse_genesis_fullcar.py` |
-| MorphMesh | No benchmark: the plate element's symmetry and rigid-body modes are checked, not a reference solution | | `tests/test_morphmesh.py` |
+| MorphMesh | Plane-stress kernel on a clamped 10 × 100 mm strip loaded at its boss like a chassis tab, against beam theory: axial PL/EA within 0.64 %, Timoshenko tip deflection within 0.24 % and bending stress within 0.03 % at 0.25 mm elements, error shrinking at each refinement; limits 2 %, 3 % and 3 % set before the run. The topology step itself has no reference solution | Closed form | `scripts/morphmesh_benchmark.py`, `tests/test_morphmesh_benchmark.py` |
 | OmniCore | Hand-worked Pareto cases: strict domination and a trade-off that keeps both | Known answer | `tests/test_omnicore.py::TestPareto::test_hand_case_strict_domination`, `::test_hand_case_tradeoff_keeps_both` |
 | Setup Optimiser | No benchmark: checked against its own tests only | | `tests/test_tiremodel.py::test_optimiser_never_regresses` |
 | Track Testing | Skidpad time consistent with its closed form | Closed form | `tests/test_laptime.py::test_skidpad_closed_form_consistency` |
@@ -220,7 +220,8 @@ Team Fit, Compliance, FlexGen, MorphMesh, OmniCore.
 | Feature | Benchmark | Kind | Re-run |
 |---|---|---|---|
 | Frame Planner | Tube buckling scales as the Euler column | Closed form | `tests/test_tubeframe.py::test_euler_buckling_scaling` |
-| Bracket FoS | No benchmark against FEA: hand-calculation modes (net section, tear-out, bending), checked against their own tests | | `tests/test_bracket_fos.py` |
+| Bracket FoS | Root bending against a 3D finite-element model of a welded tab (scikit-fem 12.0.2, 27-node hexahedra, no shared code), at sections 8–32 mm from the root: width-average stress within 0.02 %, peak across the width within 2.2 %, against 3 % and 10 % set before the run. At a fully fixed root the FEA stress is 28 % (average) and 47 % (peak) above the hand value and grows with mesh refinement, so a tab whose root governs needs FEA; reported, not claimed | Another tool | `scripts/bracket_fea_benchmark.py`, `tests/test_bracket_fea_benchmark.py`, [benchmarks/bracket_fea](fsae_suspension/benchmarks/bracket_fea) |
+| | Not benchmarked: net section, bolt bearing, tear-out and weld throat are hand calculations checked against their own tests | | `tests/test_bracket_fos.py` |
 | Team Fit | No physics to benchmark | | |
 | Compliance, FlexGen, MorphMesh, OmniCore | See [Suspension / Dynamics](#suspension--dynamics) | | |
 

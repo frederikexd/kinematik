@@ -1,0 +1,72 @@
+{
+ "tool": "scikit-fem 12.0.2",
+ "rows": [
+  {
+   "x_from_root_mm": 0.0,
+   "kinematik_MPa": 250.0,
+   "fea_width_average_MPa": 320.49173866775624,
+   "fea_peak_MPa": 367.16388488083777,
+   "average_rel": 0.28196695467102506,
+   "peak_rel": 0.46865553952335115,
+   "judged": false
+  },
+  {
+   "x_from_root_mm": 8.0,
+   "kinematik_MPa": 200.0,
+   "fea_width_average_MPa": 200.03452294686807,
+   "fea_peak_MPa": 201.1574427350511,
+   "average_rel": 0.00017261473434038166,
+   "peak_rel": 0.005787213675255476,
+   "judged": true
+  },
+  {
+   "x_from_root_mm": 12.0,
+   "kinematik_MPa": 175.0,
+   "fea_width_average_MPa": 175.0214419117785,
+   "fea_peak_MPa": 178.59991471055096,
+   "average_rel": 0.00012252521016287155,
+   "peak_rel": 0.020570941203148285,
+   "judged": true
+  },
+  {
+   "x_from_root_mm": 16.0,
+   "kinematik_MPa": 150.0,
+   "fea_width_average_MPa": 150.01390513327152,
+   "fea_peak_MPa": 153.27536833443904,
+   "average_rel": 9.270088847679325e-05,
+   "peak_rel": 0.021835788896260144,
+   "judged": true
+  },
+  {
+   "x_from_root_mm": 20.0,
+   "kinematik_MPa": 125.0,
+   "fea_width_average_MPa": 125.0084940759682,
+   "fea_peak_MPa": 127.28842972385173,
+   "average_rel": 6.795260774561385e-05,
+   "peak_rel": 0.018307437790813896,
+   "judged": true
+  },
+  {
+   "x_from_root_mm": 24.0,
+   "kinematik_MPa": 100.0,
+   "fea_width_average_MPa": 100.00418738084838,
+   "fea_peak_MPa": 101.23852562606663,
+   "average_rel": 4.187380848375e-05,
+   "peak_rel": 0.012385256260666333,
+   "judged": true
+  },
+  {
+   "x_from_root_mm": 32.0,
+   "kinematik_MPa": 50.0,
+   "fea_width_average_MPa": 49.9962438761271,
+   "fea_peak_MPa": 50.22816210571681,
+   "average_rel": 7.512247745788958e-05,
+   "peak_rel": 0.00456324211433623,
+   "judged": true
+  }
+ ],
+ "passes": {
+  "width_average": true,
+  "peak_across_width": true
+ }
+}
