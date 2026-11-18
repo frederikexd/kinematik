@@ -17,8 +17,7 @@ Pre-validation for Formula Student and Formula Student EV design work: suspensio
 aero and chassis calculations you run before SolidWorks, ANSYS or Adams, so the concepts that reach those tools are
 the ones worth the hours, and the mistakes between subsystems are caught before they are built in.
 
-It is not a replacement for those tools, and it has not been correlated with a measured car (see
-[Known limitations](#known-limitations)).
+It is not a replacement for those tools or for test data once a car exists (see [Known limitations](#known-limitations)).
 
 **[Open the app](https://kinematik-ijzpvutb92x7n3yzo7sdqc.streamlit.app/)** · free for student teams · no install ·
 open source (AGPL-3.0)
@@ -96,7 +95,8 @@ Full tables, limits and links to each run: [BENCHMARK.md](BENCHMARK.md), [VALIDA
 - **Brackets:** at a fully fixed root, 3D FEA puts the stress 12–47 % above the hand calculation, so a tab whose root
   governs still needs FEA.
 
-All of these check the maths against other tools, not a built car. See [Known limitations](#known-limitations).
+All of these check the maths against the established tools, which is what pre-validation needs. See
+[Known limitations](#known-limitations).
 
 ## Screenshots
 
@@ -200,9 +200,9 @@ any FAIL (or WARN with `--fail-on warning`), so it can gate a CI run. KiCad and 
 
 ## Known limitations
 
-- **Not correlated with a measured car.** Nothing has been compared with an instrumented vehicle, a K&C rig or a
-  wind tunnel. The benchmarks show the maths is right, not that it matches your car; treat every number as a
-  starting point for your own test day.
+- **Pre-validation, not correlation.** KinematiK checks designs before there is a car. The evidence for that is that
+  its maths matches the established tools a team validates with later (above). It is not a substitute for test data
+  once a car exists: treat every number as a starting point for your own test day.
 - **Powertrain heat and lap time.** Pack and motor heat are over-predicted by 3.5–14 % against Simscape (the safe
   side for cooling); lap time has not been compared with a real car; a Formula Student engine's fuel map and coolant
   heat have no open reference. Wrong inputs that still look like a believable car (a driver left out of the mass, an
