@@ -13,34 +13,66 @@
 [![mutation](https://github.com/frederikexd/kinematik/actions/workflows/mutation.yml/badge.svg?branch=main)](https://github.com/frederikexd/kinematik/actions/workflows/mutation.yml)
 [![DOI](https://zenodo.org/badge/1264704197.svg)](https://doi.org/10.5281/zenodo.23450788)
 
-Pre-validation for Formula Student and Formula Student EV design work. Suspension, powertrain, electrics, brakes,
-aero and chassis checks you run before SolidWorks, ANSYS or Adams, so the concepts that reach those tools are the ones
-worth the hours, and the mistakes between subsystems are caught before they are built in.
+Pre-validation for Formula Student and Formula Student EV design work: suspension, powertrain, electrics, brakes,
+aero and chassis calculations you run before SolidWorks, ANSYS or Adams, so the concepts that reach those tools are
+the ones worth the hours, and the mistakes between subsystems are caught before they are built in.
+
+It is not a replacement for those tools, and it has not been correlated with a measured car (see
+[Known limitations](#known-limitations)).
 
 **[Open the app](https://kinematik-ijzpvutb92x7n3yzo7sdqc.streamlit.app/)** · free for student teams · no install ·
 open source (AGPL-3.0)
 
-## How to judge it
+## How the numbers here are checked
 
-Don't take any number here on trust. Each one comes from a script you can re-run, against a limit written down before
-the run, and the runs that missed are published next to the ones that passed.
+1. **The same problem goes into an established tool** (Adams View, MATLAB Simscape, Ansys, Nastran, KiCad, SPICE and
+   others) or a published result from one, with identical inputs.
+2. **The pass limit is written down before the run** and committed with the benchmark.
+3. **The result is published either way.** Misses stay in, with what caused them ([below](#what-missed)).
+4. **A script re-runs it.** The commands are under [Re-run the benchmarks](#re-run-the-benchmarks).
 
-- Derivations of every model: [PHYSICS.md](PHYSICS.md)
-- What has been checked against other tools, and what has not: [VALIDATION.md](VALIDATION.md)
-- Every benchmark test, by role and feature: [BENCHMARK.md](BENCHMARK.md)
-- Think a result is wrong? [Break it](CHALLENGE.md). Confirmed breaks are credited by name.
+CI runs the tests, lint, CodeQL and security scans on every push to main, re-solves the recorded design runs every
+week, and holds the core files listed in `mutation_targets.toml` to a 99 % mutation score.
 
-It is set up to be checked rather than believed: CI runs the tests, lint, CodeQL and security scans on every push to main, re-solves the recorded design runs
-every week, and holds the core files listed in `mutation_targets.toml` to a 99 % mutation score.
+### Check one by hand
+
+Ansys's own Verification Manual, problem VM16: a cantilever 10 in long and 2 in deep, 1 in thick (Ansys's default for
+plane elements), with 300 lb on the free end. Bending stress 1 in from the wall:
+
+σ = 6·F·a / (b·h²) = 6 × 300 lb × 9 in / (1 in × (2 in)²) = **4,050 psi**
+
+| | Bending stress |
+|---|---|
+| Hand calculation (above) | 4,050 psi |
+| Ansys Mechanical APDL, published | 4,050 psi |
+| KinematiK bracket check | 4,050 psi |
+
+The same check against the published results of four more commercial solvers, and a plate solver against three:
+
+| Problem (source) | Tool's published result | Theory | KinematiK (bracket check / MorphMesh plate solver) |
+|---|---|---|---|
+| 2D cantilever plate, root stress (Creo mvss003) | MSC Nastran 55,190 psi; Creo Simulate 60,121 psi | 60,000 psi | 60,000 psi |
+| Thin cantilever wall, root stress (Autodesk Nastran 2.9) | Autodesk Nastran 20,535 psi | 21,600 psi | 21,600 psi |
+| MacNeal–Harder straight cantilever, tip deflection | Ansys 0.10676 in; Autodesk Nastran 0.1072 in; Abaqus 0.108 in | 0.108 in (0.1081 with shear) | 0.1072 in |
+
+The bracket check is the beam formula, so it returns the theory value exactly; the solvers' published numbers
+differ because they mesh the part. That shows the formula is implemented correctly, not that a hand calculation beats
+FEA (where it doesn't, see [What missed](#what-missed)).
+
+Run it in under a minute, from `kinematik/fsae_suspension` after the [install](#run-it-locally):
+
+```bash
+pytest tests/test_gold_standard_benchmark.py tests/test_ansys_vm16_benchmark.py
+```
 
 ## Benchmark highlights
 
 | Area | Checked against | Result |
 |---|---|---|
-| Suspension kinematics | Adams View 2026.1, Lotus Suspension Analysis, Applied Racing Dynamics, MathWorks' K&C rig (Simscape), Project Chrono | Camber, toe, caster and KPI within 0.00003° of Adams View at every 1 mm over ±25 mm; 500 random corners within 0.000025° of Chrono |
-| Geometry and steering | Adams View 2026.1, MATLAB Simscape Multibody R2025b, Project Chrono 9.0.1 | Contact-patch path within 0.00012 mm, anti-geometry within 0.0007 point, Ackermann at lock within 0.0003 point |
+| Suspension kinematics | Adams View 2026.1, Lotus Suspension Analysis, Applied Racing Dynamics, MathWorks' K&C rig (Simscape), Project Chrono | Camber, toe, caster and kingpin inclination within 0.00003° of Adams View at every 1 mm of wheel travel over ±25 mm; 500 random corners within 0.000025° of Chrono |
+| Geometry and steering | Adams View 2026.1, MATLAB Simscape Multibody R2025b, Project Chrono 9.0.1 | Contact-patch path within 0.00012 mm, anti-dive and anti-squat within 0.0007 percentage points, Ackermann at lock within 0.0003 percentage points |
 | Link loads | Adams View, Simscape Multibody, Chrono, an independent static solve | Member forces within 0.0009 N of Adams View (3 corners × 4 load cases; limit 0.5 N + 0.1 %) |
-| Brackets and plate FE | Published verification problems of Ansys, MSC Nastran, Creo Simulate, Autodesk Nastran and Abaqus; scikit-fem, SfePy and OpenSees | Bracket root-bending stress equals each manual's theory value; MorphMesh cantilever within 0.01–0.71 % of the tools' published deflections |
+| Brackets and plate FE | Published verification problems of Ansys, MSC Nastran, Creo Simulate, Autodesk Nastran and Abaqus (above); scikit-fem, SfePy and OpenSees | Bracket root-bending stress equals each manual's theory value; the plate solver (MorphMesh) within 0.01–0.71 % of the tools' published deflections |
 | Powertrain | NREL FASTSim 3.1.0, five published GT-SUITE studies, MathWorks' Formula Student model (blind), Argonne dyno data | FASTSim 20 of 20 within 0.04 %; GT-SUITE 41 of 44 within 5 %; blind 28 of 39 within 3 %; dyno energy 3.7 % on average |
 | Electrics | KiCad 7 and 9, Altium Designer 26, SPICE (ngspice), PyBaMM, liionpack | Board reading exact on every count (30 of 30 on native Altium boards); precharge within 0.001 %; net resistance with copper pours 203 of 204 within 2 % |
 | Wrong inputs | Sealed rounds of realistic input errors (pounds for kilograms, percent for fraction, typos) | 64 of 83 harmful errors caught at entry on two cars the checks were never written against, 0 false alarms |
@@ -51,10 +83,10 @@ Full tables, limits and links to each run: [BENCHMARK.md](BENCHMARK.md), [VALIDA
 
 ### What missed
 
-- **Two published Lotus SHARK studies:** camber and toe pass; caster, KPI, damper ratio and one paper's +30 mm values
+- **Two published Lotus SHARK studies:** camber and toe pass; caster, kingpin inclination, damper ratio and one paper's +30 mm values
   miss. Chrono solves the published hardpoints exactly as KinematiK does, so those rows don't follow from the papers'
   own hardpoints ([details](fsae_suspension/benchmarks/published_lotus/README.md)).
-- **MathWorks' K&C rig:** caster, KPI and trail (and rear scrub) miss, because MathWorks estimates them from the
+- **MathWorks' K&C rig:** caster, kingpin inclination and trail (and rear scrub) miss, because MathWorks estimates them from the
   steering test ([details](fsae_suspension/benchmarks/knc_simscape/README.md)).
 - **MathWorks' Formula Student model, blind:** 11 of 39 metrics outside 3 %.
 - **Net resistance:** the first SPICE round missed its 2 % limit (four connectivity flaws, fixed); on held-out team
