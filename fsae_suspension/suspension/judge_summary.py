@@ -153,7 +153,7 @@ ORIGIN_HINTS = (
 )
 
 
-def origin_key(target_name):
+def origin_key(target_name) -> str:
     """A stable widget key for the team's statement of where a target came from: its name, not its position."""
     import re
     return "ig_js_from_" + (re.sub(r"[^a-z]+", "_", str(target_name).lower()).strip("_") or "t")
@@ -163,7 +163,7 @@ def target_origin_rows(specs, origins):
     """Every declared target as a row of the 'where the targets came from' table, [(target, follows from, how,
     target value)]: the team's own statement from ``origins`` (target name -> text), or MISSING with what usually
     sets that kind of target, so a judge sees which targets the team has traced one level up and which it has not.
-    Units are those printed in the target's name."""
+    The rows are text (unitless); each target's own units are printed in its name."""
     rows = []
     for name, tgt, _got, _ok in specs:
         txt = str((origins or {}).get(name) or "").strip()
