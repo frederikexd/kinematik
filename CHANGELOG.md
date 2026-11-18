@@ -3,6 +3,8 @@
 
 ## Unreleased
 
+**Your own load cases.** The link screen takes the team's own contact-patch load cases (one per line: name, Fx, Fy, Fz, Mz, in N and N·m, KinematiK's corner frame), so the link forces, factors of safety and the pickup-loads CSV can be compared case for case with another tool's, such as an Adams Car load set. A line that does not parse is named and the case is not silently dropped; blank keeps the five generic cases.
+
 **Pickup loads for a chassis model.** The InverseGenesis link screen downloads as a CSV: every load case and link, the inboard and outboard pickup in KinematiK's corner frame, the axial force, and the force each link puts on the chassis at its inboard pickup, so a chassis model or optimiser can read the loads directly. Pushrod and damper loads stay in the report's spring and damper section.
 
 **Judge summary: every target traced.** 'Where the targets came from' now has a row for every declared target, not only the three the tool derives: the team's one-line statement of the requirement it follows from (a box per target in the panel, saved with the reasons), or 'Team to state' with what usually sets that kind of target, so a judge sees which targets are traced one level up the V and which are not.

@@ -2495,8 +2495,22 @@ def _sec_actuation(st, pd, v, corner, axle):
     return a
 
 
-def _sec_structural(st, pd, v, corner, axle):
+def _sec_structural(st, pd, v, corner, axle, ss=None):
     from suspension import genesis_repro as gr
+    key = f"ig_lc_custom_{axle}"
+    _ta = getattr(st, "text_area", None)                     # report-capture stand-ins have no inputs
+    if _ta is not None:
+        _ta("Your own load cases (optional): one per line, name, Fx, Fy, Fz, Mz. Forces in N from the ground on the "
+            "tyre at the contact patch (x rearward, y outboard, z up), Mz the aligning torque in N·m. Blank uses the "
+            "five generic cases.", key=key, height=90,
+            placeholder="max cornering, -800, 2600, 2400, 0\nmax braking, 3000, 0, 2900, 0")
+    custom = None
+    txt = str((ss or {}).get(key, "") or "").strip()
+    if txt:
+        try:
+            custom = gr.parse_load_cases(txt) or None
+        except ValueError as e:
+            getattr(st, "error", print)(f"Load cases not used: {e}")
     tube = gr.TubeSpec(od_mm=v["tube_od_mm"], wall_mm=v["tube_wall_mm"],
                        yield_mpa=v["yield_mpa"], E_gpa=v["E_gpa"])
     tubes = {m: gr.TubeSpec(od_mm=od, wall_mm=w, yield_mpa=v["yield_mpa"], E_gpa=v["E_gpa"])
@@ -2508,10 +2522,14 @@ def _sec_structural(st, pd, v, corner, axle):
         wheelbase_mm=v["wheelbase_mm"],
         brake_bias_front=v["brake_bias_front"],
         roll_share_front=v["roll_share_front"],
-        aligning_torque_Nm=v["aligning_outer_Nm"])
-    st.caption("Five load cases (design-g cornering, 1.5 g braking, combined "
-               "1.06 g, 3 g bump, kerb 2 g + 1 g); tension yield and "
-               "pinned-pinned Euler buckling on the declared tube.")
+        aligning_torque_Nm=v["aligning_outer_Nm"], load_cases=custom)
+    if custom:
+        st.caption(f"Your {len(custom)} declared load case{'s' if len(custom) != 1 else ''} at the contact patch; "
+                   "tension yield and pinned-pinned Euler buckling on the declared tube.")
+    else:
+        st.caption("Five load cases (design-g cornering, 1.5 g braking, combined "
+                   "1.06 g, 3 g bump, kerb 2 g + 1 g); tension yield and "
+                   "pinned-pinned Euler buckling on the declared tube.")
     (st.success if sc["all_pass"] else st.error)(
         f"Governing member {sc['governing_member']}: worst FoS "
         f"{_g(sc['worst_fos_overall'], digits=3, limited_by='declared material')}")
@@ -3112,7 +3130,7 @@ def _render_analysis(st, pd, np, ss):
         out["steer"] = _sec_steering(st, pd, v, front_hp, rear_hp,
                                      "ig_steer", rack_ratio=declared_rack_ratio(ss, run, axle))
     with st.expander("🔩 Structural screening of the links"):
-        out["sc"] = _sec_structural(st, pd, v, corner, axle)
+        out["sc"] = _sec_structural(st, pd, v, corner, axle, ss)
     with st.expander("⚙️ Compliance budget — link strain, lash and band use"):
         out["comp"] = _sec_compliance(st, pd, v, corner, axle, out["sc"],
                                       bands)

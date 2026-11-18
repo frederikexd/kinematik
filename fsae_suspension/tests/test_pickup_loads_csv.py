@@ -31,3 +31,17 @@ def test_every_row_has_its_pickups_and_the_chassis_force_along_the_link():
         assert abs(np.linalg.norm(f) - abs(F)) < 0.2                       # the link's axial force, nothing more
         if abs(F) > 1:
             assert np.sign(np.dot(f, b - a)) == np.sign(F)                 # tension pulls the chassis outboard
+
+
+def test_a_teams_own_load_cases_parse_and_drive_the_screen():
+    import pytest
+    cases = gr.parse_load_cases("# from Adams Car\nmax cornering, -800, 2600, 2400, 12\n\nmax braking, 3000, 0, 2900")
+    assert [c.name for c in cases] == ["max cornering", "max braking"]
+    assert (cases[0].Fx, cases[0].Fy, cases[0].Fz, cases[0].mz_Nmm) == (-800.0, 2600.0, 2400.0, 12000.0)
+    for bad in ("max cornering, -800, 2600", "x, a, 1, 2", ", 1, 2, 3", "x, 1, 2, nan"):
+        with pytest.raises(ValueError, match="line 1"):
+            gr.parse_load_cases(bad)
+    d = json.loads((ROOT / "manifests" / "front_v11_final.recorded.genesis.json").read_text())
+    sc = gr.structural_screening(gr.hp_from_dict(d["recorded"]["winner_hardpoints"]), axle="front", load_cases=cases)
+    assert {r["load_case"] for r in sc["rows"]} == {"max cornering", "max braking"}
+    assert "max braking" in gr.pickup_loads_csv(sc)

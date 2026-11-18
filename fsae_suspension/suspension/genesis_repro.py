@@ -1245,6 +1245,30 @@ class LoadCaseSpec:
                              M_wc_extra=tuple(self.M_wc_extra))
 
 
+def parse_load_cases(text: str) -> list:
+    """A team's own load cases from text, one per line: ``name, Fx, Fy, Fz[, Mz]``. Forces in N, from the ground on
+    the tyre at the contact patch, in KinematiK's corner frame (x rearward, y outboard, z up); Mz is the aligning
+    torque in N·m (stored in N·mm). Blank lines and lines starting with # are skipped. Raises ValueError naming the
+    line that does not parse, so a typo never silently drops a case."""
+    out = []
+    for i, raw in enumerate(str(text or "").splitlines(), start=1):
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        parts = [p.strip() for p in line.split(",")]
+        if len(parts) not in (4, 5) or not parts[0]:
+            raise ValueError(f"line {i}: expected 'name, Fx, Fy, Fz[, Mz]', got '{line}'")
+        try:
+            fx, fy, fz = (float(parts[k]) for k in (1, 2, 3))
+            mz = float(parts[4]) if len(parts) == 5 and parts[4] else 0.0
+        except ValueError:
+            raise ValueError(f"line {i}: the forces must be numbers in N (and Mz in N·m), got '{line}'") from None
+        if not all(math.isfinite(v) for v in (fx, fy, fz, mz)):
+            raise ValueError(f"line {i}: the forces must be finite, got '{line}'")
+        out.append(LoadCaseSpec(name=parts[0], Fx=fx, Fy=fy, Fz=fz, mz_Nmm=mz * 1000.0))
+    return out
+
+
 def with_halfshaft(cases: list, spec, state, wheel_radius_mm: float = 228.0
                    ) -> list:
     """Each shaft-driven case split into two, plunge friction either way.
