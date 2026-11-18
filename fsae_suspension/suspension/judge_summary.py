@@ -223,8 +223,8 @@ def build(*, title, team, corner_name, axle, specs, decisions, rationale, eviden
     missing or blank is printed as MISSING); ``evidence`` is a list of sentences on how the numbers were produced;
     ``tools`` is a list of sentences on the tools and their validation; ``loads`` is [(member, worst FoS,
     governing case)]; ``safety`` a list of sentences; ``questions`` from open_questions; ``answers`` maps a question
-    to the team's answer. ``figure_ref`` names the curves figure for render_pdf. ``not_checked`` lists what the
-    pre-validation does not cover, printed as its own section so a judge reads the limits from the team first.
+    to the team's answer. ``figure_ref`` names the curves figure for render_pdf. ``questions``, ``answers`` and
+    ``not_checked`` (what the pre-validation does not cover) go in build_review_notes, a separate report.
     ``parts`` is [(part, check, factor of safety or None, what it needs, governing case)] for the parts the links
     load: brackets, upright, hub bearings, and fatigue of welds and rod ends. ``target_chain`` is [(target, what it
     follows from, how, value)] from target_chain(): where the targets came from, one level up the V. ``iterations``
@@ -240,8 +240,8 @@ def build(*, title, team, corner_name, axle, specs, decisions, rationale, eviden
          f"Score-sheet area {SCORE_SHEET_AREA}.", "",
          "The reasons, alternatives and trade-offs below are the team's own words. The tool supplies the facts "
          "and data behind them; where a reason has not been written, the summary says so.", "",
-         "This is a pre-validation: it checks the design before it is built and tested. Section 7 lists what it "
-         "does not cover.", ""]
+         "This is a pre-validation: it checks the design before it is built and tested. What it does not cover, "
+         "and how the team will check it, is in the separate design-review notes.", ""]
 
     L += ["## 1. What we set out to achieve", "",
           "| parameter | target | delivered | met |", "|---|---|---|---|"]
@@ -301,7 +301,7 @@ def build(*, title, team, corner_name, axle, specs, decisions, rationale, eviden
     if loads:
         L += ["Load path: tyre contact patch, hub bearings, upright, ball joints and rod ends, links (axial members "
               "on spherical joints), pickup brackets, frame. Every link force and upright joint load, per load "
-              "case, is in the appendix; what is not checked here is in section 7.", ""]
+              "case, is in the appendix; what is not checked here is in the separate design-review notes.", ""]
     if parts:
         L += ["**Where the link loads go**", "",
               "| part | check | factor of safety | needs | governing case |", "|---|---|---|---|---|"]
@@ -310,18 +310,28 @@ def build(*, title, team, corner_name, axle, specs, decisions, rationale, eviden
 
     L += ["## 5. Safety considerations", ""] + [f"- {s}" for s in safety] + [""]
 
-    L += ["## 6. Questions a judge will ask, and the team's answers", ""]
+    if appendix_name:
+        L += [f"Every number above is traced, with its inputs and their sources, in the appendix: {appendix_name}.",
+              ""]
+    return "\n".join(L)
+
+
+def build_review_notes(*, title, team, corner_name, axle, questions, answers, not_checked=None, **_ignored) -> str:
+    """The design-review notes kept apart from the judge summary, as Markdown text (unitless): the questions a judge
+    is likely to ask with the team's answers, and what the pre-validation does not cover with how the team will
+    check it. Takes the same keyword arguments as build(), so one set of inputs makes both reports."""
+    head = f"{title}" + (f" · {team}" if team else "")
+    L = [f"# {head}: design-review notes", "",
+         f"Companion to the judge summary of the {axle} suspension corner {corner_name}.", "",
+         "## 1. Questions a judge will ask, and the team's answers", ""]
     if not questions:
         L += ["None outstanding.", ""]
     for q, why in questions:
         a = (answers or {}).get(q, "").strip()
         L += [f"- **{q}** ({why.strip()})", f"  - Team answer: {a or MISSING}"]
     L.append("")
-    L += ["## 7. What this pre-validation does not cover, and how the team will check it", ""]
+    L += ["## 2. What this pre-validation does not cover, and how the team will check it", ""]
     L += [f"- {s}" for s in (not_checked or ["Nothing listed."])] + [""]
-    if appendix_name:
-        L += [f"Every number above is traced, with its inputs and their sources, in the appendix: {appendix_name}.",
-              ""]
     return "\n".join(L)
 
 

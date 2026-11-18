@@ -3,6 +3,8 @@
 
 ## Unreleased
 
+**Judge summary ends at section 5.** The questions a judge is likely to ask (with the team's answers) and what the pre-validation does not cover are now a separate design-review notes report, with its own Markdown and PDF downloads, following Dan Jones's review over several drafts, which also shaped the target cascade, the iteration history and the team-stated weighting.
+
 **Checked against commercial FE tools' published results.** Bracket FoS root bending is checked against the published verification results of four commercial tools (Ansys, MSC Nastran, Creo Simulate, Autodesk Inventor Nastran) and MorphMesh against three (Ansys, Autodesk Inventor Nastran, Abaqus), on Ansys VM16, Creo mvss003, Nastran problems 2.9 and 2.34, Ansys VM184 and Abaqus benchmark 2.3.5 (MacNeal & Harder's straight cantilever). Every limit was registered before the run.
 
 **Bracket and MorphMesh benchmarks, three tools each.** Bracket FoS root bending is checked against three independent 3D finite-element models (scikit-fem, SfePy, OpenSees): within 0.02 % (width average) and 2.2 % (peak) away from the root in all three; at a fully fixed root all three put the stress above the hand value, so a root-critical tab still needs FEA, and the benchmark says so. MorphMesh's plane-stress kernel is checked against beam theory (axial, Timoshenko deflection, bending stress, converging with the mesh) and against the same strip in scikit-fem, SfePy and OpenSees. Limits for every run were registered before it.

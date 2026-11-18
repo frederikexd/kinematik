@@ -216,6 +216,12 @@ any FAIL (or WARN with `--fail-on warning`), so it can gate a CI run. KiCad and 
   outside benchmark, and a fully fixed root sees more stress than the hand value.
 - **Not peer reviewed yet.** A manuscript is in preparation.
 
+## Acknowledgments
+
+Dan Jones (Chief Judge at Formula Student) reviewed the judge summary output; at his suggestion, the judge's likely questions and the limits of the
+pre-validation moved to a separate design-review notes report. Acknowledgment records feedback received and does not
+imply endorsement.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Issues and pull requests welcome. Deployment and database notes are in

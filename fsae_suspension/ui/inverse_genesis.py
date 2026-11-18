@@ -3731,6 +3731,25 @@ def _judge_summary_panel(st, ss, v, out, rows, axle, run, defaults):
                                        mime="application/pdf", key="ig_js_pdf")
             except Exception as e:                # noqa: BLE001
                 c2.warning(f"PDF unavailable: {e}")
+        notes = js.build_review_notes(**kw)
+        st.caption("The judge's likely questions with your answers, and what this pre-validation does not cover, are "
+                   "a separate report: prepare with it, hand over the summary.")
+        n1, n2 = st.columns(2)
+        n1.download_button("⬇ Design-review notes (.md)", notes, file_name=f"design_review_notes_{axle}.md",
+                           mime="text/markdown", key="ig_js_notes_md")
+        if n2.button("🖨 Build design-review notes PDF", key="ig_js_notes_pdf_build"):
+            try:
+                import os
+                import tempfile
+                from suspension import project
+                path = os.path.join(tempfile.gettempdir(), f"design_review_notes_{axle}.pdf")
+                project.render_pdf(notes, path)
+                with open(path, "rb") as fh:
+                    n2.download_button("⬇ Design-review notes (.pdf)", fh.read(),
+                                       file_name=f"design_review_notes_{axle}.pdf", mime="application/pdf",
+                                       key="ig_js_notes_pdf")
+            except Exception as e:                # noqa: BLE001
+                n2.warning(f"PDF unavailable: {e}")
 
 
 def _report_md(v, out, rows, axle, note, run):

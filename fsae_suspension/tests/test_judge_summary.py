@@ -28,21 +28,25 @@ def test_every_score_sheet_heading_is_there_and_a_missing_reason_is_said_not_fil
     md = js.build(**_kw())
     for h in ("## 1. What we set out to achieve", "## 2. Why this design, and from what alternatives",
               "## 3. Use of design tools and analysis", "## 4. Load cases and load path",
-              "## 5. Safety considerations", "## 6. Questions a judge will ask",
-              "## 7. What this pre-validation does not cover"):
+              "## 5. Safety considerations"):
         assert h in md
+    assert "## 6." not in md and "## 7." not in md                    # moved to the design-review notes
+    notes = js.build_review_notes(**_kw())
+    assert "## 1. Questions a judge will ask" in notes and "## 2. What this pre-validation does not cover" in notes
     assert "Score-sheet area B" in md
     for _key, label, question in js.DECISIONS:              # every decision asked, its question printed with the gap
         assert f"### {label}" in md and question in md
-    # why + alternatives each, the one answer, and the target chain, weighting and iterations not given
-    assert md.count(js.MISSING) == 2 * len(js.DECISIONS) + 1 + 4
+    # why + alternatives each, and the target chain, weighting and iterations not given; the answer is in the notes
+    assert md.count(js.MISSING) == 2 * len(js.DECISIONS) + 4
+    assert notes.count(js.MISSING) == 1
 
 
 def test_the_teams_words_replace_the_gap_and_nothing_else_does():
     rat = {"camber": {"why": "Tyre optimum at 1.5 g.", "alternatives": "More gain.", "trade_off": "0.07 deg short."}}
     md = js.build(**_kw(rationale=rat, answers={"Caster: 3 deg": "Shimmed on the car."}))
     assert "Tyre optimum at 1.5 g." in md and "More gain." in md and "0.07 deg short." in md
-    assert "Team answer: Shimmed on the car." in md
+    notes = js.build_review_notes(**_kw(answers={"Caster: 3 deg": "Shimmed on the car."}))
+    assert "Team answer: Shimmed on the car." in notes and js.MISSING not in notes
     assert md.count(js.MISSING) == 2 * (len(js.DECISIONS) - 1) + 4     # + requirements, chain, weighting, iterations
 
 
