@@ -4,7 +4,8 @@
   "compared": "KinematiK root-bending stress (screen_bracket, lever arm = distance from the section to the load) against the FEA top-surface stress sxx at sections 2t and more from the root and from the load",
   "limits": {
     "width_average_rel": 0.03,
-    "peak_across_width_rel": 0.10
+    "peak_across_width_rel": 0.1
   },
-  "reported_without_limit": "FEA stress at the root itself (the fixed face concentrates stress at its edges; the screening does not claim that, it carries screening_only)"
+  "reported_without_limit": "FEA stress at the root itself (the fixed face concentrates stress at its edges; the screening does not claim that, it carries screening_only)",
+  "other_tools_registered": "2026-11-18 00:40 PT, before the SfePy and OpenSees runs: the same limits apply to each of scikit-fem 12.0.2, SfePy 2026.3 (27-node hexahedra) and OpenSeesPy (SSPbrick). SfePy and OpenSees stresses are element averages, extrapolated linearly to the top surface from the top two element layers."
 }

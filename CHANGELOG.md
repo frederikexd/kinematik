@@ -3,7 +3,7 @@
 
 ## Unreleased
 
-**Two new benchmarks.** Bracket FoS root bending is now checked against an independent 3D finite-element model (scikit-fem): within 0.02 % (width average) and 2.2 % (peak) away from the root, and the run also records that at a fully fixed root the FEA stress is well above the hand value, so a root-critical tab still needs FEA. MorphMesh's plane-stress kernel is checked against beam theory (axial, Timoshenko deflection, bending stress) and shown to converge. Limits for both were registered before the runs.
+**Bracket and MorphMesh benchmarks, three tools each.** Bracket FoS root bending is checked against three independent 3D finite-element models (scikit-fem, SfePy, OpenSees): within 0.02 % (width average) and 2.2 % (peak) away from the root in all three; at a fully fixed root all three put the stress above the hand value, so a root-critical tab still needs FEA, and the benchmark says so. MorphMesh's plane-stress kernel is checked against beam theory (axial, Timoshenko deflection, bending stress, converging with the mesh) and against the same strip in scikit-fem, SfePy and OpenSees. Limits for every run were registered before it.
 
 **Your own load cases.** The link screen takes the team's own contact-patch load cases (one per line: name, Fx, Fy, Fz, Mz, in N and N·m, KinematiK's corner frame), so the link forces, factors of safety and the pickup-loads CSV can be compared case for case with another tool's, such as an Adams Car load set. A line that does not parse is named and the case is not silently dropped; blank keeps the five generic cases.
 

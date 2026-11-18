@@ -45,5 +45,51 @@
   "transverse": true,
   "stress": true,
   "converges": true
+ },
+ "other_tools": {
+  "morphmesh": {
+   "axial_mm": 0.011045677682666679,
+   "transverse_mm": 3.5817466407297465,
+   "stress_MPa": -656.0986021989978
+  },
+  "scikit-fem 12.0.2 (9-node quads)": {
+   "values": {
+    "axial_mm": 0.011048413084755147,
+    "transverse_mm": 3.5830488597515315,
+    "stress_MPa": -656.2968759626191
+   },
+   "rel": {
+    "axial_mm": 0.00024764456894854625,
+    "transverse_mm": 0.00036357094803318724,
+    "stress_MPa": 0.00030220116756352056
+   },
+   "passes": true
+  },
+  "SfePy 2026.3 (9-node quads)": {
+   "values": {
+    "axial_mm": 0.011048413084555267,
+    "transverse_mm": 3.583048855169844,
+    "stress_MPa": -656.2968750776283
+   },
+   "rel": {
+    "axial_mm": 0.00024764455085279913,
+    "transverse_mm": 0.0003635696688564227,
+    "stress_MPa": 0.00030219981869494816
+   },
+   "passes": true
+  },
+  "OpenSeesPy 3.8.0.0 (quad, PlaneStress)": {
+   "values": {
+    "axial_mm": 0.01104567768276835,
+    "transverse_mm": 3.581746649400178,
+    "stress_MPa": -656.0986035556532
+   },
+   "rel": {
+    "axial_mm": 9.204637052562248e-12,
+    "transverse_mm": 2.4207271742682224e-09,
+    "stress_MPa": 2.067761517565714e-09
+   },
+   "passes": true
+  }
  }
 }

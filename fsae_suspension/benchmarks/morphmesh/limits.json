@@ -6,5 +6,11 @@
     "transverse_displacement_rel": 0.03,
     "bending_stress_rel": 0.03
   },
-  "convergence": "transverse displacement error must shrink at each refinement"
+  "convergence": "transverse displacement error must shrink at each refinement",
+  "other_tools_registered": "2026-11-18 00:40 PT, before the runs: the same strip at 0.25 mm elements, the load on the same nodes, solved in scikit-fem 12.0.2 (9-node quads), SfePy 2026.3 (9-node quads) and OpenSeesPy (4-node PlaneStress quads). Each must agree with MorphMesh within these limits.",
+  "other_tool_limits": {
+    "axial_displacement_rel": 0.02,
+    "transverse_displacement_rel": 0.01,
+    "bending_stress_rel": 0.02
+  }
 }
