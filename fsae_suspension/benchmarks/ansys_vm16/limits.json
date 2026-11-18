@@ -1,0 +1,14 @@
+{
+  "registered": "2026-11-18 01:05 PT, before any comparison was run",
+  "source": "Ansys Mechanical APDL Verification Manual, VM16 'Bending of a Solid Beam (Plane Elements)', release 2026 R1 (ansyshelp.ansys.com, ans_vm/Hlp_V_VM16.html). Reference: Timoshenko, Strength of Materials.",
+  "problem": "Cantilever L = 10 in, h = 2 in, plane stress, thickness 1 in (implied by the target values), E = 30e6 psi, nu = 0. Case 1: end moment M = 2000 in-lb, applied as equal and opposite forces h apart. Case 2: end shear F = 300 lb. Results: free-end deflection, bending stress on the outer fibre d = 1 in from the wall.",
+  "ansys_published": {
+    "PLANE182": {"case1_deflection_in": 0.00500, "case1_stress_psi": 3000, "case2_deflection_in": 0.00505, "case2_stress_psi": 4050},
+    "PLANE42":  {"case1_deflection_in": 0.00500, "case1_stress_psi": 3000, "case2_deflection_in": 0.00505, "case2_stress_psi": 4050}
+  },
+  "kinematik_features": {
+    "MorphMesh": "its plane-stress kernel with nu set to the problem's 0, 16 x 80 square elements, end loads applied as nodal forces; deflection = mean end-node displacement; stress extrapolated to the outer fibre from the two outermost element columns, averaged over the two rows either side of d",
+    "Bracket FoS": "screen_bracket root bending with width 1 in, thickness 2 in, load 300 lb, lever arm L - d = 9 in (case 2 only: the bracket takes a force on a lever, not a pure moment)"
+  },
+  "limits_vs_ansys": {"MorphMesh_deflection_rel": 0.02, "MorphMesh_stress_rel": 0.02, "Bracket_stress_rel": 0.005}
+}

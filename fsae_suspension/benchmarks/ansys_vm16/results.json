@@ -1,0 +1,45 @@
+{
+ "rows": [
+  {
+   "feature": "MorphMesh",
+   "quantity": "case1 deflection_in",
+   "ansys": 0.005,
+   "kinematik": 0.005019231843250351,
+   "rel": 0.0038463686500702643,
+   "passes": true
+  },
+  {
+   "feature": "MorphMesh",
+   "quantity": "case1 stress_psi",
+   "ansys": 3000,
+   "kinematik": 2994.152048152767,
+   "rel": 0.0019493172824111005,
+   "passes": true
+  },
+  {
+   "feature": "MorphMesh",
+   "quantity": "case2 deflection_in",
+   "ansys": 0.00505,
+   "kinematik": 0.005110036798159346,
+   "rel": 0.011888474883038791,
+   "passes": true
+  },
+  {
+   "feature": "MorphMesh",
+   "quantity": "case2 stress_psi",
+   "ansys": 4050,
+   "kinematik": 4044.1966276561984,
+   "rel": 0.0014329314429140094,
+   "passes": true
+  },
+  {
+   "feature": "Bracket FoS",
+   "quantity": "case2 stress_psi",
+   "ansys": 4050,
+   "kinematik": 4050.0000018611045,
+   "rel": 4.595319680333887e-10,
+   "passes": true
+  }
+ ],
+ "all_pass": true
+}
