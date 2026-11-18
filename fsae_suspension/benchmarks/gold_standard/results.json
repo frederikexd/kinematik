@@ -1,0 +1,135 @@
+{
+ "rows": [
+  {
+   "feature": "Bracket FoS",
+   "tool": "Ansys Mechanical APDL (PLANE182)",
+   "source": "Ansys Mechanical APDL Verification Manual VM16, 2026 R1",
+   "quantity": "root bending psi",
+   "kinematik": 4050.0,
+   "published": 4050,
+   "theory": 4050,
+   "rel_to_published": 0.0,
+   "kinematik_rel_to_theory": 0.0,
+   "tool_rel_to_theory": 0.0,
+   "passes": true
+  },
+  {
+   "feature": "Bracket FoS",
+   "tool": "MSC/NASTRAN",
+   "source": "Creo Simulate Verification Guide mvss003 '2D Plane Stress Cantilever Plate', r7.0",
+   "quantity": "root bending psi",
+   "kinematik": 60000.00000000001,
+   "published": 55190,
+   "theory": 60000,
+   "rel_to_published": 0.0871534698314913,
+   "kinematik_rel_to_theory": 2.220446049250313e-16,
+   "tool_rel_to_theory": 0.08016666666666672,
+   "passes": true
+  },
+  {
+   "feature": "Bracket FoS",
+   "tool": "Creo Simulate",
+   "source": "Creo Simulate Verification Guide mvss003 '2D Plane Stress Cantilever Plate', r7.0",
+   "quantity": "root bending psi",
+   "kinematik": 60000.00000000001,
+   "published": 60121,
+   "theory": 60000,
+   "rel_to_published": 0.0020126079073866654,
+   "kinematik_rel_to_theory": 2.220446049250313e-16,
+   "tool_rel_to_theory": 0.0020166666666667776,
+   "passes": true
+  },
+  {
+   "feature": "Bracket FoS",
+   "tool": "Autodesk Inventor Nastran",
+   "source": "Autodesk Inventor Nastran 2024 Verification Manual, problem 2.9 'Thin Shell Beam Wall in Pure Bending'",
+   "quantity": "root bending psi",
+   "kinematik": 21599.999999999996,
+   "published": 20535,
+   "theory": 21600,
+   "rel_to_published": 0.05186267348429485,
+   "kinematik_rel_to_theory": 2.220446049250313e-16,
+   "tool_rel_to_theory": 0.0493055555555556,
+   "passes": true
+  },
+  {
+   "feature": "MorphMesh",
+   "tool": "Ansys Mechanical APDL (SOLID187)",
+   "source": "Ansys Mechanical APDL Verification Manual VM184, 2026 R1",
+   "quantity": "axial_in",
+   "kinematik": 2.9986472625383278e-05,
+   "published": 3e-05,
+   "theory": 3e-05,
+   "rel_to_published": 0.0004509124872240644,
+   "kinematik_rel_to_theory": 0.0004509124872240644,
+   "tool_rel_to_theory": 0.0,
+   "passes": true
+  },
+  {
+   "feature": "MorphMesh",
+   "tool": "Ansys Mechanical APDL (SOLID187)",
+   "source": "Ansys Mechanical APDL Verification Manual VM184, 2026 R1",
+   "quantity": "inplane_shear_in",
+   "kinematik": 0.10720556590554858,
+   "published": 0.106757,
+   "theory": 0.108,
+   "rel_to_published": 0.0042017470100188525,
+   "kinematik_rel_to_theory": 0.007355871244920542,
+   "tool_rel_to_theory": 0.011509259259259164,
+   "passes": true
+  },
+  {
+   "feature": "MorphMesh",
+   "tool": "Autodesk Inventor Nastran",
+   "source": "Autodesk Inventor Nastran 2024 Verification Manual, problem 2.34 'Straight Cantilever Beam Using Solids'",
+   "quantity": "axial_in",
+   "kinematik": 2.9986472625383278e-05,
+   "published": 3e-05,
+   "theory": 3e-05,
+   "rel_to_published": 0.0004509124872240644,
+   "kinematik_rel_to_theory": 0.0004509124872240644,
+   "tool_rel_to_theory": 0.0,
+   "passes": true
+  },
+  {
+   "feature": "MorphMesh",
+   "tool": "Autodesk Inventor Nastran",
+   "source": "Autodesk Inventor Nastran 2024 Verification Manual, problem 2.34 'Straight Cantilever Beam Using Solids'",
+   "quantity": "inplane_shear_in",
+   "kinematik": 0.10720556590554858,
+   "published": 0.1072,
+   "theory": 0.1081,
+   "rel_to_published": 5.192076071436347e-05,
+   "kinematik_rel_to_theory": 0.008274135933870608,
+   "tool_rel_to_theory": 0.008325624421831601,
+   "passes": true
+  },
+  {
+   "feature": "MorphMesh",
+   "tool": "Abaqus/Standard (CPS8)",
+   "source": "Abaqus Benchmarks Manual 6.6, 2.3.5 'Performance of continuum and shell elements for linear analysis of bending problems', Table 2.3.51 (CPS8, 8 x 16 mesh, normalised by 0.108)",
+   "quantity": "inplane_shear_in",
+   "kinematik": 0.10723326176713019,
+   "published": 0.108,
+   "theory": 0.108,
+   "rel_to_published": 0.007099428082127823,
+   "kinematik_rel_to_theory": 0.007099428082127823,
+   "tool_rel_to_theory": 0.0,
+   "passes": true
+  }
+ ],
+ "all_pass": true,
+ "tools_per_feature": {
+  "Bracket FoS": [
+   "Ansys Mechanical APDL (PLANE182)",
+   "Autodesk Inventor Nastran",
+   "Creo Simulate",
+   "MSC/NASTRAN"
+  ],
+  "MorphMesh": [
+   "Abaqus/Standard (CPS8)",
+   "Ansys Mechanical APDL (SOLID187)",
+   "Autodesk Inventor Nastran"
+  ]
+ }
+}

@@ -1,0 +1,29 @@
+{
+  "registered": "2026-11-18 01:20 PT, before any KinematiK run of these problems",
+  "rule": "KinematiK passes a problem if it is within the stated limit of each tool's published value, or at least as close to the manual's own theory value as that tool's published result is.",
+  "units": "inch, lb, psi throughout (linear elastic, so KinematiK is run in these units directly)",
+  "bracket_root_bending": [
+    {"source": "Ansys Mechanical APDL Verification Manual VM16, 2026 R1", "tool": "Ansys Mechanical APDL (PLANE182)",
+     "width": 1.0, "thickness": 2.0, "P": 300.0, "lever": 9.0, "theory_psi": 4050, "published_psi": 4050},
+    {"source": "Creo Simulate Verification Guide mvss003 '2D Plane Stress Cantilever Plate', r7.0", "tool": "MSC/NASTRAN",
+     "width": 0.1, "thickness": 0.6, "P": 120.0, "lever": 3.0, "theory_psi": 60000, "published_psi": 55190},
+    {"source": "Creo Simulate Verification Guide mvss003 '2D Plane Stress Cantilever Plate', r7.0", "tool": "Creo Simulate",
+     "width": 0.1, "thickness": 0.6, "P": 120.0, "lever": 3.0, "theory_psi": 60000, "published_psi": 60121},
+    {"source": "Autodesk Inventor Nastran 2024 Verification Manual, problem 2.9 'Thin Shell Beam Wall in Pure Bending'", "tool": "Autodesk Inventor Nastran",
+     "width": 5.0, "thickness": 0.1, "P": 6.0, "lever": 30.0, "theory_psi": 21600, "published_psi": 20535}
+  ],
+  "bracket_limit_rel": 0.10,
+  "morphmesh_cantilever": {
+    "problem": "MacNeal & Harder (1985) straight cantilever: length 6, depth 0.2 (in plane), thickness 0.1, E = 1e7, unit end loads, root clamped",
+    "mesh": "MorphMesh square plane-stress elements, 8 across the depth (240 along); end load spread uniformly over the end nodes; tip value = mean end-node displacement",
+    "published": [
+      {"source": "Ansys Mechanical APDL Verification Manual VM184, 2026 R1", "tool": "Ansys Mechanical APDL (SOLID187)", "nu": 0.3,
+       "axial_in": 3.000e-5, "inplane_shear_in": 0.106757, "theory_axial": 3.0e-5, "theory_shear": 0.108},
+      {"source": "Autodesk Inventor Nastran 2024 Verification Manual, problem 2.34 'Straight Cantilever Beam Using Solids'", "tool": "Autodesk Inventor Nastran", "nu": 0.3,
+       "axial_in": 3.0e-5, "inplane_shear_in": 0.1072, "theory_axial": 3.0e-5, "theory_shear": 0.1081},
+      {"source": "Abaqus Benchmarks Manual 6.6, 2.3.5 'Performance of continuum and shell elements for linear analysis of bending problems', Table 2.3.51 (CPS8, 8 x 16 mesh, normalised by 0.108)", "tool": "Abaqus/Standard (CPS8)", "nu": 0.0,
+       "inplane_shear_in": 0.108, "theory_shear": 0.108}
+    ],
+    "limit_rel": 0.02
+  }
+}
