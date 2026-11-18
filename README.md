@@ -1,9 +1,9 @@
 <!--
-  KinematiK: Formula Student / Formula student EV pre-validation platform
+  KinematiK: Formula Student / Formula Student EV pre-validation platform
   Copyright (c) 2026 Frederik Thio. AGPL-3.0.
 -->
 
-# KinematiK 
+# KinematiK
 
 [![tests](https://github.com/frederikexd/kinematik/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/frederikexd/kinematik/actions/workflows/tests.yml)
 [![CodeQL](https://github.com/frederikexd/kinematik/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/frederikexd/kinematik/actions/workflows/codeql.yml)
@@ -13,158 +13,58 @@
 [![mutation](https://github.com/frederikexd/kinematik/actions/workflows/mutation.yml/badge.svg?branch=main)](https://github.com/frederikexd/kinematik/actions/workflows/mutation.yml)
 [![DOI](https://zenodo.org/badge/1264704197.svg)](https://doi.org/10.5281/zenodo.23450788)
 
-**KinematiK catches the problems that fall between teams, starting with the one that blows fuses: powertrain current versus electrical hardware.**
+Pre-validation for Formula Student and Formula Student EV design work. Suspension, powertrain, electrics, brakes,
+aero and chassis checks you run before SolidWorks, ANSYS or Adams, so the concepts that reach those tools are the ones
+worth the hours, and the mistakes between subsystems are caught before they are built in.
 
-The hour before SolidWorks, ANSYS or ADAMS/Car: KinematiK pre-validates Formula Student and Formula student EV design ideas, catching cross-subsystem mistakes in real time and documenting as it goes, reducing the garbage in garbage out effect when using established tools.
+**[Open the app](https://kinematik-ijzpvutb92x7n3yzo7sdqc.streamlit.app/)** · free for student teams · no install ·
+open source (AGPL-3.0)
 
-**[Open the app](https://kinematik-ijzpvutb92x7n3yzo7sdqc.streamlit.app/)** · Free for student teams · No install needed
+## How to judge it
 
-The physics and mathematics behind every module are documented in [PHYSICS.md](PHYSICS.md), including the derivations and their test coverage. What has been checked against other tools, and what has not, is in [VALIDATION.md](VALIDATION.md); every benchmark test, listed by role and feature, is in [BENCHMARK.md](BENCHMARK.md). If you find an error in the math, open an issue.
+Don't take any number here on trust. Each one comes from a script you can re-run, against a limit written down before
+the run, and the runs that missed are published next to the ones that passed.
 
-### Benchmarked against established tools
+- Derivations of every model: [PHYSICS.md](PHYSICS.md)
+- What has been checked against other tools, and what has not: [VALIDATION.md](VALIDATION.md)
+- Every benchmark test, by role and feature: [BENCHMARK.md](BENCHMARK.md)
+- Think a result is wrong? [Break it](CHALLENGE.md). Confirmed breaks are credited by name.
 
-The suspension kinematics solver has been checked against three established tools and an independent solve that shares no code with it. The limits were set before each run.
+It is set up to be checked rather than believed: CI runs the tests, lint, CodeQL and security scans on every push to main, re-solves the recorded design runs
+every week, and holds the core files listed in `mutation_targets.toml` to a 99 % mutation score.
 
-| Checked against | Corners | Largest difference |
+## Benchmark highlights
+
+| Area | Checked against | Result |
 |---|---|---|
-| Adams View 2026.1 | The paper's three corners, every 1 mm over ±25 mm | Camber, toe, caster and KPI within 0.00003°; wheel-centre path within 0.00003 mm (limits 0.005–0.01° and 0.05 mm) |
-| Lotus Suspension Analysis | Two published corners (Arévalo et al., 2018) | Camber in bump 0.009°, toe in bump 0.0003°, camber in roll 0.008° (Lotus values read from the published figures) |
-| Applied Racing Dynamics | Front and rear corners, static and ±20 mm | Static caster, KPI, scrub and motion ratio to ARD's display precision; camber change within 0.014°; larger differences traced to definitions |
-| Independent rigid-body solve | Three corners | Camber and toe within 1e-12° |
-| Two more published Lotus SHARK studies | Two FSAE front corners from other teams | Camber within 0.003° and toe within 0.007° (**pass**); caster, KPI, damper ratio and one paper's +30 mm values **miss**. Chrono solves the published hardpoints exactly as KinematiK does, so those rows don't follow from the papers' own hardpoints ([details](fsae_suspension/benchmarks/published_lotus/README.md)) |
-| Project Chrono, random corners | 500 corners, every pickup moved up to ±20 mm | All measures within 0.000025° and 0.00013 mm. The first run found a rocker-solve bug in KinematiK (fixed) |
-| MathWorks' K&C rig (Simscape Vehicle Templates), MathWorks' own metrics | front_v11_final, rear_v11_final | Everything the rig measures directly passes: bump steer and camber, roll steer and camber, toe and camber curves, damper ratio. Caster, KPI and trail **miss** (and rear scrub): MathWorks estimates them from the steering test, and its formulas applied to KinematiK's motion give back its numbers. It showed that tools report camber in steer two ways (Lotus: front-view projection; MathWorks: ISO inclination, 0.06° apart at 12° of steer); KinematiK now gives both ([details](fsae_suspension/benchmarks/knc_simscape/README.md)) |
+| Suspension kinematics | Adams View 2026.1, Lotus Suspension Analysis, Applied Racing Dynamics, MathWorks' K&C rig (Simscape), Project Chrono | Camber, toe, caster and KPI within 0.00003° of Adams View at every 1 mm over ±25 mm; 500 random corners within 0.000025° of Chrono |
+| Geometry and steering | Adams View 2026.1, MATLAB Simscape Multibody R2025b, Project Chrono 9.0.1 | Contact-patch path within 0.00012 mm, anti-geometry within 0.0007 point, Ackermann at lock within 0.0003 point |
+| Link loads | Adams View, Simscape Multibody, Chrono, an independent static solve | Member forces within 0.0009 N of Adams View (3 corners × 4 load cases; limit 0.5 N + 0.1 %) |
+| Brackets and plate FE | Published verification problems of Ansys, MSC Nastran, Creo Simulate, Autodesk Nastran and Abaqus; scikit-fem, SfePy and OpenSees | Bracket root-bending stress equals each manual's theory value; MorphMesh cantilever within 0.01–0.71 % of the tools' published deflections |
+| Powertrain | NREL FASTSim 3.1.0, five published GT-SUITE studies, MathWorks' Formula Student model (blind), Argonne dyno data | FASTSim 20 of 20 within 0.04 %; GT-SUITE 41 of 44 within 5 %; blind 28 of 39 within 3 %; dyno energy 3.7 % on average |
+| Electrics | KiCad 7 and 9, Altium Designer 26, SPICE (ngspice), PyBaMM, liionpack | Board reading exact on every count (30 of 30 on native Altium boards); precharge within 0.001 %; net resistance with copper pours 203 of 204 within 2 % |
+| Wrong inputs | Sealed rounds of realistic input errors (pounds for kilograms, percent for fraction, typos) | 64 of 83 harmful errors caught at entry on two cars the checks were never written against, 0 false alarms |
 
-These check the kinematics solver, not a built car; what has not been checked yet is listed in [VALIDATION.md](VALIDATION.md).
+Full tables, limits and links to each run: [BENCHMARK.md](BENCHMARK.md), [VALIDATION.md](VALIDATION.md),
+[powertrain](docs/POWERTRAIN_VALIDATION.md), [electrical](docs/ELECTRICAL_BENCHMARK.md),
+[wrong inputs](docs/GIGO_BENCHMARK_PLAN.md).
 
-The geometry and steering numbers a report prints have been checked against three multibody solvers on the v11 corners, with the limits set before each run ([geometry](fsae_suspension/benchmarks/adams_geometry/README.md), [steering](fsae_suspension/benchmarks/adams_steering/README.md)).
+### What missed
 
-| Checked against | Geometry, 2 corners over ±25 mm: contact-patch path (anti-dive, anti-squat), scrub radius, mechanical trail, damper length (limits 0.05 mm, 0.1 percentage point) | Steering, 2 corners over ±30 mm of rack: toe and camber, steering-wheel angle at lock, Ackermann at lock (limits 0.005°, 0.1°, 0.1 point) |
-|---|---|---|
-| Adams View 2026.1 | Within 0.00012 mm; anti-geometry within 0.0002 point | Toe and camber within 0.00005°; lock within 0.0002°; Ackermann within 0.0003 point |
-| MATLAB Simscape Multibody R2025b | Within 0.00003 mm; anti-geometry within 0.0006 point | Toe and camber within 0.000002°; lock within 0.00004°; Ackermann within 0.0003 point |
-| Project Chrono 9.0.1 (open source) | Within 0.00004 mm; anti-geometry within 0.0007 point | Toe and camber within 1e-9°; lock within 0.00004°; Ackermann within 0.0003 point |
+- **Two published Lotus SHARK studies:** camber and toe pass; caster, KPI, damper ratio and one paper's +30 mm values
+  miss. Chrono solves the published hardpoints exactly as KinematiK does, so those rows don't follow from the papers'
+  own hardpoints ([details](fsae_suspension/benchmarks/published_lotus/README.md)).
+- **MathWorks' K&C rig:** caster, KPI and trail (and rear scrub) miss, because MathWorks estimates them from the
+  steering test ([details](fsae_suspension/benchmarks/knc_simscape/README.md)).
+- **MathWorks' Formula Student model, blind:** 11 of 39 metrics outside 3 %.
+- **Net resistance:** the first SPICE round missed its 2 % limit (four connectivity flaws, fixed); on held-out team
+  boards the 2-D copper solve still reads high on 13 % of nets.
+- **Bugs the benchmarks found:** the 500-corner Chrono run found a rocker-solve bug, the SPICE runs four connectivity
+  flaws, the solder-bridge screen two missed custom pads. All fixed and re-run.
+- **Brackets:** at a fully fixed root, 3D FEA puts the stress 12–47 % above the hand calculation, so a tab whose root
+  governs still needs FEA.
 
-Link loads and direct-acting dampers have been checked against three multibody solvers and an independent solve, again with the limits set before each run ([link loads](fsae_suspension/benchmarks/link_loads/README.md), [direct-acting](fsae_suspension/benchmarks/direct_acting/README.md)).
-
-| Checked against | Link loads: member forces, 3 corners × 4 load cases (limit 0.5 N + 0.1 %) | Direct-acting damper, 2 corners: damper length over ±25 mm (limit 0.01 mm) and member forces |
-|---|---|---|
-| Adams View 2026.1 | Within 0.0009 N | Within 0.0001 mm and 0.001 N |
-| MATLAB Simscape Multibody R2025b | Within 0.0000005 N | Within 0.000005 mm and 0.0000005 N |
-| Project Chrono 9.0.1 (open source) | Within 0.0000005 N | Within 0.000008 mm and 0.0000005 N |
-| Independent static solve | Within 0.017 N | Damper length within 1e-13 mm; forces on the upright-mounted corner within 0.008 N |
-
-These are rigid-link statics on the design geometry: they show the member forces and motion ratio are computed correctly, not the loads on a built car, where bushing compliance and real tyre loads come in.
-
-The EV and combustion powertrain logic has been checked against four independent references
-([details](docs/POWERTRAIN_VALIDATION.md)). The blind rounds were sealed and pushed to GitHub before they ran.
-
-| Checked against | Cases | Result |
-|---|---|---|
-| NREL FASTSim 3.1.0, identical inputs | 5 vehicles × 4 drive cycles, plus a sixth car never used before | 20 of 20; worst energy difference 0.04 % (the sixth car within 0.04 % too) |
-| Five published GT-SUITE studies | BMW i3, a 12 t truck, an e-two-wheeler, two passenger cars | 41 of 44 results within 5 %; the misses traced to the papers' own gaps |
-| MathWorks' Simscape Formula Student model, blind | 7 sealed cases: laps, skidpad, launches | 28 of 39 metrics within 3 %; energy, current, voltage, pack resistance and the 75 m launch 28 of 29 |
-| Measured data | Argonne National Laboratory dyno (BMW i3, Chevrolet Blazer); a Formula Student team's race telemetry | Energy 3.7 % and fuel 3.8 % on average; launch within 1 %; pack voltage sag 3.7 % |
-
-And because a pre-validation tool has to stop wrong inputs before they reach the tools downstream, a sealed
-garbage-in benchmark feeds it realistic input errors (pounds for kilograms, efficiency in percent, inverted ratios,
-random typos) ([details](docs/GIGO_BENCHMARK_PLAN.md)):
-
-| Round | Harmful errors caught at entry | As a second opinion beside FASTSim | False alarms |
-|---|---|---|---|
-| 1, before entry checks | 0 of 120 | 99 of 99 | 0 |
-| 2, plausibility checks added | 65 of 119 (18 of 20 on the Formula Student car) | 99 of 99 | 0 |
-| 3, cars the checks were never written against | **64 of 83 on two Formula Student cars (77 %, 95 % CI 67–85 %)** | 23 of 23 | 0 |
-
-The electrical modules were checked against KiCad 7, SPICE (ngspice) and a 2-D field solver (atlc, standing in for
-Altium's impedance calculator, which can't run from this repo directly). Limits were set before each run
-([details](docs/ELECTRICAL_BENCHMARK.md)):
-
-| Checked against | Cases | Result |
-|---|---|---|
-| KiCad 7's own reader | KiCad's 14 demo boards: about 15,000 tracks, 1,260 vias, 4,869 pads | Exact on every count, net width and pad position; net lengths within 0.009 mm |
-| SPICE: precharge and the pack over a lap | 4 precharge circuits; a 520-point lap with regen | Within 0.001 % and 0.0011 % |
-| SPICE: net resistance on real boards | 963 nets | **Missed the 2 % limit.** Four connectivity flaws found and fixed; now 72.5 % within 2 %, 91.8 % within 10 % (same boards) |
-| Corrected 2-D copper solve: net resistance, held-out FS team boards | 142 sampled nets | **Still misses 2 % on 13 %, reading high.** 87.3 % within 2 %, 97.9 % within 5 %, median +0.55 %, worst low −3.1 % (was 2.8 % within 2 %, median +16.9 %) |
-| Altium Designer 26: board reading and impedance calculator | 3 boards; 21 cross-sections | Counts equal Altium's (after 2 reader fixes); impedance 21 of 21 within limits, worst 4.0 % |
-| Trace heating vs NBS 1956 measurements | 44 points | IPC-2221 × 0.975: 44 of 44 within 5 % (calibrated on these points) |
-| Altium Designer 26.11.1, native Altium boards | 6 team boards designed in Altium | 30 of 30 counts identical |
-| KiCad 9.0.3, boards saved in KiCad 8–9 | 4 team boards: 6,068 tracks, 505 nets | Every count identical; net lengths within 0.015 % |
-| 2-D solve of KiCad 9's copper, net resistance held out | 100 nets, then 100 more for the fix | 1-D model: **miss**, 70 of 95 within 2 % (all within 10 %). Sheet-solve refinement, held out: **92 of 92 within 2 %**. What reports use at the shipped size limit: **91 of 92 within 2 %**, the rest reading high |
-| Nets with copper pours (pours up to ~100 mm²), held out | 204 fresh nets on 39 boards, registered random order | **203 of 204 within 2 %**; the miss (+3.1 %, roundrect corners) fixed and held out on 53 more: 53 of 53. Large planes (34–131 mm²): 7 of 7 within 2 %, opt-in because they are much slower to solve |
-| atlc field solver: microstrip impedance | 11 cases, then 10 unseen | IPC-2141 missed by up to 8.3 %; replaced by Hammerstad–Jensen, 10 of 10 unseen within 3.4 % |
-| KiCad 7's pad polygons (pcbnew): solder-bridge screen | 866 pad pairs on the 14 demo boards; 168 on six native Altium team boards | Round 1 **missed** two custom-shaped pads; now none missed or extra, worst gap 0.007 mm (limit 0.01 mm) |
-| SPICE: harness voltage drop | 45 wire runs, 22 to 6 AWG, 20 to 105 °C | Round 1 **missed** 0.1 % at 22 and 6 AWG; areas now from the AWG definition, 45 of 45 within 0.1 % |
-| SPICE: per-cell pack thermal network | 4 × 6 cells, two fans, 20 minutes | Within 0.005 K (limit 0.2 K) |
-| PyBaMM: pack over a lap, lumped pack temperature | A lap with regen; 30 minutes of mixed current with cooling | Voltage, current and charge within 1e-6 % (limit 0.5 %); temperature within 0.003 K (limit 0.2 K) |
-| liionpack: series-parallel lumping | A 140s3p pack | Within 0.002 % with ideal interconnects; with real interconnect resistance, terminal voltage 0.19 % high (the lumped model leaves them out) |
-| ht heat-transfer correlations: pack airflow and still air | A ducted 6-row 21700 bank at 20–80 cfm; a 21 mm can at a 5–40 K rise | The old fan-draught proxy and still-air value **missed** (up to 95 % and 78 % off); the new duct mode is within 12 % of the correlations' mean, still air within 28 % (limit 30 %). Correlations, not a measured pack |
-
-**Check it yourself**: copy and paste the commands below; each set takes a few minutes on a laptop. Think a result is
-wrong? [Break it](CHALLENGE.md).
-
-Setup, once:
-
-```bash
-git clone https://github.com/frederikexd/kinematik.git
-cd kinematik
-pip install -r requirements.txt
-cd fsae_suspension
-```
-
-Electrical benchmarks (PCB Doctor, SPICE, impedance, heating; accumulator and harness against ngspice, PyBaMM and
-liionpack; the parallel split against 54 measured modules):
-
-```bash
-pytest tests/test_electrical_benchmark.py tests/test_pcb_doctor.py tests/test_ev_electrical_check.py \
-       tests/test_pcb_upload_fuzz.py tests/test_accumulator_harness_benchmark.py \
-       tests/test_parallel_module_benchmark.py tests/test_bridge_screen.py
-```
-
-EV/ICE powertrain benchmarks:
-
-```bash
-pytest tests/test_fastsim_benchmark.py tests/test_gt_suite_benchmark.py tests/test_powertrain_benchmark.py \
-       tests/test_gigo_benchmark.py tests/test_gigo_round3.py tests/test_plausibility.py
-```
-
-Suspension benchmarks: 
-
-```bash
-pytest tests/test_adams_view_benchmark.py tests/test_lotus_benchmark.py tests/test_invariants_property.py \
-       tests/test_link_load_benchmark.py tests/test_direct_acting_benchmark.py tests/test_direct_acting.py \
-       tests/test_adams_geometry_benchmark.py tests/test_adams_steering_benchmark.py \
-       tests/test_published_lotus_benchmark.py tests/test_random_geometry_benchmark.py
-python scripts/verify_run.py manifests/rear_v11_final.recorded.genesis.json   # re-solves a final corner, about 4 min
-```
-
----
-
-## What it's for
-
-You make design decisions before you have CFD or FEA results. KinematiK is the
-step in between: fast enough to try twenty ideas, honest enough to tell you when
-it can't answer.
-
-It is not a replacement for ANSYS, ADAMS or MATLAB. It is what you run *before*
-them, so the two concepts you take to a real solver are the two worth the hours.
-
-## What it does
-
-| | |
-|---|---|
-| **Suspension** | 3D constraint solver: double wishbone, MacPherson, multi-link, solid axle. Camber gain, bump steer, roll centre migration, load transfer. |
-| **Aero** | Underfloor duct model, vortex lattice for wings, source-panel method for bluff bodies. Upload an STL, get a ride-height sweep. |
-| **Brakes** | Bias, lock-up, hydraulic sizing, rotor thermal and fade. |
-| **Accumulator** | Cell sizing, pack topology, FSAE-EV rules checks, thermal model. |
-| **Chassis** | Frame graph with triangulation and load-path audit, weight and CG ledger. |
-| **Electrics** | Import a real routed board (KiCad, Altium) and check copper survival and signal integrity. |
-| **Powertrain** | Iterate motor architecture, check which one finishes fastest and which configuration blows a fuse. |
-| **Integration** | Every subsystem declares mass, CG, torque, heat and load into one ledger. Change a number, see which other subsystems it moves. |
-
-Most tabs export a build-ready DXF you can open in SolidWorks as a 2D sketch.
-
-Full list: **[FEATURES.md](FEATURES.md)**
+All of these check the maths against other tools, not a built car. See [Known limitations](#known-limitations).
 
 ## Screenshots
 
@@ -180,23 +80,20 @@ Integration tools, where every subsystem's numbers meet:
 
 ![Integration tools](docs/screenshots/integration-tools.png)
 
-## Aero example
+## What it does
 
-Upload an STL, pick a solver, get a ride-height sweep:
+| | |
+|---|---|
+| **Suspension** | 3D constraint solver: double wishbone, MacPherson, multi-link, solid axle. Camber gain, bump steer, roll-centre migration, load transfer, link loads. |
+| **Aero** | Underfloor duct model, vortex lattice for wings, source-panel method for bluff bodies. Upload an STL, get a ride-height sweep. |
+| **Brakes** | Bias, lock-up, hydraulic sizing, rotor thermal and fade. |
+| **Accumulator** | Cell sizing, pack topology, FSAE-EV rules checks, thermal model. |
+| **Chassis** | Frame graph with triangulation and load-path audit, bracket factor of safety, weight and CG ledger. |
+| **Electrics** | Import a routed board (KiCad, Altium) and check current capacity, voltage drop, clearance and impedance. |
+| **Powertrain** | Compare motor architectures: which finishes fastest, and which configuration blows a fuse. |
+| **Integration** | Every subsystem declares mass, CG, torque, heat and load into one ledger. Change a number, see which other subsystems it moves. |
 
-The what-if grid solves 30 combinations of throat position and ride height in
-milliseconds, with the diffuser separation limit marked:
-
-```
- ride       25%       35%       45%       55%       65%
-   60      -36%      -37%      -38%      -39%      -40%
-   40       +6%       +3%       +0%       -3%       -6%
-   25     +102%      +92%      +84%      +76%      +68%
-   20     +180%     +164%     +152%     +139%     +126%
-```
-
-Ten millimetres of ride height is worth more than any throat position available.
-That's the kind of answer this is for.
+Most tabs export a DXF you can open in SolidWorks as a 2D sketch. Full list: [FEATURES.md](FEATURES.md).
 
 ## Run it locally
 
@@ -208,6 +105,44 @@ streamlit run fsae_suspension/streamlit_app.py
 ```
 
 Python 3.12 or newer. The hosted app needs no install.
+
+### Re-run the benchmarks
+
+From `kinematik/fsae_suspension`, each set takes a few minutes on a laptop.
+
+Suspension:
+
+```bash
+pytest tests/test_adams_view_benchmark.py tests/test_lotus_benchmark.py tests/test_invariants_property.py \
+       tests/test_link_load_benchmark.py tests/test_direct_acting_benchmark.py tests/test_direct_acting.py \
+       tests/test_adams_geometry_benchmark.py tests/test_adams_steering_benchmark.py \
+       tests/test_published_lotus_benchmark.py tests/test_random_geometry_benchmark.py
+python scripts/verify_run.py manifests/rear_v11_final.recorded.genesis.json   # re-solves a final corner, about 4 min
+```
+
+Brackets and plate FE (the live FEA re-runs need `pip install scikit-fem sfepy openseespy`; without them the
+recorded runs are checked):
+
+```bash
+pytest tests/test_gold_standard_benchmark.py tests/test_ansys_vm16_benchmark.py \
+       tests/test_bracket_fea_benchmark.py tests/test_morphmesh_benchmark.py
+```
+
+Powertrain:
+
+```bash
+pytest tests/test_fastsim_benchmark.py tests/test_gt_suite_benchmark.py tests/test_powertrain_benchmark.py \
+       tests/test_gigo_benchmark.py tests/test_gigo_round3.py tests/test_plausibility.py
+```
+
+Electrics (PCB Doctor, SPICE, impedance, heating, accumulator and harness, the parallel split against 54 measured
+modules):
+
+```bash
+pytest tests/test_electrical_benchmark.py tests/test_pcb_doctor.py tests/test_ev_electrical_check.py \
+       tests/test_pcb_upload_fuzz.py tests/test_accumulator_harness_benchmark.py \
+       tests/test_parallel_module_benchmark.py tests/test_bridge_screen.py
+```
 
 ## Check a board offline
 
@@ -231,48 +166,29 @@ It checks each declared current against the fuses, traces and copper that carry 
 not on the board and board nets nobody declared, and states the evidence behind every result. Exit status is 1 on
 any FAIL (or WARN with `--fail-on warning`), so it can gate a CI run. KiCad and Altium boards.
 
----
-
 ## Known limitations
 
-- **Not correlated with a measured car.** The kinematics agree with Adams View,
-  Lotus Suspension Analysis and Applied Racing Dynamics, the geometry, steering, link loads and
-  direct-acting dampers agree with Adams View, MATLAB Simscape Multibody and Project Chrono, and the synthesis reproduces
-  on other teams' machines ([VALIDATION.md](VALIDATION.md)), but nothing has been
-  compared with an instrumented vehicle, a K&C rig or a wind tunnel. Treat every
-  number as a starting point for your own test day.
+- **Not correlated with a measured car.** Nothing has been compared with an instrumented vehicle, a K&C rig or a
+  wind tunnel. The benchmarks show the maths is right, not that it matches your car; treat every number as a
+  starting point for your own test day.
 - **Powertrain heat and lap time.** Pack and motor heat are over-predicted by 3.5–14 % against Simscape (the safe
   side for cooling); lap time has not been compared with a real car; a Formula Student engine's fuel map and coolant
   heat have no open reference. Wrong inputs that still look like a believable car (a driver left out of the mass, an
   efficiency off by a dropped digit) are not caught by the entry checks.
-- **Synthetic default tyre.** Load your own Magic Formula coefficients for
-  absolute grip numbers.
-- **Quasi-static and lumped models.** Lap time, load transfer and the thermal
-  models give trends, not transients.
-- **Inviscid aero.** The panel method matches a sphere in potential flow (Cp
-  minimum −1.248 against −1.250), and the vortex lattice lands 11% under
-  lifting-line theory on a rectangular AR 8 wing. Neither sees separation or
-  stall. On a cambered body the absolute C_L drifts a few percent per mesh
-  refinement while the ratio between two geometries holds to 3%, so compare
-  designs at matched settings rather than quoting one figure.
+- **Synthetic default tyre.** Load your own Magic Formula coefficients for absolute grip numbers.
+- **Quasi-static and lumped models.** Lap time, load transfer and the thermal models give trends, not transients.
+- **Inviscid aero.** The panel method matches a sphere in potential flow (Cp minimum −1.248 against −1.250), and the
+  vortex lattice lands 11 % under lifting-line theory on a rectangular AR 8 wing. Neither sees separation or stall.
+  Compare designs at matched settings rather than quoting one absolute figure.
+- **Brackets are screened, not simulated.** Bolt bearing, tear-out and weld throat are hand calculations without an
+  outside benchmark, and a fully fixed root sees more stress than the hand value.
 - **Not peer reviewed yet.** A manuscript is in preparation.
-- **One author.** That is why every published number has a script
-  that re-runs it, and why the checks run weekly in CI.
-
-**It tells you when it can't answer.** Diverged cases are blanked rather than
-printed. Grid checks that couldn't run say so instead of reporting a reassuring
-0%. Every failure message names the lever that's actually available for your
-case.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Issues and pull requests welcome. Think a result is wrong?
-[Break it](CHALLENGE.md): confirmed breaks and independent reproductions are credited there by name.
-Deployment and database notes are in [DEPLOY.md](DEPLOY.md); release
-history is in [CHANGELOG.md](CHANGELOG.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md). Issues and pull requests welcome. Deployment and database notes are in
+[DEPLOY.md](DEPLOY.md); release history is in [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
-AGPL-3.0
-
-Original work of Frederik Thio. © 2026.
+AGPL-3.0. Original work of Frederik Thio. © 2026.
