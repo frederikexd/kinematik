@@ -38,7 +38,10 @@ week, and holds the core files listed in `mutation_targets.toml` to a 99 % mutat
 Ansys's own Verification Manual, problem VM16: a cantilever 10 in long and 2 in deep, 1 in thick (Ansys's default for
 plane elements), with 300 lb on the free end. Bending stress 1 in from the wall:
 
-σ = 6·F·a / (b·h²) = 6 × 300 lb × 9 in / (1 in × (2 in)²) = **4,050 psi**
+σ = M·c / I = 6·F·a / (b·h²) = 6 × 300 lb × 9 in / (1 in × (2 in)²) = **4,050 psi**
+
+with F the end load, a = 10 in − 1 in = 9 in the distance from that section to the load, b = 1 in the thickness
+and h = 2 in the depth (I = b·h³/12, c = h/2).
 
 | | Bending stress |
 |---|---|
@@ -46,13 +49,14 @@ plane elements), with 300 lb on the free end. Bending stress 1 in from the wall:
 | Ansys Mechanical APDL, published | 4,050 psi |
 | KinematiK bracket check | 4,050 psi |
 
-The same check against the published results of four more commercial solvers, and a plate solver against three:
+The same comparison against the published results of three more commercial solvers for the bracket check, and of
+three for the MorphMesh plate solver:
 
-| Problem (source) | Tool's published result | Theory | KinematiK (bracket check / MorphMesh plate solver) |
-|---|---|---|---|
-| 2D cantilever plate, root stress (Creo mvss003) | MSC Nastran 55,190 psi; Creo Simulate 60,121 psi | 60,000 psi | 60,000 psi |
-| Thin cantilever wall, root stress (Autodesk Nastran 2.9) | Autodesk Nastran 20,535 psi | 21,600 psi | 21,600 psi |
-| MacNeal–Harder straight cantilever, tip deflection | Ansys 0.10676 in; Autodesk Nastran 0.1072 in; Abaqus 0.108 in | 0.108 in (0.1081 with shear) | 0.1072 in |
+| Problem (source) | KinematiK feature | Tool's published result | Theory | KinematiK |
+|---|---|---|---|---|
+| 2D cantilever plate, root stress (Creo mvss003) | Bracket check | MSC Nastran 55,190 psi; Creo Simulate 60,121 psi | 60,000 psi | 60,000 psi |
+| Thin cantilever wall, root stress (Autodesk Nastran 2.9) | Bracket check | Autodesk Nastran 20,535 psi | 21,600 psi | 21,600 psi |
+| MacNeal–Harder straight cantilever, tip deflection | MorphMesh | Ansys 0.1068 in; Autodesk Nastran 0.1072 in; Abaqus 0.108 in | 0.108 in (0.1081 with shear) | 0.1072 in |
 
 The bracket check is the beam formula, so it returns the theory value exactly; the solvers' published numbers
 differ because they mesh the part. That shows the formula is implemented correctly, not that a hand calculation beats
