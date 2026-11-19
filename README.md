@@ -237,5 +237,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Issues and pull requests welcome. Deploy
 
 ## License
 
-AGPL-3.0. Original work of Frederik Thio. © 2026. A commercial licence is available for companies that can't use
-AGPL software.
+AGPL-3.0. Original work of Frederik Thio. © 2026
