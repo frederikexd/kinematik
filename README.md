@@ -13,9 +13,13 @@
 [![mutation](https://github.com/frederikexd/kinematik/actions/workflows/mutation.yml/badge.svg?branch=main)](https://github.com/frederikexd/kinematik/actions/workflows/mutation.yml)
 [![DOI](https://zenodo.org/badge/1264704197.svg)](https://doi.org/10.5281/zenodo.23450788)
 
-Pre-validation for Formula Student and Formula Student EV design work: suspension, powertrain, electrics, brakes,
-aero and chassis calculations you run before SolidWorks, ANSYS or Adams, so the concepts that reach those tools are
-the ones worth the hours, and the mistakes between subsystems are caught before they are built in.
+From your suspension targets to pickup points that fit your packaging and tolerances, and the loads at every
+pickup, before the design reaches SolidWorks, ANSYS or Adams. Built for Formula Student and Formula Student EV, with
+checks for powertrain, electrics, brakes, aero and chassis alongside.
+
+> **What it can and cannot do.** It can correct and synthesise suspension geometry for part design and setup
+> decisions, and give motion ratios and link and pickup forces, within the vehicle's operating range. It cannot model
+> compliance (links and bushings are rigid), transients, or anything that needs measured data.
 
 It is not a replacement for those tools or for test data once a car exists (see [Known limitations](#known-limitations)).
 
@@ -233,4 +237,5 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Issues and pull requests welcome. Deploy
 
 ## License
 
-AGPL-3.0. Original work of Frederik Thio. © 2026.
+AGPL-3.0. Original work of Frederik Thio. © 2026. A commercial licence is available for companies that can't use
+AGPL software.
