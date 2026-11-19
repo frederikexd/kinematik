@@ -81,8 +81,8 @@ pytest tests/test_gold_standard_benchmark.py tests/test_ansys_vm16_benchmark.py
 | Link loads | Adams View, Simscape Multibody, Chrono, an independent static solve | Member forces within 0.0009 N of Adams View (3 corners × 4 load cases; limit 0.5 N + 0.1 %) |
 | Brackets and plate FE | Published verification problems of Ansys, MSC Nastran, Creo Simulate, Autodesk Nastran and Abaqus (above); scikit-fem, SfePy and OpenSees | Bracket root-bending stress equals each manual's theory value; the plate solver (MorphMesh) within 0.01–0.71 % of the tools' published deflections |
 | Powertrain | NREL FASTSim 3.1.0, five published GT-SUITE studies, MathWorks' Formula Student model (blind), Argonne dyno data | FASTSim 20 of 20 within 0.04 %; GT-SUITE 41 of 44 within 5 %; blind 28 of 39 within 3 %; dyno energy 3.7 % on average |
-| Electrics | KiCad 7 and 9, Altium Designer 26, SPICE (ngspice), PyBaMM, liionpack | Board reading exact on every count (30 of 30 on native Altium boards); precharge within 0.001 %; net resistance with copper pours 203 of 204 within 2 % |
-| Wrong inputs | Sealed rounds of realistic input errors (pounds for kilograms, percent for fraction, typos) | 64 of 83 harmful errors caught at entry on two cars the checks were never written against, 0 false alarms |
+| Electrics | KiCad 7 and 9, Altium Designer 26, SPICE (ngspice), PyBaMM, liionpack | Board reading matched KiCad and Altium on every count tested (30 of 30 on native Altium boards); precharge within 0.001 %; net resistance with copper pours 203 of 204 within 2 % |
+| Wrong inputs | Sealed rounds of realistic input errors (pounds for kilograms, percent for fraction, typos) | 64 of 83 harmful errors caught at entry on two cars the checks were never written against, 0 false alarms on the valid inputs in those rounds |
 
 Full tables, limits and links to each run: [BENCHMARK.md](BENCHMARK.md), [VALIDATION.md](VALIDATION.md),
 [powertrain](docs/POWERTRAIN_VALIDATION.md), [electrical](docs/ELECTRICAL_BENCHMARK.md),
@@ -122,16 +122,16 @@ Integration tools, where every subsystem's numbers meet:
 
 ## What it does
 
-| | |
-|---|---|
-| **Suspension** | 3D constraint solver: double wishbone, MacPherson, multi-link, solid axle. Camber gain, bump steer, roll-centre migration, load transfer, link loads. |
-| **Aero** | Underfloor duct model, vortex lattice for wings, source-panel method for bluff bodies. Upload an STL, get a ride-height sweep. |
-| **Brakes** | Bias, lock-up, hydraulic sizing, rotor thermal and fade. |
-| **Accumulator** | Cell sizing, pack topology, FSAE-EV rules checks, thermal model. |
-| **Chassis** | Frame graph with triangulation and load-path audit, bracket factor of safety, weight and CG ledger. |
-| **Electrics** | Import a routed board (KiCad, Altium) and check current capacity, voltage drop, clearance and impedance. |
-| **Powertrain** | Compare motor architectures: which finishes fastest, and which configuration blows a fuse. |
-| **Integration** | Every subsystem declares mass, CG, torque, heat and load into one ledger. Change a number, see which other subsystems it moves. |
+| | | Maturity |
+|---|---|---|
+| **Suspension** | 3D constraint solver: double wishbone, MacPherson, multi-link, solid axle. Camber gain, bump steer, roll-centre migration, load transfer, link loads. | **Most mature.** Checked against Adams View, Simscape, Chrono and Lotus; misses published |
+| **Aero** | Underfloor duct model, vortex lattice for wings, source-panel method for bluff bodies. Upload an STL, get a ride-height sweep. | **Early.** Closed-form and published checks; inviscid, no wind tunnel or CFD comparison |
+| **Brakes** | Bias, lock-up, hydraulic sizing, rotor thermal and fade. | **Early.** Closed-form and one published check; rotor temperature not benchmarked |
+| **Accumulator** | Cell sizing, pack topology, FSAE-EV rules checks, thermal model. | **Partly benchmarked.** Against PyBaMM and liionpack; some checks pending |
+| **Chassis** | Frame graph with triangulation and load-path audit, bracket factor of safety, weight and CG ledger. | **Early.** Bracket bending checked against commercial solvers; the other chassis checks are closed-form only |
+| **Electrics** | Import a routed board (KiCad, Altium) and check current capacity, voltage drop, clearance and impedance. | **Mature.** Board reading checked against KiCad and Altium, resistance against SPICE |
+| **Powertrain** | Compare motor architectures: which finishes fastest, and which configuration blows a fuse. | **Benchmarked.** FASTSim, GT-SUITE studies and a blind MathWorks model; heat and lap time not against a car |
+| **Integration** | Every subsystem declares mass, CG, torque, heat and load into one ledger. Change a number, see which other subsystems it moves. | **Early.** Bookkeeping across subsystems; no outside benchmark |
 
 Most tabs export a DXF you can open in SolidWorks as a 2D sketch. Full list: [FEATURES.md](FEATURES.md).
 
