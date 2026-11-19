@@ -1865,6 +1865,10 @@ hr{ border-color:var(--line);}
 st.markdown('<div class="brand"><span class="mark">◢ KinematiK</span>'
             '<span class="sub">the hour before ANSYS, SolidWorks &amp; MATLAB · open source</span></div>',
             unsafe_allow_html=True)
+with st.expander("What it can and cannot do", expanded=False):
+    st.markdown("It can correct and synthesise suspension geometry for part design and setup decisions, and give "
+                "motion ratios and link and pickup forces, within the vehicle's operating range. It cannot model "
+                "compliance (links and bushings are rigid), transients, or anything that needs measured data.")
 
 PLOT_LAYOUT = dict(
     paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="#0e1216",
