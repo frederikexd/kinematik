@@ -15,20 +15,24 @@
 
 Pre-build checks for Formula Student and Formula SAE teams: suspension geometry and loads, and circuit boards before
 first power-up, so the hours on the bench and in CAD go to the parts most likely to be wrong. *Pre-validation* here
-means checking a design before the car or board exists; it does not replace testing afterwards ([Known limitations](#known-limitations)).
+means checking a design before the car is built or the board is first powered; it does not replace testing afterwards ([Known limitations](#known-limitations)).
 
-> **What it can and cannot do.** It can correct and synthesise suspension geometry for part design and setup
+> **Suspension: what it can and cannot do.** It can correct and synthesise suspension geometry for part design and setup
 > decisions, and give motion ratios and link and pickup forces, within the vehicle's operating range. It cannot model
 > compliance (links and bushings are rigid), transients, or anything that needs measured data.
+>
+> **Boards: what it can and cannot do.** It reads the copper and the gaps from the board file. It cannot see whether a
+> bridge formed, a part is missing or rotated, or a signal is wrong.
 
 **[Open the app](https://kinematik-ijzpvutb92x7n3yzo7sdqc.streamlit.app/)** · free for student teams · no install ·
-open source (AGPL-3.0: anyone may use and modify it, including commercially; a modified version offered to others,
-including over a network, must publish its source under the same licence)
+open source ([AGPL-3.0](#license))
 
-## Example: a board checked before first power-up
+## Example: a team board, checked after the fact
 
-A Formula SAE team's clutch-control board, designed in Altium and assembled and reflowed in-house. The team's biggest
-source of delay after reflow was solder bridges that a visual inspection missed.
+A Formula SAE team's clutch-control board from the previous season, designed in Altium and assembled and reflowed
+in-house. The team's biggest source of delay after reflow was solder bridges that a visual inspection missed. The
+check was run afterwards, on the finished design, as a retrospective test of what it would have flagged before first
+power-up.
 
 - **What KinematiK did.** From the board file alone, it listed the 177 pin pairs on different nets closer than 0.35 mm,
   ranked the 22 supply-to-ground pairs first, and grouped them into a hit-list of the 15 places to inspect first.
@@ -263,3 +267,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Issues and pull requests welcome. Deploy
 ## License
 
 AGPL-3.0. Original work of Frederik Thio. © 2026
+
+In practice: anyone may use and modify KinematiK, including commercially. A modified version offered to others,
+including over a network, must publish its source under the same licence. This is a summary, not legal advice; the
+[licence text](LICENSE) governs.
