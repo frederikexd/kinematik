@@ -22,7 +22,8 @@ means checking a design before the car or board exists; it does not replace test
 > compliance (links and bushings are rigid), transients, or anything that needs measured data.
 
 **[Open the app](https://kinematik-ijzpvutb92x7n3yzo7sdqc.streamlit.app/)** · free for student teams · no install ·
-open source (AGPL-3.0)
+open source (AGPL-3.0: anyone may use and modify it, including commercially; a modified version offered to others,
+including over a network, must publish its source under the same licence)
 
 ## Example: a board checked before first power-up
 
@@ -31,6 +32,8 @@ source of delay after reflow was solder bridges that a visual inspection missed.
 
 - **What KinematiK did.** From the board file alone, it listed the 177 pin pairs on different nets closer than 0.35 mm,
   ranked the 22 supply-to-ground pairs first, and grouped them into a hit-list of the 15 places to inspect first.
+  This is the PCB Doctor tab's "Before first power-up" panel; the board file is the team's and is not shared, but
+  the same screen runs on the KiCad demo boards in `tests/test_bridge_screen.py`.
 - **How the gaps were checked.** Every pair matched KiCad's import of the same file, and spot checks in Altium
   (Measure Primitives) gave the same values.
 - **What it did not do.** It cannot see whether a bridge actually formed, only where the gaps are tight enough for one,
@@ -48,12 +51,12 @@ stay published: two Lotus SHARK studies, MathWorks' K&C rig, and 11 of 39 metric
 
 | | | Maturity |
 |---|---|---|
-| **Suspension** | 3D constraint solver: double wishbone, MacPherson, multi-link, solid axle. Camber gain, bump steer, roll-centre migration, load transfer, link loads. | **Most mature.** Checked against Adams View, Simscape, Chrono and Lotus; misses published |
+| **Suspension** | 3D constraint solver: double wishbone, MacPherson, multi-link, solid axle. Camber gain, bump steer, roll-centre migration, load transfer, link loads. | **Most benchmarked.** Checked against Adams View, Simscape, Chrono and Lotus; misses published |
 | **Aero** | Underfloor duct model, vortex lattice for wings, source-panel method for bluff bodies. Upload an STL, get a ride-height sweep. | **Early.** Closed-form and published checks; inviscid, no wind tunnel or CFD comparison |
 | **Brakes** | Bias, lock-up, hydraulic sizing, rotor thermal and fade. | **Early.** Closed-form and one published check; rotor temperature not benchmarked |
 | **Accumulator** | Cell sizing, pack topology, FSAE-EV rules checks, thermal model. | **Partly benchmarked.** Against PyBaMM and liionpack; some checks pending |
 | **Chassis** | Frame graph with triangulation and load-path audit, bracket factor of safety, weight and CG ledger. | **Early.** Bracket bending checked against commercial solvers; the other chassis checks are closed-form only |
-| **Electrics** | Import a routed board (KiCad, Altium) and check current capacity, voltage drop, clearance and impedance. | **Mature.** Board reading checked against KiCad and Altium, resistance against SPICE |
+| **Electrics** | Import a routed board (KiCad, Altium) and check current capacity, voltage drop, clearance and impedance. | **Benchmarked.** Board reading checked against KiCad and Altium, resistance against SPICE; misses published |
 | **Powertrain** | Compare motor architectures: which finishes fastest, and which configuration blows a fuse. | **Benchmarked.** FASTSim, GT-SUITE studies and a blind MathWorks model; heat and lap time not against a car |
 | **Integration** | Every subsystem declares mass, CG, torque, heat and load into one ledger. Change a number, see which other subsystems it moves. | **Early.** Bookkeeping across subsystems; no outside benchmark |
 
@@ -84,6 +87,40 @@ Integration tools, where every subsystem's numbers meet:
 CI runs the tests, lint, CodeQL and security scans on every push to main, re-solves the recorded design runs every
 week, and holds the core files listed in `mutation_targets.toml` to a 99 % mutation score (the share of deliberately
 injected code faults that the tests catch).
+
+## Benchmark highlights
+
+| Area | Checked against | Result |
+|---|---|---|
+| Suspension kinematics | Adams View 2026.1, Lotus Suspension Analysis, Applied Racing Dynamics, MathWorks' K&C rig (Simscape), Project Chrono | Camber, toe, caster and kingpin inclination within 0.00003° of Adams View at every 1 mm of wheel travel over ±25 mm; 500 random corners within 0.000025° of Chrono |
+| Geometry and steering | Adams View 2026.1, MATLAB Simscape Multibody R2025b, Project Chrono 9.0.1 | Contact-patch path within 0.00012 mm, anti-dive and anti-squat within 0.0007 percentage points, Ackermann at lock within 0.0003 percentage points |
+| Link loads | Adams View, Simscape Multibody, Chrono, an independent static solve | Member forces within 0.0009 N of Adams View (3 corners × 4 load cases; limit 0.5 N + 0.1 %) |
+| Brackets and plate FE | Published verification problems of Ansys, MSC Nastran, Creo Simulate, Autodesk Nastran and Abaqus (above); scikit-fem, SfePy and OpenSees | Bracket root-bending stress equals each manual's theory value; the plate solver (MorphMesh) within 0.01–0.71 % of the tools' published deflections |
+| Powertrain | NREL FASTSim 3.1.0, five published GT-SUITE studies, MathWorks' Formula Student model (blind: 7 cases sealed on GitHub before they ran), Argonne dyno data | FASTSim 20 of 20 within 0.04 %; GT-SUITE 41 of 44 within 5 %; blind 28 of 39 within 3 %; dyno energy 3.7 % on average |
+| Electrics | KiCad 7 and 9, Altium Designer 26, SPICE (ngspice), PyBaMM, liionpack | Board reading matched KiCad and Altium on every count tested (30 of 30 on native Altium boards); precharge within 0.001 %; net resistance with copper pours 203 of 204 within 2 % |
+| Wrong inputs | Sealed rounds of realistic input errors (pounds for kilograms, percent for fraction, typos) | 64 of 83 harmful errors caught at entry on two cars the checks were never written against, 0 false alarms on the valid inputs in those rounds |
+
+Full tables, limits and links to each run: [BENCHMARK.md](BENCHMARK.md), [VALIDATION.md](VALIDATION.md),
+[powertrain](docs/POWERTRAIN_VALIDATION.md), [electrical](docs/ELECTRICAL_BENCHMARK.md),
+[wrong inputs](docs/GIGO_BENCHMARK_PLAN.md).
+
+### What missed
+
+- **Two published Lotus SHARK studies:** camber and toe pass; caster, kingpin inclination, damper ratio and one paper's +30 mm values
+  miss. Chrono solves the published hardpoints exactly as KinematiK does, so those rows don't follow from the papers'
+  own hardpoints ([details](fsae_suspension/benchmarks/published_lotus/README.md)).
+- **MathWorks' K&C rig:** caster, kingpin inclination and trail (and rear scrub) miss, because MathWorks estimates them from the
+  steering test ([details](fsae_suspension/benchmarks/knc_simscape/README.md)).
+- **MathWorks' Formula Student model, blind:** 11 of 39 metrics outside 3 %.
+- **Net resistance:** the first SPICE round missed its 2 % limit (four connectivity flaws, fixed); on held-out team
+  boards the 2-D copper solve still reads high on 13 % of nets.
+- **Bugs the benchmarks found:** the 500-corner Chrono run found a rocker-solve bug, the SPICE runs four connectivity
+  flaws, the solder-bridge screen two missed custom pads. All fixed and re-run.
+- **Brackets:** at a fully fixed root, 3D FEA puts the stress 12–47 % above the hand calculation, so a tab whose root
+  governs still needs FEA.
+
+All of these check the maths against the established tools, which is what pre-validation needs. See
+[Known limitations](#known-limitations).
 
 ### Check one by hand
 
@@ -119,40 +156,6 @@ Run it in under a minute, from `kinematik/fsae_suspension` after the [install](#
 ```bash
 pytest tests/test_gold_standard_benchmark.py tests/test_ansys_vm16_benchmark.py
 ```
-
-## Benchmark highlights
-
-| Area | Checked against | Result |
-|---|---|---|
-| Suspension kinematics | Adams View 2026.1, Lotus Suspension Analysis, Applied Racing Dynamics, MathWorks' K&C rig (Simscape), Project Chrono | Camber, toe, caster and kingpin inclination within 0.00003° of Adams View at every 1 mm of wheel travel over ±25 mm; 500 random corners within 0.000025° of Chrono |
-| Geometry and steering | Adams View 2026.1, MATLAB Simscape Multibody R2025b, Project Chrono 9.0.1 | Contact-patch path within 0.00012 mm, anti-dive and anti-squat within 0.0007 percentage points, Ackermann at lock within 0.0003 percentage points |
-| Link loads | Adams View, Simscape Multibody, Chrono, an independent static solve | Member forces within 0.0009 N of Adams View (3 corners × 4 load cases; limit 0.5 N + 0.1 %) |
-| Brackets and plate FE | Published verification problems of Ansys, MSC Nastran, Creo Simulate, Autodesk Nastran and Abaqus (above); scikit-fem, SfePy and OpenSees | Bracket root-bending stress equals each manual's theory value; the plate solver (MorphMesh) within 0.01–0.71 % of the tools' published deflections |
-| Powertrain | NREL FASTSim 3.1.0, five published GT-SUITE studies, MathWorks' Formula Student model (blind: 7 cases sealed on GitHub before they ran), Argonne dyno data | FASTSim 20 of 20 within 0.04 %; GT-SUITE 41 of 44 within 5 %; blind 28 of 39 within 3 %; dyno energy 3.7 % on average |
-| Electrics | KiCad 7 and 9, Altium Designer 26, SPICE (ngspice), PyBaMM, liionpack | Board reading matched KiCad and Altium on every count tested (30 of 30 on native Altium boards); precharge within 0.001 %; net resistance with copper pours 203 of 204 within 2 % |
-| Wrong inputs | Sealed rounds of realistic input errors (pounds for kilograms, percent for fraction, typos) | 64 of 83 harmful errors caught at entry on two cars the checks were never written against, 0 false alarms on the valid inputs in those rounds |
-
-Full tables, limits and links to each run: [BENCHMARK.md](BENCHMARK.md), [VALIDATION.md](VALIDATION.md),
-[powertrain](docs/POWERTRAIN_VALIDATION.md), [electrical](docs/ELECTRICAL_BENCHMARK.md),
-[wrong inputs](docs/GIGO_BENCHMARK_PLAN.md).
-
-### What missed
-
-- **Two published Lotus SHARK studies:** camber and toe pass; caster, kingpin inclination, damper ratio and one paper's +30 mm values
-  miss. Chrono solves the published hardpoints exactly as KinematiK does, so those rows don't follow from the papers'
-  own hardpoints ([details](fsae_suspension/benchmarks/published_lotus/README.md)).
-- **MathWorks' K&C rig:** caster, kingpin inclination and trail (and rear scrub) miss, because MathWorks estimates them from the
-  steering test ([details](fsae_suspension/benchmarks/knc_simscape/README.md)).
-- **MathWorks' Formula Student model, blind:** 11 of 39 metrics outside 3 %.
-- **Net resistance:** the first SPICE round missed its 2 % limit (four connectivity flaws, fixed); on held-out team
-  boards the 2-D copper solve still reads high on 13 % of nets.
-- **Bugs the benchmarks found:** the 500-corner Chrono run found a rocker-solve bug, the SPICE runs four connectivity
-  flaws, the solder-bridge screen two missed custom pads. All fixed and re-run.
-- **Brackets:** at a fully fixed root, 3D FEA puts the stress 12–47 % above the hand calculation, so a tab whose root
-  governs still needs FEA.
-
-All of these check the maths against the established tools, which is what pre-validation needs. See
-[Known limitations](#known-limitations).
 
 ## Run it locally
 
@@ -230,6 +233,8 @@ any FAIL (or WARN with `--fail-on warning`), so it can gate a CI run. KiCad and 
 - **Pre-validation, not correlation.** KinematiK checks designs before there is a car. The evidence for that is that
   its maths matches the established tools a team validates with later (above). It is not a substitute for test data
   once a car exists: treat every number as a starting point for your own test day.
+- **Not correlated with a measured car.** Nothing has been compared with an instrumented vehicle, a K&C rig or a wind
+  tunnel. Agreement with Adams View, Simscape and Chrono shows the maths is solved correctly, not that it matches a car.
 - **Powertrain heat and lap time.** Pack and motor heat are over-predicted by 3.5–14 % against Simscape (the safe
   side for cooling); lap time has not been compared with a real car; a Formula Student engine's fuel map and coolant
   heat have no open reference. Wrong inputs that still look like a believable car (a driver left out of the mass, an
@@ -242,6 +247,7 @@ any FAIL (or WARN with `--fail-on warning`), so it can gate a CI run. KiCad and 
 - **Brackets are screened, not simulated.** Bolt bearing, tear-out and weld throat are hand calculations without an
   outside benchmark, and a fully fixed root sees more stress than the hand value.
 - **Not peer reviewed yet.** The manuscript has had technical reviews from industry engineers, credited in its acknowledgments, and is being prepared for journal submission.
+- **One author.** That is why every published number has a script that re-runs it, and why the checks run weekly in CI.
 
 ## Acknowledgments
 
