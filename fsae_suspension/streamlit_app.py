@@ -28906,13 +28906,19 @@ with tab7:
                 'timeline below shows what changed between versions; restoring '
                 'snapshots the version it replaces, so a wrong restore is one '
                 'more restore away from undone.</p>', unsafe_allow_html=True)
-            if _hcols[1].button("↻ Refresh", key="hist_refresh"):
-                st.session_state.pop("_hist_cache", None)
-            if "_hist_cache" not in st.session_state:
+            # Loaded on request only: Streamlit runs a collapsed expander's body
+            # on every rerun, and each saved version is a full copy of the
+            # project (CAD library included), so fetching here on every visit
+            # was the bulk of the database egress.
+            if _hcols[1].button("↻ Load / refresh", key="hist_refresh"):
                 st.session_state["_hist_cache"] = _hist_mod.fetch_history(
                     store.backend, limit=20)
-            _snaps, _hreason = st.session_state["_hist_cache"]
-            if _hreason:
+            _snaps, _hreason = st.session_state.get("_hist_cache", (None, None))
+            if _snaps is None:
+                st.caption("History is loaded on request, because every saved "
+                           "version is a full copy of the project. Press "
+                           "Load / refresh to see it.")
+            elif _hreason:
                 st.info(_hreason)
             elif not _snaps:
                 st.caption("No history yet — it starts accumulating from the "
