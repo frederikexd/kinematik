@@ -10256,7 +10256,7 @@ def _lib_inject_cad(cf):
     if cf.id in _lib_injected_ids():
         return True, f"**{cf.name}** is already on the 3D model."
     try:
-        import base64 as _b64i, tempfile as _tf, os as _os
+        import tempfile as _tf, os as _os
         _sfx = "." + cf.name.rsplit(".", 1)[-1].lower()
         with _tf.NamedTemporaryFile(delete=False, suffix=_sfx) as _f:
             _raw = get_shared_store().cad_bytes(cf)
