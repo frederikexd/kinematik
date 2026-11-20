@@ -2761,6 +2761,7 @@ def save_store(store):
             "✋ Not saved — a teammate saved a newer version of the project "
             "while you were editing. Load their version first, then re-apply "
             "your change, so nobody's work is overwritten.")
+        st.caption(f"Details: {store.save_conflict}")
         if st.button("🔄 Load latest project (your unsaved edit stays on screen "
                      "this run — re-enter it after the reload)",
                      key=f"reload_conflict_{id(store)}"):
@@ -19201,12 +19202,20 @@ with tab_car:
                             "embed cap. Share it as a link instead (paste a URL above "
                             "and publish without a file).")
                     else:
-                        _cad_store.add_cad_file(project_mod.CADFile(
+                        _new_cad = project_mod.CADFile(
                             name=_up.name, subsystem=_pub_sub,
                             uploader=_pub_who.strip(), kind="file",
                             data_b64=_b64.b64encode(_bytes).decode("ascii"),
-                            size_bytes=len(_bytes), note=_pub_note.strip()))
-                        _persisted = save_store(_cad_store)
+                            size_bytes=len(_bytes), note=_pub_note.strip())
+                        _cad_store.add_cad_file(_new_cad)
+                        # Adding a file can't overwrite anyone's work, so a
+                        # version conflict is resolved by reloading the latest
+                        # project and adding the file on top of it, once.
+                        _first_ok = _cad_store.save()
+                        if not _first_ok and _cad_store.save_conflict:
+                            _cad_store.reload_latest()
+                            _cad_store.add_cad_file(_new_cad)
+                        _persisted = _first_ok or save_store(_cad_store)
                         # Library ⇄ 3D model bridge: place it on the car too.
                         _msg3d = ""
                         try:
