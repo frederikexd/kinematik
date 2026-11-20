@@ -269,6 +269,7 @@ def migrate(src: ProjectStore, dst: ProjectStore, *, full: bool):
             name=c.name, subsystem=getattr(c, "subsystem", "general"),
             uploader=getattr(c, "uploader", ""), kind=getattr(c, "kind", "file"),
             data_b64=getattr(c, "data_b64", ""), link=getattr(c, "link", ""),
+            storage_path=getattr(c, "storage_path", ""),
             size_bytes=getattr(c, "size_bytes", 0), note=getattr(c, "note", ""),
             ts=getattr(c, "ts", ""), id=c.id,
         ))
@@ -394,8 +395,8 @@ def verify(src: ProjectStore, dst: ProjectStore) -> bool:
             missing.append(sc)
             continue
         # Compare the payload that actually persists (embedded bytes or link).
-        s_pay = (sc.data_b64 or "") if sc.kind != "link" else (sc.link or "")
-        d_pay = (dc.data_b64 or "") if dc.kind != "link" else (dc.link or "")
+        s_pay = (sc.data_b64 or getattr(sc, "storage_path", "") or "") if sc.kind != "link" else (sc.link or "")
+        d_pay = (dc.data_b64 or getattr(dc, "storage_path", "") or "") if dc.kind != "link" else (dc.link or "")
         if sc.kind != dc.kind or s_pay != d_pay or sc.name != dc.name:
             mismatched.append((sc, dc))
         else:

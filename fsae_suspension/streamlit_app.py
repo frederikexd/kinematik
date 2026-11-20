@@ -10191,6 +10191,22 @@ def _lib_parseable(cf):
             in _LIB_MESH_EXTS)
 
 
+def _cad_download(slot, store, cf, key):
+    """Download control for a library file. Bytes held in Storage are fetched only
+    when someone asks for that file, so listing the library costs no egress."""
+    if not (cf.data_b64 or st.session_state.get(f"{key}_want")
+            or cf.storage_path in project_mod._CAD_BYTES_CACHE):
+        if slot.button("Get file", key=f"{key}_get"):
+            st.session_state[f"{key}_want"] = True
+            _do_rerun()
+        return
+    data = store.cad_bytes(cf)
+    if data is None:
+        slot.caption("Couldn't read the file from storage.")
+    else:
+        slot.download_button("Download", data=data, file_name=cf.name, key=key)
+
+
 def _lib_inject_cad(cf):
     """Mesh a library file and snap it into its slot on the 3D model.
 
@@ -10243,7 +10259,10 @@ def _lib_inject_cad(cf):
         import base64 as _b64i, tempfile as _tf, os as _os
         _sfx = "." + cf.name.rsplit(".", 1)[-1].lower()
         with _tf.NamedTemporaryFile(delete=False, suffix=_sfx) as _f:
-            _f.write(_b64i.b64decode(cf.data_b64))
+            _raw = get_shared_store().cad_bytes(cf)
+            if _raw is None:
+                return False, f"**{cf.name}** couldn't be read from the library storage."
+            _f.write(_raw)
             _path = _f.name
         try:
             _payload = chassis_mod.load_part_mesh(_path, max_faces=4000)
@@ -19200,6 +19219,11 @@ with tab_car:
                                  "  \n_In the library for everyone this session; "
                                  "the cross-session save is degraded (see the "
                                  "warning above) but your file is not lost._")
+                        if getattr(_cad_store, "cad_offload_error", None):
+                            _tail += ("  \n_Stored inside the project rather than in "
+                                      "file storage (" + _cad_store.cad_offload_error
+                                      + "); run suspension/cad_storage.sql once to "
+                                      "enable it._")
                         st.success(f"Published {_up.name} "
                                    f"({cadshare_mod.human_size(len(_bytes))})."
                                    + _msg3d + _tail)
@@ -19274,9 +19298,7 @@ with tab_car:
                 else:
                     _row[2].caption(cadshare_mod.human_size(_cf.size_bytes))
                     try:
-                        _row[3].download_button(
-                            "Download", data=_b64.b64decode(_cf.data_b64),
-                            file_name=_cf.name, key=f"cad_dl_{_cf.id}")
+                        _cad_download(_row[3], _cad_store, _cf, f"cad_dl_{_cf.id}")
                     except Exception:
                         _row[3].caption("—")
                 # Library ⇄ 3D bridge controls for this file.
@@ -19366,7 +19388,7 @@ with tab_car:
                         _sfx = "." + _cfp.name.rsplit(".", 1)[-1].lower()
                         with _tf.NamedTemporaryFile(delete=False,
                                                     suffix=_sfx) as _f:
-                            _f.write(_b64.b64decode(_cfp.data_b64))
+                            _f.write(_cad_store.cad_bytes(_cfp) or b"")
                             _pth = _f.name
                         try:
                             with st.spinner("Reading the geometry…"):
@@ -19926,9 +19948,7 @@ with tab_car:
                     else:
                         _sr[1].caption(cadshare_mod.human_size(_sf.size_bytes))
                         try:
-                            _sr[2].download_button(
-                                "Download", data=_b64.b64decode(_sf.data_b64),
-                                file_name=_sf.name, key=f"ans_feed_dl_{_sf.id}")
+                            _cad_download(_sr[2], _cad_store, _sf, f"ans_feed_dl_{_sf.id}")
                         except Exception:
                             _sr[2].caption("—")
 
