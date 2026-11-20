@@ -21,6 +21,8 @@ means checking a design before the car is built or the board is first powered; i
 > decisions, and give motion ratios and link and pickup forces, within the vehicle's operating range. It cannot model
 > compliance (links and bushings are rigid), transients, or anything that needs measured data.
 >
+> **Chassis: what it can and cannot do.** The pickup loads a chassis is designed to come from the suspension solve above, checked.      > against Adams View and an independent solver. The chassis tools themselves (frame triangulation audit, bracket checks) are early: hand > calculations and closed-form checks, not FEA.
+> 
 > **Boards: what it can and cannot do.** It reads the copper and the gaps from the board file. It cannot see whether a
 > bridge formed, a part is missing or rotated, or a signal is wrong.
 
