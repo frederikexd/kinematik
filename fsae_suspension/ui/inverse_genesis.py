@@ -1695,8 +1695,13 @@ def _render_generate():
             "Rim offset from wheel centre (mm, + outboard)", -100.0, 100.0,
             0.0, 1.0, key="ig_env_off"))
         env_cl = float(e8.number_input(
-            "Extra clearance required (mm)", 0.0, 30.0, 0.0, 0.5,
-            key="ig_env_cl"))
+            "Extra clearance required (mm)", 0.0, 50.0, 20.0, 0.5,
+            key="ig_env_cl",
+            help=("Gap kept between every link or rod end and the rim and "
+                  "tyre, on top of their radii. 20 mm by default: the "
+                  "geometry here is an estimate, so a margin for build and "
+                  "model error is kept. A team chasing outright pace can "
+                  "lower it; record why in the design notes.")))
         e9, e10, e11 = st.columns(3)
         env_lr = float(e9.number_input(
             "Link tube radius (mm)", 0.0, 20.0, 8.0, 0.1, key="ig_env_lr",
