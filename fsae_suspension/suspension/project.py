@@ -152,9 +152,11 @@ class CADFile:
     browse/filter/download it from the shared project store — so next year finds
     the geometry, not a dead Google-Drive link.
 
-    Storage: small files are embedded as base64 in `data_b64` (kept under a size
-    cap so the whole project document stays sane); large assemblies are shared
-    as a `link` instead. Exactly one of the two is expected to be set.
+    Storage: on the cloud backend a file's bytes live in the private Storage
+    bucket CAD_BUCKET (`storage_path`), so the project document and every
+    history copy of it stay small; locally (or if the bucket can't be reached)
+    they stay embedded as base64 in `data_b64`. Large assemblies are shared as
+    a `link` instead. Read the bytes with ProjectStore.cad_bytes().
     """
     name: str                       # original filename, e.g. "front_upright.SLDPRT"
     subsystem: str = "general"      # tag: suspension, chassis, aero, ev, SES, ...
@@ -166,6 +168,7 @@ class CADFile:
     note: str = ""
     ts: str = ""
     id: str = ""
+    storage_path: str = ""          # Supabase Storage object once offloaded
 
     def __post_init__(self):
         if not self.ts:
@@ -176,6 +179,14 @@ class CADFile:
     @property
     def ext(self) -> str:
         return os.path.splitext(self.name)[1].lower().lstrip(".")
+
+
+CAD_BUCKET = "kinematik-cad"
+_CAD_BYTES_CACHE: dict = {}         # storage path -> bytes, per server process
+
+
+def _cad_object_name(name: str) -> str:
+    return "".join(ch if ch.isalnum() or ch in "._-" else "-" for ch in name)[:80] or "file"
 
 
 # --------------------------------------------------------------------------- #
@@ -762,13 +773,18 @@ class ProjectStore:
         """Persist the project. Fail-safe: a storage backend error (e.g. a remote
         Supabase/Postgres misconfiguration) is recorded on `self.save_error` and
         returns False rather than raising, so a save side-effect can never crash the
-        caller. Returns True on success.
+        caller. Returns True on success. On the cloud backend, embedded CAD bytes
+        are first moved to Storage (offload_cad_files) so the document stays small.
 
         Concurrency: the write carries the version this store loaded
         (expected_version). If a teammate saved in between, the backend raises
         StaleWriteError; we record it on `self.save_conflict` (and mirror it to
         `save_error` for older call sites) and return False — the caller shows
         the conflict and offers reload_latest(). No silent last-write-wins."""
+        try:
+            self.offload_cad_files()
+        except Exception as e:
+            self.cad_offload_error = f"{type(e).__name__}: {e}"
         payload = self._payload()
         try:
             try:
@@ -897,6 +913,75 @@ class ProjectStore:
         n0 = len(self.cad_files)
         self.cad_files = [c for c in self.cad_files if c.id != file_id]
         return len(self.cad_files) != n0
+
+    def _cad_bucket(self):
+        """The CAD bucket, as the signed-in user (so Storage RLS applies), or None
+        when there is no cloud backend."""
+        client = getattr(self.backend, "client", None)
+        url, key = getattr(client, "supabase_url", None), getattr(client, "supabase_key", None)
+        if not (isinstance(url, str) and isinstance(key, str)):
+            return None
+        token = getattr(getattr(self.backend, "ctx", None), "access_token", None) or key
+        try:
+            from storage3 import SyncStorageClient
+            return SyncStorageClient(url.rstrip("/") + "/storage/v1/",
+                                     {"apiKey": key, "Authorization": f"Bearer {token}"}
+                                     ).from_(CAD_BUCKET)
+        except Exception:
+            return None
+
+    def _cad_prefix(self) -> str:
+        ctx = getattr(self.backend, "ctx", None)
+        tenant = getattr(ctx, "workspace_id", None) or getattr(self.backend, "project_id", "project")
+        return _cad_object_name(str(tenant))
+
+    def offload_cad_files(self) -> int:
+        """Move embedded CAD bytes into Storage, keeping only the pointer in the
+        project document. Returns how many moved; a file whose upload fails stays
+        embedded (nothing is lost) and the reason is kept on cad_offload_error."""
+        todo = [c for c in getattr(self, "cad_files", None) or []
+                if c.kind == "file" and c.data_b64 and not c.storage_path]
+        self.cad_offload_error = None
+        bucket = self._cad_bucket() if todo else None
+        if bucket is None:
+            return 0
+        import base64
+        moved = 0
+        for c in todo:
+            raw = base64.b64decode(c.data_b64)
+            path = f"{self._cad_prefix()}/{c.id}-{_cad_object_name(c.name)}"
+            try:
+                bucket.upload(path=path, file=raw, file_options={
+                    "content-type": "application/octet-stream", "upsert": "true"})
+            except Exception as e:
+                self.cad_offload_error = f"{type(e).__name__}: {e}"
+                continue
+            _CAD_BYTES_CACHE[path] = raw
+            c.storage_path, c.data_b64 = path, ""
+            moved += 1
+        return moved
+
+    def cad_bytes(self, cad: CADFile) -> bytes | None:
+        """A library file's bytes, wherever they live; None for a link or if the
+        bucket can't be read."""
+        import base64
+        if cad.data_b64:
+            return base64.b64decode(cad.data_b64)
+        path = cad.storage_path
+        if not path:
+            return None
+        if path not in _CAD_BYTES_CACHE:
+            bucket = self._cad_bucket()
+            if bucket is None:
+                return None
+            try:
+                data = bucket.download(path)
+            except Exception:
+                return None
+            if len(_CAD_BYTES_CACHE) > 64:
+                _CAD_BYTES_CACHE.clear()
+            _CAD_BYTES_CACHE[path] = data
+        return _CAD_BYTES_CACHE[path]
 
     def cad_files_for(self, subsystem: str | None = None) -> list[CADFile]:
         """Library entries, newest-first, optionally filtered by subsystem tag
