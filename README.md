@@ -13,18 +13,65 @@
 [![mutation](https://github.com/frederikexd/kinematik/actions/workflows/mutation.yml/badge.svg?branch=main)](https://github.com/frederikexd/kinematik/actions/workflows/mutation.yml)
 [![DOI](https://zenodo.org/badge/1264704197.svg)](https://doi.org/10.5281/zenodo.23450788)
 
-From your suspension targets to pickup points that fit your packaging and tolerances, and the loads at every
-pickup, before the design reaches SolidWorks, ANSYS or Adams. Built for Formula Student and Formula Student EV, with
-checks for powertrain, electrics, brakes, aero and chassis alongside.
+Pre-build checks for Formula Student and Formula SAE teams: suspension geometry and loads, and circuit boards before
+first power-up, so the hours on the bench and in CAD go to the parts most likely to be wrong. *Pre-validation* here
+means checking a design before the car or board exists; it does not replace testing afterwards ([Known limitations](#known-limitations)).
 
 > **What it can and cannot do.** It can correct and synthesise suspension geometry for part design and setup
 > decisions, and give motion ratios and link and pickup forces, within the vehicle's operating range. It cannot model
 > compliance (links and bushings are rigid), transients, or anything that needs measured data.
 
-It is not a replacement for those tools or for test data once a car exists (see [Known limitations](#known-limitations)).
-
 **[Open the app](https://kinematik-ijzpvutb92x7n3yzo7sdqc.streamlit.app/)** · free for student teams · no install ·
 open source (AGPL-3.0)
+
+## Example: a board checked before first power-up
+
+A Formula SAE team's clutch-control board, designed in Altium and assembled and reflowed in-house. The team's biggest
+source of delay after reflow was solder bridges that a visual inspection missed.
+
+- **What KinematiK did.** From the board file alone, it listed the 177 pin pairs on different nets closer than 0.35 mm,
+  ranked the 22 supply-to-ground pairs first, and grouped them into a hit-list of the 15 places to inspect first.
+- **How the gaps were checked.** Every pair matched KiCad's import of the same file, and spot checks in Altium
+  (Measure Primitives) gave the same values.
+- **What it did not do.** It cannot see whether a bridge actually formed, only where the gaps are tight enough for one,
+  and it does not replace inspection after reflow. Whether the listed places match where that team's bridges really
+  were has not been confirmed yet.
+
+## The evidence, in two lines
+
+Each result is checked against an established tool or a published result, with the pass limit written down before
+the run: suspension kinematics agree with Adams View to within 0.00003°, link loads to within 0.0009 N. The misses
+stay published: two Lotus SHARK studies, MathWorks' K&C rig, and 11 of 39 metrics in a blind powertrain test
+([details](#what-missed)).
+
+## What it does
+
+| | | Maturity |
+|---|---|---|
+| **Suspension** | 3D constraint solver: double wishbone, MacPherson, multi-link, solid axle. Camber gain, bump steer, roll-centre migration, load transfer, link loads. | **Most mature.** Checked against Adams View, Simscape, Chrono and Lotus; misses published |
+| **Aero** | Underfloor duct model, vortex lattice for wings, source-panel method for bluff bodies. Upload an STL, get a ride-height sweep. | **Early.** Closed-form and published checks; inviscid, no wind tunnel or CFD comparison |
+| **Brakes** | Bias, lock-up, hydraulic sizing, rotor thermal and fade. | **Early.** Closed-form and one published check; rotor temperature not benchmarked |
+| **Accumulator** | Cell sizing, pack topology, FSAE-EV rules checks, thermal model. | **Partly benchmarked.** Against PyBaMM and liionpack; some checks pending |
+| **Chassis** | Frame graph with triangulation and load-path audit, bracket factor of safety, weight and CG ledger. | **Early.** Bracket bending checked against commercial solvers; the other chassis checks are closed-form only |
+| **Electrics** | Import a routed board (KiCad, Altium) and check current capacity, voltage drop, clearance and impedance. | **Mature.** Board reading checked against KiCad and Altium, resistance against SPICE |
+| **Powertrain** | Compare motor architectures: which finishes fastest, and which configuration blows a fuse. | **Benchmarked.** FASTSim, GT-SUITE studies and a blind MathWorks model; heat and lap time not against a car |
+| **Integration** | Every subsystem declares mass, CG, torque, heat and load into one ledger. Change a number, see which other subsystems it moves. | **Early.** Bookkeeping across subsystems; no outside benchmark |
+
+Most tabs export a DXF you can open in SolidWorks as a 2D sketch. Full list: [FEATURES.md](FEATURES.md).
+
+## Screenshots
+
+Kinematic sweeps from the live hardpoints:
+
+![Camber, bump steer, scrub and caster against wheel travel](docs/screenshots/kinematics-sweeps.png)
+
+InverseGenesis, the inverse synthesis: state the curves, get buildable pickups:
+
+![InverseGenesis set-up](docs/screenshots/inversegenesis.png)
+
+Integration tools, where every subsystem's numbers meet:
+
+![Integration tools](docs/screenshots/integration-tools.png)
 
 ## How the numbers here are checked
 
@@ -35,7 +82,8 @@ open source (AGPL-3.0)
 4. **A script re-runs it.** The commands are under [Re-run the benchmarks](#re-run-the-benchmarks).
 
 CI runs the tests, lint, CodeQL and security scans on every push to main, re-solves the recorded design runs every
-week, and holds the core files listed in `mutation_targets.toml` to a 99 % mutation score.
+week, and holds the core files listed in `mutation_targets.toml` to a 99 % mutation score (the share of deliberately
+injected code faults that the tests catch).
 
 ### Check one by hand
 
@@ -80,7 +128,7 @@ pytest tests/test_gold_standard_benchmark.py tests/test_ansys_vm16_benchmark.py
 | Geometry and steering | Adams View 2026.1, MATLAB Simscape Multibody R2025b, Project Chrono 9.0.1 | Contact-patch path within 0.00012 mm, anti-dive and anti-squat within 0.0007 percentage points, Ackermann at lock within 0.0003 percentage points |
 | Link loads | Adams View, Simscape Multibody, Chrono, an independent static solve | Member forces within 0.0009 N of Adams View (3 corners × 4 load cases; limit 0.5 N + 0.1 %) |
 | Brackets and plate FE | Published verification problems of Ansys, MSC Nastran, Creo Simulate, Autodesk Nastran and Abaqus (above); scikit-fem, SfePy and OpenSees | Bracket root-bending stress equals each manual's theory value; the plate solver (MorphMesh) within 0.01–0.71 % of the tools' published deflections |
-| Powertrain | NREL FASTSim 3.1.0, five published GT-SUITE studies, MathWorks' Formula Student model (blind), Argonne dyno data | FASTSim 20 of 20 within 0.04 %; GT-SUITE 41 of 44 within 5 %; blind 28 of 39 within 3 %; dyno energy 3.7 % on average |
+| Powertrain | NREL FASTSim 3.1.0, five published GT-SUITE studies, MathWorks' Formula Student model (blind: 7 cases sealed on GitHub before they ran), Argonne dyno data | FASTSim 20 of 20 within 0.04 %; GT-SUITE 41 of 44 within 5 %; blind 28 of 39 within 3 %; dyno energy 3.7 % on average |
 | Electrics | KiCad 7 and 9, Altium Designer 26, SPICE (ngspice), PyBaMM, liionpack | Board reading matched KiCad and Altium on every count tested (30 of 30 on native Altium boards); precharge within 0.001 %; net resistance with copper pours 203 of 204 within 2 % |
 | Wrong inputs | Sealed rounds of realistic input errors (pounds for kilograms, percent for fraction, typos) | 64 of 83 harmful errors caught at entry on two cars the checks were never written against, 0 false alarms on the valid inputs in those rounds |
 
@@ -105,35 +153,6 @@ Full tables, limits and links to each run: [BENCHMARK.md](BENCHMARK.md), [VALIDA
 
 All of these check the maths against the established tools, which is what pre-validation needs. See
 [Known limitations](#known-limitations).
-
-## Screenshots
-
-Kinematic sweeps from the live hardpoints:
-
-![Camber, bump steer, scrub and caster against wheel travel](docs/screenshots/kinematics-sweeps.png)
-
-InverseGenesis, the inverse synthesis: state the curves, get buildable pickups:
-
-![InverseGenesis set-up](docs/screenshots/inversegenesis.png)
-
-Integration tools, where every subsystem's numbers meet:
-
-![Integration tools](docs/screenshots/integration-tools.png)
-
-## What it does
-
-| | | Maturity |
-|---|---|---|
-| **Suspension** | 3D constraint solver: double wishbone, MacPherson, multi-link, solid axle. Camber gain, bump steer, roll-centre migration, load transfer, link loads. | **Most mature.** Checked against Adams View, Simscape, Chrono and Lotus; misses published |
-| **Aero** | Underfloor duct model, vortex lattice for wings, source-panel method for bluff bodies. Upload an STL, get a ride-height sweep. | **Early.** Closed-form and published checks; inviscid, no wind tunnel or CFD comparison |
-| **Brakes** | Bias, lock-up, hydraulic sizing, rotor thermal and fade. | **Early.** Closed-form and one published check; rotor temperature not benchmarked |
-| **Accumulator** | Cell sizing, pack topology, FSAE-EV rules checks, thermal model. | **Partly benchmarked.** Against PyBaMM and liionpack; some checks pending |
-| **Chassis** | Frame graph with triangulation and load-path audit, bracket factor of safety, weight and CG ledger. | **Early.** Bracket bending checked against commercial solvers; the other chassis checks are closed-form only |
-| **Electrics** | Import a routed board (KiCad, Altium) and check current capacity, voltage drop, clearance and impedance. | **Mature.** Board reading checked against KiCad and Altium, resistance against SPICE |
-| **Powertrain** | Compare motor architectures: which finishes fastest, and which configuration blows a fuse. | **Benchmarked.** FASTSim, GT-SUITE studies and a blind MathWorks model; heat and lap time not against a car |
-| **Integration** | Every subsystem declares mass, CG, torque, heat and load into one ledger. Change a number, see which other subsystems it moves. | **Early.** Bookkeeping across subsystems; no outside benchmark |
-
-Most tabs export a DXF you can open in SolidWorks as a 2D sketch. Full list: [FEATURES.md](FEATURES.md).
 
 ## Run it locally
 
