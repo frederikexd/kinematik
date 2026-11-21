@@ -3,6 +3,8 @@
 
 ## Unreleased
 
+**ECU pin check for PE3 tunes.** `python -m suspension.ecu_pins TUNE.ped WIRING.xlsx [MORE.csv ...]` reads the channel names a PE3 `.ped` tune stores ("Fan" on Digital Output #1, "MPH" on Digital Input #2), maps each to its pin with Performance Electronics' published PE3-84XX pinout, finds every ECU pin the wiring tables reference (`ECU_MAIN.6`, `Pin M-6`), and reports a named channel whose pin no table wires, a table that puts the wrong output, coil or injector number on a pin, a pin the ECU does not have, and a name that shares no word with the table rows for its pin. Only the names are read: the settings behind them (thresholds, priming, input modes) are binary fields it does not decode, so a match shows consistent naming and wiring, not behaviour. Tested on synthetic tunes laid out like PE3Monitor V5.7 files (`tests/test_ecu_pins.py`).
+
 **Judge summary ends at section 5.** The questions a judge is likely to ask (with the team's answers) and what the pre-validation does not cover are now a separate design-review notes report, with its own Markdown and PDF downloads, following Dan Jones's review over several drafts, which also shaped the target cascade, the iteration history and the team-stated weighting.
 
 **Checked against commercial FE tools' published results.** Bracket FoS root bending is checked against the published verification results of four commercial tools (Ansys, MSC Nastran, Creo Simulate, Autodesk Inventor Nastran) and MorphMesh against three (Ansys, Autodesk Inventor Nastran, Abaqus), on Ansys VM16, Creo mvss003, Nastran problems 2.9 and 2.34, Ansys VM184 and Abaqus benchmark 2.3.5 (MacNeal & Harder's straight cantilever). Every limit was registered before the run.
