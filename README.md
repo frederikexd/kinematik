@@ -17,11 +17,13 @@ Pre-build checks for Formula Student and Formula SAE teams: suspension geometry 
 first power-up, so the hours on the bench and in CAD go to the parts most likely to be wrong. *Pre-validation* here
 means checking a design before the car is built or the board is first powered; it does not replace testing afterwards ([Known limitations](#known-limitations)).
 
-> **Suspension: what it can and cannot do.** It can correct and synthesise suspension geometry for part design and setup
+> **Suspension: what it can and cannot do.** It can correct and synthesize suspension geometry for part design and setup
 > decisions, and give motion ratios and link and pickup forces, within the vehicle's operating range. It cannot model
 > compliance (links and bushings are rigid), transients, or anything that needs measured data.
 >
-> **Chassis: what it can and cannot do.** The pickup loads a chassis is designed to come from the suspension solve above, checked.      > against Adams View and an independent solver. The chassis tools themselves (frame triangulation audit, bracket checks) are early: hand > calculations and closed-form checks, not FEA.
+> **Chassis: what it can and cannot do.** The pickup loads a chassis is designed to come from the suspension solve above,
+> checked against Adams View and an independent solver. The chassis tools themselves (frame triangulation audit, bracket
+> checks) are early: hand calculations and closed-form checks, not FEA.
 > 
 > **Boards: what it can and cannot do.** It reads the copper and the gaps from the board file. It cannot see whether a
 > bridge formed, a part is missing or rotated, or a signal is wrong.
@@ -57,7 +59,7 @@ stay published: two Lotus SHARK studies, MathWorks' K&C rig, and 11 of 39 metric
 
 | | | Maturity |
 |---|---|---|
-| **Suspension** | 3D constraint solver: double wishbone, MacPherson, multi-link, solid axle. Camber gain, bump steer, roll-centre migration, load transfer, link loads. | **Most benchmarked.** Checked against Adams View, Simscape, Chrono and Lotus; misses published |
+| **Suspension** | 3D constraint solver: double wishbone, MacPherson, multi-link, solid axle. Camber gain, bump steer, roll-center migration, load transfer, link loads. | **Most benchmarked.** Checked against Adams View, Simscape, Chrono and Lotus; misses published |
 | **Aero** | Underfloor duct model, vortex lattice for wings, source-panel method for bluff bodies. Upload an STL, get a ride-height sweep. | **Early.** Closed-form and published checks; inviscid, no wind tunnel or CFD comparison |
 | **Brakes** | Bias, lock-up, hydraulic sizing, rotor thermal and fade. | **Early.** Closed-form and one published check; rotor temperature not benchmarked |
 | **Accumulator** | Cell sizing, pack topology, FSAE-EV rules checks, thermal model. | **Partly benchmarked.** Against PyBaMM and liionpack; some checks pending |
@@ -245,7 +247,7 @@ any FAIL (or WARN with `--fail-on warning`), so it can gate a CI run. KiCad and 
   side for cooling); lap time has not been compared with a real car; a Formula Student engine's fuel map and coolant
   heat have no open reference. Wrong inputs that still look like a believable car (a driver left out of the mass, an
   efficiency off by a dropped digit) are not caught by the entry checks.
-- **Synthetic default tyre.** Load your own Magic Formula coefficients for absolute grip numbers.
+- **Synthetic default tire.** Load your own Magic Formula coefficients for absolute grip numbers.
 - **Quasi-static and lumped models.** Lap time, load transfer and the thermal models give trends, not transients.
 - **Inviscid aero.** The panel method matches a sphere in potential flow (Cp minimum −1.248 against −1.250), and the
   vortex lattice lands 11 % under lifting-line theory on a rectangular AR 8 wing. Neither sees separation or stall.
@@ -271,5 +273,5 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Issues and pull requests welcome. Deploy
 AGPL-3.0. Original work of Frederik Thio. © 2026
 
 In practice: anyone may use and modify KinematiK, including commercially. A modified version offered to others,
-including over a network, must publish its source under the same licence. This is a summary, not legal advice; the
-[licence text](LICENSE) governs.
+including over a network, must publish its source under the same license. This is a summary, not legal advice; the
+[license text](LICENSE) governs.
