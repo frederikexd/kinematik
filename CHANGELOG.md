@@ -1,6 +1,10 @@
 # Changelog
 
 
+## 1.7.3 (2026-11-21)
+
+**ECU pin check scope, readable.** The scope note is one plain sentence (only the channel names were read, not the settings behind them; a match means names and wiring agree, not that the outputs behave correctly), and the checked files and their SHA-256 hashes are a table under "Files checked" instead of a run-on line. The feature report carries both: the scope under checks & verdicts, the files table under charts & tables.
+
 ## 1.7.2 (2026-11-21)
 
 **ECU pin check report as PDF, and its scope in the feature report.** The ECU pin check panel downloads its report as a PDF next to the .txt, with the same findings, input hashes, version and caveat. The panel now states the check's scope (names only, not the output settings behind them) and the input hashes as a warning, so the Electronics (PCB) feature report carries them next to the findings instead of green ticks alone.
