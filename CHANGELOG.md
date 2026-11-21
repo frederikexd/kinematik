@@ -1,6 +1,16 @@
 # Changelog
 
 
+## 1.7.4 (2026-11-21)
+
+**ECU pin check, the other direction.** An output the wiring tables drive that the tune has never named (a pump relay wired to DO10 while DO10 still carries its default name) is now flagged as a check: confirm in PE3Monitor that a function is assigned to it. This is the case where the pump function was never assigned to any output. Only names can be read, so it is a prompt, not proof the assignment is missing.
+
+**Locating the output assignment.** `python -m suspension.ecu_pins --diff A.ped B.ped` lists every byte that differs between two saves of one tune (the save date excluded). Two copies that differ in one setting, such as the pump moved from one output to another, show where PE3 stores the assignment, which no published document describes.
+
+## 1.7.3 (2026-11-21)
+
+**ECU pin check scope, readable.** The scope note is one plain sentence (only the channel names were read, not the settings behind them; a match means names and wiring agree, not that the outputs behave correctly), and the checked files and their SHA-256 hashes are a table under "Files checked" instead of a run-on line. The feature report carries both: the scope under checks & verdicts, the files table under charts & tables.
+
 ## 1.7.2 (2026-11-21)
 
 **ECU pin check report as PDF, and its scope in the feature report.** The ECU pin check panel downloads its report as a PDF next to the .txt, with the same findings, input hashes, version and caveat. The panel now states the check's scope (names only, not the output settings behind them) and the input hashes as a warning, so the Electronics (PCB) feature report carries them next to the findings instead of green ticks alone.

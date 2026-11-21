@@ -51,9 +51,17 @@ def render():
         if not rep.problems:
             st.success("No disagreement between tune names, pinout and wiring tables.")
         # A warning, not a caption or st.info: warnings are what the feature report captures, and a report
-        # carrying the green findings without what was not read, or without which files, overstates the check.
-        st.warning("Scope of this check: " + ecu_pins.CAVEAT + f" Run with KinematiK {rep.version} on (SHA-256): "
-                   + "; ".join(f"{n} {d}" for n, d in rep.inputs))
+        # carrying the green findings without what was not read overstates the check.
+        st.warning(f"**Scope of this check.** {ecu_pins.CAVEAT}")
+        # The files as a table, not a run-on sentence of hashes: readable on screen, and a table is what the
+        # feature report captures under charts & tables. The heading key is the capture layer's
+        # (_CAPTURE_HEADING_KEY in streamlit_app.py), so the table is named in the report.
+        import pandas as pd
+        title = f"Files checked (KinematiK {rep.version}, SHA-256)"
+        st.session_state["_ax_next_heading"] = title
+        st.markdown(f"**{title}**")
+        st.dataframe(pd.DataFrame([{"File": n, "SHA-256": d} for n, d in rep.inputs]), hide_index=True,
+                     width="stretch")
         c1, c2 = st.columns(2)
         c1.download_button("Download report (.txt)", ecu_pins.format_report(rep), file_name="ecu_pin_check.txt",
                            mime="text/plain", key="ecu_pins_dl")

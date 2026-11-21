@@ -93,8 +93,8 @@ def test_consistent_names_pass_and_an_unwired_named_input_is_flagged_once():
 
 def test_wiring_table_that_puts_the_wrong_output_on_a_pin_is_a_mismatch():
     wired = ep.harness_pins([["ECU_MAIN.6", "DO9 pulls to GND when on"]])
-    (f,) = ep.check({}, wired).problems
-    assert f.level == "mismatch" and "MAIN-25" in f.message
+    (f,) = [p for p in ep.check({}, wired).problems if p.level == "mismatch"]
+    assert "MAIN-25" in f.message
 
 
 def test_wrong_coil_or_injector_number_is_a_mismatch():
@@ -104,7 +104,7 @@ def test_wrong_coil_or_injector_number_is_a_mismatch():
 
 def test_a_row_naming_two_ecu_pins_makes_no_claim():
     wired = ep.harness_pins([["ECU_MAIN.6", "ECU_MAIN.11", "DO10"]])
-    assert ep.check({}, wired).problems == []
+    assert [p for p in ep.check({}, wired).problems if p.level == "mismatch"] == []
 
 
 def test_a_pin_the_ecu_does_not_have_is_a_mismatch():
@@ -120,8 +120,8 @@ def test_name_that_disagrees_with_the_wired_function_is_flagged_for_a_check():
 
 def test_report_states_what_was_not_read():
     text = ep.format_report(ep.check(ep.read_ped_names(_ped(**NICK_LIKE)), _wiring()))
-    assert "[not wired]" in text and "not behaviour" in text
-    clean = ep.format_report(ep.check({"DO1": "Fan"}, _wiring()))
+    assert "[not wired]" in text and "behave correctly" in text
+    clean = ep.format_report(ep.check({"DO1": "Fan", "DO10": "Fuel Pum"}, _wiring()))
     assert "No disagreement" in clean
 
 
@@ -168,4 +168,38 @@ def test_pdf_report_carries_findings_inputs_and_caveat():
     pdf = ep.report_pdf(rep)
     text = " ".join(" ".join(p.extract_text().split()) for p in pypdf.PdfReader(io.BytesIO(pdf)).pages)
     assert pdf.startswith(b"%PDF") and "NOT WIRED" in text and "MAIN-13" in text
-    assert rep.inputs[0][1] in text.replace(" ", "") and "not behaviour" in text and f"KinematiK {rep.version}" in text
+    assert rep.inputs[0][1] in text.replace(" ", "") and "behave correctly" in text and f"KinematiK {rep.version}" in text
+
+
+def test_an_output_the_harness_drives_but_the_tune_never_set_up_is_flagged():
+    """Nicholas's first case: the pump relay was wired, but no output in the ECU setup was assigned to it."""
+    wired = ep.harness_pins([["ECU_MAIN.6", "Fuel Pump Relay Control"], ["ECU_MAIN.11", "Fan Relay Control"]])
+    rep = ep.check({"DO1": "Fan"}, wired)
+    (f,) = rep.problems
+    assert f.level == "check" and f.pin == ("MAIN", 6) and "has not named DO10" in f.message
+    assert ep.check({"DO1": "Fan", "DO10": "Fuel Pum"}, wired).problems == []
+
+
+def test_inputs_and_fixed_function_pins_are_not_prompted():
+    wired = ep.harness_pins([["ECU_MAIN.1", "Coil 1"], ["ECU_MAIN.29", "CLT"], ["ECU_MAIN.14", "switch"]])
+    assert ep.check({}, wired).problems == []
+
+
+def test_diff_locates_the_one_setting_that_changed_and_ignores_the_save_date():
+    a = bytearray(_ped(**NICK_LIKE)) + b"Date: 11-21-2026"
+    b = bytearray(a)
+    b[0x1234] = 9
+    b[-10:] = b"11-22-2026"[:10]
+    assert ep.ped_diff(bytes(a), bytes(b)) == [(0x1234, 0, 9)]
+    with pytest.raises(ValueError):
+        ep.ped_diff(bytes(a), bytes(a[:-1]))
+
+
+def test_diff_command_line(tmp_path, capsys):
+    a = _ped()
+    b = bytearray(a)
+    b[100] = 7
+    (tmp_path / "a.ped").write_bytes(a)
+    (tmp_path / "b.ped").write_bytes(bytes(b))
+    assert ep.main(["--diff", str(tmp_path / "a.ped"), str(tmp_path / "b.ped")]) == 0
+    assert "0x00064    0 ->   7" in capsys.readouterr().out
