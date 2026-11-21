@@ -1,6 +1,12 @@
 # Changelog
 
 
+## 1.7.2 (2026-11-21)
+
+**ECU pin check report as PDF, and its scope in the feature report.** The ECU pin check panel downloads its report as a PDF next to the .txt, with the same findings, input hashes, version and caveat. The panel now states the check's scope (names only, not the output settings behind them) and the input hashes as a warning, so the Electronics (PCB) feature report carries them next to the findings instead of green ticks alone.
+
+**Screen confirmations are no longer reported as checks.** "Saved — it's in this feature's report now." and the PCB tab's "Board footprint locked in" (shown for the default 80 × 60 mm before anyone entered a board) reached feature reports as ticked checks. Neither is a finding, and the capture layer now skips both.
+
 ## 1.7.1 (2026-11-21)
 
 **ECU pin check in the app.** The Electronics (PCB) tab has an ECU pin check panel: upload a PE3 `.ped` tune and one or more wiring tables (.xlsx or .csv), see each finding, and download the report. Uploads are read in memory for the check and are not saved to the project. The report now starts with the KinematiK version and the SHA-256 of every input file, so it states exactly which files it ran on.

@@ -158,3 +158,14 @@ def test_panel_asks_for_files_before_checking():
     at = AppTest.from_string(f"import sys\nsys.path.insert(0, {root!r})\nfrom ui import ecu_pins\necu_pins.render()\n")
     at.run()
     assert not at.exception and any("Add a tune" in i.value for i in at.info)
+
+
+def test_pdf_report_carries_findings_inputs_and_caveat():
+    pypdf = pytest.importorskip("pypdf")
+    pytest.importorskip("reportlab")
+    import io
+    rep = ep.run(("tune.ped", _ped(**NICK_LIKE)), [("engine.csv", b"From\nECU_MAIN.6,Fuel Pump\n")])
+    pdf = ep.report_pdf(rep)
+    text = " ".join(" ".join(p.extract_text().split()) for p in pypdf.PdfReader(io.BytesIO(pdf)).pages)
+    assert pdf.startswith(b"%PDF") and "NOT WIRED" in text and "MAIN-13" in text
+    assert rep.inputs[0][1] in text.replace(" ", "") and "not behaviour" in text and f"KinematiK {rep.version}" in text

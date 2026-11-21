@@ -257,9 +257,54 @@ def format_report(rep: EcuPinReport) -> str:
         out.append(f"[{f.level}] {f.message}")
     if not rep.problems:
         out.append("No disagreement between tune names, pinout and wiring tables.")
-    out += ["", "Names are labels set in PE3Monitor; the output settings behind them (thresholds, priming, input "
-            "modes) are not read, so a match shows consistent naming and wiring, not behaviour."]
+    out += ["", CAVEAT]
     return "\n".join(out)
+
+
+CAVEAT = ("Names are labels set in PE3Monitor; the output settings behind them (thresholds, priming, input "
+          "modes) are not read, so a match shows consistent naming and wiring, not behaviour.")
+
+
+def report_pdf(rep: EcuPinReport) -> bytes:
+    """The same report as format_report, as a one-page A4 PDF (reportlab)."""
+    from xml.sax.saxutils import escape
+
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.lib.units import mm
+    from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+
+    ss = getSampleStyleSheet()
+    body, small = ss["BodyText"], ss["BodyText"].clone("small", fontSize=7.5, leading=9)
+    mark = {"mismatch": "MISMATCH", "not wired": "NOT WIRED", "check": "CHECK", "ok": "OK"}
+    tint = {"mismatch": colors.HexColor("#f8d7da"), "not wired": colors.HexColor("#fff3cd"),
+            "check": colors.HexColor("#fff3cd"), "ok": colors.HexColor("#d1e7dd")}
+    story = [Paragraph("ECU pin check (PE3-84XX)", ss["Title"]),
+             Paragraph(escape(f"KinematiK {rep.version}" if rep.version else "KinematiK"), body), Spacer(1, 4 * mm)]
+    if rep.inputs:
+        story.append(Paragraph("Inputs (SHA-256)", ss["Heading3"]))
+        story.append(Table([[Paragraph(escape(n), small), Paragraph(d, small)] for n, d in rep.inputs],
+                           colWidths=[62 * mm, 108 * mm]))
+    story += [Paragraph("Tune channel names", ss["Heading3"]),
+              Paragraph(escape(", ".join(f"{k} '{v}'" for k, v in sorted(rep.names.items())) or "none found"), body),
+              Paragraph(f"ECU pins referenced by the wiring tables: {len(rep.wired)}", body),
+              Paragraph("Findings", ss["Heading3"])]
+    if rep.findings:
+        t = Table([[Paragraph(mark[f.level], small), Paragraph(escape(f.message), body)] for f in rep.findings],
+                  colWidths=[22 * mm, 148 * mm])
+        t.setStyle(TableStyle([("BACKGROUND", (0, i), (0, i), tint[f.level]) for i, f in enumerate(rep.findings)]
+                              + [("VALIGN", (0, 0), (-1, -1), "TOP"),
+                                 ("LINEBELOW", (0, 0), (-1, -1), 0.25, colors.lightgrey)]))
+        story.append(t)
+    if not rep.problems:
+        story.append(Paragraph("No disagreement between tune names, pinout and wiring tables.", body))
+    story += [Spacer(1, 4 * mm), Paragraph(CAVEAT, body),
+              Paragraph("Pinout: Performance Electronics, PE3-84XX Pin Out.", small)]
+    buf = io.BytesIO()
+    SimpleDocTemplate(buf, pagesize=A4, leftMargin=20 * mm, rightMargin=20 * mm, topMargin=18 * mm,
+                      bottomMargin=18 * mm, title="ECU pin check", author="KinematiK").build(story)
+    return buf.getvalue()
 
 
 def table_rows(name: str, data: bytes):
