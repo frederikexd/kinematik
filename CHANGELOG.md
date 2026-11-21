@@ -1,7 +1,7 @@
 # Changelog
 
 
-## Unreleased
+## 1.7.0 (2026-11-21)
 
 **ECU pin check for PE3 tunes.** `python -m suspension.ecu_pins TUNE.ped WIRING.xlsx [MORE.csv ...]` reads the channel names a PE3 `.ped` tune stores ("Fan" on Digital Output #1, "MPH" on Digital Input #2), maps each to its pin with Performance Electronics' published PE3-84XX pinout, finds every ECU pin the wiring tables reference (`ECU_MAIN.6`, `Pin M-6`), and reports a named channel whose pin no table wires, a table that puts the wrong output, coil or injector number on a pin, a pin the ECU does not have, and a name that shares no word with the table rows for its pin. Only the names are read: the settings behind them (thresholds, priming, input modes) are binary fields it does not decode, so a match shows consistent naming and wiring, not behaviour. Tested on synthetic tunes laid out like PE3Monitor V5.7 files (`tests/test_ecu_pins.py`).
 
