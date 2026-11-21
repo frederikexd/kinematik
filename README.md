@@ -66,7 +66,7 @@ comparisons include misses, all published: two Lotus SHARK studies, MathWorks' K
 | **Accumulator** | Cell sizing, pack topology, FSAE-EV rules checks, thermal model. | **Partly benchmarked.** Against PyBaMM and liionpack; some checks pending |
 | **Chassis** | Frame graph with triangulation and load-path audit, bracket factor of safety, weight and CG ledger. | **Early.** Bracket bending checked against commercial solvers; the other chassis checks are closed-form only |
 | **Electrics** | Import a routed board (KiCad, Altium) and check current capacity, voltage drop, clearance and impedance. | **Benchmarked.** Board reading checked against KiCad and Altium, resistance against SPICE; misses published |
-| **Powertrain** | Compare motor architectures: predicted event performance, and flag configurations that exceed modeled fuse limits. | **Benchmarked.** FASTSim, GT-SUITE studies and a blind MathWorks model; heat and lap time not against a car |
+| **Powertrain** | Compare predicted event performance across motor architectures and flag configurations that exceed modeled fuse limits. | **Benchmarked.** FASTSim, GT-SUITE studies and a blind MathWorks model; heat and lap time not against a car |
 | **Integration** | Every subsystem declares mass, CG, torque, heat and load into one ledger. Change a number, see which other subsystems it moves. | **Early.** Bookkeeping across subsystems; no outside benchmark |
 
 Most tabs export a DXF you can open in SolidWorks as a 2D sketch. Full list: [FEATURES.md](FEATURES.md).
@@ -246,7 +246,8 @@ any FAIL (or WARN with `--fail-on warning`), so it can gate a CI run. KiCad and 
   implementation and agreement on specified cases (above); they do not establish accuracy on a real vehicle. It is not a substitute for test data
   once a car exists: treat every number as a starting point for your own test day.
 - **Not correlated with a measured car.** Nothing has been compared with an instrumented vehicle, a K&C rig or a wind
-  tunnel. Agreement with Adams View, Simscape and Chrono shows the math is solved correctly, not that it matches a car.
+  tunnel. Agreement with Adams View, Simscape and Chrono supports implementation correctness for the tested cases; it does
+  not establish agreement with a real car.
 - **Powertrain heat and lap time.** Pack and motor heat are over-predicted by 3.5–14 % against Simscape; lap
   time has not been compared with a real car; a Formula Student engine's fuel map and coolant
   heat have no open reference. Wrong inputs that still look like a believable car (a driver left out of the mass, an
