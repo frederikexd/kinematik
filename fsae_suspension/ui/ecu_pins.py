@@ -50,5 +50,15 @@ def render():
             getattr(st, _LEVEL_STYLE[f.level])(f"{f.level}: {f.message}")
         if not rep.problems:
             st.success("No disagreement between tune names, pinout and wiring tables.")
-        st.download_button("Download report (.txt)", ecu_pins.format_report(rep), file_name="ecu_pin_check.txt",
+        # A warning, not a caption or st.info: warnings are what the feature report captures, and a report
+        # carrying the green findings without what was not read, or without which files, overstates the check.
+        st.warning("Scope of this check: " + ecu_pins.CAVEAT + f" Run with KinematiK {rep.version} on (SHA-256): "
+                   + "; ".join(f"{n} {d}" for n, d in rep.inputs))
+        c1, c2 = st.columns(2)
+        c1.download_button("Download report (.txt)", ecu_pins.format_report(rep), file_name="ecu_pin_check.txt",
                            mime="text/plain", key="ecu_pins_dl")
+        try:
+            c2.download_button("Download report (.pdf)", ecu_pins.report_pdf(rep), file_name="ecu_pin_check.pdf",
+                               mime="application/pdf", key="ecu_pins_pdf")
+        except Exception as err:                 # noqa: BLE001 — the .txt is still there
+            c2.caption(f"PDF not available: {err}")

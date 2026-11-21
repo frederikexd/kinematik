@@ -750,6 +750,10 @@ _MAX_CAPTURED_VERDICTS = 24
 # one the cap dropped.
 _MAX_CAPTURED_ARTIFACTS = 48
 _VERDICT_MIN_CHARS = 12          # skip one-word chrome like "Saved"
+# Screen confirmations that are not findings. They passed the length test and reached a team's PDF as ticked
+# "checks": "Saved — it's in this feature's report now." under checks & verdicts, and the PCB tab's default
+# 80 x 60 mm board footprint reported as locked in for a board nobody had entered.
+_UI_CHROME_PREFIXES = ("Saved — it's in this feature's report", "✓ Board footprint locked in")
 # 1000, not 400: a finding longer than the cap was dropped whole and silently, which is worse than a long line.
 _VERDICT_MAX_CHARS = 1000
 
@@ -896,6 +900,8 @@ def capture_verdict(text, severity="info", *, feature=None):
         if not (_VERDICT_MIN_CHARS <= len(_t) <= _VERDICT_MAX_CHARS):
             return
         if _t.startswith("<") or "</" in _t:      # raw HTML chrome, not a finding
+            return
+        if _t.startswith(_UI_CHROME_PREFIXES):    # a screen confirmation, not a finding
             return
         # A rolling summary banner ("BLOCKED — 11 hard failure(s)") changes its
         # numbers as the plan changes, so exact-text dedup kept every historical

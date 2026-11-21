@@ -817,3 +817,13 @@ def test_a_long_cell_and_a_long_finding_reach_the_report_whole(cap):
     assert got["artifacts"][0]["table"]["rows"][0][1] == why
     assert len(got["artifacts"][1]["table"]["header"]) == 14
     assert any(long_line.strip() in v["text"] for v in got["verdicts"])
+
+
+def test_screen_confirmations_are_not_reported_as_checks(cap):
+    """A team's PDF listed 'Saved — it's in this feature's report now.' and a default board footprint as ticked checks."""
+    _open_feature(cap, "pcb")
+    cap["capture_verdict"]("Saved — it's in this feature's report now.", "ok")
+    cap["capture_verdict"]("✓ Board footprint locked in: 80 × 60 mm — the Mesh & DXF panel will now draw it.", "ok")
+    cap["capture_verdict"]("not wired: tune names DI2 'MPH' (MAIN-13), but no wiring table wires that pin", "warn")
+    got = [v["text"] for v in cap["get_feature_results"]("pcb")["verdicts"]]
+    assert got == ["not wired: tune names DI2 'MPH' (MAIN-13), but no wiring table wires that pin"]
