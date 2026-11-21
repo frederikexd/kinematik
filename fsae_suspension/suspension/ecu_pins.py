@@ -79,7 +79,7 @@ _STRIDES = range(_NAME_LEN, 21)
 
 
 def pin_of(channel: str) -> tuple[str, int] | None:
-    """Connector pin of a channel id such as 'DO10', 'DI2', 'AN5' or 'FREQ2'."""
+    """Connector pin of a channel id such as 'DO10', 'DI2', 'AN5' or 'FREQ2' (unitless: connector and pin number)."""
     m = re.fullmatch(r"(DI|DO|AN|FREQ)(\d+)", channel)
     if not m:
         return None
@@ -123,7 +123,7 @@ def _find_block(data: bytes, stem: str, count: int) -> tuple[int, int] | None:
 def read_ped_names(data: bytes) -> dict[str, str]:
     """Custom channel names in a PE3 `.ped` tune: {'DO1': 'Fan', 'DI2': 'MPH', ...}.
 
-    Channels still carrying their default name, or a blank one, are left out.
+    Channels still carrying their default name, or a blank one, are left out. Names only, so unitless.
     Raises ValueError for a file that is not a Performance Electronics tune.
     """
     if not data.startswith(PED_MAGIC):
@@ -186,6 +186,7 @@ class EcuPinReport:
 
     @property
     def problems(self) -> list[Finding]:
+        """Every finding that is not 'ok' (unitless)."""
         return [f for f in self.findings if f.level != "ok"]
 
 
@@ -203,7 +204,7 @@ def _label(pin: tuple[str, int]) -> str:
 
 
 def check(names: dict[str, str], wired: dict[tuple[str, int], list[str]]) -> EcuPinReport:
-    """Compare tune names, the pinout and the wiring tables; one finding per disagreement."""
+    """Compare tune names, the pinout and the wiring tables; one finding per disagreement (unitless: names and pins)."""
     rep = EcuPinReport(names, wired)
     for pin, texts in sorted(wired.items()):
         func = PE3_84XX_PINOUT.get(pin)
@@ -241,7 +242,31 @@ def check(names: dict[str, str], wired: dict[tuple[str, int], list[str]]) -> Ecu
             rep.findings.append(Finding(
                 "check", pin,
                 f"tune names {channel} '{name}' on {_label(pin)}, but the wiring table rows for that pin share no word with it"))
+    # The other direction: an output the harness drives that the tune never set up. A pump relay wired to DO10 while
+    # DO10 still carries its default name is the case where the pump function was never assigned in PE3Monitor.
+    # Names are what can be read, so this is a prompt to confirm the assignment, not proof it is missing.
+    for pin in sorted(wired):
+        m = re.fullmatch(r"Digital Output #(\d+)", PE3_84XX_PINOUT.get(pin, ""))
+        if m and f"DO{m.group(1)}" not in names:
+            rep.findings.append(Finding(
+                "check", pin,
+                f"the wiring tables drive {_label(pin)}, but the tune has not named DO{m.group(1)}: confirm in "
+                f"PE3Monitor that a function is assigned to that output"))
     return rep
+
+
+def ped_diff(a: bytes, b: bytes) -> list[tuple[int, int, int]]:
+    """(offset, byte in a, byte in b) for every byte that differs between two tunes of the same length (unitless).
+
+    The assignment of a function (fuel pump, fan) to an output is stored in an undocumented binary field. Two
+    copies of one tune that differ in exactly one setting, such as the pump moved from DO10 to DO9, locate it:
+    the field is wherever they differ. The trailer's save date is excluded, since it changes on every save.
+    """
+    if len(a) != len(b):
+        raise ValueError(f"tunes differ in length ({len(a)} vs {len(b)} bytes): not two saves of one tune layout")
+    stamp = a.rfind(b"Date:")
+    end = len(a) if stamp < 0 else stamp
+    return [(i, a[i], b[i]) for i in range(end) if a[i] != b[i]]
 
 
 def format_report(rep: EcuPinReport) -> str:
@@ -308,7 +333,7 @@ def report_pdf(rep: EcuPinReport) -> bytes:
 
 
 def table_rows(name: str, data: bytes):
-    """Rows of a wiring table given as file bytes: every sheet of an .xlsx/.xlsm, or a CSV."""
+    """Rows of a wiring table given as file bytes: every sheet of an .xlsx/.xlsm, or a CSV (cell text, unitless)."""
     if name.lower().endswith((".xlsx", ".xlsm")):
         import openpyxl
         wb = openpyxl.load_workbook(io.BytesIO(data), read_only=True, data_only=True)
@@ -319,7 +344,7 @@ def table_rows(name: str, data: bytes):
 
 
 def run(tune: tuple[str, bytes], tables: list[tuple[str, bytes]]) -> EcuPinReport:
-    """The whole check from file names and bytes, with each input's SHA-256 and the tool version recorded."""
+    """The whole check from file names and bytes, with each input's SHA-256 and the tool version recorded (unitless)."""
     names = read_ped_names(tune[1])
     wired: dict[tuple[str, int], list[str]] = {}
     for name, data in tables:
@@ -333,9 +358,17 @@ def run(tune: tuple[str, bytes], tables: list[tuple[str, bytes]]) -> EcuPinRepor
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Command line: the check, or --diff of two tunes. Exit code 1 when the check finds a problem (unitless)."""
     args = sys.argv[1:] if argv is None else argv
+    if len(args) == 3 and args[0] == "--diff":
+        rows = ped_diff(Path(args[1]).read_bytes(), Path(args[2]).read_bytes())
+        for off, x, y in rows:
+            print(f"0x{off:05x}  {x:3d} -> {y:3d}")
+        print(f"{len(rows)} byte(s) differ")
+        return 0
     if len(args) < 2:
-        print("usage: python -m suspension.ecu_pins TUNE.ped WIRING_TABLE.(xlsx|csv) [MORE_TABLES ...]")
+        print("usage: python -m suspension.ecu_pins TUNE.ped WIRING_TABLE.(xlsx|csv) [MORE_TABLES ...]\n"
+              "       python -m suspension.ecu_pins --diff TUNE_A.ped TUNE_B.ped")
         return 2
     files = [(Path(a).name, Path(a).read_bytes()) for a in args]
     rep = run(files[0], files[1:])
