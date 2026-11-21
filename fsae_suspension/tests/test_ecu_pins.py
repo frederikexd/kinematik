@@ -120,7 +120,7 @@ def test_name_that_disagrees_with_the_wired_function_is_flagged_for_a_check():
 
 def test_report_states_what_was_not_read():
     text = ep.format_report(ep.check(ep.read_ped_names(_ped(**NICK_LIKE)), _wiring()))
-    assert "[not wired]" in text and "not behaviour" in text
+    assert "[not wired]" in text and "behave correctly" in text
     clean = ep.format_report(ep.check({"DO1": "Fan"}, _wiring()))
     assert "No disagreement" in clean
 
@@ -168,4 +168,4 @@ def test_pdf_report_carries_findings_inputs_and_caveat():
     pdf = ep.report_pdf(rep)
     text = " ".join(" ".join(p.extract_text().split()) for p in pypdf.PdfReader(io.BytesIO(pdf)).pages)
     assert pdf.startswith(b"%PDF") and "NOT WIRED" in text and "MAIN-13" in text
-    assert rep.inputs[0][1] in text.replace(" ", "") and "not behaviour" in text and f"KinematiK {rep.version}" in text
+    assert rep.inputs[0][1] in text.replace(" ", "") and "behave correctly" in text and f"KinematiK {rep.version}" in text

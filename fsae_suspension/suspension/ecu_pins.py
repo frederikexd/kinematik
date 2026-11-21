@@ -261,8 +261,8 @@ def format_report(rep: EcuPinReport) -> str:
     return "\n".join(out)
 
 
-CAVEAT = ("Names are labels set in PE3Monitor; the output settings behind them (thresholds, priming, input "
-          "modes) are not read, so a match shows consistent naming and wiring, not behaviour.")
+CAVEAT = ("Only the channel names in the tune were read, not the settings behind them (thresholds, priming, "
+          "input modes). A match means the names and the wiring agree, not that the outputs behave correctly.")
 
 
 def report_pdf(rep: EcuPinReport) -> bytes:
