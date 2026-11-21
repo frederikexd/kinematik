@@ -19,11 +19,11 @@ means checking a design before the car is built or the board is first powered; i
 
 > **Suspension: what it can and cannot do.** It can correct and synthesize suspension geometry for part design and setup
 > decisions, and give motion ratios and link and pickup forces, within the vehicle's operating range. It cannot model
-> compliance (links and bushings are rigid), transients, or anything that needs measured data.
+> compliance (links and bushings are rigid) or transients, and absolute grip depends on the tire data you load.
 >
-> **Chassis: what it can and cannot do.** The pickup loads a chassis is designed to come from the suspension solve above,
-> checked against Adams View and an independent solver. The chassis tools themselves (frame triangulation audit, bracket
-> checks) are early: hand calculations and closed-form checks, not FEA.
+> **Chassis: what it can and cannot do.** It provides suspension-derived pickup loads as inputs to chassis design; those
+> loads have been checked against Adams View and an independent static solver for the benchmark cases below. The
+> frame-triangulation audit and bracket checks are early screening tools, not a full chassis structural analysis.
 > 
 > **Boards: what it can and cannot do.** It reads the copper and the gaps from the board file. It cannot see whether a
 > bridge formed, a part is missing or rotated, or a signal is wrong.
@@ -44,15 +44,16 @@ power-up.
   the same screen runs on the KiCad demo boards in `tests/test_bridge_screen.py`.
 - **How the gaps were checked.** Every pair matched KiCad's import of the same file, and spot checks in Altium
   (Measure Primitives) gave the same values.
-- **What it did not do.** It cannot see whether a bridge actually formed, only where the gaps are tight enough for one,
-  and it does not replace inspection after reflow. Whether the listed places match where that team's bridges really
+- **What it did not do.** It cannot see whether a bridge actually formed, only which different-net pad gaps fall below the
+  selected screening threshold, and it does not replace inspection after reflow. Whether the listed places match where that team's bridges really
   were has not been confirmed yet.
 
 ## The evidence, in two lines
 
-Each result is checked against an established tool or a published result, with the pass limit written down before
-the run: suspension kinematics agree with Adams View to within 0.00003°, link loads to within 0.0009 N. The misses
-stay published: two Lotus SHARK studies, MathWorks' K&C rig, and 11 of 39 metrics in a blind powertrain test
+In the reported benchmark cases, suspension angles agree with Adams View within 0.00003° over ±25 mm of wheel
+travel, and link forces within 0.0009 N across three corners and four load cases, with pass limits written down before
+the runs. These are solver-agreement results, not measured-car accuracy. Other
+comparisons include misses, all published: two Lotus SHARK studies, MathWorks' K&C rig, and 11 of 39 metrics in a blind powertrain test
 ([details](#what-missed)).
 
 ## What it does
@@ -65,7 +66,7 @@ stay published: two Lotus SHARK studies, MathWorks' K&C rig, and 11 of 39 metric
 | **Accumulator** | Cell sizing, pack topology, FSAE-EV rules checks, thermal model. | **Partly benchmarked.** Against PyBaMM and liionpack; some checks pending |
 | **Chassis** | Frame graph with triangulation and load-path audit, bracket factor of safety, weight and CG ledger. | **Early.** Bracket bending checked against commercial solvers; the other chassis checks are closed-form only |
 | **Electrics** | Import a routed board (KiCad, Altium) and check current capacity, voltage drop, clearance and impedance. | **Benchmarked.** Board reading checked against KiCad and Altium, resistance against SPICE; misses published |
-| **Powertrain** | Compare motor architectures: which finishes fastest, and which configuration blows a fuse. | **Benchmarked.** FASTSim, GT-SUITE studies and a blind MathWorks model; heat and lap time not against a car |
+| **Powertrain** | Compare motor architectures: predicted event performance, and flag configurations that exceed modeled fuse limits. | **Benchmarked.** FASTSim, GT-SUITE studies and a blind MathWorks model; heat and lap time not against a car |
 | **Integration** | Every subsystem declares mass, CG, torque, heat and load into one ledger. Change a number, see which other subsystems it moves. | **Early.** Bookkeeping across subsystems; no outside benchmark |
 
 Most tabs export a DXF you can open in SolidWorks as a 2D sketch. Full list: [FEATURES.md](FEATURES.md).
@@ -127,8 +128,8 @@ Full tables, limits and links to each run: [BENCHMARK.md](BENCHMARK.md), [VALIDA
 - **Brackets:** at a fully fixed root, 3D FEA puts the stress 12–47 % above the hand calculation, so a tab whose root
   governs still needs FEA.
 
-All of these check the maths against the established tools, which is what pre-validation needs. See
-[Known limitations](#known-limitations).
+These comparisons test implementation and agreement on specified cases. They do not establish accuracy on a real
+vehicle or show that the checks catch every important design error. See [Known limitations](#known-limitations).
 
 ### Check one by hand
 
@@ -216,6 +217,9 @@ pytest tests/test_electrical_benchmark.py tests/test_pcb_doctor.py tests/test_ev
 
 ## Check a board offline
 
+This command checks declared loads and current-carrying paths. The solder-bridge inspection shortlist described above
+is a separate workflow in PCB Doctor's "Before first power-up" panel.
+
 No upload, no account: the check runs on your machine and writes a report another engineer can reproduce from the
 same two files (both are hashed in the report).
 
@@ -238,13 +242,13 @@ any FAIL (or WARN with `--fail-on warning`), so it can gate a CI run. KiCad and 
 
 ## Known limitations
 
-- **Pre-validation, not correlation.** KinematiK checks designs before there is a car. The evidence for that is that
-  its maths matches the established tools a team validates with later (above). It is not a substitute for test data
+- **Pre-validation, not correlation.** KinematiK checks designs before there is a car. Its comparisons test
+  implementation and agreement on specified cases (above); they do not establish accuracy on a real vehicle. It is not a substitute for test data
   once a car exists: treat every number as a starting point for your own test day.
 - **Not correlated with a measured car.** Nothing has been compared with an instrumented vehicle, a K&C rig or a wind
-  tunnel. Agreement with Adams View, Simscape and Chrono shows the maths is solved correctly, not that it matches a car.
-- **Powertrain heat and lap time.** Pack and motor heat are over-predicted by 3.5–14 % against Simscape (the safe
-  side for cooling); lap time has not been compared with a real car; a Formula Student engine's fuel map and coolant
+  tunnel. Agreement with Adams View, Simscape and Chrono shows the math is solved correctly, not that it matches a car.
+- **Powertrain heat and lap time.** Pack and motor heat are over-predicted by 3.5–14 % against Simscape; lap
+  time has not been compared with a real car; a Formula Student engine's fuel map and coolant
   heat have no open reference. Wrong inputs that still look like a believable car (a driver left out of the mass, an
   efficiency off by a dropped digit) are not caught by the entry checks.
 - **Synthetic default tire.** Load your own Magic Formula coefficients for absolute grip numbers.
