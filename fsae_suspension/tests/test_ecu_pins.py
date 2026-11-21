@@ -138,3 +138,23 @@ def test_command_line_on_csv_and_xlsx(tmp_path, capsys):
     out = capsys.readouterr().out
     assert code == 1 and "[not wired]" in out and "DO10 'Fuel Pum'" in out
     assert ep.main([str(ped)]) == 2
+
+
+def test_run_records_version_and_input_hashes():
+    import hashlib
+    ped = _ped(**NICK_LIKE)
+    table = b"From,Note\nECU_MAIN.6,Fuel Pump Relay Control\n"
+    rep = ep.run(("tune.ped", ped), [("engine.csv", table)])
+    assert rep.inputs == [("tune.ped", hashlib.sha256(ped).hexdigest()),
+                          ("engine.csv", hashlib.sha256(table).hexdigest())]
+    text = ep.format_report(rep)
+    assert f"KinematiK {rep.version}" in text and hashlib.sha256(ped).hexdigest() in text
+
+
+def test_panel_asks_for_files_before_checking():
+    pytest.importorskip("streamlit")
+    from streamlit.testing.v1 import AppTest
+    root = str(Path(__file__).resolve().parents[1])
+    at = AppTest.from_string(f"import sys\nsys.path.insert(0, {root!r})\nfrom ui import ecu_pins\necu_pins.render()\n")
+    at.run()
+    assert not at.exception and any("Add a tune" in i.value for i in at.info)

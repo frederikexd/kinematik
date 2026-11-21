@@ -33835,6 +33835,12 @@ with tab_pcb:
   render_pcb_board()
   render_pcb_doctor()
   render_harness()
+  # --- ECU pin check: a PE3 tune's channel names against the wiring tables (ui/ecu_pins.py). --- #
+  try:
+    from ui import ecu_pins as _ecu_pins_ui
+    _ecu_pins_ui.render()
+  except Exception as _ecu_err:          # noqa: BLE001 — a broken panel must not kill the tab
+    st.error(f"ECU pin check failed to render: {_ecu_err}")
 
 
 

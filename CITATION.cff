@@ -6,7 +6,7 @@ authors:
   - family-names: Thio
     given-names: Frederik
 license: AGPL-3.0-only
-version: 1.7.0
+version: 1.7.1
 date-released: 2026-11-21
 doi: 10.5281/zenodo.23450788
 repository-code: "https://github.com/frederikexd/kinematik"

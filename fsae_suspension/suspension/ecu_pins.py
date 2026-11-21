@@ -31,6 +31,8 @@ mode of Digital Inputs #1-#4 (PE3 Series User Manual), so they share those pins.
 from __future__ import annotations
 
 import csv
+import hashlib
+import io
 import re
 import sys
 from dataclasses import dataclass, field
@@ -179,6 +181,8 @@ class EcuPinReport:
     names: dict[str, str]
     wired: dict[tuple[str, int], list[str]]
     findings: list[Finding] = field(default_factory=list)
+    inputs: list[tuple[str, str]] = field(default_factory=list)    # (file name, SHA-256)
+    version: str = ""
 
     @property
     def problems(self) -> list[Finding]:
@@ -241,7 +245,11 @@ def check(names: dict[str, str], wired: dict[tuple[str, int], list[str]]) -> Ecu
 
 
 def format_report(rep: EcuPinReport) -> str:
-    out = ["ECU pin check (PE3-84XX)", ""]
+    out = ["ECU pin check (PE3-84XX)" + (f", KinematiK {rep.version}" if rep.version else ""), ""]
+    if rep.inputs:
+        out.append("Inputs (SHA-256):")
+        out += [f"  {name}  {digest}" for name, digest in rep.inputs]
+        out.append("")
     out.append("Tune channel names: " + (", ".join(f"{k} '{v}'" for k, v in sorted(rep.names.items())) or "none found"))
     out.append(f"ECU pins referenced by the wiring tables: {len(rep.wired)}")
     out.append("")
@@ -254,15 +262,29 @@ def format_report(rep: EcuPinReport) -> str:
     return "\n".join(out)
 
 
-def _rows_from(path: Path):
-    if path.suffix.lower() in (".xlsx", ".xlsm"):
+def table_rows(name: str, data: bytes):
+    """Rows of a wiring table given as file bytes: every sheet of an .xlsx/.xlsm, or a CSV."""
+    if name.lower().endswith((".xlsx", ".xlsm")):
         import openpyxl
-        wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+        wb = openpyxl.load_workbook(io.BytesIO(data), read_only=True, data_only=True)
         for ws in wb.worksheets:
             yield from ws.iter_rows(values_only=True)
     else:
-        with open(path, newline="", encoding="utf-8-sig") as fh:
-            yield from csv.reader(fh)
+        yield from csv.reader(io.StringIO(data.decode("utf-8-sig", errors="replace")))
+
+
+def run(tune: tuple[str, bytes], tables: list[tuple[str, bytes]]) -> EcuPinReport:
+    """The whole check from file names and bytes, with each input's SHA-256 and the tool version recorded."""
+    names = read_ped_names(tune[1])
+    wired: dict[tuple[str, int], list[str]] = {}
+    for name, data in tables:
+        for pin, texts in harness_pins(table_rows(name, data)).items():
+            wired.setdefault(pin, []).extend(texts)
+    rep = check(names, wired)
+    rep.inputs = [(n, hashlib.sha256(d).hexdigest()) for n, d in [tune, *tables]]
+    from suspension.consistency_check import tool_version
+    rep.version = tool_version()
+    return rep
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -270,12 +292,8 @@ def main(argv: list[str] | None = None) -> int:
     if len(args) < 2:
         print("usage: python -m suspension.ecu_pins TUNE.ped WIRING_TABLE.(xlsx|csv) [MORE_TABLES ...]")
         return 2
-    names = read_ped_names(Path(args[0]).read_bytes())
-    wired: dict[tuple[str, int], list[str]] = {}
-    for table in args[1:]:
-        for pin, texts in harness_pins(_rows_from(Path(table))).items():
-            wired.setdefault(pin, []).extend(texts)
-    rep = check(names, wired)
+    files = [(Path(a).name, Path(a).read_bytes()) for a in args]
+    rep = run(files[0], files[1:])
     print(format_report(rep))
     return 1 if rep.problems else 0
 
