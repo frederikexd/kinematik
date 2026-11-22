@@ -50,13 +50,27 @@ def render():
             getattr(st, _LEVEL_STYLE[f.level])(f"{f.level}: {f.message}")
         if not rep.problems:
             st.success("No disagreement between tune names, pinout and wiring tables.")
+        import pandas as pd
+        rows = ecu_pins.pin_rows(rep)
+        if rows:
+            st.session_state["_ax_next_heading"] = "Every wired pin against the PE3-84XX pinout"
+            st.markdown("**Every wired pin against the PE3-84XX pinout**")
+            st.dataframe(pd.DataFrame([{"Pin": r.pin, "PE3-84XX function": r.function, "Wiring tables say": r.wiring,
+                                        "Result": r.result} for r in rows]), hide_index=True, width="stretch")
+            st.caption(ecu_pins.PIN_LEGEND)
+        todo = ecu_pins.confirm_list(rep)
+        if todo:
+            st.session_state["_ax_next_heading"] = "Confirm in PE3Monitor before first power-up"
+            st.markdown("**Confirm in PE3Monitor before first power-up.** Which function an output switches is not "
+                        "readable from the tune, so check these by eye; a relay wired to an output nobody assigned is "
+                        "caught here.")
+            st.dataframe(pd.DataFrame([{"Confirm": t} for t in todo]), hide_index=True, width="stretch")
         # A warning, not a caption or st.info: warnings are what the feature report captures, and a report
         # carrying the green findings without what was not read overstates the check.
         st.warning(f"**Scope of this check.** {ecu_pins.CAVEAT}")
         # The files as a table, not a run-on sentence of hashes: readable on screen, and a table is what the
         # feature report captures under charts & tables. The heading key is the capture layer's
         # (_CAPTURE_HEADING_KEY in streamlit_app.py), so the table is named in the report.
-        import pandas as pd
         title = f"Files checked (KinematiK {rep.version}, SHA-256)"
         st.session_state["_ax_next_heading"] = title
         st.markdown(f"**{title}**")

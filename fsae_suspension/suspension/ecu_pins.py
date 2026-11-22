@@ -269,6 +269,78 @@ def ped_diff(a: bytes, b: bytes) -> list[tuple[int, int, int]]:
     return [(i, a[i], b[i]) for i in range(end) if a[i] != b[i]]
 
 
+_SIGNAL_RE = re.compile(r"Signal:\s*([^;|]+)", re.I)
+_PART_RE = re.compile(r"\b(K\d+\s*-\s*[A-Za-z][A-Za-z &/]*?)\.\d+")
+_GENERIC = {"signal", "digital", "output", "input", "analog", "out"}
+_SYNONYMS = {"gnd": "ground"}
+
+
+def wiring_label(texts: list[str]) -> str:
+    """What the wiring tables say is on a pin: their 'Signal:' notes and relay names, else the first row."""
+    seen: list[str] = []
+    for t in texts:
+        for m in [*_SIGNAL_RE.finditer(t), *_PART_RE.finditer(t)]:
+            label = " ".join(m.group(1).split())
+            if label and label not in seen:
+                seen.append(label)
+    return " / ".join(seen) if seen else " ".join(texts[0].split())[:80]
+
+
+def _function_words(text: str) -> set[str]:
+    return {_SYNONYMS.get(w, w) for w in _words(text)} - _GENERIC
+
+
+@dataclass
+class PinRow:
+    pin: str            # 'MAIN-6'
+    function: str       # the PE3-84XX pinout's name for the pin
+    wiring: str         # what the wiring tables say is on it
+    result: str         # 'matches', 'matches tune name', 'mismatch', 'check' or 'nothing to compare'
+
+
+PIN_LEGEND = ("'matches' means the wiring tables' label for the pin uses the pinout's word for it (Coil, Injector, "
+              "MAP...); 'matches tune name' means it uses the tune's name for that output; 'nothing to compare' "
+              "means the tables give no label to compare.")
+
+
+def pin_rows(rep: EcuPinReport) -> list[PinRow]:
+    """Every pin the wiring tables wire, with the pinout's function, the tables' label and how they compare."""
+    rows = []
+    for pin in sorted(rep.wired):
+        func = PE3_84XX_PINOUT.get(pin, "not in the PE3-84XX pinout")
+        label = wiring_label(rep.wired[pin])
+        levels = {f.level for f in rep.findings if f.pin == pin}
+        if "mismatch" in levels:
+            result = "mismatch"
+        elif levels & {"check", "not wired"}:
+            result = "check"
+        elif "ok" in levels:
+            result = "matches tune name"
+        elif _function_words(func) & set().union(*(_function_words(x) for x in label.split(" / "))):
+            result = "matches"
+        else:
+            result = "nothing to compare"
+        rows.append(PinRow(f"{pin[0]}-{pin[1]}", func, label, result))
+    return rows
+
+
+def confirm_list(rep: EcuPinReport) -> list[str]:
+    """One line per wired digital output: what to confirm in PE3Monitor before first power-up.
+
+    Which function an output is set to switch is not readable from the tune (see CAVEAT), so a relay wired to an
+    output nobody assigned (the pump that never primed) is caught by looking, and this says exactly where.
+    """
+    out = []
+    for pin in sorted(rep.wired):
+        m = re.fullmatch(r"Digital Output #(\d+)", PE3_84XX_PINOUT.get(pin, ""))
+        if m:
+            n = m.group(1)
+            named = f" (named '{rep.names[f'DO{n}']}' in the tune)" if f"DO{n}" in rep.names else ""
+            out.append(f"PE3Monitor > Tuning > Digital Outputs: DO{n}{named} on {pin[0]}-{pin[1]} is set to "
+                       f"switch what the wiring tables put on it: {wiring_label(rep.wired[pin])}")
+    return out
+
+
 def format_report(rep: EcuPinReport) -> str:
     out = ["ECU pin check (PE3-84XX)" + (f", KinematiK {rep.version}" if rep.version else ""), ""]
     if rep.inputs:
@@ -282,6 +354,15 @@ def format_report(rep: EcuPinReport) -> str:
         out.append(f"[{f.level}] {f.message}")
     if not rep.problems:
         out.append("No disagreement between tune names, pinout and wiring tables.")
+    rows = pin_rows(rep)
+    if rows:
+        out += ["", "Every wired pin:", f"  {'pin':<9} {'PE3-84XX function':<20} {'result':<18} wiring tables say"]
+        out += [f"  {r.pin:<9} {r.function:<20} {r.result:<18} {r.wiring}" for r in rows]
+        out.append(f"  ({PIN_LEGEND})")
+    todo = confirm_list(rep)
+    if todo:
+        out += ["", "Confirm in PE3Monitor before first power-up (not readable from the tune):"]
+        out += [f"  [ ] {t}" for t in todo]
     out += ["", CAVEAT]
     return "\n".join(out)
 
@@ -324,6 +405,27 @@ def report_pdf(rep: EcuPinReport) -> bytes:
         story.append(t)
     if not rep.problems:
         story.append(Paragraph("No disagreement between tune names, pinout and wiring tables.", body))
+    rows = pin_rows(rep)
+    if rows:
+        story.append(Paragraph("Every wired pin", ss["Heading3"]))
+        shade = {"mismatch": tint["mismatch"], "check": tint["check"], "matches": tint["ok"],
+                 "matches tune name": tint["ok"]}
+        data = [[Paragraph(f"<b>{h}</b>", small) for h in ("Pin", "PE3-84XX function", "Wiring tables say", "Result")]]
+        data += [[Paragraph(r.pin, small), Paragraph(escape(r.function), small), Paragraph(escape(r.wiring), small),
+                  Paragraph(r.result, small)] for r in rows]
+        t = Table(data, colWidths=[18 * mm, 36 * mm, 86 * mm, 30 * mm], repeatRows=1)
+        t.setStyle(TableStyle([("BACKGROUND", (3, i + 1), (3, i + 1), shade[r.result])
+                               for i, r in enumerate(rows) if r.result in shade]
+                              + [("VALIGN", (0, 0), (-1, -1), "TOP"),
+                                 ("LINEBELOW", (0, 0), (-1, -1), 0.25, colors.lightgrey)]))
+        story.append(t)
+        story.append(Paragraph(escape(PIN_LEGEND), small))
+    todo = confirm_list(rep)
+    if todo:
+        story.append(Paragraph("Confirm in PE3Monitor before first power-up", ss["Heading3"]))
+        story.append(Paragraph("Which function an output switches is not readable from the tune, so check these by "
+                               "eye. A relay wired to an output nobody assigned is caught here.", small))
+        story += [Paragraph("&#9744; " + escape(t), body) for t in todo]
     story += [Spacer(1, 4 * mm), Paragraph(CAVEAT, body),
               Paragraph("Pinout: Performance Electronics, PE3-84XX Pin Out.", small)]
     buf = io.BytesIO()
