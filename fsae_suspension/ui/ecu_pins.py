@@ -71,7 +71,7 @@ def render():
         # The files as a table, not a run-on sentence of hashes: readable on screen, and a table is what the
         # feature report captures under charts & tables. The heading key is the capture layer's
         # (_CAPTURE_HEADING_KEY in streamlit_app.py), so the table is named in the report.
-        title = f"Files checked (KinematiK {rep.version}, SHA-256)"
+        title = "Files checked"
         st.session_state["_ax_next_heading"] = title
         st.markdown(f"**{title}**")
         st.dataframe(pd.DataFrame([{"File": n, "SHA-256": d} for n, d in rep.inputs]), hide_index=True,
