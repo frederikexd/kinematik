@@ -1,6 +1,10 @@
 # Changelog
 
 
+## Unreleased
+
+**No stray 3-D chart in feature reports.** The harness 3-D loom on the Electronics (PCB) tab is drawn on request ("Show the 3-D loom"). Tab bodies render on every run, so the always-on view reached feature PDFs as "[figure not exported: (untitled chart) — 121 series]" whether or not anyone had looked at it. PDFs also leave out any chart that has no title, no labelled axes and no picture, since it tells a reader nothing; a named chart that cannot be drawn keeps its stand-in line.
+
 ## 1.7.5 (2026-11-21)
 
 **ECU pin check: every wired pin, and what to confirm by eye.** The report (screen, .txt, PDF) lists every pin the wiring tables wire with the PE3-84XX pinout's function, what the tables say is on it, and the result (matches, matches tune name, mismatch, check, nothing to compare), so a team sees all of its pins checked, not only the problems. Which function an output switches is not readable from the tune, so each wired digital output gets a line to confirm in PE3Monitor (Tuning > Digital Outputs) before first power-up: a relay wired to an output nobody assigned, the fuel pump that never primed, is caught by looking there.
