@@ -53,14 +53,17 @@ def render():
         import pandas as pd
         rows = ecu_pins.pin_rows(rep)
         if rows:
-            st.session_state["_ax_next_heading"] = "Every wired pin against the PE3-84XX pinout"
+            # The heading carries the legend into the feature report, which does not capture captions.
+            st.session_state["_ax_next_heading"] = ("Every wired pin against the PE3-84XX pinout ('matches' = the "
+                                                    "wiring table uses the pinout's name for the pin)")
             st.markdown("**Every wired pin against the PE3-84XX pinout**")
             st.dataframe(pd.DataFrame([{"Pin": r.pin, "PE3-84XX function": r.function, "Wiring tables say": r.wiring,
                                         "Result": r.result} for r in rows]), hide_index=True, width="stretch")
             st.caption(ecu_pins.PIN_LEGEND)
         todo = ecu_pins.confirm_list(rep)
         if todo:
-            st.session_state["_ax_next_heading"] = "Confirm in PE3Monitor before first power-up"
+            st.session_state["_ax_next_heading"] = ("Confirm in PE3Monitor before first power-up (which function "
+                                                    "an output switches is not readable from the tune)")
             st.markdown("**Confirm in PE3Monitor before first power-up.** Which function an output switches is not "
                         "readable from the tune, so check these by eye; a relay wired to an output nobody assigned is "
                         "caught here.")
