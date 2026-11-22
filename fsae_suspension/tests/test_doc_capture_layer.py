@@ -827,3 +827,17 @@ def test_screen_confirmations_are_not_reported_as_checks(cap):
     cap["capture_verdict"]("not wired: tune names DI2 'MPH' (MAIN-13), but no wiring table wires that pin", "warn")
     got = [v["text"] for v in cap["get_feature_results"]("pcb")["verdicts"]]
     assert got == ["not wired: tune names DI2 'MPH' (MAIN-13), but no wiring table wires that pin"]
+
+
+def test_untitled_chart_that_cannot_be_drawn_is_left_out_of_the_pdf(tmp_path):
+    """'[figure not exported: (untitled chart) — 121 series]' reached a team's PDF from a 3-D view nobody opened."""
+    pypdf = pytest.importorskip("pypdf")
+    pytest.importorskip("reportlab")
+    from suspension import project as pj
+    md = ("# Report\n\n![(untitled chart) — 121 series](kinematik-fig:pcb~0)\n\n"
+          "![Harness 3-D loom — 5 series](kinematik-fig:pcb~1)\n")
+    out = tmp_path / "r.pdf"
+    pj.render_pdf(md, str(out), figures={})
+    text = " ".join(p.extract_text() for p in pypdf.PdfReader(str(out)).pages)
+    assert "untitled" not in text
+    assert "figure not exported" in text and "Harness 3-D loom" in text

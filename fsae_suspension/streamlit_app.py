@@ -27184,6 +27184,12 @@ def _render_harness_fragment():
     with tab3d:
         if not harness.wires and not harness.connectors:
             st.caption("The 3-D view appears once something is routed.")
+        elif not st.toggle("Show the 3-D loom", value=False, key="hn3d_show",
+                           help="Drawn on request. Tabs render every body on each run, so an always-on 3-D view "
+                                "landed in every Electronics (PCB) feature report as an untitled chart that cannot "
+                                "be exported to PDF, whether or not anyone looked at it."):
+            st.caption("Switch on to draw the loom in car coordinates: every conductor, connector, keep-out and "
+                       "violation marker.")
         else:
             oc = st.columns([1.6, 1, 1, 1, 1])
             color_by = oc[0].radio("Colour by", ["status", "subsystem"],

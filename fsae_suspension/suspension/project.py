@@ -1544,6 +1544,11 @@ def render_pdf(markdown_text: str, out_path: str, figures=None):
         """Image + caption for one captured chart, or an honest stand-in."""
         png = figures.get(ref)
         label = alt or ref
+        if not png and label.startswith("(untitled chart)"):
+            # A chart with no title, no labelled axes and no picture tells a reader nothing; "[figure not
+            # exported: (untitled chart) — 121 series]" reached a team's PDF from a 3-D view nobody had asked
+            # for. A named chart that cannot be drawn still gets its honest stand-in below.
+            return []
         if not png:
             return [Paragraph(
                 _md_to_rl(f"[figure not exported: {label}]"), missing),
