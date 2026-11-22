@@ -304,7 +304,7 @@ PIN_LEGEND = ("'matches' means the wiring tables' label for the pin uses the pin
 
 
 def pin_rows(rep: EcuPinReport) -> list[PinRow]:
-    """Every pin the wiring tables wire, with the pinout's function, the tables' label and how they compare."""
+    """Every pin the wiring tables wire, with the pinout's function, the tables' label and how they compare (unitless)."""
     rows = []
     for pin in sorted(rep.wired):
         func = PE3_84XX_PINOUT.get(pin, "not in the PE3-84XX pinout")
@@ -325,7 +325,7 @@ def pin_rows(rep: EcuPinReport) -> list[PinRow]:
 
 
 def confirm_list(rep: EcuPinReport) -> list[str]:
-    """One line per wired digital output: what to confirm in PE3Monitor before first power-up.
+    """One line per wired digital output: what to confirm in PE3Monitor before first power-up (unitless).
 
     Which function an output is set to switch is not readable from the tune (see CAVEAT), so a relay wired to an
     output nobody assigned (the pump that never primed) is caught by looking, and this says exactly where.
