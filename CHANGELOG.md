@@ -1,6 +1,10 @@
 # Changelog
 
 
+## 1.7.5 (2026-11-21)
+
+**ECU pin check: every wired pin, and what to confirm by eye.** The report (screen, .txt, PDF) lists every pin the wiring tables wire with the PE3-84XX pinout's function, what the tables say is on it, and the result (matches, matches tune name, mismatch, check, nothing to compare), so a team sees all of its pins checked, not only the problems. Which function an output switches is not readable from the tune, so each wired digital output gets a line to confirm in PE3Monitor (Tuning > Digital Outputs) before first power-up: a relay wired to an output nobody assigned, the fuel pump that never primed, is caught by looking there.
+
 ## 1.7.4 (2026-11-21)
 
 **ECU pin check, the other direction.** An output the wiring tables drive that the tune has never named (a pump relay wired to DO10 while DO10 still carries its default name) is now flagged as a check: confirm in PE3Monitor that a function is assigned to it. This is the case where the pump function was never assigned to any output. Only names can be read, so it is a prompt, not proof the assignment is missing.

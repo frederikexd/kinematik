@@ -425,7 +425,7 @@ def report_pdf(rep: EcuPinReport) -> bytes:
         story.append(Paragraph("Confirm in PE3Monitor before first power-up", ss["Heading3"]))
         story.append(Paragraph("Which function an output switches is not readable from the tune, so check these by "
                                "eye. A relay wired to an output nobody assigned is caught here.", small))
-        story += [Paragraph("&#9744; " + escape(t), body) for t in todo]
+        story += [Paragraph("[&nbsp;&nbsp;] " + escape(t), body) for t in todo]
     story += [Spacer(1, 4 * mm), Paragraph(CAVEAT, body),
               Paragraph("Pinout: Performance Electronics, PE3-84XX Pin Out.", small)]
     buf = io.BytesIO()
