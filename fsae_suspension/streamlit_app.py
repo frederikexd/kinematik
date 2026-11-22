@@ -2842,6 +2842,15 @@ ENABLE_LOGIN = _read_flag("KINEMATIK_ENABLE_LOGIN")
 
 _workspace_ctx = _auth_ui.require_workspace(st) if ENABLE_LOGIN else None
 
+# Preview lock (suspension/preview_lock.py): set on every run, before any panel draws, so uploads and downloads are
+# disabled exactly while this visitor is in the preview and never for a signed-in user.
+from suspension import preview as _pv_lock
+from suspension import preview_lock as _preview_lock
+
+st.session_state[_pv_lock.LOCK_KEY] = bool(ENABLE_LOGIN and _workspace_ctx is None
+                                           and _pv_lock.active(st.session_state))
+_preview_lock.install(st)
+
 
 # --------------------------------------------------------------------------- #
 #  PREVIEW MODE — five minutes without an account (suspension/preview.py).
@@ -2854,8 +2863,9 @@ if ENABLE_LOGIN and _workspace_ctx is None:
 
     if _preview.active(st.session_state):
         _pv_top = st.columns([0.78, 0.22], vertical_alignment="center")
-        _pv_top[0].info(f"👀 Preview mode: {_preview.clock(_preview.remaining_s(st.session_state))} left. "
-                        "Explore anything; nothing you do here is saved.")
+        _pv_top[0].info(f"👀 Preview: {_preview.clock(_preview.remaining_s(st.session_state))} left. Explore "
+                        "every tab on the example car. Running it on your own car (uploading your files, "
+                        "downloading reports, saving) needs a free account.")
         if _pv_top[1].button("Create free account", key="_kx_preview_signup", type="primary"):
             _preview.end_now(st.session_state)
             st.rerun()
@@ -2867,8 +2877,8 @@ if ENABLE_LOGIN and _workspace_ctx is None:
             if _left <= 0:
                 st.rerun()
             if _preview.should_warn(st.session_state):
-                st.toast("⏱️ One minute left in your preview. Like what you see? Create a free account to keep "
-                         "going.")
+                st.toast("⏱️ One minute left in your preview. Create a free account to run these checks on your "
+                         "own car.")
             st.metric("Preview time left", _preview.clock(_left))
 
         with st.sidebar:

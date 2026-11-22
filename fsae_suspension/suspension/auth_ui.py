@@ -100,8 +100,8 @@ def _render_preview_offer(st) -> None:
     if _preview.started(st.session_state) or st.session_state.get(_SS_JOIN):
         return
     st.markdown("##### New here?")
-    st.caption(f"Explore the full app for {_preview.PREVIEW_SECONDS // 60} minutes without an account. Nothing you "
-               "do in the preview is saved.")
+    st.caption(f"See every check on an example car for {_preview.PREVIEW_SECONDS // 60} minutes, no account "
+               "needed. Running it on your own car (uploads, reports, saving) needs a free account.")
     if st.button("👀 Preview KinematiK", key="_kx_preview_start"):
         _preview.start(st.session_state)
         st.rerun()
@@ -111,8 +111,9 @@ def _render_preview_offer(st) -> None:
 def _render_sign_in(st, auth: SupabaseAuth, *, after_preview: bool = False) -> None:
     if after_preview:
         st.markdown("### Like what you see? 🏁")
-        st.markdown(f"Your {_preview.PREVIEW_SECONDS // 60}-minute preview is over. Create a free account to keep "
-                    "exploring and to save your team's work in its own workspace.")
+        st.markdown(f"Your {_preview.PREVIEW_SECONDS // 60}-minute preview is over. Create a free account to run "
+                    "these checks on your own car: upload your files, download the reports, and keep your team's "
+                    "work in its own workspace.")
     else:
         _render_preview_offer(st)
         st.markdown("### Sign in to KinematiK")

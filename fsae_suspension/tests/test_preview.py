@@ -16,6 +16,10 @@ from suspension import auth_ui                                    # noqa: E402
 from suspension import preview as pv                              # noqa: E402
 from suspension import project as project_mod                     # noqa: E402
 
+from pathlib import Path                                           # noqa: E402
+
+ROOT = Path(__file__).resolve().parent.parent
+
 
 # ------------------------------------------------------------------ clock
 def test_clock_runs_five_minutes_and_never_restarts():
@@ -227,3 +231,36 @@ def test_a_browser_script_that_cannot_run_is_logged_not_silent(caplog):
     with caplog.at_level("WARNING"):
         auth_ui._run_browser_script(_Broken(), "<script></script>")
     assert "could not run the browser script" in caplog.text and "refused" in caplog.text
+
+
+# --- the lock: uploads and downloads disabled during the preview --------------------------------------------------
+
+def test_lock_widget_marks_label_disables_and_explains():
+    args, kw = pv.lock_widget(("Upload tune", ["ped"]), {"key": "k"}, pv.LOCKED_UPLOAD)
+    assert args == ("🔒 Upload tune", ["ped"]) and kw["disabled"] is True and kw["help"] == pv.LOCKED_UPLOAD
+    assert kw["key"] == "k"
+    args, kw = pv.lock_widget((), {"label": "Download", "data": b"x"}, pv.LOCKED_DOWNLOAD)
+    assert args == () and kw["label"] == "🔒 Download" and kw["disabled"] is True
+
+
+def test_lock_applies_only_to_the_session_in_preview():
+    from types import SimpleNamespace
+    from suspension import preview_lock
+    seen = []
+    orig = lambda *a, **k: seen.append((a, k))          # noqa: E731
+    fake_st = SimpleNamespace(session_state={})
+    f = preview_lock._wrap(fake_st, orig, pv.LOCKED_DOWNLOAD)
+    f("Download", b"x", key="d")                         # signed in / no preview: untouched
+    assert seen[-1] == (("Download", b"x"), {"key": "d"})
+    fake_st.session_state[pv.LOCK_KEY] = True
+    container = object()                                 # class-attribute call: the container comes first
+    f(container, "Download", b"x", key="d")
+    a, k = seen[-1]
+    assert a == (container, "🔒 Download", b"x") and k["disabled"] is True and k["help"] == pv.LOCKED_DOWNLOAD
+
+
+def test_app_sets_the_lock_before_any_upload_or_download_is_drawn():
+    src = (ROOT / "streamlit_app.py").read_text(encoding="utf-8")
+    lock = src.index("st.session_state[_pv_lock.LOCK_KEY] =")
+    assert lock < src.index("_preview_lock.install(st)") < src.index(".file_uploader(")
+    assert "_workspace_ctx is None" in src[lock:lock + 200]
