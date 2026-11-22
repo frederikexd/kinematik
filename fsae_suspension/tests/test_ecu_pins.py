@@ -252,3 +252,46 @@ def test_pdf_has_the_pin_table_and_the_checklist():
     pdf = ep.report_pdf(ep.check(ep.read_ped_names(_ped(**NICK_LIKE)), _wiring()))
     text = " ".join(p.extract_text() for p in pypdf.PdfReader(io.BytesIO(pdf)).pages)
     assert "Every wired pin" in text and "Confirm in PE3Monitor" in text and "Coil #1" in text
+
+
+_POWER = [["ID", "From", "To", "Net"],
+          ["W38", "K1 - ECU Power.87", "S12", ""],
+          ["W40", "S12", "K2 - Injectors.86", ""],
+          ["W39", "K2 - Injectors.87", "S13", "Injectors"],
+          ["W47", "S13", "K5 - Fan.86", "Injectors"],
+          ["W48", "K5 - Fan.85", "EH.LW6", "Pin M -11"],
+          ["W21", "FB.F5", "K5 - Fan.30", ""]]
+
+
+def test_relay_coil_fed_from_another_relays_output_is_flagged():
+    """Calvin's K5 fan relay coil sat on S13, the net K2 (injectors) switches: it only worked while K2 was on."""
+    found = ep.relay_chains(_POWER)
+    msgs = [f.message for f in found]
+    assert len(found) == 1 and found[0].level == "check"
+    assert "K5 (Fan) coil 86 is fed from K2 (Injectors) switched output 87, and K2 is itself switched by K1" in msgs[0]
+
+
+def test_coils_fed_from_the_main_relay_are_ordinary_design():
+    """K2, K3 and K4 fed from K1's output is how the other relays were wired, and how Calvin moved K5."""
+    fixed = [r for r in _POWER if r[0] != "W47"] + [["W47", "S12", "K5 - Fan.86", ""]]
+    assert ep.relay_chains(fixed) == []
+
+
+def test_relay_coils_on_a_plain_supply_are_not_flagged():
+    rows = [["From", "To"], ["FB.F1", "S1"], ["S1", "K1 - Main.86"], ["K1 - Main.87", "ECU.34"]]
+    assert ep.relay_chains(rows) == []
+    assert ep.relay_chains([["ECU_MAIN.6", "Signal"]]) == []          # no From/To header: nothing to build
+
+
+def test_run_reports_relay_chains_and_leftover_names(tmp_path):
+    openpyxl = pytest.importorskip("openpyxl")
+    import io
+    wb = openpyxl.Workbook()
+    for r in _POWER:
+        wb.active.append(r)
+    buf = io.BytesIO()
+    wb.save(buf)
+    rep = ep.run(("tune.ped", _ped(**NICK_LIKE)), [("power.xlsx", buf.getvalue())])
+    text = ep.format_report(rep)
+    assert "K5 (Fan) coil 86 is fed from K2 (Injectors)" in text
+    assert "left over from a base tune" in text
