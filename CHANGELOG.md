@@ -1,6 +1,10 @@
 # Changelog
 
 
+## 1.7.9 (2026-11-22)
+
+**Preview: the example car, not your car.** The five-minute preview still opens every tab, but on the example car only: every file upload and download is shown disabled, with a lock on its label and the reason on hover ("Uploading your own files needs a free account"). The preview offer, banner, one-minute warning and sign-up screen now say the same thing: seeing the checks is free and needs no account; running them on your own car (uploads, reports, saving) needs a free account. A second preview from a private window therefore only adds time with the example car. Signed-in users never see a lock; the lock is read per session.
+
 ## 1.7.8 (2026-11-21)
 
 **ECU pin check: relay chains.** From a wiring table's From/To columns, the check now builds the nets and flags a relay coil fed from a relay that is itself switched by another relay (a fan relay K5 fed from the injector relay K2, which the main relay K1 switches): K5 can only switch while K2 is on. A coil fed from the main relay is ordinary design and is not flagged. Found by hand on a team's power harness, then made a check.

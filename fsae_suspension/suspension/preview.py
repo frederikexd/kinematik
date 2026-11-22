@@ -8,6 +8,11 @@
 Why: with accounts switched on, a visitor meets a sign-in form before seeing anything, so the first question
 ("is this worth an account?") cannot be answered. Preview lets them explore for PREVIEW_SECONDS, then asks.
 
+What preview may do: look at everything on the example car. What it may not: upload the visitor's own files or
+download anything (LOCK_KEY; suspension/preview_lock.py shows those controls disabled with a note). So a second preview,
+from a private window, only buys more time with the example car: running KinematiK on your own car is what the
+account is for, and no amount of refreshing gives you that.
+
 What preview may touch: nothing persistent. Its project store is an in-memory backend held in the visitor's own
 session, so a preview can never read or write a team's workspace, the shared legacy project row, or another
 visitor's preview. Leaving the page discards it.
@@ -36,6 +41,22 @@ KEY_WARNED = "_kx_preview_warned"
 KEY_BACKEND = "_kx_preview_backend"
 COOKIE_KEY = "kinematik_preview"        # cookie and localStorage key in the browser: the epoch second it started
 COOKIE_MAX_AGE = 63072000               # 2 years, in seconds
+LOCK_KEY = "_kx_preview_lock"           # session flag the app sets each run: uploads and downloads are locked
+LOCKED_UPLOAD = "Uploading your own files needs a free account. The preview runs on the example car."
+LOCKED_DOWNLOAD = "Downloading reports and files needs a free account."
+
+
+def lock_widget(args: tuple, kwargs: dict, note: str) -> tuple[tuple, dict]:
+    """The arguments for an upload or download control shown in the preview: disabled, its label marked with a
+    lock, and `note` as its hover help (unitless). The label is the first argument, positional or `label=`."""
+    args, kwargs = tuple(args), dict(kwargs)
+    if args:
+        args = (f"🔒 {args[0]}",) + args[1:]
+    elif "label" in kwargs:
+        kwargs["label"] = f"🔒 {kwargs['label']}"
+    kwargs["disabled"] = True
+    kwargs["help"] = note
+    return args, kwargs
 
 
 def _now(now):
