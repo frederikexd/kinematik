@@ -235,7 +235,8 @@ def check(names: dict[str, str], wired: dict[tuple[str, int], list[str]]) -> Ecu
         if pin not in wired:
             rep.findings.append(Finding(
                 "not wired", pin,
-                f"tune names {channel} '{name}' ({_label(pin)}), but no wiring table wires that pin"))
+                f"tune names {channel} '{name}' ({_label(pin)}), but no wiring table wires that pin: a missing "
+                f"wire, or an unused name left over from a base tune?"))
         elif _shares_word(name, wired[pin]):
             rep.findings.append(Finding("ok", pin, f"{channel} '{name}' on {_label(pin)} matches the wiring table"))
         else:
@@ -445,14 +446,81 @@ def table_rows(name: str, data: bytes):
         yield from csv.reader(io.StringIO(data.decode("utf-8-sig", errors="replace")))
 
 
+_RELAY_PIN = re.compile(r"^\s*(K\d+)\s*-\s*(.+?)\.(30|85|86|87a?)\s*$", re.I)
+
+
+def relay_chains(rows) -> list[Finding]:
+    """Relay coils fed from another relay's switched output, read from a wiring table's From/To columns (unitless).
+
+    A coil (85/86) on a net that a different relay's 87/87a switches can only energise while that other relay is
+    on: K5 (fan) fed from S13, the net K2 (injectors) switches. It may work, as it did on Calvin's car, but it is a
+    dependency nobody drew on purpose more often than not, so it is reported as a check, not a fault. Nets are built
+    by joining every row's From and To; a splice (S13) joins the rows that meet at it.
+    """
+    rows = list(rows)
+    head = next((i for i, r in enumerate(rows)
+                 if {"from", "to"} <= {str(c).strip().lower() for c in r if c is not None}), None)
+    if head is None:
+        return []
+    cols = [str(c).strip().lower() if c is not None else "" for c in rows[head]]
+    fi, ti = cols.index("from"), cols.index("to")
+    parent: dict[str, str] = {}
+
+    def _find(x):
+        while parent.setdefault(x, x) != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    for r in rows[head + 1:]:
+        a = str(r[fi]).strip() if fi < len(r) and r[fi] is not None else ""
+        b = str(r[ti]).strip() if ti < len(r) and r[ti] is not None else ""
+        if a and b:
+            parent[_find(a)] = _find(b)
+    nets: dict[str, list[str]] = {}
+    for node in list(parent):
+        nets.setdefault(_find(node), []).append(node)
+    feeds: dict[str, list[tuple[str, str, str, str]]] = {}      # coil relay -> (coil pin, source relay, its pin, name)
+    names: dict[str, str] = {}
+    for members in nets.values():
+        pins = [(m, _RELAY_PIN.match(m)) for m in members]
+        for m, x in pins:
+            if x:
+                names[x.group(1).upper()] = x.group(2).strip()
+        outputs = [(m, y) for m, y in pins if y and y.group(3).lower() in ("87", "87a")]
+        for m, x in pins:
+            if x and x.group(3) in ("85", "86"):
+                for o, y in outputs:
+                    if y.group(1).upper() != x.group(1).upper():
+                        feeds.setdefault(x.group(1).upper(), []).append(
+                            (m.rsplit(".", 1)[1], y.group(1).upper(), o.rsplit(".", 1)[1], y.group(2).strip()))
+    # A coil fed from the main relay is ordinary design. Flag only a coil fed from a relay that is itself switched by
+    # another relay (K5 <- K2 <- K1): the device then depends on a relay that has nothing to do with it.
+    out = []
+    for k, srcs in sorted(feeds.items()):
+        for coil_pin, src, src_pin, src_name in srcs:
+            if src in feeds:
+                up = feeds[src][0][1]
+                out.append(Finding(
+                    "check", None,
+                    f"relay {k} ({names.get(k, '')}) coil {coil_pin} is fed from {src} ({src_name}) switched output "
+                    f"{src_pin}, and {src} is itself switched by {up}: {k} can only switch while {src} is on. "
+                    f"Intended, or feed it from {up}'s net like the others?"))
+    return out
+
+
 def run(tune: tuple[str, bytes], tables: list[tuple[str, bytes]]) -> EcuPinReport:
     """The whole check from file names and bytes, with each input's SHA-256 and the tool version recorded (unitless)."""
     names = read_ped_names(tune[1])
     wired: dict[tuple[str, int], list[str]] = {}
+    chains: list[Finding] = []
     for name, data in tables:
-        for pin, texts in harness_pins(table_rows(name, data)).items():
+        rows = list(table_rows(name, data))
+        for pin, texts in harness_pins(rows).items():
             wired.setdefault(pin, []).extend(texts)
+        chains += relay_chains(rows)
     rep = check(names, wired)
+    rep.findings += chains
     rep.inputs = [(n, hashlib.sha256(d).hexdigest()) for n, d in [tune, *tables]]
     from suspension.consistency_check import tool_version
     rep.version = tool_version()

@@ -1,6 +1,12 @@
 # Changelog
 
 
+## 1.7.8 (2026-11-21)
+
+**ECU pin check: relay chains.** From a wiring table's From/To columns, the check now builds the nets and flags a relay coil fed from a relay that is itself switched by another relay (a fan relay K5 fed from the injector relay K2, which the main relay K1 switches): K5 can only switch while K2 is on. A coil fed from the main relay is ordinary design and is not flagged. Found by hand on a team's power harness, then made a check.
+
+**Leftover names.** A named channel on an unwired pin now asks whether it is a missing wire or an unused name left over from a base tune, which is what the first one turned out to be.
+
 ## 1.7.7 (2026-11-21)
 
 **ECU pin check: the feature report explains its tables.** The feature report does not capture on-screen captions, so the pin table's heading now says what "matches" means (the wiring table uses the pinout's name for the pin), and the checklist's heading says why it is there (which function an output switches is not readable from the tune). Also: `pin_rows` and `confirm_list` state their units (unitless).
