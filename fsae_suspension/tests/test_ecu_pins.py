@@ -203,3 +203,52 @@ def test_diff_command_line(tmp_path, capsys):
     (tmp_path / "b.ped").write_bytes(bytes(b))
     assert ep.main(["--diff", str(tmp_path / "a.ped"), str(tmp_path / "b.ped")]) == 0
     assert "0x00064    0 ->   7" in capsys.readouterr().out
+
+
+def _rows_by_pin(rep):
+    return {r.pin: r for r in ep.pin_rows(rep)}
+
+
+def test_every_wired_pin_is_listed_against_the_pinout():
+    rep = ep.check(ep.read_ped_names(_ped(**NICK_LIKE)), _wiring())
+    rows = _rows_by_pin(rep)
+    assert set(rows) == {"MAIN-1", "MAIN-3", "MAIN-6", "MAIN-11"}
+    assert rows["MAIN-1"].function == "Coil #1" and rows["MAIN-1"].result == "matches"
+    assert rows["MAIN-1"].wiring == "Coil 1"
+    assert rows["MAIN-6"].result == rows["MAIN-11"].result == "matches tune name"
+
+
+def test_pin_table_marks_mismatches_checks_and_unlabelled_pins():
+    wired = ep.harness_pins([["ECU_MAIN.1", "COIL2.NEG; Signal: Coil 2"], ["ECU_MAIN.6", "Signal: Fuel Pump Relay"],
+                             ["ECU_MAIN.9", "Signal: Power Ground"], ["ECU_MAIN.12", "W13 green-pink 20 AWG"]])
+    rows = _rows_by_pin(ep.check({}, wired))
+    assert rows["MAIN-1"].result == "mismatch"
+    assert rows["MAIN-6"].result == "check"                   # a driven output the tune never set up
+    assert rows["MAIN-9"].result == "matches"                 # GND and Ground are the same thing
+    assert rows["MAIN-12"].result == "nothing to compare"
+
+
+def test_wiring_label_reads_signal_notes_and_relay_names():
+    label = ep.wiring_label(["W45 | K4 - Pumps.85 | Pin M-6", "ECU_MAIN.6 | LW4 | Signal: Fuel Pump Relay Control"])
+    assert label == "K4 - Pumps / Fuel Pump Relay Control"
+    assert ep.wiring_label(["ECU_MAIN.12 | W13"]) == "ECU_MAIN.12 | W13"
+
+
+def test_every_wired_output_gets_a_pe3monitor_line_to_confirm():
+    """Nicholas's first case, pump function never assigned: not readable, so the report says where to look."""
+    rep = ep.check({"DO1": "Fan"}, _wiring())
+    todo = ep.confirm_list(rep)
+    assert len(todo) == 2 and all("Tuning > Digital Outputs" in t for t in todo)
+    assert any("DO10 on MAIN-6" in t and "Fuel Pump Relay Control" in t for t in todo)
+    assert any("DO1 (named 'Fan' in the tune) on MAIN-11" in t for t in todo)
+    text = ep.format_report(rep)
+    assert "[ ] PE3Monitor" in text and "Every wired pin:" in text
+
+
+def test_pdf_has_the_pin_table_and_the_checklist():
+    pypdf = pytest.importorskip("pypdf")
+    pytest.importorskip("reportlab")
+    import io
+    pdf = ep.report_pdf(ep.check(ep.read_ped_names(_ped(**NICK_LIKE)), _wiring()))
+    text = " ".join(p.extract_text() for p in pypdf.PdfReader(io.BytesIO(pdf)).pages)
+    assert "Every wired pin" in text and "Confirm in PE3Monitor" in text and "Coil #1" in text
