@@ -1,6 +1,10 @@
 # Changelog
 
 
+## 1.7.7 (2026-11-21)
+
+**ECU pin check: the feature report explains its tables.** The feature report does not capture on-screen captions, so the pin table's heading now says what "matches" means (the wiring table uses the pinout's name for the pin), and the checklist's heading says why it is there (which function an output switches is not readable from the tune). Also: `pin_rows` and `confirm_list` state their units (unitless).
+
 ## 1.7.6 (2026-11-21)
 
 **ECU pin check: shorter heading.** The files table on screen is headed "Files checked"; the version and SHA-256 labels stay in the downloaded .txt and PDF reports.
