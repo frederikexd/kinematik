@@ -1,7 +1,9 @@
 # Changelog
 
 
-## Unreleased
+## 1.7.6 (2026-11-21)
+
+**ECU pin check: shorter heading.** The files table on screen is headed "Files checked"; the version and SHA-256 labels stay in the downloaded .txt and PDF reports.
 
 **No stray 3-D chart in feature reports.** The harness 3-D loom on the Electronics (PCB) tab is drawn on request ("Show the 3-D loom"). Tab bodies render on every run, so the always-on view reached feature PDFs as "[figure not exported: (untitled chart) — 121 series]" whether or not anyone had looked at it. PDFs also leave out any chart that has no title, no labelled axes and no picture, since it tells a reader nothing; a named chart that cannot be drawn keeps its stand-in line.
 
