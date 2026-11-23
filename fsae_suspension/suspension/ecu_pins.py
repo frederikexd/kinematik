@@ -331,6 +331,14 @@ def pin_rows(rep: EcuPinReport) -> list[PinRow]:
     return rows
 
 
+#: Performance Electronics' own advice (support reply, 2026-11-23): names in the tune don't prove a relay is wired
+#: to that output, so switch each output from the software and watch the relay. Shown after the per-output lines.
+OUTPUT_DIAGNOSTICS = ("Then, per Performance Electronics: name every digital output under Engine > Setup Digital Names "
+                      "(that is what this check reads from the tune), and switch each one from the Output Diagnostics "
+                      "window to confirm the relay wired to it actually clicks. A name in the tune does not prove the "
+                      "physical wiring; switching the output does.")
+
+
 def confirm_list(rep: EcuPinReport) -> list[str]:
     """One line per wired digital output: what to confirm in PE3Monitor before first power-up (unitless).
 
@@ -370,6 +378,7 @@ def format_report(rep: EcuPinReport) -> str:
     if todo:
         out += ["", "Confirm in PE3Monitor before first power-up (not readable from the tune):"]
         out += [f"  [ ] {t}" for t in todo]
+        out.append(f"  [ ] {OUTPUT_DIAGNOSTICS}")
     out += ["", CAVEAT]
     return "\n".join(out)
 
@@ -433,6 +442,7 @@ def report_pdf(rep: EcuPinReport) -> bytes:
         story.append(Paragraph("Which function an output switches is not readable from the tune, so check these by "
                                "eye. A relay wired to an output nobody assigned is caught here.", small))
         story += [Paragraph("[&nbsp;&nbsp;] " + escape(t), body) for t in todo]
+        story.append(Paragraph("[&nbsp;&nbsp;] " + escape(OUTPUT_DIAGNOSTICS), body))
     story += [Spacer(1, 4 * mm), Paragraph(CAVEAT, body),
               Paragraph("Pinout: Performance Electronics, PE3-84XX Pin Out.", small)]
     buf = io.BytesIO()
