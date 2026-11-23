@@ -3572,6 +3572,10 @@ def _point_rows(loc, items, get_pt, set_pt):
 
 
 def _hp_set_point(key, i, v):
+    if st.session_state.hp.get(key) is None:
+        # The point was switched off in this same rerun (a rocker point edited, then "Pushrod-actuated" unticked:
+        # both callbacks fire, the checkbox's first). There is nothing left to edit; ignore the stale edit.
+        return
     p = list(st.session_state.hp[key])
     p[i] = float(v)
     st.session_state.hp[key] = p

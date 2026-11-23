@@ -1,6 +1,10 @@
 # Changelog
 
 
+## 1.7.11 (2026-11-22)
+
+**Fixes from a real team geometry.** Unticking "Pushrod-actuated" right after editing a rocker point crashed the app (TypeError in the hardpoint editor): both callbacks fire in one rerun, the checkbox's first, and the point edit then found the rocker point switched off. A stale edit to a switched-off point is now ignored. The hardpoint importer read "Front" and "Rear" in names like "Upper Rear Inner" or "LCA rear pivot" as the front or rear axle, so a single-corner sheet was split in two and the rear pivots were left out of the corner offered for import. After an arm name (upper, lower, UCA, LCA, wishbone), front and rear now name the pivot; "Front Upper Outer" and "Rear Left Lower Outer" still tag the axle and corner.
+
 ## 1.7.10 (2026-11-22)
 
 **ECU pin check reads harness-tool exports.** Wiring tables exported from harness design tools name the ECU connector by its size and the relays in words; the check now reads both. 'ECU 34-Pin.M06' is MAIN-6 and 'ECU 26-Pin.C14' is COMM-14, next to the existing 'ECU_MAIN.6' and 'Pin M-6'. A part's own connector pin, as in 'Coil #2.COIL1.2', is no longer read as a claim that the wire goes to Coil #1. Relays named 'Radiator Fan Relay #5.86' are followed like 'K5 - Fan.86', so a fan relay whose coil is fed from the injector relay's output is flagged in either style. A row that names the same pin twice is listed once. In a workbook, the relay check now reads From and To from each sheet's own header, so per-connector and per-splice sheets with other columns are not read as connections. Found on a second team harness, where the check had read 2 of 17 ECU pins.

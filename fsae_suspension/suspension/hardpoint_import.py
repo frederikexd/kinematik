@@ -273,6 +273,9 @@ _CORNER_PATTERNS = [
 ]
 
 
+_ARM_BEFORE = re.compile(r"\b(upper|lower|top|bottom|uca|lca|uwb|lwb|wishbone|a-?arm|control\s*arm)\b", re.I)
+
+
 def group_corners(points: list[RawPoint]) -> dict[str, list[RawPoint]]:
     """Tag each point's corner from its name and bucket them. Points with no
     corner label land in "" and are offered with every corner (single-corner
@@ -281,7 +284,12 @@ def group_corners(points: list[RawPoint]) -> dict[str, list[RawPoint]]:
     for p in points:
         tag = ""
         for t, pat in _CORNER_PATTERNS:
-            if pat.search(p.name):
+            m = pat.search(p.name)
+            if m and t in ("F", "R") and _ARM_BEFORE.search(p.name[:m.start()]):
+                # 'Upper Front Inner', 'LCA rear pivot': front/rear after the arm names WHICH pivot of that arm, not
+                # the front or rear axle. Read as an axle it split one corner in two and dropped the rear pivots.
+                continue
+            if m:
                 tag = t
                 break
         p.corner = tag
