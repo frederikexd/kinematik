@@ -295,3 +295,43 @@ def test_run_reports_relay_chains_and_leftover_names(tmp_path):
     text = ep.format_report(rep)
     assert "K5 (Fan) coil 86 is fed from K2 (Injectors)" in text
     assert "left over from a base tune" in text
+
+
+# --- harness-tool exports: connectors named by size, relays named in words (1.7.10) --------------------------------
+
+def test_connector_named_by_size_is_read_as_main_or_comm():
+    rows = [["W51", "Fuel Pump Relay #4.85", "ECU 34-Pin.M06", "ECU Pin M-6/Fuel Pump Relay"],
+            ["W80", "ECU 26-Pin.C14", "Laptop.1", "Ethernet"],
+            ["W81", "ECU 34-Pin.M10", "Injector #2.INJ1.2", "Fuel Injector #2"]]
+    pins = ep.harness_pins(rows)
+    assert set(pins) == {(ep.MAIN, 6), (ep.MAIN, 10), (ep.COMM, 14)}
+    assert len(pins[(ep.MAIN, 6)]) == 1          # 'M06' and 'Pin M-6' in one row: listed once
+
+
+def test_part_connector_pin_is_not_read_as_a_coil_or_injector_number():
+    rows = [["W66", "ECU 34-Pin.M04", "Coil #2.COIL1.2", "Ignition Coil #2/GND"],
+            ["W67", "ECU 34-Pin.M10", "Injector #2.INJ1.2", "Fuel Injector #2/GND"]]
+    rep = ep.check({}, ep.harness_pins(rows))
+    assert not [f for f in rep.findings if f.level == "mismatch"]
+
+
+def test_relays_named_in_words_are_followed_like_k_numbers():
+    rows = [["ID", "From", "To"],
+            ["W46", "ECU Power Relay #1.87", "S2"],
+            ["W40", "S2", "Injector Power Relay #3.86"],
+            ["W39", "Injector Power Relay #3.87", "S4"],
+            ["W43", "Radiator Fan Relay #5.86", "S4"],
+            ["W50", "S2", "Fuel Pump Relay #4.86"]]
+    found = ep.relay_chains(rows)
+    assert len(found) == 1 and "K5 (Radiator Fan Relay)" in found[0].message and "K3" in found[0].message
+
+
+def test_later_sheets_with_other_columns_do_not_join_nets():
+    rows = [["ID", "Color", "From", "To", "Net"],
+            ["W46", "Red", "ECU Power Relay #1.87", "S2", "BAT +"],
+            ["W43", "White", "Radiator Fan Relay #5.86", "S2", "BAT +"],
+            # a per-splice sheet: no From/To; its 3rd and 4th columns must not be read as a connection
+            ["Destination", "ID", "Color", "Gauge", "Net"],
+            ["Injector Power Relay #3.87", "W39", "Radiator Fan Relay #5.86", "18 AWG", "x"],
+            ["S2", "W40", "Injector Power Relay #3.86", "16 AWG", "x"]]
+    assert ep.relay_chains(rows) == []
