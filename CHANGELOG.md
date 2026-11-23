@@ -1,6 +1,12 @@
 # Changelog
 
 
+## 1.7.12 (2026-11-23)
+
+**ECU pin check: Performance Electronics' own check, added.** Performance Electronics confirmed that which function a digital output switches can be read from the tune only where the team has named it under Engine > Setup Digital Names, and that a name does not prove the relay is physically wired to that output. The pre-power-up checklist (on screen, in the text report and in the PDF) now ends with their recommended step: name every digital output, then switch each one from the Output Diagnostics window and confirm the relay wired to it clicks.
+
+**Feature report: no more "&amp;" in verdicts.** Warning chips written as HTML reached the feature report with their entities raw, so a Kinematics report read "Pushrod &amp; rocker". Captured chip text is now unescaped.
+
 ## 1.7.11 (2026-11-22)
 
 **Fixes from a real team geometry.** Unticking "Pushrod-actuated" right after editing a rocker point crashed the app (TypeError in the hardpoint editor): both callbacks fire in one rerun, the checkbox's first, and the point edit then found the rocker point switched off. A stale edit to a switched-off point is now ignored. The hardpoint importer read "Front" and "Rear" in names like "Upper Rear Inner" or "LCA rear pivot" as the front or rear axle, so a single-corner sheet was split in two and the rear pivots were left out of the corner offered for import. After an arm name (upper, lower, UCA, LCA, wishbone), front and rear now name the pivot; "Front Upper Outer" and "Rear Left Lower Outer" still tag the axle and corner.

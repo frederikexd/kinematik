@@ -67,7 +67,8 @@ def render():
             st.markdown("**Confirm in PE3Monitor before first power-up.** Which function an output switches is not "
                         "readable from the tune, so check these by eye; a relay wired to an output nobody assigned is "
                         "caught here.")
-            st.dataframe(pd.DataFrame([{"Confirm": t} for t in todo]), hide_index=True, width="stretch")
+            st.dataframe(pd.DataFrame([{"Confirm": t} for t in todo + [ecu_pins.OUTPUT_DIAGNOSTICS]]),
+                         hide_index=True, width="stretch")
         # A warning, not a caption or st.info: warnings are what the feature report captures, and a report
         # carrying the green findings without what was not read overstates the check.
         st.warning(f"**Scope of this check.** {ecu_pins.CAVEAT}")

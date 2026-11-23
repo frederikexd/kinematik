@@ -1383,7 +1383,8 @@ def _ax_wrap_markdown(_orig):
             _body = kwargs.get("body", _a[0] if _a else None)
             if isinstance(_body, str) and 'class="tag ' in _body:
                 for _sev, _inner in _AX_TAG_RE.findall(_body):
-                    _txt = _AX_HTML_TAG_RE.sub("", _inner)
+                    # unescape too: chips written as HTML carry entities ("Pushrod &amp; rocker") that the report printed raw
+                    _txt = _html.unescape(_AX_HTML_TAG_RE.sub("", _inner))
                     capture_verdict(_txt, _AX_TAG_SEV.get(_sev, "info"))
         except Exception:
             pass

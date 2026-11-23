@@ -252,6 +252,7 @@ def test_pdf_has_the_pin_table_and_the_checklist():
     pdf = ep.report_pdf(ep.check(ep.read_ped_names(_ped(**NICK_LIKE)), _wiring()))
     text = " ".join(p.extract_text() for p in pypdf.PdfReader(io.BytesIO(pdf)).pages)
     assert "Every wired pin" in text and "Confirm in PE3Monitor" in text and "Coil #1" in text
+    assert "Output Diagnostics" in text
 
 
 _POWER = [["ID", "From", "To", "Net"],
@@ -335,3 +336,12 @@ def test_later_sheets_with_other_columns_do_not_join_nets():
             ["Injector Power Relay #3.87", "W39", "Radiator Fan Relay #5.86", "18 AWG", "x"],
             ["S2", "W40", "Injector Power Relay #3.86", "16 AWG", "x"]]
     assert ep.relay_chains(rows) == []
+
+
+def test_checklist_ends_with_pe_output_diagnostics_step():
+    """Performance Electronics: names don't prove the wiring; switch each output in Output Diagnostics (1.7.12)."""
+    rep = ep.check({"DO1": "Fan"}, _wiring())
+    text = ep.format_report(rep)
+    assert "Setup Digital Names" in text and "Output Diagnostics" in text
+    assert text.index("Output Diagnostics") > text.index("DO10 on MAIN-6")
+    assert len(ep.confirm_list(rep)) == 2          # per-output lines unchanged; the step is added after them
