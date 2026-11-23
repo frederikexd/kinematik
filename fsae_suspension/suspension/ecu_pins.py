@@ -146,11 +146,16 @@ _PIN_REFS = [
     (re.compile(r"ECU[_ ]?MAIN\.(\d+)", re.I), MAIN),
     (re.compile(r"ECU[_ ]?COMM\.(\d+)", re.I), COMM),
     (re.compile(r"\bPin\s*M\s*-\s*(\d+)", re.I), MAIN),
+    # Connector named by its size, as harness tools export it: 'ECU 34-Pin.M06' (MAIN), 'ECU 26-Pin.C14' (COMM).
+    (re.compile(r"\b34[-\s]?Pin\s*\.?\s*M?0*(\d+)", re.I), MAIN),
+    (re.compile(r"\b26[-\s]?Pin\s*\.?\s*C?0*(\d+)", re.I), COMM),
 ]
 _CLAIMS = [
     (re.compile(r"\b(?:DO|Digital\s+Output)\s*#?\s*(\d+)\b", re.I), "Digital Output #"),
-    (re.compile(r"\b(?:INJ|Injector)\s*#?\s*(\d+)\b", re.I), "Injector #"),
-    (re.compile(r"\b(?:COIL|Coil)\s*#?\s*(\d+)\b", re.I), "Coil #"),
+    # Not 'COIL1.2' / 'INJ1.2': that is a pin of the part's own connector (COIL1, pin 2), as in
+    # 'Coil #2.COIL1.2', not a claim about which coil it is.
+    (re.compile(r"\b(?:INJ|Injector)\s*#?\s*(\d+)\b(?!\.\d)", re.I), "Injector #"),
+    (re.compile(r"\b(?:COIL|Coil)\s*#?\s*(\d+)\b(?!\.\d)", re.I), "Coil #"),
 ]
 
 
@@ -158,14 +163,15 @@ def harness_pins(rows) -> dict[tuple[str, int], list[str]]:
     """Every ECU pin a wiring table references, with the text of the rows that mention it.
 
     `rows` is any iterable of rows (lists of cells). A pin is recognised as
-    'ECU_MAIN.6', 'ECU_COMM.14' or 'Pin M-6' (spaces around the dash allowed).
+    'ECU_MAIN.6', 'ECU_COMM.14', 'Pin M-6' (spaces around the dash allowed), or by connector size as
+    'ECU 34-Pin.M06' (MAIN) and 'ECU 26-Pin.C14' (COMM). A row naming the same pin twice is listed once.
     """
     found: dict[tuple[str, int], list[str]] = {}
     for row in rows:
         text = " | ".join(str(c) for c in row if c not in (None, ""))
-        for rx, conn in _PIN_REFS:
-            for m in rx.finditer(text):
-                found.setdefault((conn, int(m.group(1))), []).append(text)
+        pins = {(conn, int(m.group(1))) for rx, conn in _PIN_REFS for m in rx.finditer(text)}
+        for pin in sorted(pins):
+            found.setdefault(pin, []).append(text)
     return found
 
 
@@ -447,6 +453,20 @@ def table_rows(name: str, data: bytes):
 
 
 _RELAY_PIN = re.compile(r"^\s*(K\d+)\s*-\s*(.+?)\.(30|85|86|87a?)\s*$", re.I)
+_HEADER_WORDS = {"id", "color", "gauge", "from", "to", "destination", "cavity", "net", "part number", "ident"}
+_RELAY_PIN_NAMED = re.compile(r"^\s*(.*?Relay)\s*#?\s*(\d+)\.(30|85|86|87a?)\s*$", re.I)
+
+
+def _relay_pin(node: str):
+    """(relay id 'K5', its name, pin '86') for a relay pin node: 'K5 - Fan.86' or 'Radiator Fan Relay #5.86'
+    (unitless)."""
+    m = _RELAY_PIN.match(node)
+    if m:
+        return m.group(1).upper(), m.group(2).strip(), m.group(3).lower()
+    m = _RELAY_PIN_NAMED.match(node)
+    if m:
+        return f"K{int(m.group(2))}", m.group(1).strip(), m.group(3).lower()
+    return None
 
 
 def relay_chains(rows) -> list[Finding]:
@@ -457,13 +477,6 @@ def relay_chains(rows) -> list[Finding]:
     dependency nobody drew on purpose more often than not, so it is reported as a check, not a fault. Nets are built
     by joining every row's From and To; a splice (S13) joins the rows that meet at it.
     """
-    rows = list(rows)
-    head = next((i for i, r in enumerate(rows)
-                 if {"from", "to"} <= {str(c).strip().lower() for c in r if c is not None}), None)
-    if head is None:
-        return []
-    cols = [str(c).strip().lower() if c is not None else "" for c in rows[head]]
-    fi, ti = cols.index("from"), cols.index("to")
     parent: dict[str, str] = {}
 
     def _find(x):
@@ -472,7 +485,16 @@ def relay_chains(rows) -> list[Finding]:
             x = parent[x]
         return x
 
-    for r in rows[head + 1:]:
+    # Each sheet has its own header row. A workbook's later sheets (per-connector cavity lists, per-splice lists)
+    # use other columns, so From/To are taken from the latest header and ignored under a header without them.
+    fi = ti = None
+    for r in rows:
+        cells = [str(c).strip().lower() if c is not None else "" for c in r]
+        if len(_HEADER_WORDS & set(cells)) >= 3:
+            fi, ti = (cells.index("from"), cells.index("to")) if {"from", "to"} <= set(cells) else (None, None)
+            continue
+        if fi is None:
+            continue
         a = str(r[fi]).strip() if fi < len(r) and r[fi] is not None else ""
         b = str(r[ti]).strip() if ti < len(r) and r[ti] is not None else ""
         if a and b:
@@ -483,17 +505,16 @@ def relay_chains(rows) -> list[Finding]:
     feeds: dict[str, list[tuple[str, str, str, str]]] = {}      # coil relay -> (coil pin, source relay, its pin, name)
     names: dict[str, str] = {}
     for members in nets.values():
-        pins = [(m, _RELAY_PIN.match(m)) for m in members]
+        pins = [(m, _relay_pin(m)) for m in members]
         for m, x in pins:
             if x:
-                names[x.group(1).upper()] = x.group(2).strip()
-        outputs = [(m, y) for m, y in pins if y and y.group(3).lower() in ("87", "87a")]
+                names[x[0]] = x[1]
+        outputs = [(m, y) for m, y in pins if y and y[2] in ("87", "87a")]
         for m, x in pins:
-            if x and x.group(3) in ("85", "86"):
+            if x and x[2] in ("85", "86"):
                 for o, y in outputs:
-                    if y.group(1).upper() != x.group(1).upper():
-                        feeds.setdefault(x.group(1).upper(), []).append(
-                            (m.rsplit(".", 1)[1], y.group(1).upper(), o.rsplit(".", 1)[1], y.group(2).strip()))
+                    if y[0] != x[0]:
+                        feeds.setdefault(x[0], []).append((x[2], y[0], y[2], y[1]))
     # A coil fed from the main relay is ordinary design. Flag only a coil fed from a relay that is itself switched by
     # another relay (K5 <- K2 <- K1): the device then depends on a relay that has nothing to do with it.
     out = []
