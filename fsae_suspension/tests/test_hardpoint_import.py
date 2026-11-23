@@ -223,3 +223,15 @@ def test_empty_or_garbage_never_raises():
     assert not res.ok and res.warnings
     pts, _ = parse_tabular(b"not,really,a,point,table\n1,2\n", "x.csv")
     assert isinstance(pts, list)
+
+
+def test_front_and_rear_after_the_arm_name_the_pivot_not_the_axle():
+    # 1.7.11: 'Upper Rear Inner' was read as a rear-axle point, so a single-corner sheet split into F and R and the
+    # importer offered FL with the two rear pivots missing.
+    from suspension import hardpoint_import as hi
+    pts = [hi.RawPoint(n, 0.0, 0.0, 0.0) for n in
+           ("Upper Front Inner", "Upper Rear Inner", "Lower Front Inner", "LCA rear pivot", "Front Upper Outer",
+            "Rear Left Lower Outer")]
+    g = hi.group_corners(pts)
+    assert [p.corner for p in pts] == ["", "", "", "", "F", "RL"]
+    assert len(g[""]) == 4
