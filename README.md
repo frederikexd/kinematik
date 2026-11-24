@@ -264,9 +264,15 @@ any FAIL (or WARN with `--fail-on warning`), so it can gate a CI run. KiCad and 
 
 ## Acknowledgments
 
-Dan Jones (Chief Judge at Formula Student) reviewed the judge summary output; at his suggestion, the judge's likely questions and the limits of the
-pre-validation moved to a separate design-review notes report. Acknowledgment records feedback received and does not
-imply endorsement.
+- Dan Jones (Chief Judge at Formula Student) reviewed the judge summary output; at his suggestion, the judge's likely
+  questions and the limits of the pre-validation moved to a separate design-review notes report.
+- SIT Racing (Singapore Institute of Technology) re-ran a published InverseGenesis design run (front_v11_final) from the
+  public code and reported the result.
+- Daivik Tulsee (UP Formula Student, University of Pretoria) checked KinematiK's load distribution and downforce targets
+  against his own calculations, which agreed, and his testing of the aero solvers led to the vortex-lattice solver for
+  wings, the half-resolution grid check, and lower memory use.
+
+Acknowledgment records feedback received and does not imply endorsement.
 
 ## Contributing
 
