@@ -1,0 +1,13 @@
+{
+  "registered": "2026-11-25, before VehicleDynamics.lateral_load_transfer was run on these cases",
+  "reference_tool": "OpenSeesPy 3.8 (Pacific Earthquake Engineering Research Center), linear static: a rigid sprung body (rigid links) joined to a rigid front and rear axle at each axle's roll centre, translations and pitch/yaw tied, roll resisted by a rotational spring of that axle's roll stiffness; tyres as vertical supports at half track. Weight and m*a_y at the CG.",
+  "model_note": "This is the same idealisation as Milliken (RCVD ch. 18) and Gillespie: rigid chassis, all mass sprung, lateral force reacted through each axle's roll centre. It checks that KinematiK implements it correctly (split of the lateral force, roll-axis height at the CG, roll-stiffness split, signs), not that the idealisation fits a real car.",
+  "cases": {
+    "default":     {"mass_kg": 280, "cg_height_mm": 300, "wheelbase_mm": 1550, "track_front_mm": 1200, "track_rear_mm": 1180, "weight_dist_front": 0.47, "k_front_Nm_deg": 350, "k_rear_Nm_deg": 300, "rc_front_mm": 50, "rc_rear_mm": 60, "lateral_g": 1.5},
+    "rc_split":    {"mass_kg": 300, "cg_height_mm": 280, "wheelbase_mm": 1530, "track_front_mm": 1220, "track_rear_mm": 1180, "weight_dist_front": 0.45, "k_front_Nm_deg": 400, "k_rear_Nm_deg": 250, "rc_front_mm": 0, "rc_rear_mm": 80, "lateral_g": 1.6},
+    "rear_heavy":  {"mass_kg": 250, "cg_height_mm": 320, "wheelbase_mm": 1600, "track_front_mm": 1250, "track_rear_mm": 1150, "weight_dist_front": 0.40, "k_front_Nm_deg": 300, "k_rear_Nm_deg": 500, "rc_front_mm": 30, "rc_rear_mm": 45, "lateral_g": 1.2},
+    "low_rc_soft": {"mass_kg": 290, "cg_height_mm": 260, "wheelbase_mm": 1550, "track_front_mm": 1200, "track_rear_mm": 1200, "weight_dist_front": 0.50, "k_front_Nm_deg": 150, "k_rear_Nm_deg": 150, "rc_front_mm": -10, "rc_rear_mm": 20, "lateral_g": 1.0}
+  },
+  "quantities": ["fl_N", "fr_N", "rl_N", "rr_N", "roll_angle_deg"],
+  "limits": {"wheel_load_N": 0.5, "roll_angle_deg": 0.001}
+}

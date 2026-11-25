@@ -1,0 +1,131 @@
+{
+ "default": {
+  "fl_N": {
+   "kinematik": 112.40750769230772,
+   "opensees": 112.40836710780331,
+   "diff": -0.0008594154955972044,
+   "passes": true
+  },
+  "fr_N": {
+   "kinematik": 1178.5884923076924,
+   "opensees": 1178.5876403041154,
+   "diff": 0.0008520035769379319,
+   "passes": true
+  },
+  "rl_N": {
+   "kinematik": 222.51944980443284,
+   "opensees": 222.51857821833656,
+   "diff": 0.0008715860962809074,
+   "passes": true
+  },
+  "rr_N": {
+   "kinematik": 1233.2845501955671,
+   "opensees": 1233.2854189269337,
+   "diff": -0.0008687313666086993,
+   "passes": true
+  },
+  "roll_angle_deg": {
+   "kinematik": 1.5510968307692308,
+   "opensees": 1.5511086988507332,
+   "diff": -1.1868081502441896e-05,
+   "passes": true
+  }
+ },
+ "rc_split": {
+  "fl_N": {
+   "kinematik": 101.6318474148801,
+   "opensees": 101.63363601730954,
+   "diff": -0.0017886024294426761,
+   "passes": true
+  },
+  "fr_N": {
+   "kinematik": 1222.7181525851202,
+   "opensees": 1222.716337596836,
+   "diff": 0.0018149882841953513,
+   "passes": true
+  },
+  "rl_N": {
+   "kinematik": 271.52724250325946,
+   "opensees": 271.5253667328389,
+   "diff": 0.0018757704205540904,
+   "passes": true
+  },
+  "rr_N": {
+   "kinematik": 1347.1227574967406,
+   "opensees": 1347.1246074620449,
+   "diff": -0.0018499653042454156,
+   "passes": true
+  },
+  "roll_angle_deg": {
+   "kinematik": 1.7096566153846156,
+   "opensees": 1.7096707951588312,
+   "diff": -1.4179774215694607e-05,
+   "passes": true
+  }
+ },
+ "rear_heavy": {
+  "fl_N": {
+   "kinematik": 214.15230000000003,
+   "opensees": 214.1517120927533,
+   "diff": 0.0005879072467109836,
+   "passes": true
+  },
+  "fr_N": {
+   "kinematik": 766.8477,
+   "opensees": 766.8482885308192,
+   "diff": -0.0005885308191864169,
+   "passes": true
+  },
+  "rl_N": {
+   "kinematik": 217.20619565217385,
+   "opensees": 217.20683861818355,
+   "diff": -0.0006429660097069245,
+   "passes": true
+  },
+  "rr_N": {
+   "kinematik": 1254.2938043478262,
+   "opensees": 1254.2931685699712,
+   "diff": 0.0006357778549954674,
+   "passes": true
+  },
+  "roll_angle_deg": {
+   "kinematik": 1.03372875,
+   "opensees": 1.0337392117591746,
+   "diff": -1.0461759174518193e-05,
+   "passes": true
+  }
+ },
+ "low_rc_soft": {
+  "fl_N": {
+   "kinematik": 420.80812499999996,
+   "opensees": 420.80807446269125,
+   "diff": 5.0537308709408535e-05,
+   "passes": true
+  },
+  "fr_N": {
+   "kinematik": 1001.641875,
+   "opensees": 1001.6419368427148,
+   "diff": -6.184271478559822e-05,
+   "passes": true
+  },
+  "rl_N": {
+   "kinematik": 385.246875,
+   "opensees": 385.24692587779634,
+   "diff": -5.0877796354598104e-05,
+   "passes": true
+  },
+  "rr_N": {
+   "kinematik": 1037.203125,
+   "opensees": 1037.203063475145,
+   "diff": 6.152485502752825e-05,
+   "passes": true
+  },
+  "roll_angle_deg": {
+   "kinematik": 2.418165,
+   "opensees": 2.4181734739560827,
+   "diff": -8.473956082610812e-06,
+   "passes": true
+  }
+ },
+ "passed": true
+}
