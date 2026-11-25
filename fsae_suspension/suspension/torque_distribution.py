@@ -123,12 +123,21 @@ def _axle(tt: TireTable, need: float, fz, fx):
     return [scale[i] * float(np.interp(a, _ALPHA, rows[i])) for i in range(2)], a
 
 
-def state(V: float, kappa: float, dkds: float, at: float, option: str, car: Car | None = None, tt: TireTable | None = None, veh: Vehicle | None = None, n_split: int = 21, _frac: float | None = None) -> dict:  # pragma: no mutate (n_split is kept for callers; the split search sets its own grid)
+def state(V: float, kappa: float, dkds: float, at: float, option: str, car: Car | None = None, tt: TireTable | None = None, veh: Vehicle | None = None, n_split: int = 21, _frac: float | None = None, exact_overshoot: bool = False) -> dict:  # pragma: no mutate (n_split is kept for callers; the split search sets its own grid)
     """Best feasible force allocation at one instant; speed m/s, curvature 1/m, dkappa/ds 1/m², at m/s².
 
     Returns the utilisation of each tire (u), the chosen force difference d (N), the
     split yaw moment Mz_x and required Iz r_dot (N·m), and ``ok`` when every
     tire stays inside its ellipse. Left-hand turns (kappa >= 0): outside = right.
+
+    When no split is feasible, ``umax`` says how far over the limit the instant
+    is. By default that comes from the coarse search and is an upper bound on the
+    smallest overshoot (``overshoot_upper_bound``): the verdict is exact, the size
+    may be up to about 0.5 % high, because the least-overshoot split can sit in a
+    window a few thousandths of the range wide. ``exact_overshoot=True`` scans
+    2,001 splits and refines with Brent's method, as the global benchmark does
+    (benchmarks/torque_distribution); nothing in KinematiK needs the size, so the
+    default keeps the cost down.
     """
     car = car or Car(); tt = tt or _TT(); veh = veh or Vehicle()
     ay = V * V * kappa; ay_g = ay / G
@@ -198,8 +207,21 @@ def state(V: float, kappa: float, dkds: float, at: float, option: str, car: Car 
                 else: a_ = x1
                 for r in (r1, r2):
                     if r["umax"] < u0: u0, r0 = r["umax"], r  # pragma: no mutate (keep the best seen)
-            if u0 < best["umax"]: return r0  # pragma: no mutate (float threshold)
-    if best.get("infeasible"): return {"ok": False, "umax": best["umax"]}
+            if u0 > 1.0 and exact_overshoot:  # pragma: no mutate (float threshold)
+                from scipy.optimize import minimize_scalar
+                fine = [i / 2000.0 for i in range(2001)]  # pragma: no mutate (search grid)
+                uf = [state(V, kappa, dkds, at, option, car, tt, veh, _frac=f)["umax"] for f in fine]
+                i = min(range(len(fine)), key=uf.__getitem__)
+                if uf[i] < u0: u0, r0 = uf[i], state(V, kappa, dkds, at, option, car, tt, veh, _frac=fine[i])  # pragma: no mutate (keep the best seen)
+                res = minimize_scalar(lambda f: state(V, kappa, dkds, at, option, car, tt, veh, _frac=f)["umax"],
+                                      bounds=(fine[max(i - 1, 0)], fine[min(i + 1, 2000)]), method="bounded",
+                                      options={"xatol": 1e-9})
+                if res.fun < u0: u0, r0 = float(res.fun), state(V, kappa, dkds, at, option, car, tt, veh, _frac=float(res.x))  # pragma: no mutate (keep the best seen)
+            if u0 < best["umax"]:  # pragma: no mutate (float threshold)
+                if u0 > 1.0: r0 = {**r0, "overshoot_upper_bound": not exact_overshoot}
+                return r0
+    if best.get("infeasible"):
+        return {"ok": False, "umax": best["umax"], "overshoot_upper_bound": not (exact_overshoot and _frac is None)}
     best["ok"] = best["umax"] <= 1.0; best["ay_g"] = ay_g; best["at_g"] = at / G
     return best
 

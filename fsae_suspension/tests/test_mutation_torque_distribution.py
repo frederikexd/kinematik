@@ -169,7 +169,7 @@ def test_the_car_and_vehicle_arguments_reach_the_allocation():
 
 def test_past_the_limit_is_infeasible():
     r = td.state(25.0, 1 / 9.125, 0.0, 0.0, "open")
-    assert r["ok"] is False and r["umax"] > 1.0 and set(r) == {"ok", "umax"}
+    assert r["ok"] is False and r["umax"] > 1.0 and set(r) == {"ok", "umax", "overshoot_upper_bound"}
     over = td.state(13.0, 1 / 9.125, 0.0, 0.0, "open")
     assert over["umax"] > 1.0
 
@@ -275,7 +275,7 @@ def test_the_tire_utilisation_past_the_ellipse_and_past_the_axle():
     assert over["ok"] is False and 1.0 < over["umax"] <= 2.0 and "u" in over
     assert over["umax"] == pytest.approx(max(over["u"].values()))
     far = td.state(13.0, 1 / 9.125, 0.0, 0.0, "open")
-    assert set(far) == {"ok", "umax"} and 1.0 < far["umax"] < 3.0
+    assert set(far) == {"ok", "umax", "overshoot_upper_bound"} and 1.0 < far["umax"] < 3.0
 
 
 def test_drag_area_and_the_car_reach_the_answers():

@@ -66,6 +66,8 @@ def run() -> dict:
                          (18.0, 25.0, 6.0), (20.0, 25.0, 0.0)):
             k = td.state(V, 1.0 / R, 0.0, at, option)
             g = global_umax(V, 1.0 / R, at, option)
+            if g > 1.0:          # phase 2: an infeasible instant's overshoot is graded on the exact search
+                k = td.state(V, 1.0 / R, 0.0, at, option, exact_overshoot=True)
             diff = float(k["umax"]) - g
             p = bool(diff <= lim["umax_abs"])          # KinematiK may not be worse than the global optimum
             out["instants"].append({"option": option, "V": V, "R": R, "at": at, "kinematik_umax": float(k["umax"]),

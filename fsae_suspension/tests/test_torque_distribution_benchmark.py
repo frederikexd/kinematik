@@ -17,9 +17,15 @@ def test_every_steady_limit_agrees_with_the_global_search():
     assert all(r["passes"] for r in STORED["steady"])
 
 
-def test_the_one_recorded_miss_is_an_infeasible_instant():
-    """The registered run fails on one instant that no split makes feasible: the reported overshoot is 0.5 % above
-    the global minimum. Every feasible instant passes."""
-    misses = [r for r in STORED["instants"] if not r["passes"]]
-    assert len(misses) == 1 and misses[0]["global_umax"] > 1.0
-    assert all(r["passes"] for r in STORED["instants"] if r["global_umax"] <= 1.0)
+def test_the_stored_run_passed():
+    assert STORED["passed"]
+
+
+def test_the_default_flags_an_infeasible_overshoot_as_a_bound_and_the_exact_search_finds_the_minimum():
+    sys.path.insert(0, str(ROOT))
+    from suspension import torque_distribution as td
+    quick = td.state(16.0, 1 / 15, 0.0, -8.0, "tv")
+    exact = td.state(16.0, 1 / 15, 0.0, -8.0, "tv", exact_overshoot=True)
+    assert not quick["ok"] and quick["overshoot_upper_bound"] is True
+    assert not exact["ok"] and exact["overshoot_upper_bound"] is False
+    assert exact["umax"] <= quick["umax"] and abs(exact["umax"] - 2.5079) < 0.002

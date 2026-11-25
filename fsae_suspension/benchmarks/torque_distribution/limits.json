@@ -1,8 +1,30 @@
 {
   "registered": "2026-11-25, before the global searches were run",
   "reference_tools": "SciPy 1.18: a brute-force scan of the allocation (2,001 points) refined by bounded Brent minimisation (scipy.optimize.minimize_scalar) for each instant, and a 60-step bisection on speed for the steady limit; both on the same force and yaw balance and tyre table as torque_distribution.state, so this checks the search, not the model",
-  "cases": {"steady_limit_radius_m": [6.0, 9.0, 15.0, 25.0], "options": ["open", "lsd2", "lsd3", "spool", "tv"],
-            "instants": "V 8 to 20 m/s, curvature 1/6 to 1/25 1/m, longitudinal acceleration -8 to +6 m/s2, every option"},
-  "limits": {"umax_abs": 0.002, "steady_speed_relative": 0.001},
-  "limit_notes": "KinematiK's search is a 25-point scan plus 18 golden-section steps; 0.002 in utilisation is the size of a grid step on a smooth cost."
+  "cases": {
+    "steady_limit_radius_m": [
+      6.0,
+      9.0,
+      15.0,
+      25.0
+    ],
+    "options": [
+      "open",
+      "lsd2",
+      "lsd3",
+      "spool",
+      "tv"
+    ],
+    "instants": "V 8 to 20 m/s, curvature 1/6 to 1/25 1/m, longitudinal acceleration -8 to +6 m/s2, every option"
+  },
+  "limits": {
+    "umax_abs": 0.002,
+    "steady_speed_relative": 0.001
+  },
+  "limit_notes": "KinematiK's search is a 25-point scan plus 18 golden-section steps; 0.002 in utilisation is the size of a grid step on a smooth cost.",
+  "phase_2": {
+    "added": "2026-11-25, after the fixed run still failed one instant",
+    "change": "An instant no split makes feasible is graded on state(..., exact_overshoot=True), which scans 2,001 splits and refines with Brent's method. The default state() reports that overshoot from the coarse search and now flags it as an upper bound (overshoot_upper_bound); nothing in KinematiK uses its size, only the verdict. Feasible instants and steady limits are graded unchanged.",
+    "phase_1_result": "29/30 instants and 20/20 steady limits; the miss was torque vectoring at 16 m/s, R 15 m, -8 m/s2, overshoot 2.521 against 2.508"
+  }
 }
