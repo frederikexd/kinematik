@@ -1,0 +1,8 @@
+{
+  "registered": "2026-11-25, before any MFeval output was seen",
+  "reference_tool": "MFeval (Marco Furlan, MathWorks File Exchange 63618), the Magic Formula evaluator validated by its author against TNO MF-Tyre; run by the user in MATLAB with benchmarks/tyre/mfeval_reference.m on the .tir files that ship with it",
+  "compared": "Pure lateral force Fy (kappa 0, no turn slip, 16.7 m/s, nominal pressure), slip angle -15 to 15 deg, load 0.5 to 1.5 FNOMIN, camber 0, -2, -4 deg. KinematiK's PacejkaLateral is built from the same .tir's lateral coefficients and scaling factors.",
+  "scope": "MF5.2 files (FITTYP 6 or 21): every point. MF6.1/6.2 files: camber 0 only, and only if PKY4 = 2 and the pressure terms vanish at nominal pressure, since KinematiK implements MF5.2; otherwise reported but not graded.",
+  "sign": "MFeval reports forces in ISO-W axes. If KinematiK's Fy is the opposite sign for the same slip angle, the comparison uses -Fy and says so; any other mismatch is a failure.",
+  "limits": {"fy_abs_N": 1.0, "fy_relative_to_peak": 0.001}
+}
