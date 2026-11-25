@@ -1,0 +1,114 @@
+{
+ "vm4": {
+  "published": {
+   "stress_psi": 10000.0,
+   "deflection_in": -0.12,
+   "mechanical_apdl_ratio": 1.0
+  },
+  "independent": {
+   "stress_psi": 10000.000000000002,
+   "deflection_in": -0.12000000000000002,
+   "passes": true
+  },
+  "opensees": {
+   "stress_psi": 10000.000000000002,
+   "deflection_in": -0.12000000000000002,
+   "passes": true
+  }
+ },
+ "cases": {
+  "bump": {
+   "kinematik": {
+    "compliance_toe_deg": -0.015976436172037756,
+    "compliance_camber_deg": -0.026529919674338043,
+    "contact_patch_lateral_mm": 0.1041154635552175,
+    "converged": true
+   },
+   "independent": {
+    "compliance_toe_deg": -0.01597645910661358,
+    "compliance_camber_deg": -0.02652992159280876,
+    "contact_patch_lateral_mm": 0.10411546891862145
+   },
+   "opensees": {
+    "compliance_toe_deg": -0.01575901353653776,
+    "compliance_camber_deg": -0.026490622417412624,
+    "contact_patch_lateral_mm": 0.10400096923899582
+   },
+   "passes": {
+    "compliance_toe_deg": true,
+    "compliance_camber_deg": true,
+    "contact_patch_lateral_mm": true
+   }
+  },
+  "corner": {
+   "kinematik": {
+    "compliance_toe_deg": 0.09278102519375415,
+    "compliance_camber_deg": 0.03307857091828259,
+    "contact_patch_lateral_mm": -0.1130348166497015,
+    "converged": true
+   },
+   "independent": {
+    "compliance_toe_deg": 0.09278110008317463,
+    "compliance_camber_deg": 0.033078578741749354,
+    "contact_patch_lateral_mm": -0.11303484256052343
+   },
+   "opensees": {
+    "compliance_toe_deg": 0.09224558132245034,
+    "compliance_camber_deg": 0.03303372411053607,
+    "contact_patch_lateral_mm": -0.1128560134276313
+   },
+   "passes": {
+    "compliance_toe_deg": true,
+    "compliance_camber_deg": true,
+    "contact_patch_lateral_mm": true
+   }
+  },
+  "brake": {
+   "kinematik": {
+    "compliance_toe_deg": 0.3670453337560163,
+    "compliance_camber_deg": 0.022568669952805376,
+    "contact_patch_lateral_mm": -0.11554730080922582,
+    "converged": true
+   },
+   "independent": {
+    "compliance_toe_deg": 0.3670457212388825,
+    "compliance_camber_deg": 0.022568688406155335,
+    "contact_patch_lateral_mm": -0.11554737170035878
+   },
+   "opensees": {
+    "compliance_toe_deg": 0.36434517335916433,
+    "compliance_camber_deg": 0.023111545416738544,
+    "contact_patch_lateral_mm": -0.1141114671474952
+   },
+   "passes": {
+    "compliance_toe_deg": true,
+    "compliance_camber_deg": true,
+    "contact_patch_lateral_mm": true
+   }
+  },
+  "corner_drive": {
+   "kinematik": {
+    "compliance_toe_deg": -0.13940770639442152,
+    "compliance_camber_deg": 0.006463789457469282,
+    "contact_patch_lateral_mm": -0.028783624243715167,
+    "converged": true
+   },
+   "independent": {
+    "compliance_toe_deg": -0.13940790526686062,
+    "compliance_camber_deg": 0.006463766426219042,
+    "contact_patch_lateral_mm": -0.02878355132042998
+   },
+   "opensees": {
+    "compliance_toe_deg": -0.13873027850528327,
+    "compliance_camber_deg": 0.0065747553753250365,
+    "contact_patch_lateral_mm": -0.028773504506261816
+   },
+   "passes": {
+    "compliance_toe_deg": true,
+    "compliance_camber_deg": true,
+    "contact_patch_lateral_mm": true
+   }
+  }
+ },
+ "passed": true
+}

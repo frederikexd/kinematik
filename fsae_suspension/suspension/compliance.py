@@ -256,6 +256,37 @@ class CompliantCorner:
         self.hp = hp
         self.rigid_kin = SuspensionKinematics(hp)
         self.stiffness = dict(stiffness)
+        # The load solve reacts the vertical load through the spring/damper, so the
+        # loaded pose holds it at its unloaded length and lets the wheel find its own
+        # height. Without a defined spring the lower ball joint height is held instead.
+        try:
+            self._spring_L0 = float(self.rigid_kin.spring_length_at(self.rigid_kin.static)[0])
+        except ValueError:
+            self._spring_L0 = None
+
+    def _loaded_pose(self, kin: SuspensionKinematics):
+        """The deflected corner with the spring/damper at its unloaded length (secant on
+        wheel travel). Holding the lower ball joint height instead, as before 1.7.13, stopped
+        the upright heaving as the links gave, which the corner's camber gain turned into a
+        camber error of 10-50 % against two independent solvers (benchmarks/compliance)."""
+        if self._spring_L0 is None:
+            return kin.static
+
+        def gap(t):
+            s = kin.solve_at_travel(t)
+            return kin.spring_length_at(s)[0] - self._spring_L0, s
+
+        t0, (f0, s0) = 0.0, gap(0.0)
+        if abs(f0) < 1e-10:  # pragma: no mutate
+            return s0
+        t1 = 0.5
+        f1, s1 = gap(t1)
+        for _ in range(25):
+            if abs(f1) < 1e-10 or f1 == f0:  # pragma: no mutate
+                break
+            t0, t1, f0 = t1, t1 - f1 * (t1 - t0) / (f1 - f0), f1
+            f1, s1 = gap(t1)
+        return s1
 
     # ------------------------------------------------------------------ #
     @staticmethod
@@ -382,7 +413,7 @@ class CompliantCorner:
 
             # re-solve loaded geometry
             kin = SuspensionKinematics(self.hp, length_deltas=new_deltas)
-            new_state = kin.static
+            new_state = self._loaded_pose(kin)
 
             d_cam = abs(new_state.camber - state.camber)
             d_toe = abs(new_state.toe - state.toe)

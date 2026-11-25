@@ -3,6 +3,10 @@
 
 ## Unreleased
 
+**Rear corner: whole-car results no longer reuse the front corner.** The geometry editor has a Rear corner tab. Ticked, the rear axle gets its own pickup points, camber and toe (a copy of the front to start from), and the roll centre, camber gain, motion ratio and anti-squat of the rear axle come from them in load transfer, the setup optimiser, lap time, GGV, the braking lap and the Compliance tab's rear axle. Unticked, the rear reuses the front as before, and the editor says so. Saved projects carry the rear corner; older ones load with none.
+
+**Compliance: the loaded pose now holds the damper length, and is benchmarked.** The compliant solve reacted the vertical load through the spring or damper but then pinned the lower ball joint at its unloaded height, so the upright could not heave as the links gave. A new benchmark against an independent solve and OpenSeesPy, both checked first against Ansys VM4, caught it: camber and contact-patch shift were 10 to 50 % off in three of four load cases, while toe matched. The loaded pose now holds the spring or damper at its unloaded length; toe and camber agree with the independent solve to 4e-7° and with OpenSees to 0.0027° (2.3 % at most). Corners without a spring still hold the ball joint height. The README and the app no longer say compliance cannot be modelled: the main kinematics and pickup loads assume rigid links, and the Compliance tab adds link, joint and pickup stiffness.
+
 **Pickup points: front and rear no longer read as the front and rear suspension.** Feedback: it was hard to tell the front and rear suspension apart while setting up pickup points. "Front inner" and "rear inner" name the two chassis pickups of a wishbone, not the axle. They now read "forward chassis pickup" and "rearward chassis pickup", and the table says it is one corner (the example is the front-right), how to check the rear suspension, and that the whole-car results use this one corner for both axles.
 
 ## 1.7.12 (2026-11-23)

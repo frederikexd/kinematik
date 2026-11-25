@@ -1,0 +1,25 @@
+{
+  "registered": "2026-11-25, before KinematiK's compliance solve was run on these cases",
+  "corner": "benchmarks/direct_acting/corners/direct_upright.json (six two-force members, damper on the upright)",
+  "load_cases": "benchmarks/link_loads/limits.json load_cases (bump, corner, brake, corner_drive)",
+  "link_stiffness_N_per_mm": {"UF": 12000, "UR": 10000, "LF": 16000, "LR": 14000, "TR": 8000},
+  "damper": "rigid in every model",
+  "quantities": {
+    "compliance_toe_deg": "toe change from the unloaded pose, deg, + toe-out",
+    "compliance_camber_deg": "camber change from the unloaded pose, deg, front-view projection",
+    "contact_patch_lateral_mm": "lateral movement of the contact-patch point carried by the upright, mm"
+  },
+  "limits": {
+    "angle_deg": {"absolute": 0.002, "relative": 0.03},
+    "contact_patch_lateral_mm": {"absolute": 0.005, "relative": 0.03},
+    "rule": "a result passes if it is within the absolute OR the relative limit of each reference"
+  },
+  "ansys_vm4": {
+    "source": "Ansys Mechanical APDL Verification Manual, VM4 Deflection of a Hinged Support (Timoshenko, Strength of Materials Part I, 3rd ed., p. 10, problem 2)",
+    "url": "https://ansyshelp.ansys.com/public/Views/Secured/corp/v251/en/ans_vm/Hlp_V_VM4.html",
+    "data": {"L_in": 180.0, "theta_deg": 30.0, "A_in2": 0.5, "E_psi": 3.0e7, "F_lb": 5000.0},
+    "published": {"stress_psi": 10000.0, "deflection_in": -0.120, "mechanical_apdl_ratio": 1.000},
+    "limit_relative": 0.005,
+    "purpose": "checks the two reference solvers' truss model, not KinematiK"
+  }
+}

@@ -18,6 +18,7 @@ Run:  streamlit run app.py
 """
 
 import gc
+import copy
 import json
 import os
 import re
@@ -1874,8 +1875,11 @@ st.markdown('<div class="brand"><span class="mark">◢ KinematiK</span>'
             unsafe_allow_html=True)
 with st.expander("What it can and cannot do", expanded=False):
     st.markdown("It can correct and synthesise suspension geometry for part design and setup decisions, and give "
-                "motion ratios and link and pickup forces, within the vehicle's operating range. It cannot model "
-                "compliance (links and bushings are rigid), transients, or anything that needs measured data.")
+                "motion ratios and link and pickup forces, within the vehicle's operating range. The kinematics and "
+                "pickup loads assume rigid links; the Compliance tab adds link, joint and pickup stiffness, checked "
+                "against two independent solvers but not yet against a measured K&C test. It cannot model "
+                "transients, or anything that needs measured data. Whole-car results use a separate rear corner "
+                "once you enter one.")
 
 PLOT_LAYOUT = dict(
     paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="#0e1216",
@@ -2674,6 +2678,7 @@ def build_project_bundle(hp=None) -> dict:
         "kinematik_version": "1.0",
         "saved": _datetime.datetime.now().isoformat(timespec="seconds"),
         "hardpoints": hp if hp is not None else st.session_state.get("hp", {}),
+        "hardpoints_rear": st.session_state.get("hp_rear"),
         "topology": st.session_state.get("topology", "double_wishbone"),
         "topo_hardpoints": st.session_state.get("topo_hp", {}),
         "vehicle": st.session_state.get("vp"),
@@ -2707,6 +2712,8 @@ def apply_project_bundle(data: dict, include_shared_ledger: bool = True) -> None
         raise ValueError("not a KinematiK project bundle (expected a JSON object)")
     if "hardpoints" in data:
         st.session_state.hp = data["hardpoints"]
+    # An older bundle has no rear corner: the rear axle then reuses the front.
+    st.session_state.hp_rear = data.get("hardpoints_rear") or None
     if "topo_hardpoints" in data and isinstance(data["topo_hardpoints"], dict):
         st.session_state.topo_hp = data["topo_hardpoints"]
     if "topology" in data:
@@ -3572,6 +3579,66 @@ def _point_rows(loc, items, get_pt, set_pt):
                      label_visibility="collapsed")
 
 
+def _set_rear_corner(on):
+    """Give the rear axle its own corner (starting from a copy of the front
+    corner, the closest starting point), or go back to reusing the front."""
+    if on:
+        st.session_state.hp_rear = copy.deepcopy(dict(st.session_state.hp))
+    else:
+        st.session_state.hp_rear = None
+
+
+def _hp_rear_set_point(key, i, v):
+    hr = st.session_state.get("hp_rear")
+    if not hr or hr.get(key) is None:
+        return
+    p = list(hr[key])
+    p[i] = float(v)
+    hr[key] = p
+
+
+def _hp_rear_put(field):
+    def _p(v):
+        if st.session_state.get("hp_rear"):
+            st.session_state.hp_rear[field] = v
+    return _p
+
+
+def _render_rear_corner(loc):
+    """The rear corner's own pickup points, camber and toe, in the rear
+    corner's frame. Off, the whole-car results reuse the front corner."""
+    on = _kk_bind(
+        st, "checkbox", loc, "rear_own", "The rear corner has its own geometry",
+        lambda: bool(st.session_state.get("hp_rear")), _set_rear_corner,
+        help="On, the rear axle's roll centre, camber gain, motion ratio and "
+             "anti-squat come from these points in every whole-car result "
+             "(load transfer, setup optimiser, lap time). It starts as a copy "
+             "of the front corner.")
+    if not on:
+        st.caption("Off: the whole-car results use the front corner for both axles.")
+        return
+    st.caption("The rear-right corner, in its own frame: x from the rear axle, "
+               "+ rearward; y + right; z up from the ground. The Kinematics tab "
+               "and its reports still show the front corner.")
+    _err = st.session_state.get("_rear_solve_error")
+    if _err:
+        st.warning(f"This rear corner does not solve ({_err}), so the whole-car "
+                   "results are using the front corner until it does.")
+    _point_rows(f"{loc}_rear", POINTS, lambda k: st.session_state.hp_rear[k],
+                _hp_rear_set_point)
+    a, b, _ = st.columns([1, 1, 2])
+    _kk_bind(a, "number_input", f"{loc}_rear", "static_camber", "Rear static camber (°)",
+             lambda: float(st.session_state.hp_rear.get("static_camber", -1.0)),
+             _hp_rear_put("static_camber"), step=0.1, format="%.2f")
+    _kk_bind(b, "number_input", f"{loc}_rear", "static_toe", "Rear static toe (°)",
+             lambda: float(st.session_state.hp_rear.get("static_toe", 0.0)),
+             _hp_rear_put("static_toe"), step=0.05, format="%.2f")
+    if st.session_state.hp_rear.get("pushrod_outer") is not None:
+        st.caption("Rear pushrod and rocker (copied from the front; edit to match the rear):")
+        _point_rows(f"{loc}_rear", ROCKER_POINTS, lambda k: st.session_state.hp_rear[k],
+                    _hp_rear_set_point)
+
+
 def _hp_set_point(key, i, v):
     if st.session_state.hp.get(key) is None:
         # The point was switched off in this same rerun (a rocker point edited, then "Pushrod-actuated" unticked:
@@ -3625,19 +3692,25 @@ def render_geometry_editor(loc, expanded=False):
                         "convention in ✅ Checks → 🧭 Frames & Datums, or let the "
                         "importer do it.")
         if topo == "double_wishbone":
-            t_pts, t_cam, t_rock, t_imp = st.tabs(
-                ["Pickup points", "Static camber & toe", "Pushrod & rocker",
-                 "📥 Import"])
+            t_pts, t_rear, t_cam, t_rock, t_imp = st.tabs(
+                ["Pickup points", "Rear corner", "Static camber & toe",
+                 "Pushrod & rocker", "📥 Import"])
             with t_pts:
-                st.caption("One corner: the example is the front-right (y + right). "
+                _own_rear = bool(st.session_state.get("hp_rear"))
+                st.caption("The front corner: the example is the front-right (y + right). "
                            "Forward and rearward are the two chassis pickups of each "
-                           "wishbone, not the front and rear suspension. To check the "
-                           "rear suspension, enter the rear corner's points here; the "
-                           "whole-car results use this one corner for both axles. "
-                           "Chassis points sit on the frame; upright points move "
+                           "wishbone, not the front and rear suspension. "
+                           + ("The rear axle uses its own corner (Rear corner tab). "
+                              if _own_rear else
+                              "Until you give the rear its own geometry in the Rear "
+                              "corner tab, the whole-car results use this corner for "
+                              "both axles. ")
+                           + "Chassis points sit on the frame; upright points move "
                            "with the wheel.")
                 _point_rows(loc, POINTS, lambda k: st.session_state.hp[k],
                             _hp_set_point)
+            with t_rear:
+                _render_rear_corner(loc)
             with t_cam:
                 a, b, _ = st.columns([1, 1, 2])
                 _kk_bind(a, "number_input", loc, "static_camber", "Static camber (°)",
@@ -4285,8 +4358,24 @@ try:
     # compatible if an old saved project carries extra/missing keys).
     _vp_fields = set(VehicleParams.__dataclass_fields__.keys())
     _vp_kwargs = {k: v for k, v in st.session_state.vp.items() if k in _vp_fields}
+    # The rear axle has its own corner only when the person entered one (Rear
+    # corner tab); otherwise the whole-car results reuse the front corner, as
+    # the editor says. A rear geometry that will not solve falls back to the
+    # front corner and the Rear corner tab says why.
+    rear_kin = kin
+    st.session_state.pop("_rear_solve_error", None)
+    _hp_rear = st.session_state.get("hp_rear") if _topo == "double_wishbone" else None
+    if _hp_rear:
+        try:
+            _rk = SuspensionKinematics(Hardpoints.from_dict(_hp_rear))
+            if not _rk.static.converged:
+                raise ValueError("the rear corner does not close at ride height")
+            rear_kin = _rk
+        except Exception as _re:
+            st.session_state["_rear_solve_error"] = str(_re)
+            rear_kin = kin
     veh = VehicleDynamics(VehicleParams(**_vp_kwargs),
-                          front_kin=kin, rear_kin=kin, tire=_tire)
+                          front_kin=kin, rear_kin=rear_kin, tire=_tire)
     # Steer-DOF linkages (e.g. truck steering) have a limited vertical-travel
     # envelope; sweep a narrower band so the studio stays usable.
     _span = 15 if _topo == "truck_steer_linkage" else 30
@@ -4711,8 +4800,9 @@ _spring_demo = float(st.session_state.vp.get("spring_rate_front", 35.0))
 _wr = kin.wheel_rate(_spring_demo)
 _ad = kin.anti_dive_pct(st.session_state.vp.get("cg_height", 300.0),
                         st.session_state.vp.get("wheelbase", 1550.0))
-_as = kin.anti_squat_pct(st.session_state.vp.get("cg_height", 300.0),
-                         st.session_state.vp.get("wheelbase", 1550.0))
+# Anti-squat belongs to the rear axle: from the rear corner when there is one.
+_as = rear_kin.anti_squat_pct(st.session_state.vp.get("cg_height", 300.0),
+                              st.session_state.vp.get("wheelbase", 1550.0))
 
 # (The 30-second tour expander was removed by request — the mission
 #  briefing questionnaire below now carries onboarding.)
@@ -16156,7 +16246,7 @@ def _render_rotor_thermal(_bt, _mass, kin):
             _vd_b = VehicleDynamics(
                 VehicleParams(**{k: v for k, v in st.session_state.vp.items()
                                  if k in VehicleParams.__dataclass_fields__}),
-                front_kin=kin, rear_kin=kin,
+                front_kin=kin, rear_kin=globals().get("rear_kin", kin),
                 tire=globals().get("_live_tire_lap"))
             _lp = lapsim_mod.LapSimParams(mass=float(_mass))
             _sim_b = lapsim_mod.LapSimulator(_vd_b, params=_lp)
@@ -28101,7 +28191,7 @@ with tab5c:
 
    # ---- build the compliant corner and solve --------------------------- #
    try:
-       comp_kin = kin if comp_axle == "front" else kin   # same geometry both axles here
+       comp_kin = kin if comp_axle == "front" else globals().get("rear_kin", kin)
        stiff = {}
        for m in ("UF", "UR", "LF", "LR"):
            stiff[m] = MemberStiffness(material=comp_mat, od_mm=comp_od,
@@ -30153,9 +30243,9 @@ with tab10:
 
   if st.session_state.get("_run_opt"):
       with st.spinner("Sweeping setup space on the live tire…"):
-          sens = setup_mod.sensitivity(base_vp, front_kin=kin, rear_kin=kin,
+          sens = setup_mod.sensitivity(base_vp, front_kin=kin, rear_kin=globals().get("rear_kin", kin),
                                        tire=tire_mod.PacejkaLateral(coeffs=dict(st.session_state.tire_coeffs), FNOMIN=st.session_state.tire_fnomin))
-          opt = setup_mod.optimise(base_vp, front_kin=kin, rear_kin=kin,
+          opt = setup_mod.optimise(base_vp, front_kin=kin, rear_kin=globals().get("rear_kin", kin),
                                    tire=tire_mod.PacejkaLateral(coeffs=dict(st.session_state.tire_coeffs), FNOMIN=st.session_state.tire_fnomin), target_balance=target_bal,
                                    balance_tol=bal_tol)
 
@@ -30284,7 +30374,7 @@ def render_laptime(_pt):
       _veh_lap = VehicleDynamics(
           VehicleParams(**{k: v for k, v in st.session_state.vp.items()
                            if k in VehicleParams.__dataclass_fields__}),
-          front_kin=kin, rear_kin=kin, tire=_live_tire_lap)
+          front_kin=kin, rear_kin=globals().get("rear_kin", kin), tire=_live_tire_lap)
 
   # ---- Powertrain / aero come from the shared Track Testing window (_pt is
   #      passed in). No local block here anymore.
@@ -33065,6 +33155,7 @@ def render_ggv(_gp, _pt_ggv, g_pw, g_tract, g_eff, g_cda, g_cla, g_crr, g_drive,
           g_drive, round(float(g_brake), 4),
           st.session_state.get("topology", "double_wishbone"),
           repr(hp_dict),
+          repr(st.session_state.get("hp_rear")),
           repr(st.session_state.get("topo_hp", {}).get(
               st.session_state.get("topology", ""))),
       )

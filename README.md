@@ -18,8 +18,10 @@ first power-up, so the hours on the bench and in CAD go to the parts most likely
 means checking a design before the car is built or the board is first powered; it does not replace testing afterwards ([Known limitations](#known-limitations)).
 
 > **Suspension: what it can and cannot do.** It can correct and synthesize suspension geometry for part design and setup
-> decisions, and give motion ratios and link and pickup forces, within the vehicle's operating range. It cannot model
-> compliance (links and bushings are rigid) or transients, and absolute grip depends on the tire data you load.
+> decisions, and give motion ratios and link and pickup forces, within the vehicle's operating range. The kinematics and
+> pickup loads assume rigid links; the Compliance tab adds link, joint and pickup stiffness, checked against two
+> independent solvers but not yet against a measured K&C test. It cannot model transients, and absolute grip depends on
+> the tire data you load. Whole-car results use a separate rear corner once you enter one.
 >
 > **Chassis: what it can and cannot do.** It provides suspension-derived pickup loads as inputs to chassis design; those
 > loads have been checked against Adams View and an independent static solver for the benchmark cases below. The
