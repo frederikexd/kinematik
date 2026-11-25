@@ -1,0 +1,91 @@
+{
+ "temperatures": {
+  "0.0": {
+   "kinematik_F": 511.2415775184761,
+   "target_F": 505,
+   "diff_F": 6.241577518476106,
+   "passes": true
+  },
+  "0.2": {
+   "kinematik_F": 553.5728728590827,
+   "target_F": 550,
+   "diff_F": 3.572872859082736,
+   "passes": true
+  },
+  "0.4": {
+   "kinematik_F": 678.0326549440803,
+   "target_F": 670,
+   "diff_F": 8.032654944080264,
+   "passes": true
+  },
+  "0.6": {
+   "kinematik_F": 876.6310640099709,
+   "target_F": 865,
+   "diff_F": 11.631064009970942,
+   "passes": false
+  },
+  "0.8": {
+   "kinematik_F": 1135.198725192195,
+   "target_F": 1135,
+   "diff_F": 0.19872519219507012,
+   "passes": true
+  },
+  "1.0": {
+   "kinematik_F": 1433.3272871139181,
+   "target_F": 1435,
+   "diff_F": -1.6727128860818539,
+   "passes": true
+  }
+ },
+ "heat": {
+  "kinematik": 21290.81581522245,
+  "target": 20736,
+  "rel": 0.026756163928551846,
+  "passes": false
+ },
+ "passed": false,
+ "note": "The manual calls its targets graphical estimates from Kreith. The exact series solution below was added after the first run, not registered before it.",
+ "exact": {
+  "temperatures": {
+   "0.0": {
+    "kinematik_F": 511.2415775184761,
+    "exact_F": 510.21210347131205,
+    "kinematik_diff_F": 1.029474047164058,
+    "mechanical_apdl_diff_F": -3.212103471312048
+   },
+   "0.2": {
+    "kinematik_F": 553.5728728590827,
+    "exact_F": 552.5664111151143,
+    "kinematik_diff_F": 1.0064617439684298,
+    "mechanical_apdl_diff_F": -3.566411115114306
+   },
+   "0.4": {
+    "kinematik_F": 678.0326549440803,
+    "exact_F": 677.0850073959215,
+    "kinematik_diff_F": 0.947647548158784,
+    "mechanical_apdl_diff_F": -2.0850073959214797
+   },
+   "0.6": {
+    "kinematik_F": 876.6310640099709,
+    "exact_F": 875.7580169559583,
+    "kinematik_diff_F": 0.8730470540126589,
+    "mechanical_apdl_diff_F": -1.7580169559582828
+   },
+   "0.8": {
+    "kinematik_F": 1135.198725192195,
+    "exact_F": 1134.4086727518256,
+    "kinematik_diff_F": 0.7900524403694362,
+    "mechanical_apdl_diff_F": -0.4086727518256339
+   },
+   "1.0": {
+    "kinematik_F": 1433.3272871139181,
+    "exact_F": 1432.64729468736,
+    "kinematik_diff_F": 0.6799924265581012,
+    "mechanical_apdl_diff_F": 0.3527053126399551
+   }
+  },
+  "heat_btu_ft2": 21227.812786519065,
+  "kinematik_heat_rel": 0.0029679472556585207,
+  "mechanical_apdl_heat_rel": -0.026654313951665842
+ }
+}

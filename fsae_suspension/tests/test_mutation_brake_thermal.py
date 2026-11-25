@@ -256,7 +256,7 @@ def _one_d(p, n, P, dt, V=None):
     ro = max(p.diameter_mm, 1.0) / 2000
     ri = max(ro - p.hat_clearance_mm / 1000, 0.02)
     face = math.pi * (ro * ro - ri * ri)
-    sub = max(math.ceil(dt / (0.5 * dx * dx / a)), 1)
+    sub = max(math.ceil(dt / (0.25 * dx * dx / a)), 1)    # the half-cell boundary nodes halve the stable step
     h_dt = dt / sub
     Ta = p.T_ambient_c
     T = np.full(n, Ta)
@@ -270,8 +270,8 @@ def _one_d(p, n, P, dt, V=None):
         for _ in range(sub):
             lap = np.empty(n)
             lap[1:-1] = T[:-2] - 2 * T[1:-1] + T[2:]
-            lap[-1] = T[-2] - T[-1]
-            lap[0] = T[1] - T[0]
+            lap[-1] = 2 * (T[-2] - T[-1])              # half cells: k(dT)/dx over rho c dx/2
+            lap[0] = 2 * (T[1] - T[0])
             loss = 0.5 * p.area_factor * h * (T[0] - Ta)
             rad = 0.5 * p.area_factor * p.emissivity * SIG * ((T[0] + 273.15) ** 4 - (Ta + 273.15) ** 4) \
                 if p.enable_radiation else 0.0
@@ -312,7 +312,7 @@ def test_the_through_thickness_model():
     m = bt.material("grey_cast_iron")
     assert od.n == 12 and od.half_t == pytest.approx(0.0025) and od.dx == pytest.approx(0.0025 / 11)
     assert od.alpha == pytest.approx(m.k_w_mK / (m.rho_kg_m3 * m.cp_j_kgK))
-    assert od._max_stable_dt() == pytest.approx(0.5 * od.dx ** 2 / od.alpha)
+    assert od._max_stable_dt() == pytest.approx(0.25 * od.dx ** 2 / od.alpha)
     assert od.face_area == pytest.approx(_ring(220.0)) and od.A_conv == pytest.approx(_ring(220.0) * 2.4)
     thin = bt.OneDRotor(bt.TwoNodeParams(thickness_mm=0.1), n_nodes=2)
     assert thin.n == 4 and thin.half_t == pytest.approx(0.00025)
@@ -323,9 +323,9 @@ def test_the_through_thickness_model():
         30.0, 0.0, 0.0, "low")
     odd = bt.OneDRotor(bt.TwoNodeParams(rotor_mat="mystery"), n_nodes=6).simulate([20000.0] * 5, 0.1)
     assert odd.sigma_limit_mpa == 250.0
-    hard = bt.OneDRotor(bt.TwoNodeParams(thickness_mm=12.0), n_nodes=6).simulate([3e5] * 10, 0.1)
+    hard = bt.OneDRotor(bt.TwoNodeParams(thickness_mm=12.0), n_nodes=6).simulate([4e5] * 10, 0.1)
     assert hard.crack_risk == "high" and hard.over_material_limit is True
-    mid = bt.OneDRotor(bt.TwoNodeParams(thickness_mm=12.0), n_nodes=6).simulate([7e4] * 3, 0.1)
+    mid = bt.OneDRotor(bt.TwoNodeParams(thickness_mm=12.0), n_nodes=6).simulate([1.2e5] * 3, 0.1)
     assert mid.crack_risk == "elevated" and mid.over_material_limit is False
     low = bt.OneDRotor(bt.TwoNodeParams(thickness_mm=12.0), n_nodes=6).simulate([5e4] * 3, 0.1)
     assert low.crack_risk == "low"
@@ -428,7 +428,7 @@ def test_one_candidate_is_scored_on_its_fade_test():
     assert sc.sigma_peak_mpa == pytest.approx(od.sigma_peak_mpa)
     assert sc.feasible is (sc.margin_c >= 0 and od.crack_risk != "high")
     crack = bt._evaluate_candidate(260.0, 12.0, 0.0, "steel", T_constraint_c=2000.0, screen_cracks=True,
-                                   **{**kw, "v0_ms": 40.0, "mass_kg": 600.0})
+                                   **{**kw, "v0_ms": 50.0, "mass_kg": 600.0})
     assert crack.crack_risk == "high" and crack.margin_c >= 0 and crack.feasible is False
     edge = bt._evaluate_candidate(230.0, 6.0, 0.2, "steel", T_constraint_c=c.T_rotor_peak_c, **kw)
     assert edge.margin_c == 0.0 and edge.feasible is True

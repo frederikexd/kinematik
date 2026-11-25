@@ -597,6 +597,7 @@ class ThroughThicknessTrace:
     material_T_max_c: float
     over_material_limit: bool
     synthesized: bool
+    T_field_c: list | None = None   # the through-thickness profile at the end, surface first
 
 
 class OneDRotor:
@@ -605,9 +606,12 @@ class OneDRotor:
     risk from the gradient. Same fade-test / lap power series drive it as the
     lumped models."""
 
-    def __init__(self, params: TwoNodeParams | None = None, *, n_nodes: int = 12):
+    def __init__(self, params: TwoNodeParams | None = None, *, n_nodes: int = 12,
+                 rotor_material: RotorMaterial | None = None):
         self.p = params or TwoNodeParams()
-        self.mat = material(self.p.rotor_mat)
+        #  A measured or custom rotor material can be given directly instead of
+        #  by name (benchmarks/brake_thermal runs Ansys VM110 through this).
+        self.mat = rotor_material or material(self.p.rotor_mat)
         self.n = max(int(n_nodes), 4)
         # half-thickness in metres (symmetric heating both faces)
         self.half_t = max(self.p.thickness_mm, 0.5) / 1000.0 / 2.0
@@ -626,13 +630,22 @@ class OneDRotor:
             hat_clearance_mm=self.p.hat_clearance_mm, rho_kg_m3=self.mat.rho_kg_m3)
 
     def _max_stable_dt(self) -> float:
-        """Explicit 1-D conduction is stable only for Fourier number ≤ 0.5."""
-        return 0.5 * self.dx * self.dx / max(self.alpha, 1e-9)
+        """Explicit 1-D conduction is stable only for Fourier number ≤ 0.5, and the
+        half-cell boundary nodes (twice the interior coefficient) need half that."""
+        return 0.25 * self.dx * self.dx / max(self.alpha, 1e-9)
 
     def simulate(self, power_series, dt: float,
-                 v_series=None) -> ThroughThicknessTrace:
+                 v_series=None, *, T_initial_c: float | None = None,
+                 h_w_m2K: float | None = None) -> ThroughThicknessTrace:
+        """T_initial_c: a uniform start temperature other than ambient (a rotor
+        still hot from the last run). h_w_m2K: a fixed convection coefficient,
+        measured or calibrated, in place of the rotating-disc correlation.
+        Temperatures are not allowed below ambient, so T_initial_c must be at or
+        above it."""
         p = self.p
         Tamb = p.T_ambient_c
+        if T_initial_c is not None and T_initial_c < Tamb:
+            raise ValueError("T_initial_c must be at or above the ambient temperature")
         Tamb_k = Tamb + 273.15
         mech = _MECH.get(p.rotor_mat, _MECH["grey_cast_iron"])
         E = mech["E_gpa"] * _PA_PER_GPA
@@ -646,7 +659,7 @@ class OneDRotor:
         sub = max(int(math.ceil(dt / max(dt_max, 1e-9))), 1)
         h_dt = dt / sub
 
-        T = [Tamb] * self.n        # node 0 = surface, node n-1 = core (centre)
+        T = [Tamb if T_initial_c is None else float(T_initial_c)] * self.n   # node 0 = surface, n-1 = core
         ts, Tsurf, Tcore, dTg, sig = [], [], [], [], []
         rho_cp = self.mat.rho_kg_m3 * self.mat.cp_j_kgK
         t = 0.0
@@ -654,7 +667,8 @@ class OneDRotor:
         for i in range(n_steps):
             q_in = max(float(power_series[i]), 0.0)
             v = float(v_series[i]) if (v_series is not None and i < len(v_series)) else 0.0
-            h = h_rotating_disc(p.diameter_mm, v, duct_gain=p.duct_gain)
+            h = (float(h_w_m2K) if h_w_m2K is not None
+                 else h_rotating_disc(p.diameter_mm, v, duct_gain=p.duct_gain))
             # Heating is symmetric on BOTH friction faces; we model HALF the
             # thickness (one face + insulated centre-plane), so this half sees
             # HALF the rotor's heat and ONE face's worth of convective area.
@@ -667,8 +681,13 @@ class OneDRotor:
                 Tn = T[:]  # explicit: update from previous field
                 for j in range(self.n):
                     if j == 0:
-                        # SURFACE node: conduction inward + incoming flux − losses
-                        cond = self.alpha * (T[1] - T[0]) / (self.dx * self.dx)
+                        # SURFACE node: conduction inward + incoming flux − losses.
+                        # A half cell (dx/2 deep, as src below uses), so the
+                        # conductive flux k(T1-T0)/dx over rho c dx/2 is TWICE
+                        # the interior form. Without the 2 the surface could not
+                        # pass heat inward fast enough: against Ansys VM110 the
+                        # face read 79 F hot after 14.5 h (benchmarks/brake_thermal).
+                        cond = 2.0 * self.alpha * (T[1] - T[0]) / (self.dx * self.dx)
                         # Convective/radiative loss per unit FACE area.
                         #
                         # HALF the area_factor, because this model solves HALF
@@ -697,8 +716,9 @@ class OneDRotor:
                         src = (q_surf_flux - loss - rad) / (self.dx / 2.0) / rho_cp
                         Tn[0] = T[0] + h_dt * (cond + src)
                     elif j == self.n - 1:
-                        # CORE node: insulated centreline (symmetry) → mirror node
-                        cond = self.alpha * (T[j - 1] - T[j]) / (self.dx * self.dx)
+                        # CORE node: insulated centreline (symmetry) → mirror node,
+                        # i.e. a half cell with a zero-flux face: 2 x the interior form.
+                        cond = 2.0 * self.alpha * (T[j - 1] - T[j]) / (self.dx * self.dx)
                         Tn[j] = T[j] + h_dt * cond
                     else:
                         cond = self.alpha * (T[j - 1] - 2.0 * T[j] + T[j + 1]) \
@@ -726,7 +746,8 @@ class OneDRotor:
             n_nodes=self.n, rotor_mass_kg=self.m_rotor,
             material_T_max_c=self.mat.T_max_c,
             over_material_limit=over,
-            synthesized=not p.calibrated)
+            synthesized=not p.calibrated,
+            T_field_c=list(T))
 
 
 def fade_test_power_series(*, mass_kg: float, v0_ms: float, front_bias: float,

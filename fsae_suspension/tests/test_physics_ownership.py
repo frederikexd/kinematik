@@ -311,6 +311,14 @@ def test_rotor_over_temperature_flag_responds_to_the_corrected_shedding():
     during a stop, not by the steady convective balance, so the crack-risk
     screen was right all along and only the absolute temperature was wrong.
     Worth knowing before anyone assumes the whole model was suspect.
+
+    2026-11, Ansys VM110 (benchmarks/brake_thermal): that last paragraph was
+    wrong. The surface and core half cells lacked the factor 2 on conduction,
+    so the scheme created energy (up to 2x the heat put in) and DOUBLED the
+    gradient: for a steady face flux it gave 2 qL/k against the exact qL/2k.
+    Fixed, this duty cycle peaks at 717 C (still over the 700 C limit, so the
+    flag holds), the gradient is 21.4 C and the stress 35 MPa, all unchanged
+    from 6 to 48 nodes. The crack screen had been reading twice the stress.
     """
     np = pytest.importorskip("numpy")
     from suspension.brake_thermal import OneDRotor, TwoNodeParams
@@ -323,16 +331,16 @@ def test_rotor_over_temperature_flag_responds_to_the_corrected_shedding():
 
     r = OneDRotor(TwoNodeParams(), n_nodes=12).simulate(power, dt, speed)
 
-    assert r.T_surface_peak_c > 800.0, (
-        f"peak surface {r.T_surface_peak_c:.0f} C — far below the ~870 C the "
+    assert r.T_surface_peak_c > 705.0, (
+        f"peak surface {r.T_surface_peak_c:.0f} C — below the ~717 C the "
         f"corrected energy budget gives. The 1-D model is shedding twice again; "
         f"check the 0.5 * area_factor on its face.")
     assert r.over_material_limit is True, (
         "this duty cycle puts the rotor over its material limit and the flag "
         "must say so; it read False while the model over-shed")
-    # the gradient screen is independent of that fix and must stay put
-    assert 35.0 < r.dT_gradient_peak_c < 50.0
-    assert 60.0 < r.sigma_peak_mpa < 80.0
+    # the gradient after the half-cell fix (VM110); twice this means the factor 2 is gone again
+    assert 19.0 < r.dT_gradient_peak_c < 24.0
+    assert 31.0 < r.sigma_peak_mpa < 39.0
 
 
 # --------------------------------------------------------------------------- #
