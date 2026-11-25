@@ -272,8 +272,9 @@ def test_declared_motion_ratio_curve_reference_values():
 
 def test_vehicle_level_lap_sensitivity_reference():
     """Linear grip, default aero, no corners, 55 % split, 1200/1180 tracks:
-    26.126 s baseline, 0.127 s roll-split spread with its best at 54 %,
-    0.315 s CG spread (240–320 mm)."""
+    25.783 s baseline, 0.185 s roll-split spread with its best at 54 %,
+    0.311 s CG spread (240–320 mm). (Before the 2026-11 braking-pass fix,
+    benchmarks/laptime: 26.126 s, 0.127 s and 0.315 s; the best split held.)"""
     from suspension import inverse_genesis_fullcar as fc
     car = fc.DeclaredCar(tire_model="linear", cla=2.6, cda=1.1,
                          track_front_mm=1200, track_rear_mm=1180,
@@ -282,10 +283,10 @@ def test_vehicle_level_lap_sensitivity_reference():
     shares = [round(0.40 + 0.02 * i, 2) for i in range(16)]
     a = fc.lap_sensitivity(car, "front_roll_share", shares)
     b = fc.lap_sensitivity(car, "cg_height_mm", [240, 260, 280, 300, 320])
-    assert round(a["baseline_s"], 3) == 26.126
-    assert round(a["spread_s"], 3) == 0.127
+    assert round(a["baseline_s"], 3) == 25.783
+    assert round(a["spread_s"], 3) == 0.185
     assert a["best_value"] == 0.54
-    assert round(b["spread_s"], 3) == 0.315
+    assert round(b["spread_s"], 3) == 0.311
 
 
 # ---- a real CAD-kernel STEP file (OpenCascade export) ---------------------- #

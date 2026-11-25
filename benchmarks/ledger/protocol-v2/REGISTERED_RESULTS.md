@@ -43,3 +43,9 @@ Pooled over both years:
 | 2024 | 1.157 | 13 | 1.67 g | 1.27 g | 1.108 | 18 |
 | 2025 | 1.141 | 19 | 1.69 g | 1.30 g | 1.106 | 18 |
 | 2026 | 1.121 | 22 | 1.69 g | 1.36 g | 1.037 | 25 |
+
+## Reruns after code changes
+
+The numbers above are the registered results and are not edited. Code changes that move them are rerun and recorded under `reruns` in `registered_results.json`.
+
+**2026-11-25, lap solver braking-pass fix** ([benchmarks/laptime](../../../fsae_suspension/benchmarks/laptime/results.json)). Test B (autocross pace) mean absolute error: 2023 6.88 → 6.87 %, 2024 8.06 → 8.10 %, 2025 12.56 → 12.58 %, 2026 10.00 → 9.98 %. Rank correlation and the count within 5 % are unchanged in every year. Test A (skidpad and acceleration) does not use the lap solver and is unchanged.

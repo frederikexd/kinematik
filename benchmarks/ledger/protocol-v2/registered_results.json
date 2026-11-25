@@ -804,5 +804,53 @@
    "lat_g_official": 1.3562562154488236
   }
  },
- "challenger_adopted": false
+ "challenger_adopted": false,
+ "reruns": [
+  {
+   "date": "2026-11-25",
+   "why": "lap solver braking-pass fix (benchmarks/laptime): the registered numbers above stay as registered; this is the same test_b rerun on the fixed code",
+   "test_b": {
+    "2023": {
+     "model": {
+      "n": 9,
+      "mae_pct": 6.865500915907256,
+      "median_abs_pct": 4.253379873749265,
+      "bias_pct": -1.770243429989569,
+      "within_5pct": 5,
+      "spearman": 0.7166666666666666
+     }
+    },
+    "2024": {
+     "model": {
+      "n": 10,
+      "mae_pct": 8.103344787106213,
+      "median_abs_pct": 6.4226176166824605,
+      "bias_pct": -2.6624418242541834,
+      "within_5pct": 4,
+      "spearman": -0.5878787878787879
+     }
+    },
+    "2025": {
+     "model": {
+      "n": 12,
+      "mae_pct": 12.580085009280298,
+      "median_abs_pct": 10.336858221306061,
+      "bias_pct": -3.717147819793373,
+      "within_5pct": 0,
+      "spearman": 0.11888111888111888
+     }
+    },
+    "2026": {
+     "model": {
+      "n": 15,
+      "mae_pct": 9.975032325701248,
+      "median_abs_pct": 9.110985959763523,
+      "bias_pct": -2.300504567599922,
+      "within_5pct": 2,
+      "spearman": 0.6035714285714285
+     }
+    }
+   }
+  }
+ ]
 }

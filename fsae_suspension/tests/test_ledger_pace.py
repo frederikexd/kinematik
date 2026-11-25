@@ -56,7 +56,11 @@ def test_too_few_cars_and_no_spread():
 def test_repo_registered_results_reproduce():
     d = REPO / "benchmarks" / "ledger"
     reg = json.loads((d / "protocol-v2" / "registered_results.json").read_text(encoding="utf-8"))
-    for y, saved in reg["test_b"].items():
+    # The registered numbers stay as registered; code changes since then are recorded as reruns, and the latest
+    # rerun is what the current code must reproduce.
+    current = reg["reruns"][-1]["test_b"] if reg.get("reruns") else reg["test_b"]
+    assert set(current) == set(reg["test_b"])
+    for y, saved in current.items():
         specs = L.load_specs_csv(d / f"fsg{y}" / "specs.csv")
         sc = P.score_pace({s.car: P.autocross_lap_s(s) for s in specs},
                           L.load_results_csv(d / f"fsg{y}" / "autocross.csv"))
