@@ -1,0 +1,47 @@
+{
+ "VM18": {
+  "deflection_in": {
+   "kinematik": -2.649156356958506,
+   "target": -2.648,
+   "mechanical_apdl": -2.65,
+   "rel_to_target": 0.0004366906942998572,
+   "apdl_rel_to_target": 0.0007552870090634656,
+   "passes": true
+  },
+  "bending_stress_psi": {
+   "kinematik": 6366.197711293902,
+   "target": 6366.0,
+   "mechanical_apdl": 6366.198,
+   "rel_to_target": 3.105738201414354e-05,
+   "apdl_rel_to_target": 3.1102733270449434e-05,
+   "passes": true
+  },
+  "torsion_shear_psi": {
+   "kinematik": 3183.0988585802866,
+   "target": 3183.0,
+   "mechanical_apdl": 3183.099,
+   "rel_to_target": 3.105830357741368e-05,
+   "apdl_rel_to_target": 3.1102733270449434e-05,
+   "passes": true
+  }
+ },
+ "VM217": {
+  "max_rotation_rad": {
+   "kinematik": 0.0019461178762970794,
+   "target": 0.001946,
+   "mechanical_apdl": 0.00213,
+   "rel_to_target": 6.057363673139804e-05,
+   "apdl_rel_to_target": 0.0945529290853031,
+   "passes": true
+  },
+  "max_bending_moment_lb_in": {
+   "kinematik": 28148155.66662963,
+   "target": 28150000.0,
+   "mechanical_apdl": 28700000.0,
+   "rel_to_target": 6.551805933818766e-05,
+   "apdl_rel_to_target": 0.019538188277087087,
+   "passes": true
+  }
+ },
+ "passed": true
+}

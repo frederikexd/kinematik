@@ -1,0 +1,27 @@
+{
+  "registered": "2026-11-25, before frame_fe.py was run on these problems",
+  "rule": "a result passes if it is within limit_relative of the published target, or at least as close to the target as Mechanical APDL's own published value",
+  "problems": {
+    "VM18": {
+      "title": "Ansys Mechanical APDL Verification Manual VM18, Out-of-Plane Bending of a Curved Bar",
+      "url": "https://ansyshelp.ansys.com/public/Views/Secured/corp/v251/en/ans_vm/Hlp_V_VM18.html",
+      "reference": "Timoshenko, Strength of Materials Part I, 3rd ed., 1955, p. 412, eq. 241",
+      "data": {"r_in": 100.0, "arc_deg": 90.0, "d_in": 2.0, "E_psi": 3.0e7, "nu": 0.3, "F_lb": 50.0},
+      "model": "the quarter ring as 90 straight frame_fe elements, fixed at A, -Z load at B",
+      "target": {"deflection_in": -2.648, "bending_stress_psi": 6366.0, "torsion_shear_psi": 3183.0},
+      "mechanical_apdl": {"deflection_in": -2.650, "bending_stress_psi": 6366.198, "torsion_shear_psi": 3183.099},
+      "limit_relative": 0.005
+    },
+    "VM217": {
+      "title": "Ansys Mechanical APDL Verification Manual VM217, Portal Frame Under Symmetric Loading",
+      "url": "https://ansyshelp.ansys.com/public/Views/Secured/corp/v251/en/ans_vm/Hlp_V_VM217.html",
+      "reference": "N. J. Hoff, The Analysis of Structures, Wiley, 1956, pp. 115-119",
+      "data": {"a_in": 400.0, "L_in": 800.0, "w_lb_per_in": 500.0, "E_psi": 3.0e7, "I_col_in4": 20300.0, "I_span_over_I_col": 5.0},
+      "model": "columns 4 elements, span 16 elements, bases fixed, consistent nodal loads for the span's uniform load; area large enough that axial strain is negligible",
+      "target": {"max_rotation_rad": 1.946e-3, "max_bending_moment_lb_in": 2.815e7},
+      "mechanical_apdl": {"max_rotation_rad": 2.13e-3, "max_bending_moment_lb_in": 2.87e7},
+      "target_formulas": "rotation = w a^3 / (27 E I_col); moment = 19 w a^2 / 54",
+      "limit_relative": 0.01
+    }
+  }
+}
