@@ -1,6 +1,10 @@
 # Changelog
 
 
+## Unreleased
+
+**Pickup points: front and rear no longer read as the front and rear suspension.** Feedback: it was hard to tell the front and rear suspension apart while setting up pickup points. "Front inner" and "rear inner" name the two chassis pickups of a wishbone, not the axle. They now read "forward chassis pickup" and "rearward chassis pickup", and the table says it is one corner (the example is the front-right), how to check the rear suspension, and that the whole-car results use this one corner for both axles.
+
 ## 1.7.12 (2026-11-23)
 
 **ECU pin check: Performance Electronics' own check, added.** Performance Electronics confirmed that which function a digital output switches can be read from the tune only where the team has named it under Engine > Setup Digital Names, and that a name does not prove the relay is physically wired to that output. The pre-power-up checklist (on screen, in the text report and in the PDF) now ends with their recommended step: name every digital output, then switch each one from the Output Diagnostics window and confirm the relay wired to it clicks.

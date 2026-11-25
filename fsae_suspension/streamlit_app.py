@@ -1936,10 +1936,10 @@ def init_state():
 init_state()
 
 POINTS = [
-    ("upper_front_inner", "Upper wishbone · front inner (chassis)"),
-    ("upper_rear_inner",  "Upper wishbone · rear inner (chassis)"),
-    ("lower_front_inner", "Lower wishbone · front inner (chassis)"),
-    ("lower_rear_inner",  "Lower wishbone · rear inner (chassis)"),
+    ("upper_front_inner", "Upper wishbone · forward chassis pickup"),
+    ("upper_rear_inner",  "Upper wishbone · rearward chassis pickup"),
+    ("lower_front_inner", "Lower wishbone · forward chassis pickup"),
+    ("lower_rear_inner",  "Lower wishbone · rearward chassis pickup"),
     ("upper_outer",       "Upper ball joint (upright)"),
     ("lower_outer",       "Lower ball joint (upright)"),
     ("tie_rod_inner",     "Tie rod · inner (rack)"),
@@ -3629,7 +3629,12 @@ def render_geometry_editor(loc, expanded=False):
                 ["Pickup points", "Static camber & toe", "Pushrod & rocker",
                  "📥 Import"])
             with t_pts:
-                st.caption("Chassis points sit on the frame; upright points move "
+                st.caption("One corner: the example is the front-right (y + right). "
+                           "Forward and rearward are the two chassis pickups of each "
+                           "wishbone, not the front and rear suspension. To check the "
+                           "rear suspension, enter the rear corner's points here; the "
+                           "whole-car results use this one corner for both axles. "
+                           "Chassis points sit on the frame; upright points move "
                            "with the wheel.")
                 _point_rows(loc, POINTS, lambda k: st.session_state.hp[k],
                             _hp_set_point)
