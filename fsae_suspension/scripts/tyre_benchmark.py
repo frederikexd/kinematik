@@ -23,14 +23,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from suspension.tiremodel import PacejkaLateral  # noqa: E402
+from suspension.tiremodel import load_tir  # noqa: E402
 
 BENCH = ROOT / "benchmarks" / "tyre"
 REF = BENCH / "mfeval_4.3.1"
 REG = json.loads((BENCH / "limits.json").read_text())
-LAT = ["PCY1", "PDY1", "PDY2", "PDY3", "PEY1", "PEY2", "PEY3", "PEY4", "PKY1", "PKY2", "PKY3",
-       "PHY1", "PHY2", "PHY3", "PVY1", "PVY2", "PVY3", "PVY4"]
-SCALE = ["LFZO", "LCY", "LMUY", "LEY", "LKY", "LHY", "LVY", "LGAY"]
 
 
 def read_tir(path: Path) -> dict:
@@ -43,12 +40,8 @@ def read_tir(path: Path) -> dict:
 
 
 def scope(t: dict) -> str:
-    fittyp = int(t.get("FITTYP", 0))
-    if fittyp in (6, 21):
-        return "all"
-    if fittyp in (61, 62) and t.get("PKY4", 2.0) == 2.0:
-        return "camber0"
-    return "not graded"
+    """Phase 2 (MF6.1 implemented): every point of every MF5.2 and MF6.1/6.2 file is graded."""
+    return "all" if int(t.get("FITTYP", 0)) in (6, 21, 61, 62) else "not graded"
 
 
 def run() -> dict:
@@ -57,8 +50,7 @@ def run() -> dict:
     for csv_path in sorted(REF.glob("mfeval_ref_*.csv")):
         name = csv_path.stem.replace("mfeval_ref_", "")
         t = read_tir(csv_path.with_suffix(".tir"))
-        tire = PacejkaLateral(coeffs={k: t.get(k, 0.0) for k in LAT}, FNOMIN=t["FNOMIN"],
-                              scaling={k: t.get(k, 1.0) for k in SCALE})
+        tire = load_tir(str(csv_path.with_suffix(".tir")))     # KinematiK's own .tir reader
         rows = list(csv.DictReader(csv_path.open()))
         groups = defaultdict(list)
         for r in rows:

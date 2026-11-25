@@ -8,5 +8,10 @@
     "fy_abs_N": 1.0,
     "fy_relative_to_peak": 0.001
   },
-  "correction_2026-11-25": "reference_tool said MFeval is validated by its author against TNO MF-Tyre. Its File Exchange page (version 4.3.1) does not say that; it says only that it evaluates MF 5.2, 6.1 and 6.2 models from .tir files. The limits and scope are unchanged."
+  "correction_2026-11-25": "reference_tool said MFeval is validated by its author against TNO MF-Tyre. Its File Exchange page (version 4.3.1) does not say that; it says only that it evaluates MF 5.2, 6.1 and 6.2 models from .tir files. The limits and scope are unchanged.",
+  "phase_2": {
+    "added": "2026-11-25, after phase 1, when MF6.1 was implemented",
+    "scope": "every point of every file (MF5.2 and MF6.1/6.2), same limit as phase 1",
+    "disclosure": "The first MF6.1 run used alpha* = tan(alpha) and gamma* = sin(gamma) and missed by up to 35 N (0.7 % of peak). MFeval 4.3.1 evaluates the slip and camber angles as given, as KinematiK's MF5.2 path already did and matched to 3e-7 N; the MF6.1 path was changed to the same convention. That is a convention choice made after seeing the reference, and is reported as one."
+  }
 }

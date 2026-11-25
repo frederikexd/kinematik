@@ -50,6 +50,13 @@ class PacejkaLateral:
     coeffs: dict
     FNOMIN: float = 6306.0      # nominal vertical load, N (from the tire data)
     scaling: dict = None
+    # "5.2" (default) or "6.1". MF6.1/6.2 .tir files (FITTYP 61/62, what most
+    # current TTC fits are delivered as) carry camber-stiffness, PKY4/PKY5, PEY5
+    # and inflation-pressure terms that MF5.2 does not have; evaluating them with
+    # the MF5.2 equations was 5-14 % off with camber against MFeval
+    # (benchmarks/tyre). With "6.1", fy() uses Pacejka (2012) eqs. 4.E19-E30.
+    mf_version: str = "5.2"
+    pressure_pa: float | None = None      # inflation pressure, Pa (6.1 only; None = NOMPRES)
 
     def __post_init__(self):
         self.scaling = {**_DEFAULT_SCALING, **(self.scaling or {})}
@@ -70,8 +77,11 @@ class PacejkaLateral:
     def fy(self, alpha, Fz, gamma=0.0):
         """
         Pure lateral force Fy (N) for slip angle alpha (rad), vertical load Fz (N),
-        camber gamma (rad). Standard MF5.2 pure-slip lateral equations.
+        camber gamma (rad). Standard MF5.2 pure-slip lateral equations, or MF6.1
+        when mf_version is "6.1".
         """
+        if str(self.mf_version).startswith("6"):
+            return self._fy61(alpha, Fz, gamma)
         Fz = np.maximum(_vec(Fz), 1e-6)
         s = self.scaling
         dfz = (Fz - self.FNOMIN) / self.FNOMIN          # normalised load increment
@@ -113,6 +123,45 @@ class PacejkaLateral:
 
         Fy = Dy * np.sin(Cy * np.arctan(By * ax - Ey * (By * ax - np.arctan(By * ax)))) + Svy
         return Fy
+
+    def _fy61(self, alpha, Fz, gamma=0.0):
+        """MF6.1 pure lateral force (N), no turn slip: Pacejka, Tyre and Vehicle
+        Dynamics 3rd ed., eqs. 4.E19-E30. Slip and camber angles are used as
+        given, as in the MF5.2 path and in MFeval 4.3.1 (benchmarks/tyre); the
+        book's tan(alpha) and sin(gamma) differ from them by under 2.4 % of the
+        angle at 15 deg. alpha, gamma in rad; Fz in N."""
+        C, L = self._C, (lambda k: float(self.scaling.get(k, 1.0)))
+        Fz = np.maximum(_vec(Fz), 1e-6)
+        eps = 1e-6
+        fz0 = self.FNOMIN * L("LFZO")
+        dfz = (Fz - fz0) / fz0
+        p0 = C("NOMPRES", 0.0)
+        dpi = ((self.pressure_pa - p0) / p0) if (self.pressure_pa is not None and p0 > 0) else 0.0
+        a_s = alpha
+        g_s = gamma
+        lmu = L("LMUY")
+        lmu_p = 10.0 * lmu / (1.0 + 9.0 * lmu)                 # lambda'_muy, A_mu = 10
+        kya = (C("PKY1") * fz0 * (1 + C("PPY1") * dpi) * (1 - C("PKY3") * np.abs(g_s))
+               * np.sin(C("PKY4", 2.0) * np.arctan(Fz / ((C("PKY2") + C("PKY5") * g_s ** 2)
+                                                      * (1 + C("PPY2") * dpi) * fz0)))
+               * L("LKY"))
+        svyg = Fz * (C("PVY3") + C("PVY4") * dfz) * g_s * L("LKYC") * lmu_p
+        kyg0 = Fz * (C("PKY6") + C("PKY7") * dfz) * (1 + C("PPY5") * dpi) * L("LKYC")
+        kya_s = kya + eps * np.where(kya >= 0, 1.0, -1.0)
+        shy = (C("PHY1") + C("PHY2") * dfz) * L("LHY") + (kyg0 * g_s - svyg) / kya_s
+        svy = Fz * (C("PVY1") + C("PVY2") * dfz) * L("LVY") * lmu_p + svyg
+        ay = a_s + shy
+        mu_y = ((C("PDY1") + C("PDY2") * dfz) * (1 + C("PPY3") * dpi + C("PPY4") * dpi ** 2)
+                * (1 - C("PDY3") * g_s ** 2) * lmu)
+        dy = mu_y * Fz
+        cy = C("PCY1") * L("LCY")
+        # pragma: no mutate start (sign and inverse sign agree at +-1; at zero shifted slip Ey multiplies zero)
+        ey = ((C("PEY1") + C("PEY2") * dfz)
+              * (1 + C("PEY5") * g_s ** 2 - (C("PEY3") + C("PEY4") * g_s) * np.sign(ay)) * L("LEY"))
+        # pragma: no mutate end
+        ey = np.minimum(ey, 1.0)
+        by = kya / (cy * dy + eps * np.where(cy * dy >= 0, 1.0, -1.0))
+        return dy * np.sin(cy * np.arctan(by * ay - ey * (by * ay - np.arctan(by * ay)))) + svy
 
     def mu_peak(self, Fz, gamma=0.0):
         """
@@ -167,6 +216,33 @@ class PacejkaLateral:
 # --------------------------------------------------------------------------- #
 #  Loading coefficients (kept OUT of the public repo)
 # --------------------------------------------------------------------------- #
+_LAT_KEYS = ("PCY1", "PDY1", "PDY2", "PDY3", "PEY1", "PEY2", "PEY3", "PEY4", "PEY5", "PKY1", "PKY2", "PKY3",
+             "PKY4", "PKY5", "PKY6", "PKY7", "PHY1", "PHY2", "PHY3", "PVY1", "PVY2", "PVY3", "PVY4",
+             "PPY1", "PPY2", "PPY3", "PPY4", "PPY5", "NOMPRES")
+_SCALE_KEYS = ("LFZO", "LCY", "LMUY", "LEY", "LKY", "LHY", "LVY", "LGAY", "LKYC")
+
+
+def load_tir(path: str, pressure_pa: float | None = None) -> PacejkaLateral:
+    """The lateral part of an MF-Tyre .tir file (FITTYP 6/21 = MF5.2, 61/62 = MF6.1/6.2).
+    Units as the file states them (SI: N, Pa, rad); pressure_pa overrides NOMPRES."""
+    import re
+    vals = {}
+    with open(path, errors="replace") as fh:
+        for line in fh:
+            m = re.match(r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*([-+0-9.eE]+)", line)
+            if m:
+                vals[m.group(1).upper()] = float(m.group(2))
+    if "FNOMIN" not in vals:
+        raise ValueError(f"{path}: no FNOMIN, not an MF-Tyre .tir file")
+    fittyp = int(vals.get("FITTYP", 6))
+    if fittyp not in (6, 21, 61, 62):
+        raise ValueError(f"{path}: FITTYP {fittyp} is not MF5.2 (6, 21) or MF6.1/6.2 (61, 62)")
+    return PacejkaLateral(coeffs={k: vals.get(k, 2.0 if k == "PKY4" else 0.0) for k in _LAT_KEYS},
+                          FNOMIN=vals["FNOMIN"],
+                          scaling={k: vals.get(k, 1.0) for k in _SCALE_KEYS},
+                          mf_version="6.1" if fittyp >= 61 else "5.2", pressure_pa=pressure_pa)
+
+
 def load_from_json(path: str) -> PacejkaLateral:
     """Load a coefficient JSON {coeffs:{...}, FNOMIN:..} — your private tire file."""
     with open(path) as f:
