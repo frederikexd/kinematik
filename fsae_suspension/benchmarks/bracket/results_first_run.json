@@ -1,0 +1,53 @@
+{
+ "8-68": {
+  "member_bearing_mpa": {
+   "kinematik": 220.63215326430654,
+   "target": 220.63,
+   "rel": 9.759617035420831e-06,
+   "passes": true
+  },
+  "net_tension_mpa": {
+   "kinematik": 66.85822826191107,
+   "target": 78.6,
+   "rel": -0.14938640888153853,
+   "passes": false
+  }
+ },
+ "8-70": {
+  "member_bearing_mpa": {
+   "kinematik": 100.0,
+   "target": 100.0,
+   "rel": 0.0,
+   "passes": true
+  },
+  "net_tension_mpa": {
+   "kinematik": 35.294117647058826,
+   "target": 46.15,
+   "rel": -0.23523038684596254,
+   "passes": false
+  }
+ },
+ "8-71": {
+  "member_bearing_mpa": {
+   "kinematik": 147.08810217620436,
+   "target": 147.1,
+   "rel": -8.088255469496097e-05,
+   "passes": true
+  },
+  "net_tension_mpa": {
+   "kinematik": 51.91344782689565,
+   "target": 58.84,
+   "rel": -0.11771842578355463,
+   "passes": false
+  }
+ },
+ "aisc_tearout": {
+  "tearout_shear_mpa": {
+   "kinematik": 270.0,
+   "target": 270.0,
+   "rel": 0.0,
+   "passes": true
+  }
+ },
+ "passed": false
+}

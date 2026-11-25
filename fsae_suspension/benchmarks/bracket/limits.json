@@ -1,0 +1,20 @@
+{
+  "registered": "2026-11-25, before bracket_fos was run on these problems",
+  "sources": {
+    "shigley": {"url": "https://www.secs.oakland.edu/~latcha/ME4300/SM_PDF/CH8.pdf",
+                "note": "Shigley's Mechanical Engineering Design, chapter 8 solutions: bolted joints in shear. Member bearing sigma = F / (n d t); tension of members on the net section across the holes in one cross-section."},
+    "aisc_360": "ANSI/AISC 360-16 J3.10: tear-out strength of a bolt hole Rn = 1.2 lc t Fu (lc = clear distance from the hole edge to the free edge). That is two shear planes of length lc at 0.6 Fu, so at P = Rn the tear-out shear on those planes is 0.6 Fu."
+  },
+  "cases": {
+    "8-68": {"F_N": 22241.1, "n_bolts": 2, "holes_in_section": 2, "d_mm": 7.9375, "t_mm": 6.35, "w_mm": 60.325,
+             "target": {"member_bearing_mpa": 220.63, "net_tension_mpa": 78.60}, "printed": "32.0 kpsi, 11.4 kpsi"},
+    "8-70": {"F_N": 90000.0, "n_bolts": 3, "holes_in_section": 3, "d_mm": 20.0, "t_mm": 15.0, "w_mm": 190.0,
+             "target": {"member_bearing_mpa": 100.0, "net_tension_mpa": 46.15}, "printed": "100 MPa, 46.15 MPa"},
+    "8-71": {"F_N": 22241.1, "n_bolts": 3, "holes_in_section": 2, "d_mm": 6.35, "t_mm": 7.9375, "w_mm": 60.325,
+             "target": {"member_bearing_mpa": 147.10, "net_tension_mpa": 58.84}, "printed": "21.3 kpsi, 8.534 kpsi"},
+    "aisc_tearout": {"d_mm": 20.0, "hole_mm": 22.0, "edge_mm": 38.0, "t_mm": 10.0, "Fu_mpa": 450.0, "n_bolts": 1,
+                     "note": "lc = 38 - 22/2 = 27 mm; Rn = 1.2 * 27 * 10 * 450 = 145.8 kN; tear-out shear at P = Rn must be 0.6 Fu = 270 MPa"}
+  },
+  "limits": {"relative": 0.003},
+  "limit_notes": "Inch problems converted at 4.448222 N/lbf and 25.4 mm/in; the printed stresses are 3 to 4 figures."
+}

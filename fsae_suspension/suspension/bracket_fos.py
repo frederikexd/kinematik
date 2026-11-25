@@ -195,6 +195,11 @@ class Bracket:
     load_is_shear: bool = True
     weld_lines: int = 1
     n_bolts: int = 1
+    # Bolt holes in the critical cross-section (across the width). The net
+    # section loses one hole diameter per hole there; it used to lose one in
+    # total, which read Shigley's two- and three-across joints 12 to 24 % low
+    # in net tension (benchmarks/bracket).
+    holes_in_section: int = 1
     is_estimate: bool = True
     set_by: str = ""
     notes: str = ""
@@ -318,7 +323,11 @@ def screen_bracket(br: Bracket, fos_target: float = 1.5,
     #     stricter without deleting a number anyone was already reading. Errors
     #     in a screening tool must only ever move in the conservative direction.
     if (br.hole_dia_mm or 0) > 0:
-        net_w = w - float(br.hole_dia_mm)
+        n_across = max(int(br.holes_in_section or 1), 1)
+        net_w = w - n_across * float(br.hole_dia_mm)
+        if max(int(br.n_bolts), 1) > 1 and n_across == 1:
+            notes.append("net section assumes one hole per cross-section; if bolts sit side by side across "
+                         "the width, set holes_in_section")
         if net_w <= 0:
             findings.append(Finding(
                 "bracket-fos", Severity.FAIL,
