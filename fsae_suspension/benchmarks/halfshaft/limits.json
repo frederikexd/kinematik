@@ -1,0 +1,18 @@
+{
+  "registered": "2026-11-25, before halfshaft.py was run on these problems",
+  "sources": {
+    "eq_7_8": "Shigley's Mechanical Engineering Design, Eq. 7-8 (DE-Goodman shaft diameter): d = {16 n / pi [ (1/Se) (4 (Kf Ma)^2 + 3 (Kfs Ta)^2)^1/2 + (1/Sut) (4 (Kf Mm)^2 + 3 (Kfs Tm)^2)^1/2 ]}^(1/3). Torsion only: d = {16 n sqrt(3) Kfs / pi (Ta/Se + Tm/Sut)}^(1/3), with Se from the same Marin factors halfshaft.py uses (Se depends on d through kb, so solved by iteration).",
+    "problem_6_56": {
+      "url": "https://www.secs.oakland.edu/~latcha/ME4300/SM_PDF/CH6.pdf",
+      "data": {"d_in": 0.875, "T_max_lbf_in": 1000.0, "T_min_lbf_in": 300.0, "Kfs": 1.48},
+      "target": {"tau_a_kpsi": 3.94, "tau_m_kpsi": 7.32, "tau_max_kpsi": 11.25}
+    }
+  },
+  "cases_eq_7_8": {
+    "no_notch":     {"t_max_nm": 600.0, "t_min_nm": 0.0,    "sut_mpa": 1000.0, "fos": 1.5, "surface": "machined", "kf": 1.0},
+    "spline_root":  {"t_max_nm": 600.0, "t_min_nm": 0.0,    "sut_mpa": 1000.0, "fos": 1.5, "surface": "machined", "kf": 1.4},
+    "inboard_brakes": {"t_max_nm": 550.0, "t_min_nm": -350.0, "sut_mpa": 1100.0, "fos": 1.5, "surface": "ground", "kf": 1.3}
+  },
+  "limits": {"d_min_relative": 0.001, "stress_relative": 0.01},
+  "limit_notes": "The 6-56 targets are printed to 3 figures, hence 1 %."
+}

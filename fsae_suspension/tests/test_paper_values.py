@@ -75,7 +75,9 @@ def test_front_lower_fore_bracket_closure():
     assert ga.bracket_fos(stop, 13.0, 50, 6.35)["fos"] == pytest.approx(1.77, abs=0.005)     # moved to its node
 
 
-@pytest.mark.parametrize("kw,d", [({}, 23.2), ({"ke": 0.897}, 24.0), ({"ke": 0.897, "kf": 1.3}, 26.1), ({"ke": 0.897, "kf": 1.5}, 27.4)])
+# 2026-11: kf now applies to the mean stress too (Shigley Eq. 7-8, benchmarks/halfshaft), so the two notched
+# diameters moved from 26.1 and 27.4 mm; the paper's halfshaft table must follow.
+@pytest.mark.parametrize("kw,d", [({}, 23.2), ({"ke": 0.897}, 24.0), ({"ke": 0.897, "kf": 1.3}, 26.3), ({"ke": 0.897, "kf": 1.5}, 27.6)])
 def test_halfshaft_diameters(kw, d):
     assert goodman_min_diameter(356.0, -201.0, kc=1.0, **kw)["d_min_mm"] == pytest.approx(d, abs=0.06)
 

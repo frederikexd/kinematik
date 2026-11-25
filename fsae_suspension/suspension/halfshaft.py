@@ -112,7 +112,8 @@ def shaft_shear_mpa(torque_nm: float, od_mm: float, id_mm: float = 0.0) -> float
 def goodman_min_diameter(t_max_nm: float, t_min_nm: float, sut_mpa: float = 1000.0,
                          fos: float = 1.5, surface: str = "machined", kc: float = 1.0,
                          von_mises: bool = True, d_lo: float = 10.0, d_hi: float = 60.0,
-                         ke: float = 1.0, kf: float = 1.0, se_ratio: float = 0.504) -> dict:
+                         ke: float = 1.0, kf: float = 1.0, se_ratio: float = 0.504,
+                         kf_mean: float | None = None) -> dict:
     """Smallest solid shaft (mm) passing a Goodman screen, Shigley Marin factors.
 
     Mean and alternating torque come from the duty's extremes. Shear stress
@@ -124,9 +125,14 @@ def goodman_min_diameter(t_max_nm: float, t_min_nm: float, sut_mpa: float = 1000
     factor ka = a Sut^b, the size factor kb = 1.24 d^-0.107 for 2.79 <= d <= 51 mm
     (1.51 d^-0.157 above) and the reliability factor ke (1 for 50%, 0.897 for
     90%). ``kf`` is the fatigue stress-concentration factor on the alternating
-    stress (1.3 to 1.5 for a rolled spline at its root). Criterion:
-    kf s_a/Se + s_m/Sut <= 1/n. All dimensionless except stresses MPa, d mm.
+    stress (1.3 to 1.5 for a rolled spline at its root). ``kf_mean`` is the
+    factor on the mean stress; by default the same kf, as in Shigley's
+    DE-Goodman shaft equation (Eq. 7-8). It used to be left off the mean, which
+    sized a notched shaft up to 2.4 % thin against Eq. 7-8 (benchmarks/halfshaft);
+    pass kf_mean=1 only for the nominal-mean approach. Criterion:
+    kf s_a/Se + kf_mean s_m/Sut <= 1/n. All dimensionless except stresses MPa, d mm.
     """
+    kfm = kf if kf_mean is None else kf_mean
     ab = {"ground": (1.58, -0.085), "machined": (4.51, -0.265), "hot_rolled": (57.7, -0.718)}[surface]
     ka = ab[0] * sut_mpa ** ab[1]
     se0 = se_ratio * min(sut_mpa, 1400.0)                     # the 0.504 Sut rule holds to 1400 MPa
@@ -138,7 +144,7 @@ def goodman_min_diameter(t_max_nm: float, t_min_nm: float, sut_mpa: float = 1000
         kb = 1.24 * d ** -0.107 if d <= 51 else 1.51 * d ** -0.157
         se = ka * kb * kc * ke * se0
         s = lambda T: k * 16.0 * abs(T) * 1000.0 / (math.pi * d ** 3)
-        return kf * s(ta) / se + s(tm) / sut_mpa, kb, se
+        return kf * s(ta) / se + kfm * s(tm) / sut_mpa, kb, se
 
     lo, hi = d_lo, d_hi
     for _ in range(60):  # pragma: no mutate
@@ -148,4 +154,4 @@ def goodman_min_diameter(t_max_nm: float, t_min_nm: float, sut_mpa: float = 1000
         if passes: hi = mid
         else: lo = mid
     u, kb, se = util(hi)
-    return {"d_min_mm": hi, "T_mean_nm": tm, "T_alt_nm": ta, "ka": ka, "kb": kb, "kc": kc, "ke": ke, "kf": kf, "Se_mpa": se}
+    return {"d_min_mm": hi, "T_mean_nm": tm, "T_alt_nm": ta, "ka": ka, "kb": kb, "kc": kc, "ke": ke, "kf": kf, "kf_mean": kfm, "Se_mpa": se}

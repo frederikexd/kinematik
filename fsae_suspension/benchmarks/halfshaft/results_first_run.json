@@ -1,0 +1,43 @@
+{
+ "eq_7_8": {
+  "no_notch": {
+   "kinematik_mm": 25.399964595587708,
+   "shigley_mm": 25.399964595587704,
+   "rel": 2.220446049250313e-16,
+   "passes": true
+  },
+  "spline_root": {
+   "kinematik_mm": 27.81677172817301,
+   "shigley_mm": 28.50345831494424,
+   "rel": -0.024091342853340802,
+   "passes": false
+  },
+  "inboard_brakes": {
+   "kinematik_mm": 26.956676607240688,
+   "shigley_mm": 27.12681779066213,
+   "rel": -0.00627206570023886,
+   "passes": false
+  }
+ },
+ "problem_6_56": {
+  "tau_a_kpsi": {
+   "kinematik": 3.9379991451735057,
+   "target": 3.94,
+   "rel": -0.0005078311742371389,
+   "passes": true
+  },
+  "tau_m_kpsi": {
+   "kinematik": 7.313426983893653,
+   "target": 7.32,
+   "rel": -0.0008979530199927366,
+   "passes": true
+  },
+  "tau_max_kpsi": {
+   "kinematik": 11.251426129067159,
+   "target": 11.25,
+   "rel": 0.00012676702819192087,
+   "passes": true
+  }
+ },
+ "passed": false
+}

@@ -81,7 +81,7 @@ def _goodman(d, t_max, t_min, sut, fos, surface, kc, vm, ke, kf, ratio):
     k = math.sqrt(3) if vm else 1.0
     sa = k * 16 * abs(0.5 * (t_max - t_min)) * 1e3 / (math.pi * d ** 3)
     sm = k * 16 * abs(0.5 * (t_max + t_min)) * 1e3 / (math.pi * d ** 3)
-    return fos * (kf * sa / se + sm / sut), ka, kb, se
+    return fos * (kf * sa / se + kf * sm / sut), ka, kb, se      # kf on both, Shigley Eq. 7-8
 
 
 @pytest.mark.parametrize("kw", [
@@ -99,7 +99,7 @@ def test_the_goodman_diameter_is_where_the_utilisation_reaches_one(kw):
     assert u <= 1.0 and _goodman(d * (1 - 1e-9), *args)[0] > 1.0 - 1e-6
     assert u == pytest.approx(1.0, abs=1e-9)
     assert r == pytest.approx({"d_min_mm": d, "T_mean_nm": 0.5 * (t_max + t_min), "T_alt_nm": 0.5 * (t_max - t_min),
-                               "ka": ka, "kb": kb, "kc": p["kc"], "ke": p["ke"], "kf": p["kf"], "Se_mpa": se})
+                               "ka": ka, "kb": kb, "kc": p["kc"], "ke": p["ke"], "kf": p["kf"], "kf_mean": p["kf"], "Se_mpa": se})
 
 
 def test_the_search_stays_inside_its_bracket_and_switches_the_size_factor_above_51_mm():
@@ -114,3 +114,9 @@ def test_the_size_factor_switches_above_51_mm():
     at = lambda d: hs.goodman_min_diameter(1.0, 0.0, d_lo=d, d_hi=d)["kb"]
     assert at(51.0) == pytest.approx(1.24 * 51.0 ** -0.107, rel=1e-12)
     assert at(51.5) == pytest.approx(1.51 * 51.5 ** -0.157, rel=1e-12)
+
+
+def test_kf_mean_one_is_the_nominal_mean_approach():
+    a = hs.goodman_min_diameter(600.0, 0.0, kf=1.4)
+    b = hs.goodman_min_diameter(600.0, 0.0, kf=1.4, kf_mean=1.0)
+    assert a["kf_mean"] == 1.4 and b["kf_mean"] == 1.0 and b["d_min_mm"] < a["d_min_mm"]
