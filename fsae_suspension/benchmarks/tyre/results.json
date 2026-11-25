@@ -1,0 +1,849 @@
+{
+ "FSAE_Defaults": {
+  "fittyp": 61,
+  "scope": "camber0",
+  "groups": [
+   {
+    "Fz_N": 500.0,
+    "gamma_deg": -4.000000000000001,
+    "peak_Fy_N": 1624.99087877159,
+    "worst_dFy_N": 69.7663206340835,
+    "tolerance_N": 1.6249908787715899,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 500.0,
+    "gamma_deg": -2.0000000000000004,
+    "peak_Fy_N": 1624.99963369579,
+    "worst_dFy_N": 34.900724904231,
+    "tolerance_N": 1.62499963369579,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 500.0,
+    "gamma_deg": 0.0,
+    "peak_Fy_N": 1624.99662817777,
+    "worst_dFy_N": 3.325747002236312e-07,
+    "tolerance_N": 1.62499662817777,
+    "graded": true,
+    "passes": true
+   },
+   {
+    "Fz_N": 750.0,
+    "gamma_deg": -4.000000000000001,
+    "peak_Fy_N": 2343.63261879443,
+    "worst_dFy_N": 104.643752161207,
+    "tolerance_N": 2.3436326187944303,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 750.0,
+    "gamma_deg": -2.0000000000000004,
+    "peak_Fy_N": 2343.55349017899,
+    "worst_dFy_N": 52.3503702603159,
+    "tolerance_N": 2.3435534901789903,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 750.0,
+    "gamma_deg": 0.0,
+    "peak_Fy_N": 2343.45280276742,
+    "worst_dFy_N": 3.3164974411192816e-07,
+    "tolerance_N": 2.34345280276742,
+    "graded": true,
+    "passes": true
+   },
+   {
+    "Fz_N": 1000.0,
+    "gamma_deg": -4.000000000000001,
+    "peak_Fy_N": 2998.45502190884,
+    "worst_dFy_N": 139.516391261573,
+    "tolerance_N": 2.99845502190884,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 1000.0,
+    "gamma_deg": -2.0000000000000004,
+    "peak_Fy_N": 2998.11691896929,
+    "worst_dFy_N": 69.7994155976745,
+    "tolerance_N": 2.99811691896929,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 1000.0,
+    "gamma_deg": 0.0,
+    "peak_Fy_N": 2997.74048099344,
+    "worst_dFy_N": 3.3462970350228716e-07,
+    "tolerance_N": 2.99774048099344,
+    "graded": true,
+    "passes": true
+   },
+   {
+    "Fz_N": 1250.0,
+    "gamma_deg": -4.000000000000001,
+    "peak_Fy_N": 3587.04537994622,
+    "worst_dFy_N": 174.383292306758,
+    "tolerance_N": 3.5870453799462196,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 1250.0,
+    "gamma_deg": -2.0000000000000004,
+    "peak_Fy_N": 3586.16806379658,
+    "worst_dFy_N": 87.2477423876258,
+    "tolerance_N": 3.5861680637965803,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 1250.0,
+    "gamma_deg": 0.0,
+    "peak_Fy_N": 3585.2236414157,
+    "worst_dFy_N": 3.363134055689443e-07,
+    "tolerance_N": 3.5852236414157,
+    "graded": true,
+    "passes": true
+   },
+   {
+    "Fz_N": 1500.0,
+    "gamma_deg": -4.000000000000001,
+    "peak_Fy_N": 4106.33705683118,
+    "worst_dFy_N": 209.243277100304,
+    "tolerance_N": 4.1063370568311806,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 1500.0,
+    "gamma_deg": -2.0000000000000004,
+    "peak_Fy_N": 4104.50883427748,
+    "worst_dFy_N": 104.695202906222,
+    "tolerance_N": 4.10450883427748,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 1500.0,
+    "gamma_deg": 0.0,
+    "peak_Fy_N": 4102.56578944096,
+    "worst_dFy_N": 3.356171873747371e-07,
+    "tolerance_N": 4.10256578944096,
+    "graded": true,
+    "passes": true
+   }
+  ]
+ },
+ "MagicFormula52_Parameters": {
+  "fittyp": 6,
+  "scope": "all",
+  "groups": [
+   {
+    "Fz_N": 4708.3,
+    "gamma_deg": -4.000000000000001,
+    "peak_Fy_N": 4626.25957729058,
+    "worst_dFy_N": 2.5472036213614047e-07,
+    "tolerance_N": 4.62625957729058,
+    "graded": true,
+    "passes": true
+   },
+   {
+    "Fz_N": 4708.3,
+    "gamma_deg": -2.0000000000000004,
+    "peak_Fy_N": 4497.68522604495,
+    "worst_dFy_N": 2.534889063099399e-07,
+    "tolerance_N": 4.49768522604495,
+    "graded": true,
+    "passes": true
+   },
+   {
+    "Fz_N": 4708.3,
+    "gamma_deg": 0.0,
+    "peak_Fy_N": 4434.57059748072,
+    "worst_dFy_N": 2.514275365683716e-07,
+    "tolerance_N": 4.43457059748072,
+    "graded": true,
+    "passes": true
+   },
+   {
+    "Fz_N": 7062.45,
+    "gamma_deg": -4.000000000000001,
+    "peak_Fy_N": 6622.95330599044,
+    "worst_dFy_N": 2.559927452239208e-07,
+    "tolerance_N": 6.62295330599044,
+    "graded": true,
+    "passes": true
+   },
+   {
+    "Fz_N": 7062.45,
+    "gamma_deg": -2.0000000000000004,
+    "peak_Fy_N": 6399.73892756074,
+    "worst_dFy_N": 2.542892616475001e-07,
+    "tolerance_N": 6.39973892756074,
+    "graded": true,
+    "passes": true
+   },
+   {
+    "Fz_N": 7062.45,
+    "gamma_deg": 0.0,
+    "peak_Fy_N": 6275.43182822995,
+    "worst_dFy_N": 2.5145254767267033e-07,
+    "tolerance_N": 6.275431828229951,
+    "graded": true,
+    "passes": true
+   },
+   {
+    "Fz_N": 9416.6,
+    "gamma_deg": -4.000000000000001,
+    "peak_Fy_N": 8380.42881231723,
+    "worst_dFy_N": 2.568285708548501e-07,
+    "tolerance_N": 8.38042881231723,
+    "graded": true,
+    "passes": true
+   },
+   {
+    "Fz_N": 9416.6,
+    "gamma_deg": -2.0000000000000004,
+    "peak_Fy_N": 8043.63699866465,
+    "worst_dFy_N": 2.5380995793966576e-07,
+    "tolerance_N": 8.043636998664649,
+    "graded": true,
+    "passes": true
+   },
+   {
+    "Fz_N": 9416.6,
+    "gamma_deg": 0.0,
+    "peak_Fy_N": 7843.35010895859,
+    "worst_dFy_N": 2.521046553738415e-07,
+    "tolerance_N": 7.84335010895859,
+    "graded": true,
+    "passes": true
+   },
+   {
+    "Fz_N": 11770.75,
+    "gamma_deg": -4.000000000000001,
+    "peak_Fy_N": 9887.60824004619,
+    "worst_dFy_N": 2.561910150689073e-07,
+    "tolerance_N": 9.88760824004619,
+    "graded": true,
+    "passes": true
+   },
+   {
+    "Fz_N": 11770.75,
+    "gamma_deg": -2.0000000000000004,
+    "peak_Fy_N": 9440.03396916284,
+    "worst_dFy_N": 2.5490226107649505e-07,
+    "tolerance_N": 9.44003396916284,
+    "graded": true,
+    "passes": true
+   },
+   {
+    "Fz_N": 11770.75,
+    "gamma_deg": 0.0,
+    "peak_Fy_N": 9148.74333165119,
+    "worst_dFy_N": 2.541719368309714e-07,
+    "tolerance_N": 9.148743331651191,
+    "graded": true,
+    "passes": true
+   },
+   {
+    "Fz_N": 14124.9,
+    "gamma_deg": -4.000000000000001,
+    "peak_Fy_N": 11159.0128383367,
+    "worst_dFy_N": 2.5686495064292103e-07,
+    "tolerance_N": 11.1590128383367,
+    "graded": true,
+    "passes": true
+   },
+   {
+    "Fz_N": 14124.9,
+    "gamma_deg": -2.0000000000000004,
+    "peak_Fy_N": 10590.8829983386,
+    "worst_dFy_N": 2.565302565926686e-07,
+    "tolerance_N": 10.5908829983386,
+    "graded": true,
+    "passes": true
+   },
+   {
+    "Fz_N": 14124.9,
+    "gamma_deg": 0.0,
+    "peak_Fy_N": 10190.9309191802,
+    "worst_dFy_N": 2.549204509705305e-07,
+    "tolerance_N": 10.1909309191802,
+    "graded": true,
+    "passes": true
+   }
+  ]
+ },
+ "MagicFormula61_Parameters": {
+  "fittyp": 61,
+  "scope": "not graded",
+  "groups": [
+   {
+    "Fz_N": 3376.0,
+    "gamma_deg": -4.000000000000001,
+    "peak_Fy_N": 3730.44496778094,
+    "worst_dFy_N": 482.49646309757827,
+    "tolerance_N": 3.7304449677809397,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 3376.0,
+    "gamma_deg": -2.0000000000000004,
+    "peak_Fy_N": 3721.49111605797,
+    "worst_dFy_N": 505.02746314717274,
+    "tolerance_N": 3.7214911160579702,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 3376.0,
+    "gamma_deg": 0.0,
+    "peak_Fy_N": 3689.7503122226,
+    "worst_dFy_N": 489.73234306763106,
+    "tolerance_N": 3.6897503122226,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 5064.0,
+    "gamma_deg": -4.000000000000001,
+    "peak_Fy_N": 5454.8622312175,
+    "worst_dFy_N": 691.8710770831149,
+    "tolerance_N": 5.454862231217501,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 5064.0,
+    "gamma_deg": -2.0000000000000004,
+    "peak_Fy_N": 5430.69714921309,
+    "worst_dFy_N": 710.9653703970876,
+    "tolerance_N": 5.43069714921309,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 5064.0,
+    "gamma_deg": 0.0,
+    "peak_Fy_N": 5377.3634007721,
+    "worst_dFy_N": 688.1611063944911,
+    "tolerance_N": 5.377363400772101,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 6752.0,
+    "gamma_deg": -4.000000000000001,
+    "peak_Fy_N": 7099.60750841388,
+    "worst_dFy_N": 856.0373932701955,
+    "tolerance_N": 7.0996075084138806,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 6752.0,
+    "gamma_deg": -2.0000000000000004,
+    "peak_Fy_N": 7044.37990171657,
+    "worst_dFy_N": 878.0463801348369,
+    "tolerance_N": 7.04437990171657,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 6752.0,
+    "gamma_deg": 0.0,
+    "peak_Fy_N": 6958.17482485541,
+    "worst_dFy_N": 838.0642705045593,
+    "tolerance_N": 6.95817482485541,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 8440.0,
+    "gamma_deg": -4.000000000000001,
+    "peak_Fy_N": 8644.35525432124,
+    "worst_dFy_N": 969.0662237427714,
+    "tolerance_N": 8.64435525432124,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 8440.0,
+    "gamma_deg": -2.0000000000000004,
+    "peak_Fy_N": 8563.10123245057,
+    "worst_dFy_N": 986.9667771023278,
+    "tolerance_N": 8.56310123245057,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 8440.0,
+    "gamma_deg": 0.0,
+    "peak_Fy_N": 8434.22093468856,
+    "worst_dFy_N": 926.6400610097871,
+    "tolerance_N": 8.43422093468856,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 10128.0,
+    "gamma_deg": -4.000000000000001,
+    "peak_Fy_N": 10097.8406266572,
+    "worst_dFy_N": 1031.8488684766617,
+    "tolerance_N": 10.0978406266572,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 10128.0,
+    "gamma_deg": -2.0000000000000004,
+    "peak_Fy_N": 9979.75552438789,
+    "worst_dFy_N": 1021.4752817993949,
+    "tolerance_N": 9.97975552438789,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 10128.0,
+    "gamma_deg": 0.0,
+    "peak_Fy_N": 9805.45604958733,
+    "worst_dFy_N": 941.610231200867,
+    "tolerance_N": 9.805456049587331,
+    "graded": false,
+    "passes": null
+   }
+  ]
+ },
+ "MagicFormula62_Parameters": {
+  "fittyp": 62,
+  "scope": "not graded",
+  "groups": [
+   {
+    "Fz_N": 3376.0,
+    "gamma_deg": -4.000000000000001,
+    "peak_Fy_N": 3730.44496778094,
+    "worst_dFy_N": 482.49646309757827,
+    "tolerance_N": 3.7304449677809397,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 3376.0,
+    "gamma_deg": -2.0000000000000004,
+    "peak_Fy_N": 3721.49111605797,
+    "worst_dFy_N": 505.02746314717274,
+    "tolerance_N": 3.7214911160579702,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 3376.0,
+    "gamma_deg": 0.0,
+    "peak_Fy_N": 3689.7503122226,
+    "worst_dFy_N": 489.73234306763106,
+    "tolerance_N": 3.6897503122226,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 5064.0,
+    "gamma_deg": -4.000000000000001,
+    "peak_Fy_N": 5454.8622312175,
+    "worst_dFy_N": 691.8710770831149,
+    "tolerance_N": 5.454862231217501,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 5064.0,
+    "gamma_deg": -2.0000000000000004,
+    "peak_Fy_N": 5430.69714921309,
+    "worst_dFy_N": 710.9653703970876,
+    "tolerance_N": 5.43069714921309,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 5064.0,
+    "gamma_deg": 0.0,
+    "peak_Fy_N": 5377.3634007721,
+    "worst_dFy_N": 688.1611063944911,
+    "tolerance_N": 5.377363400772101,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 6752.0,
+    "gamma_deg": -4.000000000000001,
+    "peak_Fy_N": 7099.60750841388,
+    "worst_dFy_N": 856.0373932701955,
+    "tolerance_N": 7.0996075084138806,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 6752.0,
+    "gamma_deg": -2.0000000000000004,
+    "peak_Fy_N": 7044.37990171657,
+    "worst_dFy_N": 878.0463801348369,
+    "tolerance_N": 7.04437990171657,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 6752.0,
+    "gamma_deg": 0.0,
+    "peak_Fy_N": 6958.17482485541,
+    "worst_dFy_N": 838.0642705045593,
+    "tolerance_N": 6.95817482485541,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 8440.0,
+    "gamma_deg": -4.000000000000001,
+    "peak_Fy_N": 8644.35525432124,
+    "worst_dFy_N": 969.0662237427714,
+    "tolerance_N": 8.64435525432124,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 8440.0,
+    "gamma_deg": -2.0000000000000004,
+    "peak_Fy_N": 8563.10123245057,
+    "worst_dFy_N": 986.9667771023278,
+    "tolerance_N": 8.56310123245057,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 8440.0,
+    "gamma_deg": 0.0,
+    "peak_Fy_N": 8434.22093468856,
+    "worst_dFy_N": 926.6400610097871,
+    "tolerance_N": 8.43422093468856,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 10128.0,
+    "gamma_deg": -4.000000000000001,
+    "peak_Fy_N": 10097.8406266572,
+    "worst_dFy_N": 1031.8488684766617,
+    "tolerance_N": 10.0978406266572,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 10128.0,
+    "gamma_deg": -2.0000000000000004,
+    "peak_Fy_N": 9979.75552438789,
+    "worst_dFy_N": 1021.4752817993949,
+    "tolerance_N": 9.97975552438789,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 10128.0,
+    "gamma_deg": 0.0,
+    "peak_Fy_N": 9805.45604958733,
+    "worst_dFy_N": 941.610231200867,
+    "tolerance_N": 9.805456049587331,
+    "graded": false,
+    "passes": null
+   }
+  ]
+ },
+ "Model_Unstable": {
+  "fittyp": 61,
+  "scope": "not graded",
+  "groups": [
+   {
+    "Fz_N": 2630.0,
+    "gamma_deg": -4.000000000000001,
+    "peak_Fy_N": 3187.07602313688,
+    "worst_dFy_N": 5701.760123967446,
+    "tolerance_N": 3.18707602313688,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 2630.0,
+    "gamma_deg": -2.0000000000000004,
+    "peak_Fy_N": 3073.80293381794,
+    "worst_dFy_N": 5816.666683982798,
+    "tolerance_N": 3.07380293381794,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 2630.0,
+    "gamma_deg": 0.0,
+    "peak_Fy_N": 3014.30152447876,
+    "worst_dFy_N": 5952.4577732491325,
+    "tolerance_N": 3.0143015244787597,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 3945.0,
+    "gamma_deg": -4.000000000000001,
+    "peak_Fy_N": 4609.32751534775,
+    "worst_dFy_N": 8315.514019367834,
+    "tolerance_N": 4.60932751534775,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 3945.0,
+    "gamma_deg": -2.0000000000000004,
+    "peak_Fy_N": 4439.9250649334,
+    "worst_dFy_N": 8436.476365695748,
+    "tolerance_N": 4.4399250649334,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 3945.0,
+    "gamma_deg": 0.0,
+    "peak_Fy_N": 4345.331408597,
+    "worst_dFy_N": 8574.843449929038,
+    "tolerance_N": 4.345331408597,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 5260.0,
+    "gamma_deg": -4.000000000000001,
+    "peak_Fy_N": 5907.05197644898,
+    "worst_dFy_N": 10783.724252608808,
+    "tolerance_N": 5.90705197644898,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 5260.0,
+    "gamma_deg": -2.0000000000000004,
+    "peak_Fy_N": 5692.60072662281,
+    "worst_dFy_N": 10861.558927359776,
+    "tolerance_N": 5.69260072662281,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 5260.0,
+    "gamma_deg": 0.0,
+    "peak_Fy_N": 5558.75245410798,
+    "worst_dFy_N": 10966.397516670673,
+    "tolerance_N": 5.558752454107981,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 6575.0,
+    "gamma_deg": -4.000000000000001,
+    "peak_Fy_N": 7120.12596939654,
+    "worst_dFy_N": 13104.145403759288,
+    "tolerance_N": 7.120125969396541,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 6575.0,
+    "gamma_deg": -2.0000000000000004,
+    "peak_Fy_N": 6830.7987001258,
+    "worst_dFy_N": 13088.235827490229,
+    "tolerance_N": 6.8307987001258,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 6575.0,
+    "gamma_deg": 0.0,
+    "peak_Fy_N": 6654.67229887782,
+    "worst_dFy_N": 13128.922717821595,
+    "tolerance_N": 6.65467229887782,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 7890.0,
+    "gamma_deg": -4.000000000000001,
+    "peak_Fy_N": 8198.81941514837,
+    "worst_dFy_N": 15281.947197465302,
+    "tolerance_N": 8.19881941514837,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 7890.0,
+    "gamma_deg": -2.0000000000000004,
+    "peak_Fy_N": 7852.06737472266,
+    "worst_dFy_N": 15105.086753182757,
+    "tolerance_N": 7.85206737472266,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 7890.0,
+    "gamma_deg": 0.0,
+    "peak_Fy_N": 7631.37357622707,
+    "worst_dFy_N": 15068.858521140271,
+    "tolerance_N": 7.63137357622707,
+    "graded": false,
+    "passes": null
+   }
+  ]
+ },
+ "PacejkaBook_Defaults": {
+  "fittyp": 61,
+  "scope": "camber0",
+  "groups": [
+   {
+    "Fz_N": 2000.0,
+    "gamma_deg": -4.000000000000001,
+    "peak_Fy_N": 2049.99946615673,
+    "worst_dFy_N": 139.391158032548,
+    "tolerance_N": 2.04999946615673,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 2000.0,
+    "gamma_deg": -2.0000000000000004,
+    "peak_Fy_N": 2049.98682356434,
+    "worst_dFy_N": 69.783722587639,
+    "tolerance_N": 2.04998682356434,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 2000.0,
+    "gamma_deg": 0.0,
+    "peak_Fy_N": 2049.93491719206,
+    "worst_dFy_N": 3.351901796122547e-07,
+    "tolerance_N": 2.04993491719206,
+    "graded": true,
+    "passes": true
+   },
+   {
+    "Fz_N": 3000.0,
+    "gamma_deg": -4.000000000000001,
+    "peak_Fy_N": 3037.45956197067,
+    "worst_dFy_N": 209.077993071704,
+    "tolerance_N": 3.03745956197067,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 3000.0,
+    "gamma_deg": -2.0000000000000004,
+    "peak_Fy_N": 3037.49882937307,
+    "worst_dFy_N": 104.674487149995,
+    "tolerance_N": 3.03749882937307,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 3000.0,
+    "gamma_deg": 0.0,
+    "peak_Fy_N": 3037.48160734218,
+    "worst_dFy_N": 3.3237802199437283e-07,
+    "tolerance_N": 3.0374816073421798,
+    "graded": true,
+    "passes": true
+   },
+   {
+    "Fz_N": 4000.0,
+    "gamma_deg": -4.000000000000001,
+    "peak_Fy_N": 3998.3414931359,
+    "worst_dFy_N": 278.758560224989,
+    "tolerance_N": 3.9983414931359,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 4000.0,
+    "gamma_deg": -2.0000000000000004,
+    "peak_Fy_N": 3997.72090413525,
+    "worst_dFy_N": 139.564465412751,
+    "tolerance_N": 3.99772090413525,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 4000.0,
+    "gamma_deg": 0.0,
+    "peak_Fy_N": 3996.98730799582,
+    "worst_dFy_N": 3.3462447390775196e-07,
+    "tolerance_N": 3.9969873079958202,
+    "graded": true,
+    "passes": true
+   },
+   {
+    "Fz_N": 5000.0,
+    "gamma_deg": -4.000000000000001,
+    "peak_Fy_N": 4924.85900772047,
+    "worst_dFy_N": 348.432502760654,
+    "tolerance_N": 4.92485900772047,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 5000.0,
+    "gamma_deg": -2.0000000000000004,
+    "peak_Fy_N": 4922.70076929394,
+    "worst_dFy_N": 174.453612515814,
+    "tolerance_N": 4.9227007692939395,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 5000.0,
+    "gamma_deg": 0.0,
+    "peak_Fy_N": 4920.32321866235,
+    "worst_dFy_N": 3.3634842111496255e-07,
+    "tolerance_N": 4.92032321866235,
+    "graded": true,
+    "passes": true
+   },
+   {
+    "Fz_N": 6000.0,
+    "gamma_deg": -4.000000000000001,
+    "peak_Fy_N": 5806.67008807119,
+    "worst_dFy_N": 418.099439548019,
+    "tolerance_N": 5.80667008807119,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 6000.0,
+    "gamma_deg": -2.0000000000000004,
+    "peak_Fy_N": 5801.53507143292,
+    "worst_dFy_N": 209.341880521349,
+    "tolerance_N": 5.8015350714329195,
+    "graded": false,
+    "passes": null
+   },
+   {
+    "Fz_N": 6000.0,
+    "gamma_deg": 0.0,
+    "peak_Fy_N": 5795.99020330126,
+    "worst_dFy_N": 3.333261702209711e-07,
+    "tolerance_N": 5.795990203301261,
+    "graded": true,
+    "passes": true
+   }
+  ]
+ },
+ "passed": true
+}
