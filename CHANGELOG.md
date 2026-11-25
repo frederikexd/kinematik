@@ -3,6 +3,8 @@
 
 ## Unreleased
 
+**Vortex lattice: two errors found by a published benchmark, both fixed.** Against Tuck's (1993) exact lift slopes for rectangular wings, the lattice read 8 % high at aspect ratio 1 and 4 % high at 2. The trailing vortices left each bound vortex straight downstream, cutting through a pitched or cambered surface and passing just past the control points behind; they now follow the surface to the trailing edge before running downstream. The lattice also stopped 2 % short of each tip while lift was divided by the whole area, the 4 % gap to an independent lattice listed as open; its rows now run tip to tip, with only the tip sections sliced inboard. Lift slope is now within 2.4 % of Tuck at aspect ratio 1 to 8, the same as a textbook lattice on the same grid. Rear wings, which are steeply cambered and pitched, are where this mattered most.
+
 **Frame solver benchmarked against Ansys.** The 3D frame solver behind frame torsion and pickup stiffness now runs two of Ansys Mechanical APDL's published verification problems: VM18 (a curved bar in bending and torsion) within 0.044 %, and VM217 (a portal frame) within 0.007 % of the textbook targets, closer than Mechanical APDL's own published values.
 
 **Rear corner: whole-car results no longer reuse the front corner.** The geometry editor has a Rear corner tab. Ticked, the rear axle gets its own pickup points, camber and toe (a copy of the front to start from), and the roll centre, camber gain, motion ratio and anti-squat of the rear axle come from them in load transfer, the setup optimiser, lap time, GGV, the braking lap and the Compliance tab's rear axle. Unticked, the rear reuses the front as before, and the editor says so. Saved projects carry the rear corner; older ones load with none.

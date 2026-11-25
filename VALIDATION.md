@@ -180,11 +180,15 @@ heating (`tests/test_energy_rotor_gas_physics.py`).
 ## Aero
 
 The panel method matches the potential-flow sphere closely. The vortex lattice
-reads 11% under lifting-line theory on a rectangular AR 8 wing; part of that is
-expected (lifting line assumes elliptic loading), but it also reads 4% under an
-independent flat-plate lattice on the same grid, and that gap is not explained
-yet. Earlier text quoted 6% and a span efficiency of 1.004; those did not
-reproduce and have been replaced with the measured values. Both solvers are
+agrees with an independent flat-plate lattice on the same grid to 0.1%, and its
+lift slope is within 2.4% of Tuck's (1993) exact lifting-surface values for
+rectangular wings of aspect ratio 1, 2, 4 and 8 (`scripts/vortex_lattice_benchmark.py`),
+the ordinary discretisation error of a 40 x 10 lattice. The 4% gap listed here
+before had two causes, both fixed in 1.7.13: the lattice stopped 2% short of each
+tip, and the trailing vortices left each bound vortex straight downstream instead
+of following the surface to the trailing edge. The span efficiency still reads
+about 1.0 on a rectangular wing, above the roughly 0.95 expected; induced drag is
+less trustworthy than lift. Both solvers are
 inviscid: no separation, stall or profile drag. Compare designs with them; do not
 quote absolute downforce.
 
@@ -236,7 +240,7 @@ registered first, factors from the other FSG year): skidpad 4.6 % (17 of 26 with
   lumped. Transient results are trends.
 - **ARD lap time.** A load-transfer-balance study in ARD's lap simulator is
   pending.
-- **Vortex-lattice lift gap.** The 4% gap to an independent lattice above.
+- **Vortex-lattice induced drag.** Span efficiency reads about 1.0 on a rectangular wing, above the roughly 0.95 expected.
 - **Most non-suspension modules** (brakes, accumulator, electronics, structures)
   are checked against closed forms and their own tests, not against another tool.
 - **Powertrain, what is still open** (the checks themselves are in the summary above and in

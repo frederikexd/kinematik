@@ -43,12 +43,12 @@ VALIDATED AGAINST CLOSED FORM
 On a flat rectangular AR = 8 wing at 4 degrees in free air, 40 x 10 panels
 (scripts/aero_closed_form.py, tests/test_aero_closed_form.py):
 
-  * C_L 11% under lifting-line theory, 2*pi*alpha*AR/(AR+2), and 9% under
-    Helmbold's lifting-surface estimate. Part of that is expected: lifting
-    line assumes elliptic loading, which a rectangular planform does not have.
-  * C_L 4% under an independent flat-plate lattice on the same grid. That gap
-    is not explained yet and is listed as open in VALIDATION.md.
-  * Span efficiency e = 0.92 against C_Di = C_L^2/(pi*AR).
+  * C_L within 0.1% of an independent flat-plate lattice on the same grid,
+    and a lift slope within 2.4% of Tuck's (1993) exact lifting-surface values
+    at aspect ratio 1 to 8 (scripts/vortex_lattice_benchmark.py).
+  * Span efficiency about 1.0 against C_Di = C_L^2/(pi*AR), above the about
+    0.95 expected for a rectangular wing: induced drag is less trustworthy
+    than lift.
   * Grid-converged to 0.2% between 30 x 8 and 40 x 10 panels.
   * C_L rises 2.4 times from free air to h/c = 0.15 in ground effect.
 
@@ -263,15 +263,24 @@ def camber_surface_from_stl(path, n_span=DEFAULT_SPANWISE,
 
     lo, hi = mesh.bounds[0][i_span], mesh.bounds[1][i_span]
     span = float(hi - lo)
-    #  Inset from the tips: a slice exactly at the tip catches a closing cap
-    #  and produces a degenerate section.
-    stations = np.linspace(lo + 0.02 * span, hi - 0.02 * span, n_span)
+    #  ROWS FROM TIP TO TIP, SECTIONS TAKEN JUST INBOARD OF THE TIPS.
+    #
+    #  A slice exactly at a tip catches the closing cap, so the section shape is
+    #  read 2% of the span inboard. It used to be the ROW that was inset as well:
+    #  the lattice then covered 96% of the span while lift was divided by the
+    #  whole reference area, and C_L read 4% under an independent lattice (the
+    #  gap listed as open). Stretching the outer rows back to the tips fixed the
+    #  area but left two tip panels nearly twice as wide as the rest, which put
+    #  the lift slope 8% above Tuck's (1993) exact value at aspect ratio 1. The
+    #  rows are now evenly spaced from tip to tip; only the slice is inset.
+    stations = np.linspace(lo, hi, n_span)
+    slice_at = np.clip(stations, lo + 0.02 * span, hi - 0.02 * span)
 
     axis = np.zeros(3); axis[i_span] = 1.0
     grid, chords = [], []
-    for y in stations:
+    for y, ys in zip(stations, slice_at):
         try:
-            sec = mesh.section(plane_origin=axis * y, plane_normal=axis)
+            sec = mesh.section(plane_origin=axis * ys, plane_normal=axis)
         except Exception:                                   # noqa: BLE001
             sec = None
         if sec is None:
@@ -447,6 +456,18 @@ class VortexLatticeModel:
                     for i in range(_g.shape[0])]
 
         bound, ctrl, normal, dy = [], [], [], []
+        #  TRAILING LEGS FOLLOW THE SURFACE TO THE TRAILING EDGE.
+        #
+        #  Each horseshoe's trailing legs used to leave its bound vortex straight
+        #  downstream. On a pitched or cambered surface that cuts through the
+        #  surface and runs the legs a fraction of a millimetre past the control
+        #  points behind, so the lift slope of a pitched flat plate read 6% high
+        #  at aspect ratio 1 against the same plate solved flat, and 8% high
+        #  against Tuck's (1993) exact lifting-surface value. As in Katz &
+        #  Plotkin, the legs now run along the panel edges to the trailing edge
+        #  and only then downstream: segments listed per horseshoe, below.
+        seg_a, seg_b, seg_own = [], [], []
+        _off = np.array([1.0e4, 0.0, 0.0])
         ns, nc = len(grid) - 1, self.n_chord
         for i in range(ns):
             for j in range(nc):
@@ -461,6 +482,14 @@ class VortexLatticeModel:
                 collapsed = nn < 1e-12  # pragma: no mutate
                 if collapsed:
                     continue
+                k = len(bound)
+                left = [a] + [np.asarray(grid[i][q]) for q in range(j + 1, nc + 1)] + [np.asarray(grid[i][nc]) + _off]
+                right = [b] + [np.asarray(grid[i + 1][q]) for q in range(j + 1, nc + 1)] + [np.asarray(grid[i + 1][nc]) + _off]
+                for q in range(len(left) - 1):        # in from infinity along the left edge
+                    seg_a.append(left[q + 1]); seg_b.append(left[q]); seg_own.append(k)
+                seg_a.append(a); seg_b.append(b); seg_own.append(k)      # bound
+                for q in range(len(right) - 1):       # out along the right edge to infinity
+                    seg_a.append(right[q]); seg_b.append(right[q + 1]); seg_own.append(k)
                 bound.append((a, b))
                 ctrl.append(cm)
                 normal.append(n / nn)
@@ -479,9 +508,19 @@ class VortexLatticeModel:
         Pctl = np.asarray(ctrl)                             # (N, 3)
         Nrm = np.asarray(normal)                            # (N, 3)
 
+        SA, SB = np.asarray(seg_a), np.asarray(seg_b)
+        own = np.asarray(seg_own)
+
+        def _shoes(P, A_, B_):
+            """Velocity at P from every horseshoe, summed over its segments."""
+            Vs = _seg_influence(P, A_, B_)                 # (M, S, 3)
+            out = np.zeros((len(P), len(bound), 3))
+            np.add.at(out, (slice(None), own), Vs)
+            return out
+
         def influence(P):
             """(len(P), N, 3) velocity from every horseshoe, image included."""
-            V = _horseshoe_influence(P, Abnd, Bbnd)
+            V = _shoes(P, SA, SB)
             if h is not None:
                 #  Image reflected through the road with the circulation sense
                 #  reversed (ends swapped), so z = 0 is a streamline.
@@ -494,9 +533,9 @@ class VortexLatticeModel:
                 #  surface comes from the STL's own coordinates.
                 #  One road plane, at z = 0, now that the lattice is placed
                 #  against it. Straight reflection.
-                Ai = Abnd.copy(); Ai[:, 2] = -Abnd[:, 2]
-                Bi = Bbnd.copy(); Bi[:, 2] = -Bbnd[:, 2]
-                V = V + _horseshoe_influence(P, Bi, Ai)
+                Ai = SA.copy(); Ai[:, 2] = -SA[:, 2]
+                Bi = SB.copy(); Bi[:, 2] = -SB[:, 2]
+                V = V + _shoes(P, Bi, Ai)
             return V
 
         A = (influence(Pctl) * Nrm[:, None, :]).sum(axis=-1)

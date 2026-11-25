@@ -1,0 +1,10 @@
+{
+  "registered": "2026-11-25, after the tip fix; before the solver was run at AR 1, 2 and 4 or at 1 deg. Already seen: AR 8 at 4 deg read C_L about 2.6 % above Tuck's slope times alpha.",
+  "reference": {
+    "source": "E. O. Tuck, Some accurate solutions of the lifting surface integral equation, J. Austral. Math. Soc. Ser. B 35 (1993) 127-144, Table 1 (accurate to about six figures)",
+    "url": "https://www.cambridge.org/core/services/aop-cambridge-core/content/view/FBDC56A1E7525527499DD01DFAAB8552/S0334270000009097a.pdf/some-accurate-solutions-of-the-lifting-surface-integral-equation.pdf",
+    "lift_slope_per_rad": {"1": 1.46023, "2": 2.47446, "4": 3.61205, "8": 4.58606}
+  },
+  "case": "flat rectangular wing (box STL, 2 mm thick, 200 mm chord), free air (ride height 50 m), 40 spanwise x 10 chordwise panels; slope from C_L at +1 deg and -1 deg",
+  "limit_relative": 0.03
+}

@@ -86,20 +86,26 @@ def _lattice(grid, V=20.0, yaw=0.0, h=None, ref=None, area=None):
                 continue
             a, b = p00 + 0.25 * (p01 - p00), p10 + 0.25 * (p11 - p10)
             cp = 0.5 * (p00 + 0.75 * (p01 - p00) + p10 + 0.75 * (p11 - p10))
-            pan.append((a, b, cp, n / np.linalg.norm(n), abs(b[1] - a[1])))
+            # trailing legs along the panel edges to the trailing edge, then downstream (Katz & Plotkin)
+            far = np.array([1e4, 0.0, 0.0])
+            left = [a] + [g[i, q] for q in range(j + 1, g.shape[1])] + [g[i, -1] + far]
+            right = [b] + [g[i + 1, q] for q in range(j + 1, g.shape[1])] + [g[i + 1, -1] + far]
+            segs = ([(left[q + 1], left[q]) for q in range(len(left) - 1)] + [(a, b)]
+                    + [(right[q], right[q + 1]) for q in range(len(right) - 1)])
+            pan.append((a, b, cp, n / np.linalg.norm(n), abs(b[1] - a[1]), segs))
 
-    def vel(p, a, b):
-        v = _hs(p, a, b)
+    def vel(p, segs):
+        v = sum(_bs(p, s0, s1) for s0, s1 in segs)
         if h is not None:
-            v = v + _hs(p, b * [1, 1, -1], a * [1, 1, -1])
+            v = v + sum(_bs(p, s1 * [1, 1, -1], s0 * [1, 1, -1]) for s0, s1 in segs)
         return v
-    M = np.array([[vel(cp, a, b) @ n for a, b, *_ in pan] for _, _, cp, n, _ in pan])
-    G = np.linalg.solve(M, [-(n @ Vinf) for _, _, _, n, _ in pan])
-    dy = np.array([d for *_, d in pan])
+    M = np.array([[vel(cp, pk[5]) @ n for pk in pan] for _, _, cp, n, _, _ in pan])
+    G = np.linalg.solve(M, [-(n @ Vinf) for _, _, _, n, _, _ in pan])
+    dy = np.array([pk[4] for pk in pan])
     S = ref or area
     q = 0.5 * 1.225 * V * V
     L = 1.225 * V * np.sum(G * dy)
-    w = np.array([sum(vel(0.5 * (a + b), aa, bb)[2] * gk for (aa, bb, *_), gk in zip(pan, G)) for a, b, *_ in pan])
+    w = np.array([sum(vel(0.5 * (a + b), pk[5])[2] * gk for pk, gk in zip(pan, G)) for a, b, *_ in pan])
     D = -1.225 * np.sum(w * G * dy)
     return L / (q * S), D / (q * S), len(pan), np.linalg.cond(M)
 
@@ -271,7 +277,7 @@ def test_the_camber_surface_of_a_lofted_section(tmp_path):
     grid, span, chord, area = vl.camber_surface_from_stl(_wing(str(tmp_path / "w.stl")), n_span=6, n_chord=8)
     assert span == pytest.approx(1.1) and chord == pytest.approx(C) and area == pytest.approx(1.1 * C)
     assert len(grid) == 6 and all(len(r) == 9 for r in grid)
-    ys = np.linspace(-0.5 + 0.022, 0.6 - 0.022, 6)
+    ys = np.linspace(-0.5, 0.6, 6)                    # rows tip to tip; the tip sections are sliced 2% inboard
     for i, row in enumerate(grid):
         for j, p in enumerate(row):
             f = j / 8
@@ -488,9 +494,11 @@ def test_without_an_outline_the_vertex_band_is_used(tmp_path, monkeypatch):
     grid, _, chord, _ = vl.camber_surface_from_stl(p, n_span=5, n_chord=4)
     assert chord == pytest.approx(0.25) and len(grid) == 5
     mesh = trimesh.load(p)
+    lo, hi = mesh.bounds[0][1], mesh.bounds[1][1]
     for row in grid:
         assert len(row) == 5
-        sec = mesh.section(plane_origin=[0.0, row[0][1], 0.0], plane_normal=[0.0, 1.0, 0.0])
+        ys = min(max(row[0][1], lo + 0.02 * (hi - lo)), hi - 0.02 * (hi - lo))   # tip rows are sliced 2% inboard
+        sec = mesh.section(plane_origin=[0.0, ys, 0.0], plane_normal=[0.0, 1.0, 0.0])
         xz = np.asarray(sec.vertices)[:, [0, 2]]
         x0, x1 = xz[:, 0].min(), xz[:, 0].max()
         c = x1 - x0

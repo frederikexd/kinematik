@@ -549,9 +549,9 @@ Di = ρ · V∞ · Σ(Γ_i · w_i · Δy_i)   (induced drag from own downwash)
 **Ground effect:** image vortices reflected through z = 0 with reversed circulation.
 
 **Checked against closed form** (flat rectangular AR = 8 wing, 4°, free air, 40 × 10 panels; `scripts/aero_closed_form.py`, `tests/test_aero_closed_form.py`):
-- C_L 11% under lifting-line theory and 9% under Helmbold's lifting-surface estimate (rectangular planform ≠ elliptic loading accounts for part of this)
-- C_L 4% under an independent flat-plate lattice on the same grid; the gap is not yet explained (open item)
-- Span efficiency e = 0.92
+- C_L within 0.1% of an independent flat-plate lattice on the same grid; lift slope within 2.4% of Tuck's (1993) exact lifting-surface values at aspect ratio 1 to 8 (`scripts/vortex_lattice_benchmark.py`)
+- Trailing vortices follow the surface to the trailing edge, then run downstream (Katz & Plotkin); the lattice runs tip to tip
+- Span efficiency e ≈ 1.0, above the ≈ 0.95 expected for a rectangular wing (open item)
 - Grid-converged to 0.2% between 30×8 and 40×10 panels
 - C_L rises 2.4× from free air to h/c = 0.15
 
