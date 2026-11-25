@@ -1,0 +1,12 @@
+{
+  "registered": "2026-11-25, before pedal_box was run on this problem",
+  "source": {
+    "title": "Penn State ME 360 (H. J. Sommer), notes 17 'Brakes', sintered-metal disk brake worked example (Shigley's method)",
+    "url": "https://www.me.psu.edu/sommer/me360/n17_brakes.pdf",
+    "data": {"ro_mm": 150.0, "ri_mm": 85.0, "theta_deg": 35.0, "faces": 2, "mu": 0.45, "p_max_mpa": 2.0},
+    "target": {"F_max_N": 6750.0, "T_uniform_wear_Nm": 713.8, "T_uniform_pressure_Nm": 732.0}
+  },
+  "mapping": "One caliper (n_corners 1) on a 300 mm rotor, pad inner radius 85 mm, mu 0.45, one 40 mm piston per side, at the line pressure that gives a 6750 N clamp. KinematiK assumes uniform wear, so the uniform-wear torque is graded; uniform pressure is reported.",
+  "limits": {"F_relative": 0.001, "T_relative": 0.002},
+  "limit_notes": "The source prints F to 4 figures and T to 4 figures."
+}

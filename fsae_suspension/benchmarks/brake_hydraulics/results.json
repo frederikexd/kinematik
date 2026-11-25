@@ -1,0 +1,22 @@
+{
+ "F_max_N": {
+  "kinematik": 6750.060882088069,
+  "target": 6750.0,
+  "rel": 9.019568602885997e-06,
+  "passes": true
+ },
+ "T_uniform_wear_Nm": {
+  "kinematik": 713.8189382808133,
+  "target": 713.8,
+  "rel": 2.653163465016206e-05,
+  "passes": true
+ },
+ "T_uniform_pressure_Nm": {
+  "reference_formula": 732.0225599149551,
+  "target": 732.0,
+  "graded": false,
+  "note": "KinematiK uses uniform wear; uniform pressure would read this much higher"
+ },
+ "line_pressure_bar": 53.71527777777777,
+ "passed": true
+}

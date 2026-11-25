@@ -170,7 +170,12 @@ class Bracket:
 
     `weld_leg_mm` is the fillet-weld leg size attaching the bracket to the frame,
     and `weld_length_mm` the total effective weld length (sum of both sides of the
-    foot, say). Leave weld fields 0 to skip the weld check (a bolted-only bracket).
+    foot, say). `weld_lines` is how many separate parallel lines that length is
+    split into in the plane of bending: 2 for a tab welded along both sides. It
+    matters for the bending part: two lines of length L/2 are four times less
+    stiff in bending than one line of length L, so the bending stress is n times
+    the one-line value (Shigley Table 9-2). Leave weld fields 0 to skip the weld
+    check (a bolted-only bracket).
 
     `load_is_shear` picks how the direct in-plane load is resolved: True = the load
     shears the cross-section (load in the plane of the plate), False = the load
@@ -188,6 +193,7 @@ class Bracket:
     weld_leg_mm: float = 0.0
     weld_length_mm: float = 0.0
     load_is_shear: bool = True
+    weld_lines: int = 1
     n_bolts: int = 1
     is_estimate: bool = True
     set_by: str = ""
@@ -387,8 +393,15 @@ def screen_bracket(br: Bracket, fos_target: float = 1.5,
         # throat shear over the weld group's length (screening-level superposition)
         weld_shear = P / weld_area              # weld_area > 0: both weld sizes were checked above
         if (br.lever_arm_mm or 0) > 0:
-            # crude couple → extra line shear = 6·M / (throat·L²) for a line group
-            weld_bend = 6.0 * (P * br.lever_arm_mm) / (throat * br.weld_length_mm**2)
+            # Bending of n parallel weld lines, each L/n long, in the plane of the
+            # couple (Shigley Table 9-2: Iu = n (L/n)^3 / 12): tau'' = 6 n M / (throat L^2).
+            # It was 6 M / (throat L^2) whatever the layout, which read a tab welded on
+            # both sides at half its bending stress (benchmarks/weld).
+            n_lines = max(int(br.weld_lines or 1), 1)
+            weld_bend = 6.0 * n_lines * (P * br.lever_arm_mm) / (throat * br.weld_length_mm**2)
+            if n_lines == 1:
+                notes.append("weld bending assumes ONE continuous weld line; if the length is split over "
+                             "both sides of the tab, set weld_lines=2 (bending stress doubles)")
             weld_shear = math.hypot(weld_shear, weld_bend)
         # weld metal checked on the (shear) yield of the WEAKER of parent / a
         # generic matching filler ~ parent; conservative: use parent shear yield.

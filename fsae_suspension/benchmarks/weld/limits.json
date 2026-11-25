@@ -1,0 +1,13 @@
+{
+  "registered": "2026-11-25, before bracket_fos was run on these cases (the two-line case was expected to differ: the code treats the whole weld length as one line)",
+  "sources": {
+    "problem_9_1": {"url": "https://www.secs.oakland.edu/~latcha/ME4300/SM_PDF/CH9.pdf",
+                    "data": {"h_mm": 5.0, "l_mm": 100.0, "tau_allow_mpa": 140.0}, "target": {"F_kN": 49.5}},
+    "table_9_2": "Shigley's Mechanical Engineering Design, Table 9-2 (bending properties of fillet welds): one line of length d, Iu = d^3/12; two parallel lines of length d in the plane of bending, Iu = d^3/6; I = 0.707 h Iu, tau'' = M (d/2) / I, combined with the direct shear F/(0.707 h l) as sqrt(tau'^2 + tau''^2)"
+  },
+  "cases": {
+    "one_line":  {"P_N": 4000.0, "lever_mm": 40.0, "h_mm": 4.0, "line_mm": 50.0, "lines": 1},
+    "two_lines": {"P_N": 4000.0, "lever_mm": 40.0, "h_mm": 4.0, "line_mm": 50.0, "lines": 2}
+  },
+  "limits": {"relative": 0.001}
+}

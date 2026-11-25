@@ -261,6 +261,7 @@
    }
   ],
   [
+   "weld bending assumes ONE continuous weld line; if the length is split over both sides of the tab, set weld_lines=2 (bending stress doubles)",
    "High strength but essentially NOT weldable for structure — bolt it, don't weld it."
   ],
   [
@@ -331,6 +332,7 @@
    }
   ],
   [
+   "weld bending assumes ONE continuous weld line; if the length is split over both sides of the tab, set weld_lines=2 (bending stress doubles)",
    "Low-carbon mild steel — welds readily and needs no post-weld heat treat; as-welded strength stays close to parent. This is the team's switch-to material."
   ],
   [
@@ -398,6 +400,7 @@
    }
   ],
   [
+   "weld bending assumes ONE continuous weld line; if the length is split over both sides of the tab, set weld_lines=2 (bending stress doubles)",
    "Low-carbon mild steel — welds readily and needs no post-weld heat treat; as-welded strength stays close to parent. This is the team's switch-to material."
   ],
   [

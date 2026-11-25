@@ -1,0 +1,21 @@
+{
+ "problem_9_1": {
+  "kinematik_mpa": 140.02828854314006,
+  "target_mpa": 140.0,
+  "rel": 0.0002020610224289232,
+  "passes": true
+ },
+ "one_line": {
+  "kinematik_mpa": 138.7004319335928,
+  "shigley_mpa": 138.70043193359282,
+  "rel": -2.220446049250313e-16,
+  "passes": true
+ },
+ "two_lines": {
+  "kinematik_mpa": 36.77510608203677,
+  "shigley_mpa": 69.35021596679641,
+  "rel": -0.4697189393087975,
+  "passes": false
+ },
+ "passed": false
+}
