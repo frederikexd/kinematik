@@ -17065,7 +17065,7 @@ def _render_mount_bolt_check(key_prefix, *, default_ext_n=2000.0,
                  step=0.5, key=f"{key_prefix}_headd",
                  help="A bigger washer spreads the crush — the hardened-washer fix.")
 
-    c3 = st.columns([1, 1])
+    c3 = st.columns([1, 1, 1])
     extN = unum(c3[0], "External tensile load / bolt (N)", 0.0, 20000.0,
                 float(default_ext_n), "N", step=50.0, key=f"{key_prefix}_extN",
                 help="Pull-off load this ONE bolt's region reacts, before prying.")
@@ -17074,11 +17074,17 @@ def _render_mount_bolt_check(key_prefix, *, default_ext_n=2000.0,
                        help="1.0 = even share. >1 = a moment levers extra tension "
                             "into the far-edge bolt (a peeling base). >1 flags the "
                             "result as an estimate.")
+    shank = unum(c3[2], "Unthreaded shank in grip (mm)", 0.0, 30.0, 0.0, "mm", step=0.5,
+                 key=f"{key_prefix}_shank",
+                 help="The plain, unthreaded part of the bolt inside the clamped stack. "
+                      "0 = threaded all the way through. A partly threaded bolt is stiffer, "
+                      "so it takes more of the external load.")
 
     try:
         fast = bolt_mod.Fastener(grade=g, nominal_d_mm=float(d), K_factor=float(K),
                                  head_dia_mm=float(headd),
-                                 hole_dia_mm=float(d) * 1.1)
+                                 hole_dia_mm=float(d) * 1.1,
+                                 shank_in_grip_mm=float(shank))
         stack = bolt_mod.ClampedStack(base_material=base, chassis_material=chas,
                                       grip_mm=float(grip))
         jr = bolt_mod.analyze_joint(fast, stack, assembly_torque_Nm=float(T),

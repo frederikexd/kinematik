@@ -1,0 +1,46 @@
+{
+ "8-22_M14": {
+  "k_b_MN_per_m": {
+   "kinematik": 686.2578042719231,
+   "target": 686.2578,
+   "rel": 6.224953885691775e-09,
+   "limit": 0.01,
+   "passes": true
+  },
+  "C": {
+   "kinematik": 0.19446698136055207,
+   "target": 0.199032,
+   "rel": -0.022936103940310648,
+   "limit": 0.03,
+   "passes": true
+  }
+ },
+ "8-25_wileman": {
+  "k_m_wileman_MN_per_m": {
+   "kinematik": 2842.659030198628,
+   "target": 2843.0,
+   "rel": -0.00011993309932190055,
+   "limit": 0.01,
+   "passes": true
+  }
+ },
+ "8-46a_torque": {
+  "F_i_kN": {
+   "kinematik": 190.50925925925924,
+   "target": 190.6,
+   "rel": -0.00047607943725480606,
+   "limit": 0.005,
+   "passes": true
+  }
+ },
+ "8-47a_torque": {
+  "F_i_kN": {
+   "kinematik": 132.22222222222226,
+   "target": 132.3,
+   "rel": -0.0005878894767782361,
+   "limit": 0.005,
+   "passes": true
+  }
+ },
+ "passed": true
+}

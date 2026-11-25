@@ -127,6 +127,12 @@ class Fastener:
     # head/washer bearing geometry for the crush check:
     head_dia_mm: float | None = None     # outer bearing diameter of head or washer
     hole_dia_mm: float | None = None     # clearance hole the head bears around
+    # Unthreaded shank inside the grip (Shigley's l_d). 0 = threaded through the
+    # whole grip. A partly threaded bolt is stiffer than its stress area suggests:
+    # for Shigley's M14 example (21 of 40 mm unthreaded) taking A_t over the whole
+    # grip read the bolt 13 % soft and the joint constant C 13 % low
+    # (benchmarks/bolted_joint), so the bolt's share of the load was under-read.
+    shank_in_grip_mm: float = 0.0
 
     def stress_area(self) -> float:
         if self.stress_area_mm2 is not None:
@@ -200,8 +206,15 @@ class JointResult:
 #  Stiffness helpers (Shigley / Wileman)
 # --------------------------------------------------------------------------- #
 def _bolt_stiffness(fastener: Fastener, grip_mm: float, E_bolt_MPa: float = 205000.0) -> float:
+    """Shigley Eq. 8-17: the unthreaded shank (A_d over l_d) and the threaded part
+    (A_t over l_t) in series. With no shank in the grip this is E A_t / grip."""
     At = fastener.stress_area()
-    return E_bolt_MPa * At / grip_mm
+    ld = min(max(float(fastener.shank_in_grip_mm), 0.0), grip_mm)
+    if ld <= 0.0:
+        return E_bolt_MPa * At / grip_mm
+    Ad = math.pi / 4.0 * float(fastener.nominal_d_mm) ** 2
+    lt = grip_mm - ld
+    return Ad * At * E_bolt_MPa / (Ad * lt + At * ld)
 
 
 def _member_stiffness(E_member_MPa: float, d_mm: float, grip_mm: float) -> float:

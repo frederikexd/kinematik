@@ -1,0 +1,35 @@
+{
+  "registered": "2026-11-25, before bolted_joint.py was run on these problems. A hand check of E*At/grip against problem 8-22 was done first and suggested k_b would miss; the limits were not loosened for it.",
+  "source": "Shigley's Mechanical Engineering Design, chapter 8 solutions as posted by Purdue ME 354 and Oakland University ME 4300",
+  "problems": {
+    "8-22_M14": {
+      "url": "https://purdue.edu/freeform/me354/wp-content/uploads/sites/28/2022/12/Shigley_8_22.pdf",
+      "data": {"d_mm": 14.0, "pitch_mm": 2.0, "grip_mm": 40.0, "E_GPa": 207.0, "At_mm2": 115.0,
+               "Ad_mm2": 153.938, "ld_mm": 21.0, "lt_mm": 19.0, "members": "steel"},
+      "target": {"k_b_MN_per_m": 686.2578, "k_m_frustum_MN_per_m": 2761.721, "C": 0.199032}
+    },
+    "8-25_wileman": {
+      "url": "https://www.secs.oakland.edu/~latcha/ME4300/SM_PDF/CH8.pdf",
+      "data": {"d_mm": 14.0, "grip_mm": 40.0, "E_GPa": 207.0},
+      "target": {"k_m_wileman_MN_per_m": 2843.0},
+      "note": "The solution states the Wileman fit is 2.9 % above its own frustum result (2762)."
+    },
+    "8-46a_torque": {
+      "url": "https://www.secs.oakland.edu/~latcha/ME4300/SM_PDF/CH8.pdf",
+      "data": {"K": 0.18, "d_mm": 24.0, "T_Nm": 823.0},
+      "target": {"F_i_kN": 190.6}
+    },
+    "8-47a_torque": {
+      "url": "https://www.secs.oakland.edu/~latcha/ME4300/SM_PDF/CH8.pdf",
+      "data": {"K": 0.18, "d_mm": 20.0, "T_Nm": 476.0},
+      "target": {"F_i_kN": 132.3}
+    }
+  },
+  "limits": {
+    "k_b_relative": 0.01,
+    "k_m_wileman_relative": 0.01,
+    "C_relative": 0.03,
+    "F_i_relative": 0.005
+  },
+  "limit_notes": "C is compared with the solution's frustum-based value, so its limit allows the 2.9 % the textbook gives between Wileman and the frustum. The torque targets are printed to 3 figures, hence 0.5 %."
+}
