@@ -1,0 +1,10 @@
+{
+  "registered": "2026-11-25, before balance_bar_bias was run on these cases",
+  "reference_tool": "OpenSeesPy 3.8 linear static: the balance bar as an elastic beam pinned at each master-cylinder clevis, loaded by the pushrod force at the pivot; the clevis reactions are the master-cylinder forces. Pressures and torques from those forces through the same cylinder, caliper and rotor dimensions.",
+  "cases": {
+    "centred":       {"pedal_force_N": 800.0, "pedal_ratio": 5.0, "bar_length_mm": 60.0, "bar_offset_mm": 0.0,  "mc_front_mm": 15.875, "mc_rear_mm": 19.05},
+    "toward_front":  {"pedal_force_N": 800.0, "pedal_ratio": 5.0, "bar_length_mm": 60.0, "bar_offset_mm": 6.0,  "mc_front_mm": 15.875, "mc_rear_mm": 19.05},
+    "toward_rear":   {"pedal_force_N": 1200.0, "pedal_ratio": 4.2, "bar_length_mm": 70.0, "bar_offset_mm": -9.5, "mc_front_mm": 17.78, "mc_rear_mm": 17.78}
+  },
+  "limits": {"force_relative": 1e-6, "pressure_relative": 1e-6}
+}

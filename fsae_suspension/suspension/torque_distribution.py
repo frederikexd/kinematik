@@ -123,7 +123,7 @@ def _axle(tt: TireTable, need: float, fz, fx):
     return [scale[i] * float(np.interp(a, _ALPHA, rows[i])) for i in range(2)], a
 
 
-def state(V: float, kappa: float, dkds: float, at: float, option: str, car: Car | None = None, tt: TireTable | None = None, veh: Vehicle | None = None, n_split: int = 21) -> dict:  # pragma: no mutate (n_split is kept for callers; the split search sets its own grid)
+def state(V: float, kappa: float, dkds: float, at: float, option: str, car: Car | None = None, tt: TireTable | None = None, veh: Vehicle | None = None, n_split: int = 21, _frac: float | None = None) -> dict:  # pragma: no mutate (n_split is kept for callers; the split search sets its own grid)
     """Best feasible force allocation at one instant; speed m/s, curvature 1/m, dkappa/ds 1/m², at m/s².
 
     Returns the utilisation of each tire (u), the chosen force difference d (N), the
@@ -160,7 +160,8 @@ def state(V: float, kappa: float, dkds: float, at: float, option: str, car: Car 
             return {"umax": max(u.values()), "u": u, "d": float(d), "mz_x": mzx, "mz_req": mz_req, "Fy_f": fyf, "Fy_r": fyr,
                     "F_long": F, "alpha_f": af, "alpha_r": ar, "fz": fz, "fx": fx, "fy": fy}
         cost = lambda r: r["umax"]
-        if hi <= lo: best = evaluate(lo)  # pragma: no mutate (a one-point range scans to the same point)
+        if _frac is not None: best = evaluate(lo + _frac * (hi - lo))  # pragma: no mutate (the split held at one place in its range through both passes)
+        elif hi <= lo: best = evaluate(lo)  # pragma: no mutate (a one-point range scans to the same point)
         else:
             grid = list(np.linspace(lo, hi, 25))  # pragma: no mutate (search grid)
             scan = [(cost(r), x, r) for x in grid for r in [evaluate(x)]]
@@ -173,8 +174,32 @@ def state(V: float, kappa: float, dkds: float, at: float, option: str, car: Car 
                     b_, x2, r2 = x2, x1, r1; x1 = b_ - gr * (b_ - a_); r1 = evaluate(x1)
                 else: a_, x1, r1 = x1, x2, r2; x2 = a_ + gr * (b_ - a_); r2 = evaluate(x2)
             best = min((rb, r1, r2), key=cost)
-        if best.get("infeasible"): return {"ok": False, "umax": best["umax"]}
+        if best.get("infeasible"): break
         delta = car.L * kappa + best["alpha_f"] - best["alpha_r"]
+    if best.get("infeasible") or best["umax"] > 1.0:  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
+        #  The split chosen in the first pass sets the steering and induced drag
+        #  the second pass works with. Near the axle-capacity cliff that choice
+        #  can leave no feasible split in the second pass although holding some
+        #  other split through both passes is feasible: steady limits read up to
+        #  0.1 % slow against a global search (benchmarks/torque_distribution).
+        #  So before declaring the instant infeasible, search the split held
+        #  through both passes.
+        if _frac is None and lo < hi:
+            fr = [i / 40.0 for i in range(41)]  # pragma: no mutate (search grid)
+            cand = [(r["umax"], f, r) for f in fr for r in [state(V, kappa, dkds, at, option, car, tt, veh, _frac=f)]]
+            u0, f0, r0 = min(cand, key=lambda z: z[0])  # pragma: no mutate (grid points are distinct)
+            a_, b_ = max(0.0, f0 - 1 / 40.0), min(1.0, f0 + 1 / 40.0)
+            gr = (math.sqrt(5) - 1) / 2
+            for _ in range(20):  # pragma: no mutate (golden-section count)
+                x1, x2 = b_ - gr * (b_ - a_), a_ + gr * (b_ - a_)
+                r1 = state(V, kappa, dkds, at, option, car, tt, veh, _frac=x1)
+                r2 = state(V, kappa, dkds, at, option, car, tt, veh, _frac=x2)
+                if r1["umax"] <= r2["umax"]: b_ = x2  # pragma: no mutate (float threshold)
+                else: a_ = x1
+                for r in (r1, r2):
+                    if r["umax"] < u0: u0, r0 = r["umax"], r  # pragma: no mutate (keep the best seen)
+            if u0 < best["umax"]: return r0  # pragma: no mutate (float threshold)
+    if best.get("infeasible"): return {"ok": False, "umax": best["umax"]}
     best["ok"] = best["umax"] <= 1.0; best["ay_g"] = ay_g; best["at_g"] = at / G
     return best
 

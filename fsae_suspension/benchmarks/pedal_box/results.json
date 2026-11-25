@@ -1,0 +1,81 @@
+{
+ "centred": {
+  "F_front_N": {
+   "kinematik": 2000.0,
+   "opensees": 2000.0000000000018,
+   "rel": -8.881784197001252e-16,
+   "passes": true
+  },
+  "F_rear_N": {
+   "kinematik": 2000.0,
+   "opensees": 2000.0000000000007,
+   "rel": -3.3306690738754696e-16,
+   "passes": true
+  },
+  "p_front_bar": {
+   "kinematik": 101.04449235916725,
+   "opensees": 101.04449235916732,
+   "rel": -6.661338147750939e-16,
+   "passes": true
+  },
+  "p_rear_bar": {
+   "kinematik": 70.1697863605328,
+   "opensees": 70.16978636053283,
+   "rel": -4.440892098500626e-16,
+   "passes": true
+  }
+ },
+ "toward_front": {
+  "F_front_N": {
+   "kinematik": 2400.0,
+   "opensees": 2400.0000000000027,
+   "rel": -1.1102230246251565e-15,
+   "passes": true
+  },
+  "F_rear_N": {
+   "kinematik": 1600.0,
+   "opensees": 1599.9999999999993,
+   "rel": 4.440892098500626e-16,
+   "passes": true
+  },
+  "p_front_bar": {
+   "kinematik": 121.25339083100069,
+   "opensees": 121.25339083100081,
+   "rel": -1.1102230246251565e-15,
+   "passes": true
+  },
+  "p_rear_bar": {
+   "kinematik": 56.13582908842624,
+   "opensees": 56.13582908842622,
+   "rel": 4.440892098500626e-16,
+   "passes": true
+  }
+ },
+ "toward_rear": {
+  "F_front_N": {
+   "kinematik": 1836.0,
+   "opensees": 1836.0000000000002,
+   "rel": -1.1102230246251565e-16,
+   "passes": true
+  },
+  "F_rear_N": {
+   "kinematik": 3204.0,
+   "opensees": 3204.000000000003,
+   "rel": -9.992007221626409e-16,
+   "passes": true
+  },
+  "p_front_bar": {
+   "kinematik": 73.9467825141227,
+   "opensees": 73.9467825141227,
+   "rel": 0.0,
+   "passes": true
+  },
+  "p_rear_bar": {
+   "kinematik": 129.0443851717043,
+   "opensees": 129.04438517170442,
+   "rel": -8.881784197001252e-16,
+   "passes": true
+  }
+ },
+ "passed": true
+}

@@ -1,0 +1,8 @@
+{
+  "registered": "2026-11-25, before KinematiK's Gearbox or TUM's car model was run on these inputs",
+  "reference_tool": "TUM FTM laptime-simulation (commit afa0aa7; Heilmeier, Geisslinger, Betz, EVER 2019): its combustion car model (CarHybrid with no electric motor), run as published. Its engine power curve, gear ratios and gear selection (find_gear: highest gear below each gear's shift revs) give engine revs, gear and drive force at each road speed.",
+  "problem": "A 600 cc four-cylinder-like power curve in TUM's form (65 kW at 12,500 rpm, 13 kW lower at 8,000 and 14,000 rpm), CBR600RR-like primary 2.111, gears 2.750/2.000/1.667/1.444/1.304/1.208, final drive 3.0, efficiency 0.92, upshift at 13,500 rpm in every gear; road speed 3 to 40 m/s every 0.5 m/s. TUM's tyre radius grows with speed (its circ_ref model); KinematiK is given TUM's radius at each speed, so the comparison checks the gearbox chain, not the radius model. KinematiK's engine is TUM's torque curve sampled every 50 rpm; its gear is the one TUM's shift revs select, set through upshift_kmh.",
+  "quantities": ["engine rpm", "gear", "drive force at the contact patch"],
+  "limits": {"rpm_relative": 1e-6, "gear_mismatches": 0, "force_relative": 0.001},
+  "limit_notes": "The force limit allows for the 50 rpm sampling of TUM's cubic power curve."
+}
