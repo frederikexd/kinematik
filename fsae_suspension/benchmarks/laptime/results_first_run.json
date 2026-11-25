@@ -1,0 +1,100 @@
+{
+ "kinematik": {
+  "lap_time_s": 16.104081848920803,
+  "corner_min_speed_ms": {
+   "R8": 11.280334509019191,
+   "R15": 16.058322943071104,
+   "R25": 21.95503055392324,
+   "R12": 14.123220126183307
+  },
+  "top_speed_ms": 33.136869522639536
+ },
+ "exact": {
+  "lap_time_s": 15.984467099029157,
+  "corner_min_speed_ms": {
+   "R8": 11.294011544648912,
+   "R15": 16.053008177144893,
+   "R25": 21.947835718064795,
+   "R12": 14.126720103679911
+  },
+  "top_speed_ms": 33.25093857925933
+ },
+ "vs_exact": {
+  "lap_time_s": {
+   "kinematik": 16.104081848920803,
+   "reference": 15.984467099029157,
+   "rel": 0.007483186592996294,
+   "passes": false
+  },
+  "min_speed_R8_ms": {
+   "kinematik": 11.280334509019191,
+   "reference": 11.294011544648912,
+   "rel": -0.0012109989064249538,
+   "passes": true
+  },
+  "min_speed_R15_ms": {
+   "kinematik": 16.058322943071104,
+   "reference": 16.053008177144893,
+   "rel": 0.0003310760118953038,
+   "passes": true
+  },
+  "min_speed_R25_ms": {
+   "kinematik": 21.95503055392324,
+   "reference": 21.947835718064795,
+   "rel": 0.0003278152775914034,
+   "passes": true
+  },
+  "min_speed_R12_ms": {
+   "kinematik": 14.123220126183307,
+   "reference": 14.126720103679911,
+   "rel": -0.00024775584643266235,
+   "passes": true
+  },
+  "passed": false
+ },
+ "tum": {
+  "lap_time_s": 15.96432935521855,
+  "corner_min_speed_ms": {
+   "R8": 11.200000000000001,
+   "R15": 16.0,
+   "R25": 21.8,
+   "R12": 14.0
+  },
+  "top_speed_ms": 33.318001823917186,
+  "track_length_from_splines_m": 334.24777807834096
+ },
+ "vs_tum": {
+  "lap_time_s": {
+   "kinematik": 16.104081848920803,
+   "reference": 15.96432935521855,
+   "rel": 0.008754047263286324,
+   "passes": true
+  },
+  "min_speed_R8_ms": {
+   "kinematik": 11.280334509019191,
+   "reference": 11.200000000000001,
+   "rel": 0.0071727240195704756,
+   "passes": true
+  },
+  "min_speed_R15_ms": {
+   "kinematik": 16.058322943071104,
+   "reference": 16.0,
+   "rel": 0.003645183941944019,
+   "passes": true
+  },
+  "min_speed_R25_ms": {
+   "kinematik": 21.95503055392324,
+   "reference": 21.8,
+   "rel": 0.007111493299231109,
+   "passes": true
+  },
+  "min_speed_R12_ms": {
+   "kinematik": 14.123220126183307,
+   "reference": 14.0,
+   "rel": 0.00880143758452201,
+   "passes": true
+  },
+  "passed": true
+ },
+ "passed": false
+}

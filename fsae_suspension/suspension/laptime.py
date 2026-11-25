@@ -647,7 +647,13 @@ def simulate_lap(veh: VehicleDynamics, track: Track,
             for i in range(N - 2, -1, -1):  # pragma: no mutate (i = -1 repeats the loop closure below)
                 ds_i = max(s_pts[i + 1] - s_pts[i], 1e-3)
                 v1 = v[i + 1]
-                lat_used = v1 * v1 / radii[i + 1] / 9.81
+                #  The step from station i to i+1 lies on station i's piece of track,
+                #  as in the forward pass. It used station i+1's radius, so the last
+                #  step of every straight braked as if already in the corner, with
+                #  almost no grip left for braking: the car reached corner speed one
+                #  station early. Against TUM's lap simulation and an independent
+                #  integration the lap read 0.75 % slow (benchmarks/laptime).
+                lat_used = v1 * v1 / radii[i] / 9.81
                 d = _decel_long(veh, v1, pt, max_lat_g, lat_used)
                 v_prev = math.sqrt(max(v1 * v1 + 2.0 * d * ds_i, 0.0))  # pragma: no mutate (decel > 0)
                 v[i] = min(v[i], v_prev)              # v <= v_fwd <= v_ceiling already

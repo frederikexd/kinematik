@@ -1,0 +1,25 @@
+{
+  "registered": "2026-11-25, before KinematiK's lap solver or TUM's was run on this problem",
+  "reference_tool": {
+    "name": "TUM FTM laptime-simulation (quasi-steady-state lap time simulation)",
+    "url": "https://github.com/TUMFTM/laptime-simulation",
+    "commit": "afa0aa710adb9fdd23fa3d6fbdd6a13664253616",
+    "publication": "Heilmeier, Geisslinger, Betz: A Quasi-Steady-State Lap Time Simulation for Electrified Race Cars, EVER 2019, IEEE, doi 10.1109/ever.2019.8813646 (the paper the repository cites for this code)",
+    "run_unmodified": "TUM's code is run as published; only its inputs are set, and the track curvature it computes from splines is replaced by the exact curvature of the arcs."
+  },
+  "second_reference": "An independent integration of the same point-mass equations (corner limit from the exact fixed point, forward and backward passes by RK4 at 1 cm steps), written for this benchmark and sharing no code with laptime.py.",
+  "problem": {
+    "track": "A closed rounded rectangle, 120 m x 60 m, corner radii 8, 15, 25 and 12 m (anticlockwise), every corner a quarter circle.",
+    "vehicle": {"mass_kg": 280.0, "mu": 1.5, "weight_dist_front": 0.46, "ClA_m2": 3.0, "CdA_m2": 1.2,
+                "rho_kg_m3": 1.225, "crr": 0.015, "wheel_power_kW": 60.0, "drive": "rwd"},
+    "reduced_to": "A constant-mu point mass: no load sensitivity, no load transfer (CG height 0), downforce split as the weight, friction circle, no torque cap, no rotating inertia, unlimited brakes. KinematiK's tyre chain is replaced by this constant mu, so the benchmark checks the lap solver, not the tyre model.",
+    "tum_settings": "vel_subtr_corner 0 (no driver margin), one gear, eta_g 1, e_i 1, torque cap 1e6 Nm, mu_mean 1, track step 1 m"
+  },
+  "limits": {
+    "lap_time_vs_tum_relative": 0.02,
+    "lap_time_vs_exact_relative": 0.005,
+    "corner_min_speed_vs_tum_relative": 0.03,
+    "corner_min_speed_vs_exact_relative": 0.005
+  },
+  "limit_notes": "TUM finds corner speeds by bisection on a 0.2 m/s grid and asks the tyres for enough spare grip to hold speed against drag, both of which put it slightly slow; the TUM limits allow for that."
+}

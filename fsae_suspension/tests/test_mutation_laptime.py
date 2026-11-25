@@ -306,7 +306,7 @@ def _lap(car, track, pt):
     for _ in range(2):
         for i in range(N - 2, -1, -1):
             v1 = v[i + 1]
-            lat = v1 * v1 / R[i + 1] / 9.81 if math.isfinite(R[i + 1]) else 0.0
+            lat = v1 * v1 / R[i] / 9.81 if math.isfinite(R[i]) else 0.0
             d = lt._decel_long(car, v1, pt, mlat, lat)
             v[i] = min(v[i], math.sqrt(max(v1 * v1 + 2 * d * max(s[i + 1] - s[i], 1e-3), 0)), ceil[i])
         v[-1] = min(v[-1], v[0])
