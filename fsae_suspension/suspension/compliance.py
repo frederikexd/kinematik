@@ -273,6 +273,7 @@ class CompliantCorner:
             return kin.static
 
         def gap(t):
+            """Spring length at wheel travel t (mm) minus the unloaded length, mm."""
             s = kin.solve_at_travel(t)
             return kin.spring_length_at(s)[0] - self._spring_L0, s
 

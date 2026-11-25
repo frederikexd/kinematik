@@ -637,8 +637,8 @@ class OneDRotor:
     def simulate(self, power_series, dt: float,
                  v_series=None, *, T_initial_c: float | None = None,
                  h_w_m2K: float | None = None) -> ThroughThicknessTrace:
-        """T_initial_c: a uniform start temperature other than ambient (a rotor
-        still hot from the last run). h_w_m2K: a fixed convection coefficient,
+        """T_initial_c: a uniform start temperature in °C other than ambient (a rotor
+        still hot from the last run). h_w_m2K: a fixed convection coefficient in W/m²K,
         measured or calibrated, in place of the rotating-disc correlation.
         Temperatures are not allowed below ambient, so T_initial_c must be at or
         above it."""
