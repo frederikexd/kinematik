@@ -1,0 +1,14 @@
+{
+  "registered": "2026-11-25, before the vortex lattice was run on this wing",
+  "source": {
+    "reference": "J. Zerihan, An Investigation into the Aerodynamics of Wings in Ground Effect, PhD thesis, University of Southampton, 2001 (supervisor X. Zhang); the single element wing of Zerihan & Zhang, J. Aircraft 37(6), 2000",
+    "url": "https://eprints.soton.ac.uk/426058/1/00192634.pdf",
+    "wing": "Tyrrell 026 front-wing main element, LS(1)-0413 MOD, chord 223.4 mm, span 1100 mm (AR 4.92), endplates 250 x 100 x 4 mm, moving ground, Re 0.43-0.46 million, transition free, reference incidence 1 deg (3.45 deg true); profile from the thesis's Table 2",
+    "height": "h = ground to the lowest point of the suction surface",
+    "measured": {"freestream_CL": 0.69, "h_c_0.671_CL": 0.84, "max_CL": 1.72, "max_at_h_c": 0.082}
+  },
+  "model": "KinematiK's vortex lattice on the same profile and span, wing only: the endplates are not modelled (the lattice takes one lifting surface), and the flow is inviscid.",
+  "graded": {"freestream_CL": 0.69, "h_c_0.671_CL": 0.84},
+  "reported_not_graded": "The maximum (1.72 at h/c 0.082) and the shape of the curve below h/c 0.3, where the measured downforce is limited by separation an inviscid model does not have.",
+  "limits": {"relative": 0.10}
+}
