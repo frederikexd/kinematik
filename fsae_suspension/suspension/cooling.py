@@ -60,7 +60,7 @@ from dataclasses import dataclass, field as _dcfield
 __all__ = ["Coolant", "COOLANTS", "coolant", "LoopSpec", "LoopResult",
            "size_loop", "TempSensor", "FlowMeter", "TEMP_SENSORS",
            "FLOW_METERS", "RigResult", "rig_uncertainty", "required_delta_t",
-           "heat_load_w"]
+           "heat_load_w", "crossflow_effectiveness", "radiator_heat_w", "RADIATOR_ARRANGEMENTS"]
 
 
 # =========================================================================== #
@@ -146,6 +146,11 @@ class LoopSpec:
     radiator_ua_w_per_k: float = 120.0
     loop_volume_l: float = 2.5
     cap_pressure_bar: float = 1.1
+    # Air mass flow through the core, kg/s. When given, the radiator is also
+    # rated by effectiveness-NTU (radiator_heat_w), which caps the heat at what
+    # the air can carry; None keeps the UA x temperature-difference screen only.
+    air_mass_flow_kg_s: float | None = None
+    radiator_arrangement: str = "both_unmixed"
 
 
 @dataclass
@@ -160,6 +165,64 @@ class LoopResult:
     boil_margin_c: float
     ok: bool
     notes: list[str] = _dcfield(default_factory=list)
+    radiator: dict | None = None      # effectiveness-NTU rating when air flow is given
+
+
+# =========================================================================== #
+#  Radiator: effectiveness-NTU
+# =========================================================================== #
+RADIATOR_ARRANGEMENTS = ("both_unmixed", "cmax_mixed", "cmin_mixed")
+
+
+def crossflow_effectiveness(ntu: float, cr: float, arrangement: str = "both_unmixed") -> float:
+    """Effectiveness (dimensionless) of a single-pass crossflow exchanger, from NTU = UA/C_min and
+    Cr = C_min/C_max (both dimensionless). A car radiator is crossflow with the air unmixed between
+    fins and the coolant unmixed in the tubes ("both_unmixed"); "cmax_mixed" and "cmin_mixed" are
+    the one-fluid-mixed forms. All three are exact. Both-unmixed uses the exact series (Mason 1955;
+    Kays & London): the common closed-form approximation (Incropera eq. 11.32) read up to 0.011
+    low against an exact finite-difference solution, 3 % of the heat at NTU 0.5, Cr 1
+    (benchmarks/radiator)."""
+    ntu, cr = max(float(ntu), 0.0), min(max(float(cr), 0.0), 1.0)
+    if ntu == 0.0:
+        return 0.0
+    if cr < 1e-9:
+        return 1.0 - math.exp(-ntu)
+    if arrangement == "both_unmixed":
+        # eps = 1/(Cr NTU) * sum_n [1 - e^-N sum_{m<=n} N^m/m!] [1 - e^-CrN sum_{m<=n} (CrN)^m/m!]
+        x, y = ntu, cr * ntu
+        px, py = math.exp(-x), math.exp(-y)          # running e^-x * x^n / n!
+        sx, sy, total = px, py, 0.0
+        for n in range(400):
+            term = (1.0 - sx) * (1.0 - sy)
+            total += term
+            if term < 1e-15 and n > x + 10:
+                break
+            px *= x / (n + 1); py *= y / (n + 1)
+            sx += px; sy += py
+        return total / (cr * ntu)
+    if arrangement == "cmax_mixed":
+        return (1.0 / cr) * (1.0 - math.exp(-cr * (1.0 - math.exp(-ntu))))
+    if arrangement == "cmin_mixed":
+        return 1.0 - math.exp(-(1.0 / cr) * (1.0 - math.exp(-cr * ntu)))
+    raise ValueError(f"arrangement must be one of {RADIATOR_ARRANGEMENTS}")
+
+
+def radiator_heat_w(*, ua_w_per_k: float, air_mass_flow_kg_s: float, coolant_mass_flow_kg_s: float,
+                    coolant_cp_j_kgk: float, coolant_in_c: float, air_in_c: float,
+                    air_cp_j_kgk: float = 1007.0, arrangement: str = "both_unmixed") -> dict:
+    """Heat a radiator rejects (W) and both outlet temperatures (°C), by effectiveness-NTU.
+    UA in W/K, mass flows kg/s, cp J/kg·K. Unlike Q = UA (T_coolant - T_air), this cannot
+    reject more than the air or the coolant can carry."""
+    c_air = max(air_mass_flow_kg_s, 0.0) * air_cp_j_kgk
+    c_cool = max(coolant_mass_flow_kg_s, 0.0) * coolant_cp_j_kgk
+    c_min, c_max = min(c_air, c_cool), max(c_air, c_cool)
+    if c_min <= 0.0:
+        return dict(q_w=0.0, effectiveness=0.0, ntu=0.0, cr=0.0, coolant_out_c=coolant_in_c, air_out_c=air_in_c)
+    ntu, cr = ua_w_per_k / c_min, c_min / c_max
+    eps = crossflow_effectiveness(ntu, cr, arrangement)
+    q = eps * c_min * (coolant_in_c - air_in_c)
+    return dict(q_w=q, effectiveness=eps, ntu=ntu, cr=cr,
+                coolant_out_c=coolant_in_c - q / c_cool, air_out_c=air_in_c + q / c_air)
 
 
 def size_loop(spec: LoopSpec | None = None) -> LoopResult:
@@ -237,8 +300,27 @@ def size_loop(spec: LoopSpec | None = None) -> LoopResult:
             f"stator are well above bulk, so this margin is smaller than it "
             f"looks.")
     ok = bool(margin >= 1.0 and steady <= s.max_coolant_c and boil_margin >= 15.0)  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
+    rad = None
+    if s.air_mass_flow_kg_s is not None:
+        #  The coolant enters the radiator dT above the motor inlet (its outlet).
+        rad = radiator_heat_w(ua_w_per_k=s.radiator_ua_w_per_k, air_mass_flow_kg_s=s.air_mass_flow_kg_s,
+                              coolant_mass_flow_kg_s=m_dot, coolant_cp_j_kgk=c.cp_j_kgk,
+                              coolant_in_c=s.coolant_in_c + dT, air_in_c=s.ambient_c,
+                              arrangement=s.radiator_arrangement)
+        notes.append(
+            f"Effectiveness-NTU at {s.air_mass_flow_kg_s:g} kg/s of air: NTU {rad['ntu']:.2f}, "
+            f"Cr {rad['cr']:.2f}, effectiveness {rad['effectiveness']:.2f}, so the radiator rejects "
+            f"**{rad['q_w']/1000:.2f} kW** against a {s.heat_w/1000:.2f} kW load; air leaves at "
+            f"{rad['air_out_c']:.1f} °C.")
+        if rad["q_w"] < s.heat_w:  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
+            ok = False
+            notes.append(f"⚠️ At this air flow and UA the radiator rejects less than the load at these "
+                         f"temperatures; the most this air could carry is "
+                         f"{min(rad['ntu'] and rad['q_w'] / max(rad['effectiveness'], 1e-12), 1e12)/1000:.1f} kW "
+                         f"(effectiveness 1), so the gap is "
+                         f"{'UA' if rad['effectiveness'] < 0.9 else 'air flow'}.")
     return LoopResult(s, dT, m_dot, ua_req, margin, steady, t_limit,
-                      boil_margin, ok, notes)
+                      boil_margin, ok, notes, rad)
 
 
 # =========================================================================== #

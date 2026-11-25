@@ -1,0 +1,17 @@
+{
+  "registered": "2026-11-25, before cooling.crossflow_effectiveness was written or run",
+  "references": {
+    "exact": "An independent finite-difference solution of the single-pass crossflow exchanger (both fluids unmixed: a 400 x 400 grid marching each stream; one fluid mixed: that stream's temperature uniform across each row), written for this benchmark and sharing no code with cooling.py",
+    "published": {
+      "source": "Fan et al., 'Automobile radiator heat transfer analysis' (ASEE 2012, Lamar University), Table 4: crossflow, both fluids unmixed, NTU 0.59, Cr 0.455, effectiveness 40 %",
+      "url": "https://www.lamar.edu/engineering/_files/documents/mechanical/dr.-fan-publications/2012/No 31 2012 ASEE Radiator Final.pdf"
+    }
+  },
+  "grid": {"NTU": [0.25, 0.5, 1.0, 2.0, 3.0], "Cr": [0.0, 0.25, 0.5, 0.75, 1.0]},
+  "limits": {
+    "both_unmixed_vs_exact_abs": 0.01,
+    "one_mixed_vs_exact_abs": 0.003,
+    "published_abs": 0.005
+  },
+  "limit_notes": "Both-unmixed uses the closed-form approximation (Incropera eq. 11.32); textbooks quote it as accurate to about 1 point of effectiveness, hence 0.01. The one-mixed forms are exact, so their limit allows only for the grid. The published effectiveness is given to two figures."
+}
