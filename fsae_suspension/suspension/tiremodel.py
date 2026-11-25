@@ -59,7 +59,14 @@ class PacejkaLateral:
     pressure_pa: float | None = None      # inflation pressure, Pa (6.1 only; None = NOMPRES)
 
     def __post_init__(self):
-        self.scaling = {**_DEFAULT_SCALING, **(self.scaling or {})}
+        #  A coefficient dict read from a .tir carries its own FITTYP and scaling
+        #  factors, so a tyre rebuilt from just `coeffs` (as the app does from
+        #  session state and saved projects) keeps its MF version and lambdas.
+        #  Explicit arguments win.
+        own_scaling = {k: float(v) for k, v in self.coeffs.items() if k in _SCALE_KEYS}
+        self.scaling = {**_DEFAULT_SCALING, **own_scaling, **(self.scaling or {})}
+        if self.mf_version == "5.2" and float(self.coeffs.get("FITTYP", 6)) >= 61:
+            self.mf_version = "6.1"
         missing = [k for k in ("PCY1", "PDY1", "PDY2", "PEY1", "PKY1", "PKY2")
                    if k not in self.coeffs]
         if missing:
@@ -237,9 +244,10 @@ def load_tir(path: str, pressure_pa: float | None = None) -> PacejkaLateral:
     fittyp = int(vals.get("FITTYP", 6))
     if fittyp not in (6, 21, 61, 62):
         raise ValueError(f"{path}: FITTYP {fittyp} is not MF5.2 (6, 21) or MF6.1/6.2 (61, 62)")
-    return PacejkaLateral(coeffs={k: vals.get(k, 2.0 if k == "PKY4" else 0.0) for k in _LAT_KEYS},
-                          FNOMIN=vals["FNOMIN"],
-                          scaling={k: vals.get(k, 1.0) for k in _SCALE_KEYS},
+    coeffs = {k: vals.get(k, 2.0 if k == "PKY4" else 0.0) for k in _LAT_KEYS}
+    coeffs.update({k: vals.get(k, 1.0) for k in _SCALE_KEYS})     # travel with the coefficients
+    coeffs["FITTYP"] = float(fittyp)
+    return PacejkaLateral(coeffs=coeffs, FNOMIN=vals["FNOMIN"],
                           mf_version="6.1" if fittyp >= 61 else "5.2", pressure_pa=pressure_pa)
 
 

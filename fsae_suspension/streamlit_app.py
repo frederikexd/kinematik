@@ -29833,14 +29833,30 @@ with tab9:
                     'Either way it loads into the live engine immediately. '
                     '<b>Both are TTC-derived — keep them out of git.</b></p>',
                     unsafe_allow_html=True)
-        up = st.file_uploader("Fitted tire JSON", type=["json"], key="tire_json")
+        up = st.file_uploader("Fitted tire JSON, or an MF-Tyre .tir (MF5.2, 6.1 or 6.2)",
+                              type=["json", "tir"], key="tire_json",
+                              help="A .tir from a TTC fit or a tyre supplier: its lateral coefficients, scaling "
+                                   "factors and MF version are read; MF6.1/6.2 camber and pressure terms are used.")
         lc1, lc2 = st.columns([1, 1])
         if up is not None:
             try:
                 import json as _json
-                d = _json_finite(up)
-                new_coeffs = d["coeffs"]
-                new_fnom = float(d.get("FNOMIN", 1100.0))
+                if up.name.lower().endswith(".tir"):
+                    import tempfile as _tf
+                    with _tf.NamedTemporaryFile("wb", suffix=".tir", delete=False) as _fh:
+                        _fh.write(up.getvalue())
+                    try:
+                        _tt = tire_mod.load_tir(_fh.name)
+                    finally:
+                        os.unlink(_fh.name)
+                    new_coeffs, new_fnom = dict(_tt.coeffs), float(_tt.FNOMIN)
+                    st.markdown(f"<p class='hint'>Read as Magic Formula {_tt.mf_version} "
+                                f"(FITTYP {int(_tt.coeffs['FITTYP'])}), FNOMIN {new_fnom:g} N.</p>",
+                                unsafe_allow_html=True)
+                else:
+                    d = _json_finite(up)
+                    new_coeffs = d["coeffs"]
+                    new_fnom = float(d.get("FNOMIN", 1100.0))
                 # validate it builds
                 _t = tire_mod.PacejkaLateral(coeffs=new_coeffs, FNOMIN=new_fnom)
                 _t.mu_peak(new_fnom)

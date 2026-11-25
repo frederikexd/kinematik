@@ -31,3 +31,12 @@ def test_load_tir_picks_the_version_and_the_default_is_still_mf52():
     assert load_tir(str(ref / "mfeval_ref_MagicFormula52_Parameters.tir")).mf_version == "5.2"
     assert load_tir(str(ref / "mfeval_ref_FSAE_Defaults.tir")).mf_version == "6.1"
     assert default_tire().mf_version == "5.2"
+
+
+def test_a_tyre_rebuilt_from_its_coefficients_keeps_its_version_and_scaling():
+    """The app rebuilds the tyre from session-state coefficients alone; a .tir's FITTYP and lambdas ride along."""
+    from suspension.tiremodel import PacejkaLateral, load_tir
+    t = load_tir(str(ROOT / "benchmarks" / "tyre" / "mfeval_4.3.1" / "mfeval_ref_MagicFormula61_Parameters.tir"))
+    r = PacejkaLateral(coeffs=dict(t.coeffs), FNOMIN=t.FNOMIN)
+    assert r.mf_version == "6.1" and r.scaling == t.scaling
+    assert float(r.fy(0.1, 8000.0, -0.05)) == float(t.fy(0.1, 8000.0, -0.05))
