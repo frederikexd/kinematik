@@ -271,6 +271,10 @@ any FAIL (or WARN with `--fail-on warning`), so it can gate a CI run. KiCad and 
 - Daivik Tulsee (UP Formula Student, University of Pretoria) checked KinematiK's load distribution and downforce targets
   against his own calculations, which agreed, and his testing of the aero solvers led to the vortex-lattice solver for
   wings, the half-resolution grid check, and lower memory use.
+- Nicholas Stroobosscher (President) and Jonathan Hipple (Electrical Co-Lead), Calvin Racing (Calvin University
+  Formula SAE), shared their PE3 tune and harness wiring tables, and Nicholas's feedback shaped the ECU pin check
+  ([case study](docs/case-studies/calvin-harness-ecu.md)). Performance Electronics support confirmed how output names
+  are read from the tune and recommended the Output Diagnostics step.
 
 Acknowledgment records feedback received and does not imply endorsement.
 
