@@ -1,0 +1,44 @@
+{
+ "coordinate_search": {
+  "score_g": 1.5782183421431002,
+  "eval": {
+   "max_g": 1.5782183421431002,
+   "balance": 0.0003394429439451674,
+   "util_front": 0.7491077745700526,
+   "util_rear": 0.7487683316261075
+  },
+  "setup": {
+   "weight_dist_front": 0.5,
+   "cg_height": 240.0,
+   "spring_rate_front": 35.0,
+   "spring_rate_rear": 35.0,
+   "arb_rate_front": 0.0,
+   "arb_rate_rear": 0.0,
+   "static_camber_front": -2.0,
+   "static_camber_rear": -1.4999999999999998
+  }
+ },
+ "differential_evolution": {
+  "score_g": 1.6495358295050209,
+  "eval": {
+   "max_g": 1.6495358295050209,
+   "balance": 0.0982091064845485,
+   "util_front": 0.8242573224070516,
+   "util_rear": 0.7260482159225031
+  },
+  "setup": {
+   "weight_dist_front": 0.58,
+   "cg_height": 324.4792893472435,
+   "spring_rate_front": 119.99990511077951,
+   "spring_rate_rear": 20.0,
+   "arb_rate_front": 399.9897122406188,
+   "arb_rate_rear": 0.000635271850967456,
+   "static_camber_front": -2.040210320469103,
+   "static_camber_rear": -1.7348040244459604
+  },
+  "evaluations": 24138,
+  "converged": false
+ },
+ "gap_g": 0.07131748736192067,
+ "passed": false
+}

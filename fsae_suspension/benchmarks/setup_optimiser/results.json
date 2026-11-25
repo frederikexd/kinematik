@@ -1,0 +1,44 @@
+{
+ "coordinate_search": {
+  "score_g": 1.5782183421431002,
+  "eval": {
+   "max_g": 1.5782183421431002,
+   "balance": 0.0003394429439451674,
+   "util_front": 0.7491077745700526,
+   "util_rear": 0.7487683316261075
+  },
+  "setup": {
+   "weight_dist_front": 0.5,
+   "cg_height": 240.0,
+   "spring_rate_front": 35.0,
+   "spring_rate_rear": 35.0,
+   "arb_rate_front": 0.0,
+   "arb_rate_rear": 0.0,
+   "static_camber_front": -2.0,
+   "static_camber_rear": -1.4999999999999998
+  }
+ },
+ "differential_evolution": {
+  "score_g": 1.5788444551988505,
+  "eval": {
+   "max_g": 1.5788444551988505,
+   "balance": 6.239609234903742e-05,
+   "util_front": 0.7489531144924052,
+   "util_rear": 0.7488907184000562
+  },
+  "setup": {
+   "weight_dist_front": 0.5005799915282256,
+   "cg_height": 240.0024268595284,
+   "spring_rate_front": 70.2852698753179,
+   "spring_rate_rear": 83.70507649166852,
+   "arb_rate_front": 76.87332705454268,
+   "arb_rate_rear": 34.905142025604555,
+   "static_camber_front": -1.8343603348848063,
+   "static_camber_rear": -1.8374597385258777
+  },
+  "evaluations": 24336,
+  "converged": false
+ },
+ "gap_g": 0.0006261130557503325,
+ "passed": true
+}

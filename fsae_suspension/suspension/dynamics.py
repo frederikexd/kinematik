@@ -339,6 +339,29 @@ class VehicleDynamics:
         dWf = dWf_elastic + dWf_geo
         dWr = dWr_elastic + dWr_geo
 
+        #  INNER WHEEL LIFT. An axle cannot transfer more than half its weight:
+        #  past that its inner wheel is off the ground and the outer one carries
+        #  the whole axle. The loads below were clipped at zero on the inner
+        #  wheel while the outer wheel kept gaining, so a lifted axle carried
+        #  more than its weight, and the extra load made grip from nothing. A
+        #  global search of the setup optimiser found it (benchmarks/
+        #  setup_optimiser): it raised the CG to lift the inner front wheel and
+        #  scored 0.07 g more. The roll moment that axle can no longer react goes
+        #  to the other axle through the (rigid) chassis; if both lift, the car
+        #  is on two wheels and both are capped.
+        lift = dict(front=False, rear=False)
+        if dWf > Wf / 2:
+            dWr += (dWf - Wf / 2) * p.track_front / p.track_rear
+            dWf = Wf / 2
+            lift["front"] = True
+        if dWr > Wr / 2:
+            excess = (dWr - Wr / 2) * p.track_rear
+            dWr = Wr / 2
+            lift["rear"] = True
+            if not lift["front"]:
+                dWf = min(dWf + excess / p.track_front, Wf / 2)
+                lift["front"] = dWf >= Wf / 2
+
         # In a left turn the right (outer) wheels gain load
         fl = Wf / 2 - dWf
         fr = Wf / 2 + dWf
@@ -346,7 +369,8 @@ class VehicleDynamics:
         rr = Wr / 2 + dWr
         loads = CornerLoads(max(fl, 0), max(fr, 0), max(rl, 0), max(rr, 0))
         return loads, dict(roll_angle=roll_angle, rc_front=rc_f, rc_rear=rc_r,
-                           ltd_front=dWf, ltd_rear=dWr,
+                           ltd_front=dWf, ltd_rear=dWr, wheel_lift_front=lift["front"],
+                           wheel_lift_rear=lift["rear"],
                            roll_stiffness_front=ks_f, roll_stiffness_rear=ks_r)
 
     # ---------------- load-sensitive grip & balance ---------------------- #

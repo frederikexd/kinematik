@@ -1,0 +1,7 @@
+{
+  "registered": "2026-11-25, before the global search was run (the coordinate search had been run once, for timing: score 1.5782 g)",
+  "reference_tool": "SciPy differential_evolution (Storn & Price 1997; scipy 1.18), the same objective (max lateral g minus the balance-window penalty) over the same eight knobs and bounds, continuous, seed 1, popsize 15, maxiter 200, tol 1e-8, L-BFGS-B polish",
+  "car": "Hardpoints.default() front and rear, tiremodel.default_tire(), VehicleParams() defaults, target balance 0.04 +/- 0.06",
+  "limits": {"score_gap_g": 0.005},
+  "limit_notes": "The coordinate search is coarse on purpose (5 points per knob, 2 passes). The limit asks that it lands within 0.005 g of the global optimum; anything more is reported as the price of the coarse grid."
+}
