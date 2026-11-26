@@ -1,0 +1,78 @@
+{
+ "A_ref_m2": 0.100257898435748,
+ "rows": [
+  {
+   "theta_deg": 5.0,
+   "h_over_d": 0.1,
+   "measured": 1.38,
+   "kinematik": 23.45450598431827,
+   "rel": 15.99601882921614,
+   "graded": true
+  },
+  {
+   "theta_deg": 5.0,
+   "h_over_d": 0.2,
+   "measured": 0.92,
+   "kinematik": 8.441299205305299,
+   "rel": 8.175325223157934,
+   "graded": true
+  },
+  {
+   "theta_deg": 5.0,
+   "h_over_d": 0.3,
+   "measured": 0.62,
+   "kinematik": 4.8699754778696995,
+   "rel": 6.854799157854354,
+   "graded": true
+  },
+  {
+   "theta_deg": 10.0,
+   "h_over_d": 0.1,
+   "measured": 1.62,
+   "kinematik": 77.47868466513626,
+   "rel": 46.82634855872608,
+   "graded": true
+  },
+  {
+   "theta_deg": 10.0,
+   "h_over_d": 0.2,
+   "measured": 1.6,
+   "kinematik": 25.408984043342,
+   "rel": 14.880615027088748,
+   "graded": true
+  },
+  {
+   "theta_deg": 10.0,
+   "h_over_d": 0.3,
+   "measured": 1.2,
+   "kinematik": 13.912074848976054,
+   "rel": 10.593395707480045,
+   "graded": true
+  },
+  {
+   "theta_deg": 15.0,
+   "h_over_d": 0.2,
+   "measured": 1.95,
+   "kinematik": 51.20929972608965,
+   "rel": 25.26117934671264,
+   "graded": false
+  },
+  {
+   "theta_deg": 15.0,
+   "h_over_d": 0.3,
+   "measured": 1.78,
+   "kinematik": 27.073199898380885,
+   "rel": 14.209662864258924,
+   "graded": false
+  },
+  {
+   "theta_deg": 20.0,
+   "h_over_d": 0.3,
+   "measured": 1.95,
+   "kinematik": 43.897869215220304,
+   "rel": 21.51172780267708,
+   "graded": false
+  }
+ ],
+ "passed": false
+}

@@ -3,6 +3,8 @@
 
 ## Unreleased
 
+**The underfloor model checked against a measured diffuser body: a large miss.** On Southampton's wind-tunnel bluff body with 5 and 10° diffusers it predicts 6 to 47 times the measured downforce, because it takes the diffuser exit at freestream speed. Use it to compare floor shapes only; the numbers are not to be trusted until it is rebuilt against this test.
+
 **Frame torsion on a whole frame, checked against OpenSees.** A 64-tube FSAE-style space frame gives the same torsional rate, bending deflection and mount stiffness in frame_fe and in an independent OpenSeesPy model, within 0.00001 %.
 
 **Rotor cooling on the car now comes from an FSAE measurement, not a textbook correlation.** On Auburn's on-track cooling runs (SAE 2006-01-1974), the rotating-disc and cross-flow correlation read up to 94 % high above 13 m/s, so rotor temperatures on track came out low. On the car the default is now the coefficient measured there, h = 33.0 + 0.74·v W/m²K plus KinematiK's radiation; fitted on three of Auburn's speeds, that line predicts the other three within 25 %. Rotor temperatures at speed now read higher. The correlation is still used when a cross-flow is given (a dyno, a measured duct speed). New `fit_convection_line` fits the same line to your own cooling runs for the calibrated path.

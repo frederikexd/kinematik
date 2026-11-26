@@ -1,0 +1,18 @@
+{
+ "registered": "2026-11-25, before the underfloor model was run on this body. DISCLOSURE: the measured curves were read before this file was written (to find the inputs), and they are only in figures: the values below were read off Fig. 2a by eye and carry about +-0.05 in CL. The nose's underside shape is not dimensioned; it is taken from Fig. 1b as a quarter ellipse 2.5 d long and 1.03 d high.",
+ "source": {
+  "reference": "Ruhrmann & Zhang, Influence of Diffuser Angle on a Bluff Body in Ground Effect, J. Fluids Eng. 125 (2003) 332-338; geometry also from Zhang, Senior & Ruhrmann, Int. J. Heat Fluid Flow 25 (2004) 1-9, Fig. 1",
+  "tunnel": "Southampton 2.1 m x 1.5 m closed circuit, moving ground, 30 m/s, load cells; CL = downforce / (q A), A the frontal area",
+  "body_d_mm": 157.0, "length_over_d": 8.38, "height_over_d": 2.06, "width_over_d": 2.0, "ramp_start_over_d": 4.95,
+  "ramp_side_plates": true,
+  "CL_measured_fig2a": {
+   "5":  {"0.10": 1.38, "0.20": 0.92, "0.30": 0.62},
+   "10": {"0.10": 1.62, "0.20": 1.60, "0.30": 1.20},
+   "15": {"0.20": 1.95, "0.30": 1.78},
+   "20": {"0.30": 1.95}
+  }
+ },
+ "mapping": "underfloor._solve_channel (the same equations as underfloor.solve on an STL) on the gap under the body: nose relief, flat floor from 2.5 d, then the ramp at the diffuser angle from 4.95 d to 8.38 d; duct width 2 d; default discharge coefficient; reference area the frontal area (2.06 d x 2 d less the 0.35 d corner radii). The model is the floor only: it has no upper-body lift",
+ "graded": "the 5 and 10 deg diffusers at h/d 0.10, 0.20 and 0.30 (attached or nearly attached flow, no hysteresis). The 15 and 20 deg diffusers separate and are reported, not graded.",
+ "limits": {"relative_each_graded_point": 0.30}
+}
