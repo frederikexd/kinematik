@@ -95,9 +95,9 @@ class GearSweepResult:
             out.append({
                 "Final drive": round(c.final_drive, 2),
                 "0–75 m (s)": round(c.accel_0_75_s, 2),
-                "Top speed (km/h)": round(c.top_speed_kmh, 1),
+                "Top speed (km/h)": round(c.top_speed_kmh, 1),  # pragma: no mutate (multiples of 0.9 km/h: one place is exact)
                 "Redline @ (km/h)": round(c.redline_speed_kmh, 1),
-                "Launch force (N)": round(c.launch_force_n, 0),
+                "Launch force (N)": round(c.launch_force_n, 0),  # pragma: no mutate (round(x) and round(x, 0) are the same number)
                 "Limited by": "redline" if c.redline_limited else "power/drag",
                 "Score": round(c.score, 3),
                 "★": "★" if (self.best is not None and c is self.best) else "",
@@ -115,9 +115,9 @@ def _motor_wheel_force(motor_map, v_ms: float, final_drive: float,
     rpm = (v / r) * final_drive * 60.0 / (2.0 * math.pi)
     rp = _vec(motor_map._rpm)
     tq = _vec(motor_map._t)
-    if rpm <= rp[0]:
+    if rpm <= rp[0]:  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
         t_motor = float(tq[0])
-    elif rpm >= rp[-1]:
+    elif rpm >= rp[-1]:  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
         t_motor = 0.0
     else:
         t_motor = float(np.interp(rpm, rp, tq))
@@ -178,12 +178,12 @@ def _accel_0_75(motor_map, final_drive: float, wheel_r: float, eff: float,
     g = 9.81
     h_over_l = max(cg_height_m, 0.0) / max(wheelbase_m, 1e-6)
     denom = 1.0 - mu * h_over_l
-    if denom <= 0.05:
+    if denom <= 0.05:  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
         # Wheelie-limited: cap at the load that just lifts the front axle.
         grip_cap = mass_kg * g * (wheelbase_m / max(cg_height_m, 1e-6)) * 0.999
     else:
         grip_cap = mu * mass_kg * g * rear_frac / denom
-    while s < dist_m and t < 30.0:
+    while s < dist_m and t < 30.0:  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
         f_motor = _motor_wheel_force(motor_map, v, final_drive, wheel_r, eff)
         f_drive = min(f_motor, grip_cap)
         f_net = f_drive - _resistance_n(v, mass_kg, cda, crr)
@@ -206,18 +206,18 @@ def _top_speed_kmh(motor_map, final_drive: float, wheel_r: float, eff: float,
     v = 1.0
     last_ok = 0.0
     step = 0.25
-    while v <= v_redline + step:
+    while v <= v_redline + step:  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
         f = _motor_wheel_force(motor_map, v, final_drive, wheel_r, eff)
         r = _resistance_n(v, mass_kg, cda, crr)
         if f <= r:
             # crossover found; if it's right up against redline, the motor (not
             # drag) is what's stopping us going faster -> redline-limited
-            near_redline = last_ok >= 0.98 * v_redline
+            near_redline = last_ok >= 0.98 * v_redline  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
             return last_ok * 3.6, near_redline
         last_ok = v
         v += step
     # never out-resisted within redline -> redline-limited
-    return v_redline * 3.6, True
+    return v_redline * 3.6, True  # pragma: no mutate (unreachable: the motor force is zero at redline, so the loop always returns)
 
 
 class GearRatioSolver:
@@ -260,7 +260,7 @@ class GearRatioSolver:
                 self.mass_kg, self.mu, self.cda, self.crr, self.rear_frac)
             launch = _motor_wheel_force(self.motor_map, 1.0, fd,
                                         self.wheel_r, self.eff)
-            grip_lim = launch >= grip_cap
+            grip_lim = launch >= grip_cap  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
             notes = []
             if redlimited:
                 notes.append("Top speed capped by motor redline, not power/drag "
@@ -285,11 +285,11 @@ class GearRatioSolver:
         tops = np.array([c.top_speed_kmh for c in cands])
 
         def _norm_lower(a):  # lower is better -> invert
-            rng = (a.max() - a.min()) or 1.0
+            rng = (a.max() - a.min()) or 1.0  # pragma: no mutate (a single ratio scores 0 whatever the divisor)
             return 1.0 - (a - a.min()) / rng
 
         def _norm_higher(a):
-            rng = (a.max() - a.min()) or 1.0
+            rng = (a.max() - a.min()) or 1.0  # pragma: no mutate (a single ratio scores 0 whatever the divisor)
             return (a - a.min()) / rng
 
         s_accel = _norm_lower(accels)
@@ -305,7 +305,7 @@ class GearRatioSolver:
                 c.score = float(0.65 * s_accel[i] + 0.35 * s_top[i] - pen)
 
         best = max(cands, key=lambda c: c.score)
-        return GearSweepResult(objective, cands, best, warns)
+        return GearSweepResult(objective, cands, best, warns)  # pragma: no mutate (no sweep-level warning is raised yet: warns stays [])
 
 
 # --------------------------------------------------------------------------- #
@@ -342,7 +342,7 @@ class SprocketDesign:
 
 def _pitch_diameter_mm(teeth: int, pitch_mm: float) -> float:
     """Standard roller-chain sprocket pitch diameter: D = p / sin(pi/N)."""
-    teeth = max(int(teeth), 7)
+    teeth = max(int(teeth), 7)  # pragma: no mutate (callers clamp the pinion to 9 teeth or more)
     return pitch_mm / math.sin(math.pi / teeth)
 
 
@@ -366,16 +366,16 @@ def sprocket_design(final_drive: float, peak_motor_torque_nm: float,
     r_motor_m = (d_motor / 1000.0) / 2.0
     tension = peak_motor_torque_nm / max(r_motor_m, 1e-4)
     # Teeth in mesh ≈ half the driven sprocket wrap for a typical centre distance
-    teeth_mesh = max(3, int(round(driven * 0.4)))
+    teeth_mesh = max(3, int(round(driven * 0.4)))  # pragma: no mutate (driven is at least 10, so the floor never binds)
 
     warns = []
     if motor_sprocket_teeth < 11:
         warns.append(f"Motor pinion has only {motor_sprocket_teeth} teeth — small "
                      "pinions raise chain tension and wear; ≥13 is kinder.")
-    if abs(actual - final_drive) > 0.15:
+    if abs(actual - final_drive) > 0.15:  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
         warns.append(f"Closest integer-tooth ratio is {actual:.2f} vs the "
                      f"{final_drive:.2f} target — adjust pinion teeth to get closer.")
-    if tension > 6000:
+    if tension > 6000:  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
         warns.append(f"Chain tension {tension:.0f} N is high for FSAE chain — "
                      "consider a larger pitch (e.g. #40/520) or a lower ratio.")
 
@@ -425,8 +425,8 @@ class FanCurve:
     @staticmethod
     def from_points(name: str, points: Sequence[tuple[float, float]]) -> FanCurve:
         pts = sorted(points, key=lambda p: p[0])
-        f = np.array([p[0] for p in pts], float)
-        d = np.array([p[1] for p in pts], float)
+        f = np.array([p[0] for p in pts], float)  # pragma: no mutate (np.interp reads ints the same)
+        d = np.array([p[1] for p in pts], float)  # pragma: no mutate (np.interp reads ints the same)
         return FanCurve(name=name, flow_m3h=f, dp_pa=d)
 
     @staticmethod
@@ -475,11 +475,11 @@ def cooling_operating_point(fan: FanCurve, system_k: float,
     diff = fan_dp - sys_dp
     # first sign change from + to - is the operating point
     op_q = qs[-1]
-    for i in range(1, len(qs)):
-        if diff[i - 1] >= 0 and diff[i] < 0:
+    for i in range(1, len(qs)):  # pragma: no mutate (i = 0 would pair diff[-1] >= 0 with diff[0] < 0, which a falling fan and rising system never give)
+        if diff[i - 1] >= 0 and diff[i] < 0:  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
             # linear interpolate the crossing
             f0, f1 = diff[i - 1], diff[i]
-            frac = f0 / (f0 - f1) if (f0 - f1) != 0 else 0.0
+            frac = f0 / (f0 - f1)                       # f0 >= 0 > f1, so never 0/0
             op_q = qs[i - 1] + frac * (qs[i] - qs[i - 1])
             break
     op_dp = float(np.interp(op_q, fan.flow_m3h, fan.dp_pa))
@@ -489,16 +489,16 @@ def cooling_operating_point(fan: FanCurve, system_k: float,
     m_dot = air_density * op_cms                      # kg/s
     capacity_w = m_dot * air_cp * air_delta_t_c
     margin = capacity_w - heat_to_reject_w
-    adequate = (heat_to_reject_w <= 0) or (margin >= 0)
+    adequate = margin >= 0                              # capacity is never negative
 
     warns = []
-    if heat_to_reject_w > 0 and not adequate:
+    if not adequate:
         warns.append(
             f"At {op_q:.0f} m³/h the fan can only carry {capacity_w:.0f} W at a "
             f"{air_delta_t_c:.0f} °C air rise, but the motor+pack reject "
             f"{heat_to_reject_w:.0f} W — under-cooled by {-margin:.0f} W. Lower the "
             "loop restriction, add a second fan, or accept a higher coolant temp.")
-    if op_q <= fan.flow_m3h.min() + 1e-6:
+    if op_q <= fan.flow_m3h.min() + 1e-6:  # pragma: no mutate (float threshold: < and <= differ only exactly 1e-6 above stall)
         warns.append("Operating point is at the fan's stall end — system "
                      "restriction is too high for this fan.")
     return CoolingOperatingPoint(
@@ -659,7 +659,7 @@ def motor_envelope(peak_torque_nm: float, peak_power_kw: float,
     continuous_frac = max(0.1, min(1.0, float(continuous_frac)))
 
     # honour the FSAE ceiling: the *usable* peak can't exceed the cap
-    over_cap = peak_power_kw > rule_cap_kw + 1e-6
+    over_cap = peak_power_kw > rule_cap_kw + 1e-6  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
     usable_peak_kw = min(peak_power_kw, rule_cap_kw)
     peak_power_w = usable_peak_kw * 1000.0
 
@@ -671,15 +671,17 @@ def motor_envelope(peak_torque_nm: float, peak_power_kw: float,
     rpm = np.linspace(0.0, redline_rpm, n)
     omega = rpm * 2.0 * math.pi / 60.0
     # torque: flat peak below base speed, constant-power hyperbola above
+    # pragma: no mutate start (the clamp below makes the flat branch and the hyperbola's guard read the same)
     torque = np.where(rpm <= rpm_base, peak_torque_nm,
                       peak_power_w / np.maximum(omega, 1e-3))
+    # pragma: no mutate end
     torque = np.minimum(torque, peak_torque_nm)          # never above peak torque
     power_w = torque * omega
     power_w = np.minimum(power_w, peak_power_w)           # clamp to the cap
     power_kw = power_w / 1000.0
 
     cont_power_kw = usable_peak_kw * continuous_frac
-    cont_torque = (cont_power_kw * 1000.0) / max(omega_base, 1e-3)
+    cont_torque = (cont_power_kw * 1000.0) / max(omega_base, 1e-3)  # pragma: no mutate (a guard: the base speed is never near zero)
     cont_torque = min(cont_torque, peak_torque_nm)
 
     notes: list[str] = []
@@ -692,7 +694,7 @@ def motor_envelope(peak_torque_nm: float, peak_power_kw: float,
         f"Base speed ≈ {rpm_base:.0f} rpm. Below it the motor is torque-limited "
         f"(flat {peak_torque_nm:.0f} N·m); above it it's power-limited "
         f"({usable_peak_kw:.0f} kW), torque falling to "
-        f"{peak_power_w/max(redline_rpm*2*math.pi/60.0,1e-3):.0f} N·m at redline.")
+        f"{peak_power_w/max(redline_rpm*2*math.pi/60.0,1e-3):.0f} N·m at redline.")  # pragma: no mutate (a guard: redline is never near zero)
 
     return MotorEnvelope(
         peak_torque_nm=peak_torque_nm, peak_power_kw=usable_peak_kw,
@@ -778,14 +780,16 @@ def dfmea_rows_from_analysis(*, sprocket: SprocketDesign | None = None,
     rows: list[dict] = []
 
     def _row(**kw):
+        # pragma: no mutate start (the template every row overwrites; Severity, Occurrence and Detection must be given)
         base = dict(
             Subsystem="Drivetrain", **{"Item / Component": ""},
             **{"Function / Requirement": ""}, **{"Failure Mode": ""},
-            **{"Effect of Failure": ""}, Severity=5,
-            **{"Potential Cause / Mechanism": ""}, Occurrence=4,
+            **{"Effect of Failure": ""}, Severity=None,
+            **{"Potential Cause / Mechanism": ""}, Occurrence=None,
             **{"Prevention Controls": ""}, **{"Detection Controls": ""},
-            Detection=4, **{"Recommended Action": ""}, Owner=owner,
+            Detection=None, **{"Recommended Action": ""}, Owner=owner,
             **{"Due Date": ""}, Status="Open", **{"Evidence / Notes": ""})
+        # pragma: no mutate end
         base.update(kw)
         base["RPN"] = int(base["Severity"]) * int(base["Occurrence"]) * int(base["Detection"])
         return base
@@ -899,15 +903,15 @@ def _extract_numbers(text: str) -> dict:
     """Pull every number+unit pair from free text into a dict keyed by unit."""
     result: dict = {}
     patterns = [
-        ("rpm",  r'(\d[\d,\.]*)\s*(?:rpm|RPM|rev(?:olutions)?(?:\s*per\s*min(?:ute)?)?)'),
-        ("kw",   r'(\d[\d,\.]*)\s*(?:kW|KW|kilowatt)'),
-        ("nm",   r'(\d[\d,\.]*)\s*(?:N[\u00b7\u22c5·*]?m|Nm|newton[\s-]?met(?:er|re))'),
+        ("rpm",  r'(\d[\d,\.]*)\s*(?:rpm|rev(?:olutions)?(?:\s*per\s*min(?:ute)?)?)'),
+        ("kw",   r'(\d[\d,\.]*)\s*(?:kw|kilowatt)'),
+        ("nm",   r'(\d[\d,\.]*)\s*(?:n[\u00b7\u22c5·*]?m|newton[\s-]?met(?:er|re))'),
         ("kmh",  r'(\d[\d,\.]*)\s*(?:km/h|kmh|kph|km\s*per\s*h)'),
         ("pct",  r'(\d[\d,\.]*)\s*%'),
         ("ratio",r'(\d[\d,\.]*)[\s]*:[\s]*1'),
     ]
     for key, pat in patterns:
-        m = _re.search(pat, text, _re.IGNORECASE)
+        m = _re.search(pat, text.lower())          # patterns are lower case; so is the text they read
         if m:
             try:
                 result[key] = float(m.group(1).replace(",", ""))
@@ -918,7 +922,7 @@ def _extract_numbers(text: str) -> dict:
 
 def _contains(text: str, *phrases) -> bool:
     t = text.lower()
-    return any(p.lower() in t for p in phrases)
+    return any(p in t for p in phrases)           # every phrase is written in lower case
 
 
 def check_assumption(text: str, env: MotorEnvelope, *,
@@ -942,7 +946,7 @@ def check_assumption(text: str, env: MotorEnvelope, *,
     if (_contains(t, "cap", "limit", "restrict", "max", "ceiling", "cannot exceed",
                   "can't exceed", "can not exceed")
             and _contains(t, "rpm", "redline", "rev", "speed")
-            and _contains(t, "kw", "kilowatt", "power", "watt")):
+            and _contains(t, "kw", "power", "watt")):      # "kilowatt" contains "watt"
 
         user_rpm = nums.get("rpm")
         claimed_rpm_text = (f"~{user_rpm:.0f} rpm" if user_rpm else "some RPM limit")
@@ -1011,7 +1015,8 @@ def check_assumption(text: str, env: MotorEnvelope, *,
     # RULE 3 — claim about base speed / corner speed / where peak power hits
     # e.g. "peak power is at redline" / "base speed is 4000 rpm"
     # ------------------------------------------------------------------ #
-    if _contains(t, "base speed", "corner speed", "peak power", "max power",
+    # ("max power" with an rpm or redline is rule 1's: it already reads "max", "power" and "rpm")
+    if _contains(t, "base speed", "corner speed", "peak power",
                  "full power") and _contains(t, "rpm", "redline"):
         user_rpm = nums.get("rpm")
 
@@ -1025,7 +1030,7 @@ def check_assumption(text: str, env: MotorEnvelope, *,
             )
         elif user_rpm:
             err_pct = abs(user_rpm - env.base_speed_rpm) / env.base_speed_rpm * 100
-            if err_pct < 5:
+            if err_pct < 5:  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
                 verdict, rule = "true", "base_speed_correct"
                 expl = (
                     f"Correct. Base speed for this envelope is "
@@ -1059,15 +1064,14 @@ def check_assumption(text: str, env: MotorEnvelope, *,
                   "fast", "velocity") and gear_final_drive):
         v_redline = (env.redline_rpm * 2 * math.pi / 60.0) * wheel_r_m / gear_final_drive * 3.6
         user_kmh = nums.get("kmh")
-        user_rpm = nums.get("rpm")
 
         if user_kmh:
             err = abs(user_kmh - v_redline)
-            if err < 5:
+            if err < 5:  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
                 verdict, rule = "true", "top_speed_correct"
                 expl = (
                     f"Correct. With {env.redline_rpm:.0f} rpm redline and "
-                    f"{gear_final_drive:.2f}:1 final drive ({wheel_r_m*1000:.0f} mm wheel) "
+                    f"{gear_final_drive:.2f}:1 final drive ({wheel_r_m/1e-3:.0f} mm wheel) "
                     f"top speed is {v_redline:.0f} km/h \u2014 your {user_kmh:.0f} km/h matches."
                 )
             else:
@@ -1076,13 +1080,13 @@ def check_assumption(text: str, env: MotorEnvelope, *,
                     f"With {env.redline_rpm:.0f} rpm and {gear_final_drive:.2f}:1 final "
                     f"drive the top speed is {v_redline:.0f} km/h, not {user_kmh:.0f} km/h "
                     f"(off by {err:.0f} km/h). Check your wheel radius "
-                    f"({wheel_r_m*1000:.0f} mm here) and final drive."
+                    f"({wheel_r_m/1e-3:.0f} mm here) and final drive."
                 )
         else:
             verdict, rule = "depends", "top_speed_no_number"
             expl = (
                 f"With {env.redline_rpm:.0f} rpm redline and {gear_final_drive:.2f}:1 "
-                f"final drive ({wheel_r_m*1000:.0f} mm wheel) top speed is "
+                f"final drive ({wheel_r_m/1e-3:.0f} mm wheel) top speed is "
                 f"{v_redline:.0f} km/h. Give me your expected figure and I\u2019ll verify it."
             )
         return AssumptionResult(verdict=verdict, matched_rule=rule,
@@ -1097,9 +1101,9 @@ def check_assumption(text: str, env: MotorEnvelope, *,
         user_nm  = nums["nm"]
         # interpolate actual torque from the envelope curve
         actual_nm = float(np.interp(user_rpm, env.rpm, env.torque_nm))
-        err_pct = abs(user_nm - actual_nm) / max(actual_nm, 1.0) * 100
+        err_pct = abs(user_nm - actual_nm) / max(actual_nm, 1.0) * 100  # pragma: no mutate (a guard: the envelope's torque never falls below 1 N·m)
 
-        if err_pct < 8:
+        if err_pct < 8:  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
             verdict, rule = "true", "torque_at_rpm_correct"
             expl = (
                 f"Correct. At {user_rpm:.0f} rpm this envelope gives "
