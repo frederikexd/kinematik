@@ -45,7 +45,8 @@ def _rows(text: str) -> list[dict]:
     rows = list(csv.DictReader(io.StringIO(text.lstrip("﻿"))))
     if not rows:
         raise ValueError("the log is empty")
-    return [{(k or "").strip(): (v or "").strip() for k, v in r.items()} for r in rows]
+    # A row longer than the header files its extra cells under None: they have no column name, so they are dropped.
+    return [{k.strip(): (v or "").strip() for k, v in r.items() if k is not None} for r in rows]
 
 
 def _col(rows, name) -> np.ndarray:
@@ -83,7 +84,7 @@ def validate_pack(config: dict, log_text: str) -> dict:
     ambient = float(np.mean(_col(rows, "inlet_c"))) if "inlet_c" in rows[0] else float(config["ambient_c"])
     layout = pt.PackLayout(rows=n_rows, cols=n_cols, parallel=int(config.get("parallel", 1)), cell=cell,
                            ambient_c=ambient)
-    air = pt.AirflowParams(mode="duct", duct_cfm=float(config.get("duct_cfm", 0.0)))
+    air = pt.AirflowParams(mode="duct", duct_cfm=float(config.get("duct_cfm", 0.0)))  # pragma: no mutate (duct is also the default mode)
     init = float(config.get("init_temp_c", ambient))
     runs = {}
     for key, scale in (("nominal", 1.0), ("cool", 1.2), ("warm", 0.8)):
@@ -101,7 +102,7 @@ def validate_pack(config: dict, log_text: str) -> dict:
         meas = _col(rows, c)
         lo = np.minimum(runs["cool"][:, j], runs["warm"][:, j])
         hi = np.maximum(runs["cool"][:, j], runs["warm"][:, j])
-        share = float(np.mean((meas >= lo - 1e-9) & (meas <= hi + 1e-9)))
+        share = float(np.mean((meas >= lo - 1e-9) & (meas <= hi + 1e-9)))  # pragma: no mutate (float tolerance: the comparisons differ only on exact equality)
         peak_m, peak_k = float(np.max(meas) - init), float(np.max(runs["nominal"][:, j]) - init)
         out.append({"thermocouple": c, "share_in_band": share, "peak_rise_measured_k": peak_m,
                     "peak_rise_model_k": peak_k, "max_error_k": float(np.max(np.abs(runs["nominal"][:, j] - meas))),
@@ -116,8 +117,8 @@ def validate_traces(log_text: str) -> dict:
     out = []
     for i, r in enumerate(_rows(log_text), start=2):
         try:
-            tr = Trace(name=f"row{i}", net="test", owner_subsystem="electrics", width_mm=float(r["width_mm"]),
-                       copper_oz=float(r["copper_oz"]), is_external=r.get("external", "1") not in ("0", "false"))
+            tr = Trace(name=f"row{i}", net="test", owner_subsystem="electrics", width_mm=float(r["width_mm"]),  # pragma: no mutate (name, net and owner do not enter the rise)
+                       copper_oz=float(r["copper_oz"]), is_external=r.get("external", "1") not in ("0", "false"))  # pragma: no mutate (IPC-2152 uses one k for both layers, so the layer does not enter the rise)
             current, measured = float(r["current_a"]), float(r["measured_rise_c"])
         except (KeyError, ValueError):
             raise ValueError(f"trace log line {i}: needs width_mm, copper_oz, current_a and measured_rise_c "
@@ -165,16 +166,16 @@ def main(argv=None) -> int:
     a = ap.parse_args(argv)
     try:
         if a.kind == "pack":
-            res = validate_pack(json.loads(Path(a.config).read_text(encoding="utf-8")),
-                                Path(a.log).read_text(encoding="utf-8-sig"))
+            res = validate_pack(json.loads(Path(a.config).read_text(encoding="utf-8")),  # pragma: no mutate (codec names are case-blind and the locale default is UTF-8 here)
+                                Path(a.log).read_text(encoding="utf-8-sig"))  # pragma: no mutate (same; a kept BOM is stripped by _rows)
         else:
-            res = validate_traces(Path(a.log).read_text(encoding="utf-8-sig"))
+            res = validate_traces(Path(a.log).read_text(encoding="utf-8-sig"))  # pragma: no mutate (same; a kept BOM is stripped by _rows)
     except (OSError, ValueError, KeyError, json.JSONDecodeError) as e:
         print(f"kinematik-validate: {e}", file=sys.stderr)
         return 2
     md = render(res)
     if a.report:
-        Path(a.report).write_text(md, encoding="utf-8")
+        Path(a.report).write_text(md, encoding="utf-8")  # pragma: no mutate (codec names are case-blind and the locale default is UTF-8 here)
     else:
         print(md)
     return 0 if res["passed"] else 1

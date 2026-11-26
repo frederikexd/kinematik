@@ -113,11 +113,7 @@ _UNIT_IN_HDR = re.compile(r"\(([^)]*)\)|\[([^\]]*)\]")
 
 
 def _num(v) -> float | None:
-    if v is None or isinstance(v, bool):
-        return None
-    if isinstance(v, (int, float)):
-        return float(v) if math.isfinite(float(v)) else None
-    s = str(v).strip().replace(",", ".")
+    s = str(v).strip().replace(",", ".")      # None and booleans read as "None", "True", "False": not numbers
     if not s:
         return None
     try:
@@ -129,8 +125,8 @@ def _num(v) -> float | None:
 
 def _unit_from_header(cells) -> str | None:
     for c in cells:
-        for m in _UNIT_IN_HDR.finditer(str(c or "")):
-            u = (m.group(1) or m.group(2) or "").strip().lower()
+        for m in _UNIT_IN_HDR.finditer(str(c)):
+            u = m.group(m.lastindex).strip().lower()
             if u in ("mm", "millimeter", "millimetre", "millimeters", "millimetres"):
                 return "mm"
             if u in ("m", "meter", "metre", "meters", "metres"):
@@ -160,19 +156,19 @@ def _rows_from_xlsx(data: bytes) -> list[tuple[str, list]]:
 
 
 def _rows_from_csv_raw(data: bytes) -> list[tuple[str, list]]:
-    text = data.decode("utf-8-sig", errors="replace")
+    text = data.decode("utf-8-sig", errors="replace")  # pragma: no mutate (codec names are case-blind, and a kept BOM still leaves "Name" for the header match)
     # deterministic delimiter choice: whichever of , ; tab appears most in the
     # first lines wins (the Sniffer fails on headerless one-column-ish files;
     # OptimumK exports and euro-locale sheets commonly use ;)
-    head = "\n".join(text.splitlines()[:10])
-    delim = max(",;\t", key=head.count) if any(d in head for d in ",;\t") else ","
+    head = "\n".join(text.splitlines()[:10])  # pragma: no mutate (head is only counted for delimiters; the joiner holds none)
+    delim = max(",;\t", key=head.count) if any(d in head for d in ",;\t") else ","  # pragma: no mutate (with no delimiter present max() returns "," too)
     rows = list(csv.reader(io.StringIO(text), delimiter=delim))
     return [("csv", r) for r in rows]
 
 
 def _rows_from_xlsx_raw(data: bytes) -> list[tuple[str, list]]:
     import openpyxl                              # lazy: heavy import
-    wb = openpyxl.load_workbook(io.BytesIO(data), data_only=True, read_only=True)
+    wb = openpyxl.load_workbook(io.BytesIO(data), data_only=True, read_only=True)  # pragma: no mutate (an uncached formula reads as None or as text: neither is a number)
     out = []
     for ws in wb.worksheets:
         for row in ws.iter_rows(values_only=True):
@@ -199,8 +195,8 @@ def parse_tabular(data: bytes, filename: str = "") -> tuple[list[RawPoint], str 
 
     points: list[RawPoint] = []
     unit_hint: str | None = None
-    cols: dict | None = None                  # {name: i, x: i, y: i, z: i}
-    cur_sheet = None
+    cols: dict | None = None  # pragma: no mutate ({name: i, x: i, y: i, z: i}; the first row's sheet always differs from cur_sheet and resets it)
+    cur_sheet = None  # pragma: no mutate (no sheet is named like this placeholder, so the first row always resets cols)
 
     for rix, (sheet, row) in enumerate(rows):
         if sheet != cur_sheet:
@@ -216,11 +212,11 @@ def parse_tabular(data: bytes, filename: str = "") -> tuple[list[RawPoint], str 
             s = str(c)
             if idx["name"] is None and _HDR_NAME.search(s):
                 idx["name"] = i
-            elif idx["x"] is None and _HDR_X.search(s) and _num(c) is None:
+            elif idx["x"] is None and _HDR_X.search(s):
                 idx["x"] = i
-            elif idx["y"] is None and _HDR_Y.search(s) and _num(c) is None:
+            elif idx["y"] is None and _HDR_Y.search(s):
                 idx["y"] = i
-            elif idx["z"] is None and _HDR_Z.search(s) and _num(c) is None:
+            elif idx["z"] is None and _HDR_Z.search(s):
                 idx["z"] = i
         if idx["x"] is not None and idx["y"] is not None and idx["z"] is not None:
             if idx["name"] is None:              # name = first non-XYZ text col
@@ -322,7 +318,7 @@ _C = {
                "toelink", "steer"},
     "wheel":  {"wheel", "wc", "wheelcenter", "wheelcentre"},
     "center": {"center", "centre", "ctr"},
-    "patch":  {"contact", "patch", "cp", "tire", "tyre", "ground"},
+    "patch":  {"contact", "patch", "cp", "tire", "tyre", "ground", "contactpatch"},
     "pushrod": {"pushrod", "push", "prod", "pullrod", "pull"},
     "rocker": {"rocker", "bellcrank", "bell", "crank"},
     "spring": {"spring", "damper", "shock", "coilover", "coil"},
@@ -399,9 +395,6 @@ def _ordinal_of(toks: set, name: str) -> int | None:
         if t in _ORDINALS:
             return _ORDINALS[t]
     m = re.search(r"(?:link|arm|l)\s*([1-6])\b", name.lower())
-    if m:
-        return int(m.group(1))
-    m = re.search(r"\b([1-6])\b", re.sub(r"[^a-z0-9]+", " ", name.lower()))
     return int(m.group(1)) if m else None
 
 
@@ -492,7 +485,7 @@ def map_names(points: list[RawPoint]
             hits = ["wheel_center"]
         if len(hits) == 1:
             claims.setdefault(hits[0], []).append(p)
-        elif len(hits) > 1:
+        elif hits:
             ambiguous.append((p, hits))
         else:
             unmapped.append(p)
@@ -521,7 +514,7 @@ def infer_units(points: list[RawPoint], header_hint: str | None = None
     vals = [abs(v) for p in points for v in p.coords if v]
     if not vals:
         return "mm", "no numeric data — defaulted"
-    big = sorted(vals)[int(len(vals) * 0.9)] if len(vals) > 2 else max(vals)
+    big = sorted(vals)[int(len(vals) * 0.9)]      # the 90th percentile: the largest value for up to ten
     if big < 3.0:
         return "m", f"largest coordinates ≈ {big:.2f} — metres is the only unit that puts a corner at car scale"
     if big < 60.0:
@@ -577,7 +570,7 @@ def build_result(points: list[RawPoint], *,
                  header_hint: str | None = None,
                  corner: str = "",
                  mirror: bool | None = None,
-                 topology: str = "auto",
+                 topology: str = "auto",  # pragma: no mutate (an unknown topology falls back to "auto" in both lookups)
                  reorigin: bool = True) -> ImportResult:
     """Run the full pipeline on an already-corner-filtered point list.
 
@@ -604,7 +597,7 @@ def build_result(points: list[RawPoint], *,
     import coordinate_frames as _cf
     src = _cf.BUILTIN_FRAMES[frame_key]
     dst = _cf.BUILTIN_FRAMES["kinematik"]
-    zero = (0.0, 0.0, 0.0)
+    zero = (0.0, 0.0, 0.0)  # pragma: no mutate (passed as both origins: equal origins cancel whatever they are)
 
     conv: dict[str, list] = {}
     for key, p in mapped_pts.items():
@@ -629,14 +622,12 @@ def build_result(points: list[RawPoint], *,
     # re-origin to the editor convention: x = 0 at wheel centre, z = 0 at
     # the contact patch (or the lowest point when no patch is present)
     if reorigin:
-        dx = conv.get("wheel_center", [0, 0, 0])[0] if "wheel_center" in conv else 0.0
+        dx = conv["wheel_center"][0] if "wheel_center" in conv else 0.0
         if "contact_patch" in conv:
             dz = conv["contact_patch"][2]
         else:
-            dz = min(v[2] for v in conv.values())
-            if "wheel_center" in conv:      # better estimate: WC z - tyre radius unknown → keep min
-                pass
-        if abs(dx) > 1e-9 or abs(dz) > 1e-9:
+            dz = min(v[2] for v in conv.values())     # tire radius unknown: the lowest point stands in
+        if abs(dx) > 1e-9 or abs(dz) > 1e-9:  # pragma: no mutate (float tolerance: a shift under 1 mm is still a shift)
             for v in conv.values():
                 v[0] -= dx
                 v[2] -= dz

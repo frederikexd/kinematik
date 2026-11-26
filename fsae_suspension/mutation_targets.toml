@@ -750,3 +750,21 @@ tests = [
     "tests/test_gnss.py",
 ]
 deselect = []
+
+[[group]]
+name = "hardpoint_import"
+files = ["suspension/hardpoint_import.py"]
+tests = [
+    "tests/test_mutation_hardpoint_import.py",
+    "tests/test_hardpoint_import.py",
+]
+deselect = []
+
+[[group]]
+name = "thermal_validation"
+files = ["suspension/thermal_validation.py"]
+tests = [
+    "tests/test_mutation_thermal_validation.py",
+    "tests/test_thermal_validation.py",
+]
+deselect = []
