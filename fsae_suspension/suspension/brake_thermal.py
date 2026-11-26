@@ -598,6 +598,7 @@ class ThroughThicknessTrace:
     over_material_limit: bool
     synthesized: bool
     T_field_c: list | None = None   # the through-thickness profile at the end, surface first
+    T_depth_c: list | None = None   # temperature at record_depth_mm below the surface, each step
 
 
 class OneDRotor:
@@ -636,7 +637,8 @@ class OneDRotor:
 
     def simulate(self, power_series, dt: float,
                  v_series=None, *, T_initial_c: float | None = None,
-                 h_w_m2K: float | None = None) -> ThroughThicknessTrace:
+                 h_w_m2K: float | None = None,
+                 record_depth_mm: float | None = None) -> ThroughThicknessTrace:
         """T_initial_c: a uniform start temperature in °C other than ambient (a rotor
         still hot from the last run). h_w_m2K: a fixed convection coefficient in W/m²K,
         measured or calibrated, in place of the rotating-disc correlation.
@@ -661,6 +663,8 @@ class OneDRotor:
 
         T = [Tamb if T_initial_c is None else float(T_initial_c)] * self.n   # node 0 = surface, n-1 = core
         ts, Tsurf, Tcore, dTg, sig = [], [], [], [], []
+        Tdepth = [] if record_depth_mm is not None else None
+        x_nodes = [j * self.dx for j in range(self.n)]           # depth of each node, m
         rho_cp = self.mat.rho_kg_m3 * self.mat.cp_j_kgK
         t = 0.0
         n_steps = len(power_series)
@@ -732,6 +736,12 @@ class OneDRotor:
             sigma = E * alpha_x * abs(grad) / (1.0 - nu) / 1e6   # MPa
             ts.append(t); Tsurf.append(T[0]); Tcore.append(T[-1])
             dTg.append(grad); sig.append(sigma)
+            if Tdepth is not None:
+                #  a thermocouple below the surface (as dynamometer tests place them)
+                zq = min(max(float(record_depth_mm) / 1000.0, 0.0), x_nodes[-1])
+                jq = min(int(zq / self.dx), self.n - 2)
+                wq = (zq - x_nodes[jq]) / self.dx
+                Tdepth.append(T[jq] * (1.0 - wq) + T[jq + 1] * wq)
 
         T_smax = max(Tsurf) if Tsurf else Tamb
         over = T_smax > self.mat.T_max_c  # pragma: no mutate
@@ -747,7 +757,7 @@ class OneDRotor:
             material_T_max_c=self.mat.T_max_c,
             over_material_limit=over,
             synthesized=not p.calibrated,
-            T_field_c=list(T))
+            T_field_c=list(T), T_depth_c=Tdepth)
 
 
 def fade_test_power_series(*, mass_kg: float, v0_ms: float, front_bias: float,

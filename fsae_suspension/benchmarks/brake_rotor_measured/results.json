@@ -1,0 +1,27 @@
+{
+ "test_1": {
+  "max_1mm_C": 90.72072417891893,
+  "t_of_max_s": 27.160000000001446,
+  "max_surface_C": 92.39529343396006,
+  "measured_max_C": 87.0,
+  "paper_model_max_C": 88.5,
+  "diff_vs_measured_C": 3.7207241789189283,
+  "diff_vs_paper_model_C": 2.2207241789189283,
+  "passes": true,
+  "diagnostic_exact_finite_slab_C": 90.72076272670034,
+  "diagnostic_exact_semi_infinite_C": 88.4551631170292
+ },
+ "test_2": {
+  "max_1mm_C": 85.21363733528474,
+  "t_of_max_s": 32.63000000000208,
+  "max_surface_C": 86.46450956556912,
+  "measured_max_C": 79.6,
+  "paper_model_max_C": 81.5,
+  "diff_vs_measured_C": 5.61363733528475,
+  "diff_vs_paper_model_C": 3.7136373352847443,
+  "passes": false,
+  "diagnostic_exact_finite_slab_C": 85.21369713458219,
+  "diagnostic_exact_semi_infinite_C": 81.79186259659113
+ },
+ "passed": false
+}

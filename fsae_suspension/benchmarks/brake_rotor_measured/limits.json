@@ -1,0 +1,14 @@
+{
+  "registered": "2026-11-25, before KinematiK's rotor model was run on this test. DISCLOSURE: the measured maxima (87 and 79.6 C) and the paper's own analytical maxima (88.5 and 81.5 C) were read before this file was written; the inputs were taken from the paper's Tables 1-4 without adjustment.",
+  "source": {
+    "reference": "Yevtushenko, Kuciej, Grzes, Wasilewski: Analytical Model of the Frictional Heating in a Railway Brake Disc at Single Braking with Experimental Verification, Materials 15(19), 6821, 2022 (open access, CC BY)",
+    "url": "https://www.mdpi.com/1996-1944/15/19/6821",
+    "test": "Full-scale railway brake dynamometer, UIC 541-3 thermocouples 1 mm below the friction surface; the hottest one at r_eq + 40 mm = 0.293 m",
+    "inputs": {"disc": "cast iron, OD 0.64 m, ID 0.35 m, thickness 0.055 m, k 51 W/mK, rho 7100, c 500",
+               "pads": "two, cover angle 1.57 rad (eta 0.25)", "F0_kN": 20, "V0_kmh": 80, "p0_MPa": 0.294, "Rw_m": 0.435,
+               "test_1": {"gamma": 0.874, "ti_s": 4, "t0s_s": 40, "ts_s": 42, "f": 0.227, "T0_C": 36, "measured_max_C": 87.0, "paper_model_max_C": 88.5},
+               "test_2": {"gamma": 0.859, "ti_s": 2.5, "t0s_s": 46.75, "ts_s": 48, "f": 0.194, "T0_C": 34, "measured_max_C": 79.6, "paper_model_max_C": 81.5}}
+  },
+  "mapping": "KinematiK's OneDRotor (finite slab, half thickness 27.5 mm, both faces heated, explicit finite differences) driven by the paper's own frictional heat flux into the disc at r = 0.293 m, q_d = eta gamma f p(t) V(t) r / Rw, with the pressure ramp and velocity of its eqs. (12)-(17); no convection or radiation during the stop (as in the paper's model), temperature read 1 mm below the surface.",
+  "limits": {"vs_measured_C": 5.0, "vs_paper_model_C": 3.0}
+}
