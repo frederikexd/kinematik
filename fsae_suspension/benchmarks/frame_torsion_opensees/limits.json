@@ -1,0 +1,11 @@
+{
+ "registered": "2026-11-25, before frame_fe.py or OpenSees was run on this frame",
+ "frame": "a full FSAE-style steel space frame built in scripts/frame_torsion_opensees_benchmark.py from the rules' primary structure (front bulkhead, front hoop, main hoop, upper and lower side-impact members, a diagonal per side bay, the main hoop bracing to the rear, a rear box with diagonals and floor diagonals): 25.4 x 2.4, 25.4 x 1.65 and 25.4 x 1.25 mm round tubes, about 60 tubes, every tube in 50 mm elements",
+ "load_cases": {
+  "torsion": "rear suspension mount nodes fixed in all six DOF; vertical +F and -F at the right and left front mounts; torsional rate T / theta in N m/deg, theta from the two front mount deflections",
+  "bending": "the same supports; a vertical load at the four cockpit floor nodes; the largest deflection",
+  "mount_stiffness": "the vertical stiffness at one front mount, the others free except the rear mounts fixed"
+ },
+ "reference": "OpenSeesPy 3.8 (elasticBeamColumn, Linear geomTransf, linear static solve), modelled independently from the same node and tube list; E 205000 MPa, G 79500 MPa as in frame_fe",
+ "limits": {"relative_each_quantity": 0.001}
+}

@@ -1,0 +1,23 @@
+{
+ "n_nodes": 613,
+ "n_elements": 651,
+ "n_tubes": 64,
+ "rows": {
+  "torsion_Nm_per_deg": {
+   "kinematik": 1397.7461153401264,
+   "opensees": 1397.7461153391039,
+   "rel": 7.316369732279782e-13
+  },
+  "bending_max_deflection_mm": {
+   "kinematik": 43.408465773530985,
+   "opensees": 43.40846577129352,
+   "rel": 5.154432436427214e-11
+  },
+  "mount_N_per_mm": {
+   "kinematik": 44.00296269637472,
+   "opensees": 44.002962699234175,
+   "rel": -6.498312998814981e-11
+  }
+ },
+ "passed": true
+}
