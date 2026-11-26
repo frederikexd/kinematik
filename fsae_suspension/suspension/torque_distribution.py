@@ -194,15 +194,18 @@ def state(V: float, kappa: float, dkds: float, at: float, option: str, car: Car 
         #  So before declaring the instant infeasible, search the split held
         #  through both passes.
         if _frac is None and lo < hi:
+            def held(f):
+                """The instant with the split held at fraction f of its range through both passes."""
+                return state(V, kappa, dkds, at, option, car, tt, veh, _frac=f)
             fr = [i / 40.0 for i in range(41)]  # pragma: no mutate (search grid)
-            cand = [(r["umax"], f, r) for f in fr for r in [state(V, kappa, dkds, at, option, car, tt, veh, _frac=f)]]
+            cand = [(r["umax"], f, r) for f in fr for r in [held(f)]]
             u0, f0, r0 = min(cand, key=lambda z: z[0])  # pragma: no mutate (grid points are distinct)
-            a_, b_ = max(0.0, f0 - 1 / 40.0), min(1.0, f0 + 1 / 40.0)
+            a_, b_ = max(0.0, f0 - 1 / 40.0), min(1.0, f0 + 1 / 40.0)  # pragma: no mutate (one grid step either side of the best grid point; a wider window converges to the same minimum)
             gr = (math.sqrt(5) - 1) / 2
             for _ in range(20):  # pragma: no mutate (golden-section count)
                 x1, x2 = b_ - gr * (b_ - a_), a_ + gr * (b_ - a_)
-                r1 = state(V, kappa, dkds, at, option, car, tt, veh, _frac=x1)
-                r2 = state(V, kappa, dkds, at, option, car, tt, veh, _frac=x2)
+                r1 = held(x1)
+                r2 = held(x2)
                 if r1["umax"] <= r2["umax"]: b_ = x2  # pragma: no mutate (float threshold)
                 else: a_ = x1
                 for r in (r1, r2):
@@ -210,13 +213,13 @@ def state(V: float, kappa: float, dkds: float, at: float, option: str, car: Car 
             if u0 > 1.0 and exact_overshoot:  # pragma: no mutate (float threshold)
                 from scipy.optimize import minimize_scalar
                 fine = [i / 2000.0 for i in range(2001)]  # pragma: no mutate (search grid)
-                uf = [state(V, kappa, dkds, at, option, car, tt, veh, _frac=f)["umax"] for f in fine]
+                uf = [held(f)["umax"] for f in fine]
                 i = min(range(len(fine)), key=uf.__getitem__)
-                if uf[i] < u0: u0, r0 = uf[i], state(V, kappa, dkds, at, option, car, tt, veh, _frac=fine[i])  # pragma: no mutate (keep the best seen)
-                res = minimize_scalar(lambda f: state(V, kappa, dkds, at, option, car, tt, veh, _frac=f)["umax"],
-                                      bounds=(fine[max(i - 1, 0)], fine[min(i + 1, 2000)]), method="bounded",
-                                      options={"xatol": 1e-9})
-                if res.fun < u0: u0, r0 = float(res.fun), state(V, kappa, dkds, at, option, car, tt, veh, _frac=float(res.x))  # pragma: no mutate (keep the best seen)
+                if uf[i] < u0: u0, r0 = uf[i], held(fine[i])  # pragma: no mutate (keep the best seen)
+                res = minimize_scalar(lambda f: held(f)["umax"],
+                                      bounds=(fine[max(i - 1, 0)], fine[min(i + 1, 2000)]), method="bounded",  # pragma: no mutate (bounded Brent on the bracket around the best scan point; the minimum is flat there, so a wider bracket or scipy's default method lands on the same value)
+                                      options={"xatol": 1e-9})  # pragma: no mutate (tolerance on a flat minimum: the value it reaches does not change)
+                if res.fun < u0: u0, r0 = float(res.fun), held(float(res.x))  # pragma: no mutate (keep the best seen)
             if u0 < best["umax"]:  # pragma: no mutate (float threshold)
                 if u0 > 1.0: r0 = {**r0, "overshoot_upper_bound": not exact_overshoot}
                 return r0
@@ -285,9 +288,9 @@ def simulate_corner(R: float, arc_deg: float, option: str, v_top: float = 22.0, 
         return lo
     cap = np.array([vcap(i) for i in range(n)])
     vf = cap.copy()                                   # every cap is at most v_top already
-    for i in range(1, n): vf[i] = min(cap[i], math.sqrt(vf[i - 1] ** 2 + 2 * amax(vf[i - 1], i - 1, +1) * ds))
+    for i in range(1, n): vf[i] = min(cap[i], math.sqrt(vf[i - 1] ** 2 + 2 * amax(vf[i - 1], i - 1, +1) * ds))  # pragma: no mutate (the path opens on a straight at v_top, so the first points sit at their cap whichever index the pass starts from)
     vb = vf.copy()
-    for i in range(n - 2, -1, -1): vb[i] = min(vf[i], math.sqrt(vb[i + 1] ** 2 + 2 * amax(vb[i + 1], i + 1, -1) * ds))
+    for i in range(n - 2, -1, -1): vb[i] = min(vf[i], math.sqrt(vb[i + 1] ** 2 + 2 * amax(vb[i + 1], i + 1, -1) * ds))  # pragma: no mutate (the path closes on a straight at v_top: the end points are at their cap whichever index the pass stops at)
     V = vb; at = np.gradient(V * V / 2.0, s)
     rows = [state(V[i], k[i], dk[i], at[i], option, car) for i in range(n)]
     t = np.concatenate([[0.0], np.cumsum(ds / np.maximum(0.5 * (V[1:] + V[:-1]), 0.1))])

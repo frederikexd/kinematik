@@ -185,17 +185,17 @@ def crossflow_effectiveness(ntu: float, cr: float, arrangement: str = "both_unmi
     ntu, cr = max(float(ntu), 0.0), min(max(float(cr), 0.0), 1.0)
     if ntu == 0.0:
         return 0.0
-    if cr < 1e-9:
+    if cr < 1e-9:  # pragma: no mutate (float threshold: < and <= differ only at exactly 1e-9, where both forms agree to 1e-9)
         return 1.0 - math.exp(-ntu)
     if arrangement == "both_unmixed":
         # eps = 1/(Cr NTU) * sum_n [1 - e^-N sum_{m<=n} N^m/m!] [1 - e^-CrN sum_{m<=n} (CrN)^m/m!]
         x, y = ntu, cr * ntu
         px, py = math.exp(-x), math.exp(-y)          # running e^-x * x^n / n!
         sx, sy, total = px, py, 0.0
-        for n in range(400):
+        for n in range(400):  # pragma: no mutate (iteration cap; the series has converged long before it)
             term = (1.0 - sx) * (1.0 - sy)
             total += term
-            if term < 1e-15 and n > x + 10:
+            if term < 1e-15 and n > x + 10:  # pragma: no mutate (convergence cut: every later term is under 1e-15)
                 break
             px *= x / (n + 1); py *= y / (n + 1)
             sx += px; sy += py

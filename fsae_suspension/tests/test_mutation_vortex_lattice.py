@@ -74,25 +74,25 @@ def _grid(ns=7, nc=5, c=0.3, b=1.2, m=0.02, z0=0.0, twist=0.0):
     return [[np.array([x, y, z0 + m * 4 * (x / c) * (1 - x / c) - twist * x * abs(y)]) for x in xs] for y in ys]
 
 
-def _lattice(grid, V=20.0, yaw=0.0, h=None, ref=None, area=None):
-    g = np.asarray(grid, float)
+def _lattice(grid, V=20.0, yaw=0.0, h=None, ref=None, area=None, plates=()):
     Vinf = V * np.array([math.cos(math.radians(yaw)), -math.sin(math.radians(yaw)), 0.0])
     pan = []
-    for i in range(g.shape[0] - 1):
-        for j in range(g.shape[1] - 1):
-            p00, p01, p10, p11 = g[i, j], g[i, j + 1], g[i + 1, j], g[i + 1, j + 1]
-            n = np.cross(p01 - p00, p10 - p00)
-            if np.linalg.norm(n) < 1e-12:
-                continue
-            a, b = p00 + 0.25 * (p01 - p00), p10 + 0.25 * (p11 - p10)
-            cp = 0.5 * (p00 + 0.75 * (p01 - p00) + p10 + 0.75 * (p11 - p10))
-            # trailing legs along the panel edges to the trailing edge, then downstream (Katz & Plotkin)
-            far = np.array([1e4, 0.0, 0.0])
-            left = [a] + [g[i, q] for q in range(j + 1, g.shape[1])] + [g[i, -1] + far]
-            right = [b] + [g[i + 1, q] for q in range(j + 1, g.shape[1])] + [g[i + 1, -1] + far]
-            segs = ([(left[q + 1], left[q]) for q in range(len(left) - 1)] + [(a, b)]
-                    + [(right[q], right[q + 1]) for q in range(len(right) - 1)])
-            pan.append((a, b, cp, n / np.linalg.norm(n), abs(b[1] - a[1]), segs))
+    for g in [np.asarray(grid, float)] + [np.asarray(s, float) for s in plates]:
+     for i in range(g.shape[0] - 1):
+         for j in range(g.shape[1] - 1):
+             p00, p01, p10, p11 = g[i, j], g[i, j + 1], g[i + 1, j], g[i + 1, j + 1]
+             n = np.cross(p01 - p00, p10 - p00)
+             if np.linalg.norm(n) < 1e-12:
+                 continue
+             a, b = p00 + 0.25 * (p01 - p00), p10 + 0.25 * (p11 - p10)
+             cp = 0.5 * (p00 + 0.75 * (p01 - p00) + p10 + 0.75 * (p11 - p10))
+             # trailing legs along the panel edges to the trailing edge, then downstream (Katz & Plotkin)
+             far = np.array([1e4, 0.0, 0.0])
+             left = [a] + [g[i, q] for q in range(j + 1, g.shape[1])] + [g[i, -1] + far]
+             right = [b] + [g[i + 1, q] for q in range(j + 1, g.shape[1])] + [g[i + 1, -1] + far]
+             segs = ([(left[q + 1], left[q]) for q in range(len(left) - 1)] + [(a, b)]
+                     + [(right[q], right[q + 1]) for q in range(len(right) - 1)])
+             pan.append((a, b, cp, n / np.linalg.norm(n), abs(b[1] - a[1]), segs))
 
     def vel(p, segs):
         v = sum(_bs(p, s0, s1) for s0, s1 in segs)
@@ -254,11 +254,12 @@ CAMB = M * 4 * (XS / C) * (1 - XS / C)
 HALF = T * 2 * np.sqrt(np.clip(XS / C * (1 - XS / C), 0, None)) + 0.0004
 
 
-def _wing(path, y0=-0.5, y1=0.6, thick=1.0):
+def _wing(path, y0=-0.5, y1=0.6, thick=1.0, dihedral=0.0):
     loop = np.r_[np.c_[XS, CAMB + thick * HALF], np.c_[XS[::-1], (CAMB - thick * HALF)[::-1]]]
     K = len(loop)
-    V = [[x, y, z] for y in (y0, y1) for x, z in loop] + [[loop[:, 0].mean(), y0, loop[:, 1].mean()],
-                                                          [loop[:, 0].mean(), y1, loop[:, 1].mean()]]
+    V = [[x, y, z + dihedral * y] for y in (y0, y1) for x, z in loop] + [
+        [loop[:, 0].mean(), y0, loop[:, 1].mean() + dihedral * y0],
+        [loop[:, 0].mean(), y1, loop[:, 1].mean() + dihedral * y1]]
     F = []
     for k in range(K):
         a, b = k, (k + 1) % K
@@ -584,3 +585,102 @@ def test_missing_and_degenerate_sections_are_skipped(tmp_path, monkeypatch):
         grid = vl.camber_surface_from_stl(hexa, n_span=6, n_chord=4)[0]
         assert len(grid) == 5 and grid[0][0][1] > -0.45
         monkeypatch.undo()
+
+
+def test_points_on_a_filament_give_zero_without_dividing_by_zero():
+    """A point at either end of a filament, or on its line, is masked before any division: no divide-by-zero or
+    invalid warning is raised, and it contributes exactly nothing."""
+    import numpy as np
+
+    from suspension.aero import vortex_lattice as vl
+    A = np.array([[0.0, 0.0, 0.0], [0.0, 1.0, 0.0]])
+    B = np.array([[0.0, 1.0, 0.0], [0.0, 2.0, 0.0]])
+    P = np.array([[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.5, 0.0], [0.0, 3.0, 0.0], [0.3, 0.5, 0.2]])
+    with np.errstate(divide="raise", invalid="raise"):
+        out = vl._seg_influence(P, A, B)
+    assert np.all(out[:3, 0] == 0.0) and np.all(out[3] == 0.0)        # on the filament line: nothing
+    for i in range(len(P)):
+        for j in range(len(A)):
+            assert out[i, j] == pytest.approx(vl._vortex_segment(P[i], A[j], B[j]), abs=1e-15)
+    assert np.any(out[4] != 0.0)
+
+
+def _plate(tip, y, x0, L, z0, H, nz):
+    """An endplate gridded by hand: rows from its bottom edge up to the wing's tip line, then up to its top edge."""
+    xs, zs = [p[0] for p in tip], [p[2] for p in tip]
+    if x0 < xs[0]:
+        xs, zs = [x0] + xs, [zs[0]] + zs
+    if x0 + L > xs[-1]:
+        xs, zs = xs + [x0 + L], zs + [zs[-1]]
+    zs = np.array(zs)
+    mid = sum(zs) / len(zs)
+    lo = round(nz * max(mid - z0, 0.0) / (max(mid - z0, 0.0) + max(z0 + H - mid, 0.0)))
+    rows = [[min(z0 + (z - z0) * k / lo, z) for z in zs] for k in range(lo)]
+    rows += [list(zs)]
+    rows += [[max(z + (z0 + H - z) * k / (nz - lo), z) for z in zs] for k in range(1, nz - lo + 1)]
+    return [[[x, y, z] for x, z in zip(xs, r)] for r in rows]
+
+
+@pytest.mark.parametrize("ep", [
+    dict(x_start_m=-0.05, z_bottom_m=0.005, length_m=0.45, height_m=0.012, n_height=5),   # ahead, behind, clipped
+    dict(x_start_m=0.05, z_bottom_m=0.03, length_m=0.4, height_m=0.05, n_height=3),       # above it, past the TE
+    dict(z_bottom_m=-0.08, length_m=0.3, height_m=0.07, n_height=4),                      # wholly below it
+    dict(length_m=0.3, height_m=0.1, z_bottom_m=-0.04),                                   # the default 8 rows
+    dict(length_m=0.3, height_m=0.03, n_height=4),                                        # from the leading edge
+])
+def test_endplates_are_gridded_on_the_tip_line_and_solved_with_the_wing(monkeypatch, ep):
+    g = [[p + [0.1, 0.0, 0.02] for p in r] for r in _grid(ns=5, nc=4)]      # leading edge at x 0.1, z 0.02
+    monkeypatch.setattr(vl, "camber_surface_from_stl", lambda p, ns, nc: ([list(r) for r in g], 1.2, 0.3, 0.36))
+    spec = CaseSpec(attitude=Attitude(ride_height_mm=0.0, pitch_deg=0.0), geometry_path="wing.stl", reference_area_m2=None,
+                    extra={"endplates": ep})
+    r = vl.VortexLatticeModel(n_span=5, n_chord=4).solve(spec)
+    x0, z0 = 0.1 + float(ep.get("x_start_m", 0.0)), 0.02 + float(ep.get("z_bottom_m", 0.0))
+    plates = [_plate(g[0], -0.6, x0, ep["length_m"], z0, ep["height_m"], ep.get("n_height", 8)),
+              _plate(g[-1], 0.6, x0, ep["length_m"], z0, ep["height_m"], ep.get("n_height", 8))[::-1]]
+    cl, cd, n, cond = _lattice(g, area=0.36, plates=plates)
+    bare = _lattice(g, area=0.36)[0]
+    assert f"cond={cond:.1e}." in r.notes                     # unit normals: panels of unequal area scale no row
+    assert r.provenance.cell_count == n and r.c_lift == pytest.approx(cl, rel=1e-9)
+    assert r.c_drag == pytest.approx(cd, rel=1e-9) and abs(cl - bare) > 1e-3 * abs(bare)
+
+
+def test_the_tip_sections_are_sliced_two_percent_of_the_span_inboard(tmp_path):
+    grid = vl.camber_surface_from_stl(_wing(str(tmp_path / "d.stl"), dihedral=0.05), n_span=6, n_chord=8)[0]
+    ys = np.linspace(-0.5, 0.6, 6)
+    cut = np.clip(ys, -0.5 + 0.022, 0.6 - 0.022)
+    for i, row in enumerate(grid):
+        assert row[4] == pytest.approx([0.5 * C, ys[i], _camber_at(0.5 * C) + 0.05 * cut[i]], abs=2e-7)
+
+
+def _naca(n=60, t=0.12, m=0.03):
+    b = np.linspace(0.0, math.pi, n)
+    x = 0.5 * (1 - np.cos(b))
+    yt = 5 * t * (0.2969 * np.sqrt(x) - 0.126 * x - 0.3516 * x ** 2 + 0.2843 * x ** 3 - 0.1036 * x ** 4)
+    zc = m * 4 * x * (1 - x)
+    up, lo = np.c_[x, zc + yt], np.c_[x, zc - yt]
+    return [tuple(p) for p in np.r_[lo[::-1], up[1:]]]          # TE, lower, LE, upper, TE
+
+
+def test_a_section_profile_scales_lift_by_its_thickness_factor(monkeypatch):
+    from suspension.aero import panel2d as p2
+    g = _grid()
+    monkeypatch.setattr(vl, "camber_surface_from_stl", lambda p, ns, nc: ([list(r) for r in g], 1.2, 0.3, 0.36))
+    sec = _naca()
+    sx, sz = np.array([q[0] for q in sec]), np.array([q[1] for q in sec])
+
+    def run(h_mm, extra):
+        spec = CaseSpec(attitude=Attitude(ride_height_mm=h_mm), geometry_path="wing.stl", reference_area_m2=None,
+                        extra=extra)
+        return vl.VortexLatticeModel(n_span=7, n_chord=5).solve(spec)
+    for h_mm, h_low in ((0.0, None), (120.0, (0.12 + sz.min() * 0.3) / 0.3)):
+        bare, thick = run(h_mm, {}), run(h_mm, {"section_profile": sec})
+        f = float(p2.thickness_factor(sx, sz, h_low))
+        assert abs(f - 1.0) > 1e-3
+        assert thick.c_lift == pytest.approx(bare.c_lift * f, rel=1e-12)
+        assert thick.c_drag == pytest.approx(bare.c_drag * f * f, rel=1e-12)
+        assert thick.notes == bare.notes + (f" Section thickness included as a 2D strip factor of {f:.3f} "
+                                    "(thick section over camber line at this height, inviscid).")
+        assert "strip factor" not in bare.notes
+    with pytest.raises(vl.VortexLatticeUnavailable, match=r"^section_profile: the section would touch the road at "
+                                                          r"this height$"):
+        run(-sz.min() * 300.0, {"section_profile": sec})

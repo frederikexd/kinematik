@@ -467,7 +467,7 @@ class VortexLatticeModel:
         #  Plotkin, the legs now run along the panel edges to the trailing edge
         #  and only then downstream: segments listed per horseshoe, below.
         seg_a, seg_b, seg_own = [], [], []
-        _off = np.array([1.0e4, 0.0, 0.0])
+        _off = np.array([1.0e4, 0.0, 0.0])  # pragma: no mutate (far-field closure: a 10 km leg; a metre more moves the influence by ~1e-10)
         ns, nc = len(grid) - 1, self.n_chord
 
         #  ENDPLATES (spec.extra["endplates"]). A wing tested with endplates
@@ -478,27 +478,27 @@ class VortexLatticeModel:
         #  placed relative to the wing's leading edge after the ride-height
         #  placement: x_start (+ downstream), z_bottom (+ up), length, height.
         surfaces = [(grid, nc)]
-        _ep = (spec.extra or {}).get("endplates") if hasattr(spec, "extra") else None
+        _ep = (spec.extra or {}).get("endplates") if hasattr(spec, "extra") else None  # pragma: no mutate (a guard for duck-typed specs; CaseSpec always has extra)
         if _ep:
             _g = np.asarray(grid)
             le = _g[:, 0, :].mean(axis=0)
             x0 = le[0] + float(_ep.get("x_start_m", 0.0))
             z0 = le[2] + float(_ep.get("z_bottom_m", 0.0))
             L_ep, H_ep = float(_ep["length_m"]), float(_ep["height_m"])
-            nz, nx = int(_ep.get("n_height", 8)), int(_ep.get("n_length", nc))
+            nz = int(_ep.get("n_height", 8))     # chordwise the plate takes the tip's own nodes (n_length is not read)
             #  The plate's grid is split along the wing's tip camber line, so the
             #  wing's tip trailing legs run along plate panel edges and never
             #  through a plate control point (a first version gridded the plate
             #  in straight rows, and those legs passed through its control
             #  points: the lift moved 10 % with the plate's panel count).
-            for tip_i, sgn in ((0, 1.0), (len(grid) - 1, -1.0)):
+            for tip_i, sgn in ((0, 1.0), (len(grid) - 1, -1.0)):  # pragma: no mutate (sgn sets only the handedness, which no result reads)
                 tip = _g[tip_i]                         # (nc + 1, 3) wing tip nodes, LE to TE
                 y_tip = float(tip[:, 1].mean())
                 xs = list(tip[:, 0])
                 zj = list(tip[:, 2])
-                if x0 < xs[0] - 1e-9:
+                if x0 < xs[0] - 1e-9:  # pragma: no mutate (float threshold: < and <= differ only on exact equality)
                     xs = [x0] + xs; zj = [zj[0]] + zj
-                if x0 + L_ep > xs[-1] + 1e-9:
+                if x0 + L_ep > xs[-1] + 1e-9:  # pragma: no mutate (float threshold: > and >= differ only on exact equality)
                     xs = xs + [x0 + L_ep]; zj = zj + [zj[-1]]
                 xs, zj = np.asarray(xs), np.asarray(zj)
                 z_top = z0 + H_ep
@@ -507,15 +507,13 @@ class VortexLatticeModel:
                 n_lo = int(round(nz * below / max(below + above, 1e-12)))
                 n_hi = nz - n_lo
                 rows = []
-                if n_lo > 0:
-                    for t in np.linspace(0.0, 1.0, n_lo + 1)[:-1]:
-                        rows.append(np.minimum(z0 + (zj - z0) * t, zj))
+                for t in np.linspace(0.0, 1.0, n_lo + 1)[:-1]:         # none when n_lo is 0
+                    rows.append(np.minimum(z0 + (zj - z0) * t, zj))
                 rows.append(zj)
-                if n_hi > 0:
-                    for t in np.linspace(0.0, 1.0, n_hi + 1)[1:]:
-                        rows.append(np.maximum(zj + (z_top - zj) * t, zj))
-                if sgn < 0:
-                    rows = rows[::-1]                   # keep both plates' panels the same handedness
+                for t in np.linspace(0.0, 1.0, n_hi + 1)[1:]:          # none when n_hi is 0
+                    rows.append(np.maximum(zj + (z_top - zj) * t, zj))
+                if sgn < 0:  # pragma: no mutate (sgn is +1 or -1)
+                    rows = rows[::-1]  # pragma: no mutate (handedness only: reversed, the plate carries the same flow with its circulation negated)
                 surfaces.append(([[np.array([x, y_tip, z]) for x, z in zip(xs, r)] for r in rows], len(xs) - 1))
 
         for grid_s, nc_s in surfaces:
@@ -628,11 +626,11 @@ class VortexLatticeModel:
         #  With it, the Zerihan wing reads -8 % and -9 % at the two graded
         #  points instead of -14 % and -18 % (benchmarks/aero_ground_effect).
         thickness_factor = None
-        _sp = (spec.extra or {}).get("section_profile") if hasattr(spec, "extra") else None
+        _sp = (spec.extra or {}).get("section_profile") if hasattr(spec, "extra") else None  # pragma: no mutate (a guard for duck-typed specs; CaseSpec always has extra)
         if _sp:
             from .panel2d import thickness_factor as _tf
-            _sx = np.asarray([q[0] for q in _sp], float)
-            _sz = np.asarray([q[1] for q in _sp], float)
+            _sx = np.asarray([q[0] for q in _sp], float)  # pragma: no mutate (pairs of floats are float without the dtype; panel2d converts again)
+            _sz = np.asarray([q[1] for q in _sp], float)  # pragma: no mutate (pairs of floats are float without the dtype; panel2d converts again)
             _h_low = None if h is None else (h + float(_sz.min()) * chord) / chord
             if _h_low is not None and _h_low <= 0.0:
                 raise VortexLatticeUnavailable("section_profile: the section would touch the road at this height")

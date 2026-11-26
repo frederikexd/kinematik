@@ -65,7 +65,7 @@ class PacejkaLateral:
         #  Explicit arguments win.
         own_scaling = {k: float(v) for k, v in self.coeffs.items() if k in _SCALE_KEYS}
         self.scaling = {**_DEFAULT_SCALING, **own_scaling, **(self.scaling or {})}
-        if self.mf_version == "5.2" and float(self.coeffs.get("FITTYP", 6)) >= 61:
+        if self.mf_version == "5.2" and "FITTYP" in self.coeffs and float(self.coeffs["FITTYP"]) >= 61:
             self.mf_version = "6.1"
         missing = [k for k in ("PCY1", "PDY1", "PDY2", "PEY1", "PKY1", "PKY2")
                    if k not in self.coeffs]
@@ -154,7 +154,7 @@ class PacejkaLateral:
                * L("LKY"))
         svyg = Fz * (C("PVY3") + C("PVY4") * dfz) * g_s * L("LKYC") * lmu_p
         kyg0 = Fz * (C("PKY6") + C("PKY7") * dfz) * (1 + C("PPY5") * dpi) * L("LKYC")
-        kya_s = kya + eps * np.where(kya >= 0, 1.0, -1.0)
+        kya_s = kya + eps * np.where(kya >= 0, 1.0, -1.0)  # pragma: no mutate (a 1e-6 guard against a zero stiffness: invisible beside a real one)
         shy = (C("PHY1") + C("PHY2") * dfz) * L("LHY") + (kyg0 * g_s - svyg) / kya_s
         svy = Fz * (C("PVY1") + C("PVY2") * dfz) * L("LVY") * lmu_p + svyg
         ay = a_s + shy
@@ -167,7 +167,7 @@ class PacejkaLateral:
               * (1 + C("PEY5") * g_s ** 2 - (C("PEY3") + C("PEY4") * g_s) * np.sign(ay)) * L("LEY"))
         # pragma: no mutate end
         ey = np.minimum(ey, 1.0)
-        by = kya / (cy * dy + eps * np.where(cy * dy >= 0, 1.0, -1.0))
+        by = kya / (cy * dy + eps * np.where(cy * dy >= 0, 1.0, -1.0))  # pragma: no mutate (a 1e-6 guard against a zero peak: invisible beside a real one)
         return dy * np.sin(cy * np.arctan(by * ay - ey * (by * ay - np.arctan(by * ay)))) + svy
 
     def mu_peak(self, Fz, gamma=0.0):
@@ -247,8 +247,7 @@ def load_tir(path: str, pressure_pa: float | None = None) -> PacejkaLateral:
     coeffs = {k: vals.get(k, 2.0 if k == "PKY4" else 0.0) for k in _LAT_KEYS}
     coeffs.update({k: vals.get(k, 1.0) for k in _SCALE_KEYS})     # travel with the coefficients
     coeffs["FITTYP"] = float(fittyp)
-    return PacejkaLateral(coeffs=coeffs, FNOMIN=vals["FNOMIN"],
-                          mf_version="6.1" if fittyp >= 61 else "5.2", pressure_pa=pressure_pa)
+    return PacejkaLateral(coeffs=coeffs, FNOMIN=vals["FNOMIN"], pressure_pa=pressure_pa)   # FITTYP sets the version
 
 
 def load_from_json(path: str) -> PacejkaLateral:

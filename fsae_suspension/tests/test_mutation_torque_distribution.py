@@ -387,3 +387,20 @@ def test_the_held_split_search_and_the_exact_overshoot_pinned():
     assert td.state(16.0, 1 / 15, 0.0, -8.0, "tv", car)["umax"] == pytest.approx(2.5128250071964255, rel=1e-9)
     assert td.state(16.0, 1 / 15, 0.0, -8.0, "tv", veh=Vehicle(mass_kg=260.0))["umax"] == pytest.approx(
         2.7662417215759705, rel=1e-9)
+
+
+def test_the_held_split_search_uses_the_callers_car_tyres_and_vehicle():
+    """Each search candidate is solved on the car, tyre table and vehicle given, not the defaults: a heavier car and
+    a lower-grip tyre overshoot more than the default car does (2.52), so a search on the defaults would show."""
+    from suspension.tiremodel import PacejkaLateral
+    heavy = td.Car(m=330.0, wf=0.45, iz=150.0, front_lltd=0.6, brake_front=0.6)
+    assert td.state(16.0, 1 / 15, 0.0, -8.0, "tv", heavy)["umax"] == pytest.approx(2.8635921966003366, rel=1e-9)
+    d = default_tire()
+    low = td.TireTable(PacejkaLateral(coeffs=dict(d.coeffs), FNOMIN=d.FNOMIN, scaling={"LMUY": 0.85}))
+    assert td.state(16.0, 1 / 15, 0.0, -8.0, "tv", tt=low)["umax"] == pytest.approx(2.847566095872511, rel=1e-9)
+    assert td.state(16.0, 1 / 15, 0.0, -8.0, "tv", veh=Vehicle(mass_kg=260.0), exact_overshoot=True)["umax"] == \
+        pytest.approx(2.7262536568610347, rel=1e-9)
+
+
+def test_a_corner_at_the_default_top_speed_and_step():
+    assert td.simulate_corner(30.0, 20.0, "open")["time"] == pytest.approx(4.68919824124068, rel=1e-9)

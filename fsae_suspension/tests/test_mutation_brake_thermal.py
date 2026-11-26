@@ -578,3 +578,99 @@ def test_the_pareto_front_by_dominance(monkeypatch):
     r = bt.optimise_rotor(mass_kg=300.0, v0_ms=22.0, front_bias=0.6, T_constraint_c=1.0, dia_range=(180.0, 220.0),
                           dia_steps=5, th_steps=1, vent_steps=1)
     assert [c.dia for c in r.pareto] == [190.0, 200.0]
+
+
+def test_convection_h_takes_the_correlation_or_the_calibrated_line():
+    from dataclasses import replace
+    p = bt.default_brake_thermal_params()
+    assert p.calibrated is False
+    for d, v, g in ((220.0, 15.0, 1.0), (180.0, 22.0, 2.0), (260.0, 5.0, 0.5)):
+        assert bt.convection_h(p, d, v, g) == bt.h_rotating_disc(d, v, duct_gain=g)
+    assert bt.convection_h(p, 220.0, 15.0) == bt.h_rotating_disc(220.0, 15.0)
+    cal = replace(p, calibrated=True, h_air0=20.0, h_air1=3.0)
+    assert bt.convection_h(cal, 220.0, 10.0) == 50.0 and bt.convection_h(cal, 999.0, -10.0) == 50.0
+    assert bt.convection_h(cal, 220.0, 10.0, duct_gain=2.0) == 100.0
+    assert bt.convection_h(cal, 220.0, 10.0, duct_gain=0.0) == pytest.approx(5.0)       # gain floored at 0.1
+    assert bt.convection_h(cal, 220.0, 10.0, duct_gain="1.5") == 75.0
+
+
+def test_the_convection_line_fit_and_its_refusals():
+    h0, h1 = bt.fit_convection_line([0.0, 0.5], [40.0, 41.0])     # spread under 1 m/s is still a line
+    assert h0 == pytest.approx(40.0, abs=1e-12) and h1 == pytest.approx(2.0, abs=1e-12)
+    h0, h1 = bt.fit_convection_line([4.0, 10.0, 16.0], [36.0, 41.0, 45.0])
+    assert h1 == pytest.approx(0.75, abs=1e-12) and h0 == pytest.approx(122.0 / 3.0 - 7.5, abs=1e-12)
+    with pytest.raises(ValueError, match=r"^need at least two \(speed, h\) pairs of equal length$"):
+        bt.fit_convection_line([5.0], [40.0])
+    with pytest.raises(ValueError, match=r"^need at least two \(speed, h\) pairs of equal length$"):
+        bt.fit_convection_line([5.0, 6.0], [40.0])
+    with pytest.raises(ValueError, match=r"^the speeds must not all be equal$"):
+        bt.fit_convection_line([5.0, 5.0], [40.0, 41.0])
+
+
+def test_the_correlation_takes_the_given_crossflow_not_the_car_speed():
+    for v, x in ((20.0, 3.0), (20.0, -3.0), (0.0, 7.0)):
+        assert bt.h_rotating_disc(240.0, v, wheel_radius_mm=200.0, crossflow_ms=x) == pytest.approx(
+            _h_corr(240.0, v, R_mm=200.0) if x == v else
+            max(math.hypot(_h_rot(240.0, v, 200.0), _h_x(240.0, abs(x))), 12.0), rel=1e-12)
+
+
+def _h_rot(d_mm, v, R_mm):
+    D = d_mm / 1000.0
+    r = D / 2.0
+    Re = abs(v) / (R_mm / 1000.0) * r * r / bt._AIR_NU
+    return 0.015 * Re ** 0.8 * bt._AIR_K / r
+
+
+def _h_x(d_mm, vx):
+    D = d_mm / 1000.0
+    return 0.037 * (vx * D / bt._AIR_NU) ** 0.8 * bt._AIR_PR ** (1.0 / 3.0) * bt._AIR_K / D
+
+
+def test_both_rotor_models_hand_the_convection_their_geometry(monkeypatch):
+    seen = []
+    real = bt.h_rotating_disc
+
+    def spy(d, v, **kw):
+        seen.append((d, v, kw))
+        return real(d, v, **kw)
+    monkeypatch.setattr(bt, "h_rotating_disc", spy)
+    p = bt.TwoNodeParams(diameter_mm=240.0, duct_gain=1.7, wheel_radius_mm=200.0, crossflow_ms=4.0)
+    want = (240.0, 12.0, {"duct_gain": 1.7, "wheel_radius_mm": 200.0, "crossflow_ms": 4.0})
+    bt.TwoNodeRotorPad(p).simulate([5000.0, 5000.0], 0.1, [12.0, 12.0])
+    assert seen and all(c == want for c in seen)
+    seen.clear()
+    bt.OneDRotor(p, n_nodes=6).simulate([5000.0, 5000.0], 0.1, [12.0, 12.0])
+    assert seen and all(c == want for c in seen)
+
+
+def test_a_cad_wetted_area_replaces_the_area_factor_in_both_models():
+    two = bt.TwoNodeRotorPad(bt.TwoNodeParams(wetted_area_m2=0.123))
+    one = bt.OneDRotor(bt.TwoNodeParams(wetted_area_m2=0.123), n_nodes=6)
+    assert two.A_conv == 0.123 and one.A_conv == 0.123
+    # the 1-D model sheds from one face what the wetted area gives per face: the same as the equivalent area_factor
+    af = 0.123 / one.face_area
+    P, V = [20000.0] * 30 + [0.0] * 30, [15.0] * 60
+    a = bt.OneDRotor(bt.TwoNodeParams(wetted_area_m2=0.123), n_nodes=6).simulate(P, 0.1, V)
+    b = bt.OneDRotor(bt.TwoNodeParams(area_factor=af), n_nodes=6).simulate(P, 0.1, V)
+    assert a.T_surface_c == pytest.approx(b.T_surface_c, rel=1e-12)
+    c = bt.OneDRotor(bt.TwoNodeParams(), n_nodes=6).simulate(P, 0.1, V)
+    assert abs(a.T_surface_c[-1] - c.T_surface_c[-1]) > 1.0
+
+
+def test_the_buried_thermocouple_reads_between_the_nodes():
+    r = bt.OneDRotor(bt.TwoNodeParams(), n_nodes=6)
+    tr = r.simulate([30000.0] * 20, 0.1, [10.0] * 20, record_depth_mm=1.3)
+    T, dx = tr.T_field_c, r.dx
+    j = int(0.0013 / dx)
+    w = (0.0013 - j * dx) / dx
+    assert 0.0 < w < 1.0 and T[j] - T[j + 1] > 1.0
+    assert tr.T_depth_c[-1] == pytest.approx(T[j] * (1 - w) + T[j + 1] * w, rel=1e-12)
+    deep = r.simulate([30000.0] * 20, 0.1, [10.0] * 20, record_depth_mm=50.0)
+    assert deep.T_depth_c[-1] == pytest.approx(deep.T_field_c[-1], rel=1e-12)
+
+
+def test_the_start_temperature_may_equal_ambient_but_not_go_below():
+    r = bt.OneDRotor(bt.TwoNodeParams(T_ambient_c=30.0), n_nodes=6)
+    assert r.simulate([0.0], 0.1, T_initial_c=30.0).T_surface_c == [30.0]
+    with pytest.raises(ValueError, match=r"^T_initial_c must be at or above the ambient temperature$"):
+        r.simulate([0.0], 0.1, T_initial_c=29.999)

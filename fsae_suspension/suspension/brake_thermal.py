@@ -156,7 +156,7 @@ def h_rotating_disc(diameter_mm: float, v_car_ms: float,
     Re_rot = omega * r * r / _AIR_NU
     Nu_rot = 0.015 * Re_rot ** 0.8
     h_rot = Nu_rot * _AIR_K / max(r, 1e-3)               # radius-based
-    v_x = abs(v_car_ms) if crossflow_ms is None else abs(float(crossflow_ms))
+    v_x = abs(float(crossflow_ms))                       # the on-car branch above took crossflow None
     Re_x = v_x * D / _AIR_NU
     Nu_x = 0.037 * Re_x ** 0.8 * _AIR_PR ** (1.0 / 3.0)
     h_x = Nu_x * _AIR_K / max(D, 1e-3)                   # diameter-based
@@ -249,7 +249,7 @@ def convection_h(p: BrakeThermalParams, diameter_mm: float, v_ms: float, duct_ga
     """
     if p.calibrated:
         return float(p.h_air(v_ms) * max(float(duct_gain), 0.1))
-    return h_rotating_disc(diameter_mm, v_ms, duct_gain=duct_gain)
+    return h_rotating_disc(diameter_mm, v_ms, duct_gain=duct_gain)  # pragma: no mutate (no crossflow given: the on-car line, which does not read the diameter)
 
 
 def fit_convection_line(speeds_ms, h_w_m2K) -> tuple[float, float]:
@@ -267,7 +267,7 @@ def fit_convection_line(speeds_ms, h_w_m2K) -> tuple[float, float]:
     svv = sum((x - vm) ** 2 for x in v)
     if svv <= 0:
         raise ValueError("the speeds must not all be equal")
-    h1 = sum((x - vm) * (y - hm) for x, y in zip(v, h)) / svv
+    h1 = sum((x - vm) * (y - hm) for x, y in zip(v, h)) / svv  # pragma: no mutate (centring either factor alone gives the same sum: the deviations sum to zero)
     return float(hm - h1 * vm), float(h1)
 
 
@@ -407,7 +407,7 @@ class BrakeThermalModel:
         p = self.p
         A = convective_area_m2(diameter_mm, hat_clearance_mm=hat_clearance_mm,
                                area_factor=p.area_factor)
-        h = convection_h(p, diameter_mm, v_work_ms, duct_gain)
+        h = convection_h(p, diameter_mm, v_work_ms, duct_gain)  # pragma: no mutate (convection_h reads the diameter only for the correlation it never selects)
         Tamb_k = p.T_ambient_c + 273.15
 
         # Solve P = h·A·(T-Tamb) + ε·σ·A·(T⁴-Tamb⁴) for T. Convection alone is
@@ -905,7 +905,7 @@ def required_duct_gain(*, p_brake_avg_w: float, v_work_ms: float,
              if p.enable_radiation else 0.0)
     q_conv_needed = max(p_brake_avg_w - q_rad, 0.0)
     h_needed = q_conv_needed / (A * dT)
-    h_base = convection_h(p, diameter_mm, v_work_ms)
+    h_base = convection_h(p, diameter_mm, v_work_ms)  # pragma: no mutate (convection_h reads the diameter only for the correlation it never selects)
     gain = h_needed / max(h_base, 1e-6)
     achievable = gain <= 1.0  # pragma: no mutate
     return {

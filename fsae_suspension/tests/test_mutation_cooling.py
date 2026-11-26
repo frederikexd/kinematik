@@ -163,3 +163,115 @@ def test_large_powers_tiny_flows_and_tiny_loads():
     assert r.time_to_limit_s == pytest.approx(2.5 / 1000 * cl.rho_kg_m3 * cl.cp_j_kgk * 29.8 / 0.5)
     mean = 35.2 + 0.5 * dT - 35.0
     assert f"is {0.5 / max(mean, 1e-6):.0f} W/K" in r.notes[2]
+
+
+def _eps_unmixed_series(ntu, cr, terms=200):
+    """Both fluids unmixed, exact series (Mason 1955), written out independently of the module."""
+    y = cr * ntu
+
+    def poisson(x, m):          # e^-x x^m / m!, through logs so large m cannot overflow
+        return math.exp(m * math.log(x) - x - math.lgamma(m + 1))
+
+    total, sx, sy = 0.0, 0.0, 0.0
+    for n in range(terms):
+        sx += poisson(ntu, n)
+        sy += poisson(y, n)
+        total += (1.0 - sx) * (1.0 - sy)
+    return total / y
+
+
+def test_crossflow_effectiveness_in_every_arrangement():
+    assert c.RADIATOR_ARRANGEMENTS == ("both_unmixed", "cmax_mixed", "cmin_mixed")
+    for ntu, cr in ((0.5, 1.0), (1.0, 0.5), (2.0, 0.25), (3.0, 0.8), (0.2, 0.05)):
+        assert c.crossflow_effectiveness(ntu, cr) == pytest.approx(_eps_unmixed_series(ntu, cr), rel=1e-12)
+        assert c.crossflow_effectiveness(ntu, cr, "both_unmixed") == c.crossflow_effectiveness(ntu, cr)
+        assert c.crossflow_effectiveness(ntu, cr, "cmax_mixed") == pytest.approx(
+            (1 / cr) * (1 - math.exp(-cr * (1 - math.exp(-ntu)))), rel=1e-14)
+        assert c.crossflow_effectiveness(ntu, cr, "cmin_mixed") == pytest.approx(
+            1 - math.exp(-(1 / cr) * (1 - math.exp(-cr * ntu))), rel=1e-14)
+    # large NTU: the series runs long enough to converge
+    assert c.crossflow_effectiveness(25.0, 1.0) == pytest.approx(_eps_unmixed_series(25.0, 1.0, 400), rel=1e-10)
+    # limits and clamps
+    assert c.crossflow_effectiveness(0.0, 0.5) == 0.0 and c.crossflow_effectiveness(-3.0, 0.5) == 0.0
+    for arr in c.RADIATOR_ARRANGEMENTS:
+        assert c.crossflow_effectiveness(1.3, 0.0, arr) == pytest.approx(1 - math.exp(-1.3), rel=1e-15)
+        assert c.crossflow_effectiveness(1.3, -0.4, arr) == pytest.approx(1 - math.exp(-1.3), rel=1e-15)
+        assert c.crossflow_effectiveness(1.3, 1e-10, arr) == pytest.approx(1 - math.exp(-1.3), rel=1e-15)
+        assert c.crossflow_effectiveness(1.3, 4.0, arr) == c.crossflow_effectiveness(1.3, 1.0, arr)
+    assert c.crossflow_effectiveness("2", "0.5") == c.crossflow_effectiveness(2.0, 0.5)
+    with pytest.raises(ValueError) as e:
+        c.crossflow_effectiveness(1.0, 0.5, "counterflow")
+    assert str(e.value) == "arrangement must be one of ('both_unmixed', 'cmax_mixed', 'cmin_mixed')"
+
+
+def test_radiator_heat_by_effectiveness_ntu():
+    r = c.radiator_heat_w(ua_w_per_k=400.0, air_mass_flow_kg_s=0.5, coolant_mass_flow_kg_s=0.2,
+                          coolant_cp_j_kgk=3600.0, coolant_in_c=80.0, air_in_c=30.0)
+    c_air, c_cool = 0.5 * 1007.0, 0.2 * 3600.0
+    cmin, cmax = min(c_air, c_cool), max(c_air, c_cool)
+    eps = c.crossflow_effectiveness(400 / cmin, cmin / cmax)
+    q = eps * cmin * 50.0
+    assert r == pytest.approx(dict(q_w=q, effectiveness=eps, ntu=400 / cmin, cr=cmin / cmax,
+                                   coolant_out_c=80 - q / c_cool, air_out_c=30 + q / c_air), rel=1e-14)
+    r2 = c.radiator_heat_w(ua_w_per_k=400.0, air_mass_flow_kg_s=0.5, coolant_mass_flow_kg_s=0.2,
+                           coolant_cp_j_kgk=3600.0, coolant_in_c=80.0, air_in_c=30.0, air_cp_j_kgk=1100.0,
+                           arrangement="cmin_mixed")
+    c_air2 = 0.5 * 1100.0
+    eps2 = c.crossflow_effectiveness(400 / c_air2, c_air2 / c_cool, "cmin_mixed")
+    assert r2["q_w"] == pytest.approx(eps2 * c_air2 * 50.0, rel=1e-14)
+    # coolant the smaller capacity rate: C_min is the coolant's
+    r3 = c.radiator_heat_w(ua_w_per_k=300.0, air_mass_flow_kg_s=2.0, coolant_mass_flow_kg_s=0.1,
+                           coolant_cp_j_kgk=3600.0, coolant_in_c=70.0, air_in_c=20.0)
+    assert (r3["ntu"], r3["cr"]) == pytest.approx((300 / 360.0, 360.0 / 2014.0), rel=1e-14)
+    # a trickle of air (capacity rate under 1 W/K) still carries heat
+    trickle = c.radiator_heat_w(ua_w_per_k=50.0, air_mass_flow_kg_s=0.0005, coolant_mass_flow_kg_s=0.2,
+                                coolant_cp_j_kgk=3600.0, coolant_in_c=80.0, air_in_c=30.0)
+    assert 0 < trickle["q_w"] <= 0.0005 * 1007.0 * 50.0 and trickle["cr"] > 0
+    still = dict(q_w=0.0, effectiveness=0.0, ntu=0.0, cr=0.0, coolant_out_c=80.0, air_out_c=30.0)
+    for air, cool in ((0.0, 0.2), (0.5, 0.0), (-1.0, 0.2), (0.5, -0.1)):
+        assert c.radiator_heat_w(ua_w_per_k=400.0, air_mass_flow_kg_s=air, coolant_mass_flow_kg_s=cool,
+                                 coolant_cp_j_kgk=3600.0, coolant_in_c=80.0, air_in_c=30.0) == still
+
+
+def test_the_loop_rates_its_radiator_when_air_flow_is_given():
+    base = c.size_loop(c.LoopSpec(heat_w=3000.0, flow_lpm=20.0, radiator_ua_w_per_k=400.0))
+    assert base.radiator is None
+    s = c.LoopSpec(heat_w=3000.0, flow_lpm=20.0, radiator_ua_w_per_k=400.0, air_mass_flow_kg_s=0.6,
+                   radiator_arrangement="cmax_mixed")
+    r = c.size_loop(s)
+    cl = c.coolant(s.coolant_key)
+    want = c.radiator_heat_w(ua_w_per_k=400.0, air_mass_flow_kg_s=0.6, coolant_mass_flow_kg_s=r.mass_flow_kg_s,
+                             coolant_cp_j_kgk=cl.cp_j_kgk, coolant_in_c=s.coolant_in_c + r.delta_t_k,
+                             air_in_c=s.ambient_c, arrangement="cmax_mixed")
+    assert r.radiator == pytest.approx(want, rel=1e-14)
+    note = (f"Effectiveness-NTU at 0.6 kg/s of air: NTU {want['ntu']:.2f}, Cr {want['cr']:.2f}, effectiveness "
+            f"{want['effectiveness']:.2f}, so the radiator rejects **{want['q_w']/1000:.2f} kW** against a 3.00 kW "
+            f"load; air leaves at {want['air_out_c']:.1f} °C.")
+    assert note in r.notes
+    assert r.notes[:len(base.notes)] == base.notes
+    # too little air: fails, and says how much the air could carry at best and what the gap is
+    weak = c.size_loop(c.LoopSpec(heat_w=3000.0, flow_lpm=20.0, radiator_ua_w_per_k=400.0, air_mass_flow_kg_s=0.05))
+    rw = weak.radiator
+    assert rw["q_w"] < 3000.0 and weak.ok is False
+    cap = min(rw["ntu"] and rw["q_w"] / max(rw["effectiveness"], 1e-12), 1e12) / 1000
+    gap = "UA" if rw["effectiveness"] < 0.9 else "air flow"
+    assert weak.notes[-1] == (f"⚠️ At this air flow and UA the radiator rejects less than the load at these "
+                              f"temperatures; the most this air could carry is {cap:.1f} kW (effectiveness 1), "
+                              f"so the gap is {gap}.")
+    small_ua = c.size_loop(c.LoopSpec(heat_w=3000.0, flow_lpm=60.0, coolant_in_c=90.0, radiator_ua_w_per_k=20.0,
+                                      air_mass_flow_kg_s=3.0))
+    ru = small_ua.radiator
+    assert ru["effectiveness"] < 0.9 and ru["q_w"] / ru["effectiveness"] > 50000.0
+    assert small_ua.notes[-1] == (f"⚠️ At this air flow and UA the radiator rejects less than the load at these "
+                                  f"temperatures; the most this air could carry is "
+                                  f"{ru['q_w'] / ru['effectiveness'] / 1000:.1f} kW (effectiveness 1), so the gap is UA.")
+    # a large load: the kW figures in the note are the watts over a thousand
+    big = c.size_loop(c.LoopSpec(heat_w=8000.0, flow_lpm=30.0, radiator_ua_w_per_k=900.0, air_mass_flow_kg_s=1.5))
+    rb = big.radiator
+    assert rb["q_w"] > 5000.0 and (f"so the radiator rejects **{rb['q_w'] / 1000:.2f} kW** against a 8.00 kW load"
+                                   in big.notes[-2] + big.notes[-1])
+    # a load so small the UA it needs is under 1 W/K still gives a finite margin
+    tiny = c.size_loop(c.LoopSpec(heat_w=10.0, flow_lpm=20.0))
+    assert 0 < tiny.required_ua_w_per_k < 1.0 and tiny.ua_margin == pytest.approx(120.0 / tiny.required_ua_w_per_k)
+    plenty = c.size_loop(c.LoopSpec(heat_w=300.0, flow_lpm=20.0, radiator_ua_w_per_k=400.0, air_mass_flow_kg_s=1.0))
+    assert not plenty.notes[-1].startswith("⚠️ At this air flow")

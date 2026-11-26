@@ -251,3 +251,163 @@ def test_nominal_load_must_be_a_finite_number_above_zero():
         _says(e, f"FNOMIN (nominal load, N) must be a finite number above zero, got {bad!r}")
     assert tm.PacejkaLateral(dict(_REQ), FNOMIN=1e-6).FNOMIN == 1e-6
     assert tm.PacejkaLateral(dict(_REQ), FNOMIN=900).FNOMIN == 900
+
+
+_TIR = """[MODEL]
+FITTYP                   = 61                $Magic Formula version number
+[VERTICAL]
+FNOMIN                   = 1100.5            $Nominal wheel load
+ pcy1 =   1.53   $ lower-case names and padding are read
+PDY1                     = -2.4e0
+PDY2 = +0.31
+PEY1=-0.75
+PKY1                     = -5.2E+1
+PKY2 = 1.9
+PKY5 = 0.004
+NOMPRES                  = 82737
+LMUY                     = 0.66
+LKY = 1.10
+$ a comment = 3 is not read
+NOT_A_NUMBER = 'abc'
+"""
+
+
+def test_a_tir_file_is_read_with_its_version_defaults_and_scaling(tmp_path):
+    p = tmp_path / "front.tir"
+    p.write_text(_TIR)
+    t = tm.load_tir(str(p))
+    assert (t.FNOMIN, t.mf_version, t.pressure_pa) == (1100.5, "6.1", None)
+    co = t.coeffs
+    assert (co["PCY1"], co["PDY1"], co["PDY2"], co["PEY1"], co["PKY1"], co["PKY2"], co["PKY5"]) == \
+        (1.53, -2.4, 0.31, -0.75, -52.0, 1.9, 0.004)
+    assert co["NOMPRES"] == 82737.0 and co["FITTYP"] == 61.0
+    assert co["PKY4"] == 2.0 and co["PCY1"] == 1.53 and co["PHY3"] == 0.0 and co["PPY5"] == 0.0
+    assert set(co) == set(tm._LAT_KEYS) | set(tm._SCALE_KEYS) | {"FITTYP"}
+    assert (co["LMUY"], co["LKY"], co["LFZO"], co["LKYC"]) == (0.66, 1.10, 1.0, 1.0)
+    assert t.scaling["LMUY"] == 0.66 and t.scaling["LKY"] == 1.10 and t.scaling["LCY"] == 1.0
+    assert tm.load_tir(str(p), pressure_pa=90000.0).pressure_pa == 90000.0
+    assert tm._LAT_KEYS[-1] == "NOMPRES" and len(tm._LAT_KEYS) == 29
+    assert tm._SCALE_KEYS == ("LFZO", "LCY", "LMUY", "LEY", "LKY", "LHY", "LVY", "LGAY", "LKYC")
+
+
+def test_tir_versions_and_refusals(tmp_path):
+    body = _TIR.replace("FITTYP                   = 61", "FITTYP = {}")
+    for fit, ver in ((6, "5.2"), (21, "5.2"), (61, "6.1"), (62, "6.1")):
+        p = tmp_path / f"v{fit}.tir"
+        p.write_text(body.format(fit))
+        t = tm.load_tir(str(p))
+        assert t.mf_version == ver and t.coeffs["FITTYP"] == float(fit)
+    nofit = tmp_path / "nofit.tir"
+    nofit.write_text(body.replace("FITTYP = {}\n", ""))
+    assert tm.load_tir(str(nofit)).mf_version == "5.2" and tm.load_tir(str(nofit)).coeffs["FITTYP"] == 6.0
+    bad = tmp_path / "bad.tir"
+    bad.write_text(body.format(52))
+    with pytest.raises(ValueError) as e:
+        tm.load_tir(str(bad))
+    assert str(e.value) == f"{bad}: FITTYP 52 is not MF5.2 (6, 21) or MF6.1/6.2 (61, 62)"
+    none = tmp_path / "none.tir"
+    none.write_text(_TIR.replace("FNOMIN", "XNOMIN"))
+    with pytest.raises(ValueError) as e:
+        tm.load_tir(str(none))
+    assert str(e.value) == f"{none}: no FNOMIN, not an MF-Tyre .tir file"
+    junk = tmp_path / "junk.tir"
+    junk.write_bytes(_TIR.encode() + b"\xff\xfe binary tail\n")
+    assert tm.load_tir(str(junk)).FNOMIN == 1100.5
+
+
+def test_every_mfeval_reference_point_to_a_millionth_of_a_newton():
+    """MF5.2 and MF6.1/6.2 lateral force against every point MFeval 4.3.1 wrote for its own .tir files, graded or not
+    (benchmarks/tyre): the formulas agree to rounding, so any change to them shows."""
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    import tyre_benchmark as tb
+    r = tb.run()
+    assert {k for k in r if k != "passed"} >= {"MagicFormula52_Parameters", "MagicFormula61_Parameters",
+                                               "MagicFormula62_Parameters", "FSAE_Defaults"}
+    for name, v in r.items():
+        if name != "passed":
+            assert v["groups"] and max(g["worst_dFy_N"] for g in v["groups"]) < 1e-5, name
+
+
+def _fy61_by_hand(co, sc, fnomin, p, alpha, fz, g):
+    """Pacejka (2012) eqs. 4.E19-E30, pure lateral, no turn slip, written out term by term."""
+    def c(k, d=0.0):
+        return co.get(k, d)
+
+    def lam(k):
+        return sc.get(k, 1.0)
+
+    fz0 = fnomin * lam("LFZO")
+    dfz = (fz - fz0) / fz0
+    dpi = (p - c("NOMPRES")) / c("NOMPRES") if p is not None else 0.0
+    lmu_p = 10 * lam("LMUY") / (1 + 9 * lam("LMUY"))
+    kya = (c("PKY1") * fz0 * (1 + c("PPY1") * dpi) * (1 - c("PKY3") * abs(g))
+           * math.sin(c("PKY4", 2.0) * math.atan(fz / ((c("PKY2") + c("PKY5") * g * g) * (1 + c("PPY2") * dpi) * fz0)))
+           * lam("LKY"))
+    svyg = fz * (c("PVY3") + c("PVY4") * dfz) * g * lam("LKYC") * lmu_p
+    kyg0 = fz * (c("PKY6") + c("PKY7") * dfz) * (1 + c("PPY5") * dpi) * lam("LKYC")
+    shy = (c("PHY1") + c("PHY2") * dfz) * lam("LHY") + (kyg0 * g - svyg) / (kya + 1e-6 * (1 if kya >= 0 else -1))
+    svy = fz * (c("PVY1") + c("PVY2") * dfz) * lam("LVY") * lmu_p + svyg
+    ay = alpha + shy
+    dy = ((c("PDY1") + c("PDY2") * dfz) * (1 + c("PPY3") * dpi + c("PPY4") * dpi * dpi) * (1 - c("PDY3") * g * g)
+          * lam("LMUY")) * fz
+    cy = c("PCY1") * lam("LCY")
+    sgn = 1.0 if ay > 0 else (-1.0 if ay < 0 else 0.0)
+    ey = min((c("PEY1") + c("PEY2") * dfz) * (1 + c("PEY5") * g * g - (c("PEY3") + c("PEY4") * g) * sgn) * lam("LEY"),
+             1.0)
+    by = kya / (cy * dy + 1e-6 * (1 if cy * dy >= 0 else -1))
+    return dy * math.sin(cy * math.atan(by * ay - ey * (by * ay - math.atan(by * ay)))) + svy
+
+
+def test_mf61_every_term_including_pressure_and_scaling():
+    co = dict(FITTYP=61, PCY1=1.45, PDY1=-2.6, PDY2=0.31, PDY3=4.1, PEY1=-0.4, PEY2=0.21, PEY3=0.12, PEY4=-0.6,
+              PEY5=1.3, PKY1=-48.0, PKY2=1.7, PKY3=0.55, PKY4=2.1, PKY5=0.3, PKY6=-0.9, PKY7=0.25, PHY1=0.002,
+              PHY2=-0.001, PVY1=0.03, PVY2=-0.02, PVY3=-0.4, PVY4=0.25, PPY1=-0.5, PPY2=0.9, PPY3=-0.12,
+              PPY4=0.05, PPY5=-0.3, NOMPRES=83000.0)
+    sc = dict(LFZO=1.08, LCY=0.97, LMUY=0.71, LEY=1.05, LKY=0.92, LHY=1.1, LVY=0.9, LGAY=1.0, LKYC=1.15)
+    for p in (None, 70000.0, 97000.0):
+        t = tm.PacejkaLateral(coeffs=dict(co), FNOMIN=1100.0, scaling=dict(sc), pressure_pa=p)
+        assert t.mf_version == "6.1"
+        for alpha, fz, g in ((0.08, 900.0, -0.03), (-0.12, 1500.0, 0.05), (0.02, 600.0, 0.0), (0.2, 2100.0, -0.07),
+                             (-0.01, 1100.0, 0.02)):
+            assert float(t.fy(alpha, fz, g)) == pytest.approx(_fy61_by_hand(co, sc, 1100.0, p, alpha, fz, g),
+                                                             rel=1e-9, abs=1e-9)
+    # a pressure with no NOMPRES to compare it with changes nothing
+    t0 = tm.PacejkaLateral(coeffs={**co, "NOMPRES": 0.0}, FNOMIN=1100.0, pressure_pa=90000.0)
+    assert float(t0.fy(0.08, 900.0, -0.03)) == pytest.approx(
+        _fy61_by_hand({**co, "NOMPRES": 1.0}, {}, 1100.0, None, 0.08, 900.0, -0.03), rel=1e-12)
+    # the load floor: a zero or negative load is read as a micro-newton, not a division by zero
+    t1 = tm.PacejkaLateral(coeffs=dict(co), FNOMIN=1100.0)
+    assert np.isfinite(t1.fy(0.1, 0.0)) and float(t1.fy(0.1, -50.0)) == float(t1.fy(0.1, 1e-6))
+    # vectorised over loads
+    fz = np.array([700.0, 1400.0])
+    assert np.allclose(t1.fy(0.07, fz, 0.01), [_fy61_by_hand(co, {}, 1100.0, None, 0.07, f, 0.01) for f in fz],
+                       rtol=1e-12)
+
+
+def test_mf61_defaults_for_missing_terms_a_tiny_load_and_a_capped_curvature():
+    co = dict(FITTYP=61, PCY1=1.45, PDY1=-2.6, PDY2=0.31, PDY3=4.1, PEY1=-0.4, PEY2=0.21, PEY3=0.12, PEY4=-0.6,
+              PKY1=-48.0, PKY2=1.7, PKY3=0.55, PKY5=0.3, PKY6=-0.9, PVY3=-0.4, PPY1=-0.5, PPY2=0.9, PPY3=-0.12)
+    t = tm.PacejkaLateral(coeffs=dict(co), FNOMIN=1100.0, pressure_pa=90000.0)     # no PKY4, no NOMPRES
+    for alpha, fz, g in ((0.08, 900.0, -0.03), (-0.12, 1500.0, 0.05)):
+        assert float(t.fy(alpha, fz, g)) == pytest.approx(
+            _fy61_by_hand({**co, "PKY4": 2.0}, {}, 1100.0, None, alpha, fz, g), rel=1e-12)
+    # the camber is zero unless given, in the force and in the peak search alike
+    assert float(t._fy61(0.08, 900.0)) == float(t._fy61(0.08, 900.0, 0.0))
+    d = tm.default_tire()
+    assert d.alpha_peak(1100.0) == d.alpha_peak(1100.0, 0.0) != d.alpha_peak(1100.0, 1.0)
+    # a load under a newton is used as given (only zero and below are floored)
+    assert float(t.fy(0.1, 0.5, 0.02)) == pytest.approx(_fy61_by_hand({**co, "PKY4": 2.0}, {}, 1100.0, None,
+                                                                      0.1, 0.5, 0.02), rel=1e-9)
+    # any NOMPRES above zero is a reference pressure, however small
+    tp = tm.PacejkaLateral(coeffs={**co, "PKY4": 2.0, "NOMPRES": 0.5}, FNOMIN=1100.0, pressure_pa=1.0)
+    assert float(tp.fy(0.08, 900.0, -0.03)) == pytest.approx(
+        _fy61_by_hand({**co, "PKY4": 2.0, "NOMPRES": 0.5}, {}, 1100.0, 1.0, 0.08, 900.0, -0.03), rel=1e-12)
+    # a curvature factor above one is capped at one
+    tc = tm.PacejkaLateral(coeffs={**co, "PKY4": 2.0, "PEY1": 1.6, "PEY3": 0.0, "PEY4": 0.0}, FNOMIN=1100.0)
+    assert float(tc.fy(0.15, 1100.0, 0.0)) == pytest.approx(
+        _fy61_by_hand({**co, "PKY4": 2.0, "PEY1": 1.0, "PEY2": 0.0, "PEY3": 0.0, "PEY4": 0.0}, {}, 1100.0, None,
+                      0.15, 1100.0, 0.0), rel=1e-12)
+    # a coefficient set with no FITTYP stays MF5.2
+    assert tm.PacejkaLateral(coeffs={k: v for k, v in co.items() if k != "FITTYP"}, FNOMIN=1100.0).mf_version == "5.2"
