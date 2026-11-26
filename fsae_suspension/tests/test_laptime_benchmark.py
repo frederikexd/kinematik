@@ -28,7 +28,6 @@ def test_live_kinematik_matches_the_stored_references():
 def test_braking_reaches_corner_speed_at_the_corner_not_a_station_early():
     """The last step of a straight is straight: it brakes with the full grip, so the station before the corner is
     faster than the corner. Before the fix it braked as if already cornering and arrived at corner speed early."""
-    import laptime_benchmark as lb
     from types import SimpleNamespace
     from suspension import laptime as lt
     m, mu = 280.0, 1.5

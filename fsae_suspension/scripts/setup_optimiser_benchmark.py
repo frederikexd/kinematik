@@ -15,7 +15,6 @@ import sys
 from dataclasses import replace
 from pathlib import Path
 
-import numpy as np
 from scipy.optimize import differential_evolution
 
 ROOT = Path(__file__).resolve().parents[1]
