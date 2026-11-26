@@ -34,5 +34,39 @@
   "kinematik_over_40C": [],
   "passes": false
  },
- "passed": false
+ "passed": false,
+ "calibrated": {
+  "r_fit_ohm": 0.004125,
+  "dudt_fit_v_per_k": 0.00023606557377049177,
+  "h_fit_W_m2K": 31.381849736225053,
+  "heat_3It_W": 4.104,
+  "heat_3It_measured_W": 4.03,
+  "heat_rel": 0.018362282878411795,
+  "temps": {
+   "1": {
+    "measured_C": 1.4,
+    "kinematik_C": 1.5159035837330244,
+    "rel": 0.08278827409501743
+   },
+   "3": {
+    "measured_C": 6.6,
+    "kinematik_C": 6.290099876188897,
+    "rel": -0.046954564213803396
+   },
+   "5": {
+    "measured_C": 10.9,
+    "kinematik_C": 10.900000282584784,
+    "rel": 2.5925209534705118e-08
+   }
+  },
+  "flagged_over_40C": [
+   "5"
+  ],
+  "passes": {
+   "heat": true,
+   "temperature": true,
+   "decision": true
+  },
+  "passed": true
+ }
 }

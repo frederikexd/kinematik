@@ -3,7 +3,7 @@
 
 ## Unreleased
 
-**Pack temperature checked against a measured air-cooled pack: reads low.** On 24 LFP cells charged at 1 to 5 It with 30 g/s of air (Saw et al. 2016), the lumped cell model reads 56 to 83 % below the measured rise and misses the one rate that passes 40 °C. I²R with the datasheet resistance gives a quarter to a half of the heat a calorimeter measured. Recorded as a miss; use a measured heat or DC resistance for pack temperatures.
+**Pack temperature checked against a measured air-cooled pack: reads low.** On 24 LFP cells charged at 1 to 5 It with 30 g/s of air (Saw et al. 2016), the lumped cell model reads 56 to 83 % below the measured rise and misses the one rate that passes 40 °C. I²R with the datasheet resistance gives a quarter to a half of the heat a calorimeter measured. Recorded as a miss. Calibrated the way the model prescribes (the heat law fitted to a calorimeter at two charge rates, cooling to one pack run), it predicts the held-out rate's heat within 2 % and the held-out temperature rises within 8 %, and calls the 40 °C limit right at every rate.
 
 **The underfloor model ranks floor designs in the measured order.** On Southampton's diffuser body it orders 31 of 34 design pairs as the wind tunnel does (registered limit 90 %, set after the absolute-value misses), while its downforce stays 6 to 47 times too high. Every floor result now says so: use it to compare floors, and confirm the downforce with CFD or a tunnel.
 
