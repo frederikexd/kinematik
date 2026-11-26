@@ -469,10 +469,60 @@ class VortexLatticeModel:
         seg_a, seg_b, seg_own = [], [], []
         _off = np.array([1.0e4, 0.0, 0.0])
         ns, nc = len(grid) - 1, self.n_chord
-        for i in range(ns):
-            for j in range(nc):
-                p00, p01 = grid[i][j], grid[i][j + 1]
-                p10, p11 = grid[i + 1][j], grid[i + 1][j + 1]
+
+        #  ENDPLATES (spec.extra["endplates"]). A wing tested with endplates
+        #  read 21-24 % low against the wind tunnel without them (benchmarks/
+        #  aero_ground_effect): the plates stop the flow spilling round the tips.
+        #  Each plate is a flat vertical lifting surface in the plane of a wing
+        #  tip, gridded like the wing and solved with it. Dimensions in metres,
+        #  placed relative to the wing's leading edge after the ride-height
+        #  placement: x_start (+ downstream), z_bottom (+ up), length, height.
+        surfaces = [(grid, nc)]
+        _ep = (spec.extra or {}).get("endplates") if hasattr(spec, "extra") else None
+        if _ep:
+            _g = np.asarray(grid)
+            le = _g[:, 0, :].mean(axis=0)
+            x0 = le[0] + float(_ep.get("x_start_m", 0.0))
+            z0 = le[2] + float(_ep.get("z_bottom_m", 0.0))
+            L_ep, H_ep = float(_ep["length_m"]), float(_ep["height_m"])
+            nz, nx = int(_ep.get("n_height", 8)), int(_ep.get("n_length", nc))
+            #  The plate's grid is split along the wing's tip camber line, so the
+            #  wing's tip trailing legs run along plate panel edges and never
+            #  through a plate control point (a first version gridded the plate
+            #  in straight rows, and those legs passed through its control
+            #  points: the lift moved 10 % with the plate's panel count).
+            for tip_i, sgn in ((0, 1.0), (len(grid) - 1, -1.0)):
+                tip = _g[tip_i]                         # (nc + 1, 3) wing tip nodes, LE to TE
+                y_tip = float(tip[:, 1].mean())
+                xs = list(tip[:, 0])
+                zj = list(tip[:, 2])
+                if x0 < xs[0] - 1e-9:
+                    xs = [x0] + xs; zj = [zj[0]] + zj
+                if x0 + L_ep > xs[-1] + 1e-9:
+                    xs = xs + [x0 + L_ep]; zj = zj + [zj[-1]]
+                xs, zj = np.asarray(xs), np.asarray(zj)
+                z_top = z0 + H_ep
+                below = max(float(np.mean(zj) - z0), 0.0)
+                above = max(float(z_top - np.mean(zj)), 0.0)
+                n_lo = int(round(nz * below / max(below + above, 1e-12)))
+                n_hi = nz - n_lo
+                rows = []
+                if n_lo > 0:
+                    for t in np.linspace(0.0, 1.0, n_lo + 1)[:-1]:
+                        rows.append(np.minimum(z0 + (zj - z0) * t, zj))
+                rows.append(zj)
+                if n_hi > 0:
+                    for t in np.linspace(0.0, 1.0, n_hi + 1)[1:]:
+                        rows.append(np.maximum(zj + (z_top - zj) * t, zj))
+                if sgn < 0:
+                    rows = rows[::-1]                   # keep both plates' panels the same handedness
+                surfaces.append(([[np.array([x, y_tip, z]) for x, z in zip(xs, r)] for r in rows], len(xs) - 1))
+
+        for grid_s, nc_s in surfaces:
+          for i in range(len(grid_s) - 1):
+            for j in range(nc_s):
+                p00, p01 = grid_s[i][j], grid_s[i][j + 1]
+                p10, p11 = grid_s[i + 1][j], grid_s[i + 1][j + 1]
                 a = p00 + 0.25 * (p01 - p00)          # bound vortex, 1/4 chord
                 b = p10 + 0.25 * (p11 - p10)
                 cm = 0.5 * ((p00 + 0.75 * (p01 - p00))
@@ -483,8 +533,8 @@ class VortexLatticeModel:
                 if collapsed:
                     continue
                 k = len(bound)
-                left = [a] + [np.asarray(grid[i][q]) for q in range(j + 1, nc + 1)] + [np.asarray(grid[i][nc]) + _off]
-                right = [b] + [np.asarray(grid[i + 1][q]) for q in range(j + 1, nc + 1)] + [np.asarray(grid[i + 1][nc]) + _off]
+                left = [a] + [np.asarray(grid_s[i][q]) for q in range(j + 1, nc_s + 1)] + [np.asarray(grid_s[i][nc_s]) + _off]
+                right = [b] + [np.asarray(grid_s[i + 1][q]) for q in range(j + 1, nc_s + 1)] + [np.asarray(grid_s[i + 1][nc_s]) + _off]
                 for q in range(len(left) - 1):        # in from infinity along the left edge
                     seg_a.append(left[q + 1]); seg_b.append(left[q]); seg_own.append(k)
                 seg_a.append(a); seg_b.append(b); seg_own.append(k)      # bound
@@ -512,10 +562,14 @@ class VortexLatticeModel:
         own = np.asarray(seg_own)
 
         def _shoes(P, A_, B_):
-            """Velocity at P from every horseshoe, summed over its segments."""
-            Vs = _seg_influence(P, A_, B_)                 # (M, S, 3)
+            """Velocity at P from every horseshoe, summed over its segments.
+            In blocks of points, so memory stays near 200 MB whatever the
+            lattice size (endplates multiply the segment count)."""
             out = np.zeros((len(P), len(bound), 3))
-            np.add.at(out, (slice(None), own), Vs)
+            blk = max(1, int(2.0e7 // max(len(A_) * 3, 1)))  # pragma: no mutate (block size only sets memory)
+            for s0 in range(0, len(P), blk):
+                Vs = _seg_influence(P[s0:s0 + blk], A_, B_)  # (m, S, 3)
+                np.add.at(out[s0:s0 + blk], (slice(None), own), Vs)
             return out
 
         def influence(P):

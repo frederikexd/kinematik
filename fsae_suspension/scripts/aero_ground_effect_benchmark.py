@@ -63,18 +63,33 @@ def wing_stl(path: str) -> float:
     return -min(z for _, z in loop)
 
 
-def run() -> dict:
+def _sweep(path, drop, endplates=None, heights=HEIGHTS):
+    pts = []
+    for hc in heights:
+        # the lattice is placed by its leading edge; the thesis measures to the lowest suction point
+        h_mm = 50000.0 if hc is None else (hc * C + drop) * 1000.0
+        extra = {"endplates": endplates} if endplates else {}
+        r = VortexLatticeModel(60, 16).solve(CaseSpec(attitude=Attitude(ride_height_mm=h_mm), geometry_path=path,
+                                                      reference_area_m2=SPAN * C, extra=extra))
+        pts.append({"h_c": hc, "downforce_CL": abs(float(r.c_lift)), "sign": float(np.sign(r.c_lift))})
+    return pts
+
+
+def run(phase: int = 2) -> dict:
+    """Phase 1: wing alone (the registered run). Phase 2: with endplates as assumed in limits.json."""
     lim = REG["limits"]["relative"]
-    out = {"points": []}
+    out = {"phase": phase}
     with tempfile.TemporaryDirectory() as d:
         path = os.path.join(d, "wing.stl")
         drop = wing_stl(path)
-        for hc in HEIGHTS:
-            # the lattice is placed by its leading edge; the thesis measures to the lowest suction point
-            h_mm = 50000.0 if hc is None else (hc * C + drop) * 1000.0
-            r = VortexLatticeModel(60, 16).solve(CaseSpec(attitude=Attitude(ride_height_mm=h_mm), geometry_path=path,
-                                                          reference_area_m2=SPAN * C))
-            out["points"].append({"h_c": hc, "downforce_CL": abs(float(r.c_lift)), "sign": float(np.sign(r.c_lift))})
+        ep = None
+        if phase == 2:
+            ep = dict(length_m=0.25, height_m=0.10, x_start_m=-(0.25 - C) / 2, z_bottom_m=-drop, n_height=12,
+                      n_length=16)
+            alt = dict(length_m=0.10, height_m=0.25, x_start_m=(C - 0.10) / 2, z_bottom_m=-drop, n_height=24,
+                       n_length=8)
+            out["bracket_other_orientation"] = _sweep(path, drop, alt, heights=[None, 0.671])
+        out["points"] = _sweep(path, drop, ep)
     g = REG["graded"]
     pts = {p["h_c"]: p["downforce_CL"] for p in out["points"]}
     rows, ok = {}, True

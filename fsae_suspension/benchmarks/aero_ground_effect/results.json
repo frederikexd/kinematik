@@ -1,62 +1,71 @@
 {
- "points": [
+ "phase": 2,
+ "bracket_other_orientation": [
   {
    "h_c": null,
-   "downforce_CL": 0.5468129567575833,
+   "downforce_CL": 0.6184213415139298,
    "sign": -1.0
   },
   {
    "h_c": 0.671,
-   "downforce_CL": 0.6391678081650303,
+   "downforce_CL": 0.7151385263161824,
+   "sign": -1.0
+  }
+ ],
+ "points": [
+  {
+   "h_c": null,
+   "downforce_CL": 0.5908938613634197,
+   "sign": -1.0
+  },
+  {
+   "h_c": 0.671,
+   "downforce_CL": 0.6904343439215651,
    "sign": -1.0
   },
   {
    "h_c": 0.448,
-   "downforce_CL": 0.6896286355247289,
+   "downforce_CL": 0.744505493593546,
    "sign": -1.0
   },
   {
    "h_c": 0.313,
-   "downforce_CL": 0.7495788289618729,
+   "downforce_CL": 0.8092846605497639,
    "sign": -1.0
   },
   {
    "h_c": 0.224,
-   "downforce_CL": 0.8190545302771569,
+   "downforce_CL": 0.8851042044889602,
    "sign": -1.0
   },
   {
    "h_c": 0.134,
-   "downforce_CL": 0.948242968913745,
+   "downforce_CL": 1.0284415434453993,
    "sign": -1.0
   },
   {
    "h_c": 0.082,
-   "downforce_CL": 1.0873363044669393,
+   "downforce_CL": 1.1871291585088495,
    "sign": -1.0
   }
  ],
  "graded": {
   "freestream_CL": {
-   "kinematik": 0.5468129567575833,
+   "kinematik": 0.5908938613634197,
    "measured": 0.69,
-   "rel": -0.20751745397451682,
+   "rel": -0.14363208498055113,
    "passes": false
   },
   "h_c_0.671_CL": {
-   "kinematik": 0.6391678081650303,
+   "kinematik": 0.6904343439215651,
    "measured": 0.84,
-   "rel": -0.23908594266067817,
+   "rel": -0.17805435247432722,
    "passes": false
   }
  },
  "reported": {
-  "h_c_0.082_CL": 1.0873363044669393,
+  "h_c_0.082_CL": 1.1871291585088495,
   "measured_max_CL_at_0.082": 1.72
  },
- "passed": false,
- "diagnostic_after_the_run": {
-  "note": "Not part of the grade. The same profile at span 4.4 m (AR 19.7) reads CL 0.733 in free air, against 0.547 at the tested AR 4.92: tip loss on a wing the lattice sees without its endplates is the leading suspect for the under-read, not established.",
-  "AR_19.7_freestream_CL": 0.7326
- }
+ "passed": false
 }

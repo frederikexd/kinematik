@@ -245,5 +245,11 @@
  "kinematik_defaults": {
   "coolant_frac": "fuel_for_lap(coolant_frac=0.28)",
   "bte": "fuel_for_lap(bte=0.30)"
+ },
+ "phase_2": {
+  "registered": "2026-11-25, BEFORE any FSAE-engine source was searched for or read",
+  "plan": "Find an open measurement of coolant heat rejection on a Formula SAE / 600 cc motorcycle engine (a team thesis or paper with dyno data). Grade: KinematiK's coolant heat, coolant_frac x fuel power (fuel power = brake power / bte with the defaults 0.28 and 0.30, or the measured fuel flow when given), within 30 % of each measured coolant heat; report every point.",
+  "limit_relative": 0.3,
+  "outcome_2026-11-25": "No open measurement found. Searched and read: Drexel MEM-T01 FSAE cooling report (Honda F4i, test plan only), MIT FSAE cooling thesis (electric car), Illinois IDEALS FSAE cooling thesis (Honda F4i; abstract gives no values, file not reached), Cal Poly FSAE cooling senior project (test plan; PDF would not download). The criterion stands, blind, for the first team dyno measurement supplied."
  }
 }
