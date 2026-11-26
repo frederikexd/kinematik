@@ -805,3 +805,12 @@ tests = [
     "tests/test_worthwhile.py",
 ]
 deselect = []
+
+[[group]]
+name = "ledger_pace"
+files = ["suspension/ledger_pace.py"]
+tests = [
+    "tests/test_mutation_ledger_pace.py",
+    "tests/test_ledger_pace.py",
+]
+deselect = ["tests/test_ledger_pace.py::test_repo_registered_results_reproduce"]  # reads benchmarks/ from the repo root, which the mutation copy does not have

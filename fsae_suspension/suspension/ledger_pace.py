@@ -48,7 +48,7 @@ def score_pace(lap_s: dict, results: dict) -> dict:
     rows, clean = [], {}
     for car, t in lap_s.items():
         res = results.get(car, {}).get("autocross")
-        why = "no official result" if not res else L._excluded("autocross", res)
+        why = "no official result" if not res else L._excluded("autocross", res)  # pragma: no mutate (_excluded treats every event but skidpad alike)
         if why:
             rows.append({"car": car, "excluded": why})
         else:
