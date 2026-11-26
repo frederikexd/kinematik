@@ -741,3 +741,12 @@ tests = [
     "tests/test_scale_model.py",
 ]
 deselect = []
+
+[[group]]
+name = "gnss"
+files = ["suspension/gnss.py"]
+tests = [
+    "tests/test_mutation_gnss.py",
+    "tests/test_gnss.py",
+]
+deselect = []

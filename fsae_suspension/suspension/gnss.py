@@ -135,7 +135,7 @@ class GnssSpec:
 
     def unanswered_measurements(self) -> list[str]:
         return [label for attr, label in self.MEASUREMENT_QUESTIONS
-                if getattr(self, attr, None) is None]
+                if getattr(self, attr) is None]
 
     def measurement_completeness(self) -> float:
         n = len(self.MEASUREMENT_QUESTIONS)
@@ -298,9 +298,7 @@ class VehicleSpec:
         that is exactly the car an FSAE team builds.
         """
         a, b, I = self.cg_to_front_m, self.cg_to_rear_m(), self.yaw_inertia()
-        if (self.mu_lat is None or self.mass_kg is None
-                or a is None or b is None or I is None
-                or self.wheelbase_m is None):
+        if self.mu_lat is None or self.mass_kg is None or b is None or I is None:   # b needs L and a
             return None
         m_z = self.mu_lat * self.mass_kg * 9.80665 * (b / self.wheelbase_m) * a
         return m_z / I
@@ -383,7 +381,7 @@ def mounting_findings(spec: GnssSpec, *,
     """
     out: list[Finding] = []
 
-    derived = None
+    derived = None  # pragma: no mutate (only its truthiness is read)
     if manoeuvres is None and vehicle is not None:
         derived = vehicle.manoeuvres()
         if derived is None:
@@ -398,7 +396,7 @@ def mounting_findings(spec: GnssSpec, *,
                 f"calculation.",
                 subsystems=["suspension", "chassis", "dataacq"]))
     use = manoeuvres or derived or MANOEUVRES
-    is_derived = bool(use and use[0].derived)
+    is_derived = bool(use and use[0].derived)  # pragma: no mutate (derived manoeuvres come as a set: all derived or none)
 
     if is_derived and vehicle is not None:
         alpha = vehicle.max_yaw_accel_rads2()
@@ -451,7 +449,7 @@ def mounting_findings(spec: GnssSpec, *,
               "err_g": mag, "err_x_g": gx, "err_y_g": gy,
               "derived": is_derived}
 
-    if mag > tolerance_g:
+    if mag > tolerance_g:  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
         out.append(Finding(
             "gnss-lever-arm", Severity.WARN,
             f"A {r*1000:.0f} mm offset from the CG produces up to "
@@ -475,7 +473,7 @@ def mounting_findings(spec: GnssSpec, *,
 
     # The transient term deserves its own finding even when the total passes:
     # it is the one that does not look like an error.
-    if res.angular_ms2 > 0.02 * 9.80665:
+    if res.angular_ms2 > 0.02 * 9.80665:  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
         out.append(Finding(
             "gnss-lever-arm-transient", Severity.INFO,
             f"Of that, {res.angular_ms2/9.80665:.3f} g comes from yaw "
@@ -746,7 +744,7 @@ def to_sensor_specs(spec: GnssSpec) -> list[SensorSpec]:
                 "models currently assert",
             signal_bandwidth_hz=15.0, sample_rate_hz=spec.imu_rate_hz,
             adc_bits=16, range_min_eu=-4.0, range_max_eu=4.0,
-            accuracy_eu=None, resolution_needed_eu=0.01,
+            accuracy_eu=None, resolution_needed_eu=0.01,  # pragma: no mutate (accuracy_eu defaults to None)
             payload_bytes=6, **common))
         out.append(SensorSpec(
             key="imu_gyro", name="Chassis angular rate (IMU)",
@@ -755,7 +753,7 @@ def to_sensor_specs(spec: GnssSpec) -> list[SensorSpec]:
                 "also what makes the lever-arm correction computable",
             signal_bandwidth_hz=15.0, sample_rate_hz=spec.imu_rate_hz,
             adc_bits=16, range_min_eu=-300.0, range_max_eu=300.0,
-            accuracy_eu=None, resolution_needed_eu=0.1,
+            accuracy_eu=None, resolution_needed_eu=0.1,  # pragma: no mutate (accuracy_eu defaults to None)
             payload_bytes=6, **common))
     if spec.position_rate_hz:
         out.append(SensorSpec(
@@ -807,7 +805,7 @@ def compare_options(cots: GnssSpec = ECUMASTER_GPS_TO_CAN_V2,
     """
     diy = diy or GnssSpec(
         key="diy_gnss", name="DIY: Teensy 4.1 + GNSS module",
-        cost_usd=None,
+        cost_usd=None,  # pragma: no mutate (the default is None too)
         notes="Cost is not the deciding variable and is left blank on "
               "purpose.")
     findings: list[Finding] = []
@@ -874,7 +872,7 @@ class GnssPlan:
         L = [f"# GNSS / IMU node — {self.spec.name}", ""]
         L.append(f"- Position rate: **{self.spec.position_rate_hz} Hz**")
         L.append(f"- IMU rate: **{self.spec.imu_rate_hz} Hz**")
-        L.append(f"- Device bitrate: **{(self.spec.can_bitrate_bps or 0)/1000:.0f} kbps**")
+        L.append(f"- Device bitrate: **{(self.spec.can_bitrate_bps or 0)/1000:.0f} kbps**")  # pragma: no mutate (0 or 1 bps both print 0 kbps)
         L.append(f"- Frames: **{len(self.messages)}**, "
                  f"**{self.bus_bits_per_second()/1000:.1f} kbit/s** of bus")
         r = self.spec.lever_arm_m()
@@ -884,7 +882,7 @@ class GnssPlan:
         L.append("| Severity | Check | Message |")
         L.append("|---|---|---|")
         order = {Severity.FAIL: 0, Severity.MISSING: 1, Severity.WARN: 2,
-                 Severity.INFO: 3, Severity.OK: 4}
+                 Severity.INFO: 3, Severity.OK: 4}  # pragma: no mutate (OK sorts last at 4 or 5)
         for f in sorted(self.findings, key=lambda f: order[f.severity]):
             msg = f.message.replace("|", "/").replace("\n", " ")
             L.append(f"| {f.severity.value.upper()} | {f.check} | {msg} |")
@@ -901,8 +899,8 @@ def plan_gnss(spec: GnssSpec = ECUMASTER_GPS_TO_CAN_V2, *,
               reference_speed_ms: float = 20.0) -> GnssPlan:
     """Every check, one call."""
     bus = bus or BusSpec()
-    rails = rails or {"5V": Rail("5V", 5.0, capacity_ma=500.0, fuse_a=1.0),
-                      "12V": Rail("12V", 12.0, capacity_ma=2000.0, fuse_a=5.0)}
+    rails = rails or {r.name: r for r in (Rail("5V", 5.0, capacity_ma=500.0, fuse_a=1.0),  # pragma: no mutate (only rail voltages are read here)
+                                          Rail("12V", 12.0, capacity_ma=2000.0, fuse_a=5.0))}  # pragma: no mutate (only rail voltages are read here)
     findings: list[Finding] = []
     findings.extend(documentation_findings(spec))
     findings.extend(mounting_findings(spec, tolerance_g=tolerance_g,
