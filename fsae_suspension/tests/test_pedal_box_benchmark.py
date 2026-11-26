@@ -3,12 +3,15 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 STORED = json.loads((ROOT / "benchmarks" / "pedal_box" / "results.json").read_text())
 
 
 def test_live_rerun_reproduces_the_stored_verdict():
+    pytest.importorskip("openseespy")   # the OpenSees reference needs it; CI installs without it
     import pedal_box_benchmark as b
     assert b.run()["passed"] == STORED["passed"]
 

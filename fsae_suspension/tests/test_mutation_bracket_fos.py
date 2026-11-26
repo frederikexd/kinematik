@@ -286,3 +286,46 @@ def test_the_report_caveat():
     assert txt[-1] == ("Screening only: standard closed-form hand checks (Shigley / AWS throat shear). NOT a substitute "
                        "for the SolidWorks/Ansys FEA the design rule also requires — confirm the governing mode there "
                        "before sign-off.")
+
+
+NET_NOTE = ("net section assumes one hole per cross-section; if bolts sit side by side across the width, set "
+            "holes_in_section")
+WELD_NOTE = ("weld bending assumes ONE continuous weld line; if the length is split over both sides of the tab, set "
+             "weld_lines=2 (bending stress doubles)")
+
+
+def test_holes_across_the_section_and_their_note():
+    assert (bf.Bracket(name="b", material=M1018, width_mm=30, thickness_mm=3, P_N=1).holes_in_section,
+            bf.Bracket(name="b", material=M1018, width_mm=30, thickness_mm=3, P_N=1).weld_lines) == (1, 1)
+    net = "direct shear (net section at hole)"
+    two = bf.screen_bracket(_br(hole_dia_mm=6.0, n_bolts=2, holes_in_section=2))
+    assert _mode(two, net).stress_MPa == pytest.approx(2000 / ((30 - 12) * 3)) and NET_NOTE not in two.notes
+    one = bf.screen_bracket(_br(hole_dia_mm=6.0, n_bolts=2))
+    assert _mode(one, net).stress_MPa == pytest.approx(2000 / (24 * 3)) and NET_NOTE in one.notes
+    for kw in (dict(holes_in_section=0), dict(holes_in_section=None), dict(holes_in_section=-3)):
+        assert _mode(bf.screen_bracket(_br(hole_dia_mm=6.0, **kw)), net).stress_MPa == pytest.approx(2000 / 72)
+    assert NET_NOTE not in bf.screen_bracket(_br(hole_dia_mm=6.0)).notes                # one bolt: nothing to say
+    assert NET_NOTE not in bf.screen_bracket(_br(hole_dia_mm=6.0, n_bolts=0)).notes
+    assert NET_NOTE in bf.screen_bracket(_br(hole_dia_mm=6.0, n_bolts=3)).notes
+    assert NET_NOTE not in bf.screen_bracket(_br(hole_dia_mm=6.0, n_bolts=3, holes_in_section=3)).notes
+
+
+def test_weld_lines_scale_the_bending_and_their_note():
+    throat = 0.707 * 3.0
+
+    def bend(n):
+        return 6 * n * 2000 * 25 / (throat * 3600)
+
+    w = "weld throat shear"
+    for n in (2, 3):
+        r = bf.screen_bracket(_br(lever_arm_mm=25.0, weld_leg_mm=3.0, weld_length_mm=60.0, weld_lines=n))
+        assert _mode(r, w).stress_MPa == pytest.approx(math.hypot(2000 / (throat * 60), bend(n)))
+        assert WELD_NOTE not in r.notes
+    for kw in (dict(), dict(weld_lines=0), dict(weld_lines=None), dict(weld_lines=-1)):
+        r = bf.screen_bracket(_br(lever_arm_mm=25.0, weld_leg_mm=3.0, weld_length_mm=60.0, **kw))
+        assert _mode(r, w).stress_MPa == pytest.approx(math.hypot(2000 / (throat * 60), bend(1)))
+        assert WELD_NOTE in r.notes
+    assert WELD_NOTE not in bf.screen_bracket(_br(weld_leg_mm=3.0, weld_length_mm=60.0)).notes   # no couple
+    # a weld length with no leg (or a leg with no length) is no weld check at all
+    for kw in (dict(weld_leg_mm=0.0, weld_length_mm=60.0), dict(weld_leg_mm=3.0, weld_length_mm=0.0)):
+        assert w not in [m.mode for m in bf.screen_bracket(_br(**kw)).modes]

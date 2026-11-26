@@ -282,3 +282,42 @@ def test_the_roll_centre_through_the_vehicle():
     v = dy.VehicleDynamics(P, front_kin=c)
     assert v.roll_center_height(c) == pytest.approx(_rc((-1200.0, 140.0), (0.0, 610.0, 3.0)))
     assert v.lateral_load_transfer(1.0)[1]["rc_front"] == pytest.approx(_rc((-1200.0, 140.0), (0.0, 610.0, 3.0)))
+
+
+def _lift_expect(p, g):
+    """The capped transfers from the uncapped ones (linear in g here: fixed roll centres, no kinematics)."""
+    _, i0 = dy.VehicleDynamics(p).lateral_load_transfer(0.1)
+    dwf, dwr = i0["ltd_front"] * g / 0.1, i0["ltd_rear"] * g / 0.1
+    wf, wr = p.mass * p.g * p.weight_dist_front, p.mass * p.g * (1 - p.weight_dist_front)
+    lf = lr = False
+    if dwf > wf / 2:
+        dwr += (dwf - wf / 2) * p.track_front / p.track_rear
+        dwf, lf = wf / 2, True
+    if dwr > wr / 2:
+        ex = (dwr - wr / 2) * p.track_rear
+        dwr, lr = wr / 2, True
+        if not lf:
+            dwf = min(dwf + ex / p.track_front, wf / 2)
+            lf = dwf >= wf / 2
+    return dwf, dwr, lf, lr
+
+
+def test_a_lifted_axle_carries_its_weight_and_passes_on_the_rest():
+    stiff_rear = replace(P, roll_stiffness_front=100.0, roll_stiffness_rear=900.0)
+    cases = [(P, 1.0, (False, False)), (P, 1.5, (True, False)), (P, 2.0, (True, True)),
+             (stiff_rear, 1.5, (False, True)), (stiff_rear, 1.9, (True, True)), (stiff_rear, 1.0, (False, False))]
+    for p, g, flags in cases:
+        loads, info = dy.VehicleDynamics(p).lateral_load_transfer(g)
+        dwf, dwr, lf, lr = _lift_expect(p, g)
+        assert (lf, lr) == flags == (info["wheel_lift_front"], info["wheel_lift_rear"])
+        assert info["ltd_front"] == pytest.approx(dwf, rel=1e-9) and info["ltd_rear"] == pytest.approx(dwr, rel=1e-9)
+        wf, wr = p.mass * p.g * p.weight_dist_front, p.mass * p.g * (1 - p.weight_dist_front)
+        assert sum(loads.as_tuple()) == pytest.approx(wf + wr, rel=1e-12)           # never more than the car weighs
+        assert (loads.fl == pytest.approx(0.0, abs=1e-9)) == lf and (loads.rl == pytest.approx(0.0, abs=1e-9)) == lr
+    # the rear lifts first and the front then takes the rear's excess roll moment, short of lifting
+    loads, info = dy.VehicleDynamics(stiff_rear).lateral_load_transfer(1.5)
+    _, i0 = dy.VehicleDynamics(stiff_rear).lateral_load_transfer(0.1)
+    wr = stiff_rear.mass * stiff_rear.g * (1 - stiff_rear.weight_dist_front)
+    moment = (i0["ltd_front"] * 1250 + i0["ltd_rear"] * 1150) * 15
+    assert info["ltd_front"] * 1250 + info["ltd_rear"] * 1150 == pytest.approx(moment, rel=1e-9)
+    assert info["ltd_rear"] == pytest.approx(wr / 2) and not info["wheel_lift_front"]

@@ -177,3 +177,25 @@ def test_the_named_base_bearing_allowances_and_small_inputs():
     assert bj.Fastener(head_dia_mm=6.6, hole_dia_mm=6.6).bearing_area_mm2() is None
     both = bj.analyze_joint(bj.Fastener(), bj.ClampedStack(), 30.0, 60000.0)
     assert both.separated and both.notes.count("  ") == 1 and both.notes.startswith("Preload stress")
+
+
+def test_bolt_stiffness_with_an_unthreaded_shank():
+    """Shigley Eq. 8-17: shank (A_d over l_d) and thread (A_t over l_t) in series; the shank is clamped to [0, grip]."""
+    assert bj.Fastener().shank_in_grip_mm == 0.0
+    ad6, at6 = math.pi / 4 * 36.0, 20.1
+
+    def series(ld, grip, e=205000.0):
+        return ad6 * at6 * e / (ad6 * (grip - ld) + at6 * ld)
+
+    assert bj._bolt_stiffness(bj.Fastener(shank_in_grip_mm=3.0), 8.0) == pytest.approx(series(3.0, 8.0), rel=1e-12)
+    assert bj._bolt_stiffness(bj.Fastener(shank_in_grip_mm=0.5), 8.0) == pytest.approx(series(0.5, 8.0), rel=1e-12)
+    assert bj._bolt_stiffness(bj.Fastener(shank_in_grip_mm=3.0), 8.0, E_bolt_MPa=200000.0) == pytest.approx(
+        series(3.0, 8.0, 200000.0), rel=1e-12)
+    # a shank longer than the grip is the whole grip: the bolt is E A_d / grip
+    assert bj._bolt_stiffness(bj.Fastener(shank_in_grip_mm=20.0), 8.0) == pytest.approx(205000 * ad6 / 8, rel=1e-12)
+    # a negative shank is no shank
+    assert bj._bolt_stiffness(bj.Fastener(shank_in_grip_mm=-2.0), 8.0) == pytest.approx(205000 * 20.1 / 8, rel=1e-12)
+    # an M8 with an explicit stress area still takes A_d from the nominal diameter
+    f8 = bj.Fastener(nominal_d_mm=8.0, stress_area_mm2=40.0, shank_in_grip_mm=4.0)
+    ad8 = math.pi / 4 * 64.0
+    assert bj._bolt_stiffness(f8, 10.0) == pytest.approx(ad8 * 40 * 205000 / (ad8 * 6 + 40 * 4), rel=1e-12)

@@ -365,3 +365,25 @@ def test_a_corner_feasible_at_v_top_only_when_coasting(monkeypatch):
     monkeypatch.setattr(td, "state", fake)
     r = td.simulate_corner(6.0, 90.0, "open", v_top=v_top, car=car, ds=2.0)
     assert r["V"] == pytest.approx(np.full(len(r["V"]), v_top), rel=1e-12)
+
+
+def test_the_held_split_search_and_the_exact_overshoot_pinned():
+    """The second search (one split held through both passes, golden-section refined) and the exact overshoot
+    (2,001-point scan, then Brent), pinned to the values the global benchmark accepted (benchmarks/
+    torque_distribution): the quick answer is an upper bound, the exact one the least overshoot."""
+    quick = td.state(16.0, 1 / 15, 0.0, -8.0, "tv")
+    exact = td.state(16.0, 1 / 15, 0.0, -8.0, "tv", exact_overshoot=True)
+    assert quick["umax"] == pytest.approx(2.5209684724457917, rel=1e-9) and quick["overshoot_upper_bound"] is True
+    assert exact["umax"] == pytest.approx(2.507913094736402, rel=1e-6) and exact["overshoot_upper_bound"] is False
+    held = td.state(16.0, 1 / 15, 0.0, -8.0, "tv", _frac=0.5)
+    assert held["umax"] == pytest.approx(2.5986202584623914, rel=1e-9) and held["overshoot_upper_bound"] is True
+    assert set(held) == {"ok", "umax", "overshoot_upper_bound"}
+    assert td.state(16.0, 1 / 15, 0.0, -8.0, "tv", _frac=0.5, exact_overshoot=True)["overshoot_upper_bound"] is True
+    for (R, opt), v in {(15.0, "open"): 14.930233046412468, (9.125, "tv"): 11.598817750811577,
+                        (12.0, "tv"): 13.36107486486435}.items():
+        assert td.steady_limit(R, opt)["V"] == pytest.approx(v, rel=1e-9)
+    # the held-split search runs on the caller's car and vehicle, not the defaults
+    car = td.Car(m=280.0, wf=0.45, iz=150.0, front_lltd=0.6, brake_front=0.6)
+    assert td.state(16.0, 1 / 15, 0.0, -8.0, "tv", car)["umax"] == pytest.approx(2.5128250071964255, rel=1e-9)
+    assert td.state(16.0, 1 / 15, 0.0, -8.0, "tv", veh=Vehicle(mass_kg=260.0))["umax"] == pytest.approx(
+        2.7662417215759705, rel=1e-9)

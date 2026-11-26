@@ -181,3 +181,39 @@ def test_a_high_crack_risk_rules_a_rotor_out_even_when_it_runs_cool_enough():
         assert c.crack_risk in ("low", "elevated", "high")
         assert c.feasible == (c.margin_c >= 0.0 and c.crack_risk != "high")
         assert c.T_surface_peak_c >= c.T_rotor_peak_c - 1e-6
+
+
+def test_the_convection_line_is_a_least_squares_fit():
+    h0, h1 = bt.fit_convection_line([5, 10, 15], [30.0, 50.0, 70.0])
+    assert (h0, h1) == pytest.approx((10.0, 4.0))
+    vs, hs = [4.0, 9.0, 13.0, 21.0], [25.0, 41.0, 60.0, 88.0]
+    assert bt.fit_convection_line(vs, hs) == pytest.approx(tuple(np.polyfit(vs, hs, 1)[::-1]))
+    with pytest.raises(ValueError, match="at least two"):
+        bt.fit_convection_line([5.0], [30.0])
+    with pytest.raises(ValueError, match="at least two"):
+        bt.fit_convection_line([5.0, 6.0], [30.0])
+    with pytest.raises(ValueError, match="must not all be equal"):
+        bt.fit_convection_line([8.0, 8.0], [30.0, 40.0])
+
+
+def test_a_wetted_area_from_cad_replaces_the_annulus_estimate():
+    assert bt.convective_area_m2(220.0, wetted_area_m2=0.085) == 0.085
+    assert bt.convective_area_m2(220.0, wetted_area_m2=0.0) == 1e-6
+    assert bt.convective_area_m2(220.0) != bt.convective_area_m2(220.0, wetted_area_m2=0.085)
+
+
+def test_the_through_thickness_start_and_a_buried_thermocouple():
+    od = bt.OneDRotor(bt.TwoNodeParams(), n_nodes=12)
+    amb = bt.TwoNodeParams().T_ambient_c
+    with pytest.raises(ValueError, match="at or above the ambient"):
+        od.simulate([1000.0] * 5, 0.01, T_initial_c=amb - 1.0)
+    power = [3000.0] * 40 + [0.0] * 20
+    tr = od.simulate(power, 0.01, record_depth_mm=1.0)
+    assert len(tr.T_depth_c) == len(tr.t_s) == 60
+    # 1 mm down the reading sits between the surface and the core, linear between the two nodes around it
+    assert all(c - 1e-9 <= d <= s + 1e-9 for s, d, c in zip(tr.T_surface_c, tr.T_depth_c, tr.T_core_c))
+    surf = od.simulate(power, 0.01, record_depth_mm=0.0)
+    assert surf.T_depth_c == pytest.approx(surf.T_surface_c)
+    deep = od.simulate(power, 0.01, record_depth_mm=1e6)             # clamped to the mid-plane
+    assert deep.T_depth_c == pytest.approx(deep.T_core_c)
+    assert od.simulate(power, 0.01).T_depth_c is None

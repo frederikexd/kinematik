@@ -448,3 +448,43 @@ def test_a_soft_joint_still_counts_in_the_tangent_stiffness():
     ms = cm.MemberStiffness(k_direct=1000.0, joint_in=_SoftJoint())
     assert ms.tangent_axial_stiffness(10.0, 300.0) == pytest.approx(1.0 / (1 / 1000.0 + 1 / 0.5))
     assert ms.axial_deflection(10.0, 300.0) == pytest.approx(10.0 / 1000.0 + 20.0)
+
+
+def test_the_loaded_pose_holds_the_spring_at_its_unloaded_length():
+    """The deflected corner is found at the wheel travel where the spring/damper is back at its static length
+    (secant on travel), not at the rigid corner's pose; with no spring length known it is the static pose."""
+    from dataclasses import replace
+
+    from suspension import CompliantCorner, Hardpoints, SuspensionKinematics
+    hp = Hardpoints.default()
+    cc = CompliantCorner.uniform_tube(hp)
+    rigid = SuspensionKinematics(hp)
+    assert cc._spring_L0 == pytest.approx(rigid.spring_length_at(rigid.static)[0], abs=1e-12)
+    assert cc._loaded_pose(rigid).wheel_center == pytest.approx(rigid.static.wheel_center, abs=1e-9)
+    for dz in (1.5, -2.0, 4.0):
+        moved = replace(hp, spring_inner=np.asarray(hp.spring_inner, float) + np.array([0.0, 0.0, dz]))
+        kin = SuspensionKinematics(moved)
+        assert abs(kin.spring_length_at(kin.static)[0] - cc._spring_L0) > 0.05          # the spring mount moved
+        pose = cc._loaded_pose(kin)
+        assert kin.spring_length_at(pose)[0] == pytest.approx(cc._spring_L0, abs=1e-7)
+        assert abs(pose.wheel_center[2] - kin.static.wheel_center[2]) > 0.05            # the upright heaved
+    cc._spring_L0 = None
+    moved = SuspensionKinematics(replace(hp, spring_inner=np.asarray(hp.spring_inner, float) + 2.0))
+    assert cc._loaded_pose(moved) is moved.static
+
+
+def test_the_loaded_pose_secant_stops_after_25_steps_when_it_cannot_converge():
+    """A spring length that never returns to its unloaded value (no root) stops the secant at its 25-step cap and
+    returns the last iterate."""
+    from types import SimpleNamespace as NS
+
+    from suspension import CompliantCorner, Hardpoints
+    cc = CompliantCorner.uniform_tube(Hardpoints.default())
+    L0 = cc._spring_L0
+    fake = NS(solve_at_travel=lambda t: NS(t=t), spring_length_at=lambda s: (L0 + 1.0 + s.t * s.t,))
+    t0, t1, f0 = 0.0, 0.5, 1.0
+    f1 = 1.0 + t1 * t1
+    for _ in range(25):
+        t0, t1, f0 = t1, t1 - f1 * (t1 - t0) / (f1 - f0), f1
+        f1 = 1.0 + t1 * t1
+    assert cc._loaded_pose(fake).t == pytest.approx(t1, rel=1e-6)

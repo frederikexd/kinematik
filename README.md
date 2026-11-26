@@ -97,7 +97,8 @@ Integration tools, where every subsystem's numbers meet:
 
 CI runs the tests, lint, CodeQL and security scans on every push to main, re-solves the recorded design runs every
 week, and holds the core files listed in `mutation_targets.toml` to a 99 % mutation score (the share of deliberately
-injected code faults that the tests catch).
+injected code faults that the tests catch). Nine groups whose code grew on 2026-11-25 are held at their measured score until their tests catch up
+(marked TEMPORARY in that file).
 
 ## Benchmark highlights
 

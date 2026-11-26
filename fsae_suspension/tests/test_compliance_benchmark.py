@@ -21,6 +21,7 @@ def test_the_stored_run_passed_every_case_and_vm4():
 
 @pytest.mark.filterwarnings("ignore")
 def test_both_references_reproduce_ansys_vm4():
+    pytest.importorskip("openseespy")   # the OpenSees reference needs it; CI installs without it
     import compliance_benchmark as cb
     v = cb.vm4()
     for tool in ("independent", "opensees"):
