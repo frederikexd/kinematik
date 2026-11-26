@@ -78,6 +78,25 @@ def exact_1mm(tc: dict, half_thickness_m: float | None) -> float:
     return tc["T0_C"] + best
 
 
+def kinematik_full(tc: dict) -> dict:
+    """Rerun added after the registered run (not blind): KinematiK's own convection and radiation on, as a user would
+    run it, with the dyno's wheel radius (Rw 0.435 m) and no cross-flow (the dyno air does not cross the disc at road
+    speed; benchmarks/rotor_convection). The registered mapping had both off, as in the paper's model."""
+    mat = bt.RotorMaterial("cast iron (paper)", 7100.0, 500.0, 51.0, 700.0, 0.55)
+    prm = bt.TwoNodeParams(diameter_mm=640.0, thickness_mm=55.0, pad_heat_fraction=0.0, T_ambient_c=tc["T0_C"],
+                           wheel_radius_mm=INP["Rw_m"] * 1000.0, crossflow_ms=0.0)
+    rotor = bt.OneDRotor(prm, n_nodes=111, rotor_material=mat)
+    q = flux_series(tc)
+    V0, ti, t0s = INP["V0_kmh"] / 3.6, tc["ti_s"], tc["t0s_s"]
+    v = []
+    for i in range(len(q)):
+        t = i * DT
+        integ = t * t / (2 * ti) if t < ti else ti / 2 + (t - ti)
+        v.append(max(V0 * (1 - integ / t0s), 0.0))
+    r = rotor.simulate([2.0 * rotor.face_area * x for x in q], DT, v_series=v, record_depth_mm=1.0)
+    return {"max_1mm_C": max(r.T_depth_c)}
+
+
 def run() -> dict:
     lim = REG["limits"]
     out, ok = {}, True
@@ -94,6 +113,16 @@ def run() -> dict:
                      "diagnostic_exact_semi_infinite_C": exact_1mm(tc, None)}
         ok = ok and p
     out["passed"] = bool(ok)
+    rr, ok2 = {}, True
+    for name in ("test_1", "test_2"):
+        tc = INP[name]
+        k = kinematik_full(tc)["max_1mm_C"]
+        dm, dp = k - tc["measured_max_C"], k - tc["paper_model_max_C"]
+        p = bool(abs(dm) <= lim["vs_measured_C"] and abs(dp) <= lim["vs_paper_model_C"])
+        rr[name] = {"max_1mm_C": k, "diff_vs_measured_C": dm, "diff_vs_paper_model_C": dp, "passes": p}
+        ok2 = ok2 and p
+    rr["passed"] = bool(ok2)
+    out["rerun_full_model_not_blind"] = rr
     return out
 
 
@@ -106,4 +135,8 @@ if __name__ == "__main__":
               f"({r['diff_vs_measured_C']:+.1f}); paper's model {r['paper_model_max_C']} ({r['diff_vs_paper_model_C']:+.1f}) "
               f"{'PASS' if r['passes'] else 'FAIL'}")
     print("PASSED" if res["passed"] else "FAILED")
+    for n in ("test_1", "test_2"):
+        r = res["rerun_full_model_not_blind"][n]
+        print(f"rerun with convection and radiation, {n}: {r['max_1mm_C']:.2f} C ({r['diff_vs_measured_C']:+.2f} measured, "
+              f"{r['diff_vs_paper_model_C']:+.2f} paper's model) {'PASS' if r['passes'] else 'FAIL'}")
     sys.exit(0 if res["passed"] else 1)

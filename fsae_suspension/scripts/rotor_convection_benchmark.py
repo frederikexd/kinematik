@@ -82,7 +82,14 @@ def run() -> dict:
     diag = {"cfd_mean_h_500C_W_m2K": sum(Q[500]) / (500 - T_AIR) / A_cfd, "kinematik_h_W_m2K": k_h(180.0),
             "cfd_area_over_face_annulus": A_cfd / (A / bt.TwoNodeParams().area_factor),
             "kinematik_area_factor_default": bt.TwoNodeParams().area_factor}
-    return {"diagnostic": diag, "ring_width_mm": w, "A_conv_m2": A, "cfd_total_area_m2": A_cfd,
+    # rerun added after the registered run (not blind): the wetted area from CAD, as a team would give it for a vented
+    # rotor (here the thesis's own surfaces), in place of the default area factor; same limits
+    Aw = bt.convective_area_m2(D_MM, wetted_area_m2=A_cfd)
+    rw = [{"T_C": r["T_C"], "cfd_W_per_K": r["cfd_W_per_K"], "kinematik_W_per_K": k_h(180.0) * Aw,
+           "rel": k_h(180.0) * Aw / r["cfd_W_per_K"] - 1} for r in t1]
+    rerun = {"test_1": rw, "test_1_passes": all(abs(r["rel"]) <= lim["test_1_relative"] for r in rw)}
+    rerun["passed"] = bool(rerun["test_1_passes"] and p2)
+    return {"rerun_wetted_area_not_blind": rerun, "diagnostic": diag, "ring_width_mm": w, "A_conv_m2": A, "cfd_total_area_m2": A_cfd,
             "kinematik_h_180_W_m2K": k_h(180.0), "test_1": t1, "test_1_passes": p1,
             "test_2": t2, "test_2_passes": p2, "passed": bool(p1 and p2)}
 
@@ -97,4 +104,7 @@ if __name__ == "__main__":
     for r in res["test_2"]:
         print(f"  {r['v_kmh']:4d} km/h  CFD {r['cfd_ratio']:.3f}  KinematiK {r['kinematik_ratio']:.3f}  {100*r['rel']:+6.1f} %")
     print("test 1", "PASS" if res["test_1_passes"] else "FAIL", "| test 2", "PASS" if res["test_2_passes"] else "FAIL")
+    for r in res["rerun_wetted_area_not_blind"]["test_1"]:
+        print(f"  rerun, wetted area: {r['T_C']:4d} C  {100*r['rel']:+6.1f} %")
+    print("rerun", "PASS" if res["rerun_wetted_area_not_blind"]["passed"] else "FAIL")
     sys.exit(0 if res["passed"] else 1)

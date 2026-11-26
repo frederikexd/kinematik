@@ -464,7 +464,7 @@ def test_a_shift_penalty_capped_at_the_shift_time(monkeypatch):
 
 
 # ------------------------------------------------------------------ fuel, tank, engine braking, cooling
-def _fuel(lap, eng, gb, veh, fuel_key="gasoline", bte=0.30, over=0.05, cf=0.28):
+def _fuel(lap, eng, gb, veh, fuel_key="gasoline", bte=0.30, over=0.05, cf=0.22):
     f = ice.fuel(fuel_key)
     s, v = np.asarray(lap.s, float), np.asarray(lap.v, float)
     ds = np.diff(s)
@@ -509,7 +509,7 @@ def test_fuel_for_a_lap():
     assert str(err.value) == "the lap has no speed trace"
 
 
-def _willans_fuel(lap, eng, gb, veh, wl, rpm_pts=None, fuel_key="gasoline", over=0.05, cf=0.28):
+def _willans_fuel(lap, eng, gb, veh, wl, rpm_pts=None, fuel_key="gasoline", over=0.05, cf=0.22):
     f = ice.fuel(fuel_key)
     s, v = np.asarray(lap.s, float), np.asarray(lap.v, float)
     ds = np.diff(s)

@@ -6,6 +6,8 @@
 """Rotor convection against dyno CFD (benchmarks/rotor_convection). Registered result: speed scaling passes; the
 whole-disc conductance of a vented disc fails with the default area factor. Pinned so neither changes silently."""
 import json
+
+import pytest
 import sys
 from pathlib import Path
 
@@ -22,9 +24,14 @@ def test_registered_outcome():
     assert abs(r["diagnostic"]["kinematik_h_W_m2K"] / r["diagnostic"]["cfd_mean_h_500C_W_m2K"] - 1) < 0.15
 
 
-def test_crossflow_default_is_the_car_speed():
-    assert bt.h_rotating_disc(220, 20.0) == bt.h_rotating_disc(220, 20.0, crossflow_ms=20.0)
-    assert bt.h_rotating_disc(220, 20.0, crossflow_ms=0.0) < bt.h_rotating_disc(220, 20.0)
+def test_rerun_with_the_wetted_area_passes():
+    r = rc.run()["rerun_wetted_area_not_blind"]
+    assert r["passed"] and all(abs(x["rel"]) < 0.20 for x in r["test_1"])
+
+
+def test_crossflow_selects_the_correlation_and_none_the_measured_car_line():
+    assert bt.h_rotating_disc(220, 20.0) == pytest.approx(33.0 + 0.74 * 20.0)
+    assert bt.h_rotating_disc(220, 20.0, crossflow_ms=0.0) < bt.h_rotating_disc(220, 20.0, crossflow_ms=20.0)
 
 
 def test_first_run_kept():

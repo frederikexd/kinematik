@@ -100,6 +100,10 @@ _AIR_K = 0.026           # W/(m·K) thermal conductivity, dry air ~300 K
 _PA_PER_GPA = 1e9  # pragma: no mutate
 _AIR_NU = 1.6e-5         # m²/s kinematic viscosity
 _AIR_PR = 0.71           # Prandtl number
+# convection of a rotor inside a wheel on an FSAE car, W/m²K = _H_CAR0 + _H_CAR1 · v (m/s): Auburn's on-track
+# cooling runs (SAE 2006-01-1974) less KinematiK's radiation at 200 °C; see h_rotating_disc
+_H_CAR0 = 33.0
+_H_CAR1 = 0.74
 
 
 def h_rotating_disc(diameter_mm: float, v_car_ms: float,
@@ -129,10 +133,23 @@ def h_rotating_disc(diameter_mm: float, v_car_ms: float,
     be v over the ROTOR's own radius, which spun a 220 mm disc about twice as fast
     as the wheel carrying it and overstated the rotational term by about 1.8x.
 
-    CROSS-FLOW: ``crossflow_ms`` is the air speed across the disc in m/s when it is
-    not the car's speed: 0 on a brake dynamometer, whose air comes from a rig inlet
-    (benchmarks/rotor_convection), or a measured duct speed. None: the car's speed.
+    CROSS-FLOW: ``crossflow_ms`` is the air speed across the disc in m/s. Given (0 on a
+    brake dynamometer, whose air comes from a rig inlet, benchmarks/rotor_convection;
+    or a measured duct speed), the correlation above is used. None (a rotor on the
+    car, inside a wheel): the line measured on an FSAE car is used instead, see below.
+    Pass ``crossflow_ms=v_car_ms`` for the correlation with the car's speed.
     """
+    if crossflow_ms is None:
+        # ON THE CAR (the default since 1.7.13): the coefficient measured on an FSAE car, not the correlation.
+        # Auburn's on-track cooling runs (SAE 2006-01-1974: solid iron front rotor inside a 13 in wheel, no duct,
+        # 4.5 to 22.35 m/s) give an overall h = 40.5 + 0.74 v W/m²K; KinematiK adds radiation separately, so its
+        # radiation at 200 °C (7.5 W/m²K, emissivity 0.55) is taken off: h = 33.0 + 0.74 v. The correlation below
+        # applied the full car speed as cross-flow over a rotor that sits inside a wheel and read up to 94 % high at
+        # 22 m/s, so rotor temperatures on track read low. Fitted on three of the six speeds, the line predicted the
+        # other three within 25 % (benchmarks/rotor_cooling_fsae). One car, one rotor size (FSAE, about 200 to 260
+        # mm); calibrate from your own cooling runs (fit_convection_line, BrakeThermalParams.calibrated) to quote it.
+        h = _H_CAR0 + _H_CAR1 * abs(float(v_car_ms))
+        return float(max(h * max(duct_gain, 0.1), 12.0))
     D = max(diameter_mm, 1.0) / 1000.0
     r = D / 2.0
     omega = abs(v_car_ms) / max(wheel_radius_mm / 1000.0, 1e-3)   # rotor spins with the wheel
@@ -235,6 +252,25 @@ def convection_h(p: BrakeThermalParams, diameter_mm: float, v_ms: float, duct_ga
     return h_rotating_disc(diameter_mm, v_ms, duct_gain=duct_gain)
 
 
+def fit_convection_line(speeds_ms, h_w_m2K) -> tuple[float, float]:
+    """Least-squares line h = h0 + h1·v (W/m²K, v in m/s) through coefficients measured on the car, for
+    BrakeThermalParams(h_air0=h0, h_air1=h1, calibrated=True). Get each h from a constant-speed cooling run with the
+    brakes off: h = m c ln((Ti - Ta)/(Tf - Ta)) / (A Δt) for a thin rotor (SAE 2006-01-1974). The uncalibrated
+    correlation over-predicted an FSAE rotor's on-track coefficient by up to 94 % at 22 m/s
+    (benchmarks/rotor_cooling_fsae); calibrated on three speeds, this line predicts the other three within 30 %."""
+    v = [float(x) for x in speeds_ms]
+    h = [float(x) for x in h_w_m2K]
+    if len(v) != len(h) or len(v) < 2:
+        raise ValueError("need at least two (speed, h) pairs of equal length")
+    n = len(v)
+    vm, hm = sum(v) / n, sum(h) / n
+    svv = sum((x - vm) ** 2 for x in v)
+    if svv <= 0:
+        raise ValueError("the speeds must not all be equal")
+    h1 = sum((x - vm) * (y - hm) for x, y in zip(v, h)) / svv
+    return float(hm - h1 * vm), float(h1)
+
+
 def default_brake_thermal_params() -> BrakeThermalParams:
     """Representative, UNCALIBRATED parameter set (calibrated=False by design)."""
     return BrakeThermalParams()
@@ -263,9 +299,16 @@ def rotor_mass_kg(diameter_mm: float, thickness_mm: float,
 
 
 def convective_area_m2(diameter_mm: float, *, hat_clearance_mm: float = 40.0,
-                       area_factor: float = 2.4) -> float:
+                       area_factor: float = 2.4, wetted_area_m2: float | None = None) -> float:
     """Convective area of the rotor's swept annulus, scaled by `area_factor`
-    (≈2 for a solid disc's two faces, larger for vented/vaned rotors)."""
+    (≈2 for a solid disc's two faces, larger for vented/vaned rotors).
+
+    `wetted_area_m2`: the rotor's whole air-wetted area (faces, vane channels, rims) from CAD, m². When given it
+    replaces the annulus estimate. For a vented rotor it should be: against CFD of a 366 mm ventilated disc the
+    default factor read the area 59 % low and, given the wetted area, the heat loss came within 18 %
+    (benchmarks/rotor_convection)."""
+    if wetted_area_m2 is not None:
+        return float(max(float(wetted_area_m2), 1e-6))
     r_out = max(diameter_mm, 1.0) / 2000.0
     r_in = max(r_out - hat_clearance_mm / 1000.0, 0.02)
     face = math.pi * (r_out ** 2 - r_in ** 2)
@@ -453,6 +496,12 @@ class TwoNodeParams:
     hat_clearance_mm: float = 40.0
     area_factor: float = 2.4         # convective-area multiplier (vented > solid)
     duct_gain: float = 1.0           # brake-duct airflow credit for convection
+    # the rotor's whole air-wetted area from CAD, m² (replaces area_factor; set it for a vented rotor)
+    wetted_area_m2: float | None = None
+    # the tyre's loaded radius, mm: the rotor spins at v / R (convection)
+    wheel_radius_mm: float = 228.0
+    # air speed across the rotor, m/s, when it is not the car's: 0 on a brake dynamometer (None: the car's speed)
+    crossflow_ms: float | None = None
     # pad (per front corner — both pads of one caliper lumped)
     m_pad_kg: float = 0.12
     cp_pad: float = 800.0            # J/(kg·K), sintered/organic pad (effective)
@@ -502,7 +551,7 @@ class TwoNodeRotorPad:
             hat_clearance_mm=self.p.hat_clearance_mm, rho_kg_m3=m.rho_kg_m3)
         self.A_conv = convective_area_m2(
             self.p.diameter_mm, hat_clearance_mm=self.p.hat_clearance_mm,
-            area_factor=self.p.area_factor)
+            area_factor=self.p.area_factor, wetted_area_m2=self.p.wetted_area_m2)
         self.C_rotor = max(self.m_rotor * m.cp_j_kgK, 1e-6)
         self.C_pad = max(self.p.m_pad_kg * self.p.cp_pad, 1e-6)
 
@@ -522,7 +571,8 @@ class TwoNodeRotorPad:
         for i in range(n):
             q_in = max(float(power_series[i]), 0.0)
             v = float(v_series[i]) if (v_series is not None and i < len(v_series)) else 0.0
-            h = h_rotating_disc(p.diameter_mm, v, duct_gain=p.duct_gain)
+            h = h_rotating_disc(p.diameter_mm, v, duct_gain=p.duct_gain, wheel_radius_mm=p.wheel_radius_mm,
+                                  crossflow_ms=p.crossflow_ms)
 
             # split friction heat: most to the rotor, a share to the pad
             q_rotor = q_in * (1.0 - p.pad_heat_fraction)
@@ -633,7 +683,7 @@ class OneDRotor:
         self.face_area = math.pi * (r_out ** 2 - r_in ** 2)
         self.A_conv = convective_area_m2(
             self.p.diameter_mm, hat_clearance_mm=self.p.hat_clearance_mm,
-            area_factor=self.p.area_factor)
+            area_factor=self.p.area_factor, wetted_area_m2=self.p.wetted_area_m2)
         self.m_rotor = rotor_mass_kg(
             self.p.diameter_mm, self.p.thickness_mm,
             vented_fraction=self.p.vented_fraction,
@@ -675,13 +725,16 @@ class OneDRotor:
         Tdepth = [] if record_depth_mm is not None else None
         x_nodes = [j * self.dx for j in range(self.n)]           # depth of each node, m
         rho_cp = self.mat.rho_kg_m3 * self.mat.cp_j_kgK
+        af = (p.area_factor if p.wetted_area_m2 is None              # per-face multiplier of the face area
+              else self.A_conv / max(self.face_area, 1e-9))
         t = 0.0
         n_steps = len(power_series)
         for i in range(n_steps):
             q_in = max(float(power_series[i]), 0.0)
             v = float(v_series[i]) if (v_series is not None and i < len(v_series)) else 0.0
             h = (float(h_w_m2K) if h_w_m2K is not None
-                 else h_rotating_disc(p.diameter_mm, v, duct_gain=p.duct_gain))
+                 else h_rotating_disc(p.diameter_mm, v, duct_gain=p.duct_gain,
+                                      wheel_radius_mm=p.wheel_radius_mm, crossflow_ms=p.crossflow_ms))
             # Heating is symmetric on BOTH friction faces; we model HALF the
             # thickness (one face + insulated centre-plane), so this half sees
             # HALF the rotor's heat and ONE face's worth of convective area.
@@ -722,8 +775,8 @@ class OneDRotor:
                         # no pad. Remove the pad path from the 2-node and the
                         # two agree to 4.0%, which is the discretisation and the
                         # surface-vs-bulk definition.
-                        loss = 0.5 * p.area_factor * h * (T[0] - Tamb)
-                        rad = (0.5 * p.area_factor * p.emissivity * p._SIGMA
+                        loss = 0.5 * af * h * (T[0] - Tamb)
+                        rad = (0.5 * af * p.emissivity * p._SIGMA
                                * ((T[0] + 273.15) ** 4 - Tamb_k ** 4)) \
                             if p.enable_radiation else 0.0
                         src = (q_surf_flux - loss - rad) / (self.dx / 2.0) / rho_cp

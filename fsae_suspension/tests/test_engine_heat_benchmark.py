@@ -17,8 +17,10 @@ def test_live_run_matches_the_stored_one():
     assert eb.run() == json.loads((ROOT / "benchmarks" / "engine_heat" / "results.json").read_text())
 
 
-def test_phase_2_fsae_engine_is_a_registered_miss_on_the_high_side():
+def test_phase_2_first_run_missed_and_the_new_default_passes():
     import engine_heat_benchmark as eb
+    first = json.loads((ROOT / "benchmarks" / "engine_heat" / "results_phase2_first_run.json").read_text())
+    assert not first["passed"] and all(0.30 < g["rel"] < 0.40 for g in first["graded"])     # 0.28, kept on file
     r = eb.phase_2()
-    assert not r["passed"] and all(0.30 < g["rel"] < 0.40 for g in r["graded"])
+    assert r["passed"] and all(abs(g["rel"]) < 0.10 for g in r["graded"])
     assert r == json.loads((ROOT / "benchmarks" / "engine_heat" / "results_phase2.json").read_text())

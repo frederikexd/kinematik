@@ -69,9 +69,11 @@ def test_rotor_spins_with_the_wheel():
     omega = v / (r_wheel_mm / 1000.0)
     h_rot = 0.015 * (omega * r * r / nu) ** 0.8 * k / r
     h_x = 0.037 * (v * D / nu) ** 0.8 * pr ** (1.0 / 3.0) * k / D
-    assert h_rotating_disc(d_mm, v, wheel_radius_mm=r_wheel_mm) == pytest.approx(math.hypot(h_rot, h_x), rel=1e-9)
+    assert h_rotating_disc(d_mm, v, wheel_radius_mm=r_wheel_mm, crossflow_ms=v) == pytest.approx(math.hypot(h_rot, h_x),
+                                                                                  rel=1e-9)
     # a bigger wheel turns the same rotor more slowly at the same road speed: less convection
-    assert h_rotating_disc(d_mm, v, wheel_radius_mm=300.0) < h_rotating_disc(d_mm, v, wheel_radius_mm=200.0)
+    assert h_rotating_disc(d_mm, v, wheel_radius_mm=300.0, crossflow_ms=v) < h_rotating_disc(d_mm, v, wheel_radius_mm=200.0,
+                                                                                          crossflow_ms=v)
 
 
 def test_inflation_gas_heats_at_constant_volume():

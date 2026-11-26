@@ -23,5 +23,20 @@
   "diagnostic_exact_finite_slab_C": 85.21369713458219,
   "diagnostic_exact_semi_infinite_C": 81.79186259659113
  },
- "passed": false
+ "passed": false,
+ "rerun_full_model_not_blind": {
+  "test_1": {
+   "max_1mm_C": 90.11464951937823,
+   "diff_vs_measured_C": 3.114649519378233,
+   "diff_vs_paper_model_C": 1.6146495193782329,
+   "passes": true
+  },
+  "test_2": {
+   "max_1mm_C": 84.59214554540354,
+   "diff_vs_measured_C": 4.992145545403545,
+   "diff_vs_paper_model_C": 3.0921455454035396,
+   "passes": false
+  },
+  "passed": false
+ }
 }

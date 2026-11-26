@@ -1,0 +1,56 @@
+{
+ "registered": "2026-11-25, before KinematiK's coefficient was evaluated for this rotor. DISCLOSURE: the measured coefficients were read before this file was written (they had to be, to find the inputs). The rotor diameter and the tyre radius are not stated in the paper, so they are not fixed at one guessed value: KinematiK must pass across the whole plausible range given below.",
+ "source": {
+  "reference": "Heffernan, Analyzing and Simulating Brake Rotor Temperatures: A Technique Applied to a Formula SAE Vehicle, SAE Technical Paper 2006-01-1974 (Auburn University)",
+  "test": "2003 Auburn FSAE car on track: brakes heated by hard laps, then driven at constant speed without braking while a sliding-contact type K thermocouple on the front upright logged the solid iron front rotor cooling. Lumped (Biot < 0.1) fit of each cooling curve gives an overall coefficient h on the rotor area As = 0.0734 m2 (rotor 1.289 kg, 1.769e-4 m3). h lumps convection, radiation and conduction to the hat and hub.",
+  "speeds_m_s": [
+   4.5,
+   6.7,
+   8.9,
+   13.4,
+   17.9,
+   22.35
+  ],
+  "h_measured_biot_W_m2K": [
+   45.5283,
+   33.125,
+   50.9632,
+   55.1382,
+   56.3135,
+   58.177
+  ],
+  "h_measured_heat_loss_W_m2K": [
+   45.6095,
+   43.5329,
+   51.0516,
+   52.2124,
+   49.3959,
+   53.4139
+  ],
+  "mapping_note": "Table 1 data sets 1-6 are taken to be the six cooling speeds in the order the paper lists them (4.5 to 22.35 m/s)."
+ },
+ "mapping": {
+  "kinematik": "h_rotating_disc(D, v, wheel_radius_mm=R) (car cross-flow on: this is on track) plus KinematiK's radiation as a coefficient, emissivity 0.55 (default), eps sigma (Ts^2 + Ta^2)(Ts + Ta) at Ts = 200 C (the middle of the cooling runs, 300 to 100 C), Ta = 25 C. No conduction to the hub (KinematiK does not model it).",
+  "unknowns_swept": {
+   "diameter_mm": [
+    200,
+    230,
+    260
+   ],
+   "wheel_radius_mm": [
+    240,
+    250,
+    260
+   ]
+  },
+  "compared_with": "the mean of the paper's two methods at each speed"
+ },
+ "limits": {
+  "relative_each_speed_every_geometry": 0.3
+ },
+ "registered_2": {
+  "registered": "2026-11-25, after the first test failed and before this one was run: KinematiK's calibrated path (BrakeThermalParams.calibrated, h = h_air0 + h_air1 v, the line a team fits to its own cooling runs). Not blind: the measured values were known.",
+  "test": "fit the line by least squares to the mean measured h at three speeds and predict the other three; both splits, odd speeds (4.5, 8.9, 17.9 m/s) -> even (6.7, 13.4, 22.35) and even -> odd, must pass. Compared through convection_h(p, D, v) with p calibrated.",
+  "limit_relative_each_held_out_speed": 0.3
+ }
+}

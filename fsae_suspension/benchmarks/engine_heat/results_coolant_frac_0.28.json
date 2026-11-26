@@ -1,0 +1,27 @@
+{
+ "kinematik": {
+  "coolant_frac": 0.28,
+  "bte": 0.3
+ },
+ "measured": {
+  "coolant_range": [
+   0.175,
+   0.292
+  ],
+  "coolant_mean_full_load": 0.20233333333333334,
+  "coolant_mean_half_load": 0.23827777777777776,
+  "bte_range": [
+   0.29100000000000004,
+   0.37
+  ]
+ },
+ "bias": {
+  "coolant_vs_full_load_mean": 0.38385502471169697,
+  "coolant_vs_half_load_mean": 0.17509909069713236
+ },
+ "checks": {
+  "coolant_frac_within_measured_range": true,
+  "bte_within_measured_range": true
+ },
+ "passed": true
+}

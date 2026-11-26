@@ -31,6 +31,12 @@ def test_the_material_library():
 
 
 def _h(d_mm, v, duct=1.0, R_mm=228.0):
+    """The on-car default since 1.7.13: the line measured on an FSAE car (SAE 2006-01-1974), less radiation."""
+    return max((33.0 + 0.74 * abs(v)) * max(duct, 0.1), 12.0)
+
+
+def _h_corr(d_mm, v, duct=1.0, R_mm=228.0):
+    """The rotating-disc + cross-flow correlation (used when the cross-flow is given)."""
     k, nu, pr = 0.026, 1.6e-5, 0.71
     D = max(d_mm, 1.0) / 1000
     r = D / 2
@@ -42,18 +48,25 @@ def _h(d_mm, v, duct=1.0, R_mm=228.0):
 
 def test_the_rotating_disc_convection():
     assert (bt._AIR_K, bt._AIR_NU, bt._AIR_PR) == (0.026, 1.6e-5, 0.71)
+    assert (bt._H_CAR0, bt._H_CAR1) == (33.0, 0.74)
+    # the correlation, with the cross-flow given
     for d, v, duct, R in ((220.0, 20.0, 1.0, 228.0), (300.0, -12.0, 2.5, 250.0), (180.0, 30.0, 1.0, 0.5)):
-        assert bt.h_rotating_disc(d, v, duct_gain=duct, wheel_radius_mm=R) == pytest.approx(_h(d, v, duct, R),
-                                                                                           rel=1e-12)
-    assert bt.h_rotating_disc(220.0, 20.0) == pytest.approx(_h(220.0, 20.0))
-    assert bt.h_rotating_disc(220.0, 0.0) == 12.0                                     # still air: the floor
-    assert bt.h_rotating_disc(220.0, 20.0, duct_gain=0.0) == pytest.approx(max(_h(220.0, 20.0) * 0.1, 12.0))
-    assert bt.h_rotating_disc(0.5, 300.0) == pytest.approx(_h(0.5, 300.0))            # a 1 mm floor on the diameter
-    assert bt.h_rotating_disc(1.5, 300.0) == pytest.approx(_h(1.5, 300.0))
-    assert bt.h_rotating_disc(220.0, 1e-4) == 12.0
+        assert bt.h_rotating_disc(d, v, duct_gain=duct, wheel_radius_mm=R, crossflow_ms=v) == pytest.approx(
+            _h_corr(d, v, duct, R), rel=1e-12)
+    assert bt.h_rotating_disc(220.0, 0.0, crossflow_ms=0.0) == 12.0                    # still air: the floor
+    assert bt.h_rotating_disc(220.0, 20.0, duct_gain=0.0, crossflow_ms=20.0) == pytest.approx(
+        max(_h_corr(220.0, 20.0) * 0.1, 12.0))
+    assert bt.h_rotating_disc(0.5, 300.0, crossflow_ms=300.0) == pytest.approx(_h_corr(0.5, 300.0))   # 1 mm floor
+    assert bt.h_rotating_disc(1.5, 300.0, crossflow_ms=300.0) == pytest.approx(_h_corr(1.5, 300.0))
+    assert bt.h_rotating_disc(220.0, 1e-4, crossflow_ms=1e-4) == 12.0
     rot_only = 0.015 * (20 / 0.228 * 0.11 ** 2 / 1.6e-5) ** 0.8 * 0.026 / 0.11            # radius-based
     x_only = 0.037 * (20 * 0.22 / 1.6e-5) ** 0.8 * 0.71 ** (1 / 3) * 0.026 / 0.22       # diameter-based
-    assert bt.h_rotating_disc(220.0, 20.0) == pytest.approx(math.hypot(rot_only, x_only))
+    assert bt.h_rotating_disc(220.0, 20.0, crossflow_ms=20.0) == pytest.approx(math.hypot(rot_only, x_only))
+    # on the car (no cross-flow given): the measured line, scaled by the duct, floored at 12
+    for d, v, duct in ((220.0, 20.0, 1.0), (300.0, -12.0, 2.5), (180.0, 0.0, 1.0)):
+        assert bt.h_rotating_disc(d, v, duct_gain=duct) == pytest.approx(_h(d, v, duct), rel=1e-12)
+    assert bt.h_rotating_disc(220.0, 10.0, duct_gain=0.0) == pytest.approx(max((33.0 + 7.4) * 0.1, 12.0))
+    assert bt.h_rotating_disc(220.0, 10.0, wheel_radius_mm=999.0) == bt.h_rotating_disc(260.0, 10.0)
 
 
 def test_the_parameters_and_the_fade_law():

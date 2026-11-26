@@ -760,12 +760,15 @@ class FuelResult:
 
 
 def fuel_for_lap(lap, eng: EngineMap, gb: Gearbox, veh: ICEVehicle | None = None, *, fuel_key: str = "gasoline",
-                 bte: float = 0.30, overrun_fuel_g_s: float = 0.05, coolant_frac: float = 0.28,
+                 bte: float = 0.30, overrun_fuel_g_s: float = 0.05, coolant_frac: float = 0.22,
                  willans: WillansLine | PowerEfficiencyMap | None = None, aux_power_w: float = 0.0) -> FuelResult:
     """Fuel for one lap from its speed trace. Where the car accelerates or holds speed, the engine supplies
         P_engine = (m_eff a + 1/2 rho CdA v^2 + Crr m g) v / eta_gearbox
     and burns P_engine / (BTE x LHV); off the throttle it burns overrun_fuel_g_s. The coolant takes coolant_frac of
-    the fuel's chemical power (typically a quarter to a third for a spark-ignition engine at load).
+    the fuel's chemical power. The default, 22 %, is the mean of a measured heat balance of a water-cooled SI engine (36
+    points, full and half load) and lies within 6 % of a measured Honda F4i FSAE engine (benchmarks/engine_heat). It was
+    28 % until 1.7.13, which sized radiators for about a third more heat than either engine rejects; set it higher
+    for margin.
 
     With a Willans line (willans=, or the engine's own fuel_map) the engine burns willans.fuel_power_w(P_engine, rpm) instead, so part-throttle running costs
     what it does on the dyno rather than the full-load BTE. The engine speed is the logged one when the lap carries

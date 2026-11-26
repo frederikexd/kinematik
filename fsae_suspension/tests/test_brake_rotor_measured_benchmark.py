@@ -20,6 +20,12 @@ def test_registered_outcome_is_one_pass_one_miss():
     assert abs(r["test_2"]["diff_vs_measured_C"] - 5.6) < 0.2      # the miss, as registered
 
 
+def test_rerun_with_convection_still_misses_the_papers_model_on_stop_2():
+    rr = b.run()["rerun_full_model_not_blind"]
+    assert rr["test_1"]["passes"] and not rr["test_2"]["passes"]
+    assert 3.0 < rr["test_2"]["diff_vs_paper_model_C"] < 3.2 and abs(rr["test_2"]["diff_vs_measured_C"]) <= 5.0
+
+
 def test_solver_matches_the_exact_finite_slab():
     # the difference from the paper's model is the geometry (finite slab vs half-space), not the solver
     for n in ("test_1", "test_2"):

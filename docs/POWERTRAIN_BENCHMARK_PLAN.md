@@ -41,7 +41,7 @@ GT-POWER curve (until then the representative 600 cc inline-four of `ice_powertr
 peak 61 kW at 11,000 rpm, redline 13,500 rpm); primary 2.111, gears 2.750, 2.000, 1.667, 1.444, 1.304, 1.208, final
 drive 3.0 (and 2.3, the 75 m optimum on the representative curve); shift time 0.08 s; launch at 9,000 rpm; gearbox
 and chain 0.92; brake thermal efficiency 0.30 (BSFC 279 g/kWh on gasoline); engine inertia 0.025 kg·m² at the crank;
-wheels 0.6 kg·m² in all; overrun torque 8 Nm; 28% of fuel energy to the coolant.
+wheels 0.6 kg·m² in all; overrun torque 8 Nm; 22% of fuel energy to the coolant (28% until 1.7.13).
 
 ## Cases
 
@@ -53,7 +53,7 @@ transient) gets 2%; the same physics gets 1%.
 | 1 | 75 m from rest | `laptime.acceleration_time` against Simulink or Amesim, then a logged run (MoTeC) | `ice_powertrain.simulate_launch` against Simulink or Amesim, then a logged run | time and speed at 75 m | 2% (tools), 3% (logged) |
 | 2 | Energy on a fixed speed trace | `ev_powertrain`, `power_draw` on KinematiK's endurance speed trace, in Simulink and GT-SUITE | `ice_powertrain.fuel_for_lap` on the same trace with constant BSFC | kWh per lap, peak and RMS current, minimum pack voltage (EV); fuel per lap, peak fuel flow (ICE) | 1% |
 | 4 | Energy store | `pack_thermal` against PyBaMM or Simscape Battery on case 2's cell current (cell part number needed) | `ice_powertrain.endurance_fuel` against the same tool's fuel total over 22 km | terminal voltage and cell temperature (EV); endurance litres and CO2 (ICE) | 2% and 2 °C (EV); 1% (ICE) |
-| 5 | Cooling loop | `powertrain/engine` cooling network against GT-SUITE or Simscape Fluids (your Y-branch pipe lengths needed) | the same loop with the engine's heat; GT-POWER's heat to coolant at full load checks the declared 28% share | flow, loop pressure drop, coolant temperature over a lap | 2%, 3%, 1 °C |
+| 5 | Cooling loop | `powertrain/engine` cooling network against GT-SUITE or Simscape Fluids (your Y-branch pipe lengths needed) | the same loop with the engine's heat; GT-POWER's heat to coolant at full load checks the declared 22% share | flow, loop pressure drop, coolant temperature over a lap | 2%, 3%, 1 °C |
 | 6 | Intake | — | restrictor choked flow and the plenum (`throttle_dynamics`) against GT-POWER with the throttle, restrictor and plenum alone | choked mass flow; manifold pressure settling after a throttle step | 1%; 5% |
 | 7 | Overrun | regen torque and the brake balance (declared) | GT-POWER's motoring torque against the declared 8 Nm overrun torque | torque at 6,000, 9,000 and 12,000 rpm | report, then replace the declared value |
 

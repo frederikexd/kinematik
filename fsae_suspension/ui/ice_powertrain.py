@@ -211,7 +211,7 @@ def render():
     with tabs[4]:
         if fr is not None:
             k1, k2, k3 = st.columns(3)
-            share = k1.number_input("Fuel energy to coolant", 0.15, 0.45, 0.28, 0.01, key="ice_cfrac")
+            share = k1.number_input("Fuel energy to coolant", 0.15, 0.45, 0.22, 0.01, key="ice_cfrac")
             ua = k2.number_input("Radiator UA (W/K)", 50.0, 3000.0, 700.0, 10.0, key="ice_ua")
             flow = k3.number_input("Coolant flow (L/min)", 2.0, 80.0, 25.0, 1.0, key="ice_flow")
             fr_c = ice.fuel_for_lap(lap.lap, eng, gb, veh, fuel_key=fuel_key, bte=bte, coolant_frac=share)
