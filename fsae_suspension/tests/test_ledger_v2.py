@@ -215,3 +215,21 @@ def test_other_events_results_reproduce(tmp_path):
     _cli().other_events(dst)
     assert json.loads((dst / "results.json").read_text(encoding="utf-8")) == \
         json.loads((src / "results.json").read_text(encoding="utf-8"))
+
+
+def test_registered_numbers_stay_frozen_and_reruns_are_checked():
+    """`registered` never rewrites the registered numbers: today's code must match them or the latest recorded
+    rerun, otherwise it appends an undescribed rerun so CI asks for it to be recorded."""
+    cli = _cli()
+    base = {"registration_sha256": "x", "test_a": {"v2": 1.0}, "challenger_adopted": False, "factors": {"2026": 2.0},
+            "test_b": {"2026": {"model": {"mae_pct": 10.0}, "rows": [{"physics_s": 22.6}]}}}
+    moved = json.loads(json.dumps(base))
+    moved["test_b"]["2026"] = {"model": {"mae_pct": 9.98}, "rows": [{"physics_s": 22.2}]}
+    assert cli.rerun_needed(base, base, "2026-11-25") is None                      # reproduced as registered
+    entry = cli.rerun_needed(moved, base, "2026-11-25")                            # moved, nothing recorded yet
+    assert entry["test_b"] == {"2026": {"model": {"mae_pct": 9.98}}} and "test_a" not in entry
+    recorded = dict(base, reruns=[dict(entry, why="lap solver fix")])
+    assert cli.rerun_needed(moved, recorded, "2026-11-26") is None                 # matches the recorded rerun
+    again = json.loads(json.dumps(moved))
+    again["test_a"]["v2"] = 1.5
+    assert set(cli.rerun_needed(again, recorded, "2026-11-26")) == {"date", "why", "test_a", "test_b"}

@@ -213,9 +213,80 @@ def registered(out_dir: Path):
                              "lat_g_model": g_m, "lat_g_official": g_o}
         lines.append(f"| {y} | {cal['skidpad_pooled']:.3f} | {cal['n']['skidpad']} | {g_m:.2f} g | {g_o:.2f} g | "
                      f"{cal['accel']:.3f} | {cal['n']['accel']} |")
-    (d / "REGISTERED_RESULTS.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
-    (d / "registered_results.json").write_text(json.dumps(_clean(out), indent=1) + "\n", encoding="utf-8")
-    print("\n".join(lines))
+    jp, mp = d / "registered_results.json", d / "REGISTERED_RESULTS.md"
+    fresh = json.loads(json.dumps(_clean(out)))
+    frozen = json.loads(jp.read_text(encoding="utf-8")) if jp.exists() else None
+    if not frozen or frozen.get("registration_sha256") != fresh["registration_sha256"]:
+        # First run under this registration: these numbers become the registered results.
+        mp.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        jp.write_text(json.dumps(fresh, indent=1) + "\n", encoding="utf-8")
+        print("\n".join(lines))
+        return
+    # Registered numbers are never rewritten. Today's code must reproduce them or the latest recorded rerun;
+    # otherwise the new numbers are appended as an undescribed rerun, so the committed files change and CI
+    # asks for the change to be recorded on purpose.
+    new_run = rerun_needed(fresh, frozen, __import__("datetime").date.today().isoformat())
+    if new_run is None:
+        print(f"Registered results reproduced ({'latest rerun' if frozen.get('reruns') else 'as registered'}); "
+              "nothing written.")
+        return
+    frozen.setdefault("reruns", []).append(new_run)
+    jp.write_text(json.dumps(frozen, indent=1) + "\n", encoding="utf-8")
+    md = mp.read_text(encoding="utf-8").rstrip("\n")
+    if "## Reruns after code changes" not in md:
+        md += ("\n\n## Reruns after code changes\n\nThe numbers above are the registered results and are not "
+               "edited. Code changes that move them are rerun and recorded under `reruns` in "
+               "`registered_results.json`.")
+    md += (f"\n\n**{new_run['date']}, undescribed rerun.** Today's code no longer reproduces the registered "
+           f"results or the latest rerun in: {', '.join(k for k in new_run if k not in ('date', 'why'))}. "
+           "Describe the code change here and in `why`.")
+    mp.write_text(md + "\n", encoding="utf-8")
+    print(f"Results moved: appended an undescribed rerun dated {new_run['date']}.")
+
+
+def _close(a, b) -> bool:
+    if isinstance(a, dict) and isinstance(b, dict):
+        return a.keys() == b.keys() and all(_close(a[k], b[k]) for k in a)
+    if isinstance(a, list) and isinstance(b, list):
+        return len(a) == len(b) and all(_close(x, y) for x, y in zip(a, b))
+    if isinstance(a, float) and isinstance(b, (int, float)) and not isinstance(b, bool):
+        return math.isclose(a, b, rel_tol=1e-9, abs_tol=1e-9)
+    return a == b
+
+
+def _rerun_view(fresh: dict, rerun: dict) -> dict:
+    """The parts of fresh results that a recorded rerun covers (test_b keeps only what the rerun stored per year)."""
+    view = {}
+    for sec, val in rerun.items():
+        if sec in ("date", "why"):
+            continue
+        if sec == "test_b":
+            view[sec] = {y: {k: fresh[sec].get(y, {}).get(k) for k in v} for y, v in val.items()}
+        else:
+            view[sec] = fresh.get(sec)
+    return view
+
+
+def rerun_needed(fresh: dict, frozen: dict, today: str):
+    """None if `fresh` reproduces the registered results, or the latest rerun plus the registered sections it does
+    not cover; otherwise the rerun entry to append (unitless percentages and counts)."""
+    sections = ("test_a", "test_b", "factors", "challenger_adopted")
+    reruns = frozen.get("reruns") or []
+    if all(_close(fresh[k], frozen.get(k)) for k in sections):
+        return None
+    if reruns:
+        last = reruns[-1]
+        covered = {k for k in last if k not in ("date", "why")}
+        if _close(_rerun_view(fresh, last), {k: last[k] for k in covered}) and all(
+                _close(fresh[k], frozen.get(k)) for k in sections if k not in covered
+                and not (k == "test_b" and "test_b" in covered)):
+            return None
+    entry = {"date": today, "why": "TODO: describe the code change that moved these results"}
+    for k in sections:
+        if _close(fresh[k], frozen.get(k)):
+            continue
+        entry[k] = ({y: {"model": v["model"]} for y, v in fresh[k].items()} if k == "test_b" else fresh[k])
+    return entry
 
 
 OTHER_EVENTS = (("fscz2026", "FS Czech 2026", "2026", "2025"), ("fsita2026", "FS Italy 2026", "2026", "2025"),
