@@ -1,0 +1,16 @@
+{
+ "registered": "2026-11-25, before KinematiK's convection correlation was evaluated for this disc. DISCLOSURE: the CFD tables were read before this file was written (they had to be, to find the inputs). The friction-ring inner radius is not given in the thesis; it is derived from the thesis's own inner-friction-surface heat and HTC at 30 C (A = Q / (h dT)), and that choice is fixed here before KinematiK is run.",
+ "source": {
+  "reference": "Chandrasekar, Numerical Heat Transfer Simulations of Brake Discs under Dyno-Test Load Cases, MSc thesis, Chalmers University of Technology, 2026 (industrial supervisor Volvo Cars Propulsion Components)",
+  "tool": "Simcenter STAR-CCM+ conjugate CFD of the dynamometer enclosure (104 M cells, mesh-converged), checked by the author against thermocouple data in a test rotor via an Abaqus transient model",
+  "disc": "Brake disc 1: ventilated, 366 mm OD, 28 mm thick; dynamic rolling radius 0.3725 m (180 km/h = 1281.78 rpm, thesis Table 5.2); air 20 C; rig inlet 300 m3/h",
+  "tables": "A.1 (HTC by surface and temperature, 180 km/h), A.3 (heat by surface, 180 km/h), A.6 (HTC of VC, IFS, OFS by speed, 500 C, clockwise)"
+ },
+ "mapping": {
+  "kinematik": "h_rotating_disc(366, v, wheel_radius_mm=372.5, crossflow_ms=0) x convective_area_m2(366, hat_clearance_mm=r_out - r_in, default area_factor 2.4). Cross-flow is set to zero because on the dynamometer the air does not cross the disc at road speed: it comes from a 300 m3/h rig inlet. So this tests the rotating-disc term and the area model, not the car cross-flow term.",
+  "ring_inner_radius": "A_IFS = 38.98 W / (63.25 W/m2K x 10 K) = 0.0616 m2 = pi (0.183^2 - r_in^2), r_in = 0.1178 m, ring width 65.2 mm",
+  "test_1": "whole-disc convective conductance at 180 km/h, W/K: CFD sum over the eight surfaces of Q / (T - 20) at 100 to 800 C, against KinematiK h x A_conv",
+  "test_2": "speed scaling at 500 C: the area-weighted mean HTC of VC, IFS and OFS (areas from A.1 and A.3 at 500 C) at 30 to 280 km/h, divided by its value at 180 km/h, against KinematiK h(v) / h(180)"
+ },
+ "limits": {"test_1_relative": 0.30, "test_2_relative": 0.25}
+}

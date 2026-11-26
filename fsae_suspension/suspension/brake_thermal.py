@@ -103,7 +103,8 @@ _AIR_PR = 0.71           # Prandtl number
 
 
 def h_rotating_disc(diameter_mm: float, v_car_ms: float,
-                    *, duct_gain: float = 1.0, wheel_radius_mm: float = 228.0) -> float:
+                    *, duct_gain: float = 1.0, wheel_radius_mm: float = 228.0,
+                    crossflow_ms: float | None = None) -> float:
     """Forced-convection coefficient (W/m²·K) for a rotor from a rotating-disc +
     cross-flow Nusselt correlation, instead of a hand-set h0+h1·v line.
 
@@ -127,6 +128,10 @@ def h_rotating_disc(diameter_mm: float, v_car_ms: float,
     228 mm by default, the loaded radius used elsewhere in KinematiK). It used to
     be v over the ROTOR's own radius, which spun a 220 mm disc about twice as fast
     as the wheel carrying it and overstated the rotational term by about 1.8x.
+
+    CROSS-FLOW: ``crossflow_ms`` is the air speed across the disc in m/s when it is
+    not the car's speed: 0 on a brake dynamometer, whose air comes from a rig inlet
+    (benchmarks/rotor_convection), or a measured duct speed. None: the car's speed.
     """
     D = max(diameter_mm, 1.0) / 1000.0
     r = D / 2.0
@@ -134,7 +139,8 @@ def h_rotating_disc(diameter_mm: float, v_car_ms: float,
     Re_rot = omega * r * r / _AIR_NU
     Nu_rot = 0.015 * Re_rot ** 0.8
     h_rot = Nu_rot * _AIR_K / max(r, 1e-3)               # radius-based
-    Re_x = abs(v_car_ms) * D / _AIR_NU
+    v_x = abs(v_car_ms) if crossflow_ms is None else abs(float(crossflow_ms))
+    Re_x = v_x * D / _AIR_NU
     Nu_x = 0.037 * Re_x ** 0.8 * _AIR_PR ** (1.0 / 3.0)
     h_x = Nu_x * _AIR_K / max(D, 1e-3)                   # diameter-based
     h = (h_rot ** 2 + h_x ** 2) ** 0.5
@@ -171,6 +177,9 @@ class BrakeThermalParams:
     h_air1: float = 4.0              # W/(m²·K) per (m/s) of airflow over the rotor
     # convective area scaling: a vented rotor sheds heat over far more area than a
     # solid disc of the same diameter. 2.0 ≈ both faces; >2 for vaned/vented.
+    # The default suits a solid FSAE rotor (faces plus edges and slots). A vented
+    # car disc is far higher: CFD of a 366 mm ventilated disc gives 5.8 times the
+    # friction-ring annulus (benchmarks/rotor_convection), so set it for one.
     area_factor: float = 2.4
 
     # --- radiation (small but not nothing once the rotor is hot) ---

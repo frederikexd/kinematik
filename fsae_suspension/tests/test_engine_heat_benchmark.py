@@ -15,3 +15,10 @@ def test_the_stored_run_passed_and_the_bias_is_on_the_safe_side():
 def test_live_run_matches_the_stored_one():
     import engine_heat_benchmark as eb
     assert eb.run() == json.loads((ROOT / "benchmarks" / "engine_heat" / "results.json").read_text())
+
+
+def test_phase_2_fsae_engine_is_a_registered_miss_on_the_high_side():
+    import engine_heat_benchmark as eb
+    r = eb.phase_2()
+    assert not r["passed"] and all(0.30 < g["rel"] < 0.40 for g in r["graded"])
+    assert r == json.loads((ROOT / "benchmarks" / "engine_heat" / "results_phase2.json").read_text())

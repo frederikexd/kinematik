@@ -1,0 +1,20 @@
+{
+ "source": "Korczak, Cost Effective Method for the Evaluation of a Formula SAE Engine Cooling System, MSc thesis, University of Illinois at Urbana-Champaign, 2009 (Table 4.1, sec. 4.3)",
+ "caveat": "the measured heat is coolant flow at each engine speed times one mean radiator temperature drop from driving, not a dyno heat balance at wide-open throttle; the thesis reports the car overheating, so the engine at times rejected more than this",
+ "fuel_power_kW": 99.01666666666667,
+ "graded": [
+  {
+   "rpm": 11000,
+   "measured_kW": 20.63,
+   "kinematik_kW": 27.724666666666668,
+   "rel": 0.3439004685732754
+  },
+  {
+   "rpm": 12000,
+   "measured_kW": 20.63,
+   "kinematik_kW": 27.724666666666668,
+   "rel": 0.3439004685732754
+  }
+ ],
+ "passed": false
+}
