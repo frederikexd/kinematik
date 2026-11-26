@@ -74,5 +74,160 @@
    "graded": false
   }
  ],
- "passed": false
+ "passed": false,
+ "rerun_2": {
+  "rows": [
+   {
+    "theta_deg": 5.0,
+    "h_over_d": 0.1,
+    "measured": 1.38,
+    "kinematik": 10.116437477411148,
+    "rel": 6.330751795225471,
+    "graded": true
+   },
+   {
+    "theta_deg": 5.0,
+    "h_over_d": 0.2,
+    "measured": 0.92,
+    "kinematik": 4.6932405791268454,
+    "rel": 4.101348455572658,
+    "graded": true
+   },
+   {
+    "theta_deg": 5.0,
+    "h_over_d": 0.3,
+    "measured": 0.62,
+    "kinematik": 3.026752045311923,
+    "rel": 3.8818581375998757,
+    "graded": true
+   },
+   {
+    "theta_deg": 10.0,
+    "h_over_d": 0.1,
+    "measured": 1.62,
+    "kinematik": 19.77377728152295,
+    "rel": 11.206035358964783,
+    "graded": true
+   },
+   {
+    "theta_deg": 10.0,
+    "h_over_d": 0.2,
+    "measured": 1.6,
+    "kinematik": 10.367888825193495,
+    "rel": 5.4799305157459335,
+    "graded": true
+   },
+   {
+    "theta_deg": 10.0,
+    "h_over_d": 0.3,
+    "measured": 1.2,
+    "kinematik": 6.688544711102123,
+    "rel": 4.57378725925177,
+    "graded": true
+   },
+   {
+    "theta_deg": 15.0,
+    "h_over_d": 0.2,
+    "measured": 1.95,
+    "kinematik": 15.805862192396175,
+    "rel": 7.105570355074962,
+    "graded": false
+   },
+   {
+    "theta_deg": 15.0,
+    "h_over_d": 0.3,
+    "measured": 1.78,
+    "kinematik": 10.60618473076254,
+    "rel": 4.958530747619404,
+    "graded": false
+   },
+   {
+    "theta_deg": 20.0,
+    "h_over_d": 0.3,
+    "measured": 1.95,
+    "kinematik": 14.486384026732985,
+    "rel": 6.428914885504095,
+    "graded": false
+   }
+  ],
+  "passed": false
+ },
+ "rerun_3": {
+  "eta_fitted": 0.11836230842435054,
+  "rows": [
+   {
+    "theta_deg": 5.0,
+    "h_over_d": 0.1,
+    "measured": 1.38,
+    "kinematik": 0.7648469954695951,
+    "rel": -0.44576304676116296,
+    "role": "fit"
+   },
+   {
+    "theta_deg": 5.0,
+    "h_over_d": 0.2,
+    "measured": 0.92,
+    "kinematik": 0.8555526330744231,
+    "rel": -0.0700514857886706,
+    "role": "fit"
+   },
+   {
+    "theta_deg": 5.0,
+    "h_over_d": 0.3,
+    "measured": 0.62,
+    "kinematik": 0.857707812767097,
+    "rel": 0.3833996980114467,
+    "role": "fit"
+   },
+   {
+    "theta_deg": 10.0,
+    "h_over_d": 0.1,
+    "measured": 1.62,
+    "kinematik": 0.7537540831054694,
+    "rel": -0.5347197017867473,
+    "role": "held out"
+   },
+   {
+    "theta_deg": 10.0,
+    "h_over_d": 0.2,
+    "measured": 1.6,
+    "kinematik": 0.9272813484033072,
+    "rel": -0.42044915724793297,
+    "role": "held out"
+   },
+   {
+    "theta_deg": 10.0,
+    "h_over_d": 0.3,
+    "measured": 1.2,
+    "kinematik": 0.9902535048639406,
+    "rel": -0.17478874594671612,
+    "role": "held out"
+   },
+   {
+    "theta_deg": 15.0,
+    "h_over_d": 0.2,
+    "measured": 1.95,
+    "kinematik": 0.9264608817033555,
+    "rel": -0.5248918555367408,
+    "role": "reported"
+   },
+   {
+    "theta_deg": 15.0,
+    "h_over_d": 0.3,
+    "measured": 1.78,
+    "kinematik": 1.0188353541954291,
+    "rel": -0.4276205875306578,
+    "role": "reported"
+   },
+   {
+    "theta_deg": 20.0,
+    "h_over_d": 0.3,
+    "measured": 1.95,
+    "kinematik": 1.0198840564120737,
+    "rel": -0.4769825351732956,
+    "role": "reported"
+   }
+  ],
+  "passed": false
+ }
 }

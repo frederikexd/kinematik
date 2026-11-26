@@ -3,16 +3,48 @@
  "source": {
   "reference": "Ruhrmann & Zhang, Influence of Diffuser Angle on a Bluff Body in Ground Effect, J. Fluids Eng. 125 (2003) 332-338; geometry also from Zhang, Senior & Ruhrmann, Int. J. Heat Fluid Flow 25 (2004) 1-9, Fig. 1",
   "tunnel": "Southampton 2.1 m x 1.5 m closed circuit, moving ground, 30 m/s, load cells; CL = downforce / (q A), A the frontal area",
-  "body_d_mm": 157.0, "length_over_d": 8.38, "height_over_d": 2.06, "width_over_d": 2.0, "ramp_start_over_d": 4.95,
+  "body_d_mm": 157.0,
+  "length_over_d": 8.38,
+  "height_over_d": 2.06,
+  "width_over_d": 2.0,
+  "ramp_start_over_d": 4.95,
   "ramp_side_plates": true,
   "CL_measured_fig2a": {
-   "5":  {"0.10": 1.38, "0.20": 0.92, "0.30": 0.62},
-   "10": {"0.10": 1.62, "0.20": 1.60, "0.30": 1.20},
-   "15": {"0.20": 1.95, "0.30": 1.78},
-   "20": {"0.30": 1.95}
+   "5": {
+    "0.10": 1.38,
+    "0.20": 0.92,
+    "0.30": 0.62
+   },
+   "10": {
+    "0.10": 1.62,
+    "0.20": 1.6,
+    "0.30": 1.2
+   },
+   "15": {
+    "0.20": 1.95,
+    "0.30": 1.78
+   },
+   "20": {
+    "0.30": 1.95
+   }
   }
  },
  "mapping": "underfloor._solve_channel (the same equations as underfloor.solve on an STL) on the gap under the body: nose relief, flat floor from 2.5 d, then the ramp at the diffuser angle from 4.95 d to 8.38 d; duct width 2 d; default discharge coefficient; reference area the frontal area (2.06 d x 2 d less the 0.35 d corner radii). The model is the floor only: it has no upper-body lift",
  "graded": "the 5 and 10 deg diffusers at h/d 0.10, 0.20 and 0.30 (attached or nearly attached flow, no hysteresis). The 15 and 20 deg diffusers separate and are reported, not graded.",
- "limits": {"relative_each_graded_point": 0.30}
+ "limits": {
+  "relative_each_graded_point": 0.3
+ },
+ "registered_2": {
+  "registered": "2026-11-25, after the first run failed and before the new model below was run on this body. Not blind: the measured curves (and the centreline and base pressures, Figs. 6 and 8) had been read.",
+  "model": "underfloor.solve_leaky (new). Quasi-1D with the floor's open sides: air enters (or leaves) through each open side of the gap at the local pressure difference, as a sharp-edged slot, dQ/dx = 2 g Cd U sqrt(|Cp|) with Cd = 0.61 (the textbook sharp-edged orifice); total pressure conserved along the floor (Bernoulli); no side flow where side plates close the duct (the ramp here); pressure recovery in the diffuser at effectiveness 0.80 (the existing model's constant); the exit pressure set to the measured base pressure, Cp_b = -0.25 (Fig. 8, the middle of the 5 and 20 deg diffusers' range); the inlet flow found by shooting to that exit pressure. Floor force only (no upper-body lift). No constant is fitted to the downforce data.",
+  "graded": "as registered: 5 and 10 deg diffusers at h/d 0.10, 0.20, 0.30 within 30 %"
+ },
+ "registered_3": {
+  "registered": "2026-11-25, after registered_2 failed (the open-sided model with textbook constants read 2.6 to 12 times the measured downforce) and before this test was run.",
+  "test": "the same model with the diffuser effectiveness eta fitted by least squares on the 5 deg diffuser's three points only, then the 10 deg diffuser's three points predicted with that eta. Graded: the three held-out 10 deg points within 30 %. Also reported, not graded: 15 and 20 deg with the same eta.",
+  "limits": {
+   "relative_each_held_out_point": 0.3
+  }
+ },
+ "note_after_reruns": "registered_2 and registered_3 both failed. The open-sided model was then moved out of suspension/aero/underfloor.py into scripts/underbody_diffuser_benchmark.py (solve_leaky), unchanged, so the reruns stay reproducible without shipping a model that failed."
 }

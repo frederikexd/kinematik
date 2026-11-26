@@ -3,7 +3,7 @@
 
 ## Unreleased
 
-**The underfloor model checked against a measured diffuser body: a large miss.** On Southampton's wind-tunnel bluff body with 5 and 10° diffusers it predicts 6 to 47 times the measured downforce, because it takes the diffuser exit at freestream speed. Use it to compare floor shapes only; the numbers are not to be trusted until it is rebuilt against this test.
+**The underfloor model checked against a measured diffuser body: a large miss.** On Southampton's wind-tunnel bluff body with 5 and 10° diffusers it predicts 6 to 47 times the measured downforce, because it takes the diffuser exit at freestream speed. Two registered rebuilds also failed: letting air in through the open sides still read 4 to 12 times high, and fitting the diffuser effectiveness on the 5° diffuser predicted the 10° one 17 to 53 % low with the wrong trend with ride height. A one-dimensional floor model does not capture this flow. Use it to compare floor shapes only.
 
 **Frame torsion on a whole frame, checked against OpenSees.** A 64-tube FSAE-style space frame gives the same torsional rate, bending deflection and mount stiffness in frame_fe and in an independent OpenSeesPy model, within 0.00001 %.
 
