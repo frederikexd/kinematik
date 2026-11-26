@@ -686,3 +686,13 @@ tests = [
     "tests/test_pt_integration.py",
 ]
 deselect = []
+
+[[group]]
+name = "harness"
+files = ["suspension/harness.py"]
+tests = [
+    "tests/test_mutation_harness.py",
+    "tests/test_harness.py",
+    "tests/test_accumulator_harness_benchmark.py",
+]
+deselect = ["tests/test_accumulator_harness_benchmark.py::test_the_references_are_the_registered_ones"]   # reads docs/, outside mutmut's copy
