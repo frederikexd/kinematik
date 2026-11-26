@@ -1,0 +1,38 @@
+{
+ "h_W_m2K": 52.876842105263165,
+ "rows": {
+  "1": {
+   "measured_C": 1.4,
+   "kinematik_C": 0.23596916642651422,
+   "rel": -0.8314505954096327,
+   "kinematik_heat_W": 0.2176,
+   "measured_heat_W": 0.84,
+   "with_measured_heat_C": 0.9109103851030795
+  },
+  "3": {
+   "measured_C": 6.6,
+   "kinematik_C": 2.0229473743642075,
+   "rel": -0.6934928220660291,
+   "kinematik_heat_W": 1.9584,
+   "measured_heat_W": 4.03,
+   "with_measured_heat_C": 4.16282573462405
+  },
+  "5": {
+   "measured_C": 10.9,
+   "kinematik_C": 4.776114724779916,
+   "rel": -0.5618243371761545,
+   "kinematik_heat_W": 5.4399999999999995,
+   "measured_heat_W": 9.48,
+   "with_measured_heat_C": 8.32308227774206
+  }
+ },
+ "absolute_passes": false,
+ "decision": {
+  "measured_over_40C": [
+   "5"
+  ],
+  "kinematik_over_40C": [],
+  "passes": false
+ },
+ "passed": false
+}

@@ -1,0 +1,16 @@
+{
+ "registered": "2026-11-25, before KinematiK was run on this pack. DISCLOSURE: the measured curves were read before this file was written (to find the inputs); they are in Fig. 14 only, read by eye to about +-0.3 C.",
+ "source": {
+  "reference": "Saw, Ye, Tay, Chong, Kuan, Yew, Computational fluid dynamic and thermal analysis of Lithium-ion battery pack with air cooling, Applied Energy 177 (2016) 783-792",
+  "pack": "24 LFP 38120 cells (8 Ah, 3.2 V, 0.335 kg, 38 mm x 146 mm, cp 998 J/kg K, internal resistance 3.4 mOhm, Table 1), 12S2P, 5 mm spacing, air from a tangential blower at 30 g/s through venting holes in the holding plates, chamber at 30 C; 24 T-type thermocouples mid-body; constant-current charge from fully discharged at 1, 3 and 5 It (8, 24 and 40 A per cell)",
+  "measured_mean_surface_rise_C_fig14": {"1": {"t_s": 2700, "dT": 1.4}, "3": {"t_s": 1100, "dT": 6.6}, "5": {"t_s": 600, "dT": 10.9}},
+  "measured_heat_per_cell_W_ARC": {"1": 0.84, "3": 4.03, "5": 9.48},
+  "paper_nusselt_at_30_g_s": 76.4
+ },
+ "mapping": "KinematiK's lumped cell temperature (ev_electrical_check.pack_temperature_along) per cell: heat I^2 R with R = 3.4 mOhm (Table 1) at the per-cell current, heat capacity 0.335 x 998 J/K, cooling hA with h = Nu k / D = 76.4 x 0.0263 / 0.038 W/m2K over the cell's side area (pi D L). The h is the paper's own CFD figure, not KinematiK's airflow map: the pack's flow along the cells through holder holes is not a layout KinematiK's map models, so this test checks KinematiK's heating and thermal-mass model, not its airflow model.",
+ "tests": {
+  "absolute": "mean cell rise at the end of each charge within 30 % of the measurement",
+  "decision": "which charge rates take the cells past 40 C (a 10 C rise from 30 C): measured, only 5 It. KinematiK must flag the same rates."
+ },
+ "limits": {"absolute_relative": 0.30}
+}
