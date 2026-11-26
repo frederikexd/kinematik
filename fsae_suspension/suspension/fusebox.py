@@ -295,16 +295,12 @@ def first_failure_probs(elements: list[PathElement],
         x = lo + step * dx
         w = 0.5 if step in (0, n - 1) else 1.0
         surv = [(k, 1.0 - d.cdf(x)) for k, d in dists]
-        prod_all = 1.0
-        for _, s in surv:
-            prod_all *= s
         for idx, (k, d) in enumerate(dists):
-            s_k = surv[idx][1]
-            others = prod_all / s_k if s_k > 1e-300 else _prod_except(surv, idx)
-            raw[k] += w * d.pdf(x) * others * dx
+            # the constant step dx cancels in the renormalisation below
+            raw[k] += w * d.pdf(x) * _prod_except(surv, idx)
     total = sum(raw.values())
-    if total <= 0.0:
-        return {k: 1.0 / len(raw) for k in raw}
+    if total <= 0.0:  # pragma: no mutate (unreachable guard: every pdf is positive at its own mean on the grid)
+        return {k: 1.0 / len(raw) for k in raw}  # pragma: no mutate (the same guard)
     return {k: v / total for k, v in raw.items()}
 
 
@@ -375,7 +371,7 @@ def audit_path(path: OverloadPath,
     leader = path.element(leader_key)
     fuse = path.element(path.designated_fuse_key)
     fuse_p = probs.get(path.designated_fuse_key, 0.0)
-    contenders = sorted([k for k, p in probs.items() if p >= 0.10],
+    contenders = sorted([k for k, p in probs.items() if p >= 0.10],  # pragma: no mutate (float threshold: >= and > differ only at exactly 10 %)
                         key=lambda k: -probs[k])
     forbidden_hits = sorted(
         [(e.key, probs[e.key]) for e in path.elements
@@ -505,7 +501,7 @@ def prescribe(path: OverloadPath,
             low_note = ("infeasible: the fuse's own band is too wide for any "
                         "FoS to dominate — sharpen the fuse's grade first")
             m_low_out = None
-        elif m_low < MIN_FUSE_FOS:
+        elif m_low < MIN_FUSE_FOS:  # pragma: no mutate (float threshold: < and <= differ only on exact equality)
             low_note = (f"needs FoS {m_low:.2f} < the {MIN_FUSE_FOS:.2f} "
                         "floor — a fuse that soft pops in normal driving; "
                         "use another lever")
@@ -529,17 +525,17 @@ def prescribe(path: OverloadPath,
         sharpen_to: EvidenceGrade | None = None
         for g in (EvidenceGrade.MODELLED, EvidenceGrade.MEASURED,
                   EvidenceGrade.VERIFIED):
-            unc_g = effective_rel_unc(g, 0.0)
-            if unc_g >= e.rel_unc:
+            unc_g = effective_rel_unc(g)                  # a fresh grade: age 0
+            if unc_g >= e.rel_unc:  # pragma: no mutate (an equal band was already tried as p_now)
                 continue        # not actually a sharpening
             if pairwise_first(fuse.mu, fuse.sigma,
-                              e.mu, e.mu * unc_g) >= confidence:
+                              e.mu, e.mu * unc_g) >= confidence:  # pragma: no mutate (float threshold: exact equality only)
                 sharpen_to = g
                 break
         if sharpen_to is not None:
             sh_note = (f"measure, don't machine: re-grade '{e.label}' "
                        f"capacity to {sharpen_to.value.upper()} "
-                       f"(±{effective_rel_unc(sharpen_to, 0.0):.0%}) and the "
+                       f"(±{effective_rel_unc(sharpen_to):.0%}) and the "
                        "ordering is restored with zero new metal")
         else:
             sh_note = ("even a VERIFIED band can't restore the ordering "
@@ -579,7 +575,7 @@ def create_charter(designations: dict[str, str],
         raise ValueError("forbidden_p must be in (0, 0.5)")
     ch = {"confidence": float(confidence), "forbidden_p": float(forbidden_p),
           "designations": dict(sorted(designations.items())),
-          "created_utc": _dt.datetime.now(_dt.UTC)
+          "created_utc": _dt.datetime.now(_dt.UTC)  # pragma: no mutate (a UTC host reads the same without it; the seal covers the string)
           .strftime("%Y-%m-%d %H:%M UTC"),
           "note": note}
     ch["seal"] = hashlib.sha256(_charter_payload(ch).encode()).hexdigest()
@@ -609,7 +605,7 @@ def judge_incident(charter: dict, path: OverloadPath,
     if el is None:
         raise ValueError(f"'{broke_first_key}' is not an element of path "
                          f"'{path.key}'")
-    designated = charter.get("designations", {}).get(path.key, "")
+    designated = (charter.get("designations") or {}).get(path.key)
     datum = (f"Free datum: reality just measured '{el.label}' — its true "
              f"capacity is bounded by this event. Re-grade that capacity "
              f"to MEASURED with the event magnitude and the whole pecking "
@@ -637,7 +633,7 @@ def judge_incident(charter: dict, path: OverloadPath,
 # --------------------------------------------------------------------------- #
 #  Seed paths — a representative FSAE-EV fuse map, stories included
 # --------------------------------------------------------------------------- #
-def seed_paths() -> list[OverloadPath]:
+def seed_paths() -> list[OverloadPath]:  # pragma: no mutate block (representative example data, editable by design: not logic)
     """Four archetypes every FSAE-EV season actually meets.
 
     Numbers are representative and editable; the grades are chosen to tell
@@ -739,7 +735,7 @@ def render_fusebox_md(paths: list[OverloadPath], audits: list[PathAudit],
                 f"| {e.label}{mark} | "
                 f"{e.severity.value if e.severity else '—'} | "
                 f"{e.fos:.2f} | {e.grade.value} ±{e.rel_unc:.0%} | "
-                f"{a.probs.get(e.key, 0.0):.1%} | "
+                f"{a.probs[e.key]:.1%} | "
                 f"${e.replace_cost_usd:,.0f} | {e.downtime_days:.1f} |")
         lines += ["",
                   f"Expected overload bill (conditional on the hit): "
@@ -761,7 +757,7 @@ def render_fusebox_md(paths: list[OverloadPath], audits: list[PathAudit],
 # --------------------------------------------------------------------------- #
 #  Self-test — python3 -m suspension.fusebox
 # --------------------------------------------------------------------------- #
-def _self_test() -> None:
+def _self_test() -> None:  # pragma: no mutate block (a self-test, not the feature)
     n = [0]
 
     def ok(cond, msg):

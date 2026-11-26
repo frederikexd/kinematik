@@ -1,0 +1,252 @@
+{
+ "addr1": [
+  [
+   "d0034c00fc24",
+   "dummy broadcast write OTP_ECC_TEST, sync the DLL"
+  ],
+  [
+   "d00309010f74",
+   "CONTROL1 = 0x01, enable auto-address mode"
+  ],
+  [
+   "d0030600cb44",
+   "DIR0_ADDR of device 0"
+  ],
+  [
+   "d00308024ee5",
+   "provisionally mark every device a stack device"
+  ],
+  [
+   "9000030801d21d",
+   "single board: device 0 is base AND top of stack (COMM_CTRL = 0x01)"
+  ],
+  [
+   "c0034c00f8e4",
+   "dummy broadcast read, re-sync the DLL"
+  ]
+ ],
+ "addr3": [
+  [
+   "d0034c00fc24",
+   "dummy broadcast write OTP_ECC_TEST, sync the DLL"
+  ],
+  [
+   "d00309010f74",
+   "CONTROL1 = 0x01, enable auto-address mode"
+  ],
+  [
+   "d0030600cb44",
+   "DIR0_ADDR of device 0"
+  ],
+  [
+   "d00306010a84",
+   "DIR0_ADDR of device 1"
+  ],
+  [
+   "d00306024a85",
+   "DIR0_ADDR of device 2"
+  ],
+  [
+   "d00308024ee5",
+   "provisionally mark every device a stack device"
+  ],
+  [
+   "900003080013dd",
+   "device 0 is the base (COMM_CTRL = 0x00)"
+  ],
+  [
+   "90020308035264",
+   "device 2 is top of stack (COMM_CTRL = 0x03)"
+  ],
+  [
+   "c0034c00f8e4",
+   "dummy broadcast read, re-sync the DLL"
+  ]
+ ],
+ "addr3r": [
+  [
+   "d0034c00fc24",
+   "dummy broadcast write OTP_ECC_TEST, sync the DLL"
+  ],
+  [
+   "d00309810ed4",
+   "CONTROL1 = 0x81, enable auto-address mode (keeping reverse direction)"
+  ],
+  [
+   "d0030700cad4",
+   "DIR1_ADDR of device 0"
+  ],
+  [
+   "d00307010b14",
+   "DIR1_ADDR of device 1"
+  ],
+  [
+   "d00307024b15",
+   "DIR1_ADDR of device 2"
+  ],
+  [
+   "d00308024ee5",
+   "provisionally mark every device a stack device"
+  ],
+  [
+   "900003080013dd",
+   "device 0 is the base (COMM_CTRL = 0x00)"
+  ],
+  [
+   "90020308035264",
+   "device 2 is top of stack (COMM_CTRL = 0x03)"
+  ],
+  [
+   "c0034c00f8e4",
+   "dummy broadcast read, re-sync the DLL"
+  ]
+ ],
+ "rev3": [
+  [
+   "900003098013ed",
+   "base device: CONTROL1 DIR_SEL = 1"
+  ],
+  [
+   "e0030980c014",
+   "broadcast write REVERSE: flip the rest of the stack"
+  ],
+  [
+   "d0034c00fc24",
+   "dummy broadcast write OTP_ECC_TEST, sync the DLL"
+  ],
+  [
+   "d00309810ed4",
+   "CONTROL1 = 0x81, enable auto-address mode (keeping reverse direction)"
+  ],
+  [
+   "d0030700cad4",
+   "DIR1_ADDR of device 0"
+  ],
+  [
+   "d00307010b14",
+   "DIR1_ADDR of device 1"
+  ],
+  [
+   "d00307024b15",
+   "DIR1_ADDR of device 2"
+  ],
+  [
+   "d00308024ee5",
+   "provisionally mark every device a stack device"
+  ],
+  [
+   "900003080013dd",
+   "device 0 is the base (COMM_CTRL = 0x00)"
+  ],
+  [
+   "90020308035264",
+   "device 2 is top of stack (COMM_CTRL = 0x03)"
+  ],
+  [
+   "c0034c00f8e4",
+   "dummy broadcast read, re-sync the DLL"
+  ]
+ ],
+ "bal1": [
+  [
+   "d00003fb7997",
+   "ACTIVE_CELL = 0x-5"
+  ],
+  [
+   "d70318020202020202020214be",
+   "CB_CELL8..1_CTRL balance timers (nonzero = balance that channel)"
+  ],
+  [
+   "d703200202020202020202277f",
+   "CB_CELL16..9_CTRL balance timers"
+  ],
+  [
+   "d0032e011484",
+   "BAL_CTRL1 duty cycle, even/odd cell alternation"
+  ],
+  [
+   "d0032a08d642",
+   "VCB_DONE_THRESH auto-stop voltage"
+  ],
+  [
+   "d0032c051427",
+   "OVUV_CTRL = 0x05, run OV/UV comparators in round robin"
+  ],
+  [
+   "d0032f0394d5",
+   "BAL_CTRL2 = 0x03, start auto balancing"
+  ]
+ ],
+ "bal16": [
+  [
+   "d000030ab813",
+   "ACTIVE_CELL = 0x0A"
+  ],
+  [
+   "d70318020202020202020214be",
+   "CB_CELL8..1_CTRL balance timers (nonzero = balance that channel)"
+  ],
+  [
+   "d703200202020202020202277f",
+   "CB_CELL16..9_CTRL balance timers"
+  ],
+  [
+   "d0032e011484",
+   "BAL_CTRL1 duty cycle, even/odd cell alternation"
+  ],
+  [
+   "d0032a08d642",
+   "VCB_DONE_THRESH auto-stop voltage"
+  ],
+  [
+   "d0032c051427",
+   "OVUV_CTRL = 0x05, run OV/UV comparators in round robin"
+  ],
+  [
+   "d0032f0394d5",
+   "BAL_CTRL2 = 0x03, start auto balancing"
+  ]
+ ],
+ "bal8": [
+  [
+   "d0000302b9d5",
+   "ACTIVE_CELL = 0x02"
+  ],
+  [
+   "d70318050505050505050564a8",
+   "CB_CELL8..1_CTRL balance timers (nonzero = balance that channel)"
+  ],
+  [
+   "d7032005050505050505055769",
+   "CB_CELL16..9_CTRL balance timers"
+  ],
+  [
+   "d0032e039545",
+   "BAL_CTRL1 duty cycle, even/odd cell alternation"
+  ],
+  [
+   "d0032f0394d5",
+   "BAL_CTRL2 = 0x03, start auto balancing"
+  ]
+ ],
+ "adc1": [
+  [
+   "d00003fb7997",
+   "ACTIVE_CELL = 0x-5, activate 1 cells"
+  ],
+  [
+   "d0030d064c76",
+   "ADC_CTRL1 = 0x06, continuous run mode, start ADC"
+  ]
+ ],
+ "adc16": [
+  [
+   "d000030ab813",
+   "ACTIVE_CELL = 0x0A, activate 16 cells"
+  ],
+  [
+   "d0030d064c76",
+   "ADC_CTRL1 = 0x06, continuous run mode, start ADC"
+  ]
+ ]
+}

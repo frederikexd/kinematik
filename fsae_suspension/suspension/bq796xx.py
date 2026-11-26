@@ -527,7 +527,7 @@ class StackSpec:
         b = self.response_bounds()
         if b is None or b[0] != b[1]:
             return None
-        return b[0]
+        return b[0]  # pragma: no mutate (both ends are equal here)
 
 
 # ===================================================================== #
@@ -964,7 +964,7 @@ def resolution_findings(stack: StackSpec, *,
         out.append(Finding(
             "bq-resolution-unspecified", Severity.MISSING,
             f"The cell-voltage resolution the balancing decision needs is not "
-            f"declared, so {CELL_LSB_V*1e6:.2f} uV/LSB cannot be judged "
+            f"declared, so {CELL_LSB_V/1e-6:.2f} uV/LSB cannot be judged "
             f"adequate or excessive. 'The datasheet number is small' is not "
             f"the same as 'small enough for the decision we make with it'.",
             subsystems=["dataacq", "electrics"]))
@@ -974,15 +974,15 @@ def resolution_findings(stack: StackSpec, *,
     if ratio < 1.0:
         out.append(Finding(
             "bq-resolution-insufficient", Severity.FAIL,
-            f"Balancing needs {resolution_needed_v*1e6:.0f} uV resolution; the "
-            f"converter delivers {CELL_LSB_V*1e6:.2f} uV/LSB. The requirement "
+            f"Balancing needs {resolution_needed_v/1e-6:.0f} uV resolution; the "
+            f"converter delivers {CELL_LSB_V/1e-6:.2f} uV/LSB. The requirement "
             f"is finer than one count.",
             subsystems=["dataacq", "electrics"]))
     else:
         out.append(Finding(
             "bq-resolution-ok", Severity.OK,
-            f"{CELL_LSB_V*1e6:.2f} uV/LSB against a "
-            f"{resolution_needed_v*1e6:.0f} uV requirement — {ratio:.0f} "
+            f"{CELL_LSB_V/1e-6:.2f} uV/LSB against a "
+            f"{resolution_needed_v/1e-6:.0f} uV requirement — {ratio:.0f} "
             f"counts per meaningful step. Note this is quantisation only; "
             f"absolute accuracy is a separate datasheet figure and is the one "
             f"that decides whether two cells 5 mV apart are really 5 mV apart.",
@@ -1035,10 +1035,10 @@ def to_bms_signals(stack: StackSpec, *,
             rate_hz=status_rate_hz, critical=True))
 
     sigs.append(BmsSignal(
-        name="nfault_status", bits=8, unit="", rate_hz=status_rate_hz,
+        name="nfault_status", bits=8, rate_hz=status_rate_hz,
         critical=True))
     sigs.append(BmsSignal(
-        name="balance_active", bits=16, unit="", rate_hz=1.0))
+        name="balance_active", bits=16, rate_hz=1.0))
 
     return sigs
 
@@ -1166,14 +1166,14 @@ class BqPlan:
                          f"{b.rate_ceiling_max_hz:.0f} Hz** "
                          f"at {b.link.baud} baud")
         L.append(f"- Wake-to-addressable: "
-                 f"**{wake_time_s(self.stack.boards)*1000:.1f} ms**")
+                 f"**{wake_time_s(self.stack.boards)/1e-3:.1f} ms**")
         L.append("")
         L.append("## Findings")
         L.append("")
         L.append("| Severity | Check | Message |")
         L.append("|---|---|---|")
-        order = {Severity.FAIL: 0, Severity.MISSING: 1, Severity.WARN: 2,
-                 Severity.INFO: 3, Severity.OK: 4}
+        order = {Severity.FAIL: 0, Severity.MISSING: 1, Severity.WARN: 2,  # pragma: no mutate (only the order of the ranks matters)
+                 Severity.INFO: 3, Severity.OK: 4}  # pragma: no mutate (the same)
         for f in sorted(self.findings, key=lambda f: order[f.severity]):
             msg = f.message.replace("|", "/").replace("\n", " ")
             L.append(f"| {f.severity.value.upper()} | {f.check} | {msg} |")
@@ -1189,8 +1189,7 @@ def plan_stack(stack: StackSpec, *,
     """Check the stack, budget the link, and emit the frames and the CAN map."""
     dev = stack.device()
     findings = stack_findings(stack)
-    findings.extend(resolution_findings(
-        stack, resolution_needed_v=resolution_needed_v))
+    findings.extend(resolution_findings(stack, resolution_needed_v=resolution_needed_v))  # pragma: no mutate (the stack argument is not read)
 
     budget = None
     signals: list = []

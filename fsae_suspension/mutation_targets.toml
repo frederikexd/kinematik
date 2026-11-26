@@ -68,7 +68,7 @@ deselect = []
 [[group]]
 name = "frame_fe"
 files = ["suspension/frame_fe.py"]
-tests = ["tests/test_mutation_frame_fe.py"]
+tests = ["tests/test_mutation_frame_fe.py", "tests/test_frame_torsion_opensees_benchmark.py"]
 deselect = []
 
 [[group]]
@@ -370,6 +370,7 @@ deselect = []
 name = "underfloor"
 files = ["suspension/aero/underfloor.py"]
 tests = [
+    "tests/test_underbody_diffuser_benchmark.py",
     "tests/test_underfloor.py",
     "tests/test_mutation_underfloor.py",
 ]
@@ -413,6 +414,7 @@ deselect = []
 name = "pack_thermal"
 files = ["suspension/pack_thermal.py"]
 tests = [
+    "tests/test_pack_air_measured_benchmark.py",
     "tests/test_pack_thermal.py",
     "tests/test_mutation_pack_thermal.py",
     "tests/test_parallel_module_benchmark.py",
@@ -594,6 +596,7 @@ deselect = []
 name = "ev_electrical_check"
 files = ["suspension/ev_electrical_check.py"]
 tests = [
+    "tests/test_pack_air_measured_benchmark.py",
     "tests/test_mutation_ev_electrical_check.py",
     "tests/test_plausibility.py",
     "tests/test_untrusted_inputs.py",
@@ -645,5 +648,23 @@ name = "throttle_flutter_cosim"
 files = ["suspension/throttle_flutter_cosim.py"]
 tests = [
     "tests/test_mutation_throttle_flutter_cosim.py",
+]
+deselect = []
+
+[[group]]
+name = "fusebox"
+files = ["suspension/fusebox.py"]
+tests = [
+    "tests/test_mutation_fusebox.py",
+    "tests/test_fusebox.py",
+]
+deselect = []
+
+[[group]]
+name = "bq796xx"
+files = ["suspension/bq796xx.py"]
+tests = [
+    "tests/test_mutation_bq796xx.py",
+    "tests/test_bq796xx.py",
 ]
 deselect = []
