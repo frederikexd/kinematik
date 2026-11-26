@@ -93,7 +93,7 @@ class XlError:
         return isinstance(other, XlError) and other.text == self.text
 
     def __hash__(self) -> int:
-        return hash(("XlError", self.text))
+        return hash(("XlError", self.text))  # pragma: no mutate (any tag, or none, keeps equal errors hashing equal)
 
 
 DIV0 = XlError("#DIV/0!")
@@ -199,10 +199,10 @@ class _Parser:
         self.i += 1
         return tok
 
-    def expect(self, kind: str, text: str | None = None) -> tuple:
+    def expect(self, kind: str) -> tuple:
         tok = self.take()
-        if tok[0] != kind or (text is not None and tok[1] != text):
-            raise FormulaError(f"expected {text or kind}, got {tok[1]!r}")
+        if tok[0] != kind:
+            raise FormulaError(f"expected {kind}, got {tok[1]!r}")
         return tok
 
     def parse(self):
@@ -227,14 +227,14 @@ class _Parser:
 
     def additive(self):
         node = self.multiplicative()
-        while (tok := self.peek()) and tok[0] == "op" and tok[1] in "+-":
+        while (tok := self.peek()) and tok[0] == "op" and tok[1] in ("+", "-"):
             self.take()
             node = ("bin", tok[1], node, self.multiplicative())
         return node
 
     def multiplicative(self):
         node = self.power()
-        while (tok := self.peek()) and tok[0] == "op" and tok[1] in "*/":
+        while (tok := self.peek()) and tok[0] == "op" and tok[1] in ("*", "/"):
             self.take()
             node = ("bin", tok[1], node, self.power())
         return node
@@ -248,7 +248,7 @@ class _Parser:
 
     def unary(self):
         tok = self.peek()
-        if tok and tok[0] == "op" and tok[1] in "+-":
+        if tok and tok[0] == "op" and tok[1] in ("+", "-"):
             self.take()
             node = self.unary()
             return ("neg", node) if tok[1] == "-" else node
@@ -271,7 +271,7 @@ class _Parser:
         if kind == "bool":
             return ("bool", text.upper() == "TRUE")
         if kind == "err":
-            return ("err", _ERROR_LITERALS.get(text, VALUE))
+            return ("err", _ERROR_LITERALS[text])        # the tokenizer accepts only these literals
         if kind == "ref":
             return ("ref", text)
         if kind == "func":
@@ -321,9 +321,7 @@ def _num(v: Any) -> float:
             return float(v.strip())
         except ValueError:
             raise _Bail(VALUE)
-    if isinstance(v, Matrix):
-        raise _Bail(VALUE)
-    raise _Bail(VALUE)
+    raise _Bail(VALUE)  # pragma: no mutate (unreachable: callers pass _scalar values, never a range)
 
 
 def _text(v: Any) -> str:
@@ -338,7 +336,7 @@ def _text(v: Any) -> str:
             return str(int(v))
         return repr(v)
     if isinstance(v, Matrix):
-        raise _Bail(VALUE)
+        raise _Bail(VALUE)  # pragma: no mutate (unreachable: callers pass _scalar values, never a range)
     return str(v)
 
 
@@ -357,7 +355,7 @@ def _bool(v: Any) -> bool:
             return False
         raise _Bail(VALUE)
     if isinstance(v, Matrix):
-        raise _Bail(VALUE)
+        raise _Bail(VALUE)  # pragma: no mutate (unreachable: callers pass _scalar values, never a range)
     return _num(v) != 0.0
 
 
@@ -525,7 +523,7 @@ def _f_match(args):
 
     if mode == 0:
         if isinstance(needle, str):
-            rx = (_wildcard(needle) if ("*" in needle or "?" in needle)
+            rx = (_wildcard(needle) if ("*" in needle or "?" in needle)  # pragma: no mutate (a pattern without * or ? matches exactly what the plain comparison does)
                   else None)
             for i, v in enumerate(vals, start=1):
                 if isinstance(v, str):
@@ -575,14 +573,14 @@ def _f_text(args):
     if m.group("pct"):
         x *= 100.0
     decimals = len(m.group("dec") or "")
-    grouped = "," in (m.group("int") or "")
+    grouped = "," in m.group("int")                 # [#0,]* always matches, so the group is never None
     body = f"{x:,.{decimals}f}" if grouped else f"{x:.{decimals}f}"
-    if body.lstrip("-").startswith("0.") and (m.group("int") or "").endswith("#"):
-        body = body.replace("0.", ".", 1)
+    if body.removeprefix("-").startswith("0.") and m.group("int").endswith("#"):
+        body = "-" * body.startswith("-") + body.removeprefix("-")[1:]     # "#.00" drops the leading zero
     return body + m.group("pct")
 
 
-def _f_round(args, mode="half"):
+def _f_round(args, mode="half"):  # pragma: no mutate (every caller passes the mode)
     if len(args) not in (1, 2):
         raise _Bail(VALUE)
     x = _num(_scalar(args[0]))
@@ -590,9 +588,9 @@ def _f_round(args, mode="half"):
     f = 10.0 ** d
     y = x * f
     if mode == "up":
-        y = math.ceil(abs(y)) * (1 if y >= 0 else -1)
+        y = math.ceil(abs(y)) * (1 if y >= 0 else -1)  # pragma: no mutate (times or divided by a sign of ±1 is the same)
     elif mode == "down":
-        y = math.floor(abs(y)) * (1 if y >= 0 else -1)
+        y = math.floor(abs(y)) * (1 if y >= 0 else -1)  # pragma: no mutate (times or divided by a sign of ±1 is the same)
     else:
         # Excel rounds half away from zero; Python rounds half to even.
         y = math.floor(abs(y) + 0.5) * (1 if y >= 0 else -1)
@@ -677,7 +675,7 @@ def _split_ref(text: str) -> tuple:
         head, body = text.rsplit("!", 1)
         sheet = head[1:-1].replace("''", "'") if head.startswith("'") else head
     if ":" in body:
-        a, b = body.split(":", 1)
+        a, b = body.split(":", 1)  # pragma: no mutate (_CELL_RE refuses a second colon either way)
     else:
         a = b = body
     if not (_CELL_RE.match(a) and _CELL_RE.match(b)):
@@ -691,13 +689,12 @@ def _split_ref(text: str) -> tuple:
 class _Evaluator:
     """Evaluates one workbook, memoising per cell and detecting cycles."""
 
-    def __init__(self, wb, max_cells: int = 1_000_000) -> None:
+    def __init__(self, wb, max_cells: int = 1_000_000) -> None:  # pragma: no mutate (every caller passes max_cells)
         self.wb = wb
         self.max_cells = max_cells
         self.cache: dict = {}
         self.pending: set = set()
         self.unsupported: dict = {}
-        self.visited = 0
 
     # -- cell access -------------------------------------------------- #
     def sheet(self, name: str | None, default: str):
@@ -729,13 +726,12 @@ class _Evaluator:
         ma, mb = _CELL_RE.match(a), _CELL_RE.match(b)
         c1, r1 = _col_index(ma.group(1)), int(ma.group(2))
         c2, r2 = _col_index(mb.group(1)), int(mb.group(2))
-        if c1 > c2:
+        if c1 > c2:  # pragma: no mutate (swapping equal bounds changes nothing)
             c1, c2 = c2, c1
-        if r1 > r2:
+        if r1 > r2:  # pragma: no mutate (swapping equal bounds changes nothing)
             r1, r2 = r2, r1
         if (r2 - r1 + 1) * (c2 - c1 + 1) > self.max_cells:
             raise FormulaError("range too large")
-        ws = self.wb[sheet_title]
         rows = []
         for r in range(r1, r2 + 1):
             rows.append([self.cell_value(sheet_title, f"{_letters(c)}{r}")
@@ -755,7 +751,7 @@ class _Evaluator:
         except _Bail as bail:
             return bail.err
         except RecursionError:
-            raise FormulaError("formula nests too deeply")
+            raise FormulaError("formula nests too deeply")  # pragma: no mutate (the parser recurses deeper than the evaluator, so it overflows first)
 
     def eval_node(self, node, sheet: str) -> Any:
         kind = node[0]
@@ -767,16 +763,16 @@ class _Evaluator:
             if title not in self.wb.sheetnames:
                 raise _Bail(REF)
             if a == b:
-                return self.cell_value(title, a.replace("$", ""))
-            return self.range_value(title, a.replace("$", ""),
-                                    b.replace("$", ""))
+                return self.cell_value(title, a.replace("$", ""))  # pragma: no mutate (openpyxl reads $A$1 as A1: only the memo key differs, and a cycle is still caught one level on with the same #REF!)
+            return self.range_value(title, a.replace("$", ""),  # pragma: no mutate (_CELL_RE reads $ either way)
+                                    b.replace("$", ""))  # pragma: no mutate (same)
         if kind == "neg":
             return -_num(_scalar(self.eval_node(node[1], sheet)))
         if kind == "bin":
             return self.eval_bin(node[1], node[2], node[3], sheet)
         if kind == "call":
             return self.eval_call(node[1], node[2], sheet)
-        raise FormulaError(f"unknown node {kind}")
+        raise FormulaError(f"unknown node {kind}")  # pragma: no mutate (unreachable: the parser builds only the kinds above)
 
     def eval_bin(self, op: str, left, right, sheet: str) -> Any:
         lv = _scalar(self.eval_node(left, sheet))
@@ -802,7 +798,7 @@ class _Evaluator:
             return _finite(a / b)
         if op == "^":
             return _pow(a, b)
-        raise FormulaError(f"unknown operator {op}")
+        raise FormulaError(f"unknown operator {op}")  # pragma: no mutate (unreachable: the parser builds only the operators above)
 
     def eval_call(self, name: str, args, sheet: str) -> Any:
         # Lazy forms first: their whole point is not evaluating every branch.
@@ -872,12 +868,11 @@ def _compare(op: str, a: Any, b: Any) -> bool:
     a_num = isinstance(a, (int, float)) and not isinstance(a, bool)
     b_num = isinstance(b, (int, float)) and not isinstance(b, bool)
     if a is None and b is None:
-        a = b = 0.0
-        a_num = b_num = True
-    elif a is None:
-        a, a_num = (0.0, True) if b_num else ("", False)
+        return op in ("=", "<=", ">=")              # two blanks are equal
+    if a is None:
+        a, a_num = (0.0 if b_num else ""), b_num    # a blank reads as 0 beside a number, "" beside anything else
     elif b is None:
-        b, b_num = (0.0, True) if a_num else ("", False)
+        b, b_num = (0.0 if a_num else ""), a_num
     if a_num and b_num:
         x, y = float(a), float(b)
     elif isinstance(a, str) and isinstance(b, str):
@@ -885,12 +880,8 @@ def _compare(op: str, a: Any, b: Any) -> bool:
     elif isinstance(a, bool) or isinstance(b, bool):
         x, y = _num(a), _num(b)
     else:
-        # Mixed number/text: any text sorts above any number.
-        rank_a, rank_b = (0 if a_num else 1), (0 if b_num else 1)
-        if rank_a != rank_b:
-            x, y = rank_a, rank_b
-        else:                                    # pragma: no cover
-            x, y = _text(a), _text(b)
+        # Mixed number/text (one of each): any text sorts above any number.
+        x, y = (not a_num), (not b_num)
     if op == "=":
         return x == y
     if op == "<>":
@@ -915,8 +906,7 @@ def _letters(n: int) -> str:
 # ===================================================================== #
 #  Public API
 # ===================================================================== #
-def evaluate_workbook(path: str, *, only_prefix: str | None = None,
-                      max_cells: int = 1_000_000) -> tuple:
+def evaluate_workbook(path: str, *, only_prefix: str | None = None, max_cells: int = 1_000_000) -> tuple:  # pragma: no mutate (the 1e6-cell cap default is never reached)
     """Evaluate every formula this module understands.
 
     Returns `(values, report)` where `values` maps `(sheet_title, coord)` to a
@@ -927,7 +917,7 @@ def evaluate_workbook(path: str, *, only_prefix: str | None = None,
     """
     import openpyxl
 
-    wb = openpyxl.load_workbook(path, data_only=False)
+    wb = openpyxl.load_workbook(path, data_only=False)  # pragma: no mutate (False is also openpyxl's default)
     try:
         ev = _Evaluator(wb, max_cells=max_cells)
         titles = [t for t in wb.sheetnames
@@ -952,8 +942,8 @@ def evaluate_workbook(path: str, *, only_prefix: str | None = None,
                         skipped += 1
                         continue
                     except _Bail as bail:
-                        value = bail.err
-                    except (RecursionError, ValueError, TypeError,
+                        value = bail.err  # pragma: no mutate (unreachable: evaluate() turns a bail into its error value)
+                    except (RecursionError, ValueError, TypeError, IndexError,   # IndexError: a function given too few arguments
                             OverflowError, ZeroDivisionError, KeyError):
                         skipped += 1
                         continue
@@ -1016,8 +1006,7 @@ def _cached_repr(value: Any) -> tuple | None:
     return None
 
 
-def populate_cached_values(path: str, *, only_prefix: str | None = None,
-                           max_cells: int = 1_000_000) -> dict:
+def populate_cached_values(path: str, *, only_prefix: str | None = None, max_cells: int = 1_000_000) -> dict:  # pragma: no mutate (the 1e6-cell cap default is never reached)
     """Evaluate the workbook and write the results in as cached values.
 
     The file is rewritten in place. Formulas are left exactly as they are —
@@ -1035,13 +1024,13 @@ def populate_cached_values(path: str, *, only_prefix: str | None = None,
         by_sheet.setdefault(title, {})[coord] = value
 
     written = 0
-    tmp = tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False)
+    tmp = tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False)  # pragma: no mutate (only its name is used; the zip is written to it afterwards)
     tmp.close()
     with zipfile.ZipFile(path) as src:
         paths = _sheet_xml_paths(src)
         wanted = {paths[t]: cells for t, cells in by_sheet.items()
                   if t in paths}
-        with zipfile.ZipFile(tmp.name, "w", zipfile.ZIP_DEFLATED) as dst:
+        with zipfile.ZipFile(tmp.name, "w", zipfile.ZIP_DEFLATED) as dst:  # pragma: no mutate (writestr(item, ...) keeps each member's own compression)
             for item in src.infolist():
                 data = src.read(item.filename)
                 # calcChain indexes formula cells for incremental recalc. It is
@@ -1082,8 +1071,8 @@ def _xml_escape(text: str) -> bytes:
                .replace(">", "&gt;"))
     # Control characters are not representable in XML 1.0 at all.
     out = "".join(ch for ch in out
-                  if ch >= " " or ch in "\t\n\r")
-    return out.encode("utf-8")
+                  if ch >= " " or ch in ("\t", "\n", "\r"))
+    return out.encode("utf-8")  # pragma: no mutate (codec names are case-blind)
 
 
 def _inject(xml_bytes: bytes, cells: dict) -> tuple:
@@ -1092,7 +1081,7 @@ def _inject(xml_bytes: bytes, cells: dict) -> tuple:
 
     def replace(match: re.Match) -> bytes:
         nonlocal written
-        attrs = match.group("attrs") or b""
+        attrs = match.group("attrs") or b""  # pragma: no mutate (with no attributes there is no r= either, and the cell is left alone)
         inner = match.group("inner")
         if inner is None:
             return match.group(0)               # <c .../> has no formula
@@ -1105,11 +1094,10 @@ def _inject(xml_bytes: bytes, cells: dict) -> tuple:
         fm = _F_RE.search(inner)
         if fm is None:
             return match.group(0)
-        f_attrs = _F_ATTRS_RE.match(fm.group(0))
-        f_attr_text = (f_attrs.group("attrs") or b"") if f_attrs else b""
+        f_attr_text = _F_ATTRS_RE.match(fm.group(0)).group("attrs")   # fm starts "<f", so this always matches
         # Shared, array and data-table formulas have semantics this module does
         # not model — one cell's text governs a block of others.
-        if re.search(rb't="(shared|array|dataTable)"', f_attr_text):
+        if f_attr_text and re.search(rb't="(shared|array|dataTable)"', f_attr_text):
             return match.group(0)
         rendered = _cached_repr(cells[coord])
         if rendered is None:

@@ -1,0 +1,149 @@
+{
+ "build": [
+  [
+   1.0,
+   []
+  ],
+  [
+   1.0,
+   []
+  ],
+  [
+   0.7,
+   []
+  ]
+ ],
+ "build.cliff": [
+  null,
+  [
+   "Sensitivity probes at the candidate fail to solve — the geometry sits near a kinematic singularity; its yield is not a number this model owns (treated as knife-edge)."
+  ]
+ ],
+ "build.defaults": [
+  [
+   0.27275,
+   []
+  ],
+  [
+   0.2825,
+   []
+  ],
+  [
+   0.2775,
+   []
+  ]
+ ],
+ "build.steps": [
+  [
+   0.7,
+   true,
+   [
+    [
+     "upper_front_inner",
+     0
+    ],
+    [
+     "upper_front_inner",
+     1
+    ],
+    [
+     "upper_front_inner",
+     2
+    ],
+    [
+     "upper_rear_inner",
+     0
+    ],
+    [
+     "upper_rear_inner",
+     1
+    ],
+    [
+     "upper_rear_inner",
+     2
+    ]
+   ]
+  ],
+  [
+   0.25,
+   true,
+   [
+    [
+     "upper_front_inner",
+     0
+    ],
+    [
+     "upper_front_inner",
+     1
+    ],
+    [
+     "upper_front_inner",
+     2
+    ],
+    [
+     "upper_rear_inner",
+     0
+    ],
+    [
+     "upper_rear_inner",
+     1
+    ],
+    [
+     "upper_rear_inner",
+     2
+    ]
+   ]
+  ]
+ ],
+ "build.still": [
+  [
+   1.0,
+   []
+  ],
+  [
+   0.0,
+   []
+  ]
+ ],
+ "thresholds": {
+  "resilient_yield": 0.95,
+  "tempered_yield": 0.8,
+  "verify_agreement": 0.98
+ },
+ "verify": [
+  [
+   1.0,
+   1.0
+  ],
+  [
+   1.0,
+   0.8
+  ],
+  [
+   1.0,
+   0.0
+  ],
+  [
+   0.4166666666666667,
+   0.4166666666666667
+  ]
+ ],
+ "verify.out_of_band": [
+  0.0,
+  0.0
+ ],
+ "verify.still": [
+  [
+   1.0,
+   1.0
+  ],
+  [
+   0.0,
+   0.0
+  ],
+  [
+   1.0,
+   0.0
+  ]
+ ]
+}

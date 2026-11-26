@@ -850,3 +850,37 @@ tests = [
     "tests/test_provenance.py",
 ]
 deselect = []
+
+[[group]]
+name = "xlsx_formula_cache"
+files = ["suspension/xlsx_formula_cache.py"]
+tests = [
+    "tests/test_mutation_xlsx_formula_cache.py",
+    "tests/test_xlsx_formula_cache.py",
+]
+deselect = []
+
+[[group]]
+name = "inverse_genesis"
+files = ["suspension/inverse_genesis.py"]
+tests = [
+    "tests/test_mutation_inverse_genesis.py",
+]
+deselect = []
+
+[[group]]
+name = "inverse_genesis_fullcar"
+files = ["suspension/inverse_genesis_fullcar.py"]
+tests = [
+    "tests/test_mutation_inverse_genesis_fullcar.py",
+]
+deselect = []
+
+[[group]]
+name = "correlation"
+files = ["suspension/correlation.py"]
+tests = [
+    "tests/test_mutation_correlation.py",
+    "tests/test_correlation.py",
+]
+deselect = []

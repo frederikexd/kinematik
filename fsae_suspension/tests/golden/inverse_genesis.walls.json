@@ -1,0 +1,361 @@
+{
+ "bound.errors": [
+  {
+   "message": "PropertyBound: unknown property 'nope'. Allowed: anti_dive_pct, anti_lift_pct, anti_squat_pct, mech_trail_mm, caster_deg, kpi_deg, scrub_static_mm, rc_migration_mm_per_mm, compliance_camber_deg, compliance_toe_deg, compliance_caster_deg, compliance_kpi_deg, member_force_ratio, lash_toe_deg, lash_camber_deg, twist_toe_deg, compliance_toe_braking_deg, steer_ratio_min, steer_ratio, steer_effort_margin, lock_sw_deg, joint_swing_lock_deg, ackermann_lock_pct, joint_misalignment_lock_deg, brake_decel_g, link_fos_min, rocker_bearing_sf.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "PropertyBound 'caster_deg': hi < lo.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "PropertyBound 'caster_deg': declare at least one side; an unbounded bound is not a constraint.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "PropertyBound 'caster_deg': declare at least one side; an unbounded bound is not a constraint.",
+   "raised": "ValueError"
+  }
+ ],
+ "bound.labels": [
+  [
+   "caster_deg",
+   3.0,
+   7.0,
+   "3 <= caster (deg) <= 7"
+  ],
+  [
+   "anti_squat_pct",
+   23.0,
+   "inf",
+   "anti-squat (%) >= 23"
+  ],
+  [
+   "kpi_deg",
+   "-inf",
+   9.5,
+   "kingpin inclination (deg) <= 9.5"
+  ],
+  [
+   "caster_deg",
+   1.0,
+   1.0,
+   "fixed"
+  ],
+  [
+   "rc_migration_mm_per_mm",
+   -0.1,
+   0.2,
+   "-0.1 <= roll-centre migration (mm/mm) <= 0.2"
+  ]
+ ],
+ "bound.margin": [
+  [
+   -3.0,
+   -2.0,
+   0.0,
+   2.0,
+   0.0,
+   -2.5,
+   -23.0,
+   "-inf",
+   "-inf",
+   "-inf"
+  ],
+  [
+   -23.0,
+   -22.0,
+   -20.0,
+   -18.0,
+   -16.0,
+   -13.5,
+   7.0,
+   "-inf",
+   "-inf",
+   "-inf"
+  ],
+  [
+   9.5,
+   8.5,
+   6.5,
+   4.5,
+   2.5,
+   0.0,
+   -20.5,
+   "-inf",
+   "-inf",
+   "-inf"
+  ],
+  [
+   -1.0,
+   0.0,
+   -2.0,
+   -4.0,
+   -6.0,
+   -8.5,
+   -29.0,
+   "-inf",
+   "-inf",
+   "-inf"
+  ],
+  [
+   0.1,
+   -0.8,
+   -2.8,
+   -4.8,
+   -6.8,
+   -9.3,
+   -29.8,
+   "-inf",
+   "-inf",
+   "-inf"
+  ]
+ ],
+ "box.clear": [
+  [
+   -5.0,
+   -1.0,
+   3.0,
+   8.66025404,
+   0.0,
+   0.0,
+   -1.0,
+   3.0
+  ],
+  [
+   -7.0,
+   -3.0,
+   1.0,
+   6.66025404,
+   -2.0,
+   -2.0,
+   -3.0,
+   1.0
+  ],
+  [
+   -5.0
+  ],
+  [
+   1.0
+  ],
+  "hdr",
+  "keep-out box"
+ ],
+ "box.errors": [
+  {
+   "message": "KeepOutBox 'keep-out box': hi must exceed lo on every axis.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "KeepOutBox 'x': hi must exceed lo on every axis.",
+   "raised": "ValueError"
+  }
+ ],
+ "props.consts": [
+  [
+   "anti_dive_pct",
+   "anti_lift_pct",
+   "anti_squat_pct",
+   "mech_trail_mm",
+   "caster_deg",
+   "kpi_deg",
+   "scrub_static_mm",
+   "rc_migration_mm_per_mm"
+  ],
+  [
+   "compliance_camber_deg",
+   "compliance_toe_deg",
+   "compliance_caster_deg",
+   "compliance_kpi_deg",
+   "member_force_ratio",
+   "lash_toe_deg",
+   "lash_camber_deg",
+   "twist_toe_deg",
+   "compliance_toe_braking_deg"
+  ],
+  [
+   "ackermann_lock_pct",
+   "joint_misalignment_lock_deg",
+   "joint_swing_lock_deg",
+   "lock_sw_deg",
+   "mech_trail_mm",
+   "steer_effort_margin",
+   "steer_ratio",
+   "steer_ratio_min"
+  ],
+  [
+   "steer_ratio_min",
+   "steer_ratio",
+   "steer_effort_margin",
+   "lock_sw_deg",
+   "joint_swing_lock_deg",
+   "ackermann_lock_pct",
+   "joint_misalignment_lock_deg"
+  ],
+  [
+   "brake_decel_g",
+   "link_fos_min",
+   "rocker_bearing_sf"
+  ],
+  {
+   "brake_decel_g": "brake",
+   "link_fos_min": "structure",
+   "rocker_bearing_sf": "bearing"
+  },
+  [
+   "anti_dive_pct",
+   "anti_lift_pct",
+   "anti_squat_pct",
+   "mech_trail_mm",
+   "caster_deg",
+   "kpi_deg",
+   "scrub_static_mm",
+   "rc_migration_mm_per_mm",
+   "compliance_camber_deg",
+   "compliance_toe_deg",
+   "compliance_caster_deg",
+   "compliance_kpi_deg",
+   "member_force_ratio",
+   "lash_toe_deg",
+   "lash_camber_deg",
+   "twist_toe_deg",
+   "compliance_toe_braking_deg",
+   "steer_ratio_min",
+   "steer_ratio",
+   "steer_effort_margin",
+   "lock_sw_deg",
+   "joint_swing_lock_deg",
+   "ackermann_lock_pct",
+   "joint_misalignment_lock_deg",
+   "brake_decel_g",
+   "link_fos_min",
+   "rocker_bearing_sf"
+  ],
+  {
+   "ackermann_lock_pct": "Ackermann at the declared lock (%)",
+   "anti_dive_pct": "anti-dive, front (%)",
+   "anti_lift_pct": "anti-lift, rear (%)",
+   "anti_squat_pct": "anti-squat (%)",
+   "brake_decel_g": "straight-line deceleration at the declared bias (g)",
+   "caster_deg": "caster (deg)",
+   "compliance_camber_deg": "compliance camber (deg)",
+   "compliance_caster_deg": "compliance caster (deg)",
+   "compliance_kpi_deg": "compliance kingpin inclination (deg)",
+   "compliance_toe_braking_deg": "compliance steer in the declared braking case (deg)",
+   "compliance_toe_deg": "compliance steer (deg)",
+   "joint_misalignment_lock_deg": "worst joint misalignment over travel at the declared lock, bolt axes declared (deg)",
+   "joint_swing_lock_deg": "worst joint swing over travel at the declared lock (deg)",
+   "kpi_deg": "kingpin inclination (deg)",
+   "lash_camber_deg": "joint-lash camber deadband (deg)",
+   "lash_toe_deg": "joint-lash toe deadband (deg)",
+   "link_fos_min": "lowest link buckling/yield factor under the shock cases (-)",
+   "lock_sw_deg": "steering-wheel angle to reach lock (deg)",
+   "mech_trail_mm": "mechanical trail at the ground (mm)",
+   "member_force_ratio": "member force / wheel load (-)",
+   "rc_migration_mm_per_mm": "roll-centre migration (mm/mm)",
+   "rocker_bearing_sf": "rocker bearing static safety factor (-)",
+   "scrub_static_mm": "scrub radius, static (mm)",
+   "steer_effort_margin": "kinematic ratio minus the ratio effort needs (-)",
+   "steer_ratio": "kinematic steering ratio about centre (-)",
+   "steer_ratio_min": "steering ratio the effort limit needs (-)",
+   "twist_toe_deg": "frame-twist toe (deg)"
+  },
+  [
+   "anti_dive_pct",
+   "anti_lift_pct",
+   "anti_squat_pct"
+  ],
+  [
+   "compliance_camber_deg",
+   "compliance_caster_deg",
+   "compliance_kpi_deg",
+   "compliance_toe_braking_deg",
+   "compliance_toe_deg",
+   "lash_camber_deg",
+   "lash_toe_deg",
+   "member_force_ratio",
+   "twist_toe_deg"
+  ],
+  200,
+  {
+   "lower_front": [
+    "lower_front_inner",
+    "lower_outer"
+   ],
+   "lower_rear": [
+    "lower_rear_inner",
+    "lower_outer"
+   ],
+   "tie_rod": [
+    "tie_rod_inner",
+    "tie_rod_outer"
+   ],
+   "upper_front": [
+    "upper_front_inner",
+    "upper_outer"
+   ],
+   "upper_rear": [
+    "upper_rear_inner",
+    "upper_outer"
+   ]
+  },
+  [
+   "upper_outer",
+   "lower_outer",
+   "tie_rod_outer"
+  ],
+  {
+   "lower_front_inner": "lower_rear_inner",
+   "lower_rear_inner": "lower_front_inner",
+   "upper_front_inner": "upper_rear_inner",
+   "upper_rear_inner": "upper_front_inner"
+  },
+  {
+   "KNIFE_EDGE": "🔴",
+   "NO_FIT": "⚪",
+   "RESILIENT": "🟢",
+   "TEMPERED": "🟡"
+  }
+ ],
+ "spacing": [
+  [
+   "spacing lower_rear_inner.x - lower_front_inner.x >= 150 mm",
+   150.0,
+   250.0
+  ],
+  [
+   "spacing lower_outer.z - upper_outer.z >= -200 mm",
+   -200.0,
+   -190.0
+  ],
+  [
+   "toe link",
+   10.0,
+   330.3028913
+  ],
+  [
+   "spacing contact_patch.y - wheel_center.y >= 0 mm",
+   0.0,
+   5.0
+  ],
+  [
+   "spacing |b-a| >= 0 mm",
+   0.0,
+   230.73482615
+  ]
+ ],
+ "spacing.errors": [
+  {
+   "message": "PointSpacing: unknown hardpoint 'nope'.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "PointSpacing: unknown hardpoint 'wheel_centre'.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "PointSpacing.axis must be x, y, z or dist.",
+   "raised": "ValueError"
+  }
+ ]
+}

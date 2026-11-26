@@ -1,0 +1,1309 @@
+{
+ "already": {
+  "clamped": [],
+  "envelope_margin_mm": null,
+  "envelope_rejections": 0,
+  "hit": true,
+  "iterations": 1,
+  "keepout_rejections": 0,
+  "max_band_frac": 0.0,
+  "node_rejections": 0,
+  "ok": true,
+  "properties": null,
+  "property_rejections": 0,
+  "residual": [
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "shift_vec": [
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "shifts": {},
+  "verdict": "",
+  "worst_row": "camber_deg @ -10.0 mm",
+  "yield_frac": null,
+  "yield_warnings": []
+ },
+ "clamped": {
+  "clamped": [
+   "upper_front_inner.x"
+  ],
+  "envelope_margin_mm": null,
+  "envelope_rejections": 0,
+  "hit": false,
+  "iterations": 2,
+  "keepout_rejections": 0,
+  "max_band_frac": 133.44,
+  "node_rejections": 0,
+  "ok": true,
+  "properties": null,
+  "property_rejections": 0,
+  "residual": [
+   -133.44,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "shift_vec": [
+   6.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "shifts": {
+   "upper_front_inner": [
+    6.0,
+    0.0,
+    0.0
+   ]
+  },
+  "verdict": "",
+  "worst_row": "camber_deg @ -10.0 mm",
+  "yield_frac": null,
+  "yield_warnings": []
+ },
+ "cliff_jac": {
+  "clamped": [],
+  "envelope_margin_mm": null,
+  "envelope_rejections": 0,
+  "hit": true,
+  "iterations": 2,
+  "keepout_rejections": 0,
+  "max_band_frac": 0.9986384828357502,
+  "node_rejections": 0,
+  "ok": true,
+  "properties": null,
+  "property_rejections": 0,
+  "residual": [
+   -0.998638,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "shift_vec": [
+   3.958417,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "shifts": {
+   "upper_front_inner": [
+    3.958417,
+    0.0,
+    0.0
+   ]
+  },
+  "verdict": "",
+  "worst_row": "camber_deg @ -10.0 mm",
+  "yield_frac": null,
+  "yield_warnings": []
+ },
+ "cliff_mid": {
+  "clamped": [],
+  "envelope_margin_mm": null,
+  "envelope_rejections": 0,
+  "hit": false,
+  "iterations": 2,
+  "keepout_rejections": 0,
+  "max_band_frac": 2.820969555212394,
+  "node_rejections": 0,
+  "ok": true,
+  "properties": null,
+  "property_rejections": 0,
+  "residual": [
+   -2.82097,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "shift_vec": [
+   1.999,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "shifts": {
+   "upper_front_inner": [
+    1.999,
+    0.0,
+    0.0
+   ]
+  },
+  "verdict": "",
+  "worst_row": "camber_deg @ -10.0 mm",
+  "yield_frac": null,
+  "yield_warnings": []
+ },
+ "edge_hit": {
+  "clamped": [],
+  "envelope_margin_mm": null,
+  "envelope_rejections": 0,
+  "hit": true,
+  "iterations": 1,
+  "keepout_rejections": 0,
+  "max_band_frac": 0.9142857142857143,
+  "node_rejections": 0,
+  "ok": true,
+  "properties": null,
+  "property_rejections": 0,
+  "residual": [
+   -0.914286,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "shift_vec": [
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "shifts": {},
+  "verdict": "",
+  "worst_row": "camber_deg @ -10.0 mm",
+  "yield_frac": null,
+  "yield_warnings": []
+ },
+ "env": {
+  "clamped": [],
+  "envelope_margin_mm": -0.259925594,
+  "envelope_rejections": 23,
+  "hit": false,
+  "iterations": 30,
+  "keepout_rejections": 0,
+  "max_band_frac": 5.962092887701601,
+  "node_rejections": 0,
+  "ok": true,
+  "properties": null,
+  "property_rejections": 0,
+  "residual": [
+   -4.232573,
+   3.178863,
+   -5.962093,
+   3.745015
+  ],
+  "shift_vec": [
+   0.744061,
+   -0.5,
+   1.018954,
+   0.0,
+   0.0,
+   -0.627493
+  ],
+  "shifts": {
+   "upper_front_inner": [
+    0.744061,
+    -0.5,
+    1.018954
+   ],
+   "upper_rear_inner": [
+    0.0,
+    0.0,
+    -0.627493
+   ]
+  },
+  "verdict": "",
+  "worst_row": "rc_height_mm @ +10.0 mm",
+  "yield_frac": null,
+  "yield_warnings": []
+ },
+ "env.start": {
+  "clamped": [],
+  "envelope_margin_mm": null,
+  "envelope_rejections": 1,
+  "hit": false,
+  "iterations": 0,
+  "keepout_rejections": 0,
+  "max_band_frac": 8.0,
+  "node_rejections": 0,
+  "ok": false,
+  "properties": null,
+  "property_rejections": 0,
+  "residual": [
+   -5.64,
+   0.0,
+   -8.0,
+   5.0
+  ],
+  "shift_vec": [
+   0.0,
+   -2.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "shifts": {},
+  "verdict": "",
+  "worst_row": "(start inside the wheel envelope: p, -0.5 mm at env)",
+  "yield_frac": null,
+  "yield_warnings": []
+ },
+ "inband": [
+  {
+   "clamped": [],
+   "envelope_margin_mm": null,
+   "envelope_rejections": 0,
+   "hit": true,
+   "iterations": 2,
+   "keepout_rejections": 0,
+   "max_band_frac": 1.0,
+   "node_rejections": 0,
+   "ok": true,
+   "properties": null,
+   "property_rejections": 0,
+   "residual": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "shift_vec": [
+    -1.188119,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "shifts": {
+    "upper_front_inner": [
+     -1.188119,
+     0.0,
+     0.0
+    ]
+   },
+   "verdict": "",
+   "worst_row": "camber_deg @ -10.0 mm",
+   "yield_frac": null,
+   "yield_warnings": []
+  },
+  {
+   "clamped": [],
+   "envelope_margin_mm": null,
+   "envelope_rejections": 0,
+   "hit": false,
+   "iterations": 1,
+   "keepout_rejections": 0,
+   "max_band_frac": 1.2,
+   "node_rejections": 0,
+   "ok": true,
+   "properties": null,
+   "property_rejections": 0,
+   "residual": [
+    1.2,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "shift_vec": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "shifts": {},
+   "verdict": "",
+   "worst_row": "camber_deg @ -10.0 mm",
+   "yield_frac": null,
+   "yield_warnings": []
+  }
+ ],
+ "jac": [
+  [
+   [
+    1.94125,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    2.16,
+    -0.08,
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    2.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    2.0
+   ]
+  ],
+  [
+   [
+    1.96,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    2.16,
+    -0.08,
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    2.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    2.0
+   ]
+  ]
+ ],
+ "jac.cliff": null,
+ "jac.cliff_minus": null,
+ "jac.step": [
+  0.7,
+  0.25
+ ],
+ "keepout": {
+  "clamped": [],
+  "envelope_margin_mm": null,
+  "envelope_rejections": 0,
+  "hit": true,
+  "iterations": 2,
+  "keepout_rejections": 0,
+  "max_band_frac": 0.9986384828357502,
+  "node_rejections": 0,
+  "ok": true,
+  "properties": null,
+  "property_rejections": 0,
+  "residual": [
+   -0.998638,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "shift_vec": [
+   3.958417,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "shifts": {
+   "upper_front_inner": [
+    3.958417,
+    0.0,
+    0.0
+   ]
+  },
+  "verdict": "",
+  "worst_row": "camber_deg @ -10.0 mm",
+  "yield_frac": null,
+  "yield_warnings": []
+ },
+ "keepout.flush": {
+  "clamped": [],
+  "envelope_margin_mm": null,
+  "envelope_rejections": 0,
+  "hit": false,
+  "iterations": 1,
+  "keepout_rejections": 8,
+  "max_band_frac": 5.0,
+  "node_rejections": 0,
+  "ok": true,
+  "properties": null,
+  "property_rejections": 0,
+  "residual": [
+   -5.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "shift_vec": [
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "shifts": {},
+  "verdict": "",
+  "worst_row": "camber_deg @ -10.0 mm",
+  "yield_frac": null,
+  "yield_warnings": []
+ },
+ "keepout.short": {
+  "clamped": [],
+  "envelope_margin_mm": null,
+  "envelope_rejections": 0,
+  "hit": false,
+  "iterations": 4,
+  "keepout_rejections": 4,
+  "max_band_frac": 1.5816268845841963,
+  "node_rejections": 0,
+  "ok": true,
+  "properties": null,
+  "property_rejections": 0,
+  "residual": [
+   -1.581627,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "shift_vec": [
+   3.325094,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "shifts": {
+   "upper_front_inner": [
+    3.325094,
+    0.0,
+    0.0
+   ]
+  },
+  "verdict": "",
+  "worst_row": "camber_deg @ -10.0 mm",
+  "yield_frac": null,
+  "yield_warnings": []
+ },
+ "keepout.start": {
+  "clamped": [],
+  "envelope_margin_mm": null,
+  "envelope_rejections": 0,
+  "hit": false,
+  "iterations": 0,
+  "keepout_rejections": 1,
+  "max_band_frac": 8.0,
+  "node_rejections": 0,
+  "ok": false,
+  "properties": null,
+  "property_rejections": 0,
+  "residual": [
+   -0.9775,
+   4.32,
+   -8.0,
+   5.0
+  ],
+  "shift_vec": [
+   2.5,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "shifts": {},
+  "verdict": "",
+  "worst_row": "(start violates a keep-out volume)",
+  "yield_frac": null,
+  "yield_warnings": []
+ },
+ "linalg": {
+  "clamped": [],
+  "envelope_margin_mm": null,
+  "envelope_rejections": 0,
+  "hit": true,
+  "iterations": 3,
+  "keepout_rejections": 0,
+  "max_band_frac": 0.9825814313393266,
+  "node_rejections": 0,
+  "ok": true,
+  "properties": null,
+  "property_rejections": 0,
+  "residual": [
+   -0.689268,
+   0.568821,
+   -0.982581,
+   0.625
+  ],
+  "shift_vec": [
+   2.649659,
+   -1.718357,
+   3.508709,
+   0.0,
+   0.0,
+   -2.1875
+  ],
+  "shifts": {
+   "upper_front_inner": [
+    2.649659,
+    -1.718357,
+    3.508709
+   ],
+   "upper_rear_inner": [
+    0.0,
+    0.0,
+    -2.1875
+   ]
+  },
+  "verdict": "",
+  "worst_row": "rc_height_mm @ +10.0 mm",
+  "yield_frac": null,
+  "yield_warnings": []
+ },
+ "linalg.always": {
+  "clamped": [],
+  "envelope_margin_mm": null,
+  "envelope_rejections": 0,
+  "hit": false,
+  "iterations": 1,
+  "keepout_rejections": 0,
+  "max_band_frac": 8.0,
+  "node_rejections": 0,
+  "ok": true,
+  "properties": null,
+  "property_rejections": 0,
+  "residual": [
+   -5.64,
+   4.32,
+   -8.0,
+   5.0
+  ],
+  "shift_vec": [
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "shifts": {},
+  "verdict": "",
+  "worst_row": "rc_height_mm @ +10.0 mm",
+  "yield_frac": null,
+  "yield_warnings": []
+ },
+ "node": {
+  "clamped": [],
+  "envelope_margin_mm": null,
+  "envelope_rejections": 0,
+  "hit": false,
+  "iterations": 30,
+  "keepout_rejections": 0,
+  "max_band_frac": 6.000000000003524,
+  "node_rejections": 25,
+  "ok": true,
+  "properties": null,
+  "property_rejections": 0,
+  "residual": [
+   -4.259056,
+   3.199909,
+   -6.0,
+   3.76847
+  ],
+  "shift_vec": [
+   0.729782,
+   -0.490609,
+   1.0,
+   0.0,
+   0.0,
+   -0.615765
+  ],
+  "shifts": {
+   "upper_front_inner": [
+    0.729782,
+    -0.490609,
+    1.0
+   ],
+   "upper_rear_inner": [
+    0.0,
+    0.0,
+    -0.615765
+   ]
+  },
+  "verdict": "",
+  "worst_row": "rc_height_mm @ +10.0 mm",
+  "yield_frac": null,
+  "yield_warnings": []
+ },
+ "node.start": {
+  "clamped": [],
+  "envelope_margin_mm": null,
+  "envelope_rejections": 0,
+  "hit": false,
+  "iterations": 0,
+  "keepout_rejections": 0,
+  "max_band_frac": 5.64,
+  "node_rejections": 1,
+  "ok": false,
+  "properties": null,
+  "property_rejections": 0,
+  "residual": [
+   -5.64,
+   4.08,
+   -2.0,
+   5.0
+  ],
+  "shift_vec": [
+   0.0,
+   0.0,
+   3.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "shifts": {},
+  "verdict": "",
+  "worst_row": "(start off a frame node: p, node)",
+  "yield_frac": null,
+  "yield_warnings": []
+ },
+ "noprop_eval": {
+  "clamped": [],
+  "envelope_margin_mm": null,
+  "envelope_rejections": 0,
+  "hit": true,
+  "iterations": 2,
+  "keepout_rejections": 0,
+  "max_band_frac": 0.3303717178717711,
+  "node_rejections": 0,
+  "ok": true,
+  "properties": null,
+  "property_rejections": 0,
+  "residual": [
+   -0.245357,
+   0.330372,
+   -0.077764,
+   0.049505
+  ],
+  "shift_vec": [
+   2.876579,
+   -1.834942,
+   3.961118,
+   0.0,
+   0.0,
+   -2.475248
+  ],
+  "shifts": {
+   "upper_front_inner": [
+    2.876579,
+    -1.834942,
+    3.961118
+   ],
+   "upper_rear_inner": [
+    0.0,
+    0.0,
+    -2.475248
+   ]
+  },
+  "verdict": "",
+  "worst_row": "toe_deg @ +0.0 mm",
+  "yield_frac": null,
+  "yield_warnings": []
+ },
+ "overshoot": [
+  {
+   "clamped": [],
+   "envelope_margin_mm": null,
+   "envelope_rejections": 0,
+   "hit": false,
+   "iterations": 1,
+   "keepout_rejections": 0,
+   "max_band_frac": 1.5,
+   "node_rejections": 0,
+   "ok": true,
+   "properties": null,
+   "property_rejections": 0,
+   "residual": [
+    1.5,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "shift_vec": [
+    1.5,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "shifts": {
+    "upper_front_inner": [
+     1.5,
+     0.0,
+     0.0
+    ]
+   },
+   "verdict": "",
+   "worst_row": "camber_deg @ -10.0 mm",
+   "yield_frac": null,
+   "yield_warnings": []
+  },
+  {
+   "clamped": [],
+   "envelope_margin_mm": null,
+   "envelope_rejections": 0,
+   "hit": true,
+   "iterations": 2,
+   "keepout_rejections": 0,
+   "max_band_frac": 1.0,
+   "node_rejections": 0,
+   "ok": true,
+   "properties": null,
+   "property_rejections": 0,
+   "residual": [
+    1.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "shift_vec": [
+    2.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "shifts": {
+    "upper_front_inner": [
+     2.0,
+     0.0,
+     0.0
+    ]
+   },
+   "verdict": "",
+   "worst_row": "camber_deg @ -10.0 mm",
+   "yield_frac": null,
+   "yield_warnings": []
+  }
+ ],
+ "plain": {
+  "clamped": [],
+  "envelope_margin_mm": null,
+  "envelope_rejections": 0,
+  "hit": true,
+  "iterations": 2,
+  "keepout_rejections": 0,
+  "max_band_frac": 0.3303717178717711,
+  "node_rejections": 0,
+  "ok": true,
+  "properties": null,
+  "property_rejections": 0,
+  "residual": [
+   -0.245357,
+   0.330372,
+   -0.077764,
+   0.049505
+  ],
+  "shift_vec": [
+   2.876579,
+   -1.834942,
+   3.961118,
+   0.0,
+   0.0,
+   -2.475248
+  ],
+  "shifts": {
+   "upper_front_inner": [
+    2.876579,
+    -1.834942,
+    3.961118
+   ],
+   "upper_rear_inner": [
+    0.0,
+    0.0,
+    -2.475248
+   ]
+  },
+  "verdict": "",
+  "worst_row": "toe_deg @ +0.0 mm",
+  "yield_frac": null,
+  "yield_warnings": []
+ },
+ "plain.args": {
+  "clamped": [],
+  "envelope_margin_mm": null,
+  "envelope_rejections": 0,
+  "hit": false,
+  "iterations": 2,
+  "keepout_rejections": 0,
+  "max_band_frac": 11.888111888111894,
+  "node_rejections": 0,
+  "ok": true,
+  "properties": null,
+  "property_rejections": 0,
+  "residual": [
+   -2.632714,
+   4.387305,
+   -4.121061,
+   11.888112
+  ],
+  "shift_vec": [
+   1.614237,
+   0.106829,
+   1.93947,
+   0.0,
+   0.0,
+   3.444056
+  ],
+  "shifts": {
+   "upper_front_inner": [
+    1.614237,
+    0.106829,
+    1.93947
+   ],
+   "upper_rear_inner": [
+    0.0,
+    0.0,
+    3.444056
+   ]
+  },
+  "verdict": "",
+  "worst_row": "scrub_mm @ +0.0 mm",
+  "yield_frac": null,
+  "yield_warnings": []
+ },
+ "prop": {
+  "clamped": [],
+  "envelope_margin_mm": null,
+  "envelope_rejections": 0,
+  "hit": false,
+  "iterations": 30,
+  "keepout_rejections": 0,
+  "max_band_frac": 4.7619417624580365,
+  "node_rejections": 0,
+  "ok": true,
+  "properties": {
+   "caster_deg": -98.807624,
+   "kpi_deg": 7.5
+  },
+  "property_rejections": 24,
+  "residual": [
+   -3.406626,
+   2.529136,
+   -4.761942,
+   3.0
+  ],
+  "shift_vec": [
+   1.192376,
+   -0.792913,
+   1.619029,
+   0.0,
+   0.0,
+   -1.0
+  ],
+  "shifts": {
+   "upper_front_inner": [
+    1.192376,
+    -0.792913,
+    1.619029
+   ],
+   "upper_rear_inner": [
+    0.0,
+    0.0,
+    -1.0
+   ]
+  },
+  "verdict": "",
+  "worst_row": "rc_height_mm @ +10.0 mm",
+  "yield_frac": null,
+  "yield_warnings": []
+ },
+ "prop.start": {
+  "clamped": [],
+  "envelope_margin_mm": null,
+  "envelope_rejections": 0,
+  "hit": false,
+  "iterations": 0,
+  "keepout_rejections": 0,
+  "max_band_frac": 8.0,
+  "node_rejections": 0,
+  "ok": false,
+  "properties": null,
+  "property_rejections": 1,
+  "residual": [
+   -5.64,
+   4.32,
+   -8.0,
+   1.0
+  ],
+  "shift_vec": [
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   -2.0
+  ],
+  "shifts": {},
+  "verdict": "",
+  "worst_row": "(start violates caster wall)",
+  "yield_frac": null,
+  "yield_warnings": []
+ },
+ "real": {
+  "clamped": [
+   "upper_front_inner.x",
+   "upper_front_inner.y",
+   "upper_front_inner.z"
+  ],
+  "envelope_margin_mm": null,
+  "envelope_rejections": 0,
+  "hit": false,
+  "iterations": 2,
+  "keepout_rejections": 0,
+  "max_band_frac": 21.344202159841146,
+  "node_rejections": 0,
+  "ok": true,
+  "properties": null,
+  "property_rejections": 0,
+  "residual": [
+   4.985547,
+   -21.344202
+  ],
+  "shift_vec": [
+   4.0,
+   -4.0,
+   4.0
+  ],
+  "shifts": {
+   "upper_front_inner": [
+    4.0,
+    -4.0,
+    4.0
+   ]
+  },
+  "verdict": "",
+  "worst_row": "camber (°) @ +10.0 mm",
+  "yield_frac": null,
+  "yield_warnings": []
+ },
+ "start.worst": [
+  {
+   "clamped": [],
+   "envelope_margin_mm": null,
+   "envelope_rejections": 0,
+   "hit": false,
+   "iterations": 0,
+   "keepout_rejections": 0,
+   "max_band_frac": 8.0,
+   "node_rejections": 1,
+   "ok": false,
+   "properties": null,
+   "property_rejections": 0,
+   "residual": [
+    -5.64,
+    4.32,
+    -8.0,
+    5.0
+   ],
+   "shift_vec": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "shifts": {},
+   "verdict": "",
+   "worst_row": "(start off a frame node: p, second)",
+   "yield_frac": null,
+   "yield_warnings": []
+  },
+  {
+   "clamped": [],
+   "envelope_margin_mm": null,
+   "envelope_rejections": 1,
+   "hit": false,
+   "iterations": 0,
+   "keepout_rejections": 0,
+   "max_band_frac": 8.0,
+   "node_rejections": 0,
+   "ok": false,
+   "properties": null,
+   "property_rejections": 0,
+   "residual": [
+    -5.64,
+    4.32,
+    -8.0,
+    5.0
+   ],
+   "shift_vec": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "shifts": {},
+   "verdict": "",
+   "worst_row": "(start inside the wheel envelope: p, -3.0 mm at second)",
+   "yield_frac": null,
+   "yield_warnings": []
+  },
+  {
+   "clamped": [],
+   "envelope_margin_mm": null,
+   "envelope_rejections": 0,
+   "hit": false,
+   "iterations": 0,
+   "keepout_rejections": 0,
+   "max_band_frac": 8.0,
+   "node_rejections": 0,
+   "ok": false,
+   "properties": null,
+   "property_rejections": 1,
+   "residual": [
+    -5.64,
+    4.32,
+    -8.0,
+    5.0
+   ],
+   "shift_vec": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "shifts": {},
+   "verdict": "",
+   "worst_row": "(start violates first)",
+   "yield_frac": null,
+   "yield_warnings": []
+  }
+ ],
+ "start_cliff": {
+  "clamped": [],
+  "envelope_margin_mm": null,
+  "envelope_rejections": 0,
+  "hit": false,
+  "iterations": 0,
+  "keepout_rejections": 0,
+  "max_band_frac": "inf",
+  "node_rejections": 0,
+  "ok": false,
+  "properties": null,
+  "property_rejections": 0,
+  "residual": [
+   "NaN",
+   "NaN",
+   "NaN",
+   "NaN"
+  ],
+  "shift_vec": [
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "shifts": {},
+  "verdict": "",
+  "worst_row": "(nominal/start does not solve)",
+  "yield_frac": null,
+  "yield_warnings": []
+ },
+ "uphill": {
+  "clamped": [],
+  "envelope_margin_mm": null,
+  "envelope_rejections": 0,
+  "hit": false,
+  "iterations": 1,
+  "keepout_rejections": 0,
+  "max_band_frac": 2.82,
+  "node_rejections": 0,
+  "ok": true,
+  "properties": null,
+  "property_rejections": 0,
+  "residual": [
+   -2.82,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "shift_vec": [
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "shifts": {},
+  "verdict": "",
+  "worst_row": "camber_deg @ -10.0 mm",
+  "yield_frac": null,
+  "yield_warnings": []
+ },
+ "zero_iter": [
+  {
+   "clamped": [],
+   "envelope_margin_mm": null,
+   "envelope_rejections": 0,
+   "hit": true,
+   "iterations": 1,
+   "keepout_rejections": 0,
+   "max_band_frac": 1.0,
+   "node_rejections": 0,
+   "ok": true,
+   "properties": null,
+   "property_rejections": 0,
+   "residual": [
+    0.0,
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "shift_vec": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "shifts": {},
+   "verdict": "",
+   "worst_row": "rc_height_mm @ +10.0 mm",
+   "yield_frac": null,
+   "yield_warnings": []
+  },
+  {
+   "clamped": [],
+   "envelope_margin_mm": null,
+   "envelope_rejections": 0,
+   "hit": false,
+   "iterations": 0,
+   "keepout_rejections": 0,
+   "max_band_frac": 1.5,
+   "node_rejections": 0,
+   "ok": true,
+   "properties": null,
+   "property_rejections": 0,
+   "residual": [
+    0.0,
+    0.0,
+    -1.5,
+    0.0
+   ],
+   "shift_vec": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "shifts": {},
+   "verdict": "",
+   "worst_row": "rc_height_mm @ +10.0 mm",
+   "yield_frac": null,
+   "yield_warnings": []
+  },
+  {
+   "clamped": [],
+   "envelope_margin_mm": null,
+   "envelope_rejections": 0,
+   "hit": true,
+   "iterations": 0,
+   "keepout_rejections": 0,
+   "max_band_frac": 1.0,
+   "node_rejections": 0,
+   "ok": true,
+   "properties": null,
+   "property_rejections": 0,
+   "residual": [
+    0.0,
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "shift_vec": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "shifts": {},
+   "verdict": "",
+   "worst_row": "rc_height_mm @ +10.0 mm",
+   "yield_frac": null,
+   "yield_warnings": []
+  },
+  {
+   "clamped": [],
+   "envelope_margin_mm": null,
+   "envelope_rejections": 0,
+   "hit": true,
+   "iterations": 0,
+   "keepout_rejections": 0,
+   "max_band_frac": 1.0000036355040502e-09,
+   "node_rejections": 0,
+   "ok": true,
+   "properties": null,
+   "property_rejections": 0,
+   "residual": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "shift_vec": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "shifts": {},
+   "verdict": "",
+   "worst_row": "camber_deg @ -10.0 mm",
+   "yield_frac": null,
+   "yield_warnings": []
+  }
+ ]
+}

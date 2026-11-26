@@ -1,0 +1,5609 @@
+{
+ "flow.co.knife": [
+  {
+   "best_fit": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.2,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.2,
+     -0.1
+    ],
+    "shift_vec": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {},
+    "verdict": "KNIFE_EDGE",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": 0.79,
+    "yield_warnings": []
+   },
+   "candidates": [
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.2,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.2,
+      -0.1
+     ],
+     "shift_vec": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {},
+     "verdict": "KNIFE_EDGE",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": 0.79,
+     "yield_warnings": []
+    },
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.3,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.3,
+      -0.15
+     ],
+     "shift_vec": [
+      1.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       1.0,
+       0.0,
+       0.0
+      ]
+     },
+     "verdict": "KNIFE_EDGE",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": 0.0,
+     "yield_warnings": [
+      "w"
+     ]
+    }
+   ],
+   "n_starts": 2,
+   "ok": false,
+   "property_bounds": "Wall",
+   "reason": "Every geometry that hits the drawn curves is KNIFE_EDGE under the declared field (best yield 79.0%) — the bands, the legal volume and the shop's error field are JOINTLY unsatisfiable. The levers, in order of cheapness: jig the dominant tab (shrink the field), widen the governing band, or free another coordinate. The best knife-edge is reported below, clearly labelled — building it is a gamble this engine prices, not one it recommends.",
+   "resilience_premium": 0.0,
+   "seed": 0,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.95,
+    "tempered_yield": 0.8,
+    "verify_agreement": 0.98
+   },
+   "verify_agreement": null,
+   "verify_yield": null,
+   "warnings": [],
+   "wheel_envelope": "Wall",
+   "winner": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.2,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.2,
+     -0.1
+    ],
+    "shift_vec": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {},
+    "verdict": "KNIFE_EDGE",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": 0.79,
+    "yield_warnings": []
+   },
+   "winner_hp": [
+    -100.0,
+    240.0,
+    299.2
+   ],
+   "winner_is_best": true
+  },
+  [
+   [
+    [
+     0.0,
+     0.0,
+     0.0
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ],
+   [
+    [
+     1.095693,
+     -1.841706,
+     -3.672212
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ],
+   [
+    "yield",
+    4000,
+    0,
+    0.25,
+    [
+     -100.0,
+     240.0,
+     299.2
+    ],
+    true,
+    true,
+    [
+     0.2,
+     -0.1
+    ]
+   ],
+   [
+    "yield",
+    4000,
+    0,
+    0.25,
+    [
+     -99.0,
+     240.0,
+     299.2
+    ],
+    true,
+    true,
+    [
+     0.3,
+     -0.15
+    ]
+   ]
+  ]
+ ],
+ "flow.co.none_then_hit": [
+  {
+   "best_fit": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.2,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.2,
+     -0.1
+    ],
+    "shift_vec": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {},
+    "verdict": "KNIFE_EDGE",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": 0.0,
+    "yield_warnings": [
+     "w"
+    ]
+   },
+   "candidates": [
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.5,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.5,
+      -0.25
+     ],
+     "shift_vec": [
+      1.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       1.0,
+       0.0,
+       0.0
+      ]
+     },
+     "verdict": "RESILIENT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": 0.97,
+     "yield_warnings": []
+    },
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.2,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.2,
+      -0.1
+     ],
+     "shift_vec": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {},
+     "verdict": "KNIFE_EDGE",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": 0.0,
+     "yield_warnings": [
+      "w"
+     ]
+    }
+   ],
+   "n_starts": 2,
+   "ok": true,
+   "property_bounds": "Wall",
+   "reason": "Manufacturing-resilient geometry found. The pure curve-fit optimum was REJECTED: it fits 0.20× band vs the winner's 0.50×, but its build yield is 0.0% against the winner's 97.0% — a +97.0% yield premium bought by moving off the knife edge. The engine designs the car that gets built.",
+   "resilience_premium": 0.97,
+   "seed": 0,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.95,
+    "tempered_yield": 0.8,
+    "verify_agreement": 0.98
+   },
+   "verify_agreement": null,
+   "verify_yield": null,
+   "warnings": [],
+   "wheel_envelope": "Wall",
+   "winner": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.5,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.5,
+     -0.25
+    ],
+    "shift_vec": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {
+     "upper_front_inner": [
+      1.0,
+      0.0,
+      0.0
+     ]
+    },
+    "verdict": "RESILIENT",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": 0.97,
+    "yield_warnings": []
+   },
+   "winner_hp": [
+    -99.0,
+    240.0,
+    299.2
+   ],
+   "winner_is_best": false
+  },
+  [
+   [
+    [
+     0.0,
+     0.0,
+     0.0
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ],
+   [
+    [
+     1.095693,
+     -1.841706,
+     -3.672212
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ],
+   [
+    "yield",
+    4000,
+    0,
+    0.25,
+    [
+     -100.0,
+     240.0,
+     299.2
+    ],
+    true,
+    true,
+    [
+     0.2,
+     -0.1
+    ]
+   ],
+   [
+    "yield",
+    4000,
+    0,
+    0.25,
+    [
+     -99.0,
+     240.0,
+     299.2
+    ],
+    true,
+    true,
+    [
+     0.5,
+     -0.25
+    ]
+   ]
+  ]
+ ],
+ "flow.co.none_y": [
+  {
+   "best_fit": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.2,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.2,
+     -0.1
+    ],
+    "shift_vec": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {},
+    "verdict": "KNIFE_EDGE",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": 0.0,
+    "yield_warnings": [
+     "w"
+    ]
+   },
+   "candidates": [
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.2,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.2,
+      -0.1
+     ],
+     "shift_vec": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {},
+     "verdict": "KNIFE_EDGE",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": 0.0,
+     "yield_warnings": [
+      "w"
+     ]
+    }
+   ],
+   "n_starts": 1,
+   "ok": false,
+   "property_bounds": "Wall",
+   "reason": "Every geometry that hits the drawn curves is KNIFE_EDGE under the declared field (best yield 0.0%) — the bands, the legal volume and the shop's error field are JOINTLY unsatisfiable. The levers, in order of cheapness: jig the dominant tab (shrink the field), widen the governing band, or free another coordinate. The best knife-edge is reported below, clearly labelled — building it is a gamble this engine prices, not one it recommends.",
+   "resilience_premium": 0.0,
+   "seed": 0,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.95,
+    "tempered_yield": 0.8,
+    "verify_agreement": 0.98
+   },
+   "verify_agreement": null,
+   "verify_yield": null,
+   "warnings": [],
+   "wheel_envelope": "Wall",
+   "winner": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.2,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.2,
+     -0.1
+    ],
+    "shift_vec": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {},
+    "verdict": "KNIFE_EDGE",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": 0.0,
+    "yield_warnings": [
+     "w"
+    ]
+   },
+   "winner_hp": [
+    -100.0,
+    240.0,
+    299.2
+   ],
+   "winner_is_best": true
+  },
+  [
+   [
+    [
+     0.0,
+     0.0,
+     0.0
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ],
+   [
+    "yield",
+    4000,
+    0,
+    0.25,
+    [
+     -100.0,
+     240.0,
+     299.2
+    ],
+    true,
+    true,
+    [
+     0.2,
+     -0.1
+    ]
+   ]
+  ]
+ ],
+ "flow.co.nonhit_first": [
+  {
+   "best_fit": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.2,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.2,
+     -0.1
+    ],
+    "shift_vec": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {
+     "upper_front_inner": [
+      1.0,
+      0.0,
+      0.0
+     ]
+    },
+    "verdict": "RESILIENT",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": 0.97,
+    "yield_warnings": []
+   },
+   "candidates": [
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.4,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.4,
+      -0.2
+     ],
+     "shift_vec": [
+      2.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       2.0,
+       0.0,
+       0.0
+      ]
+     },
+     "verdict": "RESILIENT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": 0.99,
+     "yield_warnings": []
+    },
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.2,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.2,
+      -0.1
+     ],
+     "shift_vec": [
+      1.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       1.0,
+       0.0,
+       0.0
+      ]
+     },
+     "verdict": "RESILIENT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": 0.97,
+     "yield_warnings": []
+    },
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": false,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 2.0,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      2.0,
+      -1.0
+     ],
+     "shift_vec": [
+      3.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       3.0,
+       0.0,
+       0.0
+      ]
+     },
+     "verdict": "NO_FIT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    },
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": false,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 3.0,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      3.0,
+      -1.5
+     ],
+     "shift_vec": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {},
+     "verdict": "NO_FIT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    }
+   ],
+   "n_starts": 4,
+   "ok": true,
+   "property_bounds": "Wall",
+   "reason": "Manufacturing-resilient geometry found. The pure curve-fit optimum was REJECTED: it fits 0.20× band vs the winner's 0.40×, but its build yield is 97.0% against the winner's 99.0% — a +2.0% yield premium bought by moving off the knife edge. The engine designs the car that gets built.",
+   "resilience_premium": 0.020000000000000018,
+   "seed": 0,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.95,
+    "tempered_yield": 0.8,
+    "verify_agreement": 0.98
+   },
+   "verify_agreement": null,
+   "verify_yield": null,
+   "warnings": [],
+   "wheel_envelope": "Wall",
+   "winner": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.4,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.4,
+     -0.2
+    ],
+    "shift_vec": [
+     2.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {
+     "upper_front_inner": [
+      2.0,
+      0.0,
+      0.0
+     ]
+    },
+    "verdict": "RESILIENT",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": 0.99,
+    "yield_warnings": []
+   },
+   "winner_hp": [
+    -98.0,
+    240.0,
+    299.2
+   ],
+   "winner_is_best": false
+  },
+  [
+   [
+    [
+     0.0,
+     0.0,
+     0.0
+    ],
+    30,
+    0.6,
+    true,
+    true,
+    true
+   ],
+   [
+    [
+     1.095693,
+     -1.841706,
+     -3.672212
+    ],
+    30,
+    0.6,
+    true,
+    true,
+    true
+   ],
+   [
+    [
+     -3.867779,
+     2.506162,
+     3.302045
+    ],
+    30,
+    0.6,
+    true,
+    true,
+    true
+   ],
+   [
+    [
+     0.853086,
+     1.835972,
+     0.349
+    ],
+    30,
+    0.6,
+    true,
+    true,
+    true
+   ],
+   [
+    "yield",
+    4000,
+    0,
+    0.6,
+    [
+     -99.0,
+     240.0,
+     299.2
+    ],
+    true,
+    true,
+    [
+     0.2,
+     -0.1
+    ]
+   ],
+   [
+    "yield",
+    4000,
+    0,
+    0.6,
+    [
+     -98.0,
+     240.0,
+     299.2
+    ],
+    true,
+    true,
+    [
+     0.4,
+     -0.2
+    ]
+   ]
+  ]
+ ],
+ "flow.co.resilient_premium": [
+  {
+   "best_fit": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.2,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.2,
+     -0.1
+    ],
+    "shift_vec": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {},
+    "verdict": "KNIFE_EDGE",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": 0.5,
+    "yield_warnings": []
+   },
+   "candidates": [
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.6,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.6,
+      -0.3
+     ],
+     "shift_vec": [
+      1.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       1.0,
+       0.0,
+       0.0
+      ]
+     },
+     "verdict": "RESILIENT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": 0.97,
+     "yield_warnings": []
+    },
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.2,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.2,
+      -0.1
+     ],
+     "shift_vec": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {},
+     "verdict": "KNIFE_EDGE",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": 0.5,
+     "yield_warnings": []
+    },
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": false,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 2,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      2.0,
+      -1.0
+     ],
+     "shift_vec": [
+      2.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       2.0,
+       0.0,
+       0.0
+      ]
+     },
+     "verdict": "NO_FIT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    }
+   ],
+   "n_starts": 3,
+   "ok": true,
+   "property_bounds": "Wall",
+   "reason": "Manufacturing-resilient geometry found. The pure curve-fit optimum was REJECTED: it fits 0.20× band vs the winner's 0.60×, but its build yield is 50.0% against the winner's 97.0% — a +47.0% yield premium bought by moving off the knife edge. The engine designs the car that gets built.",
+   "resilience_premium": 0.47,
+   "seed": 0,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.95,
+    "tempered_yield": 0.8,
+    "verify_agreement": 0.98
+   },
+   "verify_agreement": null,
+   "verify_yield": null,
+   "warnings": [],
+   "wheel_envelope": "Wall",
+   "winner": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.6,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.6,
+     -0.3
+    ],
+    "shift_vec": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {
+     "upper_front_inner": [
+      1.0,
+      0.0,
+      0.0
+     ]
+    },
+    "verdict": "RESILIENT",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": 0.97,
+    "yield_warnings": []
+   },
+   "winner_hp": [
+    -99.0,
+    240.0,
+    299.2
+   ],
+   "winner_is_best": false
+  },
+  [
+   [
+    [
+     0.0,
+     0.0,
+     0.0
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ],
+   [
+    [
+     1.095693,
+     -1.841706,
+     -3.672212
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ],
+   [
+    [
+     -3.867779,
+     2.506162,
+     3.302045
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ],
+   [
+    "yield",
+    4000,
+    0,
+    0.25,
+    [
+     -100.0,
+     240.0,
+     299.2
+    ],
+    true,
+    true,
+    [
+     0.2,
+     -0.1
+    ]
+   ],
+   [
+    "yield",
+    4000,
+    0,
+    0.25,
+    [
+     -99.0,
+     240.0,
+     299.2
+    ],
+    true,
+    true,
+    [
+     0.6,
+     -0.3
+    ]
+   ]
+  ]
+ ],
+ "flow.co.same": [
+  {
+   "best_fit": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.2,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.2,
+     -0.1
+    ],
+    "shift_vec": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {},
+    "verdict": "RESILIENT",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": 0.96,
+    "yield_warnings": []
+   },
+   "candidates": [
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.2,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.2,
+      -0.1
+     ],
+     "shift_vec": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {},
+     "verdict": "RESILIENT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": 0.96,
+     "yield_warnings": []
+    },
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.6,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.6,
+      -0.3
+     ],
+     "shift_vec": [
+      1.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       1.0,
+       0.0,
+       0.0
+      ]
+     },
+     "verdict": "TEMPERED",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": 0.85,
+     "yield_warnings": []
+    }
+   ],
+   "n_starts": 2,
+   "ok": true,
+   "property_bounds": "Wall",
+   "reason": "Manufacturing-resilient geometry found: the best fit is also the most buildable (96.0% yield).",
+   "resilience_premium": 0.0,
+   "seed": 5,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.95,
+    "tempered_yield": 0.8,
+    "verify_agreement": 0.98
+   },
+   "verify_agreement": null,
+   "verify_yield": null,
+   "warnings": [],
+   "wheel_envelope": "Wall",
+   "winner": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.2,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.2,
+     -0.1
+    ],
+    "shift_vec": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {},
+    "verdict": "RESILIENT",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": 0.96,
+    "yield_warnings": []
+   },
+   "winner_hp": [
+    -100.0,
+    240.0,
+    299.2
+   ],
+   "winner_is_best": true
+  },
+  [
+   [
+    [
+     0.0,
+     0.0,
+     0.0
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ],
+   [
+    [
+     2.440023,
+     2.463526,
+     0.122604
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ],
+   [
+    "yield",
+    99,
+    5,
+    0.25,
+    [
+     -100.0,
+     240.0,
+     299.2
+    ],
+    true,
+    true,
+    [
+     0.2,
+     -0.1
+    ]
+   ],
+   [
+    "yield",
+    99,
+    5,
+    0.25,
+    [
+     -99.0,
+     240.0,
+     299.2
+    ],
+    true,
+    true,
+    [
+     0.6,
+     -0.3
+    ]
+   ]
+  ]
+ ],
+ "flow.co.tempered": [
+  {
+   "best_fit": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.2,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.2,
+     -0.1
+    ],
+    "shift_vec": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {},
+    "verdict": "TEMPERED",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": 0.8,
+    "yield_warnings": []
+   },
+   "candidates": [
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.2,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.2,
+      -0.1
+     ],
+     "shift_vec": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {},
+     "verdict": "TEMPERED",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": 0.8,
+     "yield_warnings": []
+    }
+   ],
+   "n_starts": 1,
+   "ok": true,
+   "property_bounds": "Wall",
+   "reason": "Manufacturing-resilient geometry found: the best fit is also the most buildable (80.0% yield).",
+   "resilience_premium": 0.0,
+   "seed": 0,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.95,
+    "tempered_yield": 0.8,
+    "verify_agreement": 0.98
+   },
+   "verify_agreement": null,
+   "verify_yield": null,
+   "warnings": [],
+   "wheel_envelope": "Wall",
+   "winner": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.2,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.2,
+     -0.1
+    ],
+    "shift_vec": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {},
+    "verdict": "TEMPERED",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": 0.8,
+    "yield_warnings": []
+   },
+   "winner_hp": [
+    -100.0,
+    240.0,
+    299.2
+   ],
+   "winner_is_best": true
+  },
+  [
+   [
+    [
+     0.0,
+     0.0,
+     0.0
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ],
+   [
+    "yield",
+    4000,
+    0,
+    0.25,
+    [
+     -100.0,
+     240.0,
+     299.2
+    ],
+    true,
+    true,
+    [
+     0.2,
+     -0.1
+    ]
+   ]
+  ]
+ ],
+ "flow.co.th": [
+  {
+   "best_fit": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.2,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.2,
+     -0.1
+    ],
+    "shift_vec": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {},
+    "verdict": "RESILIENT",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": 0.5,
+    "yield_warnings": []
+   },
+   "candidates": [
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.2,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.2,
+      -0.1
+     ],
+     "shift_vec": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {},
+     "verdict": "RESILIENT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": 0.5,
+     "yield_warnings": []
+    }
+   ],
+   "n_starts": 1,
+   "ok": true,
+   "property_bounds": "Wall",
+   "reason": "Manufacturing-resilient geometry found: the best fit is also the most buildable (50.0% yield).",
+   "resilience_premium": 0.0,
+   "seed": 0,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.5,
+    "tempered_yield": 0.4,
+    "verify_agreement": 0.98
+   },
+   "verify_agreement": null,
+   "verify_yield": null,
+   "warnings": [],
+   "wheel_envelope": "Wall",
+   "winner": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.2,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.2,
+     -0.1
+    ],
+    "shift_vec": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {},
+    "verdict": "RESILIENT",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": 0.5,
+    "yield_warnings": []
+   },
+   "winner_hp": [
+    -100.0,
+    240.0,
+    299.2
+   ],
+   "winner_is_best": true
+  },
+  [
+   [
+    [
+     0.0,
+     0.0,
+     0.0
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ],
+   [
+    "yield",
+    4000,
+    0,
+    0.25,
+    [
+     -100.0,
+     240.0,
+     299.2
+    ],
+    true,
+    true,
+    [
+     0.2,
+     -0.1
+    ]
+   ]
+  ]
+ ],
+ "flow.co.th2": [
+  {
+   "best_fit": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.2,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.2,
+     -0.1
+    ],
+    "shift_vec": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {},
+    "verdict": "TEMPERED",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": 0.45,
+    "yield_warnings": []
+   },
+   "candidates": [
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.2,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.2,
+      -0.1
+     ],
+     "shift_vec": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {},
+     "verdict": "TEMPERED",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": 0.45,
+     "yield_warnings": []
+    }
+   ],
+   "n_starts": 1,
+   "ok": true,
+   "property_bounds": "Wall",
+   "reason": "Manufacturing-resilient geometry found: the best fit is also the most buildable (45.0% yield).",
+   "resilience_premium": 0.0,
+   "seed": 0,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.5,
+    "tempered_yield": 0.45,
+    "verify_agreement": 0.98
+   },
+   "verify_agreement": null,
+   "verify_yield": null,
+   "warnings": [],
+   "wheel_envelope": "Wall",
+   "winner": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.2,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.2,
+     -0.1
+    ],
+    "shift_vec": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {},
+    "verdict": "TEMPERED",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": 0.45,
+    "yield_warnings": []
+   },
+   "winner_hp": [
+    -100.0,
+    240.0,
+    299.2
+   ],
+   "winner_is_best": true
+  },
+  [
+   [
+    [
+     0.0,
+     0.0,
+     0.0
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ],
+   [
+    "yield",
+    4000,
+    0,
+    0.25,
+    [
+     -100.0,
+     240.0,
+     299.2
+    ],
+    true,
+    true,
+    [
+     0.2,
+     -0.1
+    ]
+   ]
+  ]
+ ],
+ "flow.co.tie": [
+  {
+   "best_fit": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.2,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.2,
+     -0.1
+    ],
+    "shift_vec": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {
+     "upper_front_inner": [
+      1.0,
+      0.0,
+      0.0
+     ]
+    },
+    "verdict": "TEMPERED",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": 0.9,
+    "yield_warnings": []
+   },
+   "candidates": [
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.2,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.2,
+      -0.1
+     ],
+     "shift_vec": [
+      1.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       1.0,
+       0.0,
+       0.0
+      ]
+     },
+     "verdict": "TEMPERED",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": 0.9,
+     "yield_warnings": []
+    },
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.6,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.6,
+      -0.3
+     ],
+     "shift_vec": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {},
+     "verdict": "TEMPERED",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": 0.9,
+     "yield_warnings": []
+    }
+   ],
+   "n_starts": 2,
+   "ok": true,
+   "property_bounds": "Wall",
+   "reason": "Manufacturing-resilient geometry found: the best fit is also the most buildable (90.0% yield).",
+   "resilience_premium": 0.0,
+   "seed": 0,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.95,
+    "tempered_yield": 0.8,
+    "verify_agreement": 0.98
+   },
+   "verify_agreement": null,
+   "verify_yield": null,
+   "warnings": [],
+   "wheel_envelope": "Wall",
+   "winner": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.2,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.2,
+     -0.1
+    ],
+    "shift_vec": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {
+     "upper_front_inner": [
+      1.0,
+      0.0,
+      0.0
+     ]
+    },
+    "verdict": "TEMPERED",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": 0.9,
+    "yield_warnings": []
+   },
+   "winner_hp": [
+    -99.0,
+    240.0,
+    299.2
+   ],
+   "winner_is_best": true
+  },
+  [
+   [
+    [
+     0.0,
+     0.0,
+     0.0
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ],
+   [
+    [
+     1.095693,
+     -1.841706,
+     -3.672212
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ],
+   [
+    "yield",
+    4000,
+    0,
+    0.25,
+    [
+     -100.0,
+     240.0,
+     299.2
+    ],
+    true,
+    true,
+    [
+     0.6,
+     -0.3
+    ]
+   ],
+   [
+    "yield",
+    4000,
+    0,
+    0.25,
+    [
+     -99.0,
+     240.0,
+     299.2
+    ],
+    true,
+    true,
+    [
+     0.2,
+     -0.1
+    ]
+   ]
+  ]
+ ],
+ "flow.co.zero_best": [
+  {
+   "best_fit": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.2,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.2,
+     -0.1
+    ],
+    "shift_vec": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {},
+    "verdict": "RESILIENT",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": 0.0,
+    "yield_warnings": []
+   },
+   "candidates": [
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.6,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.6,
+      -0.3
+     ],
+     "shift_vec": [
+      1.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       1.0,
+       0.0,
+       0.0
+      ]
+     },
+     "verdict": "RESILIENT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": 0.5,
+     "yield_warnings": []
+    },
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.2,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.2,
+      -0.1
+     ],
+     "shift_vec": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {},
+     "verdict": "RESILIENT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": 0.0,
+     "yield_warnings": []
+    }
+   ],
+   "n_starts": 2,
+   "ok": true,
+   "property_bounds": "Wall",
+   "reason": "Manufacturing-resilient geometry found. The pure curve-fit optimum was REJECTED: it fits 0.20× band vs the winner's 0.60×, but its build yield is 0.0% against the winner's 50.0% — a +50.0% yield premium bought by moving off the knife edge. The engine designs the car that gets built.",
+   "resilience_premium": 0.5,
+   "seed": 0,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.0,
+    "tempered_yield": 0.0,
+    "verify_agreement": 0.98
+   },
+   "verify_agreement": null,
+   "verify_yield": null,
+   "warnings": [],
+   "wheel_envelope": "Wall",
+   "winner": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.6,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.6,
+     -0.3
+    ],
+    "shift_vec": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {
+     "upper_front_inner": [
+      1.0,
+      0.0,
+      0.0
+     ]
+    },
+    "verdict": "RESILIENT",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": 0.5,
+    "yield_warnings": []
+   },
+   "winner_hp": [
+    -99.0,
+    240.0,
+    299.2
+   ],
+   "winner_is_best": false
+  },
+  [
+   [
+    [
+     0.0,
+     0.0,
+     0.0
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ],
+   [
+    [
+     1.095693,
+     -1.841706,
+     -3.672212
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ],
+   [
+    "yield",
+    4000,
+    0,
+    0.25,
+    [
+     -100.0,
+     240.0,
+     299.2
+    ],
+    true,
+    true,
+    [
+     0.2,
+     -0.1
+    ]
+   ],
+   [
+    "yield",
+    4000,
+    0,
+    0.25,
+    [
+     -99.0,
+     240.0,
+     299.2
+    ],
+    true,
+    true,
+    [
+     0.6,
+     -0.3
+    ]
+   ]
+  ]
+ ],
+ "flow.co.zero_premium": [
+  {
+   "best_fit": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.2,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.2,
+     -0.1
+    ],
+    "shift_vec": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {},
+    "verdict": "TEMPERED",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": 0.9,
+    "yield_warnings": []
+   },
+   "candidates": [
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.6,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.6,
+      -0.3
+     ],
+     "shift_vec": [
+      1.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       1.0,
+       0.0,
+       0.0
+      ]
+     },
+     "verdict": "TEMPERED",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": 0.9000000001,
+     "yield_warnings": []
+    },
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.2,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.2,
+      -0.1
+     ],
+     "shift_vec": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {},
+     "verdict": "TEMPERED",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": 0.9,
+     "yield_warnings": []
+    }
+   ],
+   "n_starts": 2,
+   "ok": true,
+   "property_bounds": "Wall",
+   "reason": "Manufacturing-resilient geometry found: the best fit is also the most buildable (90.0% yield).",
+   "resilience_premium": 1.000000082740371e-10,
+   "seed": 0,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.95,
+    "tempered_yield": 0.8,
+    "verify_agreement": 0.98
+   },
+   "verify_agreement": null,
+   "verify_yield": null,
+   "warnings": [],
+   "wheel_envelope": "Wall",
+   "winner": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.6,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.6,
+     -0.3
+    ],
+    "shift_vec": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {
+     "upper_front_inner": [
+      1.0,
+      0.0,
+      0.0
+     ]
+    },
+    "verdict": "TEMPERED",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": 0.9000000001,
+    "yield_warnings": []
+   },
+   "winner_hp": [
+    -99.0,
+    240.0,
+    299.2
+   ],
+   "winner_is_best": false
+  },
+  [
+   [
+    [
+     0.0,
+     0.0,
+     0.0
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ],
+   [
+    [
+     1.095693,
+     -1.841706,
+     -3.672212
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ],
+   [
+    "yield",
+    4000,
+    0,
+    0.25,
+    [
+     -100.0,
+     240.0,
+     299.2
+    ],
+    true,
+    true,
+    [
+     0.2,
+     -0.1
+    ]
+   ],
+   [
+    "yield",
+    4000,
+    0,
+    0.25,
+    [
+     -99.0,
+     240.0,
+     299.2
+    ],
+    true,
+    true,
+    [
+     0.6,
+     -0.3
+    ]
+   ]
+  ]
+ ],
+ "flow.co.zero_yield": [
+  {
+   "best_fit": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.2,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.2,
+     -0.1
+    ],
+    "shift_vec": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {},
+    "verdict": "RESILIENT",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": 0.0,
+    "yield_warnings": []
+   },
+   "candidates": [
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.2,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.2,
+      -0.1
+     ],
+     "shift_vec": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {},
+     "verdict": "RESILIENT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": 0.0,
+     "yield_warnings": []
+    }
+   ],
+   "n_starts": 1,
+   "ok": true,
+   "property_bounds": "Wall",
+   "reason": "Manufacturing-resilient geometry found: the best fit is also the most buildable (0.0% yield).",
+   "resilience_premium": 0.0,
+   "seed": 0,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.0,
+    "tempered_yield": 0.0,
+    "verify_agreement": 0.98
+   },
+   "verify_agreement": null,
+   "verify_yield": null,
+   "warnings": [],
+   "wheel_envelope": "Wall",
+   "winner": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.2,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.2,
+     -0.1
+    ],
+    "shift_vec": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {},
+    "verdict": "RESILIENT",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": 0.0,
+    "yield_warnings": []
+   },
+   "winner_hp": [
+    -100.0,
+    240.0,
+    299.2
+   ],
+   "winner_is_best": true
+  },
+  [
+   [
+    [
+     0.0,
+     0.0,
+     0.0
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ],
+   [
+    "yield",
+    4000,
+    0,
+    0.25,
+    [
+     -100.0,
+     240.0,
+     299.2
+    ],
+    true,
+    true,
+    [
+     0.2,
+     -0.1
+    ]
+   ]
+  ]
+ ],
+ "flow.default_starts": [
+  {
+   "best_fit": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.3,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.3,
+     -0.15
+    ],
+    "shift_vec": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {},
+    "verdict": "TEMPERED",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": null,
+    "yield_warnings": []
+   },
+   "candidates": [
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.3,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.3,
+      -0.15
+     ],
+     "shift_vec": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {},
+     "verdict": "TEMPERED",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    },
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.4,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.4,
+      -0.2
+     ],
+     "shift_vec": [
+      1.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       1.0,
+       0.0,
+       0.0
+      ]
+     },
+     "verdict": "TEMPERED",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    },
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.5,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.5,
+      -0.25
+     ],
+     "shift_vec": [
+      2.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       2.0,
+       0.0,
+       0.0
+      ]
+     },
+     "verdict": "TEMPERED",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    },
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.6,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.6,
+      -0.3
+     ],
+     "shift_vec": [
+      3.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       3.0,
+       0.0,
+       0.0
+      ]
+     },
+     "verdict": "TEMPERED",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    },
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.7,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.7,
+      -0.35
+     ],
+     "shift_vec": [
+      4.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       4.0,
+       0.0,
+       0.0
+      ]
+     },
+     "verdict": "TEMPERED",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    },
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.8,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.8,
+      -0.4
+     ],
+     "shift_vec": [
+      5.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       5.0,
+       0.0,
+       0.0
+      ]
+     },
+     "verdict": "TEMPERED",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    }
+   ],
+   "n_starts": 6,
+   "ok": true,
+   "property_bounds": "Wall",
+   "reason": "Curves reached (fit-only — no yield pricing).",
+   "resilience_premium": null,
+   "seed": 0,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.95,
+    "tempered_yield": 0.8,
+    "verify_agreement": 0.98
+   },
+   "verify_agreement": null,
+   "verify_yield": null,
+   "warnings": [
+    "No tolerance field declared — the buildability question was not asked. This is textbook inverse kinematics: the winner is the best FIT, which may be a knife-edge your shop cannot hold. Declare a field (Stochastic Inversion presets work) to co-optimize for yield."
+   ],
+   "wheel_envelope": "Wall",
+   "winner": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.3,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.3,
+     -0.15
+    ],
+    "shift_vec": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {},
+    "verdict": "TEMPERED",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": null,
+    "yield_warnings": []
+   },
+   "winner_hp": [
+    -100.0,
+    240.0,
+    299.2
+   ],
+   "winner_is_best": true
+  },
+  6
+ ],
+ "flow.fit.empty": [
+  {
+   "best_fit": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.3,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.3,
+     -0.15
+    ],
+    "shift_vec": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {
+     "upper_front_inner": [
+      1.0,
+      0.0,
+      0.0
+     ]
+    },
+    "verdict": "TEMPERED",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": null,
+    "yield_warnings": []
+   },
+   "candidates": [
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.3,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.3,
+      -0.15
+     ],
+     "shift_vec": [
+      1.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       1.0,
+       0.0,
+       0.0
+      ]
+     },
+     "verdict": "TEMPERED",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    },
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.8,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.8,
+      -0.4
+     ],
+     "shift_vec": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {},
+     "verdict": "TEMPERED",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    },
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.95,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.95,
+      -0.475
+     ],
+     "shift_vec": [
+      1.05,
+      0.0,
+      0.0
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       1.05,
+       0.0,
+       0.0
+      ]
+     },
+     "verdict": "TEMPERED",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    },
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": false,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 1.2,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      1.2,
+      -0.6
+     ],
+     "shift_vec": [
+      3.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       3.0,
+       0.0,
+       0.0
+      ]
+     },
+     "verdict": "NO_FIT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    },
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": false,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 1.4,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      1.4,
+      -0.7
+     ],
+     "shift_vec": [
+      2.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       2.0,
+       0.0,
+       0.0
+      ]
+     },
+     "verdict": "NO_FIT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    }
+   ],
+   "n_starts": 6,
+   "ok": true,
+   "property_bounds": "Wall",
+   "reason": "Curves reached (fit-only — no yield pricing).",
+   "resilience_premium": null,
+   "seed": 0,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.95,
+    "tempered_yield": 0.8,
+    "verify_agreement": 0.98
+   },
+   "verify_agreement": null,
+   "verify_yield": null,
+   "warnings": [
+    "No tolerance field declared — the buildability question was not asked. This is textbook inverse kinematics: the winner is the best FIT, which may be a knife-edge your shop cannot hold. Declare a field (Stochastic Inversion presets work) to co-optimize for yield."
+   ],
+   "wheel_envelope": "Wall",
+   "winner": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.3,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.3,
+     -0.15
+    ],
+    "shift_vec": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {
+     "upper_front_inner": [
+      1.0,
+      0.0,
+      0.0
+     ]
+    },
+    "verdict": "TEMPERED",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": null,
+    "yield_warnings": []
+   },
+   "winner_hp": [
+    -99.0,
+    240.0,
+    299.2
+   ],
+   "winner_is_best": true
+  },
+  [
+   [
+    [
+     0.0,
+     0.0,
+     0.0
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ],
+   [
+    [
+     1.095693,
+     -1.841706,
+     -3.672212
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ],
+   [
+    [
+     -3.867779,
+     2.506162,
+     3.302045
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ],
+   [
+    [
+     0.853086,
+     1.835972,
+     0.349
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ],
+   [
+    [
+     3.480579,
+     2.526828,
+     -3.978092
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ],
+   [
+    [
+     2.859234,
+     -3.731315,
+     1.837244
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ]
+  ]
+ ],
+ "flow.fit.none": [
+  {
+   "best_fit": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.3,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.3,
+     -0.15
+    ],
+    "shift_vec": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {
+     "upper_front_inner": [
+      1.0,
+      0.0,
+      0.0
+     ]
+    },
+    "verdict": "TEMPERED",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": null,
+    "yield_warnings": []
+   },
+   "candidates": [
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.3,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.3,
+      -0.15
+     ],
+     "shift_vec": [
+      1.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       1.0,
+       0.0,
+       0.0
+      ]
+     },
+     "verdict": "TEMPERED",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    },
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.8,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.8,
+      -0.4
+     ],
+     "shift_vec": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {},
+     "verdict": "TEMPERED",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    },
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.95,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.95,
+      -0.475
+     ],
+     "shift_vec": [
+      1.05,
+      0.0,
+      0.0
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       1.05,
+       0.0,
+       0.0
+      ]
+     },
+     "verdict": "TEMPERED",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    },
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": false,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 1.2,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      1.2,
+      -0.6
+     ],
+     "shift_vec": [
+      3.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       3.0,
+       0.0,
+       0.0
+      ]
+     },
+     "verdict": "NO_FIT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    },
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": false,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 1.4,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      1.4,
+      -0.7
+     ],
+     "shift_vec": [
+      2.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       2.0,
+       0.0,
+       0.0
+      ]
+     },
+     "verdict": "NO_FIT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    }
+   ],
+   "n_starts": 6,
+   "ok": true,
+   "property_bounds": "Wall",
+   "reason": "Curves reached (fit-only — no yield pricing).",
+   "resilience_premium": null,
+   "seed": 0,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.95,
+    "tempered_yield": 0.8,
+    "verify_agreement": 0.98
+   },
+   "verify_agreement": null,
+   "verify_yield": null,
+   "warnings": [
+    "No tolerance field declared — the buildability question was not asked. This is textbook inverse kinematics: the winner is the best FIT, which may be a knife-edge your shop cannot hold. Declare a field (Stochastic Inversion presets work) to co-optimize for yield."
+   ],
+   "wheel_envelope": "Wall",
+   "winner": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.3,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.3,
+     -0.15
+    ],
+    "shift_vec": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {
+     "upper_front_inner": [
+      1.0,
+      0.0,
+      0.0
+     ]
+    },
+    "verdict": "TEMPERED",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": null,
+    "yield_warnings": []
+   },
+   "winner_hp": [
+    -99.0,
+    240.0,
+    299.2
+   ],
+   "winner_is_best": true
+  },
+  [
+   [
+    [
+     0.0,
+     0.0,
+     0.0
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ],
+   [
+    [
+     1.095693,
+     -1.841706,
+     -3.672212
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ],
+   [
+    [
+     -3.867779,
+     2.506162,
+     3.302045
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ],
+   [
+    [
+     0.853086,
+     1.835972,
+     0.349
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ],
+   [
+    [
+     3.480579,
+     2.526828,
+     -3.978092
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ],
+   [
+    [
+     2.859234,
+     -3.731315,
+     1.837244
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ]
+  ]
+ ],
+ "flow.nohit.all": [
+  {
+   "best_fit": {
+    "clamped": [
+     "upper_front_inner.x"
+    ],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 4,
+    "hit": false,
+    "iterations": 3,
+    "keepout_rejections": 2,
+    "max_band_frac": 3.0,
+    "node_rejections": 1,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 5,
+    "residual": [
+     3.0,
+     -1.5
+    ],
+    "shift_vec": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {
+     "upper_front_inner": [
+      1.0,
+      0.0,
+      0.0
+     ]
+    },
+    "verdict": "NO_FIT",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": null,
+    "yield_warnings": []
+   },
+   "candidates": [
+    {
+     "clamped": [
+      "upper_front_inner.x"
+     ],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 4,
+     "hit": false,
+     "iterations": 3,
+     "keepout_rejections": 2,
+     "max_band_frac": 3.0,
+     "node_rejections": 1,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 5,
+     "residual": [
+      3.0,
+      -1.5
+     ],
+     "shift_vec": [
+      1.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       1.0,
+       0.0,
+       0.0
+      ]
+     },
+     "verdict": "NO_FIT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    },
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": false,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 4.0,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      4.0,
+      -2.0
+     ],
+     "shift_vec": [
+      -1.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       -1.0,
+       0.0,
+       0.0
+      ]
+     },
+     "verdict": "NO_FIT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    }
+   ],
+   "n_starts": 3,
+   "ok": false,
+   "property_bounds": "Wall",
+   "reason": "No legal geometry reaches the drawn curves. Closest approach: 3.00× the band, governed by camber @ +0.0 mm; the legal box is binding on upper_front_inner.x; the keep-out filter refused 2 step(s) toward the curves; the node wall refused 1 step(s) that would have left a pickup off a frame node; the wheel envelope refused 4 step(s) that would have put a link inside the rim or tire; a solved-property bound refused 5 step(s) toward the curves (20 <= anti-squat (%) <= 60, kingpin inclination (deg) <= 9). The bands and the legal volume are mutually unsatisfiable AS DECLARED — widen that band, free that coordinate, or accept the closest legal curve below. No optimum was fabricated.",
+   "resilience_premium": null,
+   "seed": 0,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.95,
+    "tempered_yield": 0.8,
+    "verify_agreement": 0.98
+   },
+   "verify_agreement": null,
+   "verify_yield": null,
+   "warnings": [],
+   "wheel_envelope": "Wall",
+   "winner": null,
+   "winner_hp": [
+    -99.0,
+    240.0,
+    299.2
+   ],
+   "winner_is_best": false
+  },
+  [
+   [
+    [
+     0.0,
+     0.0,
+     0.0
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ],
+   [
+    [
+     1.095693,
+     -1.841706,
+     -3.672212
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ],
+   [
+    [
+     -3.867779,
+     2.506162,
+     3.302045
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ]
+  ]
+ ],
+ "flow.nohit.linkage": [
+  {
+   "best_fit": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": false,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 1.5,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     1.5,
+     -0.75
+    ],
+    "shift_vec": [
+     2.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {
+     "upper_front_inner": [
+      2.0,
+      0.0,
+      0.0
+     ]
+    },
+    "verdict": "NO_FIT",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": null,
+    "yield_warnings": []
+   },
+   "candidates": [
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": false,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 1.5,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      1.5,
+      -0.75
+     ],
+     "shift_vec": [
+      2.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       2.0,
+       0.0,
+       0.0
+      ]
+     },
+     "verdict": "NO_FIT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    },
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": false,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 2.5,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      2.5,
+      -1.25
+     ],
+     "shift_vec": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {},
+     "verdict": "NO_FIT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    }
+   ],
+   "n_starts": 2,
+   "ok": false,
+   "property_bounds": "Wall",
+   "reason": "No legal geometry reaches the drawn curves. Closest approach: 1.50× the band, governed by camber @ +0.0 mm; the linkage itself cannot produce these curves in this volume. The bands and the legal volume are mutually unsatisfiable AS DECLARED — widen that band, free that coordinate, or accept the closest legal curve below. No optimum was fabricated.",
+   "resilience_premium": null,
+   "seed": 0,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.95,
+    "tempered_yield": 0.8,
+    "verify_agreement": 0.98
+   },
+   "verify_agreement": null,
+   "verify_yield": null,
+   "warnings": [],
+   "wheel_envelope": "Wall",
+   "winner": null,
+   "winner_hp": [
+    -98.0,
+    240.0,
+    299.2
+   ],
+   "winner_is_best": false
+  },
+  [
+   [
+    [
+     0.0,
+     0.0,
+     0.0
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ],
+   [
+    [
+     1.095693,
+     -1.841706,
+     -3.672212
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ]
+  ]
+ ],
+ "flow.nohit.prop_undeclared": [
+  {
+   "best_fit": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": false,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 2.0,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 1,
+    "residual": [
+     2.0,
+     -1.0
+    ],
+    "shift_vec": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {},
+    "verdict": "NO_FIT",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": null,
+    "yield_warnings": []
+   },
+   "candidates": [
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": false,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 2.0,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 1,
+     "residual": [
+      2.0,
+      -1.0
+     ],
+     "shift_vec": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {},
+     "verdict": "NO_FIT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    }
+   ],
+   "n_starts": 1,
+   "ok": false,
+   "property_bounds": null,
+   "reason": "No legal geometry reaches the drawn curves. Closest approach: 2.00× the band, governed by camber @ +0.0 mm; a solved-property bound refused 1 step(s) toward the curves (a solved-property bound). The bands and the legal volume are mutually unsatisfiable AS DECLARED — widen that band, free that coordinate, or accept the closest legal curve below. No optimum was fabricated.",
+   "resilience_premium": null,
+   "seed": 0,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.95,
+    "tempered_yield": 0.8,
+    "verify_agreement": 0.98
+   },
+   "verify_agreement": null,
+   "verify_yield": null,
+   "warnings": [],
+   "wheel_envelope": "Wall",
+   "winner": null,
+   "winner_hp": [
+    -100.0,
+    240.0,
+    299.2
+   ],
+   "winner_is_best": false
+  },
+  [
+   [
+    [
+     0.0,
+     0.0,
+     0.0
+    ],
+    30,
+    0.25,
+    true,
+    true,
+    true
+   ]
+  ]
+ ],
+ "flow.none.env": [
+  {
+   "best_fit": null,
+   "candidates": [],
+   "n_starts": 6,
+   "ok": false,
+   "property_bounds": "Wall",
+   "reason": "No start cleared the declared wheel envelope (ew). 2 of 6 starts put a link or an outboard pickup inside the rim or tire before the search moved. The wall is absolute: it refuses a step into the wheel and does not walk out from inside it, so free the outboard pickups or enlarge their boxes, or seed from a geometry that already clears the wheel. No geometry that passes through the wheel was returned.",
+   "resilience_premium": null,
+   "seed": 1,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.95,
+    "tempered_yield": 0.8,
+    "verify_agreement": 0.98
+   },
+   "verify_agreement": null,
+   "verify_yield": null,
+   "warnings": [],
+   "wheel_envelope": "Wall",
+   "winner": null,
+   "winner_hp": null,
+   "winner_is_best": true
+  },
+  [
+   [
+    [
+     0.0,
+     0.0,
+     0.0
+    ],
+    7,
+    0.3,
+    true,
+    true,
+    true
+   ],
+   [
+    [
+     0.094573,
+     3.60371,
+     -2.846723
+    ],
+    7,
+    0.3,
+    true,
+    true,
+    true
+   ],
+   [
+    [
+     3.589196,
+     -1.505348,
+     -0.613388
+    ],
+    7,
+    0.3,
+    true,
+    true,
+    true
+   ],
+   [
+    [
+     2.621621,
+     -0.726407,
+     0.39675
+    ],
+    7,
+    0.3,
+    true,
+    true,
+    true
+   ],
+   [
+    [
+     -3.779527,
+     2.028105,
+     0.305147
+    ],
+    7,
+    0.3,
+    true,
+    true,
+    true
+   ],
+   [
+    [
+     -1.362146,
+     2.30743,
+     -1.574441
+    ],
+    7,
+    0.3,
+    true,
+    true,
+    true
+   ]
+  ]
+ ],
+ "flow.none.env_undeclared": [
+  {
+   "best_fit": null,
+   "candidates": [],
+   "n_starts": 1,
+   "ok": false,
+   "property_bounds": "Wall",
+   "reason": "No start inside the legal volume produced a solvable geometry — the declared boxes reach past the solver's kinematic range. Shrink or move the boxes.",
+   "resilience_premium": null,
+   "seed": 1,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.95,
+    "tempered_yield": 0.8,
+    "verify_agreement": 0.98
+   },
+   "verify_agreement": null,
+   "verify_yield": null,
+   "warnings": [],
+   "wheel_envelope": null,
+   "winner": null,
+   "winner_hp": null,
+   "winner_is_best": true
+  },
+  [
+   [
+    [
+     0.0,
+     0.0,
+     0.0
+    ],
+    7,
+    0.3,
+    true,
+    true,
+    true
+   ]
+  ]
+ ],
+ "flow.none.keep": [
+  {
+   "best_fit": null,
+   "candidates": [],
+   "n_starts": 2,
+   "ok": false,
+   "property_bounds": "Wall",
+   "reason": "No start inside the legal volume produced a solvable geometry — the declared boxes reach past the solver's kinematic range. Shrink or move the boxes.",
+   "resilience_premium": null,
+   "seed": 1,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.95,
+    "tempered_yield": 0.8,
+    "verify_agreement": 0.98
+   },
+   "verify_agreement": null,
+   "verify_yield": null,
+   "warnings": [],
+   "wheel_envelope": "Wall",
+   "winner": null,
+   "winner_hp": null,
+   "winner_is_best": true
+  },
+  [
+   [
+    [
+     0.0,
+     0.0,
+     0.0
+    ],
+    7,
+    0.3,
+    true,
+    true,
+    true
+   ],
+   [
+    [
+     0.094573,
+     3.60371,
+     -2.846723
+    ],
+    7,
+    0.3,
+    true,
+    true,
+    true
+   ]
+  ]
+ ],
+ "flow.none.prop": [
+  {
+   "best_fit": null,
+   "candidates": [],
+   "n_starts": 4,
+   "ok": false,
+   "property_bounds": "Wall",
+   "reason": "No start survived the declared solved-property bounds (20 <= anti-squat (%) <= 60; kingpin inclination (deg) <= 9). 2 of 4 starts were refused on a property, not on the curves, so the search never moved. The wall is absolute by design — it refuses a step out of the band, it does not walk in from outside — so this means the bound is unreachable FROM THIS LEGAL VOLUME with these starts, not that no geometry anywhere satisfies it. Widen the band, move or enlarge the boxes, or seed from a geometry that already meets the bound. No optimum was fabricated.",
+   "resilience_premium": null,
+   "seed": 1,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.95,
+    "tempered_yield": 0.8,
+    "verify_agreement": 0.98
+   },
+   "verify_agreement": null,
+   "verify_yield": null,
+   "warnings": [],
+   "wheel_envelope": "Wall",
+   "winner": null,
+   "winner_hp": null,
+   "winner_is_best": true
+  },
+  [
+   [
+    [
+     0.0,
+     0.0,
+     0.0
+    ],
+    7,
+    0.3,
+    true,
+    true,
+    true
+   ],
+   [
+    [
+     0.094573,
+     3.60371,
+     -2.846723
+    ],
+    7,
+    0.3,
+    true,
+    true,
+    true
+   ],
+   [
+    [
+     3.589196,
+     -1.505348,
+     -0.613388
+    ],
+    7,
+    0.3,
+    true,
+    true,
+    true
+   ],
+   [
+    [
+     2.621621,
+     -0.726407,
+     0.39675
+    ],
+    7,
+    0.3,
+    true,
+    true,
+    true
+   ]
+  ]
+ ],
+ "flow.none.prop_empty": [
+  {
+   "best_fit": null,
+   "candidates": [],
+   "n_starts": 1,
+   "ok": false,
+   "property_bounds": "Wall",
+   "reason": "No start inside the legal volume produced a solvable geometry — the declared boxes reach past the solver's kinematic range. Shrink or move the boxes.",
+   "resilience_premium": null,
+   "seed": 1,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.95,
+    "tempered_yield": 0.8,
+    "verify_agreement": 0.98
+   },
+   "verify_agreement": null,
+   "verify_yield": null,
+   "warnings": [],
+   "wheel_envelope": "Wall",
+   "winner": null,
+   "winner_hp": null,
+   "winner_is_best": true
+  },
+  [
+   [
+    [
+     0.0,
+     0.0,
+     0.0
+    ],
+    7,
+    0.3,
+    true,
+    true,
+    true
+   ]
+  ]
+ ],
+ "flow.none.prop_undeclared": [
+  {
+   "best_fit": null,
+   "candidates": [],
+   "n_starts": 1,
+   "ok": false,
+   "property_bounds": null,
+   "reason": "No start inside the legal volume produced a solvable geometry — the declared boxes reach past the solver's kinematic range. Shrink or move the boxes.",
+   "resilience_premium": null,
+   "seed": 1,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.95,
+    "tempered_yield": 0.8,
+    "verify_agreement": 0.98
+   },
+   "verify_agreement": null,
+   "verify_yield": null,
+   "warnings": [],
+   "wheel_envelope": "Wall",
+   "winner": null,
+   "winner_hp": null,
+   "winner_is_best": true
+  },
+  [
+   [
+    [
+     0.0,
+     0.0,
+     0.0
+    ],
+    7,
+    0.3,
+    true,
+    true,
+    true
+   ]
+  ]
+ ],
+ "flow.verify.low": [
+  {
+   "best_fit": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.2,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.2,
+     -0.1
+    ],
+    "shift_vec": [
+     0.5,
+     0.0,
+     0.0
+    ],
+    "shifts": {
+     "upper_front_inner": [
+      0.5,
+      0.0,
+      0.0
+     ]
+    },
+    "verdict": "RESILIENT",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": 0.99,
+    "yield_warnings": []
+   },
+   "candidates": [
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.2,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.2,
+      -0.1
+     ],
+     "shift_vec": [
+      0.5,
+      0.0,
+      0.0
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       0.5,
+       0.0,
+       0.0
+      ]
+     },
+     "verdict": "RESILIENT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": 0.99,
+     "yield_warnings": []
+    }
+   ],
+   "n_starts": 1,
+   "ok": true,
+   "property_bounds": "Wall",
+   "reason": "Manufacturing-resilient geometry found: the best fit is also the most buildable (99.0% yield).",
+   "resilience_premium": 0.0,
+   "seed": 2,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.95,
+    "tempered_yield": 0.8,
+    "verify_agreement": 0.98
+   },
+   "verify_agreement": 0.97,
+   "verify_yield": 0.5,
+   "warnings": [
+    "Linear/full pass-fail agreement 97.0% is below the 98% honesty floor — the winning yield is DEMOTED to the full-solve figure (50.0%); trust that number, and rerun the co-optimizer with more full verification samples."
+   ],
+   "wheel_envelope": "Wall",
+   "winner": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.2,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.2,
+     -0.1
+    ],
+    "shift_vec": [
+     0.5,
+     0.0,
+     0.0
+    ],
+    "shifts": {
+     "upper_front_inner": [
+      0.5,
+      0.0,
+      0.0
+     ]
+    },
+    "verdict": "RESILIENT",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": 0.99,
+    "yield_warnings": []
+   },
+   "winner_hp": [
+    -99.5,
+    240.0,
+    299.2
+   ],
+   "winner_is_best": true
+  },
+  [
+   [
+    7,
+    2,
+    "J@0.4:-99.500:True:[('upper_front_inner', 0), ('upper_front_inner', 1), ('upper_front_inner', 2)]",
+    [
+     -99.5,
+     240.0,
+     299.2
+    ],
+    true,
+    true,
+    [
+     0.2,
+     -0.1
+    ]
+   ]
+  ]
+ ],
+ "flow.verify.ok": [
+  {
+   "best_fit": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.2,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.2,
+     -0.1
+    ],
+    "shift_vec": [
+     0.5,
+     0.0,
+     0.0
+    ],
+    "shifts": {
+     "upper_front_inner": [
+      0.5,
+      0.0,
+      0.0
+     ]
+    },
+    "verdict": "RESILIENT",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": 0.99,
+    "yield_warnings": []
+   },
+   "candidates": [
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.2,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.2,
+      -0.1
+     ],
+     "shift_vec": [
+      0.5,
+      0.0,
+      0.0
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       0.5,
+       0.0,
+       0.0
+      ]
+     },
+     "verdict": "RESILIENT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": 0.99,
+     "yield_warnings": []
+    }
+   ],
+   "n_starts": 1,
+   "ok": true,
+   "property_bounds": "Wall",
+   "reason": "Manufacturing-resilient geometry found: the best fit is also the most buildable (99.0% yield).",
+   "resilience_premium": 0.0,
+   "seed": 2,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.95,
+    "tempered_yield": 0.8,
+    "verify_agreement": 0.97
+   },
+   "verify_agreement": 0.97,
+   "verify_yield": 0.5,
+   "warnings": [],
+   "wheel_envelope": "Wall",
+   "winner": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.2,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.2,
+     -0.1
+    ],
+    "shift_vec": [
+     0.5,
+     0.0,
+     0.0
+    ],
+    "shifts": {
+     "upper_front_inner": [
+      0.5,
+      0.0,
+      0.0
+     ]
+    },
+    "verdict": "RESILIENT",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": 0.99,
+    "yield_warnings": []
+   },
+   "winner_hp": [
+    -99.5,
+    240.0,
+    299.2
+   ],
+   "winner_is_best": true
+  },
+  [
+   [
+    7,
+    2,
+    "J@0.4:-99.500:True:[('upper_front_inner', 0), ('upper_front_inner', 1), ('upper_front_inner', 2)]",
+    [
+     -99.5,
+     240.0,
+     299.2
+    ],
+    true,
+    true,
+    [
+     0.2,
+     -0.1
+    ]
+   ]
+  ]
+ ],
+ "flow.verify.one": [
+  {
+   "best_fit": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.2,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.2,
+     -0.1
+    ],
+    "shift_vec": [
+     0.5,
+     0.0,
+     0.0
+    ],
+    "shifts": {
+     "upper_front_inner": [
+      0.5,
+      0.0,
+      0.0
+     ]
+    },
+    "verdict": "RESILIENT",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": 0.99,
+    "yield_warnings": []
+   },
+   "candidates": [
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": true,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 0.2,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      0.2,
+      -0.1
+     ],
+     "shift_vec": [
+      0.5,
+      0.0,
+      0.0
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       0.5,
+       0.0,
+       0.0
+      ]
+     },
+     "verdict": "RESILIENT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": 0.99,
+     "yield_warnings": []
+    }
+   ],
+   "n_starts": 1,
+   "ok": true,
+   "property_bounds": "Wall",
+   "reason": "Manufacturing-resilient geometry found: the best fit is also the most buildable (99.0% yield).",
+   "resilience_premium": 0.0,
+   "seed": 2,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.95,
+    "tempered_yield": 0.8,
+    "verify_agreement": 0.98
+   },
+   "verify_agreement": 0.97,
+   "verify_yield": 0.5,
+   "warnings": [
+    "Linear/full pass-fail agreement 97.0% is below the 98% honesty floor — the winning yield is DEMOTED to the full-solve figure (50.0%); trust that number, and rerun the co-optimizer with more full verification samples."
+   ],
+   "wheel_envelope": "Wall",
+   "winner": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": true,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 0.2,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     0.2,
+     -0.1
+    ],
+    "shift_vec": [
+     0.5,
+     0.0,
+     0.0
+    ],
+    "shifts": {
+     "upper_front_inner": [
+      0.5,
+      0.0,
+      0.0
+     ]
+    },
+    "verdict": "RESILIENT",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": 0.99,
+    "yield_warnings": []
+   },
+   "winner_hp": [
+    -99.5,
+    240.0,
+    299.2
+   ],
+   "winner_is_best": true
+  },
+  [
+   [
+    1,
+    2,
+    "J@0.4:-99.500:True:[('upper_front_inner', 0), ('upper_front_inner', 1), ('upper_front_inner', 2)]",
+    [
+     -99.5,
+     240.0,
+     299.2
+    ],
+    true,
+    true,
+    [
+     0.2,
+     -0.1
+    ]
+   ]
+  ]
+ ],
+ "nominal_fails": {
+  "best_fit": null,
+  "candidates": [],
+  "n_starts": 0,
+  "ok": false,
+  "property_bounds": "Wall",
+  "reason": "The NOMINAL geometry does not solve over the requested travel stations — fix the hardpoints (or the stations) before asking for their inverse.",
+  "resilience_premium": null,
+  "seed": 3,
+  "start_search": null,
+  "thresholds": {
+   "resilient_yield": 0.5,
+   "tempered_yield": 0.2,
+   "verify_agreement": 0.9
+  },
+  "verify_agreement": null,
+  "verify_yield": null,
+  "warnings": [],
+  "wheel_envelope": "Wall",
+  "winner": null,
+  "winner_hp": null,
+  "winner_is_best": true
+ },
+ "real": {
+  "best_fit": {
+   "clamped": [
+    "upper_front_inner.x",
+    "upper_front_inner.y",
+    "upper_front_inner.z"
+   ],
+   "envelope_margin_mm": null,
+   "envelope_rejections": 0,
+   "hit": false,
+   "iterations": 2,
+   "keepout_rejections": 0,
+   "max_band_frac": 17.886807601239152,
+   "node_rejections": 0,
+   "ok": true,
+   "properties": null,
+   "property_rejections": 0,
+   "residual": [
+    4.254166,
+    -17.886808
+   ],
+   "shift_vec": [
+    3.0,
+    -3.0,
+    3.0
+   ],
+   "shifts": {
+    "upper_front_inner": [
+     3.0,
+     -3.0,
+     3.0
+    ]
+   },
+   "verdict": "NO_FIT",
+   "worst_row": "camber (°) @ +10.0 mm",
+   "yield_frac": null,
+   "yield_warnings": []
+  },
+  "candidates": [
+   {
+    "clamped": [
+     "upper_front_inner.x",
+     "upper_front_inner.y",
+     "upper_front_inner.z"
+    ],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": false,
+    "iterations": 2,
+    "keepout_rejections": 0,
+    "max_band_frac": 17.886807601239152,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     4.254166,
+     -17.886808
+    ],
+    "shift_vec": [
+     3.0,
+     -3.0,
+     3.0
+    ],
+    "shifts": {
+     "upper_front_inner": [
+      3.0,
+      -3.0,
+      3.0
+     ]
+    },
+    "verdict": "NO_FIT",
+    "worst_row": "camber (°) @ +10.0 mm",
+    "yield_frac": null,
+    "yield_warnings": []
+   }
+  ],
+  "n_starts": 2,
+  "ok": false,
+  "property_bounds": null,
+  "reason": "No legal geometry reaches the drawn curves. Closest approach: 17.89× the band, governed by camber (°) @ +10.0 mm; the legal box is binding on upper_front_inner.x, upper_front_inner.y, upper_front_inner.z. The bands and the legal volume are mutually unsatisfiable AS DECLARED — widen that band, free that coordinate, or accept the closest legal curve below. No optimum was fabricated.",
+  "resilience_premium": null,
+  "seed": 0,
+  "start_search": null,
+  "thresholds": {
+   "resilient_yield": 0.95,
+   "tempered_yield": 0.8,
+   "verify_agreement": 0.98
+  },
+  "verify_agreement": null,
+  "verify_yield": null,
+  "warnings": [],
+  "wheel_envelope": null,
+  "winner": null,
+  "winner_hp": [
+   -97.0,
+   237.0,
+   302.2
+  ],
+  "winner_is_best": false
+ },
+ "real.md": "# 🧬 InverseGenesis — stochastic inverse report\n\n❌ No legal geometry reaches the drawn curves. Closest approach: 17.89× the band, governed by camber (°) @ +10.0 mm; the legal box is binding on upper_front_inner.x, upper_front_inner.y, upper_front_inner.z. The bands and the legal volume are mutually unsatisfiable AS DECLARED — widen that band, free that coordinate, or accept the closest legal curve below. No optimum was fabricated.\n\n---\n*2 deterministic starts, seed 0. Scope: rigid corner solver; independent per-point errors; keep-out screening tests each movable pickup as a probe sphere, not the bracket around it — and an obstacle envelope must be carved from NEIGHBOURING assemblies, never from the corner being designed. Validate the generated geometry in Ghost Topology and full simulation before manufacturing.*",
+ "starts.dedupe": [
+  2
+ ],
+ "starts.never.1": [
+  {
+   "best_fit": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": false,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 2.0,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     2.0,
+     -1.0
+    ],
+    "shift_vec": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {},
+    "verdict": "NO_FIT",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": null,
+    "yield_warnings": []
+   },
+   "candidates": [
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": false,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 2.0,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      2.0,
+      -1.0
+     ],
+     "shift_vec": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {},
+     "verdict": "NO_FIT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    }
+   ],
+   "n_starts": 1,
+   "ok": false,
+   "property_bounds": null,
+   "reason": "No legal geometry reaches the drawn curves. Closest approach: 2.00× the band, governed by camber @ +0.0 mm; the linkage itself cannot produce these curves in this volume. The bands and the legal volume are mutually unsatisfiable AS DECLARED — widen that band, free that coordinate, or accept the closest legal curve below. No optimum was fabricated.",
+   "resilience_premium": null,
+   "seed": 1,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.95,
+    "tempered_yield": 0.8,
+    "verify_agreement": 0.98
+   },
+   "verify_agreement": null,
+   "verify_yield": null,
+   "warnings": [],
+   "wheel_envelope": null,
+   "winner": null,
+   "winner_hp": [
+    -100.0,
+    240.0,
+    299.2
+   ],
+   "winner_is_best": false
+  },
+  1,
+  0
+ ],
+ "starts.never.2": [
+  {
+   "best_fit": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": false,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 2.0,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     2.0,
+     -1.0
+    ],
+    "shift_vec": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {},
+    "verdict": "NO_FIT",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": null,
+    "yield_warnings": []
+   },
+   "candidates": [
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": false,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 2.0,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      2.0,
+      -1.0
+     ],
+     "shift_vec": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {},
+     "verdict": "NO_FIT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    }
+   ],
+   "n_starts": 1,
+   "ok": false,
+   "property_bounds": null,
+   "reason": "No legal geometry reaches the drawn curves. Closest approach: 2.00× the band, governed by camber @ +0.0 mm; the linkage itself cannot produce these curves in this volume. The bands and the legal volume are mutually unsatisfiable AS DECLARED — widen that band, free that coordinate, or accept the closest legal curve below. No optimum was fabricated.",
+   "resilience_premium": null,
+   "seed": 1,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.95,
+    "tempered_yield": 0.8,
+    "verify_agreement": 0.98
+   },
+   "verify_agreement": null,
+   "verify_yield": null,
+   "warnings": [
+    "Only 0 of 1 random starts landed clear of the declared property bounds and wheel envelope after 200 draws. The walls are tight relative to the legal volume, so the candidate field is thinner than requested and the resilience premium is measured over fewer basins."
+   ],
+   "wheel_envelope": null,
+   "winner": null,
+   "winner_hp": [
+    -100.0,
+    240.0,
+    299.2
+   ],
+   "winner_is_best": false
+  },
+  1,
+  200
+ ],
+ "starts.never.3": [
+  {
+   "best_fit": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": false,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 2.0,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     2.0,
+     -1.0
+    ],
+    "shift_vec": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {},
+    "verdict": "NO_FIT",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": null,
+    "yield_warnings": []
+   },
+   "candidates": [
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": false,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 2.0,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      2.0,
+      -1.0
+     ],
+     "shift_vec": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {},
+     "verdict": "NO_FIT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    }
+   ],
+   "n_starts": 1,
+   "ok": false,
+   "property_bounds": null,
+   "reason": "No legal geometry reaches the drawn curves. Closest approach: 2.00× the band, governed by camber @ +0.0 mm; the linkage itself cannot produce these curves in this volume. The bands and the legal volume are mutually unsatisfiable AS DECLARED — widen that band, free that coordinate, or accept the closest legal curve below. No optimum was fabricated.",
+   "resilience_premium": null,
+   "seed": 1,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.95,
+    "tempered_yield": 0.8,
+    "verify_agreement": 0.98
+   },
+   "verify_agreement": null,
+   "verify_yield": null,
+   "warnings": [
+    "Only 0 of 2 random starts landed clear of the declared property bounds and wheel envelope after 400 draws. The walls are tight relative to the legal volume, so the candidate field is thinner than requested and the resilience premium is measured over fewer basins."
+   ],
+   "wheel_envelope": null,
+   "winner": null,
+   "winner_hp": [
+    -100.0,
+    240.0,
+    299.2
+   ],
+   "winner_is_best": false
+  },
+  1,
+  400
+ ],
+ "starts.plain": [
+  {
+   "best_fit": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": false,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 2.0,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     2.0,
+     -1.0
+    ],
+    "shift_vec": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {},
+    "verdict": "NO_FIT",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": null,
+    "yield_warnings": []
+   },
+   "candidates": [
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": false,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 2.0,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      2.0,
+      -1.0
+     ],
+     "shift_vec": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {},
+     "verdict": "NO_FIT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    },
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": false,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 2.0,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      2.0,
+      -1.0
+     ],
+     "shift_vec": [
+      2.961994,
+      -1.705462,
+      0.825185
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       2.961994,
+       -1.705462,
+       0.825185
+      ]
+     },
+     "verdict": "NO_FIT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    },
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": false,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 2.0,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      2.0,
+      -1.0
+     ],
+     "shift_vec": [
+      2.220273,
+      1.728597,
+      3.323041
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       2.220273,
+       1.728597,
+       3.323041
+      ]
+     },
+     "verdict": "NO_FIT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    }
+   ],
+   "n_starts": 3,
+   "ok": false,
+   "property_bounds": null,
+   "reason": "No legal geometry reaches the drawn curves. Closest approach: 2.00× the band, governed by camber @ +0.0 mm; the linkage itself cannot produce these curves in this volume. The bands and the legal volume are mutually unsatisfiable AS DECLARED — widen that band, free that coordinate, or accept the closest legal curve below. No optimum was fabricated.",
+   "resilience_premium": null,
+   "seed": 9,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.95,
+    "tempered_yield": 0.8,
+    "verify_agreement": 0.98
+   },
+   "verify_agreement": null,
+   "verify_yield": null,
+   "warnings": [],
+   "wheel_envelope": null,
+   "winner": null,
+   "winner_hp": [
+    -100.0,
+    240.0,
+    299.2
+   ],
+   "winner_is_best": false
+  },
+  [
+   [
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    2.961994,
+    -1.705462,
+    0.825185
+   ],
+   [
+    2.220273,
+    1.728597,
+    3.323041
+   ]
+  ]
+ ],
+ "starts.rare": [
+  {
+   "best_fit": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": false,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 2.0,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     2.0,
+     -1.0
+    ],
+    "shift_vec": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {},
+    "verdict": "NO_FIT",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": null,
+    "yield_warnings": []
+   },
+   "candidates": [
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": false,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 2.0,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      2.0,
+      -1.0
+     ],
+     "shift_vec": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {},
+     "verdict": "NO_FIT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    },
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": false,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 2.0,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      2.0,
+      -1.0
+     ],
+     "shift_vec": [
+      3.959339,
+      -1.472452,
+      -2.538301
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       3.959339,
+       -1.472452,
+       -2.538301
+      ]
+     },
+     "verdict": "NO_FIT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    }
+   ],
+   "n_starts": 2,
+   "ok": false,
+   "property_bounds": null,
+   "reason": "No legal geometry reaches the drawn curves. Closest approach: 2.00× the band, governed by camber @ +0.0 mm; the linkage itself cannot produce these curves in this volume. The bands and the legal volume are mutually unsatisfiable AS DECLARED — widen that band, free that coordinate, or accept the closest legal curve below. No optimum was fabricated.",
+   "resilience_premium": null,
+   "seed": 0,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.95,
+    "tempered_yield": 0.8,
+    "verify_agreement": 0.98
+   },
+   "verify_agreement": null,
+   "verify_yield": null,
+   "warnings": [],
+   "wheel_envelope": null,
+   "winner": null,
+   "winner_hp": [
+    -100.0,
+    240.0,
+    299.2
+   ],
+   "winner_is_best": false
+  },
+  2,
+  58
+ ],
+ "starts.walls": [
+  {
+   "best_fit": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": false,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 2.0,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     2.0,
+     -1.0
+    ],
+    "shift_vec": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {},
+    "verdict": "NO_FIT",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": null,
+    "yield_warnings": []
+   },
+   "candidates": [
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": false,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 2.0,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      2.0,
+      -1.0
+     ],
+     "shift_vec": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {},
+     "verdict": "NO_FIT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    },
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": false,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 2.0,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      2.0,
+      -1.0
+     ],
+     "shift_vec": [
+      -0.502016,
+      -0.120445,
+      -3.478766
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       -0.502016,
+       -0.120445,
+       -3.478766
+      ]
+     },
+     "verdict": "NO_FIT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    },
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": false,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 2.0,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      2.0,
+      -1.0
+     ],
+     "shift_vec": [
+      -3.954992,
+      2.644971,
+      3.866418
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       -3.954992,
+       2.644971,
+       3.866418
+      ]
+     },
+     "verdict": "NO_FIT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    },
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": false,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 2.0,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      2.0,
+      -1.0
+     ],
+     "shift_vec": [
+      -1.606551,
+      1.925988,
+      -1.762022
+     ],
+     "shifts": {
+      "upper_front_inner": [
+       -1.606551,
+       1.925988,
+       -1.762022
+      ]
+     },
+     "verdict": "NO_FIT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    }
+   ],
+   "n_starts": 4,
+   "ok": false,
+   "property_bounds": null,
+   "reason": "No legal geometry reaches the drawn curves. Closest approach: 2.00× the band, governed by camber @ +0.0 mm; the linkage itself cannot produce these curves in this volume. The bands and the legal volume are mutually unsatisfiable AS DECLARED — widen that band, free that coordinate, or accept the closest legal curve below. No optimum was fabricated.",
+   "resilience_premium": null,
+   "seed": 9,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.95,
+    "tempered_yield": 0.8,
+    "verify_agreement": 0.98
+   },
+   "verify_agreement": null,
+   "verify_yield": null,
+   "warnings": [],
+   "wheel_envelope": null,
+   "winner": null,
+   "winner_hp": [
+    -100.0,
+    240.0,
+    299.2
+   ],
+   "winner_is_best": false
+  },
+  [
+   [
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    -0.502016,
+    -0.120445,
+    -3.478766
+   ],
+   [
+    -3.954992,
+    2.644971,
+    3.866418
+   ],
+   [
+    -1.606551,
+    1.925988,
+    -1.762022
+   ]
+  ]
+ ],
+ "starts.zero": [
+  {
+   "best_fit": {
+    "clamped": [],
+    "envelope_margin_mm": null,
+    "envelope_rejections": 0,
+    "hit": false,
+    "iterations": 3,
+    "keepout_rejections": 0,
+    "max_band_frac": 2.0,
+    "node_rejections": 0,
+    "ok": true,
+    "properties": null,
+    "property_rejections": 0,
+    "residual": [
+     2.0,
+     -1.0
+    ],
+    "shift_vec": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "shifts": {},
+    "verdict": "NO_FIT",
+    "worst_row": "camber @ +0.0 mm",
+    "yield_frac": null,
+    "yield_warnings": []
+   },
+   "candidates": [
+    {
+     "clamped": [],
+     "envelope_margin_mm": null,
+     "envelope_rejections": 0,
+     "hit": false,
+     "iterations": 3,
+     "keepout_rejections": 0,
+     "max_band_frac": 2.0,
+     "node_rejections": 0,
+     "ok": true,
+     "properties": null,
+     "property_rejections": 0,
+     "residual": [
+      2.0,
+      -1.0
+     ],
+     "shift_vec": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "shifts": {},
+     "verdict": "NO_FIT",
+     "worst_row": "camber @ +0.0 mm",
+     "yield_frac": null,
+     "yield_warnings": []
+    }
+   ],
+   "n_starts": 1,
+   "ok": false,
+   "property_bounds": "Wall",
+   "reason": "No legal geometry reaches the drawn curves. Closest approach: 2.00× the band, governed by camber @ +0.0 mm; the linkage itself cannot produce these curves in this volume. The bands and the legal volume are mutually unsatisfiable AS DECLARED — widen that band, free that coordinate, or accept the closest legal curve below. No optimum was fabricated.",
+   "resilience_premium": null,
+   "seed": 0,
+   "start_search": null,
+   "thresholds": {
+    "resilient_yield": 0.95,
+    "tempered_yield": 0.8,
+    "verify_agreement": 0.98
+   },
+   "verify_agreement": null,
+   "verify_yield": null,
+   "warnings": [],
+   "wheel_envelope": "Wall",
+   "winner": null,
+   "winner_hp": [
+    -100.0,
+    240.0,
+    299.2
+   ],
+   "winner_is_best": false
+  },
+  [
+   [
+    0.0,
+    0.0,
+    0.0
+   ]
+  ]
+ ]
+}

@@ -194,7 +194,7 @@ class RuleMatrix:
         An empty list is the only pass."""
         out: list[str] = []
         v_pack_max = series * cell.max_v
-        if v_pack_max > self.max_ts_voltage + 1e-9:
+        if v_pack_max > self.max_ts_voltage + 1e-9:  # pragma: no mutate (tolerance)
             out.append(f"{series}s at {cell.max_v:.2f} V/cell = "
                        f"{v_pack_max:.0f} V max pack > TS voltage cap "
                        f"{self.max_ts_voltage:.0f} V")
@@ -216,7 +216,7 @@ class RuleMatrix:
                        f"single row already exceeds the "
                        f"{self.max_segment_energy_mj:.0f} MJ segment cap; "
                        "reduce parallel count")
-        if wheelbase_mm < self.min_wheelbase_mm - 1e-9:
+        if wheelbase_mm < self.min_wheelbase_mm - 1e-9:  # pragma: no mutate (tolerance)
             out.append(f"wheelbase {wheelbase_mm:.0f} mm < rule minimum "
                        f"{self.min_wheelbase_mm:.0f} mm")
         return out
@@ -378,7 +378,7 @@ class _TraceAdapter:
             v = np.array([0.0, 0.0])
         self.distance = s
         self.speed = v
-        dv = np.gradient(v, np.maximum(s, 1e-9), edge_order=1)
+        dv = np.gradient(v, np.maximum(s, 1e-9))
         self.long_g = np.nan_to_num(v * dv / g, nan=0.0,
                                     posinf=0.0, neginf=0.0)
 
@@ -426,8 +426,7 @@ class ConfigScore:
 # --------------------------------------------------------------------------- #
 #  The forward evaluation — one consistent car through the whole chain.
 # --------------------------------------------------------------------------- #
-def _vehicle_for(cfg: FullCarConfig, space: DesignSpace,
-                 derived: dict[str, float]) -> VehicleDynamics:
+def _vehicle_for(space: DesignSpace, derived: dict[str, float]) -> VehicleDynamics:
     """Build the VehicleDynamics for a candidate — the mass the pack actually
     weighs, the car's fixed geometry, the placeholder grip model. Geometry
     tabs would feed solved camber; here the fixed grip model is enough to
@@ -476,16 +475,15 @@ def _powertrain_for(cfg: FullCarConfig, space: DesignSpace,
     )
     # architecture deploys a fraction of driven-axle grip on exit; fold it in
     # as a tractive ceiling shave so twin/TV genuinely out-accelerate a diff.
-    pt.max_tractive_n = 1.0e9   # motor map governs; keep the flat cap inert
+    pt.max_tractive_n = 1.0e9  # pragma: no mutate (motor map governs; any huge cap is inert)
     return pt
 
 
-def _endurance_track(space: DesignSpace, rules: RuleMatrix
-                     ) -> tuple[Track, int]:
+def _endurance_track(rules: RuleMatrix) -> tuple[Track, int]:
     """One representative lap plus the integer lap count that covers the
     declared endurance distance."""
     base = default_autocross()
-    lap_len = max(base.total_length(), 1.0)
+    lap_len = base.total_length()
     laps = max(int(math.ceil(rules.endurance_km * 1000.0 / lap_len)), 1)
     return base, laps
 
@@ -508,9 +506,8 @@ def evaluate_config(cfg: FullCarConfig, space: DesignSpace,
         return sc
 
     try:
-        veh = _vehicle_for(cfg, space, derived)
+        veh = _vehicle_for(space, derived)
         pt = _powertrain_for(cfg, space, derived)
-        grip_frac = _ARCH_GRIP_FRAC[cfg.architecture]
 
         sc.peak_lat_g = float(veh.max_lateral_g())
 
@@ -526,7 +523,7 @@ def evaluate_config(cfg: FullCarConfig, space: DesignSpace,
         sc.autocross_s = float(autox.lap_time_s)
 
         # --- endurance: same lap, N times, with the energy integral ------- #
-        end_track, laps = _endurance_track(space, rules)
+        end_track, laps = _endurance_track(rules)
         end_lap = simulate_lap(veh, end_track, pt)
         sc.endurance_laps = laps
         if not end_lap.ok:
@@ -556,7 +553,7 @@ def evaluate_config(cfg: FullCarConfig, space: DesignSpace,
 
         # single-lap endurance time; derate penalty if the pack can't cover it
         end_single = float(end_lap.lap_time_s)
-        if math.isfinite(e_event) and e_event > usable and e_event > 1e-9:
+        if math.isfinite(e_event) and e_event > usable and e_event > 1e-9:  # pragma: no mutate (ties never happen)
             f = usable / e_event
             sc.derate_penalty_s = end_single * 0.30 * (1.0 - f)
             sc.warnings.append(
@@ -571,7 +568,7 @@ def evaluate_config(cfg: FullCarConfig, space: DesignSpace,
         yaw = _ARCH_TV_YAW_FRAC[cfg.architecture]
         if yaw > 0:
             sc.tv_yaw_note = (
-                f"torque vectoring: up to {yaw*100:.1f}% autocross/endurance "
+                f"torque vectoring: up to {yaw:.1%} autocross/endurance "
                 "time (control-dependent upper bound, NOT in the totals)")
 
         # --- the thermal gate (finalists only — it's the expensive one) --- #
@@ -633,7 +630,7 @@ def _thermal_gate(cfg: FullCarConfig, space: DesignSpace, rules: RuleMatrix,
         ttl = res.time_to_limit_s[res.hottest_cell_index]
         lap_T = max(t_arr[-1] - t_arr[0], 1e-9)
         if math.isfinite(ttl):
-            overheat_lap = int(ttl // lap_T) + 1
+            overheat_lap = int(ttl / lap_T) + 1
             overheat_lap = min(max(overheat_lap, 1), laps)
     return res, overheat_lap
 
@@ -670,11 +667,9 @@ def _score_field(scores: list[ConfigScore],
         for k in _EVENT_KEYS:
             t = getattr(s, f"{k}_s")
             b = bests[k]
-            if math.isfinite(t) and math.isfinite(b) and b > 0:
-                s.points[k] = event_points_estimate(
-                    t, b, event=_EVENT_FAMILY[k])
-            else:
-                s.points[k] = 0.0
+            # the estimate itself scores a non-finite time, or a best at or below zero, as 0
+            s.points[k] = (event_points_estimate(t, b, event=_EVENT_FAMILY[k])
+                           if math.isfinite(b) else 0.0)
         # a car that does not finish endurance forfeits its endurance points
         if s.verdict in ("THERMAL_DNF", "ENERGY_SHORT"):
             s.points["endurance"] = 0.0
@@ -728,7 +723,7 @@ def _gear_refine(cfg: FullCarConfig, space: DesignSpace, rules: RuleMatrix,
     c1 = b - _PHI * (b - a)
     c2 = a + _PHI * (b - a)
     s1, s2 = eval_at(c1), eval_at(c2)
-    best_c, best_s = (c1, s1) if s1.total_points >= s2.total_points else (c2, s2)
+    best_c, best_s = None, None          # the first iteration's pair always holds the better of s1, s2
     for _ in range(max(int(iters), 1)):
         diag.n_gear_refimements += 1
         if s1.total_points >= s2.total_points:
@@ -741,7 +736,7 @@ def _gear_refine(cfg: FullCarConfig, space: DesignSpace, rules: RuleMatrix,
             s2 = eval_at(c2)
         cand_c, cand_s = ((c1, s1) if s1.total_points >= s2.total_points
                           else (c2, s2))
-        if cand_s.total_points > best_s.total_points:
+        if best_s is None or cand_s.total_points > best_s.total_points:
             best_c, best_s = cand_c, cand_s
     winner = FullCarConfig(cfg.series, cfg.parallel, cfg.architecture,
                            float(best_c))
@@ -867,7 +862,7 @@ def synthesize_fullcar(space: DesignSpace | None = None,
     else:
         winner = finalists[0]
         ok = False
-        reason = _no_survivor_reason(finalists, rules, relative)
+        reason = _no_survivor_reason(finalists)
 
     # rebuild the full ranked list: gated finalists override their grid twins
     gated_by_cfg = {(f.config.series, f.config.parallel,
@@ -906,7 +901,7 @@ def _winner_reason(w: ConfigScore, finalists: list[ConfigScore],
     note = ""
     if beaten:
         b = beaten[0]
-        if b.total_points >= w.total_points - 1e-6:
+        if b.total_points >= w.total_points - 1e-6:  # pragma: no mutate (tolerance)
             note = (f" A higher-scoring configuration ({b.config.label()}) was "
                     f"REJECTED: it is {b.verdict.replace('_', ' ').lower()} — "
                     f"{b.kill_reasons[0] if b.kill_reasons else 'infeasible'}. "
@@ -918,8 +913,7 @@ def _winner_reason(w: ConfigScore, finalists: list[ConfigScore],
             f"{w.thermal.hottest_peak_c:.0f} °C).{note}")
 
 
-def _no_survivor_reason(finalists: list[ConfigScore], rules: RuleMatrix,
-                        relative: bool) -> str:
+def _no_survivor_reason(finalists: list[ConfigScore]) -> str:
     verdicts = {}
     for f in finalists:
         verdicts.setdefault(f.verdict, 0)
@@ -963,7 +957,7 @@ def kinematic_intent_for(score: ConfigScore | None, space: DesignSpace,
     hp = hp or Hardpoints.default()
     stations = (_vec(stations_mm) if stations_mm is not None
                 else np.array([-25.0, -12.5, 0.0, 12.5, 25.0]))
-    vals, ok = _ig.curves_of(hp, stations, track_mm=space.track_mm)
+    vals, ok = _ig.curves_of(hp, stations)
     if not ok:
         # fall back to a flat intent seeded at static if the sweep won't run
         vals = {ch: np.zeros_like(stations) for ch in _ig.CHANNELS}
@@ -997,13 +991,11 @@ def kinematic_intent_for(score: ConfigScore | None, space: DesignSpace,
     roll_deg = peak_g * float(roll_gradient_deg_per_g)
     # target camber curve: static camber at ride, gaining toward upright in
     # bump by the roll angle scaled over the travel range.
-    static_camber = float(vals["camber_deg"][np.argmin(np.abs(stations))]) \
-        if len(vals["camber_deg"]) else -1.5
+    static_camber = float(vals["camber_deg"][np.argmin(np.abs(stations))])
     travel_span = max(float(stations.max() - stations.min()), 1.0)
     camber_target = static_camber - (stations / travel_span) * roll_deg
     toe_target = np.zeros_like(stations)                 # dead bump steer
     rc_target = _vec(vals["rc_height_mm"])  # hold nominal RC
-    scrub_target = _vec(vals["scrub_mm"])   # hold nominal scrub
 
     return _ig.GenesisTargets(curves=[
         _ig.TargetCurve("camber_deg", stations, camber_target,
@@ -1069,7 +1061,7 @@ def load_case_for(score: ConfigScore, space: DesignSpace,
     static_axle_n = mass * g * space.weight_dist_front
     fz_outer = static_axle_n            # ~all of the axle on the outer tyre
     load: WheelLoad = wheel_load_from_corner(
-        Fz=fz_outer, mu_lateral=peak_g, mu_long=0.0)
+        Fz=fz_outer, mu_lateral=peak_g)
     mf = solve_member_forces(kin, state, load)
     return LoadCase(fz_n=fz_outer, mu_lateral=peak_g,
                     member_forces={k: float(v) for k, v in mf.forces.items()},
@@ -1099,8 +1091,7 @@ def elastokinematic_check(score: ConfigScore, space: DesignSpace,
     peak_g = score.peak_lat_g if math.isfinite(score.peak_lat_g) else 1.4
     mass = score.derived.get("mass_kg", 280.0)
     fz_outer = mass * 9.81 * space.weight_dist_front
-    load: WheelLoad = wheel_load_from_corner(Fz=fz_outer, mu_lateral=peak_g,
-                                             mu_long=0.0)
+    load: WheelLoad = wheel_load_from_corner(Fz=fz_outer, mu_lateral=peak_g)
     spec = _ek.ElastoSpec(stiffness=stiffness or _ek.StiffnessField(),
                           Fx=load.Fx, Fy=load.Fy, Fz=load.Fz, Mz=load.Mz,
                           n_steps=n_steps)
@@ -1127,7 +1118,7 @@ def frame_twist_toe_budget(score: ConfigScore, space: DesignSpace,
     hp = hp or Hardpoints.default()
     if toe_per_mm is None:
         J = _ek.compliance_jacobian(hp, points=("tie_rod_inner",))
-        u = _np.asarray(hp.tie_rod_outer, float) - _np.asarray(hp.tie_rod_inner, float)
+        u = _vec(hp.tie_rod_outer) - _vec(hp.tie_rod_inner)
         u /= _np.linalg.norm(u)
         toe_per_mm = float(abs(J[1] @ u))
     peak_g = score.peak_lat_g if math.isfinite(score.peak_lat_g) else 1.4

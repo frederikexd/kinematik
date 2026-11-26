@@ -1,0 +1,186 @@
+{
+ "joint_misalignment.0": [
+  [
+   "init",
+   null
+  ],
+  [
+   "init",
+   null
+  ],
+  [
+   "sweep",
+   -25.0,
+   25.0,
+   5
+  ]
+ ],
+ "joint_misalignment.3": [
+  [
+   "init",
+   null
+  ],
+  [
+   "init",
+   null
+  ],
+  [
+   "sweep",
+   -2.0,
+   2.0,
+   2
+  ],
+  [
+   "init",
+   {
+    "tie_rod_inner": [
+     0.0,
+     -3.0,
+     0.0
+    ]
+   }
+  ],
+  [
+   "sweep",
+   -2.0,
+   2.0,
+   2
+  ],
+  [
+   "init",
+   {
+    "tie_rod_inner": [
+     0.0,
+     3.0,
+     0.0
+    ]
+   }
+  ],
+  [
+   "sweep",
+   -2.0,
+   2.0,
+   2
+  ]
+ ],
+ "joint_misalignment.still": {
+  "_worst": [
+   "upper_ball",
+   5.524106186047088e-14,
+   "-25.0 mm travel"
+  ],
+  "lower_ball": 3.924122122261796e-14,
+  "tie_rod_inner": 3.6441283266322575e-16,
+  "tie_rod_outer": 3.983137376115698e-14,
+  "upper_ball": 5.524106186047088e-14
+ },
+ "joint_misalignment.tiny": {
+  "_worst": [
+   "upper_ball",
+   0.043274088068487704,
+   "-0.2 mm travel"
+  ],
+  "lower_ball": 0.034309618,
+  "tie_rod_inner": 0.041171562,
+  "tie_rod_outer": 0.036518801,
+  "upper_ball": 0.043274088
+ },
+ "joint_swing.0": [
+  [
+   "init",
+   null
+  ],
+  [
+   "init",
+   null
+  ],
+  [
+   "sweep",
+   -25.0,
+   25.0,
+   5
+  ]
+ ],
+ "joint_swing.3": [
+  [
+   "init",
+   null
+  ],
+  [
+   "init",
+   null
+  ],
+  [
+   "sweep",
+   -2.0,
+   2.0,
+   2
+  ],
+  [
+   "init",
+   {
+    "tie_rod_inner": [
+     0.0,
+     -3.0,
+     0.0
+    ]
+   }
+  ],
+  [
+   "sweep",
+   -2.0,
+   2.0,
+   2
+  ],
+  [
+   "init",
+   {
+    "tie_rod_inner": [
+     0.0,
+     3.0,
+     0.0
+    ]
+   }
+  ],
+  [
+   "sweep",
+   -2.0,
+   2.0,
+   2
+  ]
+ ],
+ "joint_swing.still": {
+  "_worst": [
+   "lower_front.outer",
+   4.521009368739794e-14,
+   "-25.0 mm travel"
+  ],
+  "lower_front.inner": 0.0,
+  "lower_front.outer": 4.521009368739794e-14,
+  "lower_rear.inner": 0.0,
+  "lower_rear.outer": 3.199075983652186e-14,
+  "tie_rod.inner": 0.0,
+  "tie_rod.outer": 3.85909430546874e-14,
+  "upper_front.inner": 0.0,
+  "upper_front.outer": 4.157599388870604e-14,
+  "upper_rear.inner": 0.0,
+  "upper_rear.outer": 2.7542707232558877e-14
+ },
+ "joint_swing.tiny": {
+  "_worst": [
+   "upper_front.inner",
+   0.044026577041380285,
+   "-0.2 mm travel"
+  ],
+  "lower_front.inner": 0.036795414,
+  "lower_front.outer": 0.034325605,
+  "lower_rear.inner": 0.03562852,
+  "lower_rear.outer": 0.028956456,
+  "tie_rod.inner": 0.041171753,
+  "tie_rod.outer": 0.036520342,
+  "upper_front.inner": 0.044026577,
+  "upper_front.outer": 0.042496919,
+  "upper_rear.inner": 0.043656064,
+  "upper_rear.outer": 0.037103478
+ }
+}

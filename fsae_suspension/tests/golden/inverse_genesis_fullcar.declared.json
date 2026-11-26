@@ -1,0 +1,191 @@
+{
+ "lap": [
+  24.934992,
+  24.737112
+ ],
+ "powertrain": [
+  60.0,
+  2.0,
+  1.1,
+  "rwd",
+  "awd",
+  1.3
+ ],
+ "sens.bad": {
+  "message": "Unknown sweep channel 'bogus'.",
+  "raised": "ValueError"
+ },
+ "sens.mass": {
+  "baseline_s": 24.934991516613515,
+  "best_value": 280.0,
+  "channel": "mass_kg",
+  "rows": [
+   [
+    280.0,
+    24.835175222443915
+   ],
+   [
+    300.0,
+    24.934991516613515
+   ],
+   [
+    320.0,
+    25.036151337220183
+   ]
+  ],
+  "spread_s": 0.20097611477626742,
+  "track_length_m": 334.0
+ },
+ "sens.share": {
+  "baseline_s": 24.934991516613515,
+  "best_value": 0.6,
+  "channel": "front_roll_share",
+  "rows": [
+   [
+    0.4,
+    25.100203000896332
+   ],
+   [
+    0.6,
+    25.02259117760915
+   ]
+  ],
+  "spread_s": 0.07761182328718164,
+  "track_length_m": 334.0
+ },
+ "sens.share_springs": {
+  "baseline_s": 25.350921008211582,
+  "best_value": 0.5,
+  "channel": "front_roll_share",
+  "rows": [
+   [
+    0.5,
+    24.969755629163352
+   ]
+  ],
+  "spread_s": 0.0,
+  "track_length_m": 334.0
+ },
+ "sens.track": {
+  "baseline_s": 9.124796974440997,
+  "best_value": 290.0,
+  "channel": "mass_kg",
+  "rows": [
+   [
+    290.0,
+    9.10620869254282
+   ]
+  ],
+  "spread_s": 0.0,
+  "track_length_m": 121.0
+ },
+ "summary": {
+  "balance_index": 0.002549447813241179,
+  "body_roll_deg": 1.5267378461538461,
+  "front_roll_share": 0.5384615384615384,
+  "grip_model": "Pacejka MF5.2",
+  "inside_front_liftoff_g": 2.002121340687313,
+  "inside_front_load_N": 177.141284170375,
+  "lateral_g": 1.5,
+  "max_lateral_g": 1.5462918147996794,
+  "motion_ratio": {
+   "front": "no geometry",
+   "rear": "no geometry"
+  },
+  "rc_front_mm": 50.0,
+  "rc_rear_mm": 60.0,
+  "roll_stiffness_front": 350.0,
+  "roll_stiffness_rear": 300.0,
+  "roll_stiffness_source": "declared directly"
+ },
+ "summary.equal_roll": 0.5,
+ "summary.liftoff": [
+  "2.002121340687313",
+  "0.4009252120277562"
+ ],
+ "summary.mr": [
+  {
+   "front": "solved from direct-acting damper",
+   "rear": "PROXY (no rocker defined)"
+  },
+  {
+   "front": "PROXY (no rocker defined)",
+   "rear": "solved from direct-acting damper"
+  }
+ ],
+ "summary.rig": {
+  "balance_index": 0.005792718493426663,
+  "body_roll_deg": 3.801522033182323,
+  "front_roll_share": 0.5845916452809556,
+  "grip_model": "Pacejka MF5.2",
+  "inside_front_liftoff_g": 1.6412596049544304,
+  "inside_front_load_N": 181.98474701745835,
+  "lateral_g": 1.2,
+  "max_lateral_g": 1.5204054820659625,
+  "motion_ratio": {
+   "front": "solved from rocker",
+   "rear": "solved from rocker"
+  },
+  "rc_front_mm": 35.405612752485084,
+  "rc_rear_mm": 35.405612752485084,
+  "roll_stiffness_front": 143.6968433569593,
+  "roll_stiffness_rear": 102.11037013460262,
+  "roll_stiffness_source": "spring rates × MR² + ARB"
+ },
+ "summary.zero_roll": "NaN",
+ "vehicle": [
+  {
+   "cg_height": 280.0,
+   "mass": 300.0,
+   "roll_stiffness_front": 350.0,
+   "roll_stiffness_rear": 300.0,
+   "track_front": 1210.0,
+   "track_rear": 1210.0,
+   "weight_dist_front": 0.48,
+   "wheelbase": 1630.0
+  },
+  "Pacejka MF5.2",
+  1.546291815
+ ],
+ "vehicle.over": [
+  {
+   "cg_height": 280.0,
+   "mass": 250.0,
+   "roll_stiffness_front": 350.0,
+   "roll_stiffness_rear": 300.0,
+   "track_front": 1210.0,
+   "track_rear": 1180.0,
+   "weight_dist_front": 0.48,
+   "wheelbase": 1630.0
+  },
+  "linear placeholder",
+  1.392179726
+ ],
+ "vehicle.rig": [
+  [
+   {
+    "cg_height": 300.0,
+    "mass": 300.0,
+    "roll_stiffness_front": 400.0,
+    "roll_stiffness_rear": 330.0,
+    "track_front": 1220.0,
+    "track_rear": 1190.0,
+    "weight_dist_front": 0.46,
+    "wheelbase": 1580.0
+   },
+   "Pacejka MF5.2",
+   1.520405482
+  ],
+  true,
+  40.0,
+  30.0,
+  2.0,
+  1.0,
+  -2.0,
+  -2.0,
+  true,
+  true,
+  -1.5,
+  -1.5
+ ]
+}

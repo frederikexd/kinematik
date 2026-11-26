@@ -1,0 +1,333 @@
+{
+ "all": {
+  "ackermann_lock_pct": 64.5,
+  "anti_dive_pct": 32.2,
+  "anti_lift_pct": 16.05,
+  "anti_squat_pct": 81.8,
+  "brake_decel_g": 2.05,
+  "caster_deg": 5.0,
+  "compliance_camber_deg": -0.05,
+  "compliance_caster_deg": 0.2,
+  "compliance_kpi_deg": 0.1,
+  "compliance_toe_braking_deg": -0.07,
+  "compliance_toe_deg": 0.01,
+  "joint_misalignment_lock_deg": 7.25,
+  "joint_swing_lock_deg": 12.5,
+  "kpi_deg": 8.0,
+  "lash_camber_deg": 0.02,
+  "lash_toe_deg": 0.0312,
+  "link_fos_min": 2.2512,
+  "lock_sw_deg": 400.12,
+  "mech_trail_mm": -6.857142857142857,
+  "member_force_ratio": 2.5,
+  "rc_migration_mm_per_mm": 0.28571428571428575,
+  "rocker_bearing_sf": 3.5012,
+  "scrub_static_mm": 10.0,
+  "steer_effort_margin": 3.1977142857142855,
+  "steer_ratio": 5.512,
+  "steer_ratio_min": 2.314285714285714,
+  "twist_toe_deg": 0.0432
+ },
+ "all.calls": [
+  [
+   [
+    "swing",
+    [
+     -10.0,
+     20.0
+    ],
+    4,
+    88.91555555555556,
+    true
+   ],
+   [
+    "mis",
+    [
+     -10.0,
+     20.0
+    ],
+    4,
+    88.91555555555556,
+    true
+   ]
+  ],
+  [
+   [
+    80.0,
+    22.0,
+    1550.0,
+    1250.0,
+    55.0,
+    "mean",
+    true
+   ]
+  ],
+  [
+   [
+    "solve",
+    "e",
+    false,
+    true
+   ],
+   [
+    "solve",
+    "brake",
+    false,
+    true
+   ]
+  ],
+  1
+ ],
+ "comp.allm": [
+  {
+   "compliance_kpi_deg": 0.1,
+   "member_force_ratio": 7.0
+  },
+  {
+   "compliance_toe_braking_deg": 0.01
+  }
+ ],
+ "comp.allm_empty": [
+  {
+   "compliance_kpi_deg": 0.1,
+   "member_force_ratio": 0.05
+  },
+  {
+   "compliance_toe_braking_deg": 0.01
+  }
+ ],
+ "comp.lash_only": {
+  "lash_toe_deg": 0.0312
+ },
+ "comp.no_spec": {
+  "caster_deg": 5.0
+ },
+ "comp.nom": [
+  {
+   "compliance_kpi_deg": 0.1,
+   "member_force_ratio": "NaN"
+  },
+  {
+   "compliance_toe_braking_deg": 0.01
+  }
+ ],
+ "comp.raise": [
+  null,
+  null,
+  null,
+  null,
+  null
+ ],
+ "comp.small_load": {
+  "member_force_ratio": 5000.0
+ },
+ "comp.twist_raise": null,
+ "comp.unconv": [
+  null,
+  null
+ ],
+ "comp.zero_load": {
+  "member_force_ratio": "NaN"
+ },
+ "empty": [
+  {},
+  {}
+ ],
+ "inboard": {
+  "anti_lift_pct": 115.2
+ },
+ "kin.empty": null,
+ "kin.flat": {
+  "rc_migration_mm_per_mm": "NaN"
+ },
+ "kin.no_trail": [
+  {
+   "mech_trail_mm": "NaN"
+  },
+  null
+ ],
+ "kin.noattr": {
+  "caster_deg": 5.0
+ },
+ "kin.pitchraise": [
+  null,
+  {
+   "anti_lift_pct": 15.2
+  },
+  {
+   "anti_squat_pct": 79.3
+  }
+ ],
+ "kin.raise": null,
+ "kin.rcnan": {
+  "rc_migration_mm_per_mm": "NaN"
+ },
+ "kin.unconv": null,
+ "nnodes": {
+  "anti_dive_pct": 27.23,
+  "rc_migration_mm_per_mm": 0.2857142857142858
+ },
+ "one.ackermann_lock_pct": {
+  "ackermann_lock_pct": 64.5
+ },
+ "one.anti_dive_pct": {
+  "anti_dive_pct": 32.2
+ },
+ "one.anti_lift_pct": {
+  "anti_lift_pct": 16.05
+ },
+ "one.anti_squat_pct": {
+  "anti_squat_pct": 81.8
+ },
+ "one.brake_decel_g": {
+  "brake_decel_g": 2.05
+ },
+ "one.caster_deg": {
+  "caster_deg": 5.0
+ },
+ "one.compliance_camber_deg": {
+  "compliance_camber_deg": -0.05
+ },
+ "one.compliance_caster_deg": {
+  "compliance_caster_deg": 0.2
+ },
+ "one.compliance_kpi_deg": {
+  "compliance_kpi_deg": 0.1
+ },
+ "one.compliance_toe_braking_deg": {
+  "compliance_toe_braking_deg": -0.07
+ },
+ "one.compliance_toe_deg": {
+  "compliance_toe_deg": 0.01
+ },
+ "one.joint_misalignment_lock_deg": {
+  "joint_misalignment_lock_deg": 7.25
+ },
+ "one.joint_swing_lock_deg": {
+  "joint_swing_lock_deg": 12.5
+ },
+ "one.kpi_deg": {
+  "kpi_deg": 8.0
+ },
+ "one.lash_camber_deg": {
+  "lash_camber_deg": 0.02
+ },
+ "one.lash_toe_deg": {
+  "lash_toe_deg": 0.0312
+ },
+ "one.link_fos_min": {
+  "link_fos_min": 2.2512
+ },
+ "one.lock_sw_deg": {
+  "lock_sw_deg": 400.12
+ },
+ "one.mech_trail_mm": {
+  "mech_trail_mm": -6.857142857142857
+ },
+ "one.member_force_ratio": {
+  "member_force_ratio": 2.5
+ },
+ "one.rc_migration_mm_per_mm": {
+  "rc_migration_mm_per_mm": 0.28571428571428575
+ },
+ "one.rocker_bearing_sf": {
+  "rocker_bearing_sf": 3.5012
+ },
+ "one.scrub_static_mm": {
+  "scrub_static_mm": 10.0
+ },
+ "one.steer_effort_margin": {
+  "steer_effort_margin": 3.1977142857142855
+ },
+ "one.steer_ratio": {
+  "steer_ratio": 5.512
+ },
+ "one.steer_ratio_min": {
+  "steer_ratio_min": 2.314285714285714
+ },
+ "one.twist_toe_deg": {
+  "twist_toe_deg": 0.0432
+ },
+ "only": {
+  "caster_deg": 5.0,
+  "kpi_deg": 8.0
+ },
+ "ptp": [
+  {
+   "rc_migration_mm_per_mm": 0.28571428571428853
+  },
+  {
+   "rc_migration_mm_per_mm": "NaN"
+  },
+  {
+   "rc_migration_mm_per_mm": 0.2857173438513859
+  }
+ ],
+ "real": {
+  "anti_dive_pct": 27.27024205130233,
+  "anti_lift_pct": -18.180161367534886,
+  "anti_squat_pct": 19.283946041538766,
+  "caster_deg": 5.112849779882466,
+  "kpi_deg": 10.43747535111818,
+  "mech_trail_mm": 14.842105263157908,
+  "rc_migration_mm_per_mm": -0.39009025905273553,
+  "scrub_static_mm": 9.736842105263122
+ },
+ "real.evaluate": {
+  "anti_dive_pct": 27.27024205130233,
+  "anti_lift_pct": -18.180161367534886,
+  "anti_squat_pct": 19.283946041538766,
+  "caster_deg": 5.112849779882466,
+  "kpi_deg": 10.43747535111818,
+  "mech_trail_mm": 14.842105263157908,
+  "rc_migration_mm_per_mm": -0.39009025905273553,
+  "scrub_static_mm": 9.736842105263122
+ },
+ "steer.kr_raise": [
+  null,
+  null,
+  {
+   "steer_ratio_min": 2.314285714285714
+  }
+ ],
+ "steer.no_se": [
+  null,
+  null,
+  null,
+  null,
+  {
+   "mech_trail_mm": -6.857142857142857
+  },
+  null,
+  null,
+  null
+ ],
+ "steer.raise": [
+  null,
+  null,
+  null
+ ],
+ "steer.sw_inf": [
+  {
+   "lock_sw_deg": "inf"
+  },
+  null,
+  null
+ ],
+ "steer.unreachable": null,
+ "trail": [
+  -6.857142857142857,
+  "NaN",
+  -9.55,
+  0.0,
+  0.0,
+  0.0
+ ],
+ "vehicle.raise": [
+  null,
+  null,
+  {
+   "brake_decel_g": 2.0
+  }
+ ]
+}

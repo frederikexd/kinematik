@@ -1,0 +1,487 @@
+{
+ "around": [
+  [
+   "upper_front_inner",
+   "upper_rear_inner"
+  ],
+  [
+   [
+    "upper_front_inner",
+    0
+   ],
+   [
+    "upper_front_inner",
+    1
+   ],
+   [
+    "upper_front_inner",
+    2
+   ],
+   [
+    "upper_rear_inner",
+    0
+   ],
+   [
+    "upper_rear_inner",
+    1
+   ],
+   [
+    "upper_rear_inner",
+    2
+   ]
+  ],
+  [
+   "upper_front_inner.x",
+   "upper_front_inner.y",
+   "upper_front_inner.z",
+   "upper_rear_inner.x",
+   "upper_rear_inner.y",
+   "upper_rear_inner.z"
+  ],
+  {
+   "upper_front_inner": [
+    [
+     -105.0,
+     235.0,
+     294.2
+    ],
+    [
+     -95.0,
+     245.0,
+     304.2
+    ]
+   ],
+   "upper_rear_inner": [
+    [
+     125.0,
+     235.0,
+     275.8
+    ],
+    [
+     135.0,
+     245.0,
+     285.8
+    ]
+   ]
+  },
+  [
+   [
+    -5.0,
+    -5.0,
+    -5.0,
+    -5.0,
+    -5.0,
+    -5.0
+   ],
+   [
+    5.0,
+    5.0,
+    5.0,
+    5.0,
+    5.0,
+    5.0
+   ]
+  ]
+ ],
+ "around.all": [
+  "lower_front_inner",
+  "lower_outer",
+  "lower_rear_inner",
+  "tie_rod_inner",
+  "tie_rod_outer",
+  "upper_front_inner",
+  "upper_outer",
+  "upper_rear_inner"
+ ],
+ "around.dict": {
+  "lower_outer": [
+   [
+    -8.0,
+    572.0,
+    107.0
+   ],
+   [
+    -2.0,
+    578.0,
+    113.0
+   ]
+  ],
+  "tie_rod_inner": [
+   [
+    98.0,
+    228.0,
+    158.0
+   ],
+   [
+    102.0,
+    232.0,
+    162.0
+   ]
+  ]
+ },
+ "around.kw": {
+  "boxes": {
+   "lower_outer": [
+    [
+     -6.0,
+     574.0,
+     109.0
+    ],
+    [
+     -4.0,
+     576.0,
+     111.0
+    ]
+   ]
+  },
+  "keep_out": [],
+  "min_clearance_mm": 2.0,
+  "node_attachment": null,
+  "probe_radius_mm": 4.0,
+  "properties": null,
+  "spacings": [],
+  "tool_access": null,
+  "wheel_envelope": null
+ },
+ "clamp": [
+  [
+   [
+    1.0,
+    -5.0,
+    5.0,
+    5.0,
+    -5.0,
+    0.0
+   ],
+   [
+    "upper_front_inner.y",
+    "upper_rear_inner.y"
+   ]
+  ],
+  [
+   [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   []
+  ]
+ ],
+ "clamp.edges": [
+  [
+   [
+    -5.0,
+    -5.0,
+    -5.0,
+    -5.0,
+    -5.0,
+    -5.0
+   ],
+   []
+  ],
+  [
+   [
+    5.0,
+    5.0,
+    5.0,
+    5.0,
+    5.0,
+    5.0
+   ],
+   []
+  ],
+  [
+   [
+    5.0,
+    5.0,
+    5.0,
+    5.0,
+    5.0,
+    5.0
+   ],
+   [
+    "upper_front_inner.x",
+    "upper_front_inner.y",
+    "upper_front_inner.z",
+    "upper_rear_inner.x",
+    "upper_rear_inner.y",
+    "upper_rear_inner.z"
+   ]
+  ],
+  [
+   [
+    -5.0,
+    -5.0,
+    -5.0,
+    -5.0,
+    -5.0,
+    -5.0
+   ],
+   [
+    "upper_front_inner.x",
+    "upper_front_inner.y",
+    "upper_front_inner.z",
+    "upper_rear_inner.x",
+    "upper_rear_inner.y",
+    "upper_rear_inner.z"
+   ]
+  ]
+ ],
+ "errors": [
+  {
+   "message": "LegalVolume: declare at least one movable point's box — with zero freedoms there is nothing to generate.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "'wheel_center' is not a designable hardpoint. Allowed: upper_front_inner, upper_rear_inner, lower_front_inner, lower_rear_inner, upper_outer, lower_outer, tie_rod_inner, tie_rod_outer.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "LegalVolume box for 'upper_outer': hi < lo.",
+   "raised": "ValueError"
+  }
+ ],
+ "keepout": [
+  [
+   "upper_front_inner",
+   "near",
+   -1.5
+  ],
+  [
+   "upper_front_inner",
+   "phantom",
+   0.5
+  ],
+  [
+   "upper_rear_inner",
+   "phantom",
+   0.5
+  ],
+  [
+   "upper_front_inner->upper_rear_inner",
+   "spacing |b-a| >= 10000 mm",
+   -9769.265173846687
+  ],
+  [
+   "upper_front_inner->upper_rear_inner",
+   "spacing |b-a| >= 231.235 mm",
+   -0.5
+  ],
+  [
+   "upper_front_inner (bolt access)",
+   "tool access 120 mm x r12 mm along the pivot axis at upper_front_inner",
+   -11.0
+  ]
+ ],
+ "keepout.exact": [],
+ "keepout.notool_without_obstacles": [],
+ "keepout.tool": [
+  [
+   "lower_rear_inner (bolt access)",
+   "tool access 120 mm x r12 mm along the pivot axis at lower_rear_inner",
+   -252.00399880039987
+  ]
+ ],
+ "keepout.tool_small.-0.5": [
+  [
+   "lower_rear_inner (bolt access)",
+   "tool access 120 mm x r12 mm along the pivot axis at lower_rear_inner",
+   -0.5
+  ]
+ ],
+ "keepout.tool_small.0.5": [],
+ "nested": [
+  {
+   "lower_outer": [
+    [
+     0.0,
+     0.0,
+     0.0
+    ],
+    [
+     1.0,
+     2.0,
+     3.0
+    ]
+   ],
+   "upper_outer": [
+    [
+     5.0,
+     5.0,
+     5.0
+    ],
+    [
+     5.0,
+     6.0,
+     5.0
+    ]
+   ]
+  },
+  [
+   [
+    5.0,
+    -575.0,
+    -110.0,
+    -7.0,
+    -535.0,
+    -295.0
+   ],
+   [
+    6.0,
+    -573.0,
+    -107.0,
+    -7.0,
+    -534.0,
+    -295.0
+   ]
+  ],
+  [
+   0.0,
+   0.0,
+   0.0
+  ],
+  [
+   1.0,
+   2.0,
+   3.0
+  ]
+ ],
+ "shifted": [
+  [
+   -99.0,
+   242.0,
+   302.2
+  ],
+  [
+   129.0,
+   238.0,
+   277.8
+  ],
+  [
+   -5.0,
+   575.0,
+   110.0
+  ]
+ ],
+ "unflatten": {
+  "upper_front_inner": [
+   1.0,
+   2.0,
+   3.0
+  ],
+  "upper_rear_inner": [
+   4.0,
+   5.0,
+   6.0
+  ]
+ },
+ "unflatten.partial": {
+  "lower_outer": [
+   0.0,
+   0.0,
+   2.0
+  ],
+  "upper_outer": [
+   3.0,
+   0.0,
+   0.0
+  ]
+ },
+ "walls": [
+  true,
+  true,
+  true,
+  [
+   [
+    "p",
+    "prop",
+    -0.49
+   ]
+  ],
+  [
+   [
+    "p",
+    "env",
+    -0.49
+   ]
+  ],
+  1.49,
+  [
+   [
+    "p",
+    "node",
+    -0.49
+   ]
+  ],
+  [
+   [
+    "p",
+    "prop",
+    -0.49
+   ],
+   [
+    "p",
+    "env",
+    -0.49
+   ],
+   [
+    "p",
+    "node",
+    -0.49
+   ]
+  ],
+  {
+   "caster_deg": -100.0,
+   "kpi_deg": 7.5
+  }
+ ],
+ "walls.none": [
+  [
+   false,
+   false,
+   false,
+   [],
+   [],
+   null,
+   [],
+   [],
+   null
+  ],
+  [
+   false,
+   false,
+   false,
+   [],
+   [],
+   null,
+   [],
+   [],
+   null
+  ],
+  [
+   false,
+   false,
+   true,
+   [],
+   [],
+   null,
+   [],
+   [],
+   null
+  ],
+  [
+   false,
+   true,
+   true,
+   [],
+   [],
+   1.49,
+   [],
+   [],
+   null
+  ]
+ ]
+}

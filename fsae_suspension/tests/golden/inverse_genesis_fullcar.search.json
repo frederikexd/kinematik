@@ -1,0 +1,3108 @@
+{
+ "diag": [
+  "10 configs enumerated (3 rule-killed), 40 evaluated, 8 gear refinements, 2 full pack-thermal gates, 160 lap sims total.",
+  "12.3 s wall time.",
+  "0 configs enumerated (0 rule-killed), 0 evaluated, 0 gear refinements, 0 full pack-thermal gates, 0 lap sims total.",
+  "0.0 s wall time."
+ ],
+ "gear.c1": [
+  3.593111629,
+  "100s4p · 2 motors (axle split) · drive 3.59:1",
+  515.58382,
+  {
+   "elapsed_s": 0.0,
+   "n_evaluated": 3,
+   "n_gear_refimements": 1,
+   "n_grid": 0,
+   "n_lap_sims": 12,
+   "n_rule_killed": 0,
+   "n_thermal_gates": 0
+  },
+  [
+   [
+    3.593111629,
+    false,
+    true,
+    true
+   ],
+   [
+    4.206888371,
+    false,
+    true,
+    true
+   ],
+   [
+    3.213776741,
+    false,
+    true,
+    true
+   ]
+  ]
+ ],
+ "gear.c2": [
+  4.206888371,
+  "100s4p · 2 motors (axle split) · drive 4.21:1",
+  515.58382,
+  {
+   "elapsed_s": 0.0,
+   "n_evaluated": 3,
+   "n_gear_refimements": 1,
+   "n_grid": 0,
+   "n_lap_sims": 12,
+   "n_rule_killed": 0,
+   "n_thermal_gates": 0
+  },
+  [
+   [
+    3.593111629,
+    false,
+    true,
+    true
+   ],
+   [
+    4.206888371,
+    false,
+    true,
+    true
+   ],
+   [
+    4.586223259,
+    false,
+    true,
+    true
+   ]
+  ]
+ ],
+ "gear.default_iters": [
+  {
+   "elapsed_s": 0.0,
+   "n_evaluated": 10,
+   "n_gear_refimements": 8,
+   "n_grid": 0,
+   "n_lap_sims": 40,
+   "n_rule_killed": 0,
+   "n_thermal_gates": 0
+  },
+  [
+   [
+    2.381966011,
+    false,
+    true,
+    true
+   ],
+   [
+    2.618033989,
+    false,
+    true,
+    true
+   ],
+   [
+    2.763932023,
+    false,
+    true,
+    true
+   ],
+   [
+    2.854101966,
+    false,
+    true,
+    true
+   ],
+   [
+    2.909830056,
+    false,
+    true,
+    true
+   ],
+   [
+    2.94427191,
+    false,
+    true,
+    true
+   ],
+   [
+    2.965558146,
+    false,
+    true,
+    true
+   ],
+   [
+    2.978713764,
+    false,
+    true,
+    true
+   ],
+   [
+    2.986844383,
+    false,
+    true,
+    true
+   ],
+   [
+    2.991869381,
+    false,
+    true,
+    true
+   ]
+  ]
+ ],
+ "gear.flat": [
+  3.213776741,
+  "100s4p · 2 motors (axle split) · drive 3.21:1",
+  575.0,
+  {
+   "elapsed_s": 0.0,
+   "n_evaluated": 4,
+   "n_gear_refimements": 2,
+   "n_grid": 0,
+   "n_lap_sims": 16,
+   "n_rule_killed": 0,
+   "n_thermal_gates": 0
+  },
+  [
+   [
+    3.593111629,
+    false,
+    true,
+    true
+   ],
+   [
+    4.206888371,
+    false,
+    true,
+    true
+   ],
+   [
+    3.213776741,
+    false,
+    true,
+    true
+   ],
+   [
+    2.979334888,
+    false,
+    true,
+    true
+   ]
+  ]
+ ],
+ "gear.high": [
+  5.11045118,
+  "100s4p · 2 motors (axle split) · drive 5.11:1",
+  574.387552,
+  {
+   "elapsed_s": 0.0,
+   "n_evaluated": 7,
+   "n_gear_refimements": 5,
+   "n_grid": 0,
+   "n_lap_sims": 28,
+   "n_rule_killed": 0,
+   "n_thermal_gates": 0
+  },
+  [
+   [
+    3.593111629,
+    false,
+    true,
+    true
+   ],
+   [
+    4.206888371,
+    false,
+    true,
+    true
+   ],
+   [
+    4.586223259,
+    false,
+    true,
+    true
+   ],
+   [
+    4.820665112,
+    false,
+    true,
+    true
+   ],
+   [
+    4.965558146,
+    false,
+    true,
+    true
+   ],
+   [
+    5.055106966,
+    false,
+    true,
+    true
+   ],
+   [
+    5.11045118,
+    false,
+    true,
+    true
+   ]
+  ]
+ ],
+ "gear.low": [
+  2.834441854,
+  "100s4p · 2 motors (axle split) · drive 2.83:1",
+  511.143771,
+  {
+   "elapsed_s": 0.0,
+   "n_evaluated": 5,
+   "n_gear_refimements": 3,
+   "n_grid": 0,
+   "n_lap_sims": 20,
+   "n_rule_killed": 0,
+   "n_thermal_gates": 0
+  },
+  [
+   [
+    3.593111629,
+    false,
+    true,
+    true
+   ],
+   [
+    4.206888371,
+    false,
+    true,
+    true
+   ],
+   [
+    3.213776741,
+    false,
+    true,
+    true
+   ],
+   [
+    2.979334888,
+    false,
+    true,
+    true
+   ],
+   [
+    2.834441854,
+    false,
+    true,
+    true
+   ]
+  ]
+ ],
+ "gear.mid": [
+  3.895962694,
+  "100s4p · 2 motors (axle split) · drive 3.90:1",
+  515.58637,
+  {
+   "elapsed_s": 0.0,
+   "n_evaluated": 10,
+   "n_gear_refimements": 8,
+   "n_grid": 0,
+   "n_lap_sims": 40,
+   "n_rule_killed": 0,
+   "n_thermal_gates": 0
+  },
+  [
+   [
+    3.593111629,
+    false,
+    true,
+    true
+   ],
+   [
+    4.206888371,
+    false,
+    true,
+    true
+   ],
+   [
+    3.213776741,
+    false,
+    true,
+    true
+   ],
+   [
+    3.827553483,
+    false,
+    true,
+    true
+   ],
+   [
+    3.972446517,
+    false,
+    true,
+    true
+   ],
+   [
+    3.738004663,
+    false,
+    true,
+    true
+   ],
+   [
+    3.882897697,
+    false,
+    true,
+    true
+   ],
+   [
+    3.917102303,
+    false,
+    true,
+    true
+   ],
+   [
+    3.861758088,
+    false,
+    true,
+    true
+   ],
+   [
+    3.895962694,
+    false,
+    true,
+    true
+   ]
+  ]
+ ],
+ "gear.relative": [
+  3.213776741,
+  "100s4p · 2 motors (axle split) · drive 3.21:1",
+  575.0,
+  {
+   "elapsed_s": 0.0,
+   "n_evaluated": 5,
+   "n_gear_refimements": 3,
+   "n_grid": 0,
+   "n_lap_sims": 20,
+   "n_rule_killed": 0,
+   "n_thermal_gates": 0
+  },
+  [
+   [
+    3.593111629,
+    false,
+    true,
+    true
+   ],
+   [
+    4.206888371,
+    false,
+    true,
+    true
+   ],
+   [
+    3.213776741,
+    false,
+    true,
+    true
+   ],
+   [
+    2.979334888,
+    false,
+    true,
+    true
+   ],
+   [
+    2.834441854,
+    false,
+    true,
+    true
+   ]
+  ]
+ ],
+ "gear.zero": [
+  3.213776741,
+  "100s4p · 2 motors (axle split) · drive 3.21:1",
+  511.884921,
+  {
+   "elapsed_s": 0.0,
+   "n_evaluated": 3,
+   "n_gear_refimements": 1,
+   "n_grid": 0,
+   "n_lap_sims": 12,
+   "n_rule_killed": 0,
+   "n_thermal_gates": 0
+  },
+  [
+   [
+    3.593111629,
+    false,
+    true,
+    true
+   ],
+   [
+    4.206888371,
+    false,
+    true,
+    true
+   ],
+   [
+    3.213776741,
+    false,
+    true,
+    true
+   ]
+  ]
+ ],
+ "reason.none": [
+  "No finalist finishes the season as configured. The highest-scoring car (102s4p · 1 motor + diff · drive 3.50:1) is thermal dnf: too hot on lap 9. Finalist verdicts: {'THERMAL_DNF': 2, 'ENERGY_SHORT': 1}. The levers, in order: raise the cell temp headroom (bigger/cooler pack or add cooling), lift the energy budget (more parallel), or widen the design space. No car was fabricated as a winner — the constraints and the track disagree AS DECLARED.",
+  "No finalist finishes the season as configured. The highest-scoring car (102s4p · 1 motor + diff · drive 3.50:1) is energy short: infeasible. Finalist verdicts: {'ENERGY_SHORT': 1}. The levers, in order: raise the cell temp headroom (bigger/cooler pack or add cooling), lift the energy budget (more parallel), or widen the design space. No car was fabricated as a winner — the constraints and the track disagree AS DECLARED."
+ ],
+ "reason.win": [
+  "Full-vehicle synthesis converged. Winner: 100s4p · 1 motor + diff · drive 3.50:1, scoring 80 relative points and finishing the season (energy margin +0.75 kWh, peak cell 51 °C).",
+  "Full-vehicle synthesis converged. Winner: 100s4p · 1 motor + diff · drive 3.50:1, scoring 80 absolute points and finishing the season (energy margin +0.75 kWh, peak cell 51 °C). A higher-scoring configuration (102s4p · 1 motor + diff · drive 3.50:1) was REJECTED: it is thermal dnf — too hot on lap 9. The engine picks the car that finishes, not the fastest one on paper.",
+  "Full-vehicle synthesis converged. Winner: 100s4p · 1 motor + diff · drive 3.50:1, scoring 80 relative points and finishing the season (energy margin +0.75 kWh, peak cell 51 °C).",
+  "Full-vehicle synthesis converged. Winner: 100s4p · 1 motor + diff · drive 3.50:1, scoring 80 relative points and finishing the season (energy margin +0.75 kWh, peak cell 51 °C).",
+  "Full-vehicle synthesis converged. Winner: 100s4p · 1 motor + diff · drive 3.50:1, scoring 80 relative points and finishing the season (energy margin +0.75 kWh, peak cell 51 °C). A higher-scoring configuration (102s4p · 1 motor + diff · drive 3.50:1) was REJECTED: it is energy short — infeasible. The engine picks the car that finishes, not the fastest one on paper.",
+  "Full-vehicle synthesis converged. Winner: 100s4p · 1 motor + diff · drive 3.50:1, scoring 80 relative points and finishing the season (energy margin +0.75 kWh, peak cell 51 °C)."
+ ],
+ "score.all_nan": [
+  [
+   {
+    "accel": 0.0,
+    "autocross": 125.0,
+    "endurance": 275.0,
+    "skidpad": 75.0
+   },
+   475.0
+  ],
+  [
+   {
+    "accel": 0.0,
+    "autocross": 117.49727668845318,
+    "endurance": 274.1590354090355,
+    "skidpad": 54.12878787878787
+   },
+   445.7850999762765
+  ]
+ ],
+ "score.declared": [
+  [
+   {
+    "accel": 61.73611111111113,
+    "autocross": 117.34722222222224,
+    "endurance": 0.0,
+    "skidpad": 0.0
+   },
+   179.08333333333337
+  ],
+  [
+   {
+    "accel": 37.386363636363626,
+    "autocross": 102.9246794871795,
+    "endurance": 0.0,
+    "skidpad": 0.0
+   },
+   140.31104312354313
+  ],
+  [
+   {
+    "accel": 68.60398860398863,
+    "autocross": 109.99455337690631,
+    "endurance": 0.0,
+    "skidpad": 0.0
+   },
+   178.59854198089494
+  ],
+  [
+   {},
+   0.0
+  ],
+  [
+   {
+    "accel": 0.0,
+    "autocross": 125.0,
+    "endurance": 0.0,
+    "skidpad": 0.0
+   },
+   125.0
+  ]
+ ],
+ "score.edge": [
+  {
+   "accel": 5.0,
+   "autocross": 125.0,
+   "endurance": 275.0,
+   "skidpad": 0.0
+  },
+  405.0
+ ],
+ "score.none": null,
+ "score.relative": [
+  [
+   {
+    "accel": 0.0,
+    "autocross": 117.34722222222224,
+    "endurance": 198.4722222222222,
+    "skidpad": 75.0
+   },
+   390.81944444444446
+  ],
+  [
+   {
+    "accel": 0.0,
+    "autocross": 102.9246794871795,
+    "endurance": 0.0,
+    "skidpad": 66.1698717948718
+   },
+   169.0945512820513
+  ],
+  [
+   {
+    "accel": 0.0,
+    "autocross": 109.99455337690631,
+    "endurance": 0.0,
+    "skidpad": 0.0
+   },
+   109.99455337690631
+  ],
+  [
+   {},
+   0.0
+  ],
+  [
+   {
+    "accel": 0.0,
+    "autocross": 125.0,
+    "endurance": 0.0,
+    "skidpad": 75.0
+   },
+   200.0
+  ]
+ ],
+ "synth.absolute_calibrated": [
+  true,
+  "Full-vehicle synthesis converged. Winner: 96s4p · 2 motors (axle split) · drive 3.59:1, scoring 487 absolute points and finishing the season (energy margin +0.50 kWh, peak cell 52 °C).",
+  [],
+  false,
+  true,
+  {
+   "cell_temp_limit_c": 60.0,
+   "endurance_km": 22.0,
+   "max_power_kw": 80.0,
+   "max_segment_energy_mj": 6.0,
+   "max_segment_voltage": 120.0,
+   "max_ts_voltage": 600.0,
+   "min_wheelbase_mm": 1525.0
+  },
+  {
+   "accel_s": 4.0,
+   "autocross_s": 50.0,
+   "endurance_s": 1000.0,
+   "skidpad_s": 5.0
+  }
+ ],
+ "synth.all_broken": [
+  false,
+  "No legal configuration produced solvable event times — the QSS chain could not follow any survivor. Check the fixed geometry/aero in the design space.",
+  null,
+  [],
+  [
+   [
+    "96s4p · 1 motor + diff · drive 3.21:1",
+    0.0
+   ],
+   [
+    "96s4p · 2 motors (axle split) · drive 3.21:1",
+    0.0
+   ],
+   [
+    "96s5p · 1 motor + diff · drive 3.21:1",
+    0.0
+   ],
+   [
+    "96s5p · 2 motors (axle split) · drive 3.21:1",
+    0.0
+   ],
+   [
+    "104s4p · 1 motor + diff · drive 3.21:1",
+    0.0
+   ],
+   [
+    "104s4p · 2 motors (axle split) · drive 3.21:1",
+    0.0
+   ],
+   [
+    "104s5p · 1 motor + diff · drive 3.21:1",
+    0.0
+   ],
+   [
+    "104s5p · 2 motors (axle split) · drive 3.21:1",
+    0.0
+   ]
+  ],
+  [],
+  {
+   "n_evaluated": 24,
+   "n_gear_refimements": 8,
+   "n_grid": 8,
+   "n_lap_sims": 96,
+   "n_rule_killed": 0,
+   "n_thermal_gates": 0
+  },
+  true,
+  [],
+  [
+   [
+    "96s4p · 1 motor + diff · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 1 motor + diff · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 1 motor + diff · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 2 motors (axle split) · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 2 motors (axle split) · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 2 motors (axle split) · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 1 motor + diff · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 1 motor + diff · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 1 motor + diff · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 2 motors (axle split) · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 2 motors (axle split) · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 2 motors (axle split) · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 1 motor + diff · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 1 motor + diff · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 1 motor + diff · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 2 motors (axle split) · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 2 motors (axle split) · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 2 motors (axle split) · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 1 motor + diff · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 1 motor + diff · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 1 motor + diff · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 2 motors (axle split) · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 2 motors (axle split) · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 2 motors (axle split) · drive 3.21:1",
+    false,
+    true,
+    true
+   ]
+  ],
+  true,
+  true,
+  true,
+  {
+   "accel_s": null,
+   "autocross_s": null,
+   "endurance_s": null,
+   "skidpad_s": null
+  },
+  true
+ ],
+ "synth.broken_fields": [
+  false,
+  true,
+  true,
+  true,
+  false,
+  [],
+  true
+ ],
+ "synth.default": [
+  true,
+  "Full-vehicle synthesis converged. Winner: 96s4p · 2 motors (axle split) · drive 3.21:1, scoring 575 relative points and finishing the season (energy margin +0.50 kWh, peak cell 52 °C).",
+  {
+   "accel_s": 4.317923753706671,
+   "autocross_s": 53.97404692133338,
+   "config": {
+    "architecture": "twin_axle",
+    "final_drive": 3.213776741499453,
+    "parallel": 4,
+    "series": 96
+   },
+   "derate_penalty_s": 0.0,
+   "derived": {
+    "mass_kg": 260.976,
+    "n_cells": 384,
+    "n_segments": 4,
+    "pack_energy_kwh": 6.2208,
+    "pack_mass_kg": 38.976,
+    "pack_nominal_v": 345.6,
+    "pack_power_cap_kw": 62.208000000000006,
+    "power_kw": 62.208000000000006,
+    "segment_series": 25,
+    "usable_kwh": 5.723136
+   },
+   "endurance_laps": 0,
+   "endurance_s": 1079.4809384266678,
+   "energy_event_kwh": "NaN",
+   "energy_margin_kwh": 0.5,
+   "kill_reasons": [],
+   "ok": true,
+   "overheat_lap": null,
+   "peak_lat_g": "NaN",
+   "points": {
+    "accel": 100.0,
+    "autocross": 125.0,
+    "endurance": 275.0,
+    "skidpad": 75.0
+   },
+   "skidpad_s": 5.0,
+   "thermal_peak": 52.5,
+   "total_points": 575.0,
+   "tv_yaw_note": "",
+   "verdict": "FEASIBLE",
+   "warnings": []
+  },
+  [
+   {
+    "accel_s": 4.317923753706671,
+    "autocross_s": 53.97404692133338,
+    "config": {
+     "architecture": "twin_axle",
+     "final_drive": 3.213776741499453,
+     "parallel": 4,
+     "series": 96
+    },
+    "derate_penalty_s": 0.0,
+    "derived": {
+     "mass_kg": 260.976,
+     "n_cells": 384,
+     "n_segments": 4,
+     "pack_energy_kwh": 6.2208,
+     "pack_mass_kg": 38.976,
+     "pack_nominal_v": 345.6,
+     "pack_power_cap_kw": 62.208000000000006,
+     "power_kw": 62.208000000000006,
+     "segment_series": 25,
+     "usable_kwh": 5.723136
+    },
+    "endurance_laps": 0,
+    "endurance_s": 1079.4809384266678,
+    "energy_event_kwh": "NaN",
+    "energy_margin_kwh": 0.5,
+    "kill_reasons": [],
+    "ok": true,
+    "overheat_lap": null,
+    "peak_lat_g": "NaN",
+    "points": {
+     "accel": 100.0,
+     "autocross": 125.0,
+     "endurance": 275.0,
+     "skidpad": 75.0
+    },
+    "skidpad_s": 5.0,
+    "thermal_peak": 52.5,
+    "total_points": 575.0,
+    "tv_yaw_note": "",
+    "verdict": "FEASIBLE",
+    "warnings": []
+   },
+   {
+    "accel_s": 4.325923753706671,
+    "autocross_s": 54.074046921333384,
+    "config": {
+     "architecture": "twin_axle",
+     "final_drive": 3.213776741499453,
+     "parallel": 4,
+     "series": 104
+    },
+    "derate_penalty_s": 0.0,
+    "derived": {
+     "mass_kg": 264.224,
+     "n_cells": 416,
+     "n_segments": 5,
+     "pack_energy_kwh": 6.739199999999999,
+     "pack_mass_kg": 42.224000000000004,
+     "pack_nominal_v": 374.40000000000003,
+     "pack_power_cap_kw": 67.392,
+     "power_kw": 67.392,
+     "segment_series": 25,
+     "usable_kwh": 6.200063999999999
+    },
+    "endurance_laps": 0,
+    "endurance_s": 1081.4809384266678,
+    "energy_event_kwh": "NaN",
+    "energy_margin_kwh": 0.5,
+    "kill_reasons": [],
+    "ok": true,
+    "overheat_lap": null,
+    "peak_lat_g": "NaN",
+    "points": {
+     "accel": 99.43390382532965,
+     "autocross": 124.29237978166206,
+     "endurance": 273.4432355196565,
+     "skidpad": 75.0
+    },
+    "skidpad_s": 5.0,
+    "thermal_peak": 52.5,
+    "total_points": 572.1695191266482,
+    "tv_yaw_note": "",
+    "verdict": "FEASIBLE",
+    "warnings": []
+   },
+   {
+    "accel_s": 4.327923753706671,
+    "autocross_s": 54.09904692133338,
+    "config": {
+     "architecture": "twin_axle",
+     "final_drive": 3.213776741499453,
+     "parallel": 5,
+     "series": 96
+    },
+    "derate_penalty_s": 0.0,
+    "derived": {
+     "mass_kg": 270.72,
+     "n_cells": 480,
+     "n_segments": 5,
+     "pack_energy_kwh": 7.776,
+     "pack_mass_kg": 48.72,
+     "pack_nominal_v": 345.6,
+     "pack_power_cap_kw": 77.76,
+     "power_kw": 77.76,
+     "segment_series": 20,
+     "usable_kwh": 7.15392
+    },
+    "endurance_laps": 0,
+    "endurance_s": 1081.9809384266678,
+    "energy_event_kwh": "NaN",
+    "energy_margin_kwh": 0.5,
+    "kill_reasons": [],
+    "ok": true,
+    "overheat_lap": null,
+    "peak_lat_g": "NaN",
+    "points": {
+     "accel": 99.29270678382692,
+     "autocross": 124.11588347978365,
+     "endurance": 273.054943655524,
+     "skidpad": 75.0
+    },
+    "skidpad_s": 5.0,
+    "thermal_peak": 52.5,
+    "total_points": 571.4635339191345,
+    "tv_yaw_note": "",
+    "verdict": "FEASIBLE",
+    "warnings": []
+   },
+   {
+    "accel_s": 4.335923753706671,
+    "autocross_s": 54.199046921333384,
+    "config": {
+     "architecture": "twin_axle",
+     "final_drive": 3.213776741499453,
+     "parallel": 5,
+     "series": 104
+    },
+    "derate_penalty_s": 0.0,
+    "derived": {
+     "mass_kg": 274.78000000000003,
+     "n_cells": 520,
+     "n_segments": 6,
+     "pack_energy_kwh": 8.424,
+     "pack_mass_kg": 52.78000000000001,
+     "pack_nominal_v": 374.40000000000003,
+     "pack_power_cap_kw": 84.24000000000001,
+     "power_kw": 80.0,
+     "segment_series": 20,
+     "usable_kwh": 7.75008
+    },
+    "endurance_laps": 0,
+    "endurance_s": 1083.9809384266678,
+    "energy_event_kwh": "NaN",
+    "energy_margin_kwh": 0.5,
+    "kill_reasons": [],
+    "ok": true,
+    "overheat_lap": null,
+    "peak_lat_g": "NaN",
+    "points": {
+     "accel": 98.7292211964545,
+     "autocross": 123.41152649556807,
+     "endurance": 271.5053582902498,
+     "skidpad": 75.0
+    },
+    "skidpad_s": 5.0,
+    "thermal_peak": 52.5,
+    "total_points": 568.6461059822724,
+    "tv_yaw_note": "",
+    "verdict": "FEASIBLE",
+    "warnings": []
+   }
+  ],
+  [
+   [
+    "96s4p · 2 motors (axle split) · drive 3.21:1",
+    575.0
+   ],
+   [
+    "104s4p · 2 motors (axle split) · drive 3.21:1",
+    572.1695191266482
+   ],
+   [
+    "96s5p · 2 motors (axle split) · drive 3.21:1",
+    571.4635339191345
+   ],
+   [
+    "104s5p · 2 motors (axle split) · drive 3.21:1",
+    568.6461059822724
+   ],
+   [
+    "96s4p · 1 motor + diff · drive 3.21:1",
+    507.2451799103589
+   ],
+   [
+    "104s4p · 1 motor + diff · drive 3.21:1",
+    504.6595407081644
+   ],
+   [
+    "96s5p · 1 motor + diff · drive 3.21:1",
+    504.01455851513686
+   ],
+   [
+    "104s5p · 1 motor + diff · drive 3.21:1",
+    501.440317512293
+   ]
+  ],
+  [],
+  {
+   "n_evaluated": 84,
+   "n_gear_refimements": 64,
+   "n_grid": 8,
+   "n_lap_sims": 336,
+   "n_rule_killed": 0,
+   "n_thermal_gates": 4
+  },
+  true,
+  [
+   "No event-best times were declared, so points are scored RELATIVE to the best candidate in this search — correct for choosing between configurations, but NOT an absolute points prediction. Declare real event bests in the reference to score in points.",
+   "The cell thermal model is UNCALIBRATED — every pack temperature, and therefore every THERMAL_DNF verdict, is physically-shaped but not measured. Calibrate the cell before trusting an overheat lap."
+  ],
+  [
+   [
+    "96s4p · 1 motor + diff · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 1 motor + diff · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 1 motor + diff · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 1 motor + diff · drive 2.98:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 1 motor + diff · drive 2.83:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 1 motor + diff · drive 2.74:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 1 motor + diff · drive 2.69:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 1 motor + diff · drive 2.66:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 1 motor + diff · drive 2.63:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 1 motor + diff · drive 2.62:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 2 motors (axle split) · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 2 motors (axle split) · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 2 motors (axle split) · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 2 motors (axle split) · drive 2.98:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 2 motors (axle split) · drive 2.83:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 2 motors (axle split) · drive 2.74:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 2 motors (axle split) · drive 2.69:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 2 motors (axle split) · drive 2.66:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 2 motors (axle split) · drive 2.63:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 2 motors (axle split) · drive 2.62:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 1 motor + diff · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 1 motor + diff · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 1 motor + diff · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 1 motor + diff · drive 2.98:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 1 motor + diff · drive 2.83:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 1 motor + diff · drive 2.74:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 1 motor + diff · drive 2.69:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 1 motor + diff · drive 2.66:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 1 motor + diff · drive 2.63:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 1 motor + diff · drive 2.62:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 2 motors (axle split) · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 2 motors (axle split) · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 2 motors (axle split) · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 2 motors (axle split) · drive 2.98:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 2 motors (axle split) · drive 2.83:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 2 motors (axle split) · drive 2.74:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 2 motors (axle split) · drive 2.69:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 2 motors (axle split) · drive 2.66:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 2 motors (axle split) · drive 2.63:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 2 motors (axle split) · drive 2.62:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 1 motor + diff · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 1 motor + diff · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 1 motor + diff · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 1 motor + diff · drive 2.98:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 1 motor + diff · drive 2.83:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 1 motor + diff · drive 2.74:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 1 motor + diff · drive 2.69:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 1 motor + diff · drive 2.66:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 1 motor + diff · drive 2.63:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 1 motor + diff · drive 2.62:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 2 motors (axle split) · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 2 motors (axle split) · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 2 motors (axle split) · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 2 motors (axle split) · drive 2.98:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 2 motors (axle split) · drive 2.83:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 2 motors (axle split) · drive 2.74:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 2 motors (axle split) · drive 2.69:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 2 motors (axle split) · drive 2.66:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 2 motors (axle split) · drive 2.63:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 2 motors (axle split) · drive 2.62:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 1 motor + diff · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 1 motor + diff · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 1 motor + diff · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 1 motor + diff · drive 2.98:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 1 motor + diff · drive 2.83:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 1 motor + diff · drive 2.74:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 1 motor + diff · drive 2.69:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 1 motor + diff · drive 2.66:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 1 motor + diff · drive 2.63:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 1 motor + diff · drive 2.62:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 2 motors (axle split) · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 2 motors (axle split) · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 2 motors (axle split) · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 2 motors (axle split) · drive 2.98:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 2 motors (axle split) · drive 2.83:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 2 motors (axle split) · drive 2.74:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 2 motors (axle split) · drive 2.69:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 2 motors (axle split) · drive 2.66:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 2 motors (axle split) · drive 2.63:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 2 motors (axle split) · drive 2.62:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 2 motors (axle split) · drive 3.21:1",
+    true,
+    true,
+    true
+   ],
+   [
+    "104s4p · 2 motors (axle split) · drive 3.21:1",
+    true,
+    true,
+    true
+   ],
+   [
+    "96s5p · 2 motors (axle split) · drive 3.21:1",
+    true,
+    true,
+    true
+   ],
+   [
+    "104s5p · 2 motors (axle split) · drive 3.21:1",
+    true,
+    true,
+    true
+   ]
+  ],
+  true,
+  true,
+  true,
+  {
+   "accel_s": null,
+   "autocross_s": null,
+   "endurance_s": null,
+   "skidpad_s": null
+  },
+  true
+ ],
+ "synth.hot_top": [
+  true,
+  "Full-vehicle synthesis converged. Winner: 104s4p · 2 motors (axle split) · drive 3.21:1, scoring 572 relative points and finishing the season (energy margin +0.50 kWh, peak cell 52 °C).",
+  {
+   "accel_s": 4.325923753706671,
+   "autocross_s": 54.074046921333384,
+   "config": {
+    "architecture": "twin_axle",
+    "final_drive": 3.213776741499453,
+    "parallel": 4,
+    "series": 104
+   },
+   "derate_penalty_s": 0.0,
+   "derived": {
+    "mass_kg": 264.224,
+    "n_cells": 416,
+    "n_segments": 5,
+    "pack_energy_kwh": 6.739199999999999,
+    "pack_mass_kg": 42.224000000000004,
+    "pack_nominal_v": 374.40000000000003,
+    "pack_power_cap_kw": 67.392,
+    "power_kw": 67.392,
+    "segment_series": 25,
+    "usable_kwh": 6.200063999999999
+   },
+   "endurance_laps": 0,
+   "endurance_s": 1081.4809384266678,
+   "energy_event_kwh": "NaN",
+   "energy_margin_kwh": 0.5,
+   "kill_reasons": [],
+   "ok": true,
+   "overheat_lap": null,
+   "peak_lat_g": "NaN",
+   "points": {
+    "accel": 99.43390382532965,
+    "autocross": 124.29237978166206,
+    "endurance": 273.4432355196565,
+    "skidpad": 75.0
+   },
+   "skidpad_s": 5.0,
+   "thermal_peak": 52.5,
+   "total_points": 572.1695191266482,
+   "tv_yaw_note": "",
+   "verdict": "FEASIBLE",
+   "warnings": []
+  },
+  [
+   {
+    "accel_s": 4.325923753706671,
+    "autocross_s": 54.074046921333384,
+    "config": {
+     "architecture": "twin_axle",
+     "final_drive": 3.213776741499453,
+     "parallel": 4,
+     "series": 104
+    },
+    "derate_penalty_s": 0.0,
+    "derived": {
+     "mass_kg": 264.224,
+     "n_cells": 416,
+     "n_segments": 5,
+     "pack_energy_kwh": 6.739199999999999,
+     "pack_mass_kg": 42.224000000000004,
+     "pack_nominal_v": 374.40000000000003,
+     "pack_power_cap_kw": 67.392,
+     "power_kw": 67.392,
+     "segment_series": 25,
+     "usable_kwh": 6.200063999999999
+    },
+    "endurance_laps": 0,
+    "endurance_s": 1081.4809384266678,
+    "energy_event_kwh": "NaN",
+    "energy_margin_kwh": 0.5,
+    "kill_reasons": [],
+    "ok": true,
+    "overheat_lap": null,
+    "peak_lat_g": "NaN",
+    "points": {
+     "accel": 99.43390382532965,
+     "autocross": 124.29237978166206,
+     "endurance": 273.4432355196565,
+     "skidpad": 75.0
+    },
+    "skidpad_s": 5.0,
+    "thermal_peak": 52.5,
+    "total_points": 572.1695191266482,
+    "tv_yaw_note": "",
+    "verdict": "FEASIBLE",
+    "warnings": []
+   },
+   {
+    "accel_s": 4.327923753706671,
+    "autocross_s": 54.09904692133338,
+    "config": {
+     "architecture": "twin_axle",
+     "final_drive": 3.213776741499453,
+     "parallel": 5,
+     "series": 96
+    },
+    "derate_penalty_s": 0.0,
+    "derived": {
+     "mass_kg": 270.72,
+     "n_cells": 480,
+     "n_segments": 5,
+     "pack_energy_kwh": 7.776,
+     "pack_mass_kg": 48.72,
+     "pack_nominal_v": 345.6,
+     "pack_power_cap_kw": 77.76,
+     "power_kw": 77.76,
+     "segment_series": 20,
+     "usable_kwh": 7.15392
+    },
+    "endurance_laps": 0,
+    "endurance_s": 1081.9809384266678,
+    "energy_event_kwh": "NaN",
+    "energy_margin_kwh": 0.5,
+    "kill_reasons": [],
+    "ok": true,
+    "overheat_lap": null,
+    "peak_lat_g": "NaN",
+    "points": {
+     "accel": 99.29270678382692,
+     "autocross": 124.11588347978365,
+     "endurance": 273.054943655524,
+     "skidpad": 75.0
+    },
+    "skidpad_s": 5.0,
+    "thermal_peak": 52.5,
+    "total_points": 571.4635339191345,
+    "tv_yaw_note": "",
+    "verdict": "FEASIBLE",
+    "warnings": []
+   },
+   {
+    "accel_s": 4.317923753706671,
+    "autocross_s": 53.97404692133338,
+    "config": {
+     "architecture": "twin_axle",
+     "final_drive": 3.213776741499453,
+     "parallel": 4,
+     "series": 96
+    },
+    "derate_penalty_s": 0.0,
+    "derived": {
+     "mass_kg": 260.976,
+     "n_cells": 384,
+     "n_segments": 4,
+     "pack_energy_kwh": 6.2208,
+     "pack_mass_kg": 38.976,
+     "pack_nominal_v": 345.6,
+     "pack_power_cap_kw": 62.208000000000006,
+     "power_kw": 62.208000000000006,
+     "segment_series": 25,
+     "usable_kwh": 5.723136
+    },
+    "endurance_laps": 0,
+    "endurance_s": 1079.4809384266678,
+    "energy_event_kwh": "NaN",
+    "energy_margin_kwh": 0.5,
+    "kill_reasons": [
+     "too hot"
+    ],
+    "ok": true,
+    "overheat_lap": 4,
+    "peak_lat_g": "NaN",
+    "points": {
+     "accel": 100.0,
+     "autocross": 125.0,
+     "endurance": 0.0,
+     "skidpad": 75.0
+    },
+    "skidpad_s": 5.0,
+    "thermal_peak": 52.5,
+    "total_points": 300.0,
+    "tv_yaw_note": "",
+    "verdict": "THERMAL_DNF",
+    "warnings": []
+   }
+  ],
+  [
+   [
+    "104s4p · 2 motors (axle split) · drive 3.21:1",
+    572.1695191266482
+   ],
+   [
+    "96s5p · 2 motors (axle split) · drive 3.21:1",
+    571.4635339191345
+   ],
+   [
+    "104s5p · 2 motors (axle split) · drive 3.21:1",
+    568.6461059822724
+   ],
+   [
+    "96s4p · 1 motor + diff · drive 3.21:1",
+    507.2451799103589
+   ],
+   [
+    "104s4p · 1 motor + diff · drive 3.21:1",
+    504.6595407081644
+   ],
+   [
+    "96s5p · 1 motor + diff · drive 3.21:1",
+    504.01455851513686
+   ],
+   [
+    "104s5p · 1 motor + diff · drive 3.21:1",
+    501.440317512293
+   ],
+   [
+    "96s4p · 2 motors (axle split) · drive 3.21:1",
+    300.0
+   ]
+  ],
+  [],
+  {
+   "n_evaluated": 27,
+   "n_gear_refimements": 8,
+   "n_grid": 8,
+   "n_lap_sims": 108,
+   "n_rule_killed": 0,
+   "n_thermal_gates": 3
+  },
+  true,
+  [
+   "No event-best times were declared, so points are scored RELATIVE to the best candidate in this search — correct for choosing between configurations, but NOT an absolute points prediction. Declare real event bests in the reference to score in points.",
+   "The cell thermal model is UNCALIBRATED — every pack temperature, and therefore every THERMAL_DNF verdict, is physically-shaped but not measured. Calibrate the cell before trusting an overheat lap."
+  ],
+  [
+   [
+    "96s4p · 1 motor + diff · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 1 motor + diff · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 1 motor + diff · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 2 motors (axle split) · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 2 motors (axle split) · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 2 motors (axle split) · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 1 motor + diff · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 1 motor + diff · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 1 motor + diff · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 2 motors (axle split) · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 2 motors (axle split) · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 2 motors (axle split) · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 1 motor + diff · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 1 motor + diff · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 1 motor + diff · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 2 motors (axle split) · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 2 motors (axle split) · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 2 motors (axle split) · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 1 motor + diff · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 1 motor + diff · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 1 motor + diff · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 2 motors (axle split) · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 2 motors (axle split) · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 2 motors (axle split) · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 2 motors (axle split) · drive 3.21:1",
+    true,
+    true,
+    true
+   ],
+   [
+    "104s4p · 2 motors (axle split) · drive 3.21:1",
+    true,
+    true,
+    true
+   ],
+   [
+    "96s5p · 2 motors (axle split) · drive 3.21:1",
+    true,
+    true,
+    true
+   ]
+  ],
+  true,
+  true,
+  true,
+  {
+   "accel_s": null,
+   "autocross_s": null,
+   "endurance_s": null,
+   "skidpad_s": null
+  },
+  true
+ ],
+ "synth.killed": [
+  false,
+  "Every configuration in the declared space breaks a rule in the matrix — no legal car exists to optimise. The binding rules are named per candidate below; widen the space or check the matrix bounds (they are seeded near the common EV rules, NOT verified against your year).",
+  [
+   {
+    "accel_s": "NaN",
+    "autocross_s": "NaN",
+    "config": {
+     "architecture": "four_tv",
+     "final_drive": 0.0,
+     "parallel": 4,
+     "series": 150
+    },
+    "derate_penalty_s": 0.0,
+    "derived": {
+     "mass_kg": 291.9,
+     "n_cells": 600,
+     "n_segments": 6,
+     "pack_energy_kwh": 9.719999999999999,
+     "pack_mass_kg": 60.900000000000006,
+     "pack_nominal_v": 540.0,
+     "pack_power_cap_kw": 97.2,
+     "power_kw": 80.0,
+     "segment_series": 25,
+     "usable_kwh": 8.9424
+    },
+    "endurance_laps": 0,
+    "endurance_s": "NaN",
+    "energy_event_kwh": "NaN",
+    "energy_margin_kwh": "NaN",
+    "kill_reasons": [
+     "150s at 4.20 V/cell = 630 V max pack > TS voltage cap 600 V"
+    ],
+    "ok": false,
+    "overheat_lap": null,
+    "peak_lat_g": "NaN",
+    "points": {},
+    "skidpad_s": "NaN",
+    "thermal_peak": null,
+    "total_points": 0.0,
+    "tv_yaw_note": "",
+    "verdict": "RULE_KILLED",
+    "warnings": []
+   },
+   {
+    "accel_s": "NaN",
+    "autocross_s": "NaN",
+    "config": {
+     "architecture": "four_tv",
+     "final_drive": 0.0,
+     "parallel": 4,
+     "series": 158
+    },
+    "derate_penalty_s": 0.0,
+    "derived": {
+     "mass_kg": 295.148,
+     "n_cells": 632,
+     "n_segments": 7,
+     "pack_energy_kwh": 10.238399999999999,
+     "pack_mass_kg": 64.148,
+     "pack_nominal_v": 568.8000000000001,
+     "pack_power_cap_kw": 102.38400000000001,
+     "power_kw": 80.0,
+     "segment_series": 25,
+     "usable_kwh": 9.419327999999998
+    },
+    "endurance_laps": 0,
+    "endurance_s": "NaN",
+    "energy_event_kwh": "NaN",
+    "energy_margin_kwh": "NaN",
+    "kill_reasons": [
+     "158s at 4.20 V/cell = 664 V max pack > TS voltage cap 600 V"
+    ],
+    "ok": false,
+    "overheat_lap": null,
+    "peak_lat_g": "NaN",
+    "points": {},
+    "skidpad_s": "NaN",
+    "thermal_peak": null,
+    "total_points": 0.0,
+    "tv_yaw_note": "",
+    "verdict": "RULE_KILLED",
+    "warnings": []
+   }
+  ],
+  2,
+  2,
+  [],
+  [],
+  [],
+  null,
+  true,
+  true,
+  true,
+  false,
+  true
+ ],
+ "synth.none_finish": [
+  false,
+  "No finalist finishes the season as configured. The highest-scoring car (96s4p · 2 motors (axle split) · drive 3.21:1) is thermal dnf: too hot. Finalist verdicts: {'THERMAL_DNF': 1, 'ENERGY_SHORT': 1}. The levers, in order: raise the cell temp headroom (bigger/cooler pack or add cooling), lift the energy budget (more parallel), or widen the design space. No car was fabricated as a winner — the constraints and the track disagree AS DECLARED.",
+  {
+   "accel_s": 4.317923753706671,
+   "autocross_s": 53.97404692133338,
+   "config": {
+    "architecture": "twin_axle",
+    "final_drive": 3.213776741499453,
+    "parallel": 4,
+    "series": 96
+   },
+   "derate_penalty_s": 0.0,
+   "derived": {
+    "mass_kg": 260.976,
+    "n_cells": 384,
+    "n_segments": 4,
+    "pack_energy_kwh": 6.2208,
+    "pack_mass_kg": 38.976,
+    "pack_nominal_v": 345.6,
+    "pack_power_cap_kw": 62.208000000000006,
+    "power_kw": 62.208000000000006,
+    "segment_series": 25,
+    "usable_kwh": 5.723136
+   },
+   "endurance_laps": 0,
+   "endurance_s": 1079.4809384266678,
+   "energy_event_kwh": "NaN",
+   "energy_margin_kwh": 0.5,
+   "kill_reasons": [
+    "too hot"
+   ],
+   "ok": true,
+   "overheat_lap": 4,
+   "peak_lat_g": "NaN",
+   "points": {
+    "accel": 100.0,
+    "autocross": 125.0,
+    "endurance": 0.0,
+    "skidpad": 75.0
+   },
+   "skidpad_s": 5.0,
+   "thermal_peak": 52.5,
+   "total_points": 300.0,
+   "tv_yaw_note": "",
+   "verdict": "THERMAL_DNF",
+   "warnings": []
+  },
+  [
+   {
+    "accel_s": 4.317923753706671,
+    "autocross_s": 53.97404692133338,
+    "config": {
+     "architecture": "twin_axle",
+     "final_drive": 3.213776741499453,
+     "parallel": 4,
+     "series": 96
+    },
+    "derate_penalty_s": 0.0,
+    "derived": {
+     "mass_kg": 260.976,
+     "n_cells": 384,
+     "n_segments": 4,
+     "pack_energy_kwh": 6.2208,
+     "pack_mass_kg": 38.976,
+     "pack_nominal_v": 345.6,
+     "pack_power_cap_kw": 62.208000000000006,
+     "power_kw": 62.208000000000006,
+     "segment_series": 25,
+     "usable_kwh": 5.723136
+    },
+    "endurance_laps": 0,
+    "endurance_s": 1079.4809384266678,
+    "energy_event_kwh": "NaN",
+    "energy_margin_kwh": 0.5,
+    "kill_reasons": [
+     "too hot"
+    ],
+    "ok": true,
+    "overheat_lap": 4,
+    "peak_lat_g": "NaN",
+    "points": {
+     "accel": 100.0,
+     "autocross": 125.0,
+     "endurance": 0.0,
+     "skidpad": 75.0
+    },
+    "skidpad_s": 5.0,
+    "thermal_peak": 52.5,
+    "total_points": 300.0,
+    "tv_yaw_note": "",
+    "verdict": "THERMAL_DNF",
+    "warnings": []
+   },
+   {
+    "accel_s": 4.325923753706671,
+    "autocross_s": 54.074046921333384,
+    "config": {
+     "architecture": "twin_axle",
+     "final_drive": 3.213776741499453,
+     "parallel": 4,
+     "series": 104
+    },
+    "derate_penalty_s": 0.0,
+    "derived": {
+     "mass_kg": 264.224,
+     "n_cells": 416,
+     "n_segments": 5,
+     "pack_energy_kwh": 6.739199999999999,
+     "pack_mass_kg": 42.224000000000004,
+     "pack_nominal_v": 374.40000000000003,
+     "pack_power_cap_kw": 67.392,
+     "power_kw": 67.392,
+     "segment_series": 25,
+     "usable_kwh": 6.200063999999999
+    },
+    "endurance_laps": 0,
+    "endurance_s": 1081.4809384266678,
+    "energy_event_kwh": "NaN",
+    "energy_margin_kwh": -0.3,
+    "kill_reasons": [
+     "short"
+    ],
+    "ok": true,
+    "overheat_lap": null,
+    "peak_lat_g": "NaN",
+    "points": {
+     "accel": 99.43390382532965,
+     "autocross": 124.29237978166206,
+     "endurance": 0.0,
+     "skidpad": 75.0
+    },
+    "skidpad_s": 5.0,
+    "thermal_peak": 52.5,
+    "total_points": 298.72628360699173,
+    "tv_yaw_note": "",
+    "verdict": "ENERGY_SHORT",
+    "warnings": []
+   }
+  ],
+  [
+   [
+    "96s5p · 2 motors (axle split) · drive 3.21:1",
+    571.4635339191345
+   ],
+   [
+    "104s5p · 2 motors (axle split) · drive 3.21:1",
+    568.6461059822724
+   ],
+   [
+    "96s4p · 1 motor + diff · drive 3.21:1",
+    507.2451799103589
+   ],
+   [
+    "104s4p · 1 motor + diff · drive 3.21:1",
+    504.6595407081644
+   ],
+   [
+    "96s5p · 1 motor + diff · drive 3.21:1",
+    504.01455851513686
+   ],
+   [
+    "104s5p · 1 motor + diff · drive 3.21:1",
+    501.440317512293
+   ],
+   [
+    "96s4p · 2 motors (axle split) · drive 3.21:1",
+    300.0
+   ],
+   [
+    "104s4p · 2 motors (axle split) · drive 3.21:1",
+    298.72628360699173
+   ]
+  ],
+  [],
+  {
+   "n_evaluated": 26,
+   "n_gear_refimements": 8,
+   "n_grid": 8,
+   "n_lap_sims": 104,
+   "n_rule_killed": 0,
+   "n_thermal_gates": 2
+  },
+  true,
+  [
+   "No event-best times were declared, so points are scored RELATIVE to the best candidate in this search — correct for choosing between configurations, but NOT an absolute points prediction. Declare real event bests in the reference to score in points.",
+   "The cell thermal model is UNCALIBRATED — every pack temperature, and therefore every THERMAL_DNF verdict, is physically-shaped but not measured. Calibrate the cell before trusting an overheat lap."
+  ],
+  [
+   [
+    "96s4p · 1 motor + diff · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 1 motor + diff · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 1 motor + diff · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 2 motors (axle split) · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 2 motors (axle split) · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 2 motors (axle split) · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 1 motor + diff · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 1 motor + diff · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 1 motor + diff · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 2 motors (axle split) · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 2 motors (axle split) · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 2 motors (axle split) · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 1 motor + diff · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 1 motor + diff · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 1 motor + diff · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 2 motors (axle split) · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 2 motors (axle split) · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 2 motors (axle split) · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 1 motor + diff · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 1 motor + diff · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 1 motor + diff · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 2 motors (axle split) · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 2 motors (axle split) · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 2 motors (axle split) · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 2 motors (axle split) · drive 3.21:1",
+    true,
+    true,
+    true
+   ],
+   [
+    "104s4p · 2 motors (axle split) · drive 3.21:1",
+    true,
+    true,
+    true
+   ]
+  ],
+  true,
+  true,
+  true,
+  {
+   "accel_s": null,
+   "autocross_s": null,
+   "endurance_s": null,
+   "skidpad_s": null
+  },
+  true
+ ],
+ "synth.one_finalist": [
+  true,
+  "Full-vehicle synthesis converged. Winner: 96s4p · 2 motors (axle split) · drive 3.21:1, scoring 575 relative points and finishing the season (energy margin +0.50 kWh, peak cell 52 °C).",
+  {
+   "accel_s": 4.317923753706671,
+   "autocross_s": 53.97404692133338,
+   "config": {
+    "architecture": "twin_axle",
+    "final_drive": 3.213776741499453,
+    "parallel": 4,
+    "series": 96
+   },
+   "derate_penalty_s": 0.0,
+   "derived": {
+    "mass_kg": 260.976,
+    "n_cells": 384,
+    "n_segments": 4,
+    "pack_energy_kwh": 6.2208,
+    "pack_mass_kg": 38.976,
+    "pack_nominal_v": 345.6,
+    "pack_power_cap_kw": 62.208000000000006,
+    "power_kw": 62.208000000000006,
+    "segment_series": 25,
+    "usable_kwh": 5.723136
+   },
+   "endurance_laps": 0,
+   "endurance_s": 1079.4809384266678,
+   "energy_event_kwh": "NaN",
+   "energy_margin_kwh": 0.5,
+   "kill_reasons": [],
+   "ok": true,
+   "overheat_lap": null,
+   "peak_lat_g": "NaN",
+   "points": {
+    "accel": 100.0,
+    "autocross": 125.0,
+    "endurance": 275.0,
+    "skidpad": 75.0
+   },
+   "skidpad_s": 5.0,
+   "thermal_peak": 52.5,
+   "total_points": 575.0,
+   "tv_yaw_note": "",
+   "verdict": "FEASIBLE",
+   "warnings": []
+  },
+  [
+   {
+    "accel_s": 4.317923753706671,
+    "autocross_s": 53.97404692133338,
+    "config": {
+     "architecture": "twin_axle",
+     "final_drive": 3.213776741499453,
+     "parallel": 4,
+     "series": 96
+    },
+    "derate_penalty_s": 0.0,
+    "derived": {
+     "mass_kg": 260.976,
+     "n_cells": 384,
+     "n_segments": 4,
+     "pack_energy_kwh": 6.2208,
+     "pack_mass_kg": 38.976,
+     "pack_nominal_v": 345.6,
+     "pack_power_cap_kw": 62.208000000000006,
+     "power_kw": 62.208000000000006,
+     "segment_series": 25,
+     "usable_kwh": 5.723136
+    },
+    "endurance_laps": 0,
+    "endurance_s": 1079.4809384266678,
+    "energy_event_kwh": "NaN",
+    "energy_margin_kwh": 0.5,
+    "kill_reasons": [],
+    "ok": true,
+    "overheat_lap": null,
+    "peak_lat_g": "NaN",
+    "points": {
+     "accel": 100.0,
+     "autocross": 125.0,
+     "endurance": 275.0,
+     "skidpad": 75.0
+    },
+    "skidpad_s": 5.0,
+    "thermal_peak": 52.5,
+    "total_points": 575.0,
+    "tv_yaw_note": "",
+    "verdict": "FEASIBLE",
+    "warnings": []
+   }
+  ],
+  [
+   [
+    "96s4p · 2 motors (axle split) · drive 3.21:1",
+    575.0
+   ],
+   [
+    "104s4p · 2 motors (axle split) · drive 3.21:1",
+    572.1695191266482
+   ],
+   [
+    "96s5p · 2 motors (axle split) · drive 3.21:1",
+    571.4635339191345
+   ],
+   [
+    "104s5p · 2 motors (axle split) · drive 3.21:1",
+    568.6461059822724
+   ],
+   [
+    "96s4p · 1 motor + diff · drive 3.21:1",
+    507.2451799103589
+   ],
+   [
+    "104s4p · 1 motor + diff · drive 3.21:1",
+    504.6595407081644
+   ],
+   [
+    "96s5p · 1 motor + diff · drive 3.21:1",
+    504.01455851513686
+   ],
+   [
+    "104s5p · 1 motor + diff · drive 3.21:1",
+    501.440317512293
+   ]
+  ],
+  [],
+  {
+   "n_evaluated": 25,
+   "n_gear_refimements": 8,
+   "n_grid": 8,
+   "n_lap_sims": 100,
+   "n_rule_killed": 0,
+   "n_thermal_gates": 1
+  },
+  true,
+  [
+   "No event-best times were declared, so points are scored RELATIVE to the best candidate in this search — correct for choosing between configurations, but NOT an absolute points prediction. Declare real event bests in the reference to score in points.",
+   "The cell thermal model is UNCALIBRATED — every pack temperature, and therefore every THERMAL_DNF verdict, is physically-shaped but not measured. Calibrate the cell before trusting an overheat lap."
+  ],
+  [
+   [
+    "96s4p · 1 motor + diff · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 1 motor + diff · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 1 motor + diff · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 2 motors (axle split) · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 2 motors (axle split) · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 2 motors (axle split) · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 1 motor + diff · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 1 motor + diff · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 1 motor + diff · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 2 motors (axle split) · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 2 motors (axle split) · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 2 motors (axle split) · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 1 motor + diff · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 1 motor + diff · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 1 motor + diff · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 2 motors (axle split) · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 2 motors (axle split) · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 2 motors (axle split) · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 1 motor + diff · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 1 motor + diff · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 1 motor + diff · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 2 motors (axle split) · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 2 motors (axle split) · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 2 motors (axle split) · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 2 motors (axle split) · drive 3.21:1",
+    true,
+    true,
+    true
+   ]
+  ],
+  true,
+  true,
+  true,
+  {
+   "accel_s": null,
+   "autocross_s": null,
+   "endurance_s": null,
+   "skidpad_s": null
+  },
+  true
+ ],
+ "synth.partial_ref": false,
+ "synth.tie": [
+  true,
+  "Full-vehicle synthesis converged. Winner: 96s4p · 2 motors (axle split) · drive 3.21:1, scoring 575 relative points and finishing the season (energy margin +0.50 kWh, peak cell 52 °C).",
+  {
+   "accel_s": 4.317923753706671,
+   "autocross_s": 53.97404692133338,
+   "config": {
+    "architecture": "twin_axle",
+    "final_drive": 3.213776741499453,
+    "parallel": 4,
+    "series": 96
+   },
+   "derate_penalty_s": 0.0,
+   "derived": {
+    "mass_kg": 260.976,
+    "n_cells": 384,
+    "n_segments": 4,
+    "pack_energy_kwh": 6.2208,
+    "pack_mass_kg": 38.976,
+    "pack_nominal_v": 345.6,
+    "pack_power_cap_kw": 62.208000000000006,
+    "power_kw": 62.208000000000006,
+    "segment_series": 25,
+    "usable_kwh": 5.723136
+   },
+   "endurance_laps": 0,
+   "endurance_s": 1079.4809384266678,
+   "energy_event_kwh": "NaN",
+   "energy_margin_kwh": 0.5,
+   "kill_reasons": [],
+   "ok": true,
+   "overheat_lap": null,
+   "peak_lat_g": "NaN",
+   "points": {
+    "accel": 100.0,
+    "autocross": 125.0,
+    "endurance": 275.0,
+    "skidpad": 75.0
+   },
+   "skidpad_s": 5.0,
+   "thermal_peak": 52.5,
+   "total_points": 575.0,
+   "tv_yaw_note": "",
+   "verdict": "FEASIBLE",
+   "warnings": []
+  },
+  [
+   {
+    "accel_s": 4.317923753706671,
+    "autocross_s": 53.97404692133338,
+    "config": {
+     "architecture": "twin_axle",
+     "final_drive": 3.213776741499453,
+     "parallel": 4,
+     "series": 96
+    },
+    "derate_penalty_s": 0.0,
+    "derived": {
+     "mass_kg": 260.976,
+     "n_cells": 384,
+     "n_segments": 4,
+     "pack_energy_kwh": 6.2208,
+     "pack_mass_kg": 38.976,
+     "pack_nominal_v": 345.6,
+     "pack_power_cap_kw": 62.208000000000006,
+     "power_kw": 62.208000000000006,
+     "segment_series": 25,
+     "usable_kwh": 5.723136
+    },
+    "endurance_laps": 0,
+    "endurance_s": 1079.4809384266678,
+    "energy_event_kwh": "NaN",
+    "energy_margin_kwh": 0.5,
+    "kill_reasons": [],
+    "ok": true,
+    "overheat_lap": null,
+    "peak_lat_g": "NaN",
+    "points": {
+     "accel": 100.0,
+     "autocross": 125.0,
+     "endurance": 275.0,
+     "skidpad": 75.0
+    },
+    "skidpad_s": 5.0,
+    "thermal_peak": 52.5,
+    "total_points": 575.0,
+    "tv_yaw_note": "",
+    "verdict": "FEASIBLE",
+    "warnings": []
+   },
+   {
+    "accel_s": 4.325923753706671,
+    "autocross_s": 54.074046921333384,
+    "config": {
+     "architecture": "twin_axle",
+     "final_drive": 3.213776741499453,
+     "parallel": 4,
+     "series": 104
+    },
+    "derate_penalty_s": 0.0,
+    "derived": {
+     "mass_kg": 264.224,
+     "n_cells": 416,
+     "n_segments": 5,
+     "pack_energy_kwh": 6.739199999999999,
+     "pack_mass_kg": 42.224000000000004,
+     "pack_nominal_v": 374.40000000000003,
+     "pack_power_cap_kw": 67.392,
+     "power_kw": 67.392,
+     "segment_series": 25,
+     "usable_kwh": 6.200063999999999
+    },
+    "endurance_laps": 0,
+    "endurance_s": 1081.4809384266678,
+    "energy_event_kwh": "NaN",
+    "energy_margin_kwh": 0.5,
+    "kill_reasons": [],
+    "ok": true,
+    "overheat_lap": null,
+    "peak_lat_g": "NaN",
+    "points": {
+     "accel": 99.43390382532965,
+     "autocross": 124.29237978166206,
+     "endurance": 273.4432355196565,
+     "skidpad": 75.0
+    },
+    "skidpad_s": 5.0,
+    "thermal_peak": 52.5,
+    "total_points": 572.1695191266482,
+    "tv_yaw_note": "",
+    "verdict": "FEASIBLE",
+    "warnings": []
+   }
+  ],
+  [
+   [
+    "96s4p · 2 motors (axle split) · drive 3.21:1",
+    575.0
+   ],
+   [
+    "104s4p · 2 motors (axle split) · drive 3.21:1",
+    572.1695191266482
+   ],
+   [
+    "96s5p · 2 motors (axle split) · drive 3.21:1",
+    571.4635339191345
+   ],
+   [
+    "104s5p · 2 motors (axle split) · drive 3.21:1",
+    568.6461059822724
+   ],
+   [
+    "96s4p · 1 motor + diff · drive 3.21:1",
+    513.0715977113431
+   ],
+   [
+    "96s5p · 1 motor + diff · drive 3.21:1",
+    513.0715977113431
+   ],
+   [
+    "104s4p · 1 motor + diff · drive 3.21:1",
+    504.6595407081644
+   ],
+   [
+    "104s5p · 1 motor + diff · drive 3.21:1",
+    501.440317512293
+   ]
+  ],
+  [],
+  {
+   "n_evaluated": 26,
+   "n_gear_refimements": 8,
+   "n_grid": 8,
+   "n_lap_sims": 104,
+   "n_rule_killed": 0,
+   "n_thermal_gates": 2
+  },
+  true,
+  [
+   "No event-best times were declared, so points are scored RELATIVE to the best candidate in this search — correct for choosing between configurations, but NOT an absolute points prediction. Declare real event bests in the reference to score in points.",
+   "The cell thermal model is UNCALIBRATED — every pack temperature, and therefore every THERMAL_DNF verdict, is physically-shaped but not measured. Calibrate the cell before trusting an overheat lap."
+  ],
+  [
+   [
+    "96s4p · 1 motor + diff · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 1 motor + diff · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 1 motor + diff · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 2 motors (axle split) · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 2 motors (axle split) · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 2 motors (axle split) · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 1 motor + diff · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 1 motor + diff · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 1 motor + diff · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 2 motors (axle split) · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 2 motors (axle split) · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s5p · 2 motors (axle split) · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 1 motor + diff · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 1 motor + diff · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 1 motor + diff · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 2 motors (axle split) · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 2 motors (axle split) · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s4p · 2 motors (axle split) · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 1 motor + diff · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 1 motor + diff · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 1 motor + diff · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 2 motors (axle split) · drive 3.59:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 2 motors (axle split) · drive 4.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "104s5p · 2 motors (axle split) · drive 3.21:1",
+    false,
+    true,
+    true
+   ],
+   [
+    "96s4p · 2 motors (axle split) · drive 3.21:1",
+    true,
+    true,
+    true
+   ],
+   [
+    "104s4p · 2 motors (axle split) · drive 3.21:1",
+    true,
+    true,
+    true
+   ]
+  ],
+  true,
+  true,
+  true,
+  {
+   "accel_s": null,
+   "autocross_s": null,
+   "endurance_s": null,
+   "skidpad_s": null
+  },
+  true
+ ]
+}

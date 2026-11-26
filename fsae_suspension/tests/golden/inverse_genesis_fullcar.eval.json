@@ -1,0 +1,924 @@
+{
+ "eval.cool": {
+  "accel_s": 4.578047481487089,
+  "autocross_s": 25.568226297126298,
+  "config": {
+   "architecture": "single_diff",
+   "final_drive": 3.8,
+   "parallel": 5,
+   "series": 112
+  },
+  "derate_penalty_s": 0.0,
+  "derived": {
+   "mass_kg": 271.84000000000003,
+   "n_cells": 560,
+   "n_segments": 6,
+   "pack_energy_kwh": 9.072,
+   "pack_mass_kg": 56.84,
+   "pack_nominal_v": 403.2,
+   "pack_power_cap_kw": 90.72,
+   "power_kw": 80.0,
+   "segment_series": 20,
+   "usable_kwh": 8.34624
+  },
+  "endurance_laps": 66,
+  "endurance_s": 1687.5029356103357,
+  "energy_event_kwh": 6.161226623909595,
+  "energy_margin_kwh": 2.1850133760904047,
+  "kill_reasons": [],
+  "ok": true,
+  "overheat_lap": null,
+  "peak_lat_g": 1.371205768777509,
+  "points": {},
+  "skidpad_s": 4.981729718974947,
+  "thermal_peak": null,
+  "total_points": 0.0,
+  "tv_yaw_note": "",
+  "verdict": "FEASIBLE",
+  "warnings": []
+ },
+ "eval.crash": {
+  "accel_s": "NaN",
+  "autocross_s": "NaN",
+  "config": {
+   "architecture": "single_diff",
+   "final_drive": 4.0,
+   "parallel": 5,
+   "series": 112
+  },
+  "derate_penalty_s": 0.0,
+  "derived": {
+   "mass_kg": 271.84000000000003,
+   "n_cells": 560,
+   "n_segments": 6,
+   "pack_energy_kwh": 9.072,
+   "pack_mass_kg": 56.84,
+   "pack_nominal_v": 403.2,
+   "pack_power_cap_kw": 90.72,
+   "power_kw": 80.0,
+   "segment_series": 20,
+   "usable_kwh": 8.34624
+  },
+  "endurance_laps": 0,
+  "endurance_s": "NaN",
+  "energy_event_kwh": "NaN",
+  "energy_margin_kwh": "NaN",
+  "kill_reasons": [
+   "evaluation crashed: ValueError(\"Unknown tire_model 'nope'.\")"
+  ],
+  "ok": false,
+  "overheat_lap": null,
+  "peak_lat_g": "NaN",
+  "points": {},
+  "skidpad_s": "NaN",
+  "thermal_peak": null,
+  "total_points": 0.0,
+  "tv_yaw_note": "",
+  "verdict": "FAILED",
+  "warnings": []
+ },
+ "eval.derate": {
+  "accel_s": 4.578047481487089,
+  "autocross_s": 25.568226297126298,
+  "config": {
+   "architecture": "single_diff",
+   "final_drive": 3.8,
+   "parallel": 5,
+   "series": 112
+  },
+  "derate_penalty_s": 7.6704592284823265,
+  "derived": {
+   "mass_kg": 271.84000000000003,
+   "n_cells": 560,
+   "n_segments": 6,
+   "pack_energy_kwh": 9.072,
+   "pack_mass_kg": 56.84,
+   "pack_nominal_v": 403.2,
+   "pack_power_cap_kw": 90.72,
+   "power_kw": 80.0,
+   "segment_series": 20,
+   "usable_kwh": 8.34624
+  },
+  "endurance_laps": 66,
+  "endurance_s": 2193.753244690169,
+  "energy_event_kwh": 7392000.0,
+  "energy_margin_kwh": -7391991.65376,
+  "kill_reasons": [
+   "endurance needs 7392000.00 kWh, pack holds 8.35 kWh usable (-7391991.65 kWh)"
+  ],
+  "ok": true,
+  "overheat_lap": null,
+  "peak_lat_g": 1.371205768777509,
+  "points": {},
+  "skidpad_s": 4.981729718974947,
+  "thermal_peak": null,
+  "total_points": 0.0,
+  "tv_yaw_note": "",
+  "verdict": "ENERGY_SHORT",
+  "warnings": [
+   "pack covers 0% of endurance energy; derate +7.67 s/lap (planning-grade)"
+  ]
+ },
+ "eval.energy": [
+  {
+   "accel_s": 4.691369748834585,
+   "autocross_s": 25.684944275039022,
+   "config": {
+    "architecture": "single_diff",
+    "final_drive": 3.8,
+    "parallel": 5,
+    "series": 112
+   },
+   "derate_penalty_s": 0.0,
+   "derived": {
+    "mass_kg": 271.84000000000003,
+    "n_cells": 560,
+    "n_segments": 6,
+    "pack_energy_kwh": 9.072,
+    "pack_mass_kg": 56.84,
+    "pack_nominal_v": 403.2,
+    "pack_power_cap_kw": 90.72,
+    "power_kw": 80.0,
+    "segment_series": 20,
+    "usable_kwh": 8.34624
+   },
+   "endurance_laps": 66,
+   "endurance_s": 1695.2063221525755,
+   "energy_event_kwh": 0.0,
+   "energy_margin_kwh": 8.34624,
+   "kill_reasons": [],
+   "ok": true,
+   "overheat_lap": null,
+   "peak_lat_g": 1.371205768777509,
+   "points": {},
+   "skidpad_s": 4.981729718974947,
+   "thermal_peak": null,
+   "total_points": 0.0,
+   "tv_yaw_note": "",
+   "verdict": "FEASIBLE",
+   "warnings": []
+  },
+  [
+   [
+    403.2,
+    0.8,
+    0.4,
+    0.2,
+    true,
+    271.84000000000003,
+    1.4,
+    1.225
+   ]
+  ]
+ ],
+ "eval.feasible": {
+  "accel_s": 4.578047481487089,
+  "autocross_s": 25.568226297126298,
+  "config": {
+   "architecture": "single_diff",
+   "final_drive": 3.8,
+   "parallel": 5,
+   "series": 112
+  },
+  "derate_penalty_s": 0.0,
+  "derived": {
+   "mass_kg": 271.84000000000003,
+   "n_cells": 560,
+   "n_segments": 6,
+   "pack_energy_kwh": 9.072,
+   "pack_mass_kg": 56.84,
+   "pack_nominal_v": 403.2,
+   "pack_power_cap_kw": 90.72,
+   "power_kw": 80.0,
+   "segment_series": 20,
+   "usable_kwh": 8.34624
+  },
+  "endurance_laps": 66,
+  "endurance_s": 1687.5029356103357,
+  "energy_event_kwh": 6.161226623909595,
+  "energy_margin_kwh": 2.1850133760904047,
+  "kill_reasons": [],
+  "ok": true,
+  "overheat_lap": null,
+  "peak_lat_g": 1.371205768777509,
+  "points": {},
+  "skidpad_s": 4.981729718974947,
+  "thermal_peak": null,
+  "total_points": 0.0,
+  "tv_yaw_note": "",
+  "verdict": "FEASIBLE",
+  "warnings": []
+ },
+ "eval.inf_energy": {
+  "accel_s": 4.578047481487089,
+  "autocross_s": 25.568226297126298,
+  "config": {
+   "architecture": "single_diff",
+   "final_drive": 3.8,
+   "parallel": 5,
+   "series": 112
+  },
+  "derate_penalty_s": 0.0,
+  "derived": {
+   "mass_kg": 271.84000000000003,
+   "n_cells": 560,
+   "n_segments": 6,
+   "pack_energy_kwh": 9.072,
+   "pack_mass_kg": 56.84,
+   "pack_nominal_v": 403.2,
+   "pack_power_cap_kw": 90.72,
+   "power_kw": 80.0,
+   "segment_series": 20,
+   "usable_kwh": 8.34624
+  },
+  "endurance_laps": 66,
+  "endurance_s": 1687.5029356103357,
+  "energy_event_kwh": "inf",
+  "energy_margin_kwh": "-inf",
+  "kill_reasons": [
+   "endurance needs inf kWh, pack holds 8.35 kWh usable (-inf kWh)"
+  ],
+  "ok": true,
+  "overheat_lap": null,
+  "peak_lat_g": 1.371205768777509,
+  "points": {},
+  "skidpad_s": 4.981729718974947,
+  "thermal_peak": null,
+  "total_points": 0.0,
+  "tv_yaw_note": "",
+  "verdict": "ENERGY_SHORT",
+  "warnings": []
+ },
+ "eval.inf_skid": {
+  "accel_s": 4.0,
+  "autocross_s": 50.0,
+  "config": {
+   "architecture": "single_diff",
+   "final_drive": 3.8,
+   "parallel": 5,
+   "series": 112
+  },
+  "derate_penalty_s": 0.0,
+  "derived": {
+   "mass_kg": 271.84000000000003,
+   "n_cells": 560,
+   "n_segments": 6,
+   "pack_energy_kwh": 9.072,
+   "pack_mass_kg": 56.84,
+   "pack_nominal_v": 403.2,
+   "pack_power_cap_kw": 90.72,
+   "power_kw": 80.0,
+   "segment_series": 20,
+   "usable_kwh": 8.34624
+  },
+  "endurance_laps": 66,
+  "endurance_s": 3300.0,
+  "energy_event_kwh": 1.1180639601974478,
+  "energy_margin_kwh": 7.228176039802552,
+  "kill_reasons": [
+   "one or more events did not solve"
+  ],
+  "ok": false,
+  "overheat_lap": null,
+  "peak_lat_g": 1.371205768777509,
+  "points": {},
+  "skidpad_s": "inf",
+  "thermal_peak": null,
+  "total_points": 0.0,
+  "tv_yaw_note": "",
+  "verdict": "FAILED",
+  "warnings": []
+ },
+ "eval.killed": {
+  "accel_s": "NaN",
+  "autocross_s": "NaN",
+  "config": {
+   "architecture": "single_diff",
+   "final_drive": 4.0,
+   "parallel": 5,
+   "series": 150
+  },
+  "derate_penalty_s": 0.0,
+  "derived": {
+   "mass_kg": 291.125,
+   "n_cells": 750,
+   "n_segments": 8,
+   "pack_energy_kwh": 12.149999999999999,
+   "pack_mass_kg": 76.12500000000001,
+   "pack_nominal_v": 540.0,
+   "pack_power_cap_kw": 121.5,
+   "power_kw": 80.0,
+   "segment_series": 20,
+   "usable_kwh": 11.177999999999999
+  },
+  "endurance_laps": 0,
+  "endurance_s": "NaN",
+  "energy_event_kwh": "NaN",
+  "energy_margin_kwh": "NaN",
+  "kill_reasons": [
+   "150s at 4.20 V/cell = 630 V max pack > TS voltage cap 600 V"
+  ],
+  "ok": false,
+  "overheat_lap": null,
+  "peak_lat_g": "NaN",
+  "points": {},
+  "skidpad_s": "NaN",
+  "thermal_peak": null,
+  "total_points": 0.0,
+  "tv_yaw_note": "",
+  "verdict": "RULE_KILLED",
+  "warnings": []
+ },
+ "eval.nan": {
+  "accel_s": 4.5,
+  "autocross_s": "NaN",
+  "config": {
+   "architecture": "single_diff",
+   "final_drive": 3.8,
+   "parallel": 5,
+   "series": 112
+  },
+  "derate_penalty_s": 0.0,
+  "derived": {
+   "mass_kg": 271.84000000000003,
+   "n_cells": 560,
+   "n_segments": 6,
+   "pack_energy_kwh": 9.072,
+   "pack_mass_kg": 56.84,
+   "pack_nominal_v": 403.2,
+   "pack_power_cap_kw": 90.72,
+   "power_kw": 80.0,
+   "segment_series": 20,
+   "usable_kwh": 8.34624
+  },
+  "endurance_laps": 66,
+  "endurance_s": "NaN",
+  "energy_event_kwh": 1.1180639601974478,
+  "energy_margin_kwh": 7.228176039802552,
+  "kill_reasons": [
+   "accel: slip",
+   "skidpad: wide"
+  ],
+  "ok": false,
+  "overheat_lap": null,
+  "peak_lat_g": 1.371205768777509,
+  "points": {},
+  "skidpad_s": 5.1,
+  "thermal_peak": null,
+  "total_points": 0.0,
+  "tv_yaw_note": "",
+  "verdict": "FAILED",
+  "warnings": [
+   "accel: slip",
+   "skidpad: wide"
+  ]
+ },
+ "eval.overheat": [
+  {
+   "accel_s": 4.578047481487089,
+   "autocross_s": 25.568226297126298,
+   "config": {
+    "architecture": "single_diff",
+    "final_drive": 3.8,
+    "parallel": 5,
+    "series": 112
+   },
+   "derate_penalty_s": 0.0,
+   "derived": {
+    "mass_kg": 271.84000000000003,
+    "n_cells": 560,
+    "n_segments": 6,
+    "pack_energy_kwh": 9.072,
+    "pack_mass_kg": 56.84,
+    "pack_nominal_v": 403.2,
+    "pack_power_cap_kw": 90.72,
+    "power_kw": 80.0,
+    "segment_series": 20,
+    "usable_kwh": 8.34624
+   },
+   "endurance_laps": 66,
+   "endurance_s": 1687.5029356103357,
+   "energy_event_kwh": 6.161226623909595,
+   "energy_margin_kwh": 2.1850133760904047,
+   "kill_reasons": [
+    "cell reaches the 60 °C limit on endurance lap 7 of 66"
+   ],
+   "ok": true,
+   "overheat_lap": 7,
+   "peak_lat_g": 1.371205768777509,
+   "points": {},
+   "skidpad_s": 4.981729718974947,
+   "thermal_peak": null,
+   "total_points": 0.0,
+   "tv_yaw_note": "",
+   "verdict": "THERMAL_DNF",
+   "warnings": []
+  },
+  [
+   [
+    "FullCarConfig",
+    "DesignSpace",
+    "RuleMatrix",
+    "_TraceAdapter",
+    "_LapParamsShim",
+    "dict",
+    "int"
+   ]
+  ]
+ ],
+ "eval.regen_only": {
+  "accel_s": 4.578047481487089,
+  "autocross_s": 25.568226297126298,
+  "config": {
+   "architecture": "single_diff",
+   "final_drive": 3.8,
+   "parallel": 5,
+   "series": 112
+  },
+  "derate_penalty_s": 0.0,
+  "derived": {
+   "mass_kg": 271.84000000000003,
+   "n_cells": 560,
+   "n_segments": 6,
+   "pack_energy_kwh": 9.072,
+   "pack_mass_kg": 56.84,
+   "pack_nominal_v": 403.2,
+   "pack_power_cap_kw": 90.72,
+   "power_kw": 80.0,
+   "segment_series": 20,
+   "usable_kwh": 8.34624
+  },
+  "endurance_laps": 66,
+  "endurance_s": 1687.5029356103357,
+  "energy_event_kwh": 0.0,
+  "energy_margin_kwh": 8.34624,
+  "kill_reasons": [],
+  "ok": true,
+  "overheat_lap": null,
+  "peak_lat_g": 1.371205768777509,
+  "points": {},
+  "skidpad_s": 4.981729718974947,
+  "thermal_peak": null,
+  "total_points": 0.0,
+  "tv_yaw_note": "",
+  "verdict": "FEASIBLE",
+  "warnings": []
+ },
+ "eval.rwd_twin": {
+  "accel_s": 4.744415287254417,
+  "autocross_s": 25.833195065976653,
+  "config": {
+   "architecture": "twin_axle",
+   "final_drive": 3.2,
+   "parallel": 5,
+   "series": 112
+  },
+  "derate_penalty_s": 0.0,
+  "derived": {
+   "mass_kg": 278.84000000000003,
+   "n_cells": 560,
+   "n_segments": 6,
+   "pack_energy_kwh": 9.072,
+   "pack_mass_kg": 56.84,
+   "pack_nominal_v": 403.2,
+   "pack_power_cap_kw": 90.72,
+   "power_kw": 80.0,
+   "segment_series": 20,
+   "usable_kwh": 8.34624
+  },
+  "endurance_laps": 66,
+  "endurance_s": 1704.990874354459,
+  "energy_event_kwh": 5.772136190534707,
+  "energy_margin_kwh": 2.574103809465293,
+  "kill_reasons": [],
+  "ok": true,
+  "overheat_lap": null,
+  "peak_lat_g": 1.3669311624193141,
+  "points": {},
+  "skidpad_s": 4.995063326507788,
+  "thermal_peak": null,
+  "total_points": 0.0,
+  "tv_yaw_note": "",
+  "verdict": "FEASIBLE",
+  "warnings": []
+ },
+ "eval.short": {
+  "accel_s": 4.642954701392341,
+  "autocross_s": 25.331255913965077,
+  "config": {
+   "architecture": "single_diff",
+   "final_drive": 4.0,
+   "parallel": 3,
+   "series": 88
+  },
+  "derate_penalty_s": 2.170716340185017,
+  "derived": {
+   "mass_kg": 241.796,
+   "n_cells": 264,
+   "n_segments": 4,
+   "pack_energy_kwh": 4.2768,
+   "pack_mass_kg": 26.796,
+   "pack_nominal_v": 316.8,
+   "pack_power_cap_kw": 42.76800000000001,
+   "power_kw": 42.76800000000001,
+   "segment_series": 28,
+   "usable_kwh": 3.934656
+  },
+  "endurance_laps": 66,
+  "endurance_s": 1815.1301687739062,
+  "energy_event_kwh": 5.507976375447879,
+  "energy_margin_kwh": -1.5733203754478793,
+  "kill_reasons": [
+   "endurance needs 5.51 kWh, pack holds 3.93 kWh usable (-1.57 kWh)"
+  ],
+  "ok": true,
+  "overheat_lap": null,
+  "peak_lat_g": 1.389718797414389,
+  "points": {},
+  "skidpad_s": 4.921073451422271,
+  "thermal_peak": null,
+  "total_points": 0.0,
+  "tv_yaw_note": "",
+  "verdict": "ENERGY_SHORT",
+  "warnings": [
+   "pack covers 71% of endurance energy; derate +2.17 s/lap (planning-grade)"
+  ]
+ },
+ "eval.short_and_hot": {
+  "accel_s": 4.642954701392341,
+  "autocross_s": 25.331255913965077,
+  "config": {
+   "architecture": "single_diff",
+   "final_drive": 4.0,
+   "parallel": 3,
+   "series": 88
+  },
+  "derate_penalty_s": 2.170716340185017,
+  "derived": {
+   "mass_kg": 241.796,
+   "n_cells": 264,
+   "n_segments": 4,
+   "pack_energy_kwh": 4.2768,
+   "pack_mass_kg": 26.796,
+   "pack_nominal_v": 316.8,
+   "pack_power_cap_kw": 42.76800000000001,
+   "power_kw": 42.76800000000001,
+   "segment_series": 28,
+   "usable_kwh": 3.934656
+  },
+  "endurance_laps": 66,
+  "endurance_s": 1815.1301687739062,
+  "energy_event_kwh": 5.507976375447879,
+  "energy_margin_kwh": -1.5733203754478793,
+  "kill_reasons": [
+   "cell reaches the 60 °C limit on endurance lap 3 of 66"
+  ],
+  "ok": true,
+  "overheat_lap": 3,
+  "peak_lat_g": 1.389718797414389,
+  "points": {},
+  "skidpad_s": 4.921073451422271,
+  "thermal_peak": null,
+  "total_points": 0.0,
+  "tv_yaw_note": "",
+  "verdict": "THERMAL_DNF",
+  "warnings": [
+   "pack covers 71% of endurance energy; derate +2.17 s/lap (planning-grade)"
+  ]
+ },
+ "eval.small_energy": {
+  "accel_s": 4.578047481487089,
+  "autocross_s": 25.568226297126298,
+  "config": {
+   "architecture": "single_diff",
+   "final_drive": 3.8,
+   "parallel": 5,
+   "series": 112
+  },
+  "derate_penalty_s": 7.670467889137889,
+  "derived": {
+   "mass_kg": 271.84000000000003,
+   "n_cells": 560,
+   "n_segments": 6,
+   "pack_energy_kwh": 9.072,
+   "pack_mass_kg": 56.84,
+   "pack_nominal_v": 403.2,
+   "pack_power_cap_kw": 90.72,
+   "power_kw": 80.0,
+   "segment_series": 20,
+   "usable_kwh": 0.0
+  },
+  "endurance_laps": 66,
+  "endurance_s": 2193.753816293436,
+  "energy_event_kwh": 0.14784,
+  "energy_margin_kwh": -0.14784,
+  "kill_reasons": [
+   "endurance needs 0.15 kWh, pack holds 0.00 kWh usable (-0.15 kWh)"
+  ],
+  "ok": true,
+  "overheat_lap": null,
+  "peak_lat_g": 1.371205768777509,
+  "points": {},
+  "skidpad_s": 4.981729718974947,
+  "thermal_peak": null,
+  "total_points": 0.0,
+  "tv_yaw_note": "",
+  "verdict": "ENERGY_SHORT",
+  "warnings": [
+   "pack covers 0% of endurance energy; derate +7.67 s/lap (planning-grade)"
+  ]
+ },
+ "eval.tv": {
+  "accel_s": 4.127096765621274,
+  "autocross_s": 25.15147792339397,
+  "config": {
+   "architecture": "four_tv",
+   "final_drive": 4.5,
+   "parallel": 6,
+   "series": 100
+  },
+  "derate_penalty_s": 0.0,
+  "derived": {
+   "mass_kg": 291.9,
+   "n_cells": 600,
+   "n_segments": 6,
+   "pack_energy_kwh": 9.719999999999999,
+   "pack_mass_kg": 60.900000000000006,
+   "pack_nominal_v": 360.0,
+   "pack_power_cap_kw": 97.2,
+   "power_kw": 80.0,
+   "segment_series": 17,
+   "usable_kwh": 8.9424
+  },
+  "endurance_laps": 66,
+  "endurance_s": 1659.997542944002,
+  "energy_event_kwh": 7.272614202526574,
+  "energy_margin_kwh": 1.6697857974734251,
+  "kill_reasons": [],
+  "ok": true,
+  "overheat_lap": null,
+  "peak_lat_g": 1.3589942406713815,
+  "points": {},
+  "skidpad_s": 5.019280464205318,
+  "thermal_peak": null,
+  "total_points": 0.0,
+  "tv_yaw_note": "torque vectoring: up to 1.5% autocross/endurance time (control-dependent upper bound, NOT in the totals)",
+  "verdict": "FEASIBLE",
+  "warnings": []
+ },
+ "eval.warnings": [
+  {
+   "accel_s": 4.5,
+   "autocross_s": 55.0,
+   "config": {
+    "architecture": "single_diff",
+    "final_drive": 3.8,
+    "parallel": 5,
+    "series": 112
+   },
+   "derate_penalty_s": 0.0,
+   "derived": {
+    "mass_kg": 271.84000000000003,
+    "n_cells": 560,
+    "n_segments": 6,
+    "pack_energy_kwh": 9.072,
+    "pack_mass_kg": 56.84,
+    "pack_nominal_v": 403.2,
+    "pack_power_cap_kw": 90.72,
+    "power_kw": 80.0,
+    "segment_series": 20,
+    "usable_kwh": 8.34624
+   },
+   "endurance_laps": 66,
+   "endurance_s": 3630.0,
+   "energy_event_kwh": 1.1180639601974478,
+   "energy_margin_kwh": 7.228176039802552,
+   "kill_reasons": [],
+   "ok": true,
+   "overheat_lap": null,
+   "peak_lat_g": 1.371205768777509,
+   "points": {},
+   "skidpad_s": 5.1,
+   "thermal_peak": null,
+   "total_points": 0.0,
+   "tv_yaw_note": "",
+   "verdict": "FEASIBLE",
+   "warnings": [
+    "accel: slip",
+    "skidpad: wide",
+    "autocross: lap",
+    "endurance lap: lap"
+   ]
+  },
+  [
+   [
+    "accel",
+    75.0,
+    80.0,
+    271.84000000000003
+   ],
+   [
+    "skid",
+    80.0
+   ]
+  ]
+ ],
+ "eval.zero_energy": {
+  "accel_s": 4.578047481487089,
+  "autocross_s": 25.568226297126298,
+  "config": {
+   "architecture": "single_diff",
+   "final_drive": 3.8,
+   "parallel": 5,
+   "series": 112
+  },
+  "derate_penalty_s": 0.0,
+  "derived": {
+   "mass_kg": 271.84000000000003,
+   "n_cells": 560,
+   "n_segments": 6,
+   "pack_energy_kwh": 9.072,
+   "pack_mass_kg": 56.84,
+   "pack_nominal_v": 403.2,
+   "pack_power_cap_kw": 90.72,
+   "power_kw": 80.0,
+   "segment_series": 20,
+   "usable_kwh": 0.0
+  },
+  "endurance_laps": 66,
+  "endurance_s": 1687.5029356103357,
+  "energy_event_kwh": 0.0,
+  "energy_margin_kwh": 0.0,
+  "kill_reasons": [],
+  "ok": true,
+  "overheat_lap": null,
+  "peak_lat_g": 1.371205768777509,
+  "points": {},
+  "skidpad_s": 4.981729718974947,
+  "thermal_peak": null,
+  "total_points": 0.0,
+  "tv_yaw_note": "",
+  "verdict": "FEASIBLE",
+  "warnings": []
+ },
+ "pt.four_tv": [
+  55.0,
+  0.85,
+  1.3,
+  3.0,
+  "awd",
+  1000000000.0,
+  {
+   "final_drive": 4.1,
+   "rpm": [
+    0.0,
+    3501.4087480216976,
+    5600.563499208679,
+    6125.352187005425,
+    6650.1408748021695,
+    7000.0
+   ],
+   "source": "representative",
+   "torque_nm": [
+    150.0,
+    150.0,
+    93.77829789403573,
+    85.74385540107549,
+    78.97747161918262,
+    75.03018745760781
+   ],
+   "wheel_radius_m": 0.23
+  }
+ ],
+ "pt.single_diff": [
+  55.0,
+  0.85,
+  1.3,
+  3.0,
+  "rwd",
+  1000000000.0,
+  {
+   "final_drive": 4.1,
+   "rpm": [
+    0.0,
+    3501.4087480216976,
+    5600.563499208679,
+    6125.352187005425,
+    6650.1408748021695,
+    7000.0
+   ],
+   "source": "representative",
+   "torque_nm": [
+    150.0,
+    150.0,
+    93.77829789403573,
+    85.74385540107549,
+    78.97747161918262,
+    75.03018745760781
+   ],
+   "wheel_radius_m": 0.23
+  }
+ ],
+ "pt.twin_axle": [
+  55.0,
+  0.85,
+  1.3,
+  3.0,
+  "awd",
+  1000000000.0,
+  {
+   "final_drive": 4.1,
+   "rpm": [
+    0.0,
+    3501.4087480216976,
+    5600.563499208679,
+    6125.352187005425,
+    6650.1408748021695,
+    7000.0
+   ],
+   "source": "representative",
+   "torque_nm": [
+    150.0,
+    150.0,
+    93.77829789403573,
+    85.74385540107549,
+    78.97747161918262,
+    75.03018745760781
+   ],
+   "wheel_radius_m": 0.23
+  }
+ ],
+ "tire": [
+  null,
+  "PacejkaLateral",
+  {
+   "message": "Unknown tire_model 'mf61'.",
+   "raised": "ValueError"
+  }
+ ],
+ "track": [
+  66,
+  334.0,
+  1,
+  3,
+  3
+ ],
+ "vehicle": [
+  [
+   {
+    "cg_height": 300.0,
+    "mass": 271.84000000000003,
+    "roll_stiffness_front": 350.0,
+    "roll_stiffness_rear": 300.0,
+    "track_front": 1200.0,
+    "track_rear": 1176.0,
+    "weight_dist_front": 0.47,
+    "wheelbase": 1550.0
+   },
+   "linear placeholder",
+   1.371205769
+  ],
+  [
+   {
+    "cg_height": 300.0,
+    "mass": 271.84000000000003,
+    "roll_stiffness_front": 420.0,
+    "roll_stiffness_rear": 310.0,
+    "track_front": 1200.0,
+    "track_rear": 1150.0,
+    "weight_dist_front": 0.47,
+    "wheelbase": 1550.0
+   },
+   "Pacejka MF5.2",
+   1.544946243
+  ],
+  [
+   {
+    "cg_height": 300.0,
+    "mass": 271.84000000000003,
+    "roll_stiffness_front": 350.0,
+    "roll_stiffness_rear": 200.0,
+    "track_front": 1200.0,
+    "track_rear": 1176.0,
+    "weight_dist_front": 0.47,
+    "wheelbase": 1550.0
+   },
+   "linear placeholder",
+   1.353705911
+  ],
+  [
+   {
+    "cg_height": 320.0,
+    "mass": 271.84000000000003,
+    "roll_stiffness_front": 350.0,
+    "roll_stiffness_rear": 300.0,
+    "track_front": 1250.0,
+    "track_rear": 1225.0,
+    "weight_dist_front": 0.5,
+    "wheelbase": 1600.0
+   },
+   "linear placeholder",
+   1.365558297
+  ]
+ ]
+}

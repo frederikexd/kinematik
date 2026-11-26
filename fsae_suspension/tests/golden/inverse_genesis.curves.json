@@ -1,0 +1,399 @@
+{
+ "consts": [
+  [
+   "camber_deg",
+   "toe_deg",
+   "rc_height_mm",
+   "scrub_mm"
+  ],
+  {
+   "camber_deg": "camber (°)",
+   "rc_height_mm": "roll-centre height (mm)",
+   "scrub_mm": "scrub radius (mm)",
+   "toe_deg": "toe (°)"
+  },
+  [
+   "upper_front_inner",
+   "upper_rear_inner",
+   "lower_front_inner",
+   "lower_rear_inner",
+   "upper_outer",
+   "lower_outer",
+   "tie_rod_inner",
+   "tie_rod_outer"
+  ],
+  [
+   "upper_front_inner",
+   "upper_rear_inner",
+   "lower_front_inner",
+   "lower_rear_inner",
+   "upper_outer",
+   "lower_outer",
+   "tie_rod_inner",
+   "tie_rod_outer",
+   "wheel_center",
+   "contact_patch"
+  ],
+  [
+   "x",
+   "y",
+   "z"
+  ]
+ ],
+ "curves.fake.empty": [
+  false,
+  {}
+ ],
+ "curves.fake.nan": [
+  false,
+  {}
+ ],
+ "curves.fake.noattr": [
+  true,
+  {
+   "camber_deg": [
+    -0.6,
+    -1.0,
+    -1.3
+   ],
+   "rc_height_mm": [
+    5.71428571,
+    11.42857143,
+    15.71428571
+   ],
+   "scrub_mm": [
+    8.0,
+    10.0,
+    11.5
+   ],
+   "toe_deg": [
+    -0.2,
+    0.0,
+    0.15
+   ]
+  }
+ ],
+ "curves.fake.ok": [
+  true,
+  {
+   "camber_deg": [
+    -0.6,
+    -1.0,
+    -1.3
+   ],
+   "rc_height_mm": [
+    5.71428571,
+    11.42857143,
+    15.71428571
+   ],
+   "scrub_mm": [
+    8.0,
+    10.0,
+    11.5
+   ],
+   "toe_deg": [
+    -0.2,
+    0.0,
+    0.15
+   ]
+  }
+ ],
+ "curves.fake.raise": [
+  false,
+  {}
+ ],
+ "curves.fake.rcnan": [
+  false,
+  {}
+ ],
+ "curves.fake.unconv": [
+  false,
+  {}
+ ],
+ "curves.four": [
+  true,
+  {
+   "camber_deg": [
+    -1.32702243,
+    -1.41130333,
+    -1.59329941,
+    -1.69102786
+   ],
+   "rc_height_mm": [
+    39.3232226,
+    37.35956303,
+    33.46141561,
+    31.52624811
+   ],
+   "scrub_mm": [
+    9.72011874,
+    9.72835231,
+    9.74560503,
+    9.75463615
+   ],
+   "toe_deg": [
+    0.08797724,
+    0.04416871,
+    -0.04455206,
+    -0.08947851
+   ]
+  }
+ ],
+ "curves.nsweep": [
+  true,
+  {
+   "camber_deg": [
+    -1.17210462,
+    -1.50141014,
+    -1.79334209
+   ],
+   "rc_height_mm": [
+    43.28195054,
+    35.40857256,
+    29.60006709
+   ],
+   "scrub_mm": [
+    9.70441738,
+    9.73692623,
+    9.76395005
+   ],
+   "toe_deg": [
+    0.17452371,
+    -0.00011796,
+    -0.13479611
+   ]
+  }
+ ],
+ "curves.one": [
+  true,
+  {
+   "camber_deg": [
+    -1.59325328
+   ],
+   "rc_height_mm": [
+    33.46132156
+   ],
+   "scrub_mm": [
+    9.74560223
+   ],
+   "toe_deg": [
+    -0.04454816
+   ]
+  }
+ ],
+ "curves.sweep_args": [
+  [
+   4.0,
+   6.0,
+   15
+  ],
+  [
+   0.0,
+   9.0,
+   31
+  ],
+  [
+   -20.0,
+   15.0,
+   4
+  ],
+  [
+   0.0,
+   0.5,
+   15
+  ],
+  [
+   0.0,
+   1e-09,
+   15
+  ]
+ ],
+ "curves.three": [
+  true,
+  {
+   "camber_deg": [
+    -1.17210462,
+    -1.5,
+    -1.79334209
+   ],
+   "rc_height_mm": [
+    43.28195054,
+    35.40561275,
+    29.60006709
+   ],
+   "scrub_mm": [
+    9.70441738,
+    9.73684211,
+    9.76395005
+   ],
+   "toe_deg": [
+    0.17452371,
+    0.0,
+    -0.13479611
+   ]
+  }
+ ],
+ "curves.track": [
+  true,
+  {
+   "camber_deg": [
+    -1.17210462,
+    -1.5,
+    -1.79334209
+   ],
+   "rc_height_mm": [
+    43.28195054,
+    35.40561275,
+    29.60006709
+   ],
+   "scrub_mm": [
+    9.70441738,
+    9.73684211,
+    9.76395005
+   ],
+   "toe_deg": [
+    0.17452371,
+    0.0,
+    -0.13479611
+   ]
+  }
+ ],
+ "target.errors": [
+  {
+   "message": "Unknown channel 'caster_deg'. Channels: camber_deg, toe_deg, rc_height_mm, scrub_mm.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "TargetCurve 'toe_deg': travel, target and band must have equal length.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "TargetCurve 'toe_deg': travel, target and band must have equal length.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "TargetCurve 'toe_deg' is empty.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "TargetCurve 'toe_deg': every band must be > 0 — a zero band asks for a probability-zero car and the yield would honestly be 0.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "TargetCurve 'toe_deg': every band must be > 0 — a zero band asks for a probability-zero car and the yield would honestly be 0.",
+   "raised": "ValueError"
+  }
+ ],
+ "target.sorted": {
+  "band": [
+   0.2,
+   0.3,
+   0.1
+  ],
+  "channel": "camber_deg",
+  "target": [
+   2.0,
+   3.0,
+   1.0
+  ],
+  "travel_mm": [
+   -10.0,
+   0.0,
+   10.0
+  ]
+ },
+ "targets.errors": [
+  {
+   "message": "GenesisTargets needs at least one TargetCurve.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "Channel 'toe_deg' declared twice — merge its stations into one curve.",
+   "raised": "ValueError"
+  }
+ ],
+ "targets.layout": [
+  [
+   [
+    "camber_deg",
+    -10.0
+   ],
+   [
+    "camber_deg",
+    0.0
+   ],
+   [
+    "camber_deg",
+    10.0
+   ],
+   [
+    "rc_height_mm",
+    -10.0
+   ],
+   [
+    "rc_height_mm",
+    5.0
+   ],
+   [
+    "scrub_mm",
+    0.0
+   ]
+  ],
+  [
+   -10.0,
+   0.0,
+   5.0,
+   10.0
+  ],
+  [
+   2.0,
+   3.0,
+   1.0,
+   20.0,
+   30.0,
+   9.0
+  ],
+  [
+   0.2,
+   0.3,
+   0.1,
+   5.0,
+   4.0,
+   2.0
+  ],
+  [
+   "camber (°) @ -10.0 mm",
+   "camber (°) @ +0.0 mm",
+   "camber (°) @ +10.0 mm",
+   "roll-centre height (mm) @ -10.0 mm",
+   "roll-centre height (mm) @ +5.0 mm",
+   "scrub radius (mm) @ +0.0 mm"
+  ]
+ ],
+ "targets.residual": [
+  true,
+  [
+   -16.635112,
+   -15.0,
+   -26.910279,
+   3.864645,
+   0.865354,
+   0.368421
+  ]
+ ],
+ "targets.residual_default_track": [
+  5.405613,
+  0.526248
+ ],
+ "targets.residual_fail": [
+  [
+   "NaN",
+   "NaN",
+   "NaN",
+   "NaN",
+   "NaN",
+   "NaN"
+  ],
+  false
+ ]
+}

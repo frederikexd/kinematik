@@ -1,0 +1,149 @@
+{
+ "errors": [
+  {
+   "message": "SolvedPropertyBounds.bounds takes PropertyBound instances.",
+   "raised": "TypeError"
+  },
+  {
+   "message": "A compliance_*, member-force, lash or twist bound needs an elastokinematic spec: pass elasto=ElastoSpec(...).",
+   "raised": "ValueError"
+  },
+  {
+   "message": "A compliance_toe_braking_deg bound needs elasto_braking=ElastoSpec(...) carrying the braking load.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "A steer_ratio_min bound needs steer_effort=SteerEffort(...): the loads and the effort limit.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "A lash bound needs ElastoSpec.joint_lash_mm: declare the clearance of each joint.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "A lash bound needs ElastoSpec.joint_lash_mm: declare the clearance of each joint.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "A twist_toe_deg bound needs ElastoSpec.twist (a FrameTwist).",
+   "raised": "ValueError"
+  },
+  {
+   "message": "A twist_toe_deg bound needs ElastoSpec.twist (a FrameTwist).",
+   "raised": "ValueError"
+  },
+  {
+   "message": "A brake_decel_g bound needs brake=... (genesis_walls): declare what it is checked against.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "A link_fos_min bound needs structure=... (genesis_walls): declare what it is checked against.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "A rocker_bearing_sf bound needs bearing=... (genesis_walls): declare what it is checked against.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "SolvedPropertyBounds.cg_height_mm must be > 0.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "SolvedPropertyBounds.wheelbase_mm must be > 0.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "SolvedPropertyBounds.track_mm must be > 0.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "SolvedPropertyBounds.travel_mm must be (min, max) with max > min.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "SolvedPropertyBounds.travel_mm must be (min, max) with max > min.",
+   "raised": "ValueError"
+  },
+  0.9
+ ],
+ "ok": [
+  [
+   [
+    "compliance_toe_braking_deg"
+   ],
+   [
+    -25.0,
+    25.0
+   ],
+   "list"
+  ],
+  [
+   [
+    "lash_toe_deg",
+    "twist_toe_deg"
+   ],
+   [
+    -25.0,
+    25.0
+   ],
+   "list"
+  ],
+  [
+   [
+    "lock_sw_deg"
+   ],
+   [
+    -25.0,
+    25.0
+   ],
+   "list"
+  ],
+  [
+   [
+    "brake_decel_g",
+    "link_fos_min",
+    "rocker_bearing_sf"
+   ],
+   [
+    -25.0,
+    25.0
+   ],
+   "list"
+  ],
+  [
+   [
+    "caster_deg"
+   ],
+   [
+    -3.0,
+    4.0
+   ],
+   "list"
+  ],
+  [
+   [],
+   [
+    -25.0,
+    25.0
+   ],
+   "list"
+  ]
+ ],
+ "violations": [
+  [
+   [
+    "caster_deg",
+    "4 <= caster (deg) <= 4.5",
+    -0.6128497798824659
+   ],
+   [
+    "scrub_static_mm",
+    "scrub radius, static (mm) >= 1e+06",
+    -999990.2631578947
+   ]
+  ],
+  []
+ ],
+ "violations.edge": [],
+ "violations.exact": []
+}

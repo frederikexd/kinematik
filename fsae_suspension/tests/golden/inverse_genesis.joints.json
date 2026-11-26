@@ -1,0 +1,196 @@
+{
+ "angles": [
+  0.0,
+  90.0,
+  180.0,
+  16.260204708311967,
+  0.0,
+  90.0,
+  53.13010235415599
+ ],
+ "kabsch": [
+  [
+   [
+    0.0,
+    -1.0,
+    -0.0
+   ],
+   [
+    1.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  [
+   [
+    1.0,
+    0.0,
+    0.0
+   ],
+   [
+    -0.0,
+    1.0,
+    -0.0
+   ],
+   [
+    -0.0,
+    -0.0,
+    1.0
+   ]
+  ],
+  [
+   [
+    -0.76525282,
+    -0.54643597,
+    -0.34028789
+   ],
+   [
+    -0.54643597,
+    0.83085014,
+    -0.10533649
+   ],
+   [
+    0.34028789,
+    0.10533649,
+    -0.93440268
+   ]
+  ]
+ ],
+ "kabsch.shift": [
+  [
+   0.0,
+   -1.0,
+   -0.0
+  ],
+  [
+   1.0,
+   0.0,
+   0.0
+  ],
+  [
+   0.0,
+   0.0,
+   1.0
+  ]
+ ],
+ "mis.default": {
+  "_worst": [
+   "upper_ball",
+   4.388560001401468,
+   "-25.0 mm travel"
+  ],
+  "lower_ball": 3.491438,
+  "tie_rod_inner": 4.127471,
+  "tie_rod_outer": 3.718229,
+  "upper_ball": 4.38856
+ },
+ "mis.rack": {
+  "_worst": [
+   "upper_ball",
+   4.388560001401608,
+   "-25.0 mm travel, rack +6 mm"
+  ],
+  "lower_ball": 3.491438,
+  "tie_rod_inner": 4.308823,
+  "tie_rod_outer": 3.936046,
+  "upper_ball": 4.38856
+ },
+ "mis.short": {
+  "_worst": [
+   "tie_rod_inner",
+   1.7724359434057944,
+   "+10.0 mm travel, rack +4 mm"
+  ],
+  "lower_ball": 1.363003,
+  "tie_rod_inner": 1.772436,
+  "tie_rod_outer": 1.568127,
+  "upper_ball": 1.721975
+ },
+ "spin": [
+  [
+   0.0,
+   1.0,
+   -0.0
+  ],
+  [
+   0.00872122,
+   0.99935282,
+   0.03489817
+  ],
+  [
+   -0.0174285,
+   0.99847786,
+   -0.05232801
+  ],
+  [
+   0.03488755,
+   0.99904878,
+   0.02616101
+  ]
+ ],
+ "swing.default": {
+  "_worst": [
+   "upper_front.inner",
+   4.410965278493322,
+   "-25.0 mm travel"
+  ],
+  "lower_front.inner": 3.685348,
+  "lower_front.outer": 3.490617,
+  "lower_rear.inner": 3.568436,
+  "lower_rear.outer": 2.955479,
+  "tie_rod.inner": 4.127512,
+  "tie_rod.outer": 3.718234,
+  "upper_front.inner": 4.410965,
+  "upper_front.outer": 4.306644,
+  "upper_rear.inner": 4.373826,
+  "upper_rear.outer": 3.772551
+ },
+ "swing.links": {
+  "_worst": [
+   "tie_rod.inner",
+   4.127512229557748,
+   "-25.0 mm travel"
+  ],
+  "tie_rod.inner": 4.127512,
+  "tie_rod.outer": 3.718234
+ },
+ "swing.rack": {
+  "_worst": [
+   "upper_front.outer",
+   5.788294082614677,
+   "-25.0 mm travel, rack +6 mm"
+  ],
+  "lower_front.inner": 3.685348,
+  "lower_front.outer": 5.399916,
+  "lower_rear.inner": 3.568436,
+  "lower_rear.outer": 4.998593,
+  "tie_rod.inner": 4.309597,
+  "tie_rod.outer": 5.542817,
+  "upper_front.inner": 4.410965,
+  "upper_front.outer": 5.788294,
+  "upper_rear.inner": 4.373826,
+  "upper_rear.outer": 5.766786
+ },
+ "swing.short": {
+  "_worst": [
+   "upper_rear.outer",
+   3.0691108311282247,
+   "+10.0 mm travel, rack +4 mm"
+  ],
+  "lower_front.inner": 1.471473,
+  "lower_front.outer": 2.990524,
+  "lower_rear.inner": 1.424806,
+  "lower_rear.outer": 2.803353,
+  "tie_rod.inner": 1.773027,
+  "tie_rod.outer": 2.975426,
+  "upper_front.inner": 1.760736,
+  "upper_front.outer": 3.064245,
+  "upper_rear.inner": 1.745917,
+  "upper_rear.outer": 3.069111
+ }
+}

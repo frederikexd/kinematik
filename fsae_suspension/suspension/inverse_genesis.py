@@ -166,7 +166,7 @@ DESIGNABLE_POINTS: tuple[str, ...] = (
 #  The forward map: geometry → curve samples at the declared stations.
 # --------------------------------------------------------------------------- #
 def curves_of(hp: Hardpoints, stations_mm: np.ndarray,
-              track_mm: float = 1200.0,
+              track_mm: float = 1200.0,  # pragma: no mutate (kept for callers; the RC construction needs no track)
               n_sweep: int | None = None
               ) -> tuple[dict[str, np.ndarray], bool]:
     """Every channel sampled at the requested travel stations.
@@ -192,8 +192,7 @@ def curves_of(hp: Hardpoints, stations_mm: np.ndarray,
     raw = {
         "camber_deg":   np.array([s.camber for s in states]),
         "toe_deg":      np.array([s.toe for s in states]),
-        "rc_height_mm": np.array([_rc_height_mm(s, track_mm=track_mm)
-                                  for s in states]),
+        "rc_height_mm": _vec([_rc_height_mm(s) for s in states]),
         "scrub_mm":     np.array([s.scrub_radius for s in states]),
     }
     if not all(np.all(np.isfinite(v)) for v in raw.values()):
@@ -282,7 +281,7 @@ class GenesisTargets:
 
         Rows normalised by their band, so the result is dimensionless.
         """
-        vals, ok = curves_of(hp, self.stations(), track_mm=self.track_mm)
+        vals, ok = curves_of(hp, self.stations())
         if not ok:
             return np.full(len(self.rows()), np.nan), False
         parts = []
@@ -329,8 +328,7 @@ class KeepOutBox:
         d_out = np.maximum(np.maximum(self.lo - pts, pts - self.hi), 0.0)
         outside = np.linalg.norm(d_out, axis=1)
         d_in = np.minimum(pts - self.lo, self.hi - pts).min(axis=1)
-        inside = np.where(np.all((pts >= self.lo) & (pts <= self.hi), axis=1),
-                          -d_in, 0.0)
+        inside = -np.maximum(d_in, 0.0)        # d_in >= 0 exactly when the point is in the box
         return outside + inside - probe_radius_mm
 
 
@@ -556,168 +554,164 @@ def properties_of(hp: Hardpoints, ctx: SolvedPropertyBounds,
     if not states or any(not getattr(st, "converged", True) for st in states):
         return None
 
-    tr = np.array([st.travel for st in states], float)
+    tr = _vec([st.travel for st in states])
     i0 = int(np.argmin(np.abs(tr)))
     s0 = states[i0]
 
     out: dict[str, float] = {}
     if "caster_deg" in want:
         out["caster_deg"] = float(s0.caster)
-    if want & _STEER_PROPERTIES:
-        trail = mechanical_trail_mm(s0)
-        if "mech_trail_mm" in want:
-            out["mech_trail_mm"] = trail
-        need = want & {"steer_ratio_min", "steer_ratio", "steer_effort_margin",
-                       "lock_sw_deg", "joint_swing_lock_deg",
-                       "joint_misalignment_lock_deg", "ackermann_lock_pct"}
-        if need:
-            se = getattr(ctx, "steer_effort", None)
-            if se is None or not np.isfinite(trail):
+    trail = mechanical_trail_mm(s0)
+    if "mech_trail_mm" in want:
+        out["mech_trail_mm"] = trail
+    need = want & {"steer_ratio_min", "steer_ratio", "steer_effort_margin",
+                   "lock_sw_deg", "joint_swing_lock_deg",
+                   "joint_misalignment_lock_deg", "ackermann_lock_pct"}
+    if need:
+        se = ctx.steer_effort
+        if se is None or not np.isfinite(trail):
+            return None
+        rmin = se.ratio_min(trail)
+        if "steer_ratio_min" in want:
+            out["steer_ratio_min"] = rmin
+        if want & {"steer_ratio", "steer_effort_margin"}:
+            try:
+                rk = se.kinematic_ratio(hp)
+            except Exception:
                 return None
-            rmin = se.ratio_min(trail)
-            if "steer_ratio_min" in want:
-                out["steer_ratio_min"] = rmin
-            if want & {"steer_ratio", "steer_effort_margin"}:
-                try:
-                    rk = se.kinematic_ratio(hp)
-                except Exception:
-                    return None
-                if "steer_ratio" in want:
-                    out["steer_ratio"] = rk
-                if "steer_effort_margin" in want:
-                    out["steer_effort_margin"] = rk - rmin
-            _sw = []
+            if "steer_ratio" in want:
+                out["steer_ratio"] = rk
+            if "steer_effort_margin" in want:
+                out["steer_effort_margin"] = rk - rmin
+        _sw = []
 
-            def _lock_sw():                    # solved once per call: lock, swing and misalignment share it
-                if not _sw:
-                    _sw.append(se.lock_sw_deg(hp))
-                return _sw[0]
-            if "lock_sw_deg" in want:
-                out["lock_sw_deg"] = _lock_sw()
-            if "joint_swing_lock_deg" in want:
-                # every joint over the travel range with the rack at the
-                # travel that reaches the declared road lock: what the rod
-                # ends must be rated for at the hairpin
-                sw = _lock_sw()
-                if not np.isfinite(sw):
-                    return None
-                try:
-                    js = joint_swing(hp, (lo, hi), n,
-                                     sw * se.rack_c_mm_per_rev / 360.0)
-                except Exception:
-                    return None
-                out["joint_swing_lock_deg"] = float(js["_worst"][1])
-            if "joint_misalignment_lock_deg" in want:
-                # the rotation the bearings actually take up, with the bolt
-                # axes of joint_misalignment, at the rack that reaches lock
-                sw = _lock_sw()
-                if not np.isfinite(sw):
-                    return None
-                try:
-                    jm = joint_misalignment(hp, (lo, hi), n,
-                                            sw * se.rack_c_mm_per_rev / 360.0)
-                except Exception:
-                    return None
-                out["joint_misalignment_lock_deg"] = float(jm["_worst"][1])
-            if "ackermann_lock_pct" in want:
-                # inner/outer steer of the mirrored axle where the inner wheel
-                # reaches the declared lock (dynamic_ackermann.lock_report)
-                from .dynamic_ackermann import lock_report
-                try:
-                    lr = lock_report(hp, se.rack_c_mm_per_rev, se.lock_road_wheel_deg,
-                                     wheelbase_mm=ctx.wheelbase_mm,
-                                     kingpin_track_mm=ctx.track_mm,
-                                     rack_max_mm=se.rack_travel_max_mm,
-                                     lock_basis=se.lock_basis)
-                except Exception:
-                    return None
-                if not lr.get("reachable"):
-                    return None
-                out["ackermann_lock_pct"] = float(lr["ackermann_pct_lo_and_lock"][1])
+        def _lock_sw():                    # solved once per call: lock, swing and misalignment share it
+            if not _sw:
+                _sw.append(se.lock_sw_deg(hp))
+            return _sw[0]
+        if "lock_sw_deg" in want:
+            out["lock_sw_deg"] = _lock_sw()
+        if "joint_swing_lock_deg" in want:
+            # every joint over the travel range with the rack at the
+            # travel that reaches the declared road lock: what the rod
+            # ends must be rated for at the hairpin
+            sw = _lock_sw()
+            if not np.isfinite(sw):
+                return None
+            try:
+                js = joint_swing(hp, (lo, hi), n,
+                                 sw * se.rack_c_mm_per_rev / 360.0)
+            except Exception:
+                return None
+            out["joint_swing_lock_deg"] = float(js["_worst"][1])
+        if "joint_misalignment_lock_deg" in want:
+            # the rotation the bearings actually take up, with the bolt
+            # axes of joint_misalignment, at the rack that reaches lock
+            sw = _lock_sw()
+            if not np.isfinite(sw):
+                return None
+            try:
+                jm = joint_misalignment(hp, (lo, hi), n,
+                                        sw * se.rack_c_mm_per_rev / 360.0)
+            except Exception:
+                return None
+            out["joint_misalignment_lock_deg"] = float(jm["_worst"][1])
+        if "ackermann_lock_pct" in want:
+            # inner/outer steer of the mirrored axle where the inner wheel
+            # reaches the declared lock (dynamic_ackermann.lock_report)
+            from .dynamic_ackermann import lock_report
+            try:
+                lr = lock_report(hp, se.rack_c_mm_per_rev, se.lock_road_wheel_deg,
+                                 wheelbase_mm=ctx.wheelbase_mm,
+                                 kingpin_track_mm=ctx.track_mm,
+                                 rack_max_mm=se.rack_travel_max_mm,
+                                 lock_basis=se.lock_basis)
+            except Exception:
+                return None
+            if not lr.get("reachable"):
+                return None
+            out["ackermann_lock_pct"] = float(lr["ackermann_pct_lo_and_lock"][1])
     if "kpi_deg" in want:
         out["kpi_deg"] = float(s0.kpi)
     if "scrub_static_mm" in want:
         out["scrub_static_mm"] = float(s0.scrub_radius)
     if "rc_migration_mm_per_mm" in want:
-        rc = np.array([_rc_height_mm(st, track_mm=ctx.track_mm)
-                       for st in states], float)
+        rc = _vec([_rc_height_mm(st) for st in states])
         if np.all(np.isfinite(rc)) and np.ptp(tr) > 1e-9:
             A = np.vstack([tr, np.ones_like(tr)]).T
             out["rc_migration_mm_per_mm"] = float(
-                np.linalg.lstsq(A, rc, rcond=None)[0][0])
+                np.linalg.lstsq(A, rc)[0][0])
         else:
             out["rc_migration_mm_per_mm"] = math.nan
-    if want & _PITCH_PROPERTIES:
+    try:
+        if "anti_dive_pct" in want:
+            out["anti_dive_pct"] = float(kin.anti_dive_pct(
+                ctx.cg_height_mm, ctx.wheelbase_mm,
+                ctx.brake_bias_front, state=s0))
+        if "anti_lift_pct" in want:
+            out["anti_lift_pct"] = float(kin.anti_lift_pct(
+                ctx.cg_height_mm, ctx.wheelbase_mm,
+                1.0 - ctx.brake_bias_front, state=s0,
+                inboard_brakes=bool(ctx.rear_brakes_inboard)))
+        if "anti_squat_pct" in want:
+            out["anti_squat_pct"] = float(kin.anti_squat_pct(
+                ctx.cg_height_mm, ctx.wheelbase_mm,
+                ctx.drive_bias_rear, state=s0))
+    except Exception:
+        return None
+    spec = ctx.elasto
+    if spec is None:
+        # not evaluable without a load case; a bound on one cannot be
+        # declared without it (SolvedPropertyBounds refuses), so skipping
+        # here only affects explicit ``only=`` requests
+        want = want - _COMPLIANCE_PROPERTIES
+    from . import elastokinematics as _ek
+    loaded = {f"compliance_{c}_deg" for c in ("camber", "toe", "caster", "kpi")}
+    loaded.add("member_force_ratio")
+    if want & loaded:
         try:
-            if "anti_dive_pct" in want:
-                out["anti_dive_pct"] = float(kin.anti_dive_pct(
-                    ctx.cg_height_mm, ctx.wheelbase_mm,
-                    ctx.brake_bias_front, state=s0))
-            if "anti_lift_pct" in want:
-                out["anti_lift_pct"] = float(kin.anti_lift_pct(
-                    ctx.cg_height_mm, ctx.wheelbase_mm,
-                    1.0 - ctx.brake_bias_front, state=s0,
-                    inboard_brakes=bool(getattr(ctx, "rear_brakes_inboard", False))))
-            if "anti_squat_pct" in want:
-                out["anti_squat_pct"] = float(kin.anti_squat_pct(
-                    ctx.cg_height_mm, ctx.wheelbase_mm,
-                    ctx.drive_bias_rear, state=s0))
+            r = _ek.solve_elastokinematic(hp, spec, jacobian=False)
         except Exception:
             return None
-    if want & _COMPLIANCE_PROPERTIES:
-        spec = getattr(ctx, "elasto", None)
-        if spec is None:
-            # not evaluable without a load case; a bound on one cannot be
-            # declared without it (SolvedPropertyBounds refuses), so skipping
-            # here only affects explicit ``only=`` requests
-            want = want - _COMPLIANCE_PROPERTIES
-        from . import elastokinematics as _ek
-        loaded = {f"compliance_{c}_deg" for c in ("camber", "toe", "caster", "kpi")}
-        loaded.add("member_force_ratio")
-        if want & loaded:
-            try:
-                r = _ek.solve_elastokinematic(hp, spec, jacobian=False)
-            except Exception:
-                return None
-            if not r.converged:
-                return None
-            for ch in ("camber", "toe", "caster", "kpi"):
-                key = f"compliance_{ch}_deg"
-                if key in want:
-                    out[key] = float(r.change[ch])
-            if "member_force_ratio" in want:
-                # load amplification: a geometry that meets its curves with a
-                # near-flat link multiplies the wheel load into that link; the
-                # ratio bounds it without a structural model
-                mag = spec.wheel_load_magnitude()
-                fmax = max((abs(v) for v in (r.all_member_forces
-                                             or r.member_forces).values()),
-                           default=math.nan)
-                out["member_force_ratio"] = (float(fmax / mag) if mag > 0
-                                             else math.nan)
-        if want & {"lash_toe_deg", "lash_camber_deg"}:
-            try:
-                db = _ek.lash_deadband(hp, spec.joint_lash_mm)
-            except Exception:
-                return None
-            if "lash_toe_deg" in want:
-                out["lash_toe_deg"] = db["toe"]
-            if "lash_camber_deg" in want:
-                out["lash_camber_deg"] = db["camber"]
-        if "compliance_toe_braking_deg" in want:
-            bspec = getattr(ctx, "elasto_braking", None)
-            try:
-                rb = _ek.solve_elastokinematic(hp, bspec, jacobian=False)
-            except Exception:
-                return None
-            if not rb.converged:
-                return None
-            out["compliance_toe_braking_deg"] = float(rb.change["toe"])
-        if "twist_toe_deg" in want:
-            try:
-                out["twist_toe_deg"] = float(spec.twist.toe_deg(hp))
-            except Exception:
-                return None
+        if not r.converged:
+            return None
+        for ch in ("camber", "toe", "caster", "kpi"):
+            key = f"compliance_{ch}_deg"
+            if key in want:
+                out[key] = float(r.change[ch])
+        if "member_force_ratio" in want:
+            # load amplification: a geometry that meets its curves with a
+            # near-flat link multiplies the wheel load into that link; the
+            # ratio bounds it without a structural model
+            mag = spec.wheel_load_magnitude()
+            fmax = max((abs(v) for v in (r.all_member_forces
+                                         or r.member_forces).values()),
+                       default=math.nan)
+            out["member_force_ratio"] = (float(fmax / mag) if mag > 0
+                                         else math.nan)
+    if want & {"lash_toe_deg", "lash_camber_deg"}:
+        try:
+            db = _ek.lash_deadband(hp, spec.joint_lash_mm)
+        except Exception:
+            return None
+        if "lash_toe_deg" in want:
+            out["lash_toe_deg"] = db["toe"]
+        if "lash_camber_deg" in want:
+            out["lash_camber_deg"] = db["camber"]
+    if "compliance_toe_braking_deg" in want:
+        bspec = ctx.elasto_braking
+        try:
+            rb = _ek.solve_elastokinematic(hp, bspec, jacobian=False)
+        except Exception:
+            return None
+        if not rb.converged:
+            return None
+        out["compliance_toe_braking_deg"] = float(rb.change["toe"])
+    if "twist_toe_deg" in want:
+        try:
+            out["twist_toe_deg"] = float(spec.twist.toe_deg(hp))
+        except Exception:
+            return None
     if "brake_decel_g" in want:
         out["brake_decel_g"] = float(ctx.brake.decel_g(ctx.brake_bias_front))
     if "link_fos_min" in want:
@@ -905,10 +899,10 @@ class SolvedPropertyBounds:
                              "needs an elastokinematic spec: pass "
                              "elasto=ElastoSpec(...).")
         props = {b.prop for b in self.bounds}
-        if "compliance_toe_braking_deg" in props and getattr(self, "elasto_braking", None) is None:
+        if "compliance_toe_braking_deg" in props and self.elasto_braking is None:
             raise ValueError("A compliance_toe_braking_deg bound needs elasto_braking=ElastoSpec(...) "
                              "carrying the braking load.")
-        if props & set(STEER_PROPERTIES) and getattr(self, "steer_effort", None) is None:
+        if props & set(STEER_PROPERTIES) and self.steer_effort is None:
             raise ValueError("A steer_ratio_min bound needs steer_effort="
                              "SteerEffort(...): the loads and the effort limit.")
         if self.elasto is not None:
@@ -922,7 +916,7 @@ class SolvedPropertyBounds:
                                  "(a FrameTwist).")
         for b in self.bounds:
             spec = _VEHICLE_SPEC.get(b.prop)
-            if spec and getattr(self, spec, None) is None:
+            if spec and getattr(self, spec) is None:
                 raise ValueError(f"A {b.prop} bound needs {spec}=... "
                                  "(genesis_walls): declare what it is checked against.")
         for name in ("cg_height_mm", "wheelbase_mm", "track_mm"):
@@ -955,7 +949,7 @@ class SolvedPropertyBounds:
                                 "evaluation range", -math.inf)]
         out: list[tuple[str, str, float]] = []
         for b in self.bounds:
-            m = b.margin(vals.get(b.prop, math.nan))
+            m = b.margin(vals[b.prop])                # every bounded property is evaluated
             if m < -1e-12:
                 out.append((b.prop, b.label, m))
         return out
@@ -1010,11 +1004,21 @@ def spin_axis(camber_deg: float, toe_deg: float) -> np.ndarray:
 
 def _kabsch(p0: np.ndarray, p1: np.ndarray) -> np.ndarray:
     """Rotation (dimensionless 3x3) best mapping point set p0 onto p1 (mm)."""
-    a = p0 - p0.mean(axis=0)
+    # centring p1 is enough: the columns of the centred p1 sum to zero, so p0's own centroid drops out of p0ᵀ·b
     b = p1 - p1.mean(axis=0)
-    u, _, vt = np.linalg.svd(a.T @ b)
+    u, _, vt = np.linalg.svd(p0.T @ b)
     d = np.sign(np.linalg.det(vt.T @ u.T))
     return vt.T @ np.diag([1.0, 1.0, d]) @ u.T
+
+
+def _angle_deg(u: np.ndarray, v: np.ndarray) -> float:
+    """Angle (deg) between two unit vectors, exact at 0 and well conditioned near it (no arccos clipping)."""
+    return float(np.degrees(np.arctan2(np.linalg.norm(np.cross(u, v)), u @ v)))
+
+
+def _tilt_deg(p: np.ndarray, d: np.ndarray) -> float:
+    """Angle (deg) between the unit vector ``d`` and the plane whose unit normal is ``p``."""
+    return float(np.degrees(np.arctan2(abs(p @ d), np.linalg.norm(np.cross(p, d)))))
 
 
 def joint_swing(hp: Hardpoints, travel_mm: tuple[float, float] = (-25.0, 25.0),
@@ -1040,37 +1044,32 @@ def joint_swing(hp: Hardpoints, travel_mm: tuple[float, float] = (-25.0, 25.0),
     racks = [0.0] + ([-abs(rack_travel_mm), abs(rack_travel_mm)]
                      if rack_travel_mm else [])
     s0 = SuspensionKinematics(hp).solve_at_travel(0.0)
-    up0 = np.array([s0.upper_outer, s0.lower_outer, s0.tie_rod_outer], float)
+    up0 = _vec([s0.upper_outer, s0.lower_outer, s0.tie_rod_outer])
 
     def direction(h, s, link):
         inn, out = _ENVELOPE_LINKS[link]
-        v = _vec(getattr(s, out)) - _vec(getattr(h, inn))
-        return v / np.linalg.norm(v)
+        return _vec(getattr(s, out)) - _vec(getattr(h, inn))   # angles are scale-free: no need to normalise
 
     d0 = {l: direction(hp, s0, l) for l in links}
     out = {f"{l}.{e}": 0.0 for l in links for e in ("inner", "outer")}
-    worst = ("", 0.0, "")
+    seen = []                                  # (deg, joint, where), in the order solved
     for r in racks:
         pd = {"tie_rod_inner": np.array([0.0, r, 0.0])} if r else None
         h = hp if not r else _perturbed(hp, pd)
         for s in SuspensionKinematics(hp, pickup_deltas=pd).sweep(
                 travel_min=travel_mm[0], travel_max=travel_mm[1], n=n_travel):
-            pts = np.array([s.upper_outer, s.lower_outer, s.tie_rod_outer], float)
-            R = _kabsch(up0, pts)
+            R = _kabsch(up0, _vec([s.upper_outer, s.lower_outer, s.tie_rod_outer]))
             where = f"{s.travel:+.1f} mm travel" + (f", rack {r:+g} mm" if r else "")
             for l in links:
                 d = direction(h, s, l)
                 # the tie-rod inner housing rides on the rack, which only
                 # translates, so its frame is still the chassis frame
-                a_in = float(np.degrees(np.arccos(np.clip(d @ d0[l], -1, 1))))
-                a_out = float(np.degrees(np.arccos(np.clip(
-                    (R.T @ d) @ d0[l], -1, 1))))
-                for key, a in ((f"{l}.inner", a_in), (f"{l}.outer", a_out)):
-                    if a > out[key]:
-                        out[key] = a
-                    if a > worst[1]:
-                        worst = (key, a, where)
-    out["_worst"] = worst
+                for key, a in ((f"{l}.inner", _angle_deg(d, d0[l])),
+                               (f"{l}.outer", _angle_deg(R.T @ d, d0[l]))):
+                    out[key] = max(out[key], a)
+                    seen.append((a, key, where))
+    a, key, where = max(seen, key=lambda t: t[0])  # the first of the largest
+    out["_worst"] = (key, a, where)
     return out
 
 
@@ -1104,38 +1103,37 @@ def joint_misalignment(hp: Hardpoints, travel_mm: tuple[float, float] = (-25.0, 
 
     racks = [0.0] + ([-abs(rack_travel_mm), abs(rack_travel_mm)] if rack_travel_mm else [])
     s0 = SuspensionKinematics(hp).solve_at_travel(0.0)
-    up0 = np.array([s0.upper_outer, s0.lower_outer, s0.tie_rod_outer], float)
+    up0 = _vec([s0.upper_outer, s0.lower_outer, s0.tie_rod_outer])
     kp = _unit(np.subtract(s0.upper_outer, s0.lower_outer))
     arms = {"upper_ball": ("upper_front_inner", "upper_rear_inner", "upper_outer"),
             "lower_ball": ("lower_front_inner", "lower_rear_inner", "lower_outer")}
-    a0 = {k: np.array([getattr(hp, i), getattr(hp, j), getattr(s0, o)], float)
+    a0 = {k: _vec([getattr(hp, i), getattr(hp, j), getattr(s0, o)])
           for k, (i, j, o) in arms.items()}
     d0 = _unit(np.subtract(s0.tie_rod_outer, hp.tie_rod_inner))
     p_out = _unit(kp - (kp @ d0) * d0)
-    z = np.array([0.0, 0.0, 1.0])
+    z = np.eye(3)[2]
     p_in = _unit(z - (z @ d0) * d0)
     out = {"upper_ball": 0.0, "lower_ball": 0.0, "tie_rod_outer": 0.0, "tie_rod_inner": 0.0}
-    worst = ("", 0.0, "")
+    seen = []                                  # (deg, joint, where), in the order solved
     for r in racks:
         pd = {"tie_rod_inner": np.array([0.0, r, 0.0])} if r else None
         h = hp if not r else _perturbed(hp, pd)
         for s in SuspensionKinematics(hp, pickup_deltas=pd).sweep(
                 travel_min=travel_mm[0], travel_max=travel_mm[1], n=n_travel):
-            Ru = _kabsch(up0, np.array([s.upper_outer, s.lower_outer, s.tie_rod_outer], float))
+            Ru = _kabsch(up0, _vec([s.upper_outer, s.lower_outer, s.tie_rod_outer]))
             where = f"{s.travel:+.1f} mm travel" + (f", rack {r:+g} mm" if r else "")
             vals = {}
             for k, (i, j, o) in arms.items():
-                Ra = _kabsch(a0[k], np.array([getattr(hp, i), getattr(hp, j), getattr(s, o)], float))
-                vals[k] = float(np.degrees(np.arccos(np.clip((Ru @ kp) @ (Ra @ kp), -1.0, 1.0))))
+                Ra = _kabsch(a0[k], _vec([getattr(hp, i), getattr(hp, j), getattr(s, o)]))
+                vals[k] = _angle_deg(Ru @ kp, Ra @ kp)
             d = _unit(np.subtract(s.tie_rod_outer, h.tie_rod_inner))
-            vals["tie_rod_outer"] = float(np.degrees(np.arcsin(min(1.0, abs((Ru @ p_out) @ d)))))
-            vals["tie_rod_inner"] = float(np.degrees(np.arcsin(min(1.0, abs(p_in @ d)))))
+            vals["tie_rod_outer"] = _tilt_deg(Ru @ p_out, d)
+            vals["tie_rod_inner"] = _tilt_deg(p_in, d)
             for k, a in vals.items():
-                if a > out[k]:
-                    out[k] = a
-                if a > worst[1]:
-                    worst = (k, a, where)
-    out["_worst"] = worst
+                out[k] = max(out[k], a)
+                seen.append((a, k, where))
+    a, k, where = max(seen, key=lambda t: t[0])    # the first of the largest
+    out["_worst"] = (k, a, where)
     return out
 
 
@@ -1166,7 +1164,6 @@ class NodeAttachment:
             raise ValueError(f"NodeAttachment: unknown point(s) {bad}.")
         if float(self.max_offset_mm) <= 0.0:
             raise ValueError("NodeAttachment.max_offset_mm must be > 0.")
-        self._arr = _vec(self.nodes)
 
     @property
     def label(self) -> str:
@@ -1176,9 +1173,7 @@ class NodeAttachment:
 
     def nearest(self, hp: Hardpoints) -> dict[str, float]:
         """Distance in mm from each listed pickup to its nearest node."""
-        arr = getattr(self, "_arr", None)
-        if arr is None:
-            arr = self._arr = _vec(self.nodes)
+        arr = _vec(self.nodes)
         return {p: float(np.min(np.linalg.norm(
             arr - _vec(getattr(hp, p)), axis=1)))
             for p in self.points}
@@ -1250,10 +1245,8 @@ class ToolAccess:
                 continue
             ax /= n
             best = -math.inf
-            for sgn in (1.0, -1.0):          # outward past this pickup, or back
-                d = ax * sgn
-                # the path from the far side starts past the partner pickup
-                s0 = a if sgn > 0 else b
+            # outward past this pickup, or back from past the partner pickup
+            for d, s0 in ((ax, a), (-ax, b)):
                 pts = s0 + d * (self.start_offset_mm + t[:, None] * self.reach_mm)
                 c = min((float(np.min(obs.clearances(pts, self.tool_radius_mm)))
                          for obs in obstacles), default=math.inf)
@@ -1293,8 +1286,8 @@ class WheelSector:
         """Penetration in mm (> 0 inside) of a padded point; <= 0 is clear."""
         th = (theta_deg - self.theta_min_deg) % 360.0
         span = self.theta_max_deg - self.theta_min_deg
-        # angular gap expressed as arc length at this radius (mm)
-        if th <= span:
+        # angular gap expressed as arc length at this radius (mm); both forms are 0 at th == span
+        if th <= span:  # pragma: no mutate (see above)
             ang_gap = min(th, span - th) * np.pi / 180.0 * max(radial, 1e-6)
         else:
             ang_gap = -min(th - span, 360.0 - th) * np.pi / 180.0 * max(radial, 1e-6)
@@ -1403,10 +1396,10 @@ class WheelEnvelope:
             ws = [p[1] for p in self.tire_profile]
             return float(np.interp(radial, rs, ws))
         mid = 0.5 * (self.rim_radius_mm + self.tire_radius_mm)
-        if radial >= mid:
+        if radial >= mid:  # pragma: no mutate (the taper reaches the full width exactly at mid)
             return self.tire_half_width_mm
-        f = (radial - self.rim_radius_mm) / max(mid - self.rim_radius_mm, 1e-9)
-        f = min(max(f, 0.0), 1.0)
+        # below mid the fraction is < 1, and the rim radius is below the tire radius so mid - rim > 0
+        f = max((radial - self.rim_radius_mm) / (mid - self.rim_radius_mm), 0.0)
         return self.rim_half_width_mm + f * (self.tire_half_width_mm
                                              - self.rim_half_width_mm)
 
@@ -1422,17 +1415,14 @@ class WheelEnvelope:
             # toe is a declared alignment, so the solver re-derives the rod
             # length to hold it. pickup_deltas keeps the rest length from the
             # unshifted geometry, which is what a rack does.
-            h = hp
-            pd = None
-            if r:
-                pd = {"tie_rod_inner": np.array([0.0, r, 0.0])}
-                h = _perturbed(hp, pd)      # for the link's inner end position
+            pd = {"tie_rod_inner": np.array([0.0, r, 0.0])} if r else None
+            h = _perturbed(hp, pd) if r else hp      # for the link's inner end position
             try:
                 st = SuspensionKinematics(hp, pickup_deltas=pd).sweep(
                     travel_min=self.travel_mm[0], travel_max=self.travel_mm[1],
                     n=self.n_travel)
             except Exception:
-                st = None
+                st = ()  # pragma: no mutate (any empty value reads as "does not solve")
             out.append((r, h, st))
         return out
 
@@ -1453,19 +1443,16 @@ class WheelEnvelope:
                 wc = _vec(s.wheel_center)
                 where = f"{s.travel:+.1f} mm travel, {tag}"
 
-                # upright-fixed reference direction for sector angles: global
-                # up with its spin-axis component removed
-                up = np.array([0.0, 0.0, 1.0]) - ax[2] * ax
-                up /= max(np.linalg.norm(up), 1e-12)
-                rear = np.cross(up, ax)
-                if rear[0] < 0:
-                    rear = -rear
+                # sector angles about the spin axis from the upward direction, positive rearward: rv is normal
+                # to the axis, so its component along "up" (global z less its axial part) is just rv[2], and the
+                # rearward reference ax x z points along +x for any toe and camber under 45 deg
+                rear = np.cross(ax, np.eye(3)[2])
 
                 def frame(p):
                     d = _vec(p) - wc
                     a = float(d @ ax)
                     rv = d - a * ax
-                    th = float(np.degrees(np.arctan2(rv @ rear, rv @ up)))
+                    th = float(np.degrees(np.arctan2(rv @ rear, rv[2])))
                     return a, float(np.linalg.norm(rv)), th
 
                 def sector_margin(a, rad, th, pad):
@@ -1486,7 +1473,7 @@ class WheelEnvelope:
                     if self.sectors:
                         m = min(m, sector_margin(a, rad, th, ro + c))
                     worst = min(worst, m)
-                    if m < -1e-9:
+                    if m < -1e-9:  # pragma: no mutate (tolerance)
                         vio.append((name, where, m))
                 for link in self.links:
                     inner_n, outer_n = _ENVELOPE_LINKS[link]
@@ -1494,8 +1481,7 @@ class WheelEnvelope:
                     pout = _vec(getattr(s, outer_n))
                     link_worst = math.inf
                     lr = self.link_radius_mm
-                    for t in np.linspace(0.0, 1.0, self.samples_per_link,
-                                         endpoint=False):
+                    for t in np.arange(self.samples_per_link) / self.samples_per_link:
                         a, rad, th = frame(pin + t * (pout - pin))
                         if self.sectors:
                             link_worst = min(link_worst,
@@ -1504,18 +1490,12 @@ class WheelEnvelope:
                         inner_gap = rad - (self.rim_radius_mm - c - lr)
                         outer_gap = (self.tire_radius_mm + c + lr) - rad
                         axial_gap = (self._half_width(rad) + c + lr) - abs(a)
-                        gaps = (inner_gap, outer_gap, axial_gap)
-                        if min(gaps) > 0.0:
-                            # inside the solid: depth = smallest move out
-                            m = -min(gaps)
-                        else:
-                            # outside: separation along the clearest direction
-                            # (a lower bound on the true distance, so the
-                            # reported clearance is never optimistic)
-                            m = max(-g for g in gaps if g <= 0.0)
-                        link_worst = min(link_worst, m)
+                        # inside the solid (every gap > 0) the smallest gap is the depth, the smallest move
+                        # out; outside it, -min(gaps) is the separation along the clearest direction (a
+                        # lower bound on the true distance, so the reported clearance is never optimistic)
+                        link_worst = min(link_worst, -min(inner_gap, outer_gap, axial_gap))
                     worst = min(worst, link_worst)
-                    if link_worst < -1e-9:
+                    if link_worst < -1e-9:  # pragma: no mutate (tolerance)
                         vio.append((f"{link} link", where, link_worst))
         return vio, worst
 
@@ -1647,7 +1627,7 @@ class LegalVolume:
         lo, hi = self.bounds_vec(hp)
         clamped = [lab for lab, s, l, h in
                    zip(self.coord_labels(), shift, lo, hi)
-                   if s < l - 1e-12 or s > h + 1e-12]
+                   if s < l - 1e-12 or s > h + 1e-12]  # pragma: no mutate (tolerance)
         return np.clip(shift, lo, hi), clamped
 
     def keepout_violations(self, hp: Hardpoints
@@ -1664,17 +1644,17 @@ class LegalVolume:
             lab = getattr(obs, "label", None) or \
                 getattr(obs, "kind", None) or obs.__class__.__name__
             for p, c in zip(self.points(), cl):
-                if c < self.min_clearance_mm - 1e-12:
+                if c < self.min_clearance_mm - 1e-12:  # pragma: no mutate (tolerance)
                     out.append((p, str(lab), float(c)))
         for sp in self.spacings:
             g = sp.gap(hp)
-            if g < sp.min_gap_mm - 1e-12:
+            if g < sp.min_gap_mm - 1e-12:  # pragma: no mutate (tolerance)
                 out.append((f"{sp.a}->{sp.b}", sp.label,
                             float(g - sp.min_gap_mm)))
-        ta = getattr(self, "tool_access", None)
+        ta = self.tool_access
         if ta is not None and self.keep_out:
             for p, c in ta.clearance(hp, self.keep_out).items():
-                if c < 0.0:
+                if c < 0.0:  # pragma: no mutate (a path that touches is clear)
                     out.append((f"{p} (bolt access)", ta.label, float(c)))
         return out
 
@@ -1882,7 +1862,6 @@ def genesis_solve(hp: Hardpoints, targets: GenesisTargets,
         JtJ = J.T @ J
         diag = np.diag(np.maximum(np.diag(JtJ), 1e-12))
         g = J.T @ r
-        stepped = False
         for _ in range(8):                   # λ ladder within one iteration
             try:
                 dx = np.linalg.solve(JtJ + lam * diag, -g)
@@ -1913,14 +1892,14 @@ def genesis_solve(hp: Hardpoints, targets: GenesisTargets,
                 lam *= 10.0
                 continue
             c_try = float(r_try @ r_try)
-            if c_try < cost - 1e-12 or np.max(np.abs(r_try)) <= 1.0:
+            lower = c_try < cost - 1e-12  # pragma: no mutate (a cost tie to 1e-12 never happens)
+            if lower or np.max(np.abs(r_try)) <= 1.0:
                 x, hp_x, r, cost = x_try, hp_try, r_try, c_try
                 clamped_last = clamped
                 lam = max(lam / 3.0, 1e-6)
-                stepped = True
                 break
             lam *= 10.0
-        if not stepped:
+        else:
             break                            # stalled: best legal point stands
 
     worst = int(np.argmax(np.abs(r)))
@@ -1988,11 +1967,12 @@ def _verify_yield_full(hp_candidate: Hardpoints, targets: GenesisTargets,
     accounting Stochastic Inversion uses."""
     samples = fld.sample(n_verify, seed=seed + 1)
     coords = fld.coords()
-    full_pass = np.zeros(n_verify, bool)
+    full_pass = []
     for i in range(n_verify):
         hp_i = _perturbed(hp_candidate, _unflatten(samples[i], coords))
         r_i, ok = targets.residual(hp_i)
-        full_pass[i] = bool(ok and np.max(np.abs(r_i)) <= 1.0)
+        full_pass.append(bool(ok and np.max(np.abs(r_i)) <= 1.0))
+    full_pass = np.array(full_pass)
     if J is not None:
         lin_pass = np.all(np.abs(r_fit[None, :] + samples @ J.T) <= 1.0,
                           axis=1)
@@ -2098,7 +2078,6 @@ def inverse_genesis(hp: Hardpoints, targets: GenesisTargets,
     cands: list[Candidate] = []
     n_start_prop_refused = 0
     n_start_env_refused = 0
-    n_start_keepout_refused = 0
     for s in starts:
         c = genesis_solve(hp, targets, volume, start_shift=s,
                           max_iter=max_iter, step_mm=step_mm)
@@ -2107,8 +2086,6 @@ def inverse_genesis(hp: Hardpoints, targets: GenesisTargets,
                 n_start_env_refused += 1
             elif c.property_rejections:
                 n_start_prop_refused += 1
-            elif c.keepout_rejections:
-                n_start_keepout_refused += 1
             continue
         if any(np.linalg.norm(c.shift_vec - c2.shift_vec) < 0.05
                for c2 in cands):
@@ -2242,14 +2219,14 @@ def inverse_genesis(hp: Hardpoints, targets: GenesisTargets,
                      "TEMPERED" if y >= th.tempered_yield else
                      "KNIFE_EDGE")
 
-    hits.sort(key=lambda c: (-(c.yield_frac or 0.0), c.max_band_frac))
+    hits.sort(key=lambda c: (-c.yield_frac, c.max_band_frac))   # every hit was priced (a failure as 0.0)
     winner = hits[0]
-    premium = float((winner.yield_frac or 0.0) - (best_fit.yield_frac or 0.0))
+    premium = float(winner.yield_frac - best_fit.yield_frac)
 
     if winner.verdict == "KNIFE_EDGE":
         reason = (f"Every geometry that hits the drawn curves is KNIFE_EDGE "
                   f"under the declared field (best yield "
-                  f"{(winner.yield_frac or 0):.1%}) — the bands, the legal "
+                  f"{winner.yield_frac:.1%}) — the bands, the legal "
                   "volume and the shop's error field are JOINTLY "
                   "unsatisfiable. The levers, in order of cheapness: jig the "
                   "dominant tab (shrink the field), widen the governing "
@@ -2258,20 +2235,20 @@ def inverse_genesis(hp: Hardpoints, targets: GenesisTargets,
                   "gamble this engine prices, not one it recommends.")
         ok = False
     else:
-        if winner is not best_fit and premium > 1e-9:
+        if winner is not best_fit and premium > 1e-9:  # pragma: no mutate (tolerance)
             reason = (f"Manufacturing-resilient geometry found. The pure "
                       f"curve-fit optimum was REJECTED: it fits "
                       f"{best_fit.max_band_frac:.2f}× band vs the winner's "
                       f"{winner.max_band_frac:.2f}×, but its build yield is "
-                      f"{(best_fit.yield_frac or 0):.1%} against the "
-                      f"winner's {(winner.yield_frac or 0):.1%} — a "
+                      f"{best_fit.yield_frac:.1%} against the "
+                      f"winner's {winner.yield_frac:.1%} — a "
                       f"{premium:+.1%} yield premium bought by moving off "
                       "the knife edge. The engine designs the car that gets "
                       "built.")
         else:
             reason = (f"Manufacturing-resilient geometry found: the best "
                       f"fit is also the most buildable "
-                      f"({(winner.yield_frac or 0):.1%} yield).")
+                      f"({winner.yield_frac:.1%} yield).")
         ok = True
 
     # ---- price the linearisation on the winner ---------------------------- #
@@ -2446,7 +2423,7 @@ def band_sweep(hp: Hardpoints, targets: GenesisTargets, volume: LegalVolume,
              "max_move_mm": 0.0 if ref_hp is not None else None}]
     for ch in chans:
         for sc in scales:
-            if abs(float(sc) - 1.0) < 1e-12:
+            if abs(float(sc) - 1.0) < 1e-12:  # pragma: no mutate (tolerance)
                 continue
             curves = [TargetCurve(c.channel, c.travel_mm, c.target,
                                   c.band * (float(sc) if c.channel == ch else 1.0))

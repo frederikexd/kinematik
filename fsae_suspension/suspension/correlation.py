@@ -111,7 +111,7 @@ class TraceResult:
         d = asdict(self)
         # keep arrays out of the lightweight dict view
         for k in ("distance", "measured", "predicted"):
-            d.pop(k, None)
+            d.pop(k)                     # asdict always holds the three
         return d
 
 

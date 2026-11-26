@@ -1,0 +1,173 @@
+{
+ "node": [
+  "upper_front_inner, upper_rear_inner, lower_front_inner, lower_rear_inner within 25 mm of one of 3 frame nodes",
+  [
+   [
+    -100.0,
+    240.0,
+    299.2
+   ],
+   [
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    140.0,
+    200.0,
+    147.5
+   ]
+  ],
+  [
+   "upper_front_inner",
+   "upper_rear_inner",
+   "lower_front_inner",
+   "lower_rear_inner"
+  ],
+  {
+   "lower_front_inner": 186.31932266944295,
+   "lower_rear_inner": 25.0,
+   "upper_front_inner": 0.0,
+   "upper_rear_inner": 139.53096430541862
+  },
+  [
+   [
+    "upper_rear_inner",
+    "139.5 mm from the nearest node",
+    -114.53096430541862
+   ],
+   [
+    "lower_front_inner",
+    "186.3 mm from the nearest node",
+    -161.31932266944295
+   ]
+  ],
+  [
+   [
+    "tie_rod_inner",
+    "297.5 mm from the nearest node",
+    -292.4894956128703
+   ]
+  ]
+ ],
+ "node.edges": [
+  "upper_front_inner, upper_rear_inner, lower_front_inner, lower_rear_inner within 0.5 mm of one of 1 frame nodes",
+  [
+   [
+    "lower_outer",
+    "25.5 mm from the nearest node",
+    -0.5
+   ]
+  ]
+ ],
+ "node.errors": [
+  {
+   "message": "NodeAttachment needs at least one node.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "NodeAttachment: unknown point(s) ['wheel_center'].",
+   "raised": "ValueError"
+  },
+  {
+   "message": "NodeAttachment.max_offset_mm must be > 0.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "NodeAttachment.max_offset_mm must be > 0.",
+   "raised": "ValueError"
+  }
+ ],
+ "tool": [
+  "tool access 120 mm x r12 mm along the pivot axis at upper_front_inner, upper_rear_inner, lower_front_inner, lower_rear_inner",
+  12,
+  2,
+  7,
+  "tool access 120 mm x r12 mm along the pivot axis at upper_front_inner, upper_rear_inner, lower_front_inner, lower_rear_inner",
+  "tool access 0.5 mm x r0.5 mm along the pivot axis at upper_front_inner, upper_rear_inner, lower_front_inner, lower_rear_inner"
+ ],
+ "tool.both": [
+  {
+   "lower_front_inner": 182.12159174331745,
+   "lower_rear_inner": 182.12159174331745,
+   "upper_front_inner": -11.106543178095393,
+   "upper_rear_inner": -11.106543178095393
+  },
+  {
+   "lower_front_inner": 182.19287044034064,
+   "lower_rear_inner": 182.19287044034064,
+   "upper_front_inner": -7.0286624931748065,
+   "upper_rear_inner": -7.0286624931748065
+  }
+ ],
+ "tool.clear": [
+  {
+   "lower_front_inner": 325.12109819585726,
+   "lower_rear_inner": 325.12109819585726,
+   "upper_front_inner": 268.1193790822314,
+   "upper_rear_inner": 268.1193790822314
+  },
+  {
+   "lower_front_inner": "inf",
+   "lower_rear_inner": "inf",
+   "upper_front_inner": "inf",
+   "upper_rear_inner": "inf"
+  },
+  {
+   "lower_front_inner": 1653.3337757637396,
+   "lower_rear_inner": 1653.3337757637396,
+   "upper_front_inner": 1762.4471316192573,
+   "upper_rear_inner": 1762.4471316192573
+  },
+  {
+   "lower_rear_inner": 317.3026278528313
+  }
+ ],
+ "tool.degenerate": {
+  "lower_front_inner": 325.12109819585726,
+  "lower_rear_inner": 325.12109819585726,
+  "upper_front_inner": "-inf",
+  "upper_rear_inner": "-inf"
+ },
+ "tool.end": [
+  {
+   "lower_front_inner": 412.93906719872246,
+   "lower_rear_inner": 412.93906719872246,
+   "upper_front_inner": 360.51530431480063,
+   "upper_rear_inner": 360.51530431480063
+  },
+  {
+   "lower_front_inner": 412.93906719872246,
+   "lower_rear_inner": 412.93906719872246,
+   "upper_front_inner": 360.51530431480063,
+   "upper_rear_inner": 360.51530431480063
+  }
+ ],
+ "tool.errors": [
+  {
+   "message": "ToolAccess: ['upper_outer'] are not chassis wishbone pickups.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "ToolAccess.reach_mm must be > 0.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "ToolAccess.tool_radius_mm must be > 0.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "ToolAccess.start_offset_mm must be >= 0.",
+   "raised": "ValueError"
+  }
+ ],
+ "tool.short.0.5": {
+  "upper_front_inner": 58.0
+ },
+ "tool.short.1e-09": {
+  "upper_front_inner": 58.0
+ },
+ "tool.short.2e-09": {
+  "upper_front_inner": 58.0
+ }
+}

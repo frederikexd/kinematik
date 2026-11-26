@@ -1,0 +1,1447 @@
+{
+ "env.barrel.-20.0": [
+  [
+   [
+    "lower_outer",
+    "-25.0 mm travel, centre",
+    -4.411651978983144
+   ],
+   [
+    "tie_rod_outer",
+    "-25.0 mm travel, centre",
+    -5.396111563859108
+   ],
+   [
+    "lower_outer",
+    "+25.0 mm travel, centre",
+    -4.411651978983116
+   ],
+   [
+    "tie_rod_outer",
+    "+25.0 mm travel, centre",
+    -5.396111563859108
+   ]
+  ],
+  -5.396111563859108
+ ],
+ "env.barrel.-60.0": [
+  [
+   [
+    "lower_outer",
+    "-25.0 mm travel, centre",
+    -4.411651978983144
+   ],
+   [
+    "tie_rod_outer",
+    "-25.0 mm travel, centre",
+    -5.396111563859108
+   ],
+   [
+    "lower_outer",
+    "+25.0 mm travel, centre",
+    -4.411651978983116
+   ],
+   [
+    "tie_rod_outer",
+    "+25.0 mm travel, centre",
+    -5.396111563859108
+   ]
+  ],
+  -5.396111563859108
+ ],
+ "env.barrel.0.0": [
+  [
+   [
+    "lower_outer",
+    "-25.0 mm travel, centre",
+    -4.411651978983144
+   ],
+   [
+    "tie_rod_outer",
+    "-25.0 mm travel, centre",
+    -5.396111563859108
+   ],
+   [
+    "lower_outer",
+    "+25.0 mm travel, centre",
+    -4.411651978983116
+   ],
+   [
+    "tie_rod_outer",
+    "+25.0 mm travel, centre",
+    -5.396111563859108
+   ]
+  ],
+  -5.396111563859108
+ ],
+ "env.barrel.35.0": [
+  [
+   [
+    "lower_outer",
+    "-25.0 mm travel, centre",
+    -4.411651978983144
+   ],
+   [
+    "tie_rod_outer",
+    "-25.0 mm travel, centre",
+    -5.396111563859108
+   ],
+   [
+    "lower_outer",
+    "+25.0 mm travel, centre",
+    -4.411651978983116
+   ],
+   [
+    "tie_rod_outer",
+    "+25.0 mm travel, centre",
+    -5.396111563859108
+   ]
+  ],
+  -5.396111563859108
+ ],
+ "env.barrel.60.0": [
+  [
+   [
+    "lower_outer",
+    "-25.0 mm travel, centre",
+    -4.411651978983144
+   ],
+   [
+    "lower_outer",
+    "+25.0 mm travel, centre",
+    -4.411651978983116
+   ]
+  ],
+  -4.411651978983144
+ ],
+ "env.barrel.80.0": [
+  [],
+  0.6038884361408776
+ ],
+ "env.default": [
+  [
+   [
+    [
+     "lower_outer",
+     "-25.0 mm travel, centre",
+     -2.4116519789831443
+    ],
+    [
+     "tie_rod_outer",
+     "-25.0 mm travel, centre",
+     -3.3961115638591224
+    ],
+    [
+     "lower_outer",
+     "-12.5 mm travel, centre",
+     -2.4116519789831443
+    ],
+    [
+     "tie_rod_outer",
+     "-12.5 mm travel, centre",
+     -3.3961115638591224
+    ],
+    [
+     "lower_outer",
+     "+0.0 mm travel, centre",
+     -2.41165197898313
+    ],
+    [
+     "tie_rod_outer",
+     "+0.0 mm travel, centre",
+     -3.396111563859108
+    ],
+    [
+     "lower_outer",
+     "+12.5 mm travel, centre",
+     -2.4116519789831443
+    ],
+    [
+     "tie_rod_outer",
+     "+12.5 mm travel, centre",
+     -3.396111563859151
+    ],
+    [
+     "lower_outer",
+     "+25.0 mm travel, centre",
+     -2.411651978983116
+    ],
+    [
+     "tie_rod_outer",
+     "+25.0 mm travel, centre",
+     -3.3961115638591366
+    ],
+    [
+     "lower_front link",
+     "+25.0 mm travel, centre",
+     -0.4103499425823003
+    ],
+    [
+     "tie_rod link",
+     "+25.0 mm travel, centre",
+     -0.3855902997515841
+    ]
+   ],
+   -3.396111563859151
+  ],
+  [
+   [
+    "lower_outer",
+    "-25.0 mm travel, centre",
+    -2.4116519789831443
+   ],
+   [
+    "tie_rod_outer",
+    "-25.0 mm travel, centre",
+    -3.3961115638591224
+   ],
+   [
+    "lower_outer",
+    "-12.5 mm travel, centre",
+    -2.4116519789831443
+   ],
+   [
+    "tie_rod_outer",
+    "-12.5 mm travel, centre",
+    -3.3961115638591224
+   ],
+   [
+    "lower_outer",
+    "+0.0 mm travel, centre",
+    -2.41165197898313
+   ],
+   [
+    "tie_rod_outer",
+    "+0.0 mm travel, centre",
+    -3.396111563859108
+   ],
+   [
+    "lower_outer",
+    "+12.5 mm travel, centre",
+    -2.4116519789831443
+   ],
+   [
+    "tie_rod_outer",
+    "+12.5 mm travel, centre",
+    -3.396111563859151
+   ],
+   [
+    "lower_outer",
+    "+25.0 mm travel, centre",
+    -2.411651978983116
+   ],
+   [
+    "tie_rod_outer",
+    "+25.0 mm travel, centre",
+    -3.3961115638591366
+   ],
+   [
+    "lower_front link",
+    "+25.0 mm travel, centre",
+    -0.4103499425823003
+   ],
+   [
+    "tie_rod link",
+    "+25.0 mm travel, centre",
+    -0.3855902997515841
+   ]
+  ],
+  -3.396111563859151
+ ],
+ "env.edges": [
+  "pickups within 0.5 mm; no link inside the rim/tire solid (127–228 mm, section ±95 mm) over -25 to +25 mm, links as 8 mm capsules, rod ends 11 mm",
+  "pickups within 115 mm; no link inside the rim/tire solid (127–228 mm, section ±0.75 mm) over -25 to +25 mm, links as 8 mm capsules, rod ends 11 mm",
+  {
+   "message": "WheelEnvelope.tire_profile radii must lie between the rim and tire radii.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "WheelEnvelope.tire_profile radii must lie between the rim and tire radii.",
+   "raised": "ValueError"
+  },
+  "pickups within 115 mm; no link inside the rim/tire solid (127–228 mm, section ±95 mm) over -25 to +25 mm, links as 8 mm capsules, rod ends 11 mm, measured tire profile",
+  [
+   0.0,
+   -0.5,
+   0.5
+  ]
+ ],
+ "env.errors": [
+  {
+   "message": "WheelEnvelope.pickup_radius_mm must be > 0.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "WheelEnvelope.rim_radius_mm must be > 0.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "WheelEnvelope.tire_radius_mm must be > 0.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "WheelEnvelope.rim_half_width_mm must be > 0.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "WheelEnvelope.tire_half_width_mm must be > 0.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "WheelEnvelope: tire radius must exceed rim radius.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "WheelEnvelope: tire section must be at least as wide as the rim.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "WheelEnvelope: the pickup envelope cannot extend past the rim.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "WheelEnvelope.travel_mm must be (min, max).",
+   "raised": "ValueError"
+  },
+  {
+   "message": "WheelEnvelope: unknown link(s) ['bad']; allowed ['upper_front', 'upper_rear', 'lower_front', 'lower_rear', 'tie_rod'].",
+   "raised": "ValueError"
+  },
+  {
+   "message": "WheelEnvelope.tire_profile radii must lie between the rim and tire radii.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "WheelEnvelope.tire_profile radii must lie between the rim and tire radii.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "WheelEnvelope.sectors takes WheelSector items.",
+   "raised": "TypeError"
+  }
+ ],
+ "env.fake.empty": [
+  [
+   [
+    "(sweep)",
+    "does not solve, centre",
+    "-inf"
+   ],
+   [
+    "(sweep)",
+    "does not solve, rack -2 mm",
+    "-inf"
+   ],
+   [
+    "(sweep)",
+    "does not solve, rack +2 mm",
+    "-inf"
+   ]
+  ],
+  "-inf"
+ ],
+ "env.fake.noattr": [
+  [],
+  5.353104250225925
+ ],
+ "env.fake.raise": [
+  [
+   [
+    "(sweep)",
+    "does not solve, centre",
+    "-inf"
+   ],
+   [
+    "(sweep)",
+    "does not solve, rack -2 mm",
+    "-inf"
+   ],
+   [
+    "(sweep)",
+    "does not solve, rack +2 mm",
+    "-inf"
+   ]
+  ],
+  "-inf"
+ ],
+ "env.fake.unconv": [
+  [
+   [
+    "(sweep)",
+    "does not solve, centre",
+    "-inf"
+   ],
+   [
+    "(sweep)",
+    "does not solve, rack -2 mm",
+    "-inf"
+   ],
+   [
+    "(sweep)",
+    "does not solve, rack +2 mm",
+    "-inf"
+   ]
+  ],
+  "-inf"
+ ],
+ "env.halfwidth": [
+  [
+   89.0,
+   89.0,
+   91.73267326732673,
+   95.0,
+   95.0,
+   95.0,
+   95.0,
+   95.0
+  ],
+  [
+   89.0,
+   89.0,
+   90.89041095890411,
+   93.15068493150685,
+   93.1917808219178,
+   95.0,
+   95.0,
+   95.0
+  ],
+  [
+   89.0,
+   89.0,
+   95.0,
+   95.0,
+   95.0,
+   95.0,
+   95.0,
+   95.0
+  ]
+ ],
+ "env.halfwidth.fine": [
+  90.19999999999993,
+  91.39999999999986,
+  93.80000000000007
+ ],
+ "env.norm": [
+  2,
+  4,
+  5.0,
+  0.0,
+  0.0,
+  [
+   [
+    127.0,
+    89.0
+   ],
+   [
+    200.0,
+    95.0
+   ]
+  ],
+  [
+   -10.0,
+   10.0
+  ],
+  [
+   "tie_rod"
+  ],
+  "pickups within 127 mm; no link inside the rim/tire solid (127–228 mm, section ±89 mm) over -10 to +10 mm, rack ±5 mm, links as 0 mm capsules, rod ends 0 mm, measured tire profile, caliper, joint swing within 12.5 deg",
+  "pickups within 115 mm; no link inside the rim/tire solid (127–228 mm, section ±95 mm) over -25 to +25 mm, links as 8 mm capsules, rod ends 11 mm",
+  "pickups within 115 mm; no link inside the rim/tire solid (127–228 mm, section ±95 mm) over -25 to +25 mm, rack ±3 mm, links as 8 mm capsules, rod ends 11 mm",
+  "pickups within 115 mm; no link inside the rim/tire solid (127–228 mm, section ±95 mm) over -25 to +25 mm, links as 8 mm capsules, rod ends 11 mm, measured tire profile"
+ ],
+ "env.offset": [
+  [
+   [
+    "lower_outer",
+    "-25.0 mm travel, centre",
+    -2.4116519789831443
+   ],
+   [
+    "tie_rod_outer",
+    "-25.0 mm travel, centre",
+    -3.3961115638591224
+   ],
+   [
+    "lower_outer",
+    "+25.0 mm travel, centre",
+    -2.411651978983116
+   ],
+   [
+    "tie_rod_outer",
+    "+25.0 mm travel, centre",
+    -3.396111563859108
+   ]
+  ],
+  -3.3961115638591224
+ ],
+ "env.sector_ball": [
+  8.565514,
+  [
+   [
+    [
+     "upper_outer",
+     "-25.0 mm travel, centre",
+     -17.202372283750222
+    ],
+    [
+     "lower_outer",
+     "-25.0 mm travel, centre",
+     -3.4116519789831443
+    ],
+    [
+     "tie_rod_outer",
+     "-25.0 mm travel, centre",
+     -4.396111563859122
+    ],
+    [
+     "upper_front link",
+     "-25.0 mm travel, centre",
+     -7.266606889106147
+    ],
+    [
+     "upper_rear link",
+     "-25.0 mm travel, centre",
+     -6.961562475657038
+    ],
+    [
+     "upper_outer",
+     "+25.0 mm travel, centre",
+     -15.386963517078934
+    ],
+    [
+     "lower_outer",
+     "+25.0 mm travel, centre",
+     -3.411651978983116
+    ],
+    [
+     "tie_rod_outer",
+     "+25.0 mm travel, centre",
+     -4.396111563859108
+    ],
+    [
+     "upper_front link",
+     "+25.0 mm travel, centre",
+     -8.907883146249828
+    ],
+    [
+     "upper_rear link",
+     "+25.0 mm travel, centre",
+     -4.926022833297972
+    ]
+   ],
+   -17.202372283750222
+  ]
+ ],
+ "env.small_tire": [
+  [
+   [
+    "upper_outer",
+    "-25.0 mm travel, centre",
+    -27.01849382868079
+   ],
+   [
+    "lower_outer",
+    "-25.0 mm travel, centre",
+    -69.91165197898314
+   ],
+   [
+    "tie_rod_outer",
+    "-25.0 mm travel, centre",
+    -70.89611156385911
+   ],
+   [
+    "upper_front link",
+    "-25.0 mm travel, centre",
+    -8.844929756433231
+   ],
+   [
+    "upper_rear link",
+    "-25.0 mm travel, centre",
+    -7.810922336533309
+   ],
+   [
+    "upper_outer",
+    "+25.0 mm travel, centre",
+    -27.018493828680803
+   ],
+   [
+    "lower_outer",
+    "+25.0 mm travel, centre",
+    -69.91165197898312
+   ],
+   [
+    "tie_rod_outer",
+    "+25.0 mm travel, centre",
+    -70.89611156385911
+   ],
+   [
+    "upper_front link",
+    "+25.0 mm travel, centre",
+    -11.806049549764282
+   ],
+   [
+    "upper_rear link",
+    "+25.0 mm travel, centre",
+    -10.406880557620994
+   ]
+  ],
+  -70.89611156385911
+ ],
+ "env.small_violation": [
+  [
+   [
+    "lower_outer",
+    "-25.0 mm travel, centre",
+    -0.4116519789831443
+   ],
+   [
+    "tie_rod_outer",
+    "-25.0 mm travel, centre",
+    -1.3961115638591082
+   ],
+   [
+    "lower_outer",
+    "+25.0 mm travel, centre",
+    -0.4116519789831159
+   ],
+   [
+    "tie_rod_outer",
+    "+25.0 mm travel, centre",
+    -1.3961115638591082
+   ],
+   [
+    "lower_front link",
+    "+25.0 mm travel, centre",
+    -0.4103499425823145
+   ]
+  ],
+  -1.3961115638591082
+ ],
+ "env.states": [
+  [
+   0.0,
+   [
+    100.0,
+    230.0,
+    160.0
+   ],
+   2
+  ],
+  [
+   -5.0,
+   [
+    100.0,
+    225.0,
+    160.0
+   ],
+   2
+  ],
+  [
+   5.0,
+   [
+    100.0,
+    235.0,
+    160.0
+   ],
+   2
+  ]
+ ],
+ "env.states_spy": [
+  null,
+  {
+   "tie_rod_inner": [
+    0.0,
+    -2.0,
+    0.0
+   ]
+  },
+  {
+   "tie_rod_inner": [
+    0.0,
+    2.0,
+    0.0
+   ]
+  },
+  null
+ ],
+ "env.swing_edge": [
+  [
+   "lower_outer",
+   "-25.0 mm travel, centre",
+   -2.4116519789831443
+  ],
+  [
+   "tie_rod_outer",
+   "-25.0 mm travel, centre",
+   -3.3961115638591224
+  ],
+  [
+   "lower_outer",
+   "+25.0 mm travel, centre",
+   -2.411651978983116
+  ],
+  [
+   "tie_rod_outer",
+   "+25.0 mm travel, centre",
+   -3.396111563859108
+  ],
+  [
+   "lower_front link",
+   "+25.0 mm travel, centre",
+   -0.4103499425823145
+  ],
+  [
+   "tie_rod link",
+   "+25.0 mm travel, centre",
+   -0.3855902997515699
+  ]
+ ],
+ "env.swing_fake": [
+  [
+   [
+    "lower_outer",
+    "-25.0 mm travel, centre",
+    -2.4116519789831443
+   ],
+   [
+    "tie_rod_outer",
+    "-25.0 mm travel, centre",
+    -3.3961115638591224
+   ],
+   [
+    "lower_outer",
+    "+0.0 mm travel, centre",
+    -2.41165197898313
+   ],
+   [
+    "tie_rod_outer",
+    "+0.0 mm travel, centre",
+    -3.396111563859108
+   ],
+   [
+    "lower_outer",
+    "+25.0 mm travel, centre",
+    -2.411651978983116
+   ],
+   [
+    "tie_rod_outer",
+    "+25.0 mm travel, centre",
+    -3.396111563859108
+   ],
+   [
+    "tie_rod link",
+    "+25.0 mm travel, centre",
+    -0.3855902997515699
+   ],
+   [
+    "lower_outer",
+    "-25.0 mm travel, rack -2 mm",
+    -2.4116519789831727
+   ],
+   [
+    "tie_rod_outer",
+    "-25.0 mm travel, rack -2 mm",
+    -3.3961115638591224
+   ],
+   [
+    "lower_outer",
+    "+0.0 mm travel, rack -2 mm",
+    -2.4116519789831585
+   ],
+   [
+    "tie_rod_outer",
+    "+0.0 mm travel, rack -2 mm",
+    -3.3961115638591366
+   ],
+   [
+    "lower_outer",
+    "+25.0 mm travel, rack -2 mm",
+    -2.41165197898313
+   ],
+   [
+    "tie_rod_outer",
+    "+25.0 mm travel, rack -2 mm",
+    -3.3961115638591224
+   ],
+   [
+    "tie_rod link",
+    "+25.0 mm travel, rack -2 mm",
+    -1.1134981725987956
+   ],
+   [
+    "lower_outer",
+    "-25.0 mm travel, rack +2 mm",
+    -2.41165197898313
+   ],
+   [
+    "tie_rod_outer",
+    "-25.0 mm travel, rack +2 mm",
+    -3.396111563859094
+   ],
+   [
+    "lower_outer",
+    "+0.0 mm travel, rack +2 mm",
+    -2.4116519789831727
+   ],
+   [
+    "tie_rod_outer",
+    "+0.0 mm travel, rack +2 mm",
+    -3.3961115638591366
+   ],
+   [
+    "lower_outer",
+    "+25.0 mm travel, rack +2 mm",
+    -2.4116519789831585
+   ],
+   [
+    "tie_rod_outer",
+    "+25.0 mm travel, rack +2 mm",
+    -3.3961115638591224
+   ],
+   [
+    "c.outer joint swing",
+    "3.1 deg",
+    -0.10000000000000009
+   ]
+  ],
+  [
+   [
+    [
+     -25.0,
+     25.0
+    ],
+    3,
+    2.0,
+    [
+     "tie_rod"
+    ]
+   ]
+  ]
+ ],
+ "env.swing_raise": [
+  [
+   "lower_outer",
+   "-25.0 mm travel, centre",
+   -2.4116519789831443
+  ],
+  [
+   "tie_rod_outer",
+   "-25.0 mm travel, centre",
+   -3.3961115638591224
+  ],
+  [
+   "lower_outer",
+   "+25.0 mm travel, centre",
+   -2.411651978983116
+  ],
+  [
+   "tie_rod_outer",
+   "+25.0 mm travel, centre",
+   -3.396111563859108
+  ],
+  [
+   "lower_front link",
+   "+25.0 mm travel, centre",
+   -0.4103499425823145
+  ],
+  [
+   "tie_rod link",
+   "+25.0 mm travel, centre",
+   -0.3855902997515699
+  ],
+  [
+   "(joints)",
+   "swing does not solve",
+   "-inf"
+  ]
+ ],
+ "env.tight": [
+  [
+   [
+    [
+     "upper_outer",
+     "-25.0 mm travel, centre",
+     -16.51849382868079
+    ],
+    [
+     "lower_outer",
+     "-25.0 mm travel, centre",
+     -59.411651978983144
+    ],
+    [
+     "tie_rod_outer",
+     "-25.0 mm travel, centre",
+     -60.39611156385912
+    ],
+    [
+     "upper_front link",
+     "-25.0 mm travel, centre",
+     -12.658912870640194
+    ],
+    [
+     "upper_rear link",
+     "-25.0 mm travel, centre",
+     -16.943001296328163
+    ],
+    [
+     "lower_front link",
+     "-25.0 mm travel, centre",
+     -41.43592674574204
+    ],
+    [
+     "lower_rear link",
+     "-25.0 mm travel, centre",
+     -41.1761319032715
+    ],
+    [
+     "tie_rod link",
+     "-25.0 mm travel, centre",
+     -44.55030245686511
+    ],
+    [
+     "upper_outer",
+     "+25.0 mm travel, centre",
+     -16.518493828680803
+    ],
+    [
+     "lower_outer",
+     "+25.0 mm travel, centre",
+     -59.411651978983116
+    ],
+    [
+     "tie_rod_outer",
+     "+25.0 mm travel, centre",
+     -60.39611156385911
+    ],
+    [
+     "upper_front link",
+     "+25.0 mm travel, centre",
+     -1.4860990488489136
+    ],
+    [
+     "upper_rear link",
+     "+25.0 mm travel, centre",
+     -7.266413063108928
+    ],
+    [
+     "lower_front link",
+     "+25.0 mm travel, centre",
+     -55.83549892074964
+    ],
+    [
+     "lower_rear link",
+     "+25.0 mm travel, centre",
+     -56.93644622323609
+    ],
+    [
+     "tie_rod link",
+     "+25.0 mm travel, centre",
+     -50.377238809493804
+    ],
+    [
+     "upper_outer",
+     "-25.0 mm travel, rack -5 mm",
+     -16.518493828680818
+    ],
+    [
+     "lower_outer",
+     "-25.0 mm travel, rack -5 mm",
+     -59.411651978983144
+    ],
+    [
+     "tie_rod_outer",
+     "-25.0 mm travel, rack -5 mm",
+     -60.396111563859094
+    ],
+    [
+     "upper_front link",
+     "-25.0 mm travel, rack -5 mm",
+     -11.400720097371291
+    ],
+    [
+     "upper_rear link",
+     "-25.0 mm travel, rack -5 mm",
+     -19.80548715191088
+    ],
+    [
+     "lower_front link",
+     "-25.0 mm travel, rack -5 mm",
+     -40.766337596036124
+    ],
+    [
+     "lower_rear link",
+     "-25.0 mm travel, rack -5 mm",
+     -42.833342222749394
+    ],
+    [
+     "tie_rod link",
+     "-25.0 mm travel, rack -5 mm",
+     -48.44581392852733
+    ],
+    [
+     "upper_outer",
+     "+25.0 mm travel, rack -5 mm",
+     -16.51849382868079
+    ],
+    [
+     "lower_outer",
+     "+25.0 mm travel, rack -5 mm",
+     -59.411651978983144
+    ],
+    [
+     "tie_rod_outer",
+     "+25.0 mm travel, rack -5 mm",
+     -60.39611156385914
+    ],
+    [
+     "upper_front link",
+     "+25.0 mm travel, rack -5 mm",
+     -0.036117249547615415
+    ],
+    [
+     "upper_rear link",
+     "+25.0 mm travel, rack -5 mm",
+     -9.452420386946912
+    ],
+    [
+     "lower_front link",
+     "+25.0 mm travel, rack -5 mm",
+     -52.23981952297082
+    ],
+    [
+     "lower_rear link",
+     "+25.0 mm travel, rack -5 mm",
+     -69.61127049155033
+    ],
+    [
+     "tie_rod link",
+     "+25.0 mm travel, rack -5 mm",
+     -56.708039845657424
+    ],
+    [
+     "upper_outer",
+     "-25.0 mm travel, rack +5 mm",
+     -16.518493828680775
+    ],
+    [
+     "lower_outer",
+     "-25.0 mm travel, rack +5 mm",
+     -59.41165197898317
+    ],
+    [
+     "tie_rod_outer",
+     "-25.0 mm travel, rack +5 mm",
+     -60.39611156385914
+    ],
+    [
+     "upper_front link",
+     "-25.0 mm travel, rack +5 mm",
+     -14.108721145812709
+    ],
+    [
+     "upper_rear link",
+     "-25.0 mm travel, rack +5 mm",
+     -15.092014960900116
+    ],
+    [
+     "lower_front link",
+     "-25.0 mm travel, rack +5 mm",
+     -42.27562030486952
+    ],
+    [
+     "lower_rear link",
+     "-25.0 mm travel, rack +5 mm",
+     -39.65719014456104
+    ],
+    [
+     "tie_rod link",
+     "-25.0 mm travel, rack +5 mm",
+     -40.765680078677775
+    ],
+    [
+     "upper_outer",
+     "+25.0 mm travel, rack +5 mm",
+     -16.518493828680775
+    ],
+    [
+     "lower_outer",
+     "+25.0 mm travel, rack +5 mm",
+     -59.41165197898313
+    ],
+    [
+     "tie_rod_outer",
+     "+25.0 mm travel, rack +5 mm",
+     -60.396111563859094
+    ],
+    [
+     "upper_front link",
+     "+25.0 mm travel, rack +5 mm",
+     -3.141385494219051
+    ],
+    [
+     "upper_rear link",
+     "+25.0 mm travel, rack +5 mm",
+     -5.252270425229028
+    ],
+    [
+     "lower_front link",
+     "+25.0 mm travel, rack +5 mm",
+     -66.87577954090358
+    ],
+    [
+     "lower_rear link",
+     "+25.0 mm travel, rack +5 mm",
+     -49.35172435618584
+    ],
+    [
+     "tie_rod link",
+     "+25.0 mm travel, rack +5 mm",
+     -46.79983116352912
+    ]
+   ],
+   -69.61127049155033
+  ],
+  [
+   [
+    "upper_outer",
+    "-25.0 mm travel, centre",
+    -16.51849382868079
+   ],
+   [
+    "lower_outer",
+    "-25.0 mm travel, centre",
+    -59.411651978983144
+   ],
+   [
+    "tie_rod_outer",
+    "-25.0 mm travel, centre",
+    -60.39611156385912
+   ],
+   [
+    "upper_front link",
+    "-25.0 mm travel, centre",
+    -12.658912870640194
+   ],
+   [
+    "upper_rear link",
+    "-25.0 mm travel, centre",
+    -16.943001296328163
+   ],
+   [
+    "lower_front link",
+    "-25.0 mm travel, centre",
+    -41.43592674574204
+   ],
+   [
+    "lower_rear link",
+    "-25.0 mm travel, centre",
+    -41.1761319032715
+   ],
+   [
+    "tie_rod link",
+    "-25.0 mm travel, centre",
+    -44.55030245686511
+   ],
+   [
+    "upper_outer",
+    "+25.0 mm travel, centre",
+    -16.518493828680803
+   ],
+   [
+    "lower_outer",
+    "+25.0 mm travel, centre",
+    -59.411651978983116
+   ],
+   [
+    "tie_rod_outer",
+    "+25.0 mm travel, centre",
+    -60.39611156385911
+   ],
+   [
+    "upper_front link",
+    "+25.0 mm travel, centre",
+    -1.4860990488489136
+   ],
+   [
+    "upper_rear link",
+    "+25.0 mm travel, centre",
+    -7.266413063108928
+   ],
+   [
+    "lower_front link",
+    "+25.0 mm travel, centre",
+    -55.83549892074964
+   ],
+   [
+    "lower_rear link",
+    "+25.0 mm travel, centre",
+    -56.93644622323609
+   ],
+   [
+    "tie_rod link",
+    "+25.0 mm travel, centre",
+    -50.377238809493804
+   ],
+   [
+    "upper_outer",
+    "-25.0 mm travel, rack -5 mm",
+    -16.518493828680818
+   ],
+   [
+    "lower_outer",
+    "-25.0 mm travel, rack -5 mm",
+    -59.411651978983144
+   ],
+   [
+    "tie_rod_outer",
+    "-25.0 mm travel, rack -5 mm",
+    -60.396111563859094
+   ],
+   [
+    "upper_front link",
+    "-25.0 mm travel, rack -5 mm",
+    -11.400720097371291
+   ],
+   [
+    "upper_rear link",
+    "-25.0 mm travel, rack -5 mm",
+    -19.80548715191088
+   ],
+   [
+    "lower_front link",
+    "-25.0 mm travel, rack -5 mm",
+    -40.766337596036124
+   ],
+   [
+    "lower_rear link",
+    "-25.0 mm travel, rack -5 mm",
+    -42.833342222749394
+   ],
+   [
+    "tie_rod link",
+    "-25.0 mm travel, rack -5 mm",
+    -48.44581392852733
+   ],
+   [
+    "upper_outer",
+    "+25.0 mm travel, rack -5 mm",
+    -16.51849382868079
+   ],
+   [
+    "lower_outer",
+    "+25.0 mm travel, rack -5 mm",
+    -59.411651978983144
+   ],
+   [
+    "tie_rod_outer",
+    "+25.0 mm travel, rack -5 mm",
+    -60.39611156385914
+   ],
+   [
+    "upper_front link",
+    "+25.0 mm travel, rack -5 mm",
+    -0.036117249547615415
+   ],
+   [
+    "upper_rear link",
+    "+25.0 mm travel, rack -5 mm",
+    -9.452420386946912
+   ],
+   [
+    "lower_front link",
+    "+25.0 mm travel, rack -5 mm",
+    -52.23981952297082
+   ],
+   [
+    "lower_rear link",
+    "+25.0 mm travel, rack -5 mm",
+    -69.61127049155033
+   ],
+   [
+    "tie_rod link",
+    "+25.0 mm travel, rack -5 mm",
+    -56.708039845657424
+   ],
+   [
+    "upper_outer",
+    "-25.0 mm travel, rack +5 mm",
+    -16.518493828680775
+   ],
+   [
+    "lower_outer",
+    "-25.0 mm travel, rack +5 mm",
+    -59.41165197898317
+   ],
+   [
+    "tie_rod_outer",
+    "-25.0 mm travel, rack +5 mm",
+    -60.39611156385914
+   ],
+   [
+    "upper_front link",
+    "-25.0 mm travel, rack +5 mm",
+    -14.108721145812709
+   ],
+   [
+    "upper_rear link",
+    "-25.0 mm travel, rack +5 mm",
+    -15.092014960900116
+   ],
+   [
+    "lower_front link",
+    "-25.0 mm travel, rack +5 mm",
+    -42.27562030486952
+   ],
+   [
+    "lower_rear link",
+    "-25.0 mm travel, rack +5 mm",
+    -39.65719014456104
+   ],
+   [
+    "tie_rod link",
+    "-25.0 mm travel, rack +5 mm",
+    -40.765680078677775
+   ],
+   [
+    "upper_outer",
+    "+25.0 mm travel, rack +5 mm",
+    -16.518493828680775
+   ],
+   [
+    "lower_outer",
+    "+25.0 mm travel, rack +5 mm",
+    -59.41165197898313
+   ],
+   [
+    "tie_rod_outer",
+    "+25.0 mm travel, rack +5 mm",
+    -60.396111563859094
+   ],
+   [
+    "upper_front link",
+    "+25.0 mm travel, rack +5 mm",
+    -3.141385494219051
+   ],
+   [
+    "upper_rear link",
+    "+25.0 mm travel, rack +5 mm",
+    -5.252270425229028
+   ],
+   [
+    "lower_front link",
+    "+25.0 mm travel, rack +5 mm",
+    -66.87577954090358
+   ],
+   [
+    "lower_rear link",
+    "+25.0 mm travel, rack +5 mm",
+    -49.35172435618584
+   ],
+   [
+    "tie_rod link",
+    "+25.0 mm travel, rack +5 mm",
+    -46.79983116352912
+   ],
+   [
+    "upper_front.inner joint swing",
+    "4.4 deg",
+    -3.9109652784933226
+   ],
+   [
+    "upper_front.outer joint swing",
+    "5.4 deg",
+    -4.8821301437137565
+   ],
+   [
+    "upper_rear.inner joint swing",
+    "4.4 deg",
+    -3.8738259046201646
+   ],
+   [
+    "upper_rear.outer joint swing",
+    "5.3 deg",
+    -4.789925650150754
+   ],
+   [
+    "lower_front.inner joint swing",
+    "3.7 deg",
+    -3.1853479511583385
+   ],
+   [
+    "lower_front.outer joint swing",
+    "4.9 deg",
+    -4.430141278584293
+   ],
+   [
+    "lower_rear.inner joint swing",
+    "3.6 deg",
+    -3.068436008689866
+   ],
+   [
+    "lower_rear.outer joint swing",
+    "4.5 deg",
+    -4.000297774017227
+   ],
+   [
+    "tie_rod.inner joint swing",
+    "4.3 deg",
+    -3.7792055326578726
+   ],
+   [
+    "tie_rod.outer joint swing",
+    "5.1 deg",
+    -4.570455505963017
+   ]
+  ]
+ ],
+ "sector.depth": [
+  10.0,
+  0.0,
+  -52.35987755982988,
+  -191.98621771937624,
+  -52.10520681182421,
+  5.0,
+  -10.0,
+  -5.0,
+  1.0,
+  -90.0,
+  -5.726646259971647,
+  10.0,
+  10.0,
+  -70.0,
+  -70.0,
+  -89.5,
+  -89.5,
+  -89.5,
+  5.0,
+  2.0,
+  2.2453292519943293,
+  -8.226646259971647,
+  0.8726646259971648
+ ],
+ "sector.errors": [
+  {
+   "message": "WheelSector 'a': need 0 <= r_min < r_max.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "WheelSector 'a': need 0 <= r_min < r_max.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "WheelSector 'a': theta_max <= theta_min.",
+   "raised": "ValueError"
+  },
+  {
+   "message": "WheelSector 'a': axial_max <= axial_min.",
+   "raised": "ValueError"
+  }
+ ],
+ "sector.hub": [
+  0.2617993877991494,
+  -0.9599310885968813,
+  2e-07,
+  -1.9198621771937625e-06,
+  0.5235987755982988
+ ]
+}
