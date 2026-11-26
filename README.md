@@ -62,13 +62,13 @@ comparisons include misses, all published: two Lotus SHARK studies, MathWorks' K
 
 | | | Maturity |
 |---|---|---|
-| **Suspension** | 3D constraint solver: double wishbone, MacPherson, multi-link, solid axle. Camber gain, bump steer, roll-center migration, load transfer, link loads. | **Most benchmarked.** Checked against Adams View, Simscape, Chrono and Lotus; misses published |
-| **Aero** | Underfloor duct model, vortex lattice for wings, source-panel method for bluff bodies. Upload an STL, get a ride-height sweep. | **Early.** Closed-form and published checks; inviscid, no wind tunnel or CFD comparison |
-| **Brakes** | Bias, lock-up, hydraulic sizing, rotor thermal and fade. | **Early.** Closed-form and one published check; rotor temperature not benchmarked |
+| **Suspension** | 3D constraint solver: double wishbone, MacPherson, multi-link, solid axle. Camber gain, bump steer, roll-center migration, load transfer, link loads. | **Most benchmarked.** Checked against Adams View, Simscape, Chrono and Lotus; load transfer against OpenSees, tyre forces against MFeval; misses published |
+| **Aero** | Underfloor duct model, vortex lattice for wings, source-panel method for bluff bodies. Upload an STL, get a ride-height sweep. | **Partly benchmarked.** Wing against a wind tunnel in ground effect: within 9 % at moderate ride heights, overshoots the peak near the road (inviscid); no whole-car comparison |
+| **Brakes** | Bias, lock-up, hydraulic sizing, rotor thermal and fade. | **Partly benchmarked.** Torque and the rotor solver against published examples and Ansys; rotor cooling from a measured FSAE car (one car); rotor temperature against a railway dyno, one stop just misses |
 | **Accumulator** | Cell sizing, pack topology, FSAE-EV rules checks, thermal model. | **Partly benchmarked.** Against PyBaMM and liionpack; some checks pending |
-| **Chassis** | Frame graph with triangulation and load-path audit, bracket factor of safety, weight and CG ledger. | **Early.** Bracket bending checked against commercial solvers; the other chassis checks are closed-form only |
+| **Chassis** | Frame graph with triangulation and load-path audit, bracket factor of safety, weight and CG ledger. | **Partly benchmarked.** Bracket bending against commercial solvers; welds, bolted joints, bearing and tear-out against Shigley and AISC; the frame checks are closed-form only |
 | **Electrics** | Import a routed board (KiCad, Altium) and check current capacity, voltage drop, clearance and impedance. | **Benchmarked.** Board reading checked against KiCad and Altium, resistance against SPICE; misses published |
-| **Powertrain** | Compare predicted event performance across motor architectures and flag configurations that exceed modeled fuse limits. | **Benchmarked.** FASTSim, GT-SUITE studies and a blind MathWorks model; heat and lap time not against a car |
+| **Powertrain** | Compare predicted event performance across motor architectures and flag configurations that exceed modeled fuse limits. | **Benchmarked.** FASTSim, GT-SUITE studies and a blind MathWorks model; lap time against TUM's simulator; engine heat against two measured engines; lap time not against a car |
 | **Integration** | Every subsystem declares mass, CG, torque, heat and load into one ledger. Change a number, see which other subsystems it moves. | **Early.** Bookkeeping across subsystems; no outside benchmark |
 
 Most tabs export a DXF you can open in SolidWorks as a 2D sketch. Full list: [FEATURES.md](FEATURES.md).
