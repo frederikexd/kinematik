@@ -63,33 +63,46 @@ def wing_stl(path: str) -> float:
     return -min(z for _, z in loop)
 
 
-def _sweep(path, drop, endplates=None, heights=HEIGHTS):
+def section_loop(n: int = 120):
+    """Table 2 as one closed loop in chord units, cosine-spaced: TE -> suction (lower) -> LE -> pressure -> TE."""
+    b = 0.5 * (1 - np.cos(np.linspace(0, np.pi, n + 1)))
+    xs = [r[0] for r in TABLE2]
+    s = np.interp(b, xs, [r[1] for r in TABLE2])
+    p = np.interp(b, xs, [r[2] for r in TABLE2])
+    return list(zip(np.r_[b[::-1], b[1:]].tolist(), np.r_[s[::-1], p[1:]].tolist()))
+
+
+def _sweep(path, drop, endplates=None, heights=HEIGHTS, section=None):
     pts = []
     for hc in heights:
         # the lattice is placed by its leading edge; the thesis measures to the lowest suction point
         h_mm = 50000.0 if hc is None else (hc * C + drop) * 1000.0
         extra = {"endplates": endplates} if endplates else {}
+        if section:
+            extra["section_profile"] = section
         r = VortexLatticeModel(60, 16).solve(CaseSpec(attitude=Attitude(ride_height_mm=h_mm), geometry_path=path,
                                                       reference_area_m2=SPAN * C, extra=extra))
         pts.append({"h_c": hc, "downforce_CL": abs(float(r.c_lift)), "sign": float(np.sign(r.c_lift))})
     return pts
 
 
-def run(phase: int = 2) -> dict:
-    """Phase 1: wing alone (the registered run). Phase 2: with endplates as assumed in limits.json."""
+def run(phase: int = 3) -> dict:
+    """Phase 1: wing alone (the registered run). Phase 2: with endplates as assumed in limits.json. Phase 3: and
+    the section thickness as a 2D strip factor."""
     lim = REG["limits"]["relative"]
     out = {"phase": phase}
     with tempfile.TemporaryDirectory() as d:
         path = os.path.join(d, "wing.stl")
         drop = wing_stl(path)
         ep = None
-        if phase == 2:
+        if phase >= 2:
             ep = dict(length_m=0.25, height_m=0.10, x_start_m=-(0.25 - C) / 2, z_bottom_m=-drop, n_height=12,
                       n_length=16)
             alt = dict(length_m=0.10, height_m=0.25, x_start_m=(C - 0.10) / 2, z_bottom_m=-drop, n_height=24,
                        n_length=8)
-            out["bracket_other_orientation"] = _sweep(path, drop, alt, heights=[None, 0.671])
-        out["points"] = _sweep(path, drop, ep)
+            sec = section_loop() if phase >= 3 else None
+            out["bracket_other_orientation"] = _sweep(path, drop, alt, heights=[None, 0.671], section=sec)
+        out["points"] = _sweep(path, drop, ep, section=sec if phase >= 3 else None)
     g = REG["graded"]
     pts = {p["h_c"]: p["downforce_CL"] for p in out["points"]}
     rows, ok = {}, True

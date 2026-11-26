@@ -1,0 +1,8 @@
+{
+  "registered": "2026-11-25. DISCLOSURE: the Joukowski check had been run at 400 and 800 panels while panel2d was being written (-1.6 % and -0.9 % at 4 deg); the ground-effect consistency check had not been run.",
+  "checks": {
+    "joukowski_exact": "Hess-Smith CL of a Joukowski aerofoil (centre -0.1, 0.08: about 12 % thick, 4 % camber) at 0, 4 and 8 deg, 800 panels, against the exact conformal-map solution CL = 8 pi R sin(alpha + beta) / chord (Katz & Plotkin sec. 6.6)",
+    "thin_limit_in_ground_effect": "Hess-Smith CL of a 0.5 % thick ellipse at 4 deg against the lumped-vortex flat plate at the same height above the road, h/c 0.1, 0.3, 1.0 and free air: as thickness goes to zero the two must agree"
+  },
+  "limits": {"joukowski_relative": 0.01, "thin_limit_relative": 0.02}
+}

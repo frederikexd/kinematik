@@ -616,10 +616,37 @@ class VortexLatticeModel:
         w = influence(Pmid)[..., 2] @ G                     # (N,) downwash
         c_drag_i = -2.0 * float(np.sum(w * G * dy)) / ref_area
 
+        #  SECTION THICKNESS (spec.extra["section_profile"]). The lattice sees
+        #  the camber line only; in ground effect the section's thickness and
+        #  the road form a nozzle under the suction surface. Given the section
+        #  as a closed loop in chord units ((x, z) pairs, trailing edge -> lower
+        #  surface -> leading edge -> upper surface -> trailing edge, leading
+        #  edge at (0, 0), as placed), CL is scaled by the 2D ratio of the
+        #  thick section to its camber line at the same height (panel2d, Hess-
+        #  Smith against lumped vortex, both with the road image). A strip
+        #  correction: it assumes the 3D loss is the same for thin and thick.
+        #  With it, the Zerihan wing reads -8 % and -9 % at the two graded
+        #  points instead of -14 % and -18 % (benchmarks/aero_ground_effect).
+        thickness_factor = None
+        _sp = (spec.extra or {}).get("section_profile") if hasattr(spec, "extra") else None
+        if _sp:
+            from .panel2d import thickness_factor as _tf
+            _sx = np.asarray([q[0] for q in _sp], float)
+            _sz = np.asarray([q[1] for q in _sp], float)
+            _h_low = None if h is None else (h + float(_sz.min()) * chord) / chord
+            if _h_low is not None and _h_low <= 0.0:
+                raise VortexLatticeUnavailable("section_profile: the section would touch the road at this height")
+            thickness_factor = float(_tf(_sx, _sz, _h_low))
+            c_lift *= thickness_factor
+            c_drag_i *= thickness_factor ** 2
+
         notes = (f"vortex lattice: {ns}x{nc} panels, span {span:.3f} m, mean "
                  f"chord {chord:.3f} m, cond={cond:.1e}. "
                  f"INDUCED drag only — no profile drag, so total drag is a "
                  f"lower bound.")
+        if thickness_factor is not None:
+            notes += (f" Section thickness included as a 2D strip factor of {thickness_factor:.3f} "
+                      f"(thick section over camber line at this height, inviscid).")
         converged = True
         ill = cond > 1e10  # pragma: no mutate
         if ill:

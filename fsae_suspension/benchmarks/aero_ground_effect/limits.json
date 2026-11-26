@@ -25,5 +25,11 @@
     "added": "2026-11-25, after the phase-1 run failed, when endplates were added to the lattice",
     "endplates": "Modelled as flat vertical lifting surfaces at the wing tips. The thesis gives their size (250 x 100 x 4 mm) but not their placement or which side is vertical. Assumed: 250 mm long, centred on the chord, 100 mm tall, lower edge level with the wing's lowest point (the thesis says they were sized to allow very low ground heights). The other orientation (100 long, 250 tall, same lower edge) is reported as a bracket, not graded.",
     "graded": "the same two points, the same 10 % limit"
+  },
+  "phase_3": {
+    "added": "2026-11-25, after phase 2 failed; registered before the phase-3 run of the 3D lattice. DISCLOSURE: the 2D thickness factors for this section had been computed (freestream 1.077, h/c 0.671 1.109) before this entry was written, so the outcome at the graded points could be anticipated.",
+    "change": "Section thickness as a 2D strip factor (suspension/aero/panel2d.py: Hess-Smith panel method over lumped-vortex camber line, both with the road image), on top of the phase-2 endplates. The 2D method is checked separately against the exact Joukowski aerofoil (benchmarks/aero_section).",
+    "graded": "the same two points, the same 10 % limit; the near-ground points are reported, not graded (inviscid: no separation)",
+    "first_run": "The first phase-3 run read freestream 45 % low: panel2d's self-induced term depended on a tolerance that failed when the section sat far above the origin (the free-air case is placed 50 m up). Fixed (the term is now set exactly) and rerun; that first run is kept as results_phase3_first_run.json."
   }
 }

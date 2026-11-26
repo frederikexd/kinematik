@@ -1,5 +1,5 @@
 """Vortex lattice absolute downforce against Zerihan's wind-tunnel wing in ground effect (scripts/
-aero_ground_effect_benchmark.py). Both registered phases fail; these tests pin what they found."""
+aero_ground_effect_benchmark.py). Phases 1 and 2 fail and phase 3 passes; these tests pin what each found."""
 import json
 import math
 import os
@@ -11,7 +11,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 B = ROOT / "benchmarks" / "aero_ground_effect"
 P1 = json.loads((B / "results_phase1.json").read_text())
-P2 = json.loads((B / "results.json").read_text())
+P2 = json.loads((B / "results_phase2.json").read_text())
+P3 = json.loads((B / "results.json").read_text())
 
 
 def test_both_phases_are_reported_as_they_came_out():
@@ -21,8 +22,13 @@ def test_both_phases_are_reported_as_they_came_out():
     assert P2["graded"]["h_c_0.671_CL"]["rel"] > P1["graded"]["h_c_0.671_CL"]["rel"]
 
 
+def test_phase_3_with_section_thickness_passes_the_registered_limit():
+    assert P3["phase"] == 3 and P3["passed"] is True
+    assert all(abs(r["rel"]) <= 0.10 for r in P3["graded"].values())
+
+
 def test_downforce_still_rises_towards_the_ground():
-    cl = [p["downforce_CL"] for p in P2["points"]]
+    cl = [p["downforce_CL"] for p in P3["points"]]
     assert all(b > a for a, b in zip(cl, cl[1:]))
 
 

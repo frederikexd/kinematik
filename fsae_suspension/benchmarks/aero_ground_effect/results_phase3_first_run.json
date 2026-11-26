@@ -1,0 +1,71 @@
+{
+ "phase": 3,
+ "bracket_other_orientation": [
+  {
+   "h_c": null,
+   "downforce_CL": 0.3993771043673517,
+   "sign": -1.0
+  },
+  {
+   "h_c": 0.671,
+   "downforce_CL": 0.7932983183775896,
+   "sign": -1.0
+  }
+ ],
+ "points": [
+  {
+   "h_c": null,
+   "downforce_CL": 0.3815998308888412,
+   "sign": -1.0
+  },
+  {
+   "h_c": 0.671,
+   "downforce_CL": 0.7658941363493955,
+   "sign": -1.0
+  },
+  {
+   "h_c": 0.448,
+   "downforce_CL": 0.8523004421044297,
+   "sign": -1.0
+  },
+  {
+   "h_c": 0.313,
+   "downforce_CL": 0.9686381511285538,
+   "sign": -1.0
+  },
+  {
+   "h_c": 0.224,
+   "downforce_CL": 1.1214736067423265,
+   "sign": -1.0
+  },
+  {
+   "h_c": 0.134,
+   "downforce_CL": 1.4633359340590781,
+   "sign": -1.0
+  },
+  {
+   "h_c": 0.082,
+   "downforce_CL": 1.944826617546765,
+   "sign": -1.0
+  }
+ ],
+ "graded": {
+  "freestream_CL": {
+   "kinematik": 0.3815998308888412,
+   "measured": 0.69,
+   "rel": -0.4469567668277663,
+   "passes": false
+  },
+  "h_c_0.671_CL": {
+   "kinematik": 0.7658941363493955,
+   "measured": 0.84,
+   "rel": -0.08822126625071958,
+   "passes": true
+  }
+ },
+ "reported": {
+  "h_c_0.082_CL": 1.944826617546765,
+  "measured_max_CL_at_0.082": 1.72
+ },
+ "passed": false
+}
