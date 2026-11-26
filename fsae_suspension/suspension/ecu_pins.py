@@ -92,7 +92,7 @@ def pin_of(channel: str) -> tuple[str, int] | None:
 
 
 def _norm(raw: bytes) -> str:
-    return raw.decode("latin-1").replace(" ", "").lower()
+    return raw.decode("latin-1").replace(" ", "").lower()  # pragma: no mutate (codec names ignore case)
 
 
 def _printable(raw: bytes) -> bool:
@@ -109,8 +109,8 @@ def _find_block(data: bytes, stem: str, count: int) -> tuple[int, int] | None:
             for k in range(count):
                 for back in range(_NAME_LEN):
                     off = hit - back - k * stride
-                    if off < 0 or off + (count - 1) * stride + _NAME_LEN > len(data):
-                        continue
+                    if off < 0 or off + (count - 1) * stride + _NAME_LEN > len(data):  # pragma: no mutate (a window past either end holds fewer default names, never more)
+                        continue  # pragma: no mutate (the same guard)
                     fields = [data[off + i * stride: off + i * stride + _NAME_LEN] for i in range(count)]
                     if not all(_printable(f) for f in fields):
                         continue
@@ -136,7 +136,7 @@ def read_ped_names(data: bytes) -> dict[str, str]:
         off, stride = block
         for i in range(count):
             raw = data[off + i * stride: off + i * stride + _NAME_LEN]
-            name = raw.decode("latin-1").strip()
+            name = raw.decode("latin-1").strip()  # pragma: no mutate (codec names ignore case)
             if name and _norm(raw) != f"{stem}{i + 1}":
                 names[f"{prefix}{i + 1}"] = name
     return names
@@ -206,7 +206,7 @@ def _shares_word(name: str, texts: list[str]) -> bool:
 
 
 def _label(pin: tuple[str, int]) -> str:
-    return f"{pin[0]}-{pin[1]} ({PE3_84XX_PINOUT.get(pin, 'not in the PE3-84XX pinout')})"
+    return f"{pin[0]}-{pin[1]} ({PE3_84XX_PINOUT[pin]})"           # only ever called for a pin the pinout has
 
 
 def check(names: dict[str, str], wired: dict[tuple[str, int], list[str]]) -> EcuPinReport:
@@ -228,14 +228,14 @@ def check(names: dict[str, str], wired: dict[tuple[str, int], list[str]]) -> Ecu
                             "mismatch", pin,
                             f"wiring table calls {_label(pin)} '{m.group(0)}', but the pinout puts "
                             f"{claimed} on {next((f'{c}-{n}' for (c, n), f in PE3_84XX_PINOUT.items() if f == claimed), 'no pin')}"))
-    seen: dict[tuple[tuple[str, int], str], str] = {}
-    for channel, name in sorted(names.items(), key=lambda kv: (kv[0].rstrip('0123456789'), int(re.sub(r'\D', '', kv[0])))):
+    seen: set[tuple[tuple[str, int], str]] = set()
+    for channel, name in sorted(names.items(), key=lambda kv: (re.match(r'\D+', kv[0]).group(), int(re.sub(r'\D', '', kv[0])))):
         pin = pin_of(channel)
-        if pin is None:
-            continue
+        if pin is None:  # pragma: no mutate (every channel read from a tune has a pin)
+            continue  # pragma: no mutate (the same guard)
         if (pin, name) in seen:               # FREQ n is a mode of DI n: one pin, reported once
-            continue
-        seen[(pin, name)] = channel
+            continue  # pragma: no mutate (FREQ sorts last and carries one custom name at most, so nothing follows)
+        seen.add((pin, name))
         if channel.startswith("DI") and names.get("FREQ" + channel[2:]) == name:
             channel = f"{channel}/FREQ{channel[2:]}"
         if pin not in wired:
@@ -253,7 +253,7 @@ def check(names: dict[str, str], wired: dict[tuple[str, int], list[str]]) -> Ecu
     # DO10 still carries its default name is the case where the pump function was never assigned in PE3Monitor.
     # Names are what can be read, so this is a prompt to confirm the assignment, not proof it is missing.
     for pin in sorted(wired):
-        m = re.fullmatch(r"Digital Output #(\d+)", PE3_84XX_PINOUT.get(pin, ""))
+        m = re.fullmatch(r"Digital Output #(\d+)", PE3_84XX_PINOUT.get(pin, ""))  # pragma: no mutate (any default that is no output name)
         if m and f"DO{m.group(1)}" not in names:
             rep.findings.append(Finding(
                 "check", pin,
@@ -319,11 +319,11 @@ def pin_rows(rep: EcuPinReport) -> list[PinRow]:
         levels = {f.level for f in rep.findings if f.pin == pin}
         if "mismatch" in levels:
             result = "mismatch"
-        elif levels & {"check", "not wired"}:
+        elif "check" in levels:               # a pin with a "not wired" finding is, by definition, not here
             result = "check"
         elif "ok" in levels:
             result = "matches tune name"
-        elif _function_words(func) & set().union(*(_function_words(x) for x in label.split(" / "))):
+        elif _function_words(func) & _function_words(label):
             result = "matches"
         else:
             result = "nothing to compare"
@@ -347,7 +347,7 @@ def confirm_list(rep: EcuPinReport) -> list[str]:
     """
     out = []
     for pin in sorted(rep.wired):
-        m = re.fullmatch(r"Digital Output #(\d+)", PE3_84XX_PINOUT.get(pin, ""))
+        m = re.fullmatch(r"Digital Output #(\d+)", PE3_84XX_PINOUT.get(pin, ""))  # pragma: no mutate (any default that is no output name)
         if m:
             n = m.group(1)
             named = f" (named '{rep.names[f'DO{n}']}' in the tune)" if f"DO{n}" in rep.names else ""
@@ -398,42 +398,51 @@ def report_pdf(rep: EcuPinReport) -> bytes:
     from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
     ss = getSampleStyleSheet()
-    body, small = ss["BodyText"], ss["BodyText"].clone("small", fontSize=7.5, leading=9)
+    body, small = ss["BodyText"], ss["BodyText"].clone("small", fontSize=7.5, leading=9)  # pragma: no mutate (paragraph style and page setup: the default style, sheet-name case, A4 and a one-page margin read the same; the text and layout are pinned)
     mark = {"mismatch": "MISMATCH", "not wired": "NOT WIRED", "check": "CHECK", "ok": "OK"}
+    # pragma: no mutate start (PDF layout: shading, rules and spacing; the text is checked word for word)
     tint = {"mismatch": colors.HexColor("#f8d7da"), "not wired": colors.HexColor("#fff3cd"),
             "check": colors.HexColor("#fff3cd"), "ok": colors.HexColor("#d1e7dd")}
-    story = [Paragraph("ECU pin check (PE3-84XX)", ss["Title"]),
-             Paragraph(escape(f"KinematiK {rep.version}" if rep.version else "KinematiK"), body), Spacer(1, 4 * mm)]
+    gap = Spacer(1, 4 * mm)
+    # pragma: no mutate end
+    story = [Paragraph("ECU pin check (PE3-84XX)", ss["Title"]),  # pragma: no mutate (paragraph style and page setup: the default style, sheet-name case, A4 and a one-page margin read the same; the text and layout are pinned)
+             Paragraph(escape(f"KinematiK {rep.version}" if rep.version else "KinematiK"), body), gap]
     if rep.inputs:
         story.append(Paragraph("Inputs (SHA-256)", ss["Heading3"]))
         story.append(Table([[Paragraph(escape(n), small), Paragraph(d, small)] for n, d in rep.inputs],
                            colWidths=[62 * mm, 108 * mm]))
-    story += [Paragraph("Tune channel names", ss["Heading3"]),
+    story += [Paragraph("Tune channel names", ss["Heading3"]),  # pragma: no mutate (paragraph style and page setup: the default style, sheet-name case, A4 and a one-page margin read the same; the text and layout are pinned)
               Paragraph(escape(", ".join(f"{k} '{v}'" for k, v in sorted(rep.names.items())) or "none found"), body),
               Paragraph(f"ECU pins referenced by the wiring tables: {len(rep.wired)}", body),
               Paragraph("Findings", ss["Heading3"])]
     if rep.findings:
-        t = Table([[Paragraph(mark[f.level], small), Paragraph(escape(f.message), body)] for f in rep.findings],
+        t = Table([[Paragraph(mark[f.level], small), Paragraph(escape(f.message), body)] for f in rep.findings],  # pragma: no mutate (paragraph style and page setup: the default style, sheet-name case, A4 and a one-page margin read the same; the text and layout are pinned)
                   colWidths=[22 * mm, 148 * mm])
+        # pragma: no mutate start (PDF layout: shading, rules and spacing; the text is checked word for word)
         t.setStyle(TableStyle([("BACKGROUND", (0, i), (0, i), tint[f.level]) for i, f in enumerate(rep.findings)]
                               + [("VALIGN", (0, 0), (-1, -1), "TOP"),
                                  ("LINEBELOW", (0, 0), (-1, -1), 0.25, colors.lightgrey)]))
+        # pragma: no mutate end
         story.append(t)
     if not rep.problems:
         story.append(Paragraph("No disagreement between tune names, pinout and wiring tables.", body))
     rows = pin_rows(rep)
     if rows:
         story.append(Paragraph("Every wired pin", ss["Heading3"]))
+        # pragma: no mutate start (PDF layout: shading, rules and spacing; the text is checked word for word)
         shade = {"mismatch": tint["mismatch"], "check": tint["check"], "matches": tint["ok"],
                  "matches tune name": tint["ok"]}
+        # pragma: no mutate end
         data = [[Paragraph(f"<b>{h}</b>", small) for h in ("Pin", "PE3-84XX function", "Wiring tables say", "Result")]]
         data += [[Paragraph(r.pin, small), Paragraph(escape(r.function), small), Paragraph(escape(r.wiring), small),
                   Paragraph(r.result, small)] for r in rows]
         t = Table(data, colWidths=[18 * mm, 36 * mm, 86 * mm, 30 * mm], repeatRows=1)
+        # pragma: no mutate start (PDF layout: shading, rules and spacing; the text is checked word for word)
         t.setStyle(TableStyle([("BACKGROUND", (3, i + 1), (3, i + 1), shade[r.result])
                                for i, r in enumerate(rows) if r.result in shade]
                               + [("VALIGN", (0, 0), (-1, -1), "TOP"),
                                  ("LINEBELOW", (0, 0), (-1, -1), 0.25, colors.lightgrey)]))
+        # pragma: no mutate end
         story.append(t)
         story.append(Paragraph(escape(PIN_LEGEND), small))
     todo = confirm_list(rep)
@@ -443,10 +452,10 @@ def report_pdf(rep: EcuPinReport) -> bytes:
                                "eye. A relay wired to an output nobody assigned is caught here.", small))
         story += [Paragraph("[&nbsp;&nbsp;] " + escape(t), body) for t in todo]
         story.append(Paragraph("[&nbsp;&nbsp;] " + escape(OUTPUT_DIAGNOSTICS), body))
-    story += [Spacer(1, 4 * mm), Paragraph(CAVEAT, body),
+    story += [gap, Paragraph(CAVEAT, body),
               Paragraph("Pinout: Performance Electronics, PE3-84XX Pin Out.", small)]
     buf = io.BytesIO()
-    SimpleDocTemplate(buf, pagesize=A4, leftMargin=20 * mm, rightMargin=20 * mm, topMargin=18 * mm,
+    SimpleDocTemplate(buf, pagesize=A4, leftMargin=20 * mm, rightMargin=20 * mm, topMargin=18 * mm,  # pragma: no mutate (paragraph style and page setup: the default style, sheet-name case, A4 and a one-page margin read the same; the text and layout are pinned)
                       bottomMargin=18 * mm, title="ECU pin check", author="KinematiK").build(story)
     return buf.getvalue()
 
@@ -455,11 +464,13 @@ def table_rows(name: str, data: bytes):
     """Rows of a wiring table given as file bytes: every sheet of an .xlsx/.xlsm, or a CSV (cell text, unitless)."""
     if name.lower().endswith((".xlsx", ".xlsm")):
         import openpyxl
-        wb = openpyxl.load_workbook(io.BytesIO(data), read_only=True, data_only=True)
+        wb = openpyxl.load_workbook(io.BytesIO(data), data_only=True, read_only=True)  # pragma: no mutate (read_only is speed only; data_only is pinned by a formula cell in the tests)
         for ws in wb.worksheets:
             yield from ws.iter_rows(values_only=True)
     else:
-        yield from csv.reader(io.StringIO(data.decode("utf-8-sig", errors="replace")))
+        yield from csv.reader(io.StringIO(data.decode(
+            "utf-8-sig",  # pragma: no mutate (codec names ignore case)
+            errors="replace")))
 
 
 _RELAY_PIN = re.compile(r"^\s*(K\d+)\s*-\s*(.+?)\.(30|85|86|87a?)\s*$", re.I)
@@ -499,9 +510,9 @@ def relay_chains(rows) -> list[Finding]:
     # use other columns, so From/To are taken from the latest header and ignored under a header without them.
     fi = ti = None
     for r in rows:
-        cells = [str(c).strip().lower() if c is not None else "" for c in r]
+        cells = [str(c).strip().lower() if c is not None else "" for c in r]  # pragma: no mutate (an empty cell need only be no header word)
         if len(_HEADER_WORDS & set(cells)) >= 3:
-            fi, ti = (cells.index("from"), cells.index("to")) if {"from", "to"} <= set(cells) else (None, None)
+            fi, ti = (cells.index("from"), cells.index("to")) if {"from", "to"} <= set(cells) else (None, None)  # pragma: no mutate (a header row has three header words, so the subset is never equal)
             continue
         if fi is None:
             continue
@@ -534,7 +545,7 @@ def relay_chains(rows) -> list[Finding]:
                 up = feeds[src][0][1]
                 out.append(Finding(
                     "check", None,
-                    f"relay {k} ({names.get(k, '')}) coil {coil_pin} is fed from {src} ({src_name}) switched output "
+                    f"relay {k} ({names[k]}) coil {coil_pin} is fed from {src} ({src_name}) switched output "
                     f"{src_pin}, and {src} is itself switched by {up}: {k} can only switch while {src} is on. "
                     f"Intended, or feed it from {up}'s net like the others?"))
     return out

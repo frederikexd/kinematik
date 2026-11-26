@@ -1,0 +1,32 @@
+0 184.1 766.9 18.00 ECU pin check (PE3-84XX)
+0 62.7 746.9 10.00 KinematiK
+0 62.7 709.5 12.00 Tune channel names
+0 62.7 691.5 10.00 DO1 'Fan'
+0 62.7 673.5 10.00 ECU pins referenced by the wiring tables: 1
+0 62.7 647.5 12.00 Findings
+0 62.7 629.0 7.50 OK
+0 125.1 626.5 10.00 DO1 'Fan' matches
+0 62.7 605.5 10.00 No disagreement between tune names, pinout and wiring tables.
+0 62.7 579.5 12.00 Every wired pin
+0 62.7 561.0 7.50 Pin
+0 113.7 561.0 7.50 PE3-84XX function
+0 215.8 561.0 7.50 Wiring tables say
+0 459.5 561.0 7.50 Result
+0 62.7 546.0 7.50 MAIN-11
+0 113.7 546.0 7.50 Digital Output #1
+0 215.8 546.0 7.50 Fan Relay Control
+0 459.5 546.0 7.50 matches tune name
+0 62.7 528.0 7.50 'matches' means the wiring tables' label for the pin uses the pinout's word for it (Coil, Injector, MAP...); 'matches tune name' means it uses the
+0 62.7 519.0 7.50 tune's name for that output; 'nothing to compare' means the tables give no label to compare.
+0 62.7 493.5 12.00 Confirm in PE3Monitor before first power-up
+0 62.7 478.0 7.50 Which function an output switches is not readable from the tune, so check these by eye. A relay wired to an output nobody assigned is caught
+0 62.7 469.0 7.50 here.
+0 62.7 451.5 10.00 [  ] PE3Monitor > Tuning > Digital Outputs: DO1 (named 'Fan' in the tune) on MAIN-11 is set to switch what
+0 62.7 439.5 10.00 the wiring tables put on it: Fan Relay Control
+0 62.7 421.5 10.00 [  ] Then, per Performance Electronics: name every digital output under Engine > Setup Digital Names
+0 62.7 409.5 10.00 (that is what this check reads from the tune), and switch each one from the Output Diagnostics window to
+0 62.7 397.5 10.00 confirm the relay wired to it actually clicks. A name in the tune does not prove the physical wiring;
+0 62.7 385.5 10.00 switching the output does.
+0 62.7 356.2 10.00 Only the channel names in the tune were read, not the settings behind them (thresholds, priming, input
+0 62.7 344.2 10.00 modes). A match means the names and the wiring agree, not that the outputs behave correctly.
+0 62.7 328.7 7.50 Pinout: Performance Electronics, PE3-84XX Pin Out.

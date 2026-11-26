@@ -668,3 +668,12 @@ tests = [
     "tests/test_bq796xx.py",
 ]
 deselect = []
+
+[[group]]
+name = "ecu_pins"
+files = ["suspension/ecu_pins.py"]
+tests = [
+    "tests/test_mutation_ecu_pins.py",
+    "tests/test_ecu_pins.py",
+]
+deselect = []

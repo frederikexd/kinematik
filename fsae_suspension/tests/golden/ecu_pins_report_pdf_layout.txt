@@ -1,0 +1,128 @@
+0 184.1 766.9 18.00 ECU pin check (PE3-84XX)
+0 62.7 746.9 10.00 KinematiK 9.9.9
+0 62.7 709.5 12.00 Inputs (SHA-256)
+0 62.7 691.0 7.50 tune.ped
+0 238.4 691.0 7.50 abababababababababababababababababababababababababababababababab
+0 62.7 676.0 7.50 wiring.csv
+0 238.4 676.0 7.50 cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd
+0 62.7 647.5 12.00 Tune channel names
+0 62.7 629.5 10.00 AN2 'MPH', AN3 'Oil Pres', AN5 'TPS', DI1 'Clutch', DI2 'MPH', DI3 'Launch', DO1 'Fan', DO10 'Fuel Pum',
+0 62.7 617.5 10.00 DO9 'Water P', FREQ2 'MPH'
+0 62.7 599.5 10.00 ECU pins referenced by the wiring tables: 11
+0 62.7 573.5 12.00 Findings
+0 62.7 555.0 7.50 MISMATCH
+0 125.1 552.5 10.00 COMM-99 is wired but the PE3-84XX has no such pin
+0 62.7 537.0 7.50 MISMATCH
+0 125.1 534.5 10.00 wiring table calls MAIN-1 (Coil #1) 'COIL2', but the pinout puts Coil #2 on MAIN-4
+0 62.7 519.0 7.50 MISMATCH
+0 125.1 516.5 10.00 wiring table calls MAIN-1 (Coil #1) 'Coil 2', but the pinout puts Coil #2 on MAIN-4
+0 62.7 501.0 7.50 MISMATCH
+0 125.1 498.5 10.00 wiring table calls MAIN-3 (Injector #1) 'INJ9', but the pinout puts Injector #9 on no pin
+0 62.7 483.0 7.50 MISMATCH
+0 125.1 480.5 10.00 wiring table calls MAIN-3 (Injector #1) 'Injector 9', but the pinout puts Injector #9 on no pin
+0 62.7 465.0 7.50 MISMATCH
+0 125.1 462.5 10.00 MAIN-40 is wired but the PE3-84XX has no such pin
+0 62.7 447.0 7.50 NOT WIRED
+0 125.1 444.5 10.00 tune names AN2 'MPH' (COMM-6 (Analog Input #2)), but no wiring table wires that pin: a
+0 125.1 432.5 10.00 missing wire, or an unused name left over from a base tune?
+0 62.7 417.0 7.50 NOT WIRED
+0 125.1 414.5 10.00 tune names AN3 'Oil Pres' (COMM-18 (Analog Input #3)), but no wiring table wires that pin:
+0 125.1 402.5 10.00 a missing wire, or an unused name left over from a base tune?
+0 62.7 387.0 7.50 NOT WIRED
+0 125.1 384.5 10.00 tune names AN5 'TPS' (MAIN-8 (Analog Input #5)), but no wiring table wires that pin: a
+0 125.1 372.5 10.00 missing wire, or an unused name left over from a base tune?
+0 62.7 357.0 7.50 NOT WIRED
+0 125.1 354.5 10.00 tune names DI1 'Clutch' (MAIN-14 (Digital Input #1)), but no wiring table wires that pin: a
+0 125.1 342.5 10.00 missing wire, or an unused name left over from a base tune?
+0 62.7 327.0 7.50 NOT WIRED
+0 125.1 324.5 10.00 tune names DI2/FREQ2 'MPH' (MAIN-13 (Digital Input #2)), but no wiring table wires that
+0 125.1 312.5 10.00 pin: a missing wire, or an unused name left over from a base tune?
+0 62.7 297.0 7.50 CHECK
+0 125.1 294.5 10.00 tune names DI3 'Launch' on COMM-16 (Digital Input #3), but the wiring table rows for that
+0 125.1 282.5 10.00 pin share no word with it
+0 62.7 267.0 7.50 OK
+0 125.1 264.5 10.00 DO1 'Fan' on MAIN-11 (Digital Output #1) matches the wiring table
+0 62.7 249.0 7.50 NOT WIRED
+0 125.1 246.5 10.00 tune names DO9 'Water P' (MAIN-25 (Digital Output #9)), but no wiring table wires that pin:
+0 125.1 234.5 10.00 a missing wire, or an unused name left over from a base tune?
+0 62.7 219.0 7.50 OK
+0 125.1 216.5 10.00 DO10 'Fuel Pum' on MAIN-6 (Digital Output #10) matches the wiring table
+0 62.7 201.0 7.50 CHECK
+0 125.1 198.5 10.00 the wiring tables drive MAIN-2 (Digital Output #2), but the tune has not named DO2: confirm
+0 125.1 186.5 10.00 in PE3Monitor that a function is assigned to that output
+0 62.7 171.0 7.50 CHECK
+0 125.1 168.5 10.00 relay K5 (Fan) coil 86 is fed from K2 (Injectors) switched output 87, and K2 is itself switched
+0 125.1 156.5 10.00 by K1: K5 can only switch while K2 is on. Intended, or feed it from K1's net like the others?
+0 62.7 127.5 12.00 Every wired pin
+0 62.7 109.0 7.50 Pin
+0 113.7 109.0 7.50 PE3-84XX function
+0 215.8 109.0 7.50 Wiring tables say
+0 459.5 109.0 7.50 Result
+0 62.7 94.0 7.50 COMM-16
+0 113.7 94.0 7.50 Digital Input #3
+0 215.8 94.0 7.50 W7 | ECU_COMM.16 | ECU_MAIN.2 | DO3 jumper
+0 459.5 94.0 7.50 check
+0 62.7 79.0 7.50 COMM-99
+0 113.7 79.0 7.50 not in the PE3-84XX
+0 113.7 70.0 7.50 pinout
+0 215.8 79.0 7.50 W0 | ECU_COMM.99
+0 459.5 79.0 7.50 mismatch
+1 62.7 774.4 7.50 Pin
+1 113.7 774.4 7.50 PE3-84XX function
+1 215.8 774.4 7.50 Wiring tables say
+1 459.5 774.4 7.50 Result
+1 62.7 759.4 7.50 MAIN-1
+1 113.7 759.4 7.50 Coil #1
+1 215.8 759.4 7.50 Coil 2
+1 459.5 759.4 7.50 mismatch
+1 62.7 744.4 7.50 MAIN-2
+1 113.7 744.4 7.50 Digital Output #2
+1 215.8 744.4 7.50 W7 | ECU_COMM.16 | ECU_MAIN.2 | DO3 jumper
+1 459.5 744.4 7.50 check
+1 62.7 729.4 7.50 MAIN-3
+1 113.7 729.4 7.50 Injector #1
+1 215.8 729.4 7.50 Injector 1 / Injector 9
+1 459.5 729.4 7.50 mismatch
+1 62.7 714.4 7.50 MAIN-4
+1 113.7 714.4 7.50 Coil #2
+1 215.8 714.4 7.50 W3a | ECU_MAIN.1 | ECU_MAIN.4 | Coil 3 bridge
+1 459.5 714.4 7.50 matches
+1 62.7 699.4 7.50 MAIN-6
+1 113.7 699.4 7.50 Digital Output #10
+1 215.8 699.4 7.50 Fuel Pump Relay Control / K4 - Fuel Pump
+1 459.5 699.4 7.50 matches tune name
+1 62.7 684.4 7.50 MAIN-9
+1 113.7 684.4 7.50 GND
+1 215.8 684.4 7.50 W8 | ECU 34-Pin.M09 | Launch button
+1 459.5 684.4 7.50 nothing to compare
+1 62.7 669.4 7.50 MAIN-11
+1 113.7 669.4 7.50 Digital Output #1
+1 215.8 669.4 7.50 Fan Relay Control / K5 - Fan
+1 459.5 669.4 7.50 matches tune name
+1 62.7 654.4 7.50 MAIN-30
+1 113.7 654.4 7.50 TPS Signal
+1 215.8 654.4 7.50 throttle position
+1 459.5 654.4 7.50 nothing to compare
+1 62.7 639.4 7.50 MAIN-40
+1 113.7 639.4 7.50 not in the PE3-84XX
+1 113.7 630.4 7.50 pinout
+1 215.8 639.4 7.50 W5 | ECU_MAIN.40 | X | spare
+1 459.5 639.4 7.50 mismatch
+1 62.7 612.4 7.50 'matches' means the wiring tables' label for the pin uses the pinout's word for it (Coil, Injector, MAP...); 'matches tune name' means it uses the
+1 62.7 603.4 7.50 tune's name for that output; 'nothing to compare' means the tables give no label to compare.
+1 62.7 577.9 12.00 Confirm in PE3Monitor before first power-up
+1 62.7 562.4 7.50 Which function an output switches is not readable from the tune, so check these by eye. A relay wired to an output nobody assigned is caught
+1 62.7 553.4 7.50 here.
+1 62.7 535.9 10.00 [  ] PE3Monitor > Tuning > Digital Outputs: DO2 on MAIN-2 is set to switch what the wiring tables put on it:
+1 62.7 523.9 10.00 W7 | ECU_COMM.16 | ECU_MAIN.2 | DO3 jumper
+1 62.7 505.9 10.00 [  ] PE3Monitor > Tuning > Digital Outputs: DO10 (named 'Fuel Pum' in the tune) on MAIN-6 is set to
+1 62.7 493.9 10.00 switch what the wiring tables put on it: Fuel Pump Relay Control / K4 - Fuel Pump
+1 62.7 475.9 10.00 [  ] PE3Monitor > Tuning > Digital Outputs: DO1 (named 'Fan' in the tune) on MAIN-11 is set to switch what
+1 62.7 463.9 10.00 the wiring tables put on it: Fan Relay Control / K5 - Fan
+1 62.7 445.9 10.00 [  ] Then, per Performance Electronics: name every digital output under Engine > Setup Digital Names
+1 62.7 433.9 10.00 (that is what this check reads from the tune), and switch each one from the Output Diagnostics window to
+1 62.7 421.9 10.00 confirm the relay wired to it actually clicks. A name in the tune does not prove the physical wiring;
+1 62.7 409.9 10.00 switching the output does.
+1 62.7 380.5 10.00 Only the channel names in the tune were read, not the settings behind them (thresholds, priming, input
+1 62.7 368.5 10.00 modes). A match means the names and the wiring agree, not that the outputs behave correctly.
+1 62.7 353.0 7.50 Pinout: Performance Electronics, PE3-84XX Pin Out.

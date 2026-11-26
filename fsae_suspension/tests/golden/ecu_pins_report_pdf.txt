@@ -1,0 +1,129 @@
+ECU pin check (PE3-84XX)
+KinematiK 9.9.9
+Inputs (SHA-256)
+tune.ped
+abababababababababababababababababababababababababababababababab
+wiring.csv
+cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd
+Tune channel names
+AN2 'MPH', AN3 'Oil Pres', AN5 'TPS', DI1 'Clutch', DI2 'MPH', DI3 'Launch', DO1 'Fan', DO10 'Fuel Pum',
+DO9 'Water P', FREQ2 'MPH'
+ECU pins referenced by the wiring tables: 11
+Findings
+MISMATCH
+COMM-99 is wired but the PE3-84XX has no such pin
+MISMATCH
+wiring table calls MAIN-1 (Coil #1) 'COIL2', but the pinout puts Coil #2 on MAIN-4
+MISMATCH
+wiring table calls MAIN-1 (Coil #1) 'Coil 2', but the pinout puts Coil #2 on MAIN-4
+MISMATCH
+wiring table calls MAIN-3 (Injector #1) 'INJ9', but the pinout puts Injector #9 on no pin
+MISMATCH
+wiring table calls MAIN-3 (Injector #1) 'Injector 9', but the pinout puts Injector #9 on no pin
+MISMATCH
+MAIN-40 is wired but the PE3-84XX has no such pin
+NOT WIRED
+tune names AN2 'MPH' (COMM-6 (Analog Input #2)), but no wiring table wires that pin: a
+missing wire, or an unused name left over from a base tune?
+NOT WIRED
+tune names AN3 'Oil Pres' (COMM-18 (Analog Input #3)), but no wiring table wires that pin:
+a missing wire, or an unused name left over from a base tune?
+NOT WIRED
+tune names AN5 'TPS' (MAIN-8 (Analog Input #5)), but no wiring table wires that pin: a
+missing wire, or an unused name left over from a base tune?
+NOT WIRED
+tune names DI1 'Clutch' (MAIN-14 (Digital Input #1)), but no wiring table wires that pin: a
+missing wire, or an unused name left over from a base tune?
+NOT WIRED
+tune names DI2/FREQ2 'MPH' (MAIN-13 (Digital Input #2)), but no wiring table wires that
+pin: a missing wire, or an unused name left over from a base tune?
+CHECK
+tune names DI3 'Launch' on COMM-16 (Digital Input #3), but the wiring table rows for that
+pin share no word with it
+OK
+DO1 'Fan' on MAIN-11 (Digital Output #1) matches the wiring table
+NOT WIRED
+tune names DO9 'Water P' (MAIN-25 (Digital Output #9)), but no wiring table wires that pin:
+a missing wire, or an unused name left over from a base tune?
+OK
+DO10 'Fuel Pum' on MAIN-6 (Digital Output #10) matches the wiring table
+CHECK
+the wiring tables drive MAIN-2 (Digital Output #2), but the tune has not named DO2: confirm
+in PE3Monitor that a function is assigned to that output
+CHECK
+relay K5 (Fan) coil 86 is fed from K2 (Injectors) switched output 87, and K2 is itself switched
+by K1: K5 can only switch while K2 is on. Intended, or feed it from K1's net like the others?
+Every wired pin
+Pin
+PE3-84XX function
+Wiring tables say
+Result
+COMM-16
+Digital Input #3
+W7 | ECU_COMM.16 | ECU_MAIN.2 | DO3 jumper
+check
+COMM-99
+not in the PE3-84XX
+pinout
+W0 | ECU_COMM.99
+mismatch
+
+Pin
+PE3-84XX function
+Wiring tables say
+Result
+MAIN-1
+Coil #1
+Coil 2
+mismatch
+MAIN-2
+Digital Output #2
+W7 | ECU_COMM.16 | ECU_MAIN.2 | DO3 jumper
+check
+MAIN-3
+Injector #1
+Injector 1 / Injector 9
+mismatch
+MAIN-4
+Coil #2
+W3a | ECU_MAIN.1 | ECU_MAIN.4 | Coil 3 bridge
+matches
+MAIN-6
+Digital Output #10
+Fuel Pump Relay Control / K4 - Fuel Pump
+matches tune name
+MAIN-9
+GND
+W8 | ECU 34-Pin.M09 | Launch button
+nothing to compare
+MAIN-11
+Digital Output #1
+Fan Relay Control / K5 - Fan
+matches tune name
+MAIN-30
+TPS Signal
+throttle position
+nothing to compare
+MAIN-40
+not in the PE3-84XX
+pinout
+W5 | ECU_MAIN.40 | X | spare
+mismatch
+'matches' means the wiring tables' label for the pin uses the pinout's word for it (Coil, Injector, MAP...); 'matches tune name' means it uses the
+tune's name for that output; 'nothing to compare' means the tables give no label to compare.
+Confirm in PE3Monitor before first power-up
+Which function an output switches is not readable from the tune, so check these by eye. A relay wired to an output nobody assigned is caught
+here.
+[  ] PE3Monitor > Tuning > Digital Outputs: DO2 on MAIN-2 is set to switch what the wiring tables put on it:
+W7 | ECU_COMM.16 | ECU_MAIN.2 | DO3 jumper
+[  ] PE3Monitor > Tuning > Digital Outputs: DO10 (named 'Fuel Pum' in the tune) on MAIN-6 is set to
+switch what the wiring tables put on it: Fuel Pump Relay Control / K4 - Fuel Pump
+[  ] PE3Monitor > Tuning > Digital Outputs: DO1 (named 'Fan' in the tune) on MAIN-11 is set to switch what
+the wiring tables put on it: Fan Relay Control / K5 - Fan
+[  ] Then, per Performance Electronics: name every digital output under Engine > Setup Digital Names
+(that is what this check reads from the tune), and switch each one from the Output Diagnostics window to
+confirm the relay wired to it actually clicks. A name in the tune does not prove the physical wiring;
+switching the output does.
+Only the channel names in the tune were read, not the settings behind them (thresholds, priming, input
+modes). A match means the names and the wiring agree, not that the outputs behave correctly.
+Pinout: Performance Electronics, PE3-84XX Pin Out.
