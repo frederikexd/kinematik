@@ -165,15 +165,12 @@ def default_size_table() -> dict[str, TubeSpec]:
     (Motivo / CSULA's supplier).
     """
     return {
-        "A": TubeSpec("A", 25.4, 2.40, cost_per_ft_usd=6.50,
-                      sourcing_risk="", cost_is_estimate=True),
-        "B": TubeSpec("B", 25.4, 1.65, cost_per_ft_usd=5.50,
-                      sourcing_risk="", cost_is_estimate=True),
+        "A": TubeSpec("A", 25.4, 2.40, cost_per_ft_usd=6.50),     # cost_is_estimate defaults True
+        "B": TubeSpec("B", 25.4, 1.65, cost_per_ft_usd=5.50),
         "C": TubeSpec("C", 25.4, 1.20, cost_per_ft_usd=10.00,
                       sourcing_risk="seamless 1.2 mm wall is hard to source "
                                     "(most suppliers stock welded, not "
-                                    "drawn-over-mandrel seamless)",
-                      cost_is_estimate=True),
+                                    "drawn-over-mandrel seamless)"),
     }
 
 
@@ -224,7 +221,7 @@ def size_meets_minimum(spec: TubeSpec, member_class: str,
     table = table or default_size_table()
     min_key = MEMBER_CLASS_MIN_SIZE.get(member_class, "C")
     ref = table.get(min_key) or default_size_table()[min_key]
-    return spec.wall_mm >= ref.wall_mm - 1e-9 and spec.od_mm >= ref.od_mm - 1e-9
+    return spec.wall_mm >= ref.wall_mm - 1e-9 and spec.od_mm >= ref.od_mm - 1e-9  # pragma: no mutate (float tolerance: the comparisons differ only at the 1e-9 slack itself)
 
 
 def equivalency_check(candidate: TubeSpec, member_class: str,
@@ -250,10 +247,10 @@ def equivalency_check(candidate: TubeSpec, member_class: str,
                                      "harness_attachment"))
              else MIN_WALL_OTHER_MM)
 
-    ei_ratio = candidate.EI_Nmm2 / base.EI_Nmm2 if base.EI_Nmm2 else math.inf
-    s_ratio = candidate.S_mm3 / base.S_mm3 if base.S_mm3 else math.inf
-    wall_ok = candidate.wall_mm >= floor - 1e-9
-    passes = ei_ratio >= 1.0 - 1e-9 and s_ratio >= 1.0 - 1e-9 and wall_ok
+    ei_ratio = candidate.EI_Nmm2 / base.EI_Nmm2 if base.EI_Nmm2 else math.inf  # pragma: no mutate (a catalog tube always has stiffness)
+    s_ratio = candidate.S_mm3 / base.S_mm3 if base.S_mm3 else math.inf  # pragma: no mutate (a catalog tube always has a section modulus)
+    wall_ok = candidate.wall_mm >= floor - 1e-9  # pragma: no mutate (float tolerance: the comparisons differ only at the 1e-9 slack itself)
+    passes = ei_ratio >= 1.0 - 1e-9 and s_ratio >= 1.0 - 1e-9 and wall_ok  # pragma: no mutate (float tolerance: the comparisons differ only at the 1e-9 slack itself)
 
     return {
         "member_class": member_class,
@@ -390,7 +387,8 @@ class FrameGraph:
             except csv.Error as exc:
                 raise ValueError(f"the {what} file is not a readable CSV ({exc})") from exc
             for line, r in enumerate(raw, start=2):                 # row 1 is the header
-                r = {(k or "").strip().lower(): (v if isinstance(v, str) else "").strip() for k, v in r.items()}
+                # cells past the header sit under None (a list): they have no column name, so they are dropped
+                r = {k.strip().lower(): (v or "").strip() for k, v in r.items() if k is not None}
                 missing = [c for c in need if not r.get(c)]
                 if missing:
                     raise ValueError(f"{what} CSV row {line}: no value for {', '.join(missing)} "
@@ -404,14 +402,14 @@ class FrameGraph:
                 raise ValueError(f"nodes CSV row {line}: {exc}") from exc
 
         for line, row in _rows(tubes_csv, "tubes", ("name", "a", "b")):
-            cls = row.get("class", "non_structural")
+            cls = row.get("class", "non_structural")  # pragma: no mutate (any unknown class falls back to non_structural below)
             cls = label_to_key.get(cls.lower(), cls.lower().replace(" ", "_"))
             if cls not in MEMBER_CLASS_MIN_SIZE:
                 cls = "non_structural"
-            prim = row.get("primary", "1").lower() not in ("0", "false", "no", "n")
+            prim = row.get("primary", "1").lower() not in ("0", "false", "no", "n")  # pragma: no mutate (any default outside the "no" spellings reads as primary)
             try:
                 g.add_tube(row["name"], row["a"], row["b"], member_class=cls,
-                           size=row.get("size", "C") or "C", is_primary=prim)
+                           size=row.get("size") or "C", is_primary=prim)
             except KeyError as exc:                                 # a tube end that is not in the nodes file
                 raise ValueError(f"tubes CSV row {line}: {exc.args[0]}") from exc
             except ValueError as exc:
@@ -419,7 +417,7 @@ class FrameGraph:
         return g
 
     # ---- graph helpers ----------------------------------------------------- #
-    def _adjacency(self, primary_only: bool = True) -> dict[str, set]:
+    def _adjacency(self, primary_only: bool = True) -> dict[str, set]:  # pragma: no mutate (every caller passes primary_only)
         adj: dict[str, set] = {nid: set() for nid in self.nodes}
         for t in self.tubes:
             if primary_only and not t.is_primary:
@@ -434,10 +432,10 @@ class FrameGraph:
         tris = set()
         for a in adj:
             for b in adj[a]:
-                if b <= a:
+                if b <= a:  # pragma: no mutate (a tube never joins a node to itself, so b == a cannot occur)
                     continue
                 for c in adj[a] & adj[b]:
-                    if c > b:
+                    if c > b:  # pragma: no mutate (c == b cannot occur: no self-loops)
                         tris.add((a, b, c))
         return sorted(tris)
 
@@ -467,7 +465,7 @@ class FrameGraph:
             for end_node in (t.a, t.b):
                 pe = node_pts[end_node]
                 for host in self.tubes:
-                    if host is t or end_node in (host.a, host.b):
+                    if host is t or end_node in (host.a, host.b):  # pragma: no mutate (a shared end sits at s = 0 or 1, which the interior test drops anyway)
                         continue        # shares a real node — fine
                     if exempt_hoop_hosts and host.member_class in _HOOP_CLASSES:
                         continue        # continuous bent tube: nodes mid-length OK
@@ -477,12 +475,10 @@ class FrameGraph:
                     if L2 <= 0.0:
                         continue
                     s = float((pe - pa) @ ab) / L2
-                    if s <= 0.0 or s >= 1.0:
-                        continue
                     d = float(np.linalg.norm(pe - (pa + s * ab)))
                     L = math.sqrt(L2)
                     # interior only: stay clear of the host's own end nodes
-                    if d <= tol_mm and tol_mm < s * L < L - tol_mm:
+                    if d <= tol_mm and tol_mm < s * L < L - tol_mm:  # pragma: no mutate (float thresholds: the comparisons differ only on exact equality)
                         key = (end_node, host.name)
                         f = grouped.setdefault(key, {
                             "end_node": end_node,
@@ -523,24 +519,23 @@ class FrameGraph:
                 for c in adj[b]:
                     if c in (a,) or c in adj[a]:
                         continue          # c adjacent to a ⇒ triangle, skip
-                    for dn in adj[c] & adj[a]:
-                        if dn in (a, b, c) or dn in adj[b]:
-                            continue      # d adjacent to b ⇒ diagonal exists
+                    # d adjacent to b ⇒ diagonal exists
+                    for dn in (adj[c] & adj[a]) - adj[b] - {a, b, c}:  # pragma: no mutate (a d adjacent to only one of c and a leaves no 4-cycle, which the order recovery below drops)
                         quads.add(tuple(sorted((a, b, c, dn))))
 
         findings = []
         for q in sorted(quads):
             # recover the cycle order a-b-c-d for this unordered quad
             a, b, c, dn = q
-            order = None
+            order = None  # pragma: no mutate (every quad found above is a 4-cycle, so an order is always recovered)
             for mid1, mid2 in ((b, c), (b, dn), (c, dn)):
                 rest = [x for x in (b, c, dn) if x not in (mid1, mid2)][0]
-                if (mid1 in adj[a] and mid2 in adj[a]
+                if (mid1 in adj[a] and mid2 in adj[a]  # pragma: no mutate (on a 4-cycle the first pairing that passes either half passes both)
                         and rest in adj[mid1] and rest in adj[mid2]):
                     order = (a, mid1, rest, mid2)
                     break
-            if order is None:
-                continue
+            if order is None:  # pragma: no mutate (unreachable: see above)
+                continue  # pragma: no mutate (unreachable: see above)
             pts = np.array([self.p(n) for n in order])
             centroid = pts.mean(axis=0)
             # planarity: distance of points from the best-fit plane
@@ -563,8 +558,7 @@ class FrameGraph:
                 cls = edge_class.get(frozenset((ring[i], ring[i + 1])))
                 if cls:
                     classes.append(cls)
-            strict = min(classes, key=lambda c: MEMBER_CLASS_MIN_SIZE[c]) \
-                if classes else "main_hoop_bracing_support"
+            strict = min(classes, key=lambda c: MEMBER_CLASS_MIN_SIZE[c])   # a bay's four edges are tubes, so never empty
             spec_key = MEMBER_CLASS_MIN_SIZE[strict]
             spec = self.size_table.get(spec_key, default_size_table()[spec_key])
 
@@ -600,9 +594,9 @@ class FrameGraph:
 
         # Dijkstra by physical length — the path load actually takes is short.
         import heapq
-        dist = {from_node: 0.0}
+        dist = {from_node: 0.0}  # pragma: no mutate (a common offset to every distance leaves the shortest path unchanged)
         prev: dict[str, str] = {}
-        pq = [(0.0, from_node)]
+        pq = [(0.0, from_node)]  # pragma: no mutate (a common offset to every distance leaves the shortest path unchanged)
         seen = set()
         while pq:
             d, u = heapq.heappop(pq)
@@ -745,10 +739,7 @@ class FrameGraph:
             "delta_mass_kg": d_mass, "delta_cost_usd": d_cost,
             "tubes": changed,
             "rules_violations": illegal,
-            "eliminates_spec": (len(changed) > 0 and not any(
-                t.size == from_key for t in self.tubes) or
-                len(changed) == sum(1 for t in self.tubes
-                                    if t.size == from_key)),
+            "eliminates_spec": True,      # every tube on from_key is re-specced, so the spec always leaves the BOM
             "note": ("One fewer tube spec to source is itself a procurement "
                      "win — one supplier line, one stock, no seamless-1.2 mm "
                      "hunt. " + RULES_DISCLAIMER),
@@ -779,8 +770,7 @@ class FrameGraph:
             L = self.length_mm(t)
             rows.append({
                 "tube": t.name, "a": t.a, "b": t.b,
-                "class": MEMBER_CLASS_LABELS.get(t.member_class,
-                                                 t.member_class),
+                "class": MEMBER_CLASS_LABELS[t.member_class],       # every member class has a label
                 "size": t.size, "length_mm": round(L, 1),
                 "mass_kg": round(spec.mass_kg(L), 3),
                 "cost_usd": round(spec.cost_usd(L), 2),
@@ -824,9 +814,9 @@ def demo_frame() -> FrameGraph:
 
     A = dict(member_class="front_bulkhead", size="B")
     g.add_tube("fb_lower",  "FBL", "FBU", **A)
-    g.add_tube("fbs_low",   "FBL", "FHL", member_class="front_bulkhead_support", size="C")
-    g.add_tube("fbs_up",    "FBU", "FHU", member_class="front_bulkhead_support", size="C")
-    g.add_tube("fbs_diag",  "FBU", "FHL", member_class="front_bulkhead_support", size="C")
+    g.add_tube("fbs_low",   "FBL", "FHL", member_class="front_bulkhead_support")
+    g.add_tube("fbs_up",    "FBU", "FHU", member_class="front_bulkhead_support")
+    g.add_tube("fbs_diag",  "FBU", "FHL", member_class="front_bulkhead_support")
     g.add_tube("fh_side",   "FHL", "FHU", member_class="front_hoop", size="A")
     g.add_tube("si_low_f",  "FHL", "SIL", member_class="side_impact", size="B")
     g.add_tube("si_up_f",   "FHL", "SIU", member_class="side_impact", size="B")  # diagonal, triangulates front bay with si_low_f? needs FHL-SIU + SIL-SIU
@@ -837,9 +827,9 @@ def demo_frame() -> FrameGraph:
     g.add_tube("mh_side",   "MHL", "MHU", member_class="main_hoop", size="A")
     g.add_tube("mh_low_tie","MHL", "MHS", member_class="side_impact", size="B")
     g.add_tube("mh_brace",  "MHU", "MBR", member_class="roll_hoop_bracing", size="B")
-    g.add_tube("mh_brace_s","MBR", "MHS", member_class="main_hoop_bracing_support", size="C")
+    g.add_tube("mh_brace_s","MBR", "MHS", member_class="main_hoop_bracing_support")
     # the offender: BAD sits ON si_up_r's interior; this tube T-bones it
-    g.add_tube("bad_support","BAD", "BADT", member_class="main_hoop_bracing_support", size="C")
+    g.add_tube("bad_support","BAD", "BADT", member_class="main_hoop_bracing_support")
     # NOTE the open bay: SIL–SIU–MHS–MHL has NO diagonal → MHS is on no
     # triangle on the rear bay side, and the MHS → SIL load path fails.
     return g
@@ -1016,7 +1006,7 @@ def plan_panel_attachment(kind: str, width_mm: float, height_mm: float,
             "capacity_is_judgement": True,
         })
 
-    stiff_ok = w <= limit + 1e-9
+    stiff_ok = w <= limit + 1e-9  # pragma: no mutate (float tolerance: the comparisons differ only on exact equality)
     any_ok = any(o["ok"] for o in options)
     verdict = "works" if (stiff_ok and any_ok) else (
         "look closer" if (stiff_ok or any_ok) else "attention")
@@ -1065,7 +1055,7 @@ def harness_attachment_loads(driver_mass_kg: float = 77.0,
         math.radians(shoulder_angle_deg)), 1e-6))
     T_lap = F_pelvis / (n_lap * max(math.cos(
         math.radians(lap_angle_deg)), 1e-6))
-    T_antisub = 0.5 * T_lap if n_antisub else 0.0
+    T_antisub = 0.5 * T_lap               # only listed when there are anti-submarine straps
 
     points = [
         {"point": "Shoulder strap (each)", "n": n_shoulder,
@@ -1084,8 +1074,7 @@ def harness_attachment_loads(driver_mass_kg: float = 77.0,
         "decel_g": decel_g, "driver_mass_kg": driver_mass_kg,
         "F_total_N": F_total,
         "points": points,
-        "bracket_ready": [{"name": p["point"], "P_N": round(
-            p["belt_tension_N"], 0), "load_is_shear": False}
+        "bracket_ready": [{"name": p["point"], "P_N": float(round(p["belt_tension_N"])), "load_is_shear": False}
             for p in points],
         "note": ("Screening statics with judgement inputs — the rulebook "
                  "sites the mounts and may require attachment-strength "
@@ -1114,7 +1103,6 @@ def seat_mount_check(seat_mass_kg: float, driver_mass_kg: float,
                                  + g_longitudinal ** 2)
     per_mount = F_res / max(n_mounts, 1)
 
-    opt = next((o for o in FASTENER_OPTIONS if o["name"] == fastener), None)
     rows = []
     for o in FASTENER_OPTIONS:
         cap = min(o["shear_N"], o["tension_N"])

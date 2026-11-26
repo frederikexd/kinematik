@@ -147,11 +147,11 @@ def _largest_contributor(ledger: IntegrationLedger, field_name: str) -> str | No
         return None
     best, best_val = None, -1.0
     for name, it in ledger.interfaces.items():
-        m = getattr(it, "mass_kg", None)
+        m = it.mass_kg
         if m is None:
             continue
         # for CG_z misses, weight by mass*height; for mass, by mass
-        if field_name == "cg_z_mm" and getattr(it, "cg_z_mm", None) is not None:
+        if field_name == "cg_z_mm" and it.cg_z_mm is not None:
             contrib = m * abs(it.cg_z_mm)
         else:
             contrib = m
@@ -237,7 +237,7 @@ def _score_against_reference(times: dict, ref_times: dict) -> dict:
         else:
             # paper car is the benchmark (Tmin=ref); a slower real time scores less
             pts[ev] = lapsim.event_points(ev, t, best_time=ref)
-    pts["total"] = float(sum(v for k, v in pts.items() if k != "total"))
+    pts["total"] = float(sum(pts.values()))
     return pts
 
 
@@ -292,10 +292,11 @@ def assess(ledger: IntegrationLedger,
 
     # buildable: run the physics on both the paper baseline and the reconciled car
     paper_params = paper_baseline or VehicleParams()
-    paper_veh = VehicleDynamics(paper_params, front_kin=front_kin,
-                                rear_kin=rear_kin, tire=tire)
-    real_veh = vehicle_from_ledger(ledger, base=paper_params,
-                                   front_kin=front_kin, rear_kin=rear_kin, tire=tire)
+    # pragma lines: lapsim is a point-mass model, so the corner kinematics do not change the event times
+    paper_veh = VehicleDynamics(paper_params, front_kin=front_kin, rear_kin=rear_kin,  # pragma: no mutate (see above)
+                                tire=tire)
+    real_veh = vehicle_from_ledger(ledger, front_kin=front_kin, rear_kin=rear_kin,  # pragma: no mutate (see above)
+                                   base=paper_params, tire=tire)
 
     paper_times = _event_times(paper_veh, sim_params, endurance_laps)
     real_times = _event_times(real_veh, sim_params, endurance_laps)
@@ -303,7 +304,7 @@ def assess(ledger: IntegrationLedger,
     # heavier/slower real car actually loses points (see _score_against_reference)
     paper_pts = _score_against_reference(paper_times, paper_times)  # ~max by def.
     real_pts = _score_against_reference(real_times, paper_times)
-    delta = {k: round(real_pts[k] - paper_pts.get(k, 0.0), 1) for k in real_pts}
+    delta = {k: round(real_pts[k] - paper_pts[k], 1) for k in real_pts}     # both scored over the same events
 
     dm = real_veh.p.mass - paper_params.mass
     dcg = real_veh.p.cg_height - paper_params.cg_height

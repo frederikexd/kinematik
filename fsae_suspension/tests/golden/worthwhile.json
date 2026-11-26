@@ -1,0 +1,1838 @@
+{
+ "assess.allmass_nocg": {
+  "any_estimate": false,
+  "blocking": [
+   {
+    "check": "physics-input-missing",
+    "detail": {},
+    "message": "Cannot run the lap sim on the reconciled build: mass and/or combined CG are not yet computable from declared subsystem data. The worthwhileness number is withheld rather than faked.",
+    "severity": "missing",
+    "subsystems": []
+   }
+  ],
+  "buildable": false,
+  "delta": null,
+  "findings": [
+   {
+    "check": "mass-budget-total",
+    "detail": {
+     "delta_kg": -84.0,
+     "target_net_kg": 230.0,
+     "total_kg": 146.0
+    },
+    "message": "Declared subsystem mass 146.0 kg vs target 230 kg (target net of 70 kg driver = 230 kg) (-84.0 kg).",
+    "severity": "ok",
+    "subsystems": [
+     "aerodynamics",
+     "brakes",
+     "chassis",
+     "cooling",
+     "data-acquisition",
+     "electrics",
+     "powertrain",
+     "suspension"
+    ]
+   },
+   {
+    "check": "cg",
+    "detail": {},
+    "message": "Combined CG not computable — some subsystems gave mass but no CG location. Suspension is using an assumed CG height that nobody has confirmed against real layout.",
+    "severity": "missing",
+    "subsystems": [
+     "suspension"
+    ]
+   },
+   {
+    "check": "envelope",
+    "detail": {},
+    "message": "Chassis has not declared the interior envelope it offers, so no fit check is possible.",
+    "severity": "missing",
+    "subsystems": [
+     "chassis"
+    ]
+   }
+  ],
+  "paper": null,
+  "real": null,
+  "text": "NOT BUILDABLE as declared. 1 blocking issue(s) involving: —. Points withheld — a worthwhileness score for a car that can't be assembled would be misleading. Resolve the blocking findings, then re-run.",
+  "total": null
+ },
+ "assess.contradiction": {
+  "any_estimate": false,
+  "blocking": [
+   {
+    "check": "assumption-contradiction",
+    "detail": {
+     "about": "car",
+     "actual": 201.0,
+     "assumed": 100.0,
+     "delta": 101.0,
+     "rationale": ""
+    },
+    "message": "suspension designed around total_mass_kg = 100 ±5, but the reconciled build is 201 (+101.0). suspension's work is sized for a car that doesn't exist; powertrain is the largest contributor to the gap.",
+    "severity": "fail",
+    "subsystems": [
+     "suspension",
+     "powertrain"
+    ]
+   }
+  ],
+  "buildable": false,
+  "delta": null,
+  "findings": [
+   {
+    "check": "mass-budget-total",
+    "detail": {
+     "delta_kg": -29.0,
+     "target_net_kg": 230.0,
+     "total_kg": 201.0
+    },
+    "message": "Declared subsystem mass 201.0 kg vs target 230 kg (target net of 70 kg driver = 230 kg) (-29.0 kg).",
+    "severity": "ok",
+    "subsystems": [
+     "aerodynamics",
+     "brakes",
+     "chassis",
+     "cooling",
+     "data-acquisition",
+     "electrics",
+     "powertrain",
+     "suspension"
+    ]
+   },
+   {
+    "check": "cg",
+    "detail": {
+     "cg_x": 957.8457711442786,
+     "cg_y": 37.84577114427861,
+     "cg_z": 260.547263681592
+    },
+    "message": "Combined CG (declared subsystems): x=958 y=38 z=261 mm. Feed CG height 261 mm into the vehicle model so load transfer matches the real build.",
+    "severity": "info",
+    "subsystems": [
+     "suspension",
+     "chassis"
+    ]
+   },
+   {
+    "check": "cg-lateral",
+    "detail": {},
+    "message": "Combined CG is +38 mm off centreline — that's a static lateral weight bias the suspension corner weights must account for.",
+    "severity": "warning",
+    "subsystems": [
+     "suspension",
+     "chassis"
+    ]
+   },
+   {
+    "check": "envelope",
+    "detail": {},
+    "message": "Chassis has not declared the interior envelope it offers, so no fit check is possible.",
+    "severity": "missing",
+    "subsystems": [
+     "chassis"
+    ]
+   },
+   {
+    "check": "assumption-contradiction",
+    "detail": {
+     "about": "car",
+     "actual": 201.0,
+     "assumed": 100.0,
+     "delta": 101.0,
+     "rationale": ""
+    },
+    "message": "suspension designed around total_mass_kg = 100 ±5, but the reconciled build is 201 (+101.0). suspension's work is sized for a car that doesn't exist; powertrain is the largest contributor to the gap.",
+    "severity": "fail",
+    "subsystems": [
+     "suspension",
+     "powertrain"
+    ]
+   }
+  ],
+  "paper": null,
+  "real": null,
+  "text": "NOT BUILDABLE as declared. 1 blocking issue(s) involving: powertrain, suspension. Points withheld — a worthwhileness score for a car that can't be assembled would be misleading. Resolve the blocking findings, then re-run.",
+  "total": null
+ },
+ "assess.default_paper": {
+  "any_estimate": false,
+  "blocking": [],
+  "buildable": true,
+  "delta": {
+   "acceleration": 0.0,
+   "autocross": 0.0,
+   "skidpad": 0.0,
+   "total": 0.0
+  },
+  "findings": [
+   {
+    "check": "mass-budget-total",
+    "detail": {
+     "delta_kg": -84.0,
+     "target_net_kg": 230.0,
+     "total_kg": 146.0
+    },
+    "message": "Declared subsystem mass 146.0 kg vs target 230 kg (target net of 70 kg driver = 230 kg) (-84.0 kg).",
+    "severity": "ok",
+    "subsystems": [
+     "aerodynamics",
+     "brakes",
+     "chassis",
+     "cooling",
+     "data-acquisition",
+     "electrics",
+     "powertrain",
+     "suspension"
+    ]
+   },
+   {
+    "check": "cg",
+    "detail": {
+     "cg_x": 928.7808219178082,
+     "cg_y": 8.780821917808218,
+     "cg_z": 256.986301369863
+    },
+    "message": "Combined CG (declared subsystems): x=929 y=9 z=257 mm. Feed CG height 257 mm into the vehicle model so load transfer matches the real build.",
+    "severity": "info",
+    "subsystems": [
+     "suspension",
+     "chassis"
+    ]
+   },
+   {
+    "check": "envelope",
+    "detail": {},
+    "message": "Chassis has not declared the interior envelope it offers, so no fit check is possible.",
+    "severity": "missing",
+    "subsystems": [
+     "chassis"
+    ]
+   }
+  ],
+  "paper": {
+   "acceleration": 100.0,
+   "autocross": 125.0,
+   "skidpad": 75.0,
+   "total": 300.0
+  },
+  "real": {
+   "acceleration": 100.0,
+   "autocross": 125.0,
+   "skidpad": 75.0,
+   "total": 300.0
+  },
+  "text": "BUILDABLE. Reconciled build is -64.0 kg and -43 mm CG vs the paper baseline, costing an estimated +0.0 points across the dynamic events. That gap is the price of the estimates meeting reality — close it by attacking the heaviest over-budget subsystem, not by re-optimising suspension in a vacuum.",
+  "total": 0.0
+ },
+ "assess.estimate": {
+  "any_estimate": true,
+  "blocking": [],
+  "buildable": true,
+  "delta": {
+   "acceleration": 0.0,
+   "autocross": 0.0,
+   "skidpad": 0.0,
+   "total": 0.0
+  },
+  "findings": [
+   {
+    "check": "mass-budget-total",
+    "detail": {
+     "delta_kg": -84.0,
+     "target_net_kg": 230.0,
+     "total_kg": 146.0
+    },
+    "message": "Declared subsystem mass 146.0 kg vs target 230 kg (target net of 70 kg driver = 230 kg) (-84.0 kg).",
+    "severity": "ok",
+    "subsystems": [
+     "aerodynamics",
+     "brakes",
+     "chassis",
+     "cooling",
+     "data-acquisition",
+     "electrics",
+     "powertrain",
+     "suspension"
+    ]
+   },
+   {
+    "check": "cg",
+    "detail": {
+     "cg_x": 928.7808219178082,
+     "cg_y": 8.780821917808218,
+     "cg_z": 256.986301369863
+    },
+    "message": "Combined CG (declared subsystems): x=929 y=9 z=257 mm. Feed CG height 257 mm into the vehicle model so load transfer matches the real build.",
+    "severity": "info",
+    "subsystems": [
+     "suspension",
+     "chassis"
+    ]
+   },
+   {
+    "check": "envelope",
+    "detail": {},
+    "message": "Chassis has not declared the interior envelope it offers, so no fit check is possible.",
+    "severity": "missing",
+    "subsystems": [
+     "chassis"
+    ]
+   },
+   {
+    "check": "data-provenance",
+    "detail": {},
+    "message": "1 subsystem(s) are using estimated/placeholder numbers: aerodynamics. Every check above involving them is only as trustworthy as those estimates — replace with measured/CAD values before freezing.",
+    "severity": "info",
+    "subsystems": [
+     "aerodynamics"
+    ]
+   }
+  ],
+  "paper": {
+   "acceleration": 100.0,
+   "autocross": 125.0,
+   "skidpad": 75.0,
+   "total": 300.0
+  },
+  "real": {
+   "acceleration": 100.0,
+   "autocross": 125.0,
+   "skidpad": 75.0,
+   "total": 300.0
+  },
+  "text": "BUILDABLE. Reconciled build is -34.0 kg and -13 mm CG vs the paper baseline, costing an estimated +0.0 points across the dynamic events. That gap is the price of the estimates meeting reality — close it by attacking the heaviest over-budget subsystem, not by re-optimising suspension in a vacuum. Some reconciled inputs are still ESTIMATES — treat the delta as directional until they're confirmed.",
+  "total": 0.0
+ },
+ "assess.front_only": {
+  "any_estimate": false,
+  "blocking": [],
+  "buildable": true,
+  "delta": {
+   "acceleration": -8.1,
+   "autocross": -8.6,
+   "skidpad": -7.1,
+   "total": -23.8
+  },
+  "findings": [
+   {
+    "check": "mass-budget-total",
+    "detail": {
+     "delta_kg": -54.0,
+     "target_net_kg": 230.0,
+     "total_kg": 176.0
+    },
+    "message": "Declared subsystem mass 176.0 kg vs target 230 kg (target net of 70 kg driver = 230 kg) (-54.0 kg).",
+    "severity": "ok",
+    "subsystems": [
+     "aerodynamics",
+     "brakes",
+     "chassis",
+     "cooling",
+     "data-acquisition",
+     "electrics",
+     "powertrain",
+     "suspension"
+    ]
+   },
+   {
+    "check": "cg",
+    "detail": {
+     "cg_x": 942.625,
+     "cg_y": 22.625,
+     "cg_z": 259.20454545454544
+    },
+    "message": "Combined CG (declared subsystems): x=943 y=23 z=259 mm. Feed CG height 259 mm into the vehicle model so load transfer matches the real build.",
+    "severity": "info",
+    "subsystems": [
+     "suspension",
+     "chassis"
+    ]
+   },
+   {
+    "check": "envelope",
+    "detail": {},
+    "message": "Chassis has not declared the interior envelope it offers, so no fit check is possible.",
+    "severity": "missing",
+    "subsystems": [
+     "chassis"
+    ]
+   }
+  ],
+  "paper": {
+   "acceleration": 100.0,
+   "autocross": 125.0,
+   "skidpad": 75.0,
+   "total": 300.0
+  },
+  "real": {
+   "acceleration": 91.85345223489583,
+   "autocross": 116.42916408970791,
+   "skidpad": 67.90598480632947,
+   "total": 276.1886011309332
+  },
+  "text": "BUILDABLE. Reconciled build is +60.0 kg and -11 mm CG vs the paper baseline, costing an estimated -23.8 points across the dynamic events. That gap is the price of the estimates meeting reality — close it by attacking the heaviest over-budget subsystem, not by re-optimising suspension in a vacuum.",
+  "total": -23.8
+ },
+ "assess.heavy": {
+  "any_estimate": false,
+  "blocking": [],
+  "buildable": true,
+  "delta": {
+   "acceleration": -12.0,
+   "autocross": -12.3,
+   "skidpad": -10.1,
+   "total": -34.4
+  },
+  "findings": [
+   {
+    "check": "mass-budget-total",
+    "detail": {
+     "delta_kg": -24.0,
+     "target_net_kg": 230.0,
+     "total_kg": 206.0
+    },
+    "message": "Declared subsystem mass 206.0 kg vs target 230 kg (target net of 70 kg driver = 230 kg) (-24.0 kg).",
+    "severity": "ok",
+    "subsystems": [
+     "aerodynamics",
+     "brakes",
+     "chassis",
+     "cooling",
+     "data-acquisition",
+     "electrics",
+     "powertrain",
+     "suspension"
+    ]
+   },
+   {
+    "check": "cg",
+    "detail": {
+     "cg_x": 961.1747572815534,
+     "cg_y": 41.1747572815534,
+     "cg_z": 260.77669902912623
+    },
+    "message": "Combined CG (declared subsystems): x=961 y=41 z=261 mm. Feed CG height 261 mm into the vehicle model so load transfer matches the real build.",
+    "severity": "info",
+    "subsystems": [
+     "suspension",
+     "chassis"
+    ]
+   },
+   {
+    "check": "cg-lateral",
+    "detail": {},
+    "message": "Combined CG is +41 mm off centreline — that's a static lateral weight bias the suspension corner weights must account for.",
+    "severity": "warning",
+    "subsystems": [
+     "suspension",
+     "chassis"
+    ]
+   },
+   {
+    "check": "envelope",
+    "detail": {},
+    "message": "Chassis has not declared the interior envelope it offers, so no fit check is possible.",
+    "severity": "missing",
+    "subsystems": [
+     "chassis"
+    ]
+   }
+  ],
+  "paper": {
+   "acceleration": 100.0,
+   "autocross": 125.0,
+   "skidpad": 75.0,
+   "total": 300.0
+  },
+  "real": {
+   "acceleration": 87.9925421328149,
+   "autocross": 112.68874544350544,
+   "skidpad": 64.94983820337573,
+   "total": 265.63112577969605
+  },
+  "text": "BUILDABLE. Reconciled build is +90.0 kg and -9 mm CG vs the paper baseline, costing an estimated -34.4 points across the dynamic events. That gap is the price of the estimates meeting reality — close it by attacking the heaviest over-budget subsystem, not by re-optimising suspension in a vacuum.",
+  "total": -34.4
+ },
+ "assess.kin": {
+  "any_estimate": false,
+  "blocking": [],
+  "buildable": true,
+  "delta": {
+   "acceleration": -9.2,
+   "autocross": -10.3,
+   "skidpad": -9.0,
+   "total": -28.5
+  },
+  "findings": [
+   {
+    "check": "mass-budget-total",
+    "detail": {
+     "delta_kg": -54.0,
+     "target_net_kg": 230.0,
+     "total_kg": 176.0
+    },
+    "message": "Declared subsystem mass 176.0 kg vs target 230 kg (target net of 70 kg driver = 230 kg) (-54.0 kg).",
+    "severity": "ok",
+    "subsystems": [
+     "aerodynamics",
+     "brakes",
+     "chassis",
+     "cooling",
+     "data-acquisition",
+     "electrics",
+     "powertrain",
+     "suspension"
+    ]
+   },
+   {
+    "check": "cg",
+    "detail": {
+     "cg_x": 942.625,
+     "cg_y": 22.625,
+     "cg_z": 259.20454545454544
+    },
+    "message": "Combined CG (declared subsystems): x=943 y=23 z=259 mm. Feed CG height 259 mm into the vehicle model so load transfer matches the real build.",
+    "severity": "info",
+    "subsystems": [
+     "suspension",
+     "chassis"
+    ]
+   },
+   {
+    "check": "envelope",
+    "detail": {},
+    "message": "Chassis has not declared the interior envelope it offers, so no fit check is possible.",
+    "severity": "missing",
+    "subsystems": [
+     "chassis"
+    ]
+   }
+  ],
+  "paper": {
+   "acceleration": 100.0,
+   "autocross": 125.0,
+   "skidpad": 75.0,
+   "total": 300.0
+  },
+  "real": {
+   "acceleration": 90.83186877162876,
+   "autocross": 114.72809367382317,
+   "skidpad": 65.97783066340097,
+   "total": 271.5377931088529
+  },
+  "text": "BUILDABLE. Reconciled build is +60.0 kg and -11 mm CG vs the paper baseline, costing an estimated -28.5 points across the dynamic events. That gap is the price of the estimates meeting reality — close it by attacking the heaviest over-budget subsystem, not by re-optimising suspension in a vacuum.",
+  "total": -28.5
+ },
+ "assess.laps": {
+  "any_estimate": false,
+  "blocking": [],
+  "buildable": true,
+  "delta": {
+   "acceleration": -6.8,
+   "autocross": -7.3,
+   "skidpad": -6.1,
+   "total": -20.2
+  },
+  "findings": [
+   {
+    "check": "mass-budget-total",
+    "detail": {
+     "delta_kg": -64.0,
+     "target_net_kg": 230.0,
+     "total_kg": 166.0
+    },
+    "message": "Declared subsystem mass 166.0 kg vs target 230 kg (target net of 70 kg driver = 230 kg) (-64.0 kg).",
+    "severity": "ok",
+    "subsystems": [
+     "aerodynamics",
+     "brakes",
+     "chassis",
+     "cooling",
+     "data-acquisition",
+     "electrics",
+     "powertrain",
+     "suspension"
+    ]
+   },
+   {
+    "check": "cg",
+    "detail": {
+     "cg_x": 937.3614457831326,
+     "cg_y": 17.36144578313253,
+     "cg_z": 258.5542168674699
+    },
+    "message": "Combined CG (declared subsystems): x=937 y=17 z=259 mm. Feed CG height 259 mm into the vehicle model so load transfer matches the real build.",
+    "severity": "info",
+    "subsystems": [
+     "suspension",
+     "chassis"
+    ]
+   },
+   {
+    "check": "envelope",
+    "detail": {},
+    "message": "Chassis has not declared the interior envelope it offers, so no fit check is possible.",
+    "severity": "missing",
+    "subsystems": [
+     "chassis"
+    ]
+   }
+  ],
+  "paper": {
+   "acceleration": 100.0,
+   "autocross": 125.0,
+   "skidpad": 75.0,
+   "total": 300.0
+  },
+  "real": {
+   "acceleration": 93.16874260159543,
+   "autocross": 117.67397887114736,
+   "skidpad": 68.93774200650269,
+   "total": 279.78046347924544
+  },
+  "text": "BUILDABLE. Reconciled build is +50.0 kg and -11 mm CG vs the paper baseline, costing an estimated -20.2 points across the dynamic events. That gap is the price of the estimates meeting reality — close it by attacking the heaviest over-budget subsystem, not by re-optimising suspension in a vacuum.",
+  "total": -20.2
+ },
+ "assess.light": {
+  "any_estimate": false,
+  "blocking": [],
+  "buildable": true,
+  "delta": {
+   "acceleration": 0.0,
+   "autocross": 0.0,
+   "skidpad": 0.0,
+   "total": 0.0
+  },
+  "findings": [
+   {
+    "check": "mass-budget-total",
+    "detail": {
+     "delta_kg": -114.0,
+     "target_net_kg": 230.0,
+     "total_kg": 116.0
+    },
+    "message": "Declared subsystem mass 116.0 kg vs target 230 kg (target net of 70 kg driver = 230 kg) (-114.0 kg).",
+    "severity": "ok",
+    "subsystems": [
+     "aerodynamics",
+     "brakes",
+     "chassis",
+     "cooling",
+     "data-acquisition",
+     "electrics",
+     "powertrain",
+     "suspension"
+    ]
+   },
+   {
+    "check": "cg",
+    "detail": {
+     "cg_x": 923.2931034482758,
+     "cg_y": 3.293103448275862,
+     "cg_z": 253.6206896551724
+    },
+    "message": "Combined CG (declared subsystems): x=923 y=3 z=254 mm. Feed CG height 254 mm into the vehicle model so load transfer matches the real build.",
+    "severity": "info",
+    "subsystems": [
+     "suspension",
+     "chassis"
+    ]
+   },
+   {
+    "check": "envelope",
+    "detail": {},
+    "message": "Chassis has not declared the interior envelope it offers, so no fit check is possible.",
+    "severity": "missing",
+    "subsystems": [
+     "chassis"
+    ]
+   }
+  ],
+  "paper": {
+   "acceleration": 100.0,
+   "autocross": 125.0,
+   "skidpad": 75.0,
+   "total": 300.0
+  },
+  "real": {
+   "acceleration": 100.0,
+   "autocross": 125.0,
+   "skidpad": 75.0,
+   "total": 300.0
+  },
+  "text": "BUILDABLE. Reconciled build is +0.0 kg and -16 mm CG vs the paper baseline, costing an estimated +0.0 points across the dynamic events. That gap is the price of the estimates meeting reality — close it by attacking the heaviest over-budget subsystem, not by re-optimising suspension in a vacuum.",
+  "total": 0.0
+ },
+ "assess.missing": {
+  "any_estimate": false,
+  "blocking": [
+   {
+    "check": "physics-input-missing",
+    "detail": {},
+    "message": "Cannot run the lap sim on the reconciled build: mass and/or combined CG are not yet computable from declared subsystem data. The worthwhileness number is withheld rather than faked.",
+    "severity": "missing",
+    "subsystems": [
+     "aerodynamics",
+     "brakes",
+     "chassis",
+     "cooling",
+     "data-acquisition",
+     "electrics",
+     "powertrain",
+     "suspension"
+    ]
+   }
+  ],
+  "buildable": false,
+  "delta": null,
+  "findings": [
+   {
+    "check": "mass-budget",
+    "detail": {
+     "declared": []
+    },
+    "message": "8 subsystem(s) have not declared a mass: aerodynamics, brakes, chassis, cooling, data-acquisition, electrics, powertrain, suspension. The car mass total — and therefore suspension's load transfer and the lap sim — is incomplete.",
+    "severity": "missing",
+    "subsystems": [
+     "aerodynamics",
+     "brakes",
+     "chassis",
+     "cooling",
+     "data-acquisition",
+     "electrics",
+     "powertrain",
+     "suspension"
+    ]
+   },
+   {
+    "check": "cg",
+    "detail": {},
+    "message": "Combined CG not computable — some subsystems gave mass but no CG location. Suspension is using an assumed CG height that nobody has confirmed against real layout.",
+    "severity": "missing",
+    "subsystems": [
+     "suspension"
+    ]
+   },
+   {
+    "check": "envelope",
+    "detail": {},
+    "message": "Chassis has not declared the interior envelope it offers, so no fit check is possible.",
+    "severity": "missing",
+    "subsystems": [
+     "chassis"
+    ]
+   }
+  ],
+  "paper": null,
+  "real": null,
+  "text": "NOT BUILDABLE as declared. 1 blocking issue(s) involving: aerodynamics, brakes, chassis, cooling, data-acquisition, electrics, powertrain, suspension. Points withheld — a worthwhileness score for a car that can't be assembled would be misleading. Resolve the blocking findings, then re-run.",
+  "total": null
+ },
+ "assess.nocg": {
+  "any_estimate": true,
+  "blocking": [
+   {
+    "check": "physics-input-missing",
+    "detail": {},
+    "message": "Cannot run the lap sim on the reconciled build: mass and/or combined CG are not yet computable from declared subsystem data. The worthwhileness number is withheld rather than faked.",
+    "severity": "missing",
+    "subsystems": [
+     "aerodynamics",
+     "brakes",
+     "cooling",
+     "data-acquisition",
+     "electrics",
+     "powertrain",
+     "suspension"
+    ]
+   }
+  ],
+  "buildable": false,
+  "delta": null,
+  "findings": [
+   {
+    "check": "mass-budget",
+    "detail": {
+     "declared": [
+      "chassis"
+     ]
+    },
+    "message": "7 subsystem(s) have not declared a mass: aerodynamics, brakes, cooling, data-acquisition, electrics, powertrain, suspension. The car mass total — and therefore suspension's load transfer and the lap sim — is incomplete.",
+    "severity": "missing",
+    "subsystems": [
+     "aerodynamics",
+     "brakes",
+     "cooling",
+     "data-acquisition",
+     "electrics",
+     "powertrain",
+     "suspension"
+    ]
+   },
+   {
+    "check": "mass-budget-total",
+    "detail": {
+     "delta_kg": -200.0,
+     "target_net_kg": 230.0,
+     "total_kg": 30.0
+    },
+    "message": "Declared subsystem mass 30.0 kg vs target 230 kg (-200.0 kg). And not everyone has reported — the real total is higher.",
+    "severity": "ok",
+    "subsystems": [
+     "chassis"
+    ]
+   },
+   {
+    "check": "cg",
+    "detail": {},
+    "message": "Combined CG not computable — some subsystems gave mass but no CG location. Suspension is using an assumed CG height that nobody has confirmed against real layout.",
+    "severity": "missing",
+    "subsystems": [
+     "suspension"
+    ]
+   },
+   {
+    "check": "envelope",
+    "detail": {},
+    "message": "Chassis has not declared the interior envelope it offers, so no fit check is possible.",
+    "severity": "missing",
+    "subsystems": [
+     "chassis"
+    ]
+   },
+   {
+    "check": "data-provenance",
+    "detail": {},
+    "message": "1 subsystem(s) are using estimated/placeholder numbers: chassis. Every check above involving them is only as trustworthy as those estimates — replace with measured/CAD values before freezing.",
+    "severity": "info",
+    "subsystems": [
+     "chassis"
+    ]
+   }
+  ],
+  "paper": null,
+  "real": null,
+  "text": "NOT BUILDABLE as declared. 1 blocking issue(s) involving: aerodynamics, brakes, cooling, data-acquisition, electrics, powertrain, suspension. Points withheld — a worthwhileness score for a car that can't be assembled would be misleading. Resolve the blocking findings, then re-run.",
+  "total": null
+ },
+ "assess.nofit": {
+  "any_estimate": false,
+  "blocking": [
+   {
+    "check": "envelope-fit",
+    "detail": {
+     "have": [
+      500,
+      400,
+      300
+     ],
+     "need": [
+      900,
+      400,
+      300
+     ]
+    },
+    "message": "powertrain needs a 900×400×300 mm box but chassis offers 500×400×300 mm — it does not fit.",
+    "severity": "fail",
+    "subsystems": [
+     "powertrain",
+     "chassis"
+    ]
+   }
+  ],
+  "buildable": false,
+  "delta": null,
+  "findings": [
+   {
+    "check": "mass-budget-total",
+    "detail": {
+     "delta_kg": -84.0,
+     "target_net_kg": 230.0,
+     "total_kg": 146.0
+    },
+    "message": "Declared subsystem mass 146.0 kg vs target 230 kg (target net of 70 kg driver = 230 kg) (-84.0 kg).",
+    "severity": "ok",
+    "subsystems": [
+     "aerodynamics",
+     "brakes",
+     "chassis",
+     "cooling",
+     "data-acquisition",
+     "electrics",
+     "powertrain",
+     "suspension"
+    ]
+   },
+   {
+    "check": "cg",
+    "detail": {
+     "cg_x": 917.8219178082192,
+     "cg_y": 3.3013698630136985,
+     "cg_z": 256.986301369863
+    },
+    "message": "Combined CG (declared subsystems): x=918 y=3 z=257 mm. Feed CG height 257 mm into the vehicle model so load transfer matches the real build.",
+    "severity": "info",
+    "subsystems": [
+     "suspension",
+     "chassis"
+    ]
+   },
+   {
+    "check": "envelope-fit",
+    "detail": {
+     "have": [
+      500,
+      400,
+      300
+     ],
+     "need": [
+      900,
+      400,
+      300
+     ]
+    },
+    "message": "powertrain needs a 900×400×300 mm box but chassis offers 500×400×300 mm — it does not fit.",
+    "severity": "fail",
+    "subsystems": [
+     "powertrain",
+     "chassis"
+    ]
+   }
+  ],
+  "paper": null,
+  "real": null,
+  "text": "NOT BUILDABLE as declared. 1 blocking issue(s) involving: chassis, powertrain. Points withheld — a worthwhileness score for a car that can't be assembled would be misleading. Resolve the blocking findings, then re-run.",
+  "total": null
+ },
+ "assess.rear_only": {
+  "any_estimate": false,
+  "blocking": [],
+  "buildable": true,
+  "delta": {
+   "acceleration": -8.1,
+   "autocross": -8.6,
+   "skidpad": -7.1,
+   "total": -23.8
+  },
+  "findings": [
+   {
+    "check": "mass-budget-total",
+    "detail": {
+     "delta_kg": -54.0,
+     "target_net_kg": 230.0,
+     "total_kg": 176.0
+    },
+    "message": "Declared subsystem mass 176.0 kg vs target 230 kg (target net of 70 kg driver = 230 kg) (-54.0 kg).",
+    "severity": "ok",
+    "subsystems": [
+     "aerodynamics",
+     "brakes",
+     "chassis",
+     "cooling",
+     "data-acquisition",
+     "electrics",
+     "powertrain",
+     "suspension"
+    ]
+   },
+   {
+    "check": "cg",
+    "detail": {
+     "cg_x": 942.625,
+     "cg_y": 22.625,
+     "cg_z": 259.20454545454544
+    },
+    "message": "Combined CG (declared subsystems): x=943 y=23 z=259 mm. Feed CG height 259 mm into the vehicle model so load transfer matches the real build.",
+    "severity": "info",
+    "subsystems": [
+     "suspension",
+     "chassis"
+    ]
+   },
+   {
+    "check": "envelope",
+    "detail": {},
+    "message": "Chassis has not declared the interior envelope it offers, so no fit check is possible.",
+    "severity": "missing",
+    "subsystems": [
+     "chassis"
+    ]
+   }
+  ],
+  "paper": {
+   "acceleration": 100.0,
+   "autocross": 125.0,
+   "skidpad": 75.0,
+   "total": 300.0
+  },
+  "real": {
+   "acceleration": 91.85345223489583,
+   "autocross": 116.42916408970791,
+   "skidpad": 67.90598480632947,
+   "total": 276.1886011309332
+  },
+  "text": "BUILDABLE. Reconciled build is +60.0 kg and -11 mm CG vs the paper baseline, costing an estimated -23.8 points across the dynamic events. That gap is the price of the estimates meeting reality — close it by attacking the heaviest over-budget subsystem, not by re-optimising suspension in a vacuum.",
+  "total": -23.8
+ },
+ "assess.sim": {
+  "any_estimate": false,
+  "blocking": [],
+  "buildable": true,
+  "delta": {
+   "acceleration": -8.3,
+   "autocross": -9.4,
+   "skidpad": -8.2,
+   "total": -25.8
+  },
+  "findings": [
+   {
+    "check": "mass-budget-total",
+    "detail": {
+     "delta_kg": -54.0,
+     "target_net_kg": 230.0,
+     "total_kg": 176.0
+    },
+    "message": "Declared subsystem mass 176.0 kg vs target 230 kg (target net of 70 kg driver = 230 kg) (-54.0 kg).",
+    "severity": "ok",
+    "subsystems": [
+     "aerodynamics",
+     "brakes",
+     "chassis",
+     "cooling",
+     "data-acquisition",
+     "electrics",
+     "powertrain",
+     "suspension"
+    ]
+   },
+   {
+    "check": "cg",
+    "detail": {
+     "cg_x": 942.625,
+     "cg_y": 22.625,
+     "cg_z": 259.20454545454544
+    },
+    "message": "Combined CG (declared subsystems): x=943 y=23 z=259 mm. Feed CG height 259 mm into the vehicle model so load transfer matches the real build.",
+    "severity": "info",
+    "subsystems": [
+     "suspension",
+     "chassis"
+    ]
+   },
+   {
+    "check": "envelope",
+    "detail": {},
+    "message": "Chassis has not declared the interior envelope it offers, so no fit check is possible.",
+    "severity": "missing",
+    "subsystems": [
+     "chassis"
+    ]
+   }
+  ],
+  "paper": {
+   "acceleration": 100.0,
+   "autocross": 125.0,
+   "skidpad": 75.0,
+   "total": 300.0
+  },
+  "real": {
+   "acceleration": 91.73722562746478,
+   "autocross": 115.63825537857295,
+   "skidpad": 66.83943210718492,
+   "total": 274.2149131132227
+  },
+  "text": "BUILDABLE. Reconciled build is +60.0 kg and -11 mm CG vs the paper baseline, costing an estimated -25.8 points across the dynamic events. That gap is the price of the estimates meeting reality — close it by attacking the heaviest over-budget subsystem, not by re-optimising suspension in a vacuum.",
+  "total": -25.8
+ },
+ "assume.blank": [
+  {
+   "check": "assumption-uncheckable",
+   "detail": {
+    "assumed": 1.0,
+    "field": "total_mass_kg"
+   },
+   "message": "s assumes total_mass_kg = 1, but the reconciled value isn't computable yet (missing subsystem data). This assumption is riding unverified.",
+   "severity": "missing",
+   "subsystems": [
+    "s"
+   ]
+  },
+  {
+   "check": "assumption-uncheckable",
+   "detail": {
+    "assumed": 1.0,
+    "field": "cg_x_mm"
+   },
+   "message": "s assumes cg_x_mm = 1, but the reconciled value isn't computable yet (missing subsystem data). This assumption is riding unverified.",
+   "severity": "missing",
+   "subsystems": [
+    "s"
+   ]
+  },
+  {
+   "check": "assumption-uncheckable",
+   "detail": {
+    "assumed": 1.0,
+    "field": "cg_y_mm"
+   },
+   "message": "s assumes cg_y_mm = 1, but the reconciled value isn't computable yet (missing subsystem data). This assumption is riding unverified.",
+   "severity": "missing",
+   "subsystems": [
+    "s"
+   ]
+  },
+  {
+   "check": "assumption-uncheckable",
+   "detail": {
+    "assumed": 1.0,
+    "field": "cg_z_mm"
+   },
+   "message": "s assumes cg_z_mm = 1, but the reconciled value isn't computable yet (missing subsystem data). This assumption is riding unverified.",
+   "severity": "missing",
+   "subsystems": [
+    "s"
+   ]
+  }
+ ],
+ "assume.cg_x_mm.aerodynamics": [
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "car",
+    "actual": 928.7808219178082,
+    "assumed": 933.8808219178082,
+    "delta": -5.100000000000023,
+    "rationale": ""
+   },
+   "message": "aerodynamics designed around cg_x_mm = 933.881 ±5, but the reconciled build is 928.781 (-5.1). aerodynamics's work is sized for a car that doesn't exist; powertrain is the largest contributor to the gap.",
+   "severity": "fail",
+   "subsystems": [
+    "aerodynamics",
+    "powertrain"
+   ]
+  },
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "aero",
+    "actual": 928.7808219178082,
+    "assumed": 916.7808219178082,
+    "delta": 12.0,
+    "rationale": "r"
+   },
+   "message": "aerodynamics designed around cg_x_mm = 916.781, but the reconciled build is 928.781 (+12.0). aerodynamics's work is sized for a car that doesn't exist; powertrain is the largest contributor to the gap.",
+   "severity": "fail",
+   "subsystems": [
+    "aerodynamics",
+    "powertrain"
+   ]
+  },
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "car",
+    "actual": 928.7808219178082,
+    "assumed": 929.2808219178082,
+    "delta": -0.5,
+    "rationale": ""
+   },
+   "message": "aerodynamics designed around cg_x_mm = 929.281, but the reconciled build is 928.781 (-0.5). aerodynamics's work is sized for a car that doesn't exist; powertrain is the largest contributor to the gap.",
+   "severity": "fail",
+   "subsystems": [
+    "aerodynamics",
+    "powertrain"
+   ]
+  }
+ ],
+ "assume.cg_x_mm.powertrain": [
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "car",
+    "actual": 928.7808219178082,
+    "assumed": 933.8808219178082,
+    "delta": -5.100000000000023,
+    "rationale": ""
+   },
+   "message": "powertrain designed around cg_x_mm = 933.881 ±5, but the reconciled build is 928.781 (-5.1). powertrain's work is sized for a car that doesn't exist.",
+   "severity": "fail",
+   "subsystems": [
+    "powertrain"
+   ]
+  },
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "aero",
+    "actual": 928.7808219178082,
+    "assumed": 916.7808219178082,
+    "delta": 12.0,
+    "rationale": "r"
+   },
+   "message": "powertrain designed around cg_x_mm = 916.781, but the reconciled build is 928.781 (+12.0). powertrain's work is sized for a car that doesn't exist.",
+   "severity": "fail",
+   "subsystems": [
+    "powertrain"
+   ]
+  },
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "car",
+    "actual": 928.7808219178082,
+    "assumed": 929.2808219178082,
+    "delta": -0.5,
+    "rationale": ""
+   },
+   "message": "powertrain designed around cg_x_mm = 929.281, but the reconciled build is 928.781 (-0.5). powertrain's work is sized for a car that doesn't exist.",
+   "severity": "fail",
+   "subsystems": [
+    "powertrain"
+   ]
+  }
+ ],
+ "assume.cg_x_mm.suspension": [
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "car",
+    "actual": 928.7808219178082,
+    "assumed": 933.8808219178082,
+    "delta": -5.100000000000023,
+    "rationale": ""
+   },
+   "message": "suspension designed around cg_x_mm = 933.881 ±5, but the reconciled build is 928.781 (-5.1). suspension's work is sized for a car that doesn't exist; powertrain is the largest contributor to the gap.",
+   "severity": "fail",
+   "subsystems": [
+    "suspension",
+    "powertrain"
+   ]
+  },
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "aero",
+    "actual": 928.7808219178082,
+    "assumed": 916.7808219178082,
+    "delta": 12.0,
+    "rationale": "r"
+   },
+   "message": "suspension designed around cg_x_mm = 916.781, but the reconciled build is 928.781 (+12.0). suspension's work is sized for a car that doesn't exist; powertrain is the largest contributor to the gap.",
+   "severity": "fail",
+   "subsystems": [
+    "suspension",
+    "powertrain"
+   ]
+  },
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "car",
+    "actual": 928.7808219178082,
+    "assumed": 929.2808219178082,
+    "delta": -0.5,
+    "rationale": ""
+   },
+   "message": "suspension designed around cg_x_mm = 929.281, but the reconciled build is 928.781 (-0.5). suspension's work is sized for a car that doesn't exist; powertrain is the largest contributor to the gap.",
+   "severity": "fail",
+   "subsystems": [
+    "suspension",
+    "powertrain"
+   ]
+  }
+ ],
+ "assume.cg_y_mm.aerodynamics": [
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "car",
+    "actual": 8.780821917808218,
+    "assumed": 13.880821917808218,
+    "delta": -5.1,
+    "rationale": ""
+   },
+   "message": "aerodynamics designed around cg_y_mm = 13.8808 ±5, but the reconciled build is 8.78082 (-5.1). aerodynamics's work is sized for a car that doesn't exist; powertrain is the largest contributor to the gap.",
+   "severity": "fail",
+   "subsystems": [
+    "aerodynamics",
+    "powertrain"
+   ]
+  },
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "aero",
+    "actual": 8.780821917808218,
+    "assumed": -3.2191780821917817,
+    "delta": 12.0,
+    "rationale": "r"
+   },
+   "message": "aerodynamics designed around cg_y_mm = -3.21918, but the reconciled build is 8.78082 (+12.0). aerodynamics's work is sized for a car that doesn't exist; powertrain is the largest contributor to the gap.",
+   "severity": "fail",
+   "subsystems": [
+    "aerodynamics",
+    "powertrain"
+   ]
+  },
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "car",
+    "actual": 8.780821917808218,
+    "assumed": 9.280821917808218,
+    "delta": -0.5,
+    "rationale": ""
+   },
+   "message": "aerodynamics designed around cg_y_mm = 9.28082, but the reconciled build is 8.78082 (-0.5). aerodynamics's work is sized for a car that doesn't exist; powertrain is the largest contributor to the gap.",
+   "severity": "fail",
+   "subsystems": [
+    "aerodynamics",
+    "powertrain"
+   ]
+  }
+ ],
+ "assume.cg_y_mm.powertrain": [
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "car",
+    "actual": 8.780821917808218,
+    "assumed": 13.880821917808218,
+    "delta": -5.1,
+    "rationale": ""
+   },
+   "message": "powertrain designed around cg_y_mm = 13.8808 ±5, but the reconciled build is 8.78082 (-5.1). powertrain's work is sized for a car that doesn't exist.",
+   "severity": "fail",
+   "subsystems": [
+    "powertrain"
+   ]
+  },
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "aero",
+    "actual": 8.780821917808218,
+    "assumed": -3.2191780821917817,
+    "delta": 12.0,
+    "rationale": "r"
+   },
+   "message": "powertrain designed around cg_y_mm = -3.21918, but the reconciled build is 8.78082 (+12.0). powertrain's work is sized for a car that doesn't exist.",
+   "severity": "fail",
+   "subsystems": [
+    "powertrain"
+   ]
+  },
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "car",
+    "actual": 8.780821917808218,
+    "assumed": 9.280821917808218,
+    "delta": -0.5,
+    "rationale": ""
+   },
+   "message": "powertrain designed around cg_y_mm = 9.28082, but the reconciled build is 8.78082 (-0.5). powertrain's work is sized for a car that doesn't exist.",
+   "severity": "fail",
+   "subsystems": [
+    "powertrain"
+   ]
+  }
+ ],
+ "assume.cg_y_mm.suspension": [
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "car",
+    "actual": 8.780821917808218,
+    "assumed": 13.880821917808218,
+    "delta": -5.1,
+    "rationale": ""
+   },
+   "message": "suspension designed around cg_y_mm = 13.8808 ±5, but the reconciled build is 8.78082 (-5.1). suspension's work is sized for a car that doesn't exist; powertrain is the largest contributor to the gap.",
+   "severity": "fail",
+   "subsystems": [
+    "suspension",
+    "powertrain"
+   ]
+  },
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "aero",
+    "actual": 8.780821917808218,
+    "assumed": -3.2191780821917817,
+    "delta": 12.0,
+    "rationale": "r"
+   },
+   "message": "suspension designed around cg_y_mm = -3.21918, but the reconciled build is 8.78082 (+12.0). suspension's work is sized for a car that doesn't exist; powertrain is the largest contributor to the gap.",
+   "severity": "fail",
+   "subsystems": [
+    "suspension",
+    "powertrain"
+   ]
+  },
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "car",
+    "actual": 8.780821917808218,
+    "assumed": 9.280821917808218,
+    "delta": -0.5,
+    "rationale": ""
+   },
+   "message": "suspension designed around cg_y_mm = 9.28082, but the reconciled build is 8.78082 (-0.5). suspension's work is sized for a car that doesn't exist; powertrain is the largest contributor to the gap.",
+   "severity": "fail",
+   "subsystems": [
+    "suspension",
+    "powertrain"
+   ]
+  }
+ ],
+ "assume.cg_z_mm.aerodynamics": [
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "car",
+    "actual": 256.986301369863,
+    "assumed": 262.086301369863,
+    "delta": -5.100000000000023,
+    "rationale": ""
+   },
+   "message": "aerodynamics designed around cg_z_mm = 262.086 ±5, but the reconciled build is 256.986 (-5.1). aerodynamics's work is sized for a car that doesn't exist; powertrain is the largest contributor to the gap.",
+   "severity": "fail",
+   "subsystems": [
+    "aerodynamics",
+    "powertrain"
+   ]
+  },
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "aero",
+    "actual": 256.986301369863,
+    "assumed": 244.98630136986299,
+    "delta": 12.0,
+    "rationale": "r"
+   },
+   "message": "aerodynamics designed around cg_z_mm = 244.986, but the reconciled build is 256.986 (+12.0). aerodynamics's work is sized for a car that doesn't exist; powertrain is the largest contributor to the gap.",
+   "severity": "fail",
+   "subsystems": [
+    "aerodynamics",
+    "powertrain"
+   ]
+  },
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "car",
+    "actual": 256.986301369863,
+    "assumed": 257.486301369863,
+    "delta": -0.5,
+    "rationale": ""
+   },
+   "message": "aerodynamics designed around cg_z_mm = 257.486, but the reconciled build is 256.986 (-0.5). aerodynamics's work is sized for a car that doesn't exist; powertrain is the largest contributor to the gap.",
+   "severity": "fail",
+   "subsystems": [
+    "aerodynamics",
+    "powertrain"
+   ]
+  }
+ ],
+ "assume.cg_z_mm.powertrain": [
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "car",
+    "actual": 256.986301369863,
+    "assumed": 262.086301369863,
+    "delta": -5.100000000000023,
+    "rationale": ""
+   },
+   "message": "powertrain designed around cg_z_mm = 262.086 ±5, but the reconciled build is 256.986 (-5.1). powertrain's work is sized for a car that doesn't exist.",
+   "severity": "fail",
+   "subsystems": [
+    "powertrain"
+   ]
+  },
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "aero",
+    "actual": 256.986301369863,
+    "assumed": 244.98630136986299,
+    "delta": 12.0,
+    "rationale": "r"
+   },
+   "message": "powertrain designed around cg_z_mm = 244.986, but the reconciled build is 256.986 (+12.0). powertrain's work is sized for a car that doesn't exist.",
+   "severity": "fail",
+   "subsystems": [
+    "powertrain"
+   ]
+  },
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "car",
+    "actual": 256.986301369863,
+    "assumed": 257.486301369863,
+    "delta": -0.5,
+    "rationale": ""
+   },
+   "message": "powertrain designed around cg_z_mm = 257.486, but the reconciled build is 256.986 (-0.5). powertrain's work is sized for a car that doesn't exist.",
+   "severity": "fail",
+   "subsystems": [
+    "powertrain"
+   ]
+  }
+ ],
+ "assume.cg_z_mm.suspension": [
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "car",
+    "actual": 256.986301369863,
+    "assumed": 262.086301369863,
+    "delta": -5.100000000000023,
+    "rationale": ""
+   },
+   "message": "suspension designed around cg_z_mm = 262.086 ±5, but the reconciled build is 256.986 (-5.1). suspension's work is sized for a car that doesn't exist; powertrain is the largest contributor to the gap.",
+   "severity": "fail",
+   "subsystems": [
+    "suspension",
+    "powertrain"
+   ]
+  },
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "aero",
+    "actual": 256.986301369863,
+    "assumed": 244.98630136986299,
+    "delta": 12.0,
+    "rationale": "r"
+   },
+   "message": "suspension designed around cg_z_mm = 244.986, but the reconciled build is 256.986 (+12.0). suspension's work is sized for a car that doesn't exist; powertrain is the largest contributor to the gap.",
+   "severity": "fail",
+   "subsystems": [
+    "suspension",
+    "powertrain"
+   ]
+  },
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "car",
+    "actual": 256.986301369863,
+    "assumed": 257.486301369863,
+    "delta": -0.5,
+    "rationale": ""
+   },
+   "message": "suspension designed around cg_z_mm = 257.486, but the reconciled build is 256.986 (-0.5). suspension's work is sized for a car that doesn't exist; powertrain is the largest contributor to the gap.",
+   "severity": "fail",
+   "subsystems": [
+    "suspension",
+    "powertrain"
+   ]
+  }
+ ],
+ "assume.other": [
+  {
+   "check": "assumption-uncheckable",
+   "detail": {
+    "assumed": 1530.0,
+    "field": "wheelbase_mm"
+   },
+   "message": "brakes assumes wheelbase_mm = 1530, but the reconciled value isn't computable yet (missing subsystem data). This assumption is riding unverified.",
+   "severity": "missing",
+   "subsystems": [
+    "brakes"
+   ]
+  },
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "car",
+    "actual": 928.7808219178082,
+    "assumed": 0.0,
+    "delta": 928.7808219178082,
+    "rationale": ""
+   },
+   "message": "brakes designed around cg_x_mm = 0, but the reconciled build is 928.781 (+928.8). brakes's work is sized for a car that doesn't exist; powertrain is the largest contributor to the gap.",
+   "severity": "fail",
+   "subsystems": [
+    "brakes",
+    "powertrain"
+   ]
+  }
+ ],
+ "assume.total_mass_kg.aerodynamics": [
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "car",
+    "actual": 146.0,
+    "assumed": 151.1,
+    "delta": -5.099999999999994,
+    "rationale": ""
+   },
+   "message": "aerodynamics designed around total_mass_kg = 151.1 ±5, but the reconciled build is 146 (-5.1). aerodynamics's work is sized for a car that doesn't exist; powertrain is the largest contributor to the gap.",
+   "severity": "fail",
+   "subsystems": [
+    "aerodynamics",
+    "powertrain"
+   ]
+  },
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "aero",
+    "actual": 146.0,
+    "assumed": 134.0,
+    "delta": 12.0,
+    "rationale": "r"
+   },
+   "message": "aerodynamics designed around total_mass_kg = 134, but the reconciled build is 146 (+12.0). aerodynamics's work is sized for a car that doesn't exist; powertrain is the largest contributor to the gap.",
+   "severity": "fail",
+   "subsystems": [
+    "aerodynamics",
+    "powertrain"
+   ]
+  },
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "car",
+    "actual": 146.0,
+    "assumed": 146.5,
+    "delta": -0.5,
+    "rationale": ""
+   },
+   "message": "aerodynamics designed around total_mass_kg = 146.5, but the reconciled build is 146 (-0.5). aerodynamics's work is sized for a car that doesn't exist; powertrain is the largest contributor to the gap.",
+   "severity": "fail",
+   "subsystems": [
+    "aerodynamics",
+    "powertrain"
+   ]
+  }
+ ],
+ "assume.total_mass_kg.powertrain": [
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "car",
+    "actual": 146.0,
+    "assumed": 151.1,
+    "delta": -5.099999999999994,
+    "rationale": ""
+   },
+   "message": "powertrain designed around total_mass_kg = 151.1 ±5, but the reconciled build is 146 (-5.1). powertrain's work is sized for a car that doesn't exist.",
+   "severity": "fail",
+   "subsystems": [
+    "powertrain"
+   ]
+  },
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "aero",
+    "actual": 146.0,
+    "assumed": 134.0,
+    "delta": 12.0,
+    "rationale": "r"
+   },
+   "message": "powertrain designed around total_mass_kg = 134, but the reconciled build is 146 (+12.0). powertrain's work is sized for a car that doesn't exist.",
+   "severity": "fail",
+   "subsystems": [
+    "powertrain"
+   ]
+  },
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "car",
+    "actual": 146.0,
+    "assumed": 146.5,
+    "delta": -0.5,
+    "rationale": ""
+   },
+   "message": "powertrain designed around total_mass_kg = 146.5, but the reconciled build is 146 (-0.5). powertrain's work is sized for a car that doesn't exist.",
+   "severity": "fail",
+   "subsystems": [
+    "powertrain"
+   ]
+  }
+ ],
+ "assume.total_mass_kg.suspension": [
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "car",
+    "actual": 146.0,
+    "assumed": 151.1,
+    "delta": -5.099999999999994,
+    "rationale": ""
+   },
+   "message": "suspension designed around total_mass_kg = 151.1 ±5, but the reconciled build is 146 (-5.1). suspension's work is sized for a car that doesn't exist; powertrain is the largest contributor to the gap.",
+   "severity": "fail",
+   "subsystems": [
+    "suspension",
+    "powertrain"
+   ]
+  },
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "aero",
+    "actual": 146.0,
+    "assumed": 134.0,
+    "delta": 12.0,
+    "rationale": "r"
+   },
+   "message": "suspension designed around total_mass_kg = 134, but the reconciled build is 146 (+12.0). suspension's work is sized for a car that doesn't exist; powertrain is the largest contributor to the gap.",
+   "severity": "fail",
+   "subsystems": [
+    "suspension",
+    "powertrain"
+   ]
+  },
+  {
+   "check": "assumption-contradiction",
+   "detail": {
+    "about": "car",
+    "actual": 146.0,
+    "assumed": 146.5,
+    "delta": -0.5,
+    "rationale": ""
+   },
+   "message": "suspension designed around total_mass_kg = 146.5, but the reconciled build is 146 (-0.5). suspension's work is sized for a car that doesn't exist; powertrain is the largest contributor to the gap.",
+   "severity": "fail",
+   "subsystems": [
+    "suspension",
+    "powertrain"
+   ]
+  }
+ ],
+ "culprit": [
+  "powertrain",
+  "powertrain",
+  "powertrain",
+  null,
+  null
+ ],
+ "culprit.partial": [
+  "powertrain",
+  null
+ ],
+ "culprit.small": [
+  "brakes",
+  "brakes",
+  null,
+  "brakes"
+ ],
+ "culprit.tall": [
+  "powertrain",
+  "suspension"
+ ],
+ "provenance": {
+  "estimate_flagged": [
+   "any subsystem interface still marked is_estimate — the verdict says so"
+  ],
+  "hard_rule": "When a blocking FAIL (non-fit, contradicted assumption, or missing physics input) is present, the points number is WITHHELD, not averaged away. A worthwhileness score for an unbuildable car is a lie.",
+  "physics_grounded": [
+   "lap times & load transfer (real LapSimulator / VehicleDynamics)",
+   "points curves (published-form FSAE event_points)",
+   "mass & CG roll-up (exact arithmetic on declared numbers)"
+  ]
+ },
+ "roll": {
+  "any_estimate": false,
+  "cg_mm": [
+   928.7808219178082,
+   8.780821917808218,
+   256.986301369863
+  ],
+  "declared": [
+   "aerodynamics",
+   "brakes",
+   "chassis",
+   "cooling",
+   "data-acquisition",
+   "electrics",
+   "powertrain",
+   "suspension"
+  ],
+  "delta_kg": -154.0,
+  "missing": [],
+  "target_kg": 300.0,
+  "total_kg": 146.0
+ },
+ "score": [
+  {
+   "a": 95.74074074074073,
+   "b": 0.0,
+   "c": 0.0,
+   "d": 0.0,
+   "total": 95.74074074074073
+  },
+  {
+   "total": 0.0
+  }
+ ],
+ "score.small_ref": {
+  "a": 125.0,
+  "total": 125.0
+ },
+ "times": [
+  {
+   "acceleration": 3.7089149172002593,
+   "autocross": 30.359970035306677,
+   "skidpad": 4.799298814916458
+  },
+  {
+   "acceleration": 3.7438963492693693,
+   "autocross": 30.20413767361058,
+   "skidpad": 4.753452405684161
+  },
+  {
+   "acceleration": 3.7089149172002593,
+   "autocross": 60.719940070613355,
+   "skidpad": 4.799298814916458
+  }
+ ],
+ "times.fake": {
+  "a": 4.0,
+  "b": null,
+  "c": null,
+  "d": null,
+  "e": null,
+  "f": null,
+  "g": 0.5,
+  "h": null,
+  "i": null
+ },
+ "vehicle.blank": [
+  999.0,
+  777.0
+ ],
+ "vehicle.default": 280.0,
+ "vehicle.full": [
+  216.0,
+  256.986301369863
+ ],
+ "vehicle.kin": [
+  216.0,
+  true,
+  true,
+  true
+ ],
+ "vehicle.negdriver": [
+  146.0,
+  256.986301369863
+ ],
+ "vehicle.nodriver": [
+  146.0,
+  256.986301369863
+ ],
+ "verdict.none": null
+}

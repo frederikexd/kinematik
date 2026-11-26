@@ -1,0 +1,1168 @@
+{
+ "consolidate.table": {
+  "delta_cost_usd": 0.0,
+  "delta_mass_kg": -2.5376236762561613,
+  "eliminates_spec": true,
+  "from": "B",
+  "length_mm": 1414.213562373095,
+  "n_tubes": 1,
+  "note": "One fewer tube spec to source is itself a procurement win — one supplier line, one stock, no seamless-1.2 mm hunt. Size classes transcribed from the FSAE 2024-25 (F.3.2 baseline classes) rulebook. Verify against the rulebook year you compete under.",
+  "rules_violations": [
+   {
+    "d_cost_usd": 0.0,
+    "d_mass_kg": -2.538,
+    "length_mm": 1414.2,
+    "member_class": "side_impact",
+    "min_size": "B",
+    "tube": "Q13"
+   }
+  ],
+  "to": "C",
+  "tubes": [
+   {
+    "d_cost_usd": 0.0,
+    "d_mass_kg": -2.538,
+    "length_mm": 1414.2,
+    "tube": "Q13"
+   }
+  ]
+ },
+ "csv.more": [
+  {
+   "message": "the nodes file is not a readable CSV (field larger than field limit (131072))",
+   "raised": "ValueError"
+  },
+  {
+   "message": "tubes CSV row 2: tube 'ab': both ends on node 'a'",
+   "raised": "ValueError"
+  },
+  {
+   "nodes": [
+    {
+     "label": "",
+     "nid": "a",
+     "xyz_mm": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "label": "",
+     "nid": "b",
+     "xyz_mm": [
+      400.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "label": "",
+     "nid": "c",
+     "xyz_mm": [
+      400.0,
+      0.0,
+      400.0
+     ]
+    },
+    {
+     "label": "",
+     "nid": "d",
+     "xyz_mm": [
+      0.0,
+      0.0,
+      400.0
+     ]
+    },
+    {
+     "label": "",
+     "nid": "e",
+     "xyz_mm": [
+      200.0,
+      0.0,
+      8.6
+     ]
+    },
+    {
+     "label": "",
+     "nid": "f",
+     "xyz_mm": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   ],
+   "size_table": {
+    "A": {
+     "cost_is_estimate": true,
+     "cost_per_ft_usd": 6.5,
+     "key": "A",
+     "od_mm": 25.4,
+     "sourcing_risk": "",
+     "wall_mm": 2.4
+    },
+    "B": {
+     "cost_is_estimate": true,
+     "cost_per_ft_usd": 5.5,
+     "key": "B",
+     "od_mm": 25.4,
+     "sourcing_risk": "",
+     "wall_mm": 1.65
+    },
+    "C": {
+     "cost_is_estimate": true,
+     "cost_per_ft_usd": 10.0,
+     "key": "C",
+     "od_mm": 25.4,
+     "sourcing_risk": "seamless 1.2 mm wall is hard to source (most suppliers stock welded, not drawn-over-mandrel seamless)",
+     "wall_mm": 1.2
+    }
+   },
+   "tubes": [
+    {
+     "a": "a",
+     "b": "b",
+     "is_primary": true,
+     "member_class": "non_structural",
+     "name": "ab",
+     "size": "C"
+    }
+   ]
+  }
+ ],
+ "equiv.table": [
+  {
+   "EI_ratio": 0.44766622837833325,
+   "baseline": {
+    "cost_is_estimate": true,
+    "cost_per_ft_usd": 0.0,
+    "key": "B",
+    "od_mm": 30.0,
+    "sourcing_risk": "",
+    "wall_mm": 3.0
+   },
+   "bending_strength_ratio": 0.5165379558211537,
+   "candidate": {
+    "cost_is_estimate": true,
+    "cost_per_ft_usd": 0.0,
+    "key": "x",
+    "od_mm": 26.0,
+    "sourcing_risk": "",
+    "wall_mm": 1.9
+   },
+   "mass_per_m_delta_kg": -0.8683314970632381,
+   "member_class": "side_impact",
+   "note": "Size classes transcribed from the FSAE 2024-25 (F.3.2 baseline classes) rulebook. Verify against the rulebook year you compete under.",
+   "passes": false,
+   "wall_floor_mm": 1.2,
+   "wall_ok": true
+  },
+  {
+   "EI_ratio": 1.2048411922537035,
+   "baseline": {
+    "cost_is_estimate": true,
+    "cost_per_ft_usd": 5.5,
+    "key": "B",
+    "od_mm": 25.4,
+    "sourcing_risk": "",
+    "wall_mm": 1.65
+   },
+   "bending_strength_ratio": 1.1770371647401563,
+   "candidate": {
+    "cost_is_estimate": true,
+    "cost_per_ft_usd": 0.0,
+    "key": "x",
+    "od_mm": 26.0,
+    "sourcing_risk": "",
+    "wall_mm": 1.9
+   },
+   "mass_per_m_delta_kg": 0.16282756913831375,
+   "member_class": "side_impact",
+   "note": "Size classes transcribed from the FSAE 2024-25 (F.3.2 baseline classes) rulebook. Verify against the rulebook year you compete under.",
+   "passes": true,
+   "wall_floor_mm": 1.2,
+   "wall_ok": true
+  }
+ ],
+ "harness.no_antisub": {
+  "F_total_N": 15107.4,
+  "bracket_ready": [
+   {
+    "P_N": 4602.0,
+    "load_is_shear": false,
+    "name": "Shoulder strap (each)"
+   },
+   {
+    "P_N": 5268.0,
+    "load_is_shear": false,
+    "name": "Lap belt (each)"
+   }
+  ],
+  "decel_g": 20.0,
+  "driver_mass_kg": 77.0,
+  "note": "Screening statics with judgement inputs — the rulebook sites the mounts and may require attachment-strength proof; run each tab through the bolt & bracket FoS screen with these P_N values, then confirm per the rulebook.",
+  "points": [
+   {
+    "belt_tension_N": 4602.136798920811,
+    "mounts_to": "shoulder harness bar (size-A class tube)",
+    "n": 2,
+    "point": "Shoulder strap (each)"
+   },
+   {
+    "belt_tension_N": 5267.789624033235,
+    "mounts_to": "harness-attachment class structure",
+    "n": 2,
+    "point": "Lap belt (each)"
+   }
+  ]
+ },
+ "landings": [
+  [],
+  [
+   {
+    "end_node": "R",
+    "host_fraction": 0.5,
+    "host_tube": "S",
+    "offset_mm": 0.05,
+    "tubes": [
+     "RR"
+    ],
+    "why": "tube end lands mid-span on the host instead of at a shared node — this interrupts the host's load path"
+   }
+  ],
+  [
+   {
+    "end_node": "P",
+    "host_fraction": 0.5,
+    "host_tube": "H",
+    "offset_mm": 8.5,
+    "tubes": [
+     "PP"
+    ],
+    "why": "tube end lands mid-span on the host instead of at a shared node — this interrupts the host's load path"
+   }
+  ]
+ ],
+ "panel.more": [
+  {
+   "deflection_limit_mm": 1.0,
+   "deflection_mm": 0.0,
+   "kind": "aero",
+   "load_per_fastener_N": 0.0,
+   "max_pitch_mm": "inf",
+   "n_fasteners": 13,
+   "notes": "Aero panel / bodywork: no rules load case, but bodywork must stay attached and stable at top speed — the pitch answer below IS aero's 'how close together do the mounting points need to be'. Quick-release is legal and normal here.",
+   "options": [
+    {
+     "capacity_N": 900.0,
+     "capacity_is_judgement": true,
+     "fos": "inf",
+     "name": "Quarter-turn (Dzus-type), steel",
+     "note": "The classic bodywork fastener; needs a spring + receptacle riveted to the frame side.",
+     "ok": true,
+     "quick_release": true,
+     "shear_N": 1500.0,
+     "tension_N": 900.0
+    },
+    {
+     "capacity_N": 1300.0,
+     "capacity_is_judgement": true,
+     "fos": "inf",
+     "name": "Camloc 1/4-turn, aerospace",
+     "note": "Stronger and more expensive than Dzus; positive retention.",
+     "ok": true,
+     "quick_release": true,
+     "shear_N": 2200.0,
+     "tension_N": 1300.0
+    },
+    {
+     "capacity_N": 2500.0,
+     "capacity_is_judgement": true,
+     "fos": "inf",
+     "name": "M5 8.8 bolt + rivnut (Al)",
+     "note": "Tension limited by rivnut thread pull-out in aluminium, not the bolt. Tooled removal — not quick-release.",
+     "ok": true,
+     "quick_release": false,
+     "shear_N": 5200.0,
+     "tension_N": 2500.0
+    },
+    {
+     "capacity_N": 6000.0,
+     "capacity_is_judgement": true,
+     "fos": "inf",
+     "name": "M6 8.8 bolt + welded nutplate",
+     "note": "The harness/seat-grade option; nutplate welds to the tube.",
+     "ok": true,
+     "quick_release": false,
+     "shear_N": 7400.0,
+     "tension_N": 6000.0
+    },
+    {
+     "capacity_N": 300.0,
+     "capacity_is_judgement": true,
+     "fos": "inf",
+     "name": "Rubber-buffered pin + lanyard (aero)",
+     "note": "Trailing-edge/secondary retention only — never primary.",
+     "ok": true,
+     "quick_release": true,
+     "shear_N": 600.0,
+     "tension_N": 300.0
+    }
+   ],
+   "panel_mass_kg": 0.072,
+   "perimeter_mm": 1000.0,
+   "pitch_mm": 80.0,
+   "pressure_kPa": 0.0,
+   "verdict": "works"
+  },
+  {
+   "deflection_limit_mm": 1.0,
+   "deflection_mm": 13.58695652173913,
+   "kind": "aero",
+   "load_per_fastener_N": 5.000000000000001,
+   "max_pitch_mm": 52.085813742804355,
+   "n_fasteners": 4,
+   "notes": "Aero panel / bodywork: no rules load case, but bodywork must stay attached and stable at top speed — the pitch answer below IS aero's 'how close together do the mounting points need to be'. Quick-release is legal and normal here.",
+   "options": [
+    {
+     "capacity_N": 900.0,
+     "capacity_is_judgement": true,
+     "fos": 180.0,
+     "name": "Quarter-turn (Dzus-type), steel",
+     "note": "The classic bodywork fastener; needs a spring + receptacle riveted to the frame side.",
+     "ok": true,
+     "quick_release": true,
+     "shear_N": 1500.0,
+     "tension_N": 900.0
+    },
+    {
+     "capacity_N": 1300.0,
+     "capacity_is_judgement": true,
+     "fos": 260.0,
+     "name": "Camloc 1/4-turn, aerospace",
+     "note": "Stronger and more expensive than Dzus; positive retention.",
+     "ok": true,
+     "quick_release": true,
+     "shear_N": 2200.0,
+     "tension_N": 1300.0
+    },
+    {
+     "capacity_N": 2500.0,
+     "capacity_is_judgement": true,
+     "fos": 500.0,
+     "name": "M5 8.8 bolt + rivnut (Al)",
+     "note": "Tension limited by rivnut thread pull-out in aluminium, not the bolt. Tooled removal — not quick-release.",
+     "ok": true,
+     "quick_release": false,
+     "shear_N": 5200.0,
+     "tension_N": 2500.0
+    },
+    {
+     "capacity_N": 6000.0,
+     "capacity_is_judgement": true,
+     "fos": 1200.0,
+     "name": "M6 8.8 bolt + welded nutplate",
+     "note": "The harness/seat-grade option; nutplate welds to the tube.",
+     "ok": true,
+     "quick_release": false,
+     "shear_N": 7400.0,
+     "tension_N": 6000.0
+    },
+    {
+     "capacity_N": 300.0,
+     "capacity_is_judgement": true,
+     "fos": 60.0,
+     "name": "Rubber-buffered pin + lanyard (aero)",
+     "note": "Trailing-edge/secondary retention only — never primary.",
+     "ok": true,
+     "quick_release": true,
+     "shear_N": 600.0,
+     "tension_N": 300.0
+    }
+   ],
+   "panel_mass_kg": 0.012000000000000004,
+   "perimeter_mm": 400.0,
+   "pitch_mm": 100.0,
+   "pressure_kPa": 2.0,
+   "verdict": "look closer"
+  },
+  {
+   "deflection_limit_mm": 1.0,
+   "deflection_mm": 13.58695652173913,
+   "kind": "aero",
+   "load_per_fastener_N": 5.000000000000001,
+   "max_pitch_mm": 52.085813742804355,
+   "n_fasteners": 4,
+   "notes": "Aero panel / bodywork: no rules load case, but bodywork must stay attached and stable at top speed — the pitch answer below IS aero's 'how close together do the mounting points need to be'. Quick-release is legal and normal here.",
+   "options": [
+    {
+     "capacity_N": 900.0,
+     "capacity_is_judgement": true,
+     "fos": 180.0,
+     "name": "Quarter-turn (Dzus-type), steel",
+     "note": "The classic bodywork fastener; needs a spring + receptacle riveted to the frame side.",
+     "ok": true,
+     "quick_release": true,
+     "shear_N": 1500.0,
+     "tension_N": 900.0
+    },
+    {
+     "capacity_N": 1300.0,
+     "capacity_is_judgement": true,
+     "fos": 260.0,
+     "name": "Camloc 1/4-turn, aerospace",
+     "note": "Stronger and more expensive than Dzus; positive retention.",
+     "ok": true,
+     "quick_release": true,
+     "shear_N": 2200.0,
+     "tension_N": 1300.0
+    },
+    {
+     "capacity_N": 2500.0,
+     "capacity_is_judgement": true,
+     "fos": 500.0,
+     "name": "M5 8.8 bolt + rivnut (Al)",
+     "note": "Tension limited by rivnut thread pull-out in aluminium, not the bolt. Tooled removal — not quick-release.",
+     "ok": true,
+     "quick_release": false,
+     "shear_N": 5200.0,
+     "tension_N": 2500.0
+    },
+    {
+     "capacity_N": 6000.0,
+     "capacity_is_judgement": true,
+     "fos": 1200.0,
+     "name": "M6 8.8 bolt + welded nutplate",
+     "note": "The harness/seat-grade option; nutplate welds to the tube.",
+     "ok": true,
+     "quick_release": false,
+     "shear_N": 7400.0,
+     "tension_N": 6000.0
+    },
+    {
+     "capacity_N": 300.0,
+     "capacity_is_judgement": true,
+     "fos": 60.0,
+     "name": "Rubber-buffered pin + lanyard (aero)",
+     "note": "Trailing-edge/secondary retention only — never primary.",
+     "ok": false,
+     "quick_release": true,
+     "shear_N": 600.0,
+     "tension_N": 300.0
+    }
+   ],
+   "panel_mass_kg": 0.012000000000000004,
+   "perimeter_mm": 400.0,
+   "pitch_mm": 100.0,
+   "pressure_kPa": 2.0,
+   "verdict": "look closer"
+  },
+  {
+   "deflection_limit_mm": 1.0,
+   "deflection_mm": 698.7577639751553,
+   "kind": "aero",
+   "load_per_fastener_N": 257.14285714285717,
+   "max_pitch_mm": 19.449943245237577,
+   "n_fasteners": 4,
+   "notes": "Aero panel / bodywork: no rules load case, but bodywork must stay attached and stable at top speed — the pitch answer below IS aero's 'how close together do the mounting points need to be'. Quick-release is legal and normal here.",
+   "options": [
+    {
+     "capacity_N": 900.0,
+     "capacity_is_judgement": true,
+     "fos": 3.5,
+     "name": "Quarter-turn (Dzus-type), steel",
+     "note": "The classic bodywork fastener; needs a spring + receptacle riveted to the frame side.",
+     "ok": true,
+     "quick_release": true,
+     "shear_N": 1500.0,
+     "tension_N": 900.0
+    },
+    {
+     "capacity_N": 1300.0,
+     "capacity_is_judgement": true,
+     "fos": 5.06,
+     "name": "Camloc 1/4-turn, aerospace",
+     "note": "Stronger and more expensive than Dzus; positive retention.",
+     "ok": true,
+     "quick_release": true,
+     "shear_N": 2200.0,
+     "tension_N": 1300.0
+    },
+    {
+     "capacity_N": 2500.0,
+     "capacity_is_judgement": true,
+     "fos": 9.72,
+     "name": "M5 8.8 bolt + rivnut (Al)",
+     "note": "Tension limited by rivnut thread pull-out in aluminium, not the bolt. Tooled removal — not quick-release.",
+     "ok": true,
+     "quick_release": false,
+     "shear_N": 5200.0,
+     "tension_N": 2500.0
+    },
+    {
+     "capacity_N": 6000.0,
+     "capacity_is_judgement": true,
+     "fos": 23.33,
+     "name": "M6 8.8 bolt + welded nutplate",
+     "note": "The harness/seat-grade option; nutplate welds to the tube.",
+     "ok": true,
+     "quick_release": false,
+     "shear_N": 7400.0,
+     "tension_N": 6000.0
+    },
+    {
+     "capacity_N": 300.0,
+     "capacity_is_judgement": true,
+     "fos": 1.17,
+     "name": "Rubber-buffered pin + lanyard (aero)",
+     "note": "Trailing-edge/secondary retention only — never primary.",
+     "ok": false,
+     "quick_release": true,
+     "shear_N": 600.0,
+     "tension_N": 300.0
+    }
+   ],
+   "panel_mass_kg": 0.012000000000000004,
+   "perimeter_mm": 400.0,
+   "pitch_mm": 100.0,
+   "pressure_kPa": 102.85714285714286,
+   "verdict": "look closer"
+  },
+  {
+   "deflection_limit_mm": 6.0,
+   "deflection_mm": 3522982.867826087,
+   "kind": "aero",
+   "load_per_fastener_N": 6752.38383,
+   "max_pitch_mm": 21.675115989006148,
+   "n_fasteners": 6,
+   "notes": "Aero panel / bodywork: no rules load case, but bodywork must stay attached and stable at top speed — the pitch answer below IS aero's 'how close together do the mounting points need to be'. Quick-release is legal and normal here.",
+   "options": [
+    {
+     "capacity_N": 900.0,
+     "capacity_is_judgement": true,
+     "fos": 0.13,
+     "name": "Quarter-turn (Dzus-type), steel",
+     "note": "The classic bodywork fastener; needs a spring + receptacle riveted to the frame side.",
+     "ok": false,
+     "quick_release": true,
+     "shear_N": 1500.0,
+     "tension_N": 900.0
+    },
+    {
+     "capacity_N": 1300.0,
+     "capacity_is_judgement": true,
+     "fos": 0.19,
+     "name": "Camloc 1/4-turn, aerospace",
+     "note": "Stronger and more expensive than Dzus; positive retention.",
+     "ok": false,
+     "quick_release": true,
+     "shear_N": 2200.0,
+     "tension_N": 1300.0
+    },
+    {
+     "capacity_N": 2500.0,
+     "capacity_is_judgement": true,
+     "fos": 0.37,
+     "name": "M5 8.8 bolt + rivnut (Al)",
+     "note": "Tension limited by rivnut thread pull-out in aluminium, not the bolt. Tooled removal — not quick-release.",
+     "ok": false,
+     "quick_release": false,
+     "shear_N": 5200.0,
+     "tension_N": 2500.0
+    },
+    {
+     "capacity_N": 6000.0,
+     "capacity_is_judgement": true,
+     "fos": 0.89,
+     "name": "M6 8.8 bolt + welded nutplate",
+     "note": "The harness/seat-grade option; nutplate welds to the tube.",
+     "ok": false,
+     "quick_release": false,
+     "shear_N": 7400.0,
+     "tension_N": 6000.0
+    },
+    {
+     "capacity_N": 300.0,
+     "capacity_is_judgement": true,
+     "fos": 0.04,
+     "name": "Rubber-buffered pin + lanyard (aero)",
+     "note": "Trailing-edge/secondary retention only — never primary.",
+     "ok": false,
+     "quick_release": true,
+     "shear_N": 600.0,
+     "tension_N": 300.0
+    }
+   ],
+   "panel_mass_kg": 0.48600000000000004,
+   "perimeter_mm": 3600.0,
+   "pitch_mm": 600.0,
+   "pressure_kPa": 50.0,
+   "verdict": "attention"
+  }
+ ],
+ "q.default_cp": 0.47260802469135804,
+ "quad.big_a": [
+  [
+   {
+    "bay_nodes": [
+     "Q1",
+     "Q2",
+     "Q3",
+     "Q4"
+    ],
+    "diagonal_cost_usd": 0.0,
+    "diagonal_length_mm": 1414.2,
+    "diagonal_mass_kg": 2.825,
+    "diagonal_size": "A",
+    "governing_class": "main_hoop",
+    "planarity_dev_mm": 0.0,
+    "suggested_diagonal": [
+     "Q1",
+     "Q3"
+    ]
+   }
+  ],
+  [
+   {
+    "bay_nodes": [
+     "Q1",
+     "Q2",
+     "Q3",
+     "Q4"
+    ],
+    "diagonal_cost_usd": 0.0,
+    "diagonal_length_mm": 1414.2,
+    "diagonal_mass_kg": 2.825,
+    "diagonal_size": "A",
+    "governing_class": "main_hoop",
+    "planarity_dev_mm": 0.0,
+    "suggested_diagonal": [
+     "Q1",
+     "Q3"
+    ]
+   }
+  ],
+  [
+   {
+    "bay_nodes": [
+     "Q1",
+     "Q2",
+     "Q3",
+     "Q4"
+    ],
+    "diagonal_cost_usd": 0.0,
+    "diagonal_length_mm": 1414.2,
+    "diagonal_mass_kg": 2.825,
+    "diagonal_size": "A",
+    "governing_class": "main_hoop",
+    "planarity_dev_mm": 0.0,
+    "suggested_diagonal": [
+     "Q1",
+     "Q3"
+    ]
+   }
+  ]
+ ],
+ "quad.flat": [
+  [
+   {
+    "bay_nodes": [
+     "Q1",
+     "Q2",
+     "Q3",
+     "Q4"
+    ],
+    "diagonal_cost_usd": 30.16,
+    "diagonal_length_mm": 1414.2,
+    "diagonal_mass_kg": 1.925,
+    "diagonal_size": "A",
+    "governing_class": "main_hoop",
+    "planarity_dev_mm": 0.0,
+    "suggested_diagonal": [
+     "Q1",
+     "Q3"
+    ]
+   }
+  ],
+  [
+   {
+    "bay_nodes": [
+     "Q1",
+     "Q2",
+     "Q3",
+     "Q4"
+    ],
+    "diagonal_cost_usd": 30.16,
+    "diagonal_length_mm": 1414.2,
+    "diagonal_mass_kg": 1.925,
+    "diagonal_size": "A",
+    "governing_class": "main_hoop",
+    "planarity_dev_mm": 0.0,
+    "suggested_diagonal": [
+     "Q1",
+     "Q3"
+    ]
+   }
+  ],
+  [
+   {
+    "bay_nodes": [
+     "Q1",
+     "Q2",
+     "Q3",
+     "Q4"
+    ],
+    "diagonal_cost_usd": 30.16,
+    "diagonal_length_mm": 1414.2,
+    "diagonal_mass_kg": 1.925,
+    "diagonal_size": "A",
+    "governing_class": "main_hoop",
+    "planarity_dev_mm": 0.0,
+    "suggested_diagonal": [
+     "Q1",
+     "Q3"
+    ]
+   }
+  ]
+ ],
+ "quad.lift": [
+  [],
+  [],
+  [
+   {
+    "bay_nodes": [
+     "Q1",
+     "Q2",
+     "Q3",
+     "Q4"
+    ],
+    "diagonal_cost_usd": 30.16,
+    "diagonal_length_mm": 1414.2,
+    "diagonal_mass_kg": 1.925,
+    "diagonal_size": "A",
+    "governing_class": "main_hoop",
+    "planarity_dev_mm": 60.8,
+    "suggested_diagonal": [
+     "Q2",
+     "Q4"
+    ]
+   }
+  ]
+ ],
+ "quad.lift_more": [
+  [],
+  [],
+  []
+ ],
+ "quad.noSec": [
+  [
+   {
+    "bay_nodes": [
+     "Q1",
+     "Q2",
+     "Q3",
+     "Q4"
+    ],
+    "diagonal_cost_usd": 30.16,
+    "diagonal_length_mm": 1414.2,
+    "diagonal_mass_kg": 1.925,
+    "diagonal_size": "A",
+    "governing_class": "main_hoop",
+    "planarity_dev_mm": 0.0,
+    "suggested_diagonal": [
+     "Q1",
+     "Q3"
+    ]
+   }
+  ],
+  [
+   {
+    "bay_nodes": [
+     "Q1",
+     "Q2",
+     "Q3",
+     "Q4"
+    ],
+    "diagonal_cost_usd": 30.16,
+    "diagonal_length_mm": 1414.2,
+    "diagonal_mass_kg": 1.925,
+    "diagonal_size": "A",
+    "governing_class": "main_hoop",
+    "planarity_dev_mm": 0.0,
+    "suggested_diagonal": [
+     "Q1",
+     "Q3"
+    ]
+   }
+  ],
+  [
+   {
+    "bay_nodes": [
+     "Q1",
+     "Q2",
+     "Q3",
+     "Q4"
+    ],
+    "diagonal_cost_usd": 30.16,
+    "diagonal_length_mm": 1414.2,
+    "diagonal_mass_kg": 1.925,
+    "diagonal_size": "A",
+    "governing_class": "main_hoop",
+    "planarity_dev_mm": 0.0,
+    "suggested_diagonal": [
+     "Q1",
+     "Q3"
+    ]
+   }
+  ]
+ ],
+ "quad.only_c": [
+  [
+   {
+    "bay_nodes": [
+     "Q1",
+     "Q2",
+     "Q3",
+     "Q4"
+    ],
+    "diagonal_cost_usd": 30.16,
+    "diagonal_length_mm": 1414.2,
+    "diagonal_mass_kg": 1.925,
+    "diagonal_size": "A",
+    "governing_class": "main_hoop",
+    "planarity_dev_mm": 0.0,
+    "suggested_diagonal": [
+     "Q1",
+     "Q3"
+    ]
+   }
+  ],
+  [
+   {
+    "bay_nodes": [
+     "Q1",
+     "Q2",
+     "Q3",
+     "Q4"
+    ],
+    "diagonal_cost_usd": 30.16,
+    "diagonal_length_mm": 1414.2,
+    "diagonal_mass_kg": 1.925,
+    "diagonal_size": "A",
+    "governing_class": "main_hoop",
+    "planarity_dev_mm": 0.0,
+    "suggested_diagonal": [
+     "Q1",
+     "Q3"
+    ]
+   }
+  ],
+  [
+   {
+    "bay_nodes": [
+     "Q1",
+     "Q2",
+     "Q3",
+     "Q4"
+    ],
+    "diagonal_cost_usd": 30.16,
+    "diagonal_length_mm": 1414.2,
+    "diagonal_mass_kg": 1.925,
+    "diagonal_size": "A",
+    "governing_class": "main_hoop",
+    "planarity_dev_mm": 0.0,
+    "suggested_diagonal": [
+     "Q1",
+     "Q3"
+    ]
+   }
+  ]
+ ],
+ "seat.more": [
+  {
+   "F_resultant_N": 3276.2609611720495,
+   "chosen": {
+    "capacity_N": 6000.0,
+    "fos": 1.83,
+    "name": "M6 8.8 bolt + welded nutplate",
+    "note": "The harness/seat-grade option; nutplate welds to the tube.",
+    "ok": false,
+    "quick_release": false,
+    "shear_N": 7400.0,
+    "tension_N": 6000.0
+   },
+   "combined_mass_kg": 81.0,
+   "load_per_mount_N": 3276.2609611720495,
+   "n_mounts": 1,
+   "note": "Everyday-g seat mount screen; crash load lives in the harness tabs, not here. Capacities are judgement — verify with vendor data. Keep at least one quick-release option green to satisfy 'keep seat removable'.",
+   "options": [
+    {
+     "capacity_N": 900.0,
+     "fos": 0.27,
+     "name": "Quarter-turn (Dzus-type), steel",
+     "note": "The classic bodywork fastener; needs a spring + receptacle riveted to the frame side.",
+     "ok": false,
+     "quick_release": true,
+     "shear_N": 1500.0,
+     "tension_N": 900.0
+    },
+    {
+     "capacity_N": 1300.0,
+     "fos": 0.4,
+     "name": "Camloc 1/4-turn, aerospace",
+     "note": "Stronger and more expensive than Dzus; positive retention.",
+     "ok": false,
+     "quick_release": true,
+     "shear_N": 2200.0,
+     "tension_N": 1300.0
+    },
+    {
+     "capacity_N": 2500.0,
+     "fos": 0.76,
+     "name": "M5 8.8 bolt + rivnut (Al)",
+     "note": "Tension limited by rivnut thread pull-out in aluminium, not the bolt. Tooled removal — not quick-release.",
+     "ok": false,
+     "quick_release": false,
+     "shear_N": 5200.0,
+     "tension_N": 2500.0
+    },
+    {
+     "capacity_N": 6000.0,
+     "fos": 1.83,
+     "name": "M6 8.8 bolt + welded nutplate",
+     "note": "The harness/seat-grade option; nutplate welds to the tube.",
+     "ok": false,
+     "quick_release": false,
+     "shear_N": 7400.0,
+     "tension_N": 6000.0
+    },
+    {
+     "capacity_N": 300.0,
+     "fos": 0.09,
+     "name": "Rubber-buffered pin + lanyard (aero)",
+     "note": "Trailing-edge/secondary retention only — never primary.",
+     "ok": false,
+     "quick_release": true,
+     "shear_N": 600.0,
+     "tension_N": 300.0
+    }
+   ],
+   "resultant_g": 4.123105625617661,
+   "verdict": "attention"
+  },
+  {
+   "F_resultant_N": 0.0,
+   "chosen": {
+    "capacity_N": 6000.0,
+    "fos": "inf",
+    "name": "M6 8.8 bolt + welded nutplate",
+    "note": "The harness/seat-grade option; nutplate welds to the tube.",
+    "ok": true,
+    "quick_release": false,
+    "shear_N": 7400.0,
+    "tension_N": 6000.0
+   },
+   "combined_mass_kg": 81.0,
+   "load_per_mount_N": 0.0,
+   "n_mounts": 4,
+   "note": "Everyday-g seat mount screen; crash load lives in the harness tabs, not here. Capacities are judgement — verify with vendor data. Keep at least one quick-release option green to satisfy 'keep seat removable'.",
+   "options": [
+    {
+     "capacity_N": 900.0,
+     "fos": "inf",
+     "name": "Quarter-turn (Dzus-type), steel",
+     "note": "The classic bodywork fastener; needs a spring + receptacle riveted to the frame side.",
+     "ok": true,
+     "quick_release": true,
+     "shear_N": 1500.0,
+     "tension_N": 900.0
+    },
+    {
+     "capacity_N": 1300.0,
+     "fos": "inf",
+     "name": "Camloc 1/4-turn, aerospace",
+     "note": "Stronger and more expensive than Dzus; positive retention.",
+     "ok": true,
+     "quick_release": true,
+     "shear_N": 2200.0,
+     "tension_N": 1300.0
+    },
+    {
+     "capacity_N": 2500.0,
+     "fos": "inf",
+     "name": "M5 8.8 bolt + rivnut (Al)",
+     "note": "Tension limited by rivnut thread pull-out in aluminium, not the bolt. Tooled removal — not quick-release.",
+     "ok": true,
+     "quick_release": false,
+     "shear_N": 5200.0,
+     "tension_N": 2500.0
+    },
+    {
+     "capacity_N": 6000.0,
+     "fos": "inf",
+     "name": "M6 8.8 bolt + welded nutplate",
+     "note": "The harness/seat-grade option; nutplate welds to the tube.",
+     "ok": true,
+     "quick_release": false,
+     "shear_N": 7400.0,
+     "tension_N": 6000.0
+    },
+    {
+     "capacity_N": 300.0,
+     "fos": "inf",
+     "name": "Rubber-buffered pin + lanyard (aero)",
+     "note": "Trailing-edge/secondary retention only — never primary.",
+     "ok": true,
+     "quick_release": true,
+     "shear_N": 600.0,
+     "tension_N": 300.0
+    }
+   ],
+   "resultant_g": 0.0,
+   "verdict": "works"
+  },
+  {
+   "F_resultant_N": 0.0981,
+   "chosen": {
+    "capacity_N": 6000.0,
+    "fos": 244648.32,
+    "name": "M6 8.8 bolt + welded nutplate",
+    "note": "The harness/seat-grade option; nutplate welds to the tube.",
+    "ok": true,
+    "quick_release": false,
+    "shear_N": 7400.0,
+    "tension_N": 6000.0
+   },
+   "combined_mass_kg": 0.01,
+   "load_per_mount_N": 0.024525,
+   "n_mounts": 4,
+   "note": "Everyday-g seat mount screen; crash load lives in the harness tabs, not here. Capacities are judgement — verify with vendor data. Keep at least one quick-release option green to satisfy 'keep seat removable'.",
+   "options": [
+    {
+     "capacity_N": 900.0,
+     "fos": 36697.25,
+     "name": "Quarter-turn (Dzus-type), steel",
+     "note": "The classic bodywork fastener; needs a spring + receptacle riveted to the frame side.",
+     "ok": true,
+     "quick_release": true,
+     "shear_N": 1500.0,
+     "tension_N": 900.0
+    },
+    {
+     "capacity_N": 1300.0,
+     "fos": 53007.14,
+     "name": "Camloc 1/4-turn, aerospace",
+     "note": "Stronger and more expensive than Dzus; positive retention.",
+     "ok": true,
+     "quick_release": true,
+     "shear_N": 2200.0,
+     "tension_N": 1300.0
+    },
+    {
+     "capacity_N": 2500.0,
+     "fos": 101936.8,
+     "name": "M5 8.8 bolt + rivnut (Al)",
+     "note": "Tension limited by rivnut thread pull-out in aluminium, not the bolt. Tooled removal — not quick-release.",
+     "ok": true,
+     "quick_release": false,
+     "shear_N": 5200.0,
+     "tension_N": 2500.0
+    },
+    {
+     "capacity_N": 6000.0,
+     "fos": 244648.32,
+     "name": "M6 8.8 bolt + welded nutplate",
+     "note": "The harness/seat-grade option; nutplate welds to the tube.",
+     "ok": true,
+     "quick_release": false,
+     "shear_N": 7400.0,
+     "tension_N": 6000.0
+    },
+    {
+     "capacity_N": 300.0,
+     "fos": 12232.42,
+     "name": "Rubber-buffered pin + lanyard (aero)",
+     "note": "Trailing-edge/secondary retention only — never primary.",
+     "ok": true,
+     "quick_release": true,
+     "shear_N": 600.0,
+     "tension_N": 300.0
+    }
+   ],
+   "resultant_g": 1.0,
+   "verdict": "works"
+  },
+  {
+   "F_resultant_N": 3276.2609611720495,
+   "chosen": {
+    "capacity_N": 6000.0,
+    "fos": 7.33,
+    "name": "M6 8.8 bolt + welded nutplate",
+    "note": "The harness/seat-grade option; nutplate welds to the tube.",
+    "ok": true,
+    "quick_release": false,
+    "shear_N": 7400.0,
+    "tension_N": 6000.0
+   },
+   "combined_mass_kg": 81.0,
+   "load_per_mount_N": 819.0652402930124,
+   "n_mounts": 4,
+   "note": "Everyday-g seat mount screen; crash load lives in the harness tabs, not here. Capacities are judgement — verify with vendor data. Keep at least one quick-release option green to satisfy 'keep seat removable'.",
+   "options": [
+    {
+     "capacity_N": 900.0,
+     "fos": 1.1,
+     "name": "Quarter-turn (Dzus-type), steel",
+     "note": "The classic bodywork fastener; needs a spring + receptacle riveted to the frame side.",
+     "ok": true,
+     "quick_release": true,
+     "shear_N": 1500.0,
+     "tension_N": 900.0
+    },
+    {
+     "capacity_N": 1300.0,
+     "fos": 1.59,
+     "name": "Camloc 1/4-turn, aerospace",
+     "note": "Stronger and more expensive than Dzus; positive retention.",
+     "ok": true,
+     "quick_release": true,
+     "shear_N": 2200.0,
+     "tension_N": 1300.0
+    },
+    {
+     "capacity_N": 2500.0,
+     "fos": 3.05,
+     "name": "M5 8.8 bolt + rivnut (Al)",
+     "note": "Tension limited by rivnut thread pull-out in aluminium, not the bolt. Tooled removal — not quick-release.",
+     "ok": true,
+     "quick_release": false,
+     "shear_N": 5200.0,
+     "tension_N": 2500.0
+    },
+    {
+     "capacity_N": 6000.0,
+     "fos": 7.33,
+     "name": "M6 8.8 bolt + welded nutplate",
+     "note": "The harness/seat-grade option; nutplate welds to the tube.",
+     "ok": true,
+     "quick_release": false,
+     "shear_N": 7400.0,
+     "tension_N": 6000.0
+    },
+    {
+     "capacity_N": 300.0,
+     "fos": 0.37,
+     "name": "Rubber-buffered pin + lanyard (aero)",
+     "note": "Trailing-edge/secondary retention only — never primary.",
+     "ok": false,
+     "quick_release": true,
+     "shear_N": 600.0,
+     "tension_N": 300.0
+    }
+   ],
+   "resultant_g": 4.123105625617661,
+   "verdict": "works"
+  }
+ ]
+}

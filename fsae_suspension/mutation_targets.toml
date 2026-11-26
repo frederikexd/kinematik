@@ -768,3 +768,40 @@ tests = [
     "tests/test_thermal_validation.py",
 ]
 deselect = []
+
+[[group]]
+name = "tubeframe"
+files = ["suspension/tubeframe.py"]
+tests = [
+    "tests/test_mutation_tubeframe.py",
+    "tests/test_tubeframe.py",
+]
+deselect = []
+
+[[group]]
+name = "cell_library"
+files = ["suspension/cell_library.py"]
+tests = [
+    "tests/test_mutation_cell_library.py",
+    "tests/test_cell_library.py",
+    "tests/test_thermal_validation.py",
+]
+deselect = []
+
+[[group]]
+name = "corner_parts"
+files = ["suspension/corner_parts.py"]
+tests = [
+    "tests/test_mutation_corner_parts.py",
+    "tests/test_corner_parts.py",
+]
+deselect = []
+
+[[group]]
+name = "worthwhile"
+files = ["suspension/worthwhile.py"]
+tests = [
+    "tests/test_mutation_worthwhile.py",
+    "tests/test_worthwhile.py",
+]
+deselect = []

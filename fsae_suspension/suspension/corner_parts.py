@@ -32,6 +32,8 @@ import math
 
 import numpy as np
 
+from ._num import vec as _vec
+
 #: Joints on the upright: the members that meet there.
 JOINTS = {"upper ball joint": ("UF", "UR"), "lower ball joint": ("LF", "LR"),
           "tie-rod end": ("TR",), "pushrod": ("PR",)}
@@ -61,25 +63,22 @@ def upright_loads(hp, load_cases):
         mf = lp.solve_member_forces(kin, state, load)
         total = np.zeros(3)
         rows = []
-        on_wishbone = getattr(mf, "model", "two-force") != "two-force"
+        on_wishbone = mf.model != "two-force"
         for joint, members in JOINTS.items():
             if on_wishbone and joint in ("lower ball joint", "pushrod"):
                 continue                      # the pushrod loads the lower wishbone, not the upright
-            got = [m for m in members if m in mf.forces and m in mf.axes]
-            if not got:
-                continue
-            F = sum(float(mf.forces[m]) * np.asarray(mf.axes[m], float) for m in got)
-            total += F
-            pt = getattr(state, _JOINT_POINT[joint], None)
-            rows.append({"load_case": lc.name, "joint": joint,
-                         "point": None if pt is None else np.asarray(pt, float), "F": F})
+            got = [m for m in members if m in mf.forces and m in mf.axes]  # pragma: no mutate (the solver fills forces and axes for the same members)
+            if got:
+                F = sum(float(mf.forces[m]) * _vec(mf.axes[m]) for m in got)
+                total += F
+                # a joint whose members were solved has its point on the corner state
+                rows.append({"load_case": lc.name, "joint": joint, "point": _vec(getattr(state, _JOINT_POINT[joint])),
+                             "F": F})
         if on_wishbone:
             # the lower ball joint carries what the upper joint and tie rod do not: the upright's force balance
             F = -(load.force() + total)
             total += F
-            pt = getattr(state, "lower_outer", None)
-            rows.append({"load_case": lc.name, "joint": "lower ball joint",
-                         "point": None if pt is None else np.asarray(pt, float), "F": F})
+            rows.append({"load_case": lc.name, "joint": "lower ball joint", "point": _vec(state.lower_outer), "F": F})
         resid = float(np.linalg.norm(total + load.force()))
         for r in rows:
             r["residual_N"] = resid
@@ -93,14 +92,14 @@ def upright_arms(loads, wheel_center, yield_mpa, section_modulus_mm3=None, fos_t
     Returns [{"joint", "arm_mm", "moment_Nmm", "load_case", "Z_required_mm3", "fos"}]: the section modulus the arm
     needs at its root for ``fos_target`` on ``yield_mpa`` (MPa), and, where ``section_modulus_mm3`` maps the joint to
     the arm's declared Z (mm^3), its factor of safety."""
-    wc = np.asarray(wheel_center, float)
+    wc = _vec(wheel_center)
     worst = {}
     for r in loads:
         if r["point"] is None:
             continue
         arm = r["point"] - wc
         M = float(np.linalg.norm(np.cross(arm, r["F"])))
-        if M > worst.get(r["joint"], {}).get("moment_Nmm", -1.0):
+        if r["joint"] not in worst or M > worst[r["joint"]]["moment_Nmm"]:
             worst[r["joint"]] = {"joint": r["joint"], "arm_mm": float(np.linalg.norm(arm)), "moment_Nmm": M,
                                  "load_case": r["load_case"]}
     out = []
@@ -124,7 +123,7 @@ def hub_bearings(load_cases, tyre_radius_mm, spacing_mm, wheel_offset_mm=0.0, x0
     R, s, e = float(tyre_radius_mm), float(spacing_mm), float(wheel_offset_mm)
     out = []
     for lc in load_cases:
-        Fx, Fy, Fz = float(lc.Fx + getattr(lc, "Fx_wc", 0.0)), float(lc.Fy), float(lc.Fz)
+        Fx, Fy, Fz = float(lc.Fx + lc.Fx_wc), float(lc.Fy), float(lc.Fz)
         # moments about the wheel centre that the bearing pair reacts as a couple along the spin axis:
         # vertical plane: Fz at the patch offset e outboard, Fy at the patch R below the centre
         m_vert = Fz * e + Fy * R
@@ -176,7 +175,7 @@ def link_weld_fatigue(screen_rows, tube_area_mm2, fat_mpa, cycles=1e5):
         if any(w in r["load_case"].lower() for w in SHOCK_WORDS):
             continue
         by.setdefault(r["member"], [0.0]).append(float(r["force_N"]))
-    limit = float(fat_mpa) * max(life_factor(cycles), CAFL_FRACTION) if cycles < 1e7 else CAFL_FRACTION * float(fat_mpa)
+    limit = float(fat_mpa) * max(life_factor(cycles), CAFL_FRACTION)     # from 1e7 cycles on, the CAFL governs
     out = []
     for m, fs in by.items():
         rng = (max(fs) - min(fs)) / float(tube_area_mm2[m])

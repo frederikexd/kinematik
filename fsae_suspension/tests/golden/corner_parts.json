@@ -1,0 +1,1533 @@
+{
+ "arms.default": [
+  [
+   {
+    "Z_required_mm3": 274.6413900498924,
+    "arm_mm": 94.48809448814173,
+    "fos": null,
+    "joint": "upper ball joint",
+    "load_case": "1.5g braking",
+    "moment_Nmm": 91547.13001663079
+   },
+   {
+    "Z_required_mm3": 182.69994103883113,
+    "arm_mm": 125.63439019631528,
+    "fos": null,
+    "joint": "tie-rod end",
+    "load_case": "combined 1.06g",
+    "moment_Nmm": 60899.98034627704
+   },
+   {
+    "Z_required_mm3": 986.4424877746799,
+    "arm_mm": 120.72282302862206,
+    "fos": null,
+    "joint": "lower ball joint",
+    "load_case": "1.5g corner",
+    "moment_Nmm": 328814.16259156
+   }
+  ],
+  [
+   {
+    "Z_required_mm3": 366.18852006652315,
+    "arm_mm": 94.48809448814173,
+    "fos": 4.915500900118347,
+    "joint": "upper ball joint",
+    "load_case": "1.5g braking",
+    "moment_Nmm": 91547.13001663079
+   },
+   {
+    "Z_required_mm3": 243.59992138510816,
+    "arm_mm": 125.63439019631528,
+    "fos": null,
+    "joint": "tie-rod end",
+    "load_case": "combined 1.06g",
+    "moment_Nmm": 60899.98034627704
+   },
+   {
+    "Z_required_mm3": 1315.25665036624,
+    "arm_mm": 120.72282302862206,
+    "fos": null,
+    "joint": "lower ball joint",
+    "load_case": "1.5g corner",
+    "moment_Nmm": 328814.16259156
+   }
+  ]
+ ],
+ "arms.hand": [
+  [
+   {
+    "Z_required_mm3": 750.0,
+    "arm_mm": 100.0,
+    "fos": 1.0,
+    "joint": "lower ball joint",
+    "load_case": "b",
+    "moment_Nmm": 200000.0
+   },
+   {
+    "Z_required_mm3": 0.0,
+    "arm_mm": 50.0,
+    "fos": null,
+    "joint": "tie-rod end",
+    "load_case": "a",
+    "moment_Nmm": 0.0
+   },
+   {
+    "Z_required_mm3": 0.001875,
+    "arm_mm": 100.0,
+    "fos": 40000.0,
+    "joint": "upper",
+    "load_case": "a",
+    "moment_Nmm": 0.5
+   }
+  ],
+  [
+   {
+    "Z_required_mm3": 500.0,
+    "arm_mm": 100.0,
+    "fos": null,
+    "joint": "lower ball joint",
+    "load_case": "b",
+    "moment_Nmm": 200000.0
+   },
+   {
+    "Z_required_mm3": 0.0,
+    "arm_mm": 50.0,
+    "fos": null,
+    "joint": "tie-rod end",
+    "load_case": "a",
+    "moment_Nmm": 0.0
+   },
+   {
+    "Z_required_mm3": 0.00125,
+    "arm_mm": 100.0,
+    "fos": null,
+    "joint": "upper",
+    "load_case": "a",
+    "moment_Nmm": 0.5
+   }
+  ],
+  []
+ ],
+ "arms.pushrod_upright": [
+  [
+   {
+    "Z_required_mm3": 271.06893250367557,
+    "arm_mm": 82.38021607157874,
+    "fos": null,
+    "joint": "upper ball joint",
+    "load_case": "1.5g braking",
+    "moment_Nmm": 90356.31083455852
+   },
+   {
+    "Z_required_mm3": 895.0083649134723,
+    "arm_mm": 109.35245767699965,
+    "fos": null,
+    "joint": "lower ball joint",
+    "load_case": "1.5g braking",
+    "moment_Nmm": 298336.1216378241
+   },
+   {
+    "Z_required_mm3": 168.87297851376724,
+    "arm_mm": 112.87511840761137,
+    "fos": null,
+    "joint": "tie-rod end",
+    "load_case": "combined 1.06g",
+    "moment_Nmm": 56290.992837922415
+   },
+   {
+    "Z_required_mm3": 773.053115882355,
+    "arm_mm": 122.8059041740258,
+    "fos": null,
+    "joint": "pushrod",
+    "load_case": "3g vertical bump",
+    "moment_Nmm": 257684.371960785
+   }
+  ],
+  [
+   {
+    "Z_required_mm3": 361.42524333823405,
+    "arm_mm": 82.38021607157874,
+    "fos": 4.9802830133685445,
+    "joint": "upper ball joint",
+    "load_case": "1.5g braking",
+    "moment_Nmm": 90356.31083455852
+   },
+   {
+    "Z_required_mm3": 1193.3444865512965,
+    "arm_mm": 109.35245767699965,
+    "fos": null,
+    "joint": "lower ball joint",
+    "load_case": "1.5g braking",
+    "moment_Nmm": 298336.1216378241
+   },
+   {
+    "Z_required_mm3": 225.16397135168967,
+    "arm_mm": 112.87511840761137,
+    "fos": null,
+    "joint": "tie-rod end",
+    "load_case": "combined 1.06g",
+    "moment_Nmm": 56290.992837922415
+   },
+   {
+    "Z_required_mm3": 1030.7374878431401,
+    "arm_mm": 122.8059041740258,
+    "fos": null,
+    "joint": "pushrod",
+    "load_case": "3g vertical bump",
+    "moment_Nmm": 257684.371960785
+   }
+  ]
+ ],
+ "brackets": [
+  [
+   {
+    "force_N": 9000.0,
+    "fos": 0.10666666666666667,
+    "load_case": "3g vertical bump",
+    "member": "LF",
+    "stress_mpa": 2812.5
+   },
+   {
+    "force_N": -20000.0,
+    "fos": 0.048,
+    "load_case": "Kerb strike",
+    "member": "UF",
+    "stress_mpa": 6250.0
+   },
+   {
+    "force_N": 5000.0,
+    "fos": 0.192,
+    "load_case": "POTHOLE",
+    "member": "TR",
+    "stress_mpa": 1562.5
+   },
+   {
+    "force_N": 100.0,
+    "fos": 9.6,
+    "load_case": "curb ride",
+    "member": "PR",
+    "stress_mpa": 31.25
+   },
+   {
+    "force_N": 0.5,
+    "fos": 1920.0,
+    "load_case": "tiny",
+    "member": "Z",
+    "stress_mpa": 0.15625
+   }
+  ],
+  [
+   {
+    "force_N": 9000.0,
+    "fos": 0.013888888888888888,
+    "load_case": "3g vertical bump",
+    "member": "LF",
+    "stress_mpa": 18000.0
+   },
+   {
+    "force_N": -20000.0,
+    "fos": 0.00625,
+    "load_case": "Kerb strike",
+    "member": "UF",
+    "stress_mpa": 40000.0
+   },
+   {
+    "force_N": 5000.0,
+    "fos": 0.025,
+    "load_case": "POTHOLE",
+    "member": "TR",
+    "stress_mpa": 10000.0
+   },
+   {
+    "force_N": 100.0,
+    "fos": 1.25,
+    "load_case": "curb ride",
+    "member": "PR",
+    "stress_mpa": 200.0
+   },
+   {
+    "force_N": 0.5,
+    "fos": 250.0,
+    "load_case": "tiny",
+    "member": "Z",
+    "stress_mpa": 1.0
+   }
+  ],
+  []
+ ],
+ "consts": [
+  0.5848035476425733,
+  [
+   "bump",
+   "kerb",
+   "curb",
+   "strike",
+   "pothole"
+  ],
+  {
+   "lower ball joint": [
+    "LF",
+    "LR"
+   ],
+   "pushrod": [
+    "PR"
+   ],
+   "tie-rod end": [
+    "TR"
+   ],
+   "upper ball joint": [
+    "UF",
+    "UR"
+   ]
+  },
+  {
+   "lower ball joint": "lower_outer",
+   "pushrod": "pushrod_outer",
+   "tie-rod end": "tie_rod_outer",
+   "upper ball joint": "upper_outer"
+  }
+ ],
+ "hub.[('c0_kN', 0.0), ('s0_target', 1.5), ('x0', 0.56), ('y0', 1.4)]": [
+  [
+   {
+    "C0_required_kN": 0.75,
+    "Fa_N": 0.0,
+    "Fr_N": 500.0,
+    "P0_N": 500.0,
+    "load_case": "v",
+    "s0": null
+   },
+   {
+    "C0_required_kN": 5.0625,
+    "Fa_N": 500.0,
+    "Fr_N": 3375.0,
+    "P0_N": 3375.0,
+    "load_case": "c",
+    "s0": null
+   },
+   {
+    "C0_required_kN": 1.0816653826391966,
+    "Fa_N": 0.0,
+    "Fr_N": 721.1102550927978,
+    "P0_N": 721.1102550927978,
+    "load_case": "b",
+    "s0": null
+   },
+   {
+    "C0_required_kN": 7.131312992710389,
+    "Fa_N": 800.0,
+    "Fr_N": 4754.208661806926,
+    "P0_N": 4754.208661806926,
+    "load_case": "o",
+    "s0": null
+   }
+  ],
+  [
+   {
+    "C0_required_kN": 0.75,
+    "Fa_N": 0.0,
+    "Fr_N": 500.0,
+    "P0_N": 500.0,
+    "load_case": "v",
+    "s0": null
+   },
+   {
+    "C0_required_kN": 1.4805,
+    "Fa_N": 500.0,
+    "Fr_N": 512.5,
+    "P0_N": 987.0,
+    "load_case": "c",
+    "s0": null
+   },
+   {
+    "C0_required_kN": 1.0816653826391966,
+    "Fa_N": 0.0,
+    "Fr_N": 721.1102550927978,
+    "P0_N": 721.1102550927978,
+    "load_case": "b",
+    "s0": null
+   },
+   {
+    "C0_required_kN": 1.9004899997732323,
+    "Fa_N": 800.0,
+    "Fr_N": 262.48809496813374,
+    "P0_N": 1266.9933331821549,
+    "load_case": "o",
+    "s0": null
+   }
+  ]
+ ],
+ "hub.[('c0_kN', 12.0)]": [
+  [
+   {
+    "C0_required_kN": 1.0,
+    "Fa_N": 0.0,
+    "Fr_N": 500.0,
+    "P0_N": 500.0,
+    "load_case": "v",
+    "s0": 24.0
+   },
+   {
+    "C0_required_kN": 6.75,
+    "Fa_N": 500.0,
+    "Fr_N": 3375.0,
+    "P0_N": 3375.0,
+    "load_case": "c",
+    "s0": 3.5555555555555554
+   },
+   {
+    "C0_required_kN": 1.4422205101855956,
+    "Fa_N": 0.0,
+    "Fr_N": 721.1102550927978,
+    "P0_N": 721.1102550927978,
+    "load_case": "b",
+    "s0": 16.641005886756876
+   },
+   {
+    "C0_required_kN": 9.508417323613852,
+    "Fa_N": 800.0,
+    "Fr_N": 4754.208661806926,
+    "P0_N": 4754.208661806926,
+    "load_case": "o",
+    "s0": 2.5240793691708046
+   }
+  ],
+  [
+   {
+    "C0_required_kN": 1.0,
+    "Fa_N": 0.0,
+    "Fr_N": 500.0,
+    "P0_N": 500.0,
+    "load_case": "v",
+    "s0": 24.0
+   },
+   {
+    "C0_required_kN": 1.115,
+    "Fa_N": 500.0,
+    "Fr_N": 512.5,
+    "P0_N": 557.5,
+    "load_case": "c",
+    "s0": 21.524663677130047
+   },
+   {
+    "C0_required_kN": 1.4422205101855956,
+    "Fa_N": 0.0,
+    "Fr_N": 721.1102550927978,
+    "P0_N": 721.1102550927978,
+    "load_case": "b",
+    "s0": 16.641005886756876
+   },
+   {
+    "C0_required_kN": 1.1149857139617605,
+    "Fa_N": 800.0,
+    "Fr_N": 262.48809496813374,
+    "P0_N": 557.4928569808802,
+    "load_case": "o",
+    "s0": 21.524939467361737
+   }
+  ]
+ ],
+ "hub.[('c0_kN', 30.0), ('wheel_offset_mm', -15.0)]": [
+  [
+   {
+    "C0_required_kN": 1.75,
+    "Fa_N": 0.0,
+    "Fr_N": 875.0,
+    "P0_N": 875.0,
+    "load_case": "v",
+    "s0": 34.285714285714285
+   },
+   {
+    "C0_required_kN": 7.5,
+    "Fa_N": 500.0,
+    "Fr_N": 3750.0,
+    "P0_N": 3750.0,
+    "load_case": "c",
+    "s0": 8.0
+   },
+   {
+    "C0_required_kN": 2.5238858928247923,
+    "Fa_N": 0.0,
+    "Fr_N": 1261.9429464123962,
+    "P0_N": 1261.9429464123962,
+    "load_case": "b",
+    "s0": 23.77286555250982
+   },
+   {
+    "C0_required_kN": 9.750160255093245,
+    "Fa_N": 800.0,
+    "Fr_N": 4875.080127546623,
+    "P0_N": 4875.080127546623,
+    "load_case": "o",
+    "s0": 6.153745008309731
+   }
+  ],
+  [
+   {
+    "C0_required_kN": 1.075,
+    "Fa_N": 0.0,
+    "Fr_N": 537.5,
+    "P0_N": 537.5,
+    "load_case": "v",
+    "s0": 55.81395348837209
+   },
+   {
+    "C0_required_kN": 1.16,
+    "Fa_N": 500.0,
+    "Fr_N": 550.0,
+    "P0_N": 580.0,
+    "load_case": "c",
+    "s0": 51.724137931034484
+   },
+   {
+    "C0_required_kN": 1.5503870484495152,
+    "Fa_N": 0.0,
+    "Fr_N": 775.1935242247577,
+    "P0_N": 775.1935242247577,
+    "load_case": "b",
+    "s0": 38.700013690132266
+   },
+   {
+    "C0_required_kN": 1.137446662452009,
+    "Fa_N": 800.0,
+    "Fr_N": 281.20555204334073,
+    "P0_N": 568.7233312260045,
+    "load_case": "o",
+    "s0": 52.74972618993598
+   }
+  ]
+ ],
+ "hub.[('wheel_offset_mm', 20.0)]": [
+  [
+   {
+    "C0_required_kN": 2.0,
+    "Fa_N": 0.0,
+    "Fr_N": 1000.0,
+    "P0_N": 1000.0,
+    "load_case": "v",
+    "s0": null
+   },
+   {
+    "C0_required_kN": 5.75,
+    "Fa_N": 500.0,
+    "Fr_N": 2875.0,
+    "P0_N": 2875.0,
+    "load_case": "c",
+    "s0": null
+   },
+   {
+    "C0_required_kN": 2.884441020371191,
+    "Fa_N": 0.0,
+    "Fr_N": 1442.2205101855957,
+    "P0_N": 1442.2205101855957,
+    "load_case": "b",
+    "s0": null
+   },
+   {
+    "C0_required_kN": 9.2,
+    "Fa_N": 800.0,
+    "Fr_N": 4600.0,
+    "P0_N": 4600.0,
+    "load_case": "o",
+    "s0": null
+   }
+  ],
+  [
+   {
+    "C0_required_kN": 1.1,
+    "Fa_N": 0.0,
+    "Fr_N": 550.0,
+    "P0_N": 550.0,
+    "load_case": "v",
+    "s0": null
+   },
+   {
+    "C0_required_kN": 1.145,
+    "Fa_N": 500.0,
+    "Fr_N": 537.5,
+    "P0_N": 572.5,
+    "load_case": "c",
+    "s0": null
+   },
+   {
+    "C0_required_kN": 1.5864425612041553,
+    "Fa_N": 0.0,
+    "Fr_N": 793.2212806020776,
+    "P0_N": 793.2212806020776,
+    "load_case": "b",
+    "s0": null
+   },
+   {
+    "C0_required_kN": 1.1161834910301296,
+    "Fa_N": 800.0,
+    "Fr_N": 263.48624252510797,
+    "P0_N": 558.0917455150648,
+    "load_case": "o",
+    "s0": null
+   }
+  ]
+ ],
+ "hub.[]": [
+  [
+   {
+    "C0_required_kN": 1.0,
+    "Fa_N": 0.0,
+    "Fr_N": 500.0,
+    "P0_N": 500.0,
+    "load_case": "v",
+    "s0": null
+   },
+   {
+    "C0_required_kN": 6.75,
+    "Fa_N": 500.0,
+    "Fr_N": 3375.0,
+    "P0_N": 3375.0,
+    "load_case": "c",
+    "s0": null
+   },
+   {
+    "C0_required_kN": 1.4422205101855956,
+    "Fa_N": 0.0,
+    "Fr_N": 721.1102550927978,
+    "P0_N": 721.1102550927978,
+    "load_case": "b",
+    "s0": null
+   },
+   {
+    "C0_required_kN": 9.508417323613852,
+    "Fa_N": 800.0,
+    "Fr_N": 4754.208661806926,
+    "P0_N": 4754.208661806926,
+    "load_case": "o",
+    "s0": null
+   }
+  ],
+  [
+   {
+    "C0_required_kN": 1.0,
+    "Fa_N": 0.0,
+    "Fr_N": 500.0,
+    "P0_N": 500.0,
+    "load_case": "v",
+    "s0": null
+   },
+   {
+    "C0_required_kN": 1.115,
+    "Fa_N": 500.0,
+    "Fr_N": 512.5,
+    "P0_N": 557.5,
+    "load_case": "c",
+    "s0": null
+   },
+   {
+    "C0_required_kN": 1.4422205101855956,
+    "Fa_N": 0.0,
+    "Fr_N": 721.1102550927978,
+    "P0_N": 721.1102550927978,
+    "load_case": "b",
+    "s0": null
+   },
+   {
+    "C0_required_kN": 1.1149857139617605,
+    "Fa_N": 800.0,
+    "Fr_N": 262.48809496813374,
+    "P0_N": 557.4928569808802,
+    "load_case": "o",
+    "s0": null
+   }
+  ]
+ ],
+ "life": [
+  12.59921049894873,
+  1.0,
+  0.5848035476425733,
+  2.154434690031884
+ ],
+ "loads.default": [
+  {
+   "F": [
+    27.347210281864392,
+    -966.4459712884744,
+    -33.62948575513418
+   ],
+   "joint": "upper ball joint",
+   "load_case": "1.5g corner",
+   "point": [
+    12.0,
+    540.0,
+    300.0
+   ],
+   "residual_N": 2.2737367544323206e-13
+  },
+  {
+   "F": [
+    -10.421019297014144,
+    343.89363680146676,
+    -10.421019297014144
+   ],
+   "joint": "tie-rod end",
+   "load_case": "1.5g corner",
+   "point": [
+    90.0,
+    560.0,
+    150.0
+   ],
+   "residual_N": 2.2737367544323206e-13
+  },
+  {
+   "F": [
+    -16.926190984850248,
+    2524.8005163051894,
+    -1224.114949493306
+   ],
+   "joint": "lower ball joint",
+   "load_case": "1.5g corner",
+   "point": [
+    -5.0,
+    575.0,
+    110.0
+   ],
+   "residual_N": 2.2737367544323206e-13
+  },
+  {
+   "F": [
+    953.9103821706626,
+    157.48362009854372,
+    -71.18936346644696
+   ],
+   "joint": "upper ball joint",
+   "load_case": "1.5g braking",
+   "point": [
+    12.0,
+    540.0,
+    300.0
+   ],
+   "residual_N": 2.2737367544323206e-13
+  },
+  {
+   "F": [
+    -3.934195539215243,
+    129.82845279410301,
+    -3.934195539215243
+   ],
+   "joint": "tie-rod end",
+   "load_case": "1.5g braking",
+   "point": [
+    90.0,
+    560.0,
+    150.0
+   ],
+   "residual_N": 2.2737367544323206e-13
+  },
+  {
+   "F": [
+    -2561.2686866314475,
+    -287.3120728926467,
+    -1010.3559501967918
+   ],
+   "joint": "lower ball joint",
+   "load_case": "1.5g braking",
+   "point": [
+    -5.0,
+    575.0,
+    110.0
+   ],
+   "residual_N": 2.2737367544323206e-13
+  },
+  {
+   "F": [
+    683.8355626815754,
+    -717.0777277128439,
+    -78.03577375611715
+   ],
+   "joint": "upper ball joint",
+   "load_case": "combined 1.06g",
+   "point": [
+    12.0,
+    540.0,
+    300.0
+   ],
+   "residual_N": 0.0
+  },
+  {
+   "F": [
+    -15.495566216170378,
+    511.3536851336225,
+    -15.495566216170378
+   ],
+   "joint": "tie-rod end",
+   "load_case": "combined 1.06g",
+   "point": [
+    90.0,
+    560.0,
+    150.0
+   ],
+   "residual_N": 0.0
+  },
+  {
+   "F": [
+    -1806.9866964654052,
+    1659.2986940906549,
+    -1277.7655010762346
+   ],
+   "joint": "lower ball joint",
+   "load_case": "combined 1.06g",
+   "point": [
+    -5.0,
+    575.0,
+    110.0
+   ],
+   "residual_N": 0.0
+  },
+  {
+   "F": [
+    57.11338621037583,
+    350.84222520289154,
+    6.844996163104011
+   ],
+   "joint": "upper ball joint",
+   "load_case": "3g vertical bump",
+   "point": [
+    12.0,
+    540.0,
+    300.0
+   ],
+   "residual_N": 0.0
+  },
+  {
+   "F": [
+    2.552335367247535,
+    -84.22706711916865,
+    2.552335367247535
+   ],
+   "joint": "tie-rod end",
+   "load_case": "3g vertical bump",
+   "point": [
+    90.0,
+    560.0,
+    150.0
+   ],
+   "residual_N": 0.0
+  },
+  {
+   "F": [
+    -59.665721577623366,
+    -266.6151580837229,
+    -2128.3573315303515
+   ],
+   "joint": "lower ball joint",
+   "load_case": "3g vertical bump",
+   "point": [
+    -5.0,
+    575.0,
+    110.0
+   ],
+   "residual_N": 0.0
+  },
+  {
+   "F": [
+    654.5108650206254,
+    219.0666134138753,
+    -45.23390204525189
+   ],
+   "joint": "upper ball joint",
+   "load_case": "kerb 2g+1g",
+   "point": [
+    12.0,
+    540.0,
+    300.0
+   ],
+   "residual_N": 0.0
+  },
+  {
+   "F": [
+    -1.7928965693084074,
+    59.165586787177446,
+    -1.7928965693084074
+   ],
+   "joint": "tie-rod end",
+   "load_case": "kerb 2g+1g",
+   "point": [
+    90.0,
+    560.0,
+    150.0
+   ],
+   "residual_N": 0.0
+  },
+  {
+   "F": [
+    -1726.9129684513173,
+    -278.23220020105276,
+    -1365.6132013854397
+   ],
+   "joint": "lower ball joint",
+   "load_case": "kerb 2g+1g",
+   "point": [
+    -5.0,
+    575.0,
+    110.0
+   ],
+   "residual_N": 0.0
+  }
+ ],
+ "loads.pushrod_upright": [
+  {
+   "F": [
+    -64.3265690050028,
+    -799.3336468897056,
+    -68.19507481499099
+   ],
+   "joint": "upper ball joint",
+   "load_case": "1.5g corner",
+   "point": [
+    6.5,
+    560.5,
+    300.0
+   ],
+   "residual_N": 4.602649920770331e-13
+  },
+  {
+   "F": [
+    19.53301948014237,
+    1903.5364407511438,
+    -27.57968317959757
+   ],
+   "joint": "lower ball joint",
+   "load_case": "1.5g corner",
+   "point": [
+    -5.0,
+    583.6,
+    120.0
+   ],
+   "residual_N": 4.602649920770331e-13
+  },
+  {
+   "F": [
+    71.96452069653151,
+    348.2320186166371,
+    1.0556209256764042
+   ],
+   "joint": "tie-rod end",
+   "load_case": "1.5g corner",
+   "point": [
+    53.37543392805734,
+    540.572865123218,
+    148.24869249435073
+   ],
+   "residual_N": 4.602649920770331e-13
+  },
+  {
+   "F": [
+    -27.170971171671013,
+    449.81336934010665,
+    -1173.4463174765422
+   ],
+   "joint": "pushrod",
+   "load_case": "1.5g corner",
+   "point": [
+    8.22,
+    522.81,
+    132.84
+   ],
+   "residual_N": 4.602649920770331e-13
+  },
+  {
+   "F": [
+    1033.244706657456,
+    408.9022151872359,
+    -106.61856399724341
+   ],
+   "joint": "upper ball joint",
+   "load_case": "1.5g braking",
+   "point": [
+    6.5,
+    560.5,
+    300.0
+   ],
+   "residual_N": 5.084229945850415e-13
+  },
+  {
+   "F": [
+    -2632.4977712866003,
+    -785.5481490026004,
+    -101.04772594859965
+   ],
+   "joint": "lower ball joint",
+   "load_case": "1.5g braking",
+   "point": [
+    -5.0,
+    583.6,
+    120.0
+   ],
+   "residual_N": 5.084229945850415e-13
+  },
+  {
+   "F": [
+    8.289011696051755,
+    40.11003265658015,
+    0.12158844545671271
+   ],
+   "joint": "tie-rod end",
+   "load_case": "1.5g braking",
+   "point": [
+    53.37543392805734,
+    540.572865123218,
+    148.24869249435073
+   ],
+   "residual_N": 5.084229945850415e-13
+  },
+  {
+   "F": [
+    -20.328447066907497,
+    336.53590115878484,
+    -877.9348077020677
+   ],
+   "joint": "pushrod",
+   "load_case": "1.5g braking",
+   "point": [
+    8.22,
+    522.81,
+    132.84
+   ],
+   "residual_N": 5.084229945850415e-13
+  },
+  {
+   "F": [
+    689.8137821749756,
+    -521.8705779057036,
+    -148.0425884710373
+   ],
+   "joint": "upper ball joint",
+   "load_case": "combined 1.06g",
+   "point": [
+    6.5,
+    560.5,
+    300.0
+   ],
+   "residual_N": 3.2155493553843715e-13
+  },
+  {
+   "F": [
+    -1913.6683116646495,
+    1004.3934589874334,
+    -96.97420811809191
+   ],
+   "joint": "lower ball joint",
+   "load_case": "combined 1.06g",
+   "point": [
+    -5.0,
+    583.6,
+    120.0
+   ],
+   "residual_N": 3.2155493553843715e-13
+  },
+  {
+   "F": [
+    111.3244841264223,
+    538.6925314527699,
+    1.6329776651961507
+   ],
+   "joint": "tie-rod end",
+   "load_case": "combined 1.06g",
+   "point": [
+    53.37543392805734,
+    540.572865123218,
+    148.24869249435073
+   ],
+   "residual_N": 3.2155493553843715e-13
+  },
+  {
+   "F": [
+    -26.116654636748798,
+    432.35923897693414,
+    -1127.913022124589
+   ],
+   "joint": "pushrod",
+   "load_case": "combined 1.06g",
+   "point": [
+    8.22,
+    522.81,
+    132.84
+   ],
+   "residual_N": 3.2155493553843715e-13
+  },
+  {
+   "F": [
+    -88.1744525926622,
+    979.7998172066298,
+    107.2181170647405
+   ],
+   "joint": "upper ball joint",
+   "load_case": "3g vertical bump",
+   "point": [
+    6.5,
+    560.5,
+    300.0
+   ],
+   "residual_N": 2.404323753877496e-13
+  },
+  {
+   "F": [
+    194.18457184751807,
+    -1585.0607202541546,
+    31.980928435224452
+   ],
+   "joint": "lower ball joint",
+   "load_case": "3g vertical bump",
+   "point": [
+    -5.0,
+    583.6,
+    120.0
+   ],
+   "residual_N": 2.404323753877496e-13
+  },
+  {
+   "F": [
+    -53.74104283163142,
+    -260.04969736044035,
+    -0.7883074719550837
+   ],
+   "joint": "tie-rod end",
+   "load_case": "3g vertical bump",
+   "point": [
+    53.37543392805734,
+    540.572865123218,
+    148.24869249435073
+   ],
+   "residual_N": 2.404323753877496e-13
+  },
+  {
+   "F": [
+    -52.269076423224526,
+    865.310600407965,
+    -2257.37073802801
+   ],
+   "joint": "pushrod",
+   "load_case": "3g vertical bump",
+   "point": [
+    8.22,
+    522.81,
+    132.84
+   ],
+   "residual_N": 2.404323753877496e-13
+  },
+  {
+   "F": [
+    660.159583656641,
+    591.1866934292293,
+    -36.216710122305955
+   ],
+   "joint": "upper ball joint",
+   "load_case": "kerb 2g+1g",
+   "point": [
+    6.5,
+    560.5,
+    300.0
+   ],
+   "residual_N": 5.115907697472721e-13
+  },
+  {
+   "F": [
+    -1691.8587454308313,
+    -1039.0866075567656,
+    -56.96644384057831
+   ],
+   "joint": "lower ball joint",
+   "load_case": "kerb 2g+1g",
+   "point": [
+    -5.0,
+    583.6,
+    120.0
+   ],
+   "residual_N": 5.115907697472721e-13
+  },
+  {
+   "F": [
+    -11.948073614144215,
+    -57.816014793997695,
+    -0.1752618708015745
+   ],
+   "joint": "tie-rod end",
+   "load_case": "kerb 2g+1g",
+   "point": [
+    53.37543392805734,
+    540.572865123218,
+    148.24869249435073
+   ],
+   "residual_N": 5.115907697472721e-13
+  },
+  {
+   "F": [
+    -30.54776461166573,
+    505.7159289215343,
+    -1319.281584166314
+   ],
+   "joint": "pushrod",
+   "load_case": "kerb 2g+1g",
+   "point": [
+    8.22,
+    522.81,
+    132.84
+   ],
+   "residual_N": 5.115907697472721e-13
+  }
+ ],
+ "rodend.10000": [
+  {
+   "endurance_amp_MPa": 316.8904223788193,
+   "force_N": 9000.0,
+   "fos": 1.9983507357680215,
+   "member": "LF",
+   "stress_amp_MPa": 158.57597803372067
+  },
+  {
+   "endurance_amp_MPa": 316.8904223788193,
+   "force_N": 650.0,
+   "fos": 27.669471726018756,
+   "member": "UF",
+   "stress_amp_MPa": 11.452709524657605
+  },
+  {
+   "endurance_amp_MPa": 316.8904223788193,
+   "force_N": 0.0,
+   "fos": "inf",
+   "member": "TR",
+   "stress_amp_MPa": 0.0
+  },
+  {
+   "endurance_amp_MPa": 316.8904223788193,
+   "force_N": 0.5,
+   "fos": 35970.313243824385,
+   "member": "Z",
+   "stress_amp_MPa": 0.008809776557428928
+  }
+ ],
+ "rodend.100000": [
+  {
+   "endurance_amp_MPa": 147.0875045992365,
+   "force_N": 9000.0,
+   "fos": 0.927552246078273,
+   "member": "LF",
+   "stress_amp_MPa": 158.57597803372067
+  },
+  {
+   "endurance_amp_MPa": 147.0875045992365,
+   "force_N": 650.0,
+   "fos": 12.843031099545318,
+   "member": "UF",
+   "stress_amp_MPa": 11.452709524657605
+  },
+  {
+   "endurance_amp_MPa": 147.0875045992365,
+   "force_N": 0.0,
+   "fos": "inf",
+   "member": "TR",
+   "stress_amp_MPa": 0.0
+  },
+  {
+   "endurance_amp_MPa": 147.0875045992365,
+   "force_N": 0.5,
+   "fos": 16695.94042940891,
+   "member": "Z",
+   "stress_amp_MPa": 0.008809776557428928
+  }
+ ],
+ "rodend.1e+07": [
+  {
+   "endurance_amp_MPa": 54.1875,
+   "force_N": 9000.0,
+   "fos": 0.3417131691186997,
+   "member": "LF",
+   "stress_amp_MPa": 158.57597803372067
+  },
+  {
+   "endurance_amp_MPa": 54.1875,
+   "force_N": 650.0,
+   "fos": 4.731413110874303,
+   "member": "UF",
+   "stress_amp_MPa": 11.452709524657605
+  },
+  {
+   "endurance_amp_MPa": 54.1875,
+   "force_N": 0.0,
+   "fos": "inf",
+   "member": "TR",
+   "stress_amp_MPa": 0.0
+  },
+  {
+   "endurance_amp_MPa": 54.1875,
+   "force_N": 0.5,
+   "fos": 6150.837044136593,
+   "member": "Z",
+   "stress_amp_MPa": 0.008809776557428928
+  }
+ ],
+ "rodend.2e+06": [
+  {
+   "endurance_amp_MPa": 54.1875,
+   "force_N": 9000.0,
+   "fos": 0.3417131691186997,
+   "member": "LF",
+   "stress_amp_MPa": 158.57597803372067
+  },
+  {
+   "endurance_amp_MPa": 54.1875,
+   "force_N": 650.0,
+   "fos": 4.731413110874303,
+   "member": "UF",
+   "stress_amp_MPa": 11.452709524657605
+  },
+  {
+   "endurance_amp_MPa": 54.1875,
+   "force_N": 0.0,
+   "fos": "inf",
+   "member": "TR",
+   "stress_amp_MPa": 0.0
+  },
+  {
+   "endurance_amp_MPa": 54.1875,
+   "force_N": 0.5,
+   "fos": 6150.837044136593,
+   "member": "Z",
+   "stress_amp_MPa": 0.008809776557428928
+  }
+ ],
+ "rodend.default": [
+  {
+   "endurance_amp_MPa": 158.3285598372513,
+   "force_N": 9000.0,
+   "fos": 0.24807210919012984,
+   "member": "LF",
+   "stress_amp_MPa": 638.2360369093471
+  },
+  {
+   "endurance_amp_MPa": 158.3285598372513,
+   "force_N": 650.0,
+   "fos": 3.434844588786413,
+   "member": "UF",
+   "stress_amp_MPa": 46.094824887897296
+  },
+  {
+   "endurance_amp_MPa": 158.3285598372513,
+   "force_N": 0.0,
+   "fos": "inf",
+   "member": "TR",
+   "stress_amp_MPa": 0.0
+  },
+  {
+   "endurance_amp_MPa": 158.3285598372513,
+   "force_N": 0.5,
+   "fos": 4465.297965422337,
+   "member": "Z",
+   "stress_amp_MPa": 0.035457557606074844
+  }
+ ],
+ "weld.1000": [
+  {
+   "fos": 3.3545397953450995,
+   "limit_MPa": 894.5439454253599,
+   "member": "LF",
+   "range_MPa": 266.6666666666667
+  },
+  {
+   "fos": 39.359933598715834,
+   "limit_MPa": 894.5439454253599,
+   "member": "UF",
+   "range_MPa": 22.727272727272727
+  },
+  {
+   "fos": "inf",
+   "limit_MPa": 894.5439454253599,
+   "member": "TR",
+   "range_MPa": 0.0
+  },
+  {
+   "fos": 1789.0878908507198,
+   "limit_MPa": 894.5439454253599,
+   "member": "Z",
+   "range_MPa": 0.5
+  }
+ ],
+ "weld.100000": [
+  {
+   "fos": 0.7227136904183937,
+   "limit_MPa": 192.72365077823835,
+   "member": "LF",
+   "range_MPa": 266.6666666666667
+  },
+  {
+   "fos": 8.479840634242487,
+   "limit_MPa": 192.72365077823835,
+   "member": "UF",
+   "range_MPa": 22.727272727272727
+  },
+  {
+   "fos": "inf",
+   "limit_MPa": 192.72365077823835,
+   "member": "TR",
+   "range_MPa": 0.0
+  },
+  {
+   "fos": 385.4473015564767,
+   "limit_MPa": 192.72365077823835,
+   "member": "Z",
+   "range_MPa": 0.5
+  }
+ ],
+ "weld.1e+07": [
+  {
+   "fos": 0.1557039445598351,
+   "limit_MPa": 41.5210518826227,
+   "member": "LF",
+   "range_MPa": 266.6666666666667
+  },
+  {
+   "fos": 1.826926282835399,
+   "limit_MPa": 41.5210518826227,
+   "member": "UF",
+   "range_MPa": 22.727272727272727
+  },
+  {
+   "fos": "inf",
+   "limit_MPa": 41.5210518826227,
+   "member": "TR",
+   "range_MPa": 0.0
+  },
+  {
+   "fos": 83.0421037652454,
+   "limit_MPa": 41.5210518826227,
+   "member": "Z",
+   "range_MPa": 0.5
+  }
+ ],
+ "weld.1e+08": [
+  {
+   "fos": 0.1557039445598351,
+   "limit_MPa": 41.5210518826227,
+   "member": "LF",
+   "range_MPa": 266.6666666666667
+  },
+  {
+   "fos": 1.826926282835399,
+   "limit_MPa": 41.5210518826227,
+   "member": "UF",
+   "range_MPa": 22.727272727272727
+  },
+  {
+   "fos": "inf",
+   "limit_MPa": 41.5210518826227,
+   "member": "TR",
+   "range_MPa": 0.0
+  },
+  {
+   "fos": 83.0421037652454,
+   "limit_MPa": 41.5210518826227,
+   "member": "Z",
+   "range_MPa": 0.5
+  }
+ ],
+ "weld.2e+06": [
+  {
+   "fos": 0.26625,
+   "limit_MPa": 71.0,
+   "member": "LF",
+   "range_MPa": 266.6666666666667
+  },
+  {
+   "fos": 3.124,
+   "limit_MPa": 71.0,
+   "member": "UF",
+   "range_MPa": 22.727272727272727
+  },
+  {
+   "fos": "inf",
+   "limit_MPa": 71.0,
+   "member": "TR",
+   "range_MPa": 0.0
+  },
+  {
+   "fos": 142.0,
+   "limit_MPa": 71.0,
+   "member": "Z",
+   "range_MPa": 0.5
+  }
+ ],
+ "weld.5e+06": [
+  {
+   "fos": 0.19617467730260058,
+   "limit_MPa": 52.31324728069349,
+   "member": "LF",
+   "range_MPa": 266.6666666666667
+  },
+  {
+   "fos": 2.3017828803505136,
+   "limit_MPa": 52.31324728069349,
+   "member": "UF",
+   "range_MPa": 22.727272727272727
+  },
+  {
+   "fos": "inf",
+   "limit_MPa": 52.31324728069349,
+   "member": "TR",
+   "range_MPa": 0.0
+  },
+  {
+   "fos": 104.62649456138698,
+   "limit_MPa": 52.31324728069349,
+   "member": "Z",
+   "range_MPa": 0.5
+  }
+ ],
+ "weld.9.9e+06": [
+  {
+   "fos": 0.15622644493404367,
+   "limit_MPa": 41.66038531574498,
+   "member": "LF",
+   "range_MPa": 266.6666666666667
+  },
+  {
+   "fos": 1.8330569538927792,
+   "limit_MPa": 41.66038531574498,
+   "member": "UF",
+   "range_MPa": 22.727272727272727
+  },
+  {
+   "fos": "inf",
+   "limit_MPa": 41.66038531574498,
+   "member": "TR",
+   "range_MPa": 0.0
+  },
+  {
+   "fos": 83.32077063148996,
+   "limit_MPa": 41.66038531574498,
+   "member": "Z",
+   "range_MPa": 0.5
+  }
+ ],
+ "weld.default": [
+  {
+   "fos": 0.9161159456007808,
+   "limit_MPa": 244.29758549354156,
+   "member": "LF",
+   "range_MPa": 266.6666666666667
+  },
+  {
+   "fos": 10.749093761715828,
+   "limit_MPa": 244.29758549354156,
+   "member": "UF",
+   "range_MPa": 22.727272727272727
+  },
+  {
+   "fos": "inf",
+   "limit_MPa": 244.29758549354156,
+   "member": "TR",
+   "range_MPa": 0.0
+  },
+  {
+   "fos": 488.5951709870831,
+   "limit_MPa": 244.29758549354156,
+   "member": "Z",
+   "range_MPa": 0.5
+  }
+ ]
+}

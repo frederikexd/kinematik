@@ -1,0 +1,759 @@
+{
+ "names": [
+  "Molicel INR-21700-P42A",
+  "Molicel INR-21700-P45B",
+  "Samsung INR21700-40T",
+  "Sony/Murata US18650VTC6"
+ ],
+ "params.3v7": [
+  {
+   "calibrated": false,
+   "contact_area_m2": 8e-05,
+   "cp": 1000.0,
+   "dudt_v_per_k": 0.0,
+   "enable_entropic": false,
+   "fitted_to": "",
+   "mass_kg": 0.045,
+   "nominal_v": 3.7,
+   "pitch_mm": 22.0,
+   "r_internal_ohm": 0.03,
+   "r_tempco_per_c": -0.001,
+   "surface_area_m2": 0.004184601414581606,
+   "temp_limit_c": 60.0,
+   "temp_warn_c": 50.0
+  },
+  [
+   "specific heat"
+  ]
+ ],
+ "params.Molicel INR-21700-P42A.[('cp_j_kgk', 0.0)]": [
+  {
+   "calibrated": false,
+   "contact_area_m2": 8e-05,
+   "cp": 0.0,
+   "dudt_v_per_k": 0.0,
+   "enable_entropic": false,
+   "fitted_to": "",
+   "mass_kg": 0.07,
+   "nominal_v": 3.6,
+   "pitch_mm": 22.0,
+   "r_internal_ohm": 0.016,
+   "r_tempco_per_c": -0.001,
+   "surface_area_m2": 0.005525386035243924,
+   "temp_limit_c": 60.0,
+   "temp_warn_c": 50.0
+  },
+  []
+ ],
+ "params.Molicel INR-21700-P42A.[('cp_j_kgk', 1100.0), ('pitch_mm', 25.0), ('r_dc_ohm', 0.012)]": [
+  {
+   "calibrated": false,
+   "contact_area_m2": 8e-05,
+   "cp": 1100.0,
+   "dudt_v_per_k": 0.0,
+   "enable_entropic": false,
+   "fitted_to": "",
+   "mass_kg": 0.07,
+   "nominal_v": 3.6,
+   "pitch_mm": 25.0,
+   "r_internal_ohm": 0.012,
+   "r_tempco_per_c": -0.001,
+   "surface_area_m2": 0.005525386035243924,
+   "temp_limit_c": 60.0,
+   "temp_warn_c": 50.0
+  },
+  []
+ ],
+ "params.Molicel INR-21700-P42A.[('cp_j_kgk', 950.0)]": [
+  {
+   "calibrated": false,
+   "contact_area_m2": 8e-05,
+   "cp": 950.0,
+   "dudt_v_per_k": 0.0,
+   "enable_entropic": false,
+   "fitted_to": "",
+   "mass_kg": 0.07,
+   "nominal_v": 3.6,
+   "pitch_mm": 22.0,
+   "r_internal_ohm": 0.016,
+   "r_tempco_per_c": -0.001,
+   "surface_area_m2": 0.005525386035243924,
+   "temp_limit_c": 60.0,
+   "temp_warn_c": 50.0
+  },
+  []
+ ],
+ "params.Molicel INR-21700-P42A.[('pitch_mm', 0.0)]": [
+  {
+   "calibrated": false,
+   "contact_area_m2": 8e-05,
+   "cp": 1000.0,
+   "dudt_v_per_k": 0.0,
+   "enable_entropic": false,
+   "fitted_to": "",
+   "mass_kg": 0.07,
+   "nominal_v": 3.6,
+   "pitch_mm": 0.0,
+   "r_internal_ohm": 0.016,
+   "r_tempco_per_c": -0.001,
+   "surface_area_m2": 0.005525386035243924,
+   "temp_limit_c": 60.0,
+   "temp_warn_c": 50.0
+  },
+  [
+   "specific heat"
+  ]
+ ],
+ "params.Molicel INR-21700-P42A.[('pitch_mm', 23.5)]": [
+  {
+   "calibrated": false,
+   "contact_area_m2": 8e-05,
+   "cp": 1000.0,
+   "dudt_v_per_k": 0.0,
+   "enable_entropic": false,
+   "fitted_to": "",
+   "mass_kg": 0.07,
+   "nominal_v": 3.6,
+   "pitch_mm": 23.5,
+   "r_internal_ohm": 0.016,
+   "r_tempco_per_c": -0.001,
+   "surface_area_m2": 0.005525386035243924,
+   "temp_limit_c": 60.0,
+   "temp_warn_c": 50.0
+  },
+  [
+   "specific heat"
+  ]
+ ],
+ "params.Molicel INR-21700-P42A.[('r_dc_ohm', 0.0)]": [
+  {
+   "calibrated": false,
+   "contact_area_m2": 8e-05,
+   "cp": 1000.0,
+   "dudt_v_per_k": 0.0,
+   "enable_entropic": false,
+   "fitted_to": "",
+   "mass_kg": 0.07,
+   "nominal_v": 3.6,
+   "pitch_mm": 22.0,
+   "r_internal_ohm": 0.0,
+   "r_tempco_per_c": -0.001,
+   "surface_area_m2": 0.005525386035243924,
+   "temp_limit_c": 60.0,
+   "temp_warn_c": 50.0
+  },
+  [
+   "specific heat"
+  ]
+ ],
+ "params.Molicel INR-21700-P42A.[('r_dc_ohm', 0.021)]": [
+  {
+   "calibrated": false,
+   "contact_area_m2": 8e-05,
+   "cp": 1000.0,
+   "dudt_v_per_k": 0.0,
+   "enable_entropic": false,
+   "fitted_to": "",
+   "mass_kg": 0.07,
+   "nominal_v": 3.6,
+   "pitch_mm": 22.0,
+   "r_internal_ohm": 0.021,
+   "r_tempco_per_c": -0.001,
+   "surface_area_m2": 0.005525386035243924,
+   "temp_limit_c": 60.0,
+   "temp_warn_c": 50.0
+  },
+  [
+   "specific heat"
+  ]
+ ],
+ "params.Molicel INR-21700-P42A.[]": [
+  {
+   "calibrated": false,
+   "contact_area_m2": 8e-05,
+   "cp": 1000.0,
+   "dudt_v_per_k": 0.0,
+   "enable_entropic": false,
+   "fitted_to": "",
+   "mass_kg": 0.07,
+   "nominal_v": 3.6,
+   "pitch_mm": 22.0,
+   "r_internal_ohm": 0.016,
+   "r_tempco_per_c": -0.001,
+   "surface_area_m2": 0.005525386035243924,
+   "temp_limit_c": 60.0,
+   "temp_warn_c": 50.0
+  },
+  [
+   "specific heat"
+  ]
+ ],
+ "params.Molicel INR-21700-P45B.[('cp_j_kgk', 0.0)]": [
+  {
+   "calibrated": false,
+   "contact_area_m2": 8e-05,
+   "cp": 0.0,
+   "dudt_v_per_k": 0.0,
+   "enable_entropic": false,
+   "fitted_to": "",
+   "mass_kg": 0.07,
+   "nominal_v": 3.6,
+   "pitch_mm": 22.0,
+   "r_internal_ohm": 0.022,
+   "r_tempco_per_c": -0.001,
+   "surface_area_m2": 0.005425467680896501,
+   "temp_limit_c": 60.0,
+   "temp_warn_c": 50.0
+  },
+  [
+   "DC internal resistance"
+  ]
+ ],
+ "params.Molicel INR-21700-P45B.[('cp_j_kgk', 1100.0), ('pitch_mm', 25.0), ('r_dc_ohm', 0.012)]": [
+  {
+   "calibrated": false,
+   "contact_area_m2": 8e-05,
+   "cp": 1100.0,
+   "dudt_v_per_k": 0.0,
+   "enable_entropic": false,
+   "fitted_to": "",
+   "mass_kg": 0.07,
+   "nominal_v": 3.6,
+   "pitch_mm": 25.0,
+   "r_internal_ohm": 0.012,
+   "r_tempco_per_c": -0.001,
+   "surface_area_m2": 0.005425467680896501,
+   "temp_limit_c": 60.0,
+   "temp_warn_c": 50.0
+  },
+  []
+ ],
+ "params.Molicel INR-21700-P45B.[('cp_j_kgk', 950.0)]": [
+  {
+   "calibrated": false,
+   "contact_area_m2": 8e-05,
+   "cp": 950.0,
+   "dudt_v_per_k": 0.0,
+   "enable_entropic": false,
+   "fitted_to": "",
+   "mass_kg": 0.07,
+   "nominal_v": 3.6,
+   "pitch_mm": 22.0,
+   "r_internal_ohm": 0.022,
+   "r_tempco_per_c": -0.001,
+   "surface_area_m2": 0.005425467680896501,
+   "temp_limit_c": 60.0,
+   "temp_warn_c": 50.0
+  },
+  [
+   "DC internal resistance"
+  ]
+ ],
+ "params.Molicel INR-21700-P45B.[('pitch_mm', 0.0)]": [
+  {
+   "calibrated": false,
+   "contact_area_m2": 8e-05,
+   "cp": 1000.0,
+   "dudt_v_per_k": 0.0,
+   "enable_entropic": false,
+   "fitted_to": "",
+   "mass_kg": 0.07,
+   "nominal_v": 3.6,
+   "pitch_mm": 0.0,
+   "r_internal_ohm": 0.022,
+   "r_tempco_per_c": -0.001,
+   "surface_area_m2": 0.005425467680896501,
+   "temp_limit_c": 60.0,
+   "temp_warn_c": 50.0
+  },
+  [
+   "DC internal resistance",
+   "specific heat"
+  ]
+ ],
+ "params.Molicel INR-21700-P45B.[('pitch_mm', 23.5)]": [
+  {
+   "calibrated": false,
+   "contact_area_m2": 8e-05,
+   "cp": 1000.0,
+   "dudt_v_per_k": 0.0,
+   "enable_entropic": false,
+   "fitted_to": "",
+   "mass_kg": 0.07,
+   "nominal_v": 3.6,
+   "pitch_mm": 23.5,
+   "r_internal_ohm": 0.022,
+   "r_tempco_per_c": -0.001,
+   "surface_area_m2": 0.005425467680896501,
+   "temp_limit_c": 60.0,
+   "temp_warn_c": 50.0
+  },
+  [
+   "DC internal resistance",
+   "specific heat"
+  ]
+ ],
+ "params.Molicel INR-21700-P45B.[('r_dc_ohm', 0.0)]": [
+  {
+   "calibrated": false,
+   "contact_area_m2": 8e-05,
+   "cp": 1000.0,
+   "dudt_v_per_k": 0.0,
+   "enable_entropic": false,
+   "fitted_to": "",
+   "mass_kg": 0.07,
+   "nominal_v": 3.6,
+   "pitch_mm": 22.0,
+   "r_internal_ohm": 0.0,
+   "r_tempco_per_c": -0.001,
+   "surface_area_m2": 0.005425467680896501,
+   "temp_limit_c": 60.0,
+   "temp_warn_c": 50.0
+  },
+  [
+   "specific heat"
+  ]
+ ],
+ "params.Molicel INR-21700-P45B.[('r_dc_ohm', 0.021)]": [
+  {
+   "calibrated": false,
+   "contact_area_m2": 8e-05,
+   "cp": 1000.0,
+   "dudt_v_per_k": 0.0,
+   "enable_entropic": false,
+   "fitted_to": "",
+   "mass_kg": 0.07,
+   "nominal_v": 3.6,
+   "pitch_mm": 22.0,
+   "r_internal_ohm": 0.021,
+   "r_tempco_per_c": -0.001,
+   "surface_area_m2": 0.005425467680896501,
+   "temp_limit_c": 60.0,
+   "temp_warn_c": 50.0
+  },
+  [
+   "specific heat"
+  ]
+ ],
+ "params.Molicel INR-21700-P45B.[]": [
+  {
+   "calibrated": false,
+   "contact_area_m2": 8e-05,
+   "cp": 1000.0,
+   "dudt_v_per_k": 0.0,
+   "enable_entropic": false,
+   "fitted_to": "",
+   "mass_kg": 0.07,
+   "nominal_v": 3.6,
+   "pitch_mm": 22.0,
+   "r_internal_ohm": 0.022,
+   "r_tempco_per_c": -0.001,
+   "surface_area_m2": 0.005425467680896501,
+   "temp_limit_c": 60.0,
+   "temp_warn_c": 50.0
+  },
+  [
+   "DC internal resistance",
+   "specific heat"
+  ]
+ ],
+ "params.Samsung INR21700-40T.[('cp_j_kgk', 0.0)]": [
+  {
+   "calibrated": false,
+   "contact_area_m2": 8e-05,
+   "cp": 0.0,
+   "dudt_v_per_k": 0.0,
+   "enable_entropic": false,
+   "fitted_to": "",
+   "mass_kg": 0.07,
+   "nominal_v": 3.6,
+   "pitch_mm": 22.0,
+   "r_internal_ohm": 0.022,
+   "r_tempco_per_c": -0.001,
+   "surface_area_m2": 0.005393832471193383,
+   "temp_limit_c": 60.0,
+   "temp_warn_c": 50.0
+  },
+  [
+   "DC internal resistance"
+  ]
+ ],
+ "params.Samsung INR21700-40T.[('cp_j_kgk', 1100.0), ('pitch_mm', 25.0), ('r_dc_ohm', 0.012)]": [
+  {
+   "calibrated": false,
+   "contact_area_m2": 8e-05,
+   "cp": 1100.0,
+   "dudt_v_per_k": 0.0,
+   "enable_entropic": false,
+   "fitted_to": "",
+   "mass_kg": 0.07,
+   "nominal_v": 3.6,
+   "pitch_mm": 25.0,
+   "r_internal_ohm": 0.012,
+   "r_tempco_per_c": -0.001,
+   "surface_area_m2": 0.005393832471193383,
+   "temp_limit_c": 60.0,
+   "temp_warn_c": 50.0
+  },
+  []
+ ],
+ "params.Samsung INR21700-40T.[('cp_j_kgk', 950.0)]": [
+  {
+   "calibrated": false,
+   "contact_area_m2": 8e-05,
+   "cp": 950.0,
+   "dudt_v_per_k": 0.0,
+   "enable_entropic": false,
+   "fitted_to": "",
+   "mass_kg": 0.07,
+   "nominal_v": 3.6,
+   "pitch_mm": 22.0,
+   "r_internal_ohm": 0.022,
+   "r_tempco_per_c": -0.001,
+   "surface_area_m2": 0.005393832471193383,
+   "temp_limit_c": 60.0,
+   "temp_warn_c": 50.0
+  },
+  [
+   "DC internal resistance"
+  ]
+ ],
+ "params.Samsung INR21700-40T.[('pitch_mm', 0.0)]": [
+  {
+   "calibrated": false,
+   "contact_area_m2": 8e-05,
+   "cp": 1000.0,
+   "dudt_v_per_k": 0.0,
+   "enable_entropic": false,
+   "fitted_to": "",
+   "mass_kg": 0.07,
+   "nominal_v": 3.6,
+   "pitch_mm": 0.0,
+   "r_internal_ohm": 0.022,
+   "r_tempco_per_c": -0.001,
+   "surface_area_m2": 0.005393832471193383,
+   "temp_limit_c": 60.0,
+   "temp_warn_c": 50.0
+  },
+  [
+   "DC internal resistance",
+   "specific heat"
+  ]
+ ],
+ "params.Samsung INR21700-40T.[('pitch_mm', 23.5)]": [
+  {
+   "calibrated": false,
+   "contact_area_m2": 8e-05,
+   "cp": 1000.0,
+   "dudt_v_per_k": 0.0,
+   "enable_entropic": false,
+   "fitted_to": "",
+   "mass_kg": 0.07,
+   "nominal_v": 3.6,
+   "pitch_mm": 23.5,
+   "r_internal_ohm": 0.022,
+   "r_tempco_per_c": -0.001,
+   "surface_area_m2": 0.005393832471193383,
+   "temp_limit_c": 60.0,
+   "temp_warn_c": 50.0
+  },
+  [
+   "DC internal resistance",
+   "specific heat"
+  ]
+ ],
+ "params.Samsung INR21700-40T.[('r_dc_ohm', 0.0)]": [
+  {
+   "calibrated": false,
+   "contact_area_m2": 8e-05,
+   "cp": 1000.0,
+   "dudt_v_per_k": 0.0,
+   "enable_entropic": false,
+   "fitted_to": "",
+   "mass_kg": 0.07,
+   "nominal_v": 3.6,
+   "pitch_mm": 22.0,
+   "r_internal_ohm": 0.0,
+   "r_tempco_per_c": -0.001,
+   "surface_area_m2": 0.005393832471193383,
+   "temp_limit_c": 60.0,
+   "temp_warn_c": 50.0
+  },
+  [
+   "specific heat"
+  ]
+ ],
+ "params.Samsung INR21700-40T.[('r_dc_ohm', 0.021)]": [
+  {
+   "calibrated": false,
+   "contact_area_m2": 8e-05,
+   "cp": 1000.0,
+   "dudt_v_per_k": 0.0,
+   "enable_entropic": false,
+   "fitted_to": "",
+   "mass_kg": 0.07,
+   "nominal_v": 3.6,
+   "pitch_mm": 22.0,
+   "r_internal_ohm": 0.021,
+   "r_tempco_per_c": -0.001,
+   "surface_area_m2": 0.005393832471193383,
+   "temp_limit_c": 60.0,
+   "temp_warn_c": 50.0
+  },
+  [
+   "specific heat"
+  ]
+ ],
+ "params.Samsung INR21700-40T.[]": [
+  {
+   "calibrated": false,
+   "contact_area_m2": 8e-05,
+   "cp": 1000.0,
+   "dudt_v_per_k": 0.0,
+   "enable_entropic": false,
+   "fitted_to": "",
+   "mass_kg": 0.07,
+   "nominal_v": 3.6,
+   "pitch_mm": 22.0,
+   "r_internal_ohm": 0.022,
+   "r_tempco_per_c": -0.001,
+   "surface_area_m2": 0.005393832471193383,
+   "temp_limit_c": 60.0,
+   "temp_warn_c": 50.0
+  },
+  [
+   "DC internal resistance",
+   "specific heat"
+  ]
+ ],
+ "params.Sony/Murata US18650VTC6.[('cp_j_kgk', 0.0)]": [
+  {
+   "calibrated": false,
+   "contact_area_m2": 8e-05,
+   "cp": 0.0,
+   "dudt_v_per_k": 0.0,
+   "enable_entropic": false,
+   "fitted_to": "",
+   "mass_kg": 0.0465,
+   "nominal_v": 3.6,
+   "pitch_mm": 22.0,
+   "r_internal_ohm": 0.022,
+   "r_tempco_per_c": -0.001,
+   "surface_area_m2": 0.004326994101605562,
+   "temp_limit_c": 60.0,
+   "temp_warn_c": 50.0
+  },
+  [
+   "DC internal resistance"
+  ]
+ ],
+ "params.Sony/Murata US18650VTC6.[('cp_j_kgk', 1100.0), ('pitch_mm', 25.0), ('r_dc_ohm', 0.012)]": [
+  {
+   "calibrated": false,
+   "contact_area_m2": 8e-05,
+   "cp": 1100.0,
+   "dudt_v_per_k": 0.0,
+   "enable_entropic": false,
+   "fitted_to": "",
+   "mass_kg": 0.0465,
+   "nominal_v": 3.6,
+   "pitch_mm": 25.0,
+   "r_internal_ohm": 0.012,
+   "r_tempco_per_c": -0.001,
+   "surface_area_m2": 0.004326994101605562,
+   "temp_limit_c": 60.0,
+   "temp_warn_c": 50.0
+  },
+  []
+ ],
+ "params.Sony/Murata US18650VTC6.[('cp_j_kgk', 950.0)]": [
+  {
+   "calibrated": false,
+   "contact_area_m2": 8e-05,
+   "cp": 950.0,
+   "dudt_v_per_k": 0.0,
+   "enable_entropic": false,
+   "fitted_to": "",
+   "mass_kg": 0.0465,
+   "nominal_v": 3.6,
+   "pitch_mm": 22.0,
+   "r_internal_ohm": 0.022,
+   "r_tempco_per_c": -0.001,
+   "surface_area_m2": 0.004326994101605562,
+   "temp_limit_c": 60.0,
+   "temp_warn_c": 50.0
+  },
+  [
+   "DC internal resistance"
+  ]
+ ],
+ "params.Sony/Murata US18650VTC6.[('pitch_mm', 0.0)]": [
+  {
+   "calibrated": false,
+   "contact_area_m2": 8e-05,
+   "cp": 1000.0,
+   "dudt_v_per_k": 0.0,
+   "enable_entropic": false,
+   "fitted_to": "",
+   "mass_kg": 0.0465,
+   "nominal_v": 3.6,
+   "pitch_mm": 0.0,
+   "r_internal_ohm": 0.022,
+   "r_tempco_per_c": -0.001,
+   "surface_area_m2": 0.004326994101605562,
+   "temp_limit_c": 60.0,
+   "temp_warn_c": 50.0
+  },
+  [
+   "DC internal resistance",
+   "specific heat"
+  ]
+ ],
+ "params.Sony/Murata US18650VTC6.[('pitch_mm', 23.5)]": [
+  {
+   "calibrated": false,
+   "contact_area_m2": 8e-05,
+   "cp": 1000.0,
+   "dudt_v_per_k": 0.0,
+   "enable_entropic": false,
+   "fitted_to": "",
+   "mass_kg": 0.0465,
+   "nominal_v": 3.6,
+   "pitch_mm": 23.5,
+   "r_internal_ohm": 0.022,
+   "r_tempco_per_c": -0.001,
+   "surface_area_m2": 0.004326994101605562,
+   "temp_limit_c": 60.0,
+   "temp_warn_c": 50.0
+  },
+  [
+   "DC internal resistance",
+   "specific heat"
+  ]
+ ],
+ "params.Sony/Murata US18650VTC6.[('r_dc_ohm', 0.0)]": [
+  {
+   "calibrated": false,
+   "contact_area_m2": 8e-05,
+   "cp": 1000.0,
+   "dudt_v_per_k": 0.0,
+   "enable_entropic": false,
+   "fitted_to": "",
+   "mass_kg": 0.0465,
+   "nominal_v": 3.6,
+   "pitch_mm": 22.0,
+   "r_internal_ohm": 0.0,
+   "r_tempco_per_c": -0.001,
+   "surface_area_m2": 0.004326994101605562,
+   "temp_limit_c": 60.0,
+   "temp_warn_c": 50.0
+  },
+  [
+   "specific heat"
+  ]
+ ],
+ "params.Sony/Murata US18650VTC6.[('r_dc_ohm', 0.021)]": [
+  {
+   "calibrated": false,
+   "contact_area_m2": 8e-05,
+   "cp": 1000.0,
+   "dudt_v_per_k": 0.0,
+   "enable_entropic": false,
+   "fitted_to": "",
+   "mass_kg": 0.0465,
+   "nominal_v": 3.6,
+   "pitch_mm": 22.0,
+   "r_internal_ohm": 0.021,
+   "r_tempco_per_c": -0.001,
+   "surface_area_m2": 0.004326994101605562,
+   "temp_limit_c": 60.0,
+   "temp_warn_c": 50.0
+  },
+  [
+   "specific heat"
+  ]
+ ],
+ "params.Sony/Murata US18650VTC6.[]": [
+  {
+   "calibrated": false,
+   "contact_area_m2": 8e-05,
+   "cp": 1000.0,
+   "dudt_v_per_k": 0.0,
+   "enable_entropic": false,
+   "fitted_to": "",
+   "mass_kg": 0.0465,
+   "nominal_v": 3.6,
+   "pitch_mm": 22.0,
+   "r_internal_ohm": 0.022,
+   "r_tempco_per_c": -0.001,
+   "surface_area_m2": 0.004326994101605562,
+   "temp_limit_c": 60.0,
+   "temp_warn_c": 50.0
+  },
+  [
+   "DC internal resistance",
+   "specific heat"
+  ]
+ ],
+ "spec.Molicel INR-21700-P42A": [
+  {
+   "capacity_ah": 4.2,
+   "diameter_mm": 21.7,
+   "length_mm": 70.2,
+   "mass_g": 70.0,
+   "max_continuous_a": 45.0,
+   "name": "Molicel INR-21700-P42A",
+   "nominal_v": 3.6,
+   "r_ac_1khz_ohm": 0.01,
+   "r_dc_ohm": 0.016,
+   "source": "Molicel P42A datasheet V4 (80092): 4200 mAh typical, 45 A continuous, 70 g max, 21.7 x 70.2 mm max, AC 1 kHz 10 mΩ, DC 10 A/1 s 16 mΩ. https://www.rcscomponents.kiev.ua/datasheets/INR21700P42A-V4-80092.pdf"
+  },
+  0.005525386035243924
+ ],
+ "spec.Molicel INR-21700-P45B": [
+  {
+   "capacity_ah": 4.5,
+   "diameter_mm": 21.4,
+   "length_mm": 70.0,
+   "mass_g": 70.0,
+   "max_continuous_a": 45.0,
+   "name": "Molicel INR-21700-P45B",
+   "nominal_v": 3.6,
+   "r_ac_1khz_ohm": 0.008,
+   "r_dc_ohm": null,
+   "source": "Molicel P45B datasheet: 4.5 Ah typical, 45 A continuous, 70.0 g max, 21.40 x 70.00 mm, AC 1 kHz <= 8 mΩ (no DC value given). https://www.kronium.cz/uploads/p45b-datasheet.pdf"
+  },
+  0.005425467680896501
+ ],
+ "spec.Samsung INR21700-40T": [
+  {
+   "capacity_ah": 4.0,
+   "diameter_mm": 21.22,
+   "length_mm": 70.3,
+   "mass_g": 70.0,
+   "max_continuous_a": 35.0,
+   "name": "Samsung INR21700-40T",
+   "nominal_v": 3.6,
+   "r_ac_1khz_ohm": null,
+   "r_dc_ohm": null,
+   "source": "Samsung SDI INR21700-40T datasheet: 4000 mAh min standard, 35 A continuous without temperature cut (45 A with an 80 °C cut), 70.0 g max, 21.22 x 70.30 mm max; no resistance given. https://cdn.simpower.co.nz/wp-content/uploads/2021/09/INR21700-40T.pdf"
+  },
+  0.005393832471193383
+ ],
+ "spec.Sony/Murata US18650VTC6": [
+  {
+   "capacity_ah": 3.13,
+   "diameter_mm": 18.5,
+   "length_mm": 65.2,
+   "mass_g": 46.5,
+   "max_continuous_a": null,
+   "name": "Sony/Murata US18650VTC6",
+   "nominal_v": 3.6,
+   "r_ac_1khz_ohm": null,
+   "r_dc_ohm": null,
+   "source": "Sony US18650VTC6 datasheet: 3130 mAh at 0.2C, 46.5 g average, 18.50 x 65.20 mm max; no continuous rating and no resistance value given. https://www.kronium.cz/uploads/SONY_US18650VTC6.pdf"
+  },
+  0.004326994101605562
+ ],
+ "unknown": "'Nope 99'"
+}
