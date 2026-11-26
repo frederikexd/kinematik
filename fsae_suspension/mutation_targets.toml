@@ -696,3 +696,14 @@ tests = [
     "tests/test_accumulator_harness_benchmark.py",
 ]
 deselect = ["tests/test_accumulator_harness_benchmark.py::test_the_references_are_the_registered_ones"]   # reads docs/, outside mutmut's copy
+
+[[group]]
+name = "pcb_altium"
+files = ["suspension/pcb_altium.py"]
+tests = [
+    "tests/test_mutation_pcb_altium.py",
+    "tests/test_mutation_pcb_doctor.py",
+    "tests/test_pcb_doctor.py",
+    "tests/test_pcb_upload_fuzz.py",
+]
+deselect = []

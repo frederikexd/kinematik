@@ -86,7 +86,7 @@ def _default_unit(text: str) -> str:
     return "mm" if mms > mils else "mil"
 
 
-def _len_mm(raw, default_unit: str = "mil"):
+def _len_mm(raw, default_unit: str):
     """`'11.811mil'` → 0.3 (mm). None if it isn't a length."""
     if raw is None:
         return None
@@ -94,16 +94,16 @@ def _len_mm(raw, default_unit: str = "mil"):
     if not m:
         return None
     unit = (m.group(2) or default_unit).lower()
-    return float(m.group(1)) * UNIT_MM.get(unit, 0.0254)
+    return float(m.group(1)) * UNIT_MM[unit]
 
 
 def _len_unit(raw, default_unit: str = "mil"):
     """`'11.811mil'` → (0.0254, 'mil') — the scale and suffix to write back."""
-    m = _LEN_RE.match(str(raw or ""))
+    m = _LEN_RE.match(str(raw))                 # None reads as "None", which is no length
     unit = (m.group(2) if m and m.group(2) else "").lower()
     if not unit:
-        return UNIT_MM.get(default_unit, 0.0254), ""
-    return UNIT_MM.get(unit, 0.0254), unit
+        return UNIT_MM[default_unit], ""
+    return UNIT_MM[unit], unit
 
 
 # --------------------------------------------------------------------------- #
@@ -143,14 +143,14 @@ def altium_layer_to_kicad(name):
 
 
 def _is_plane(name) -> bool:
-    return bool(_PLANE_RE.match(re.sub(r"[\s_\-]", "", str(name or "")).upper()))
+    return bool(_PLANE_RE.match(re.sub(r"[\s_\-]", "", str(name)).upper()))
 
 
 def _order_layers(found: set) -> list:
     """F.Cu, then inner layers in numeric order, then B.Cu — the stackup order
     a person expects, not set order."""
     inner = sorted((l for l in found if l.startswith("In")),
-                   key=lambda l: int(re.sub(r"\D", "", l) or 0))
+                   key=lambda l: int(re.sub(r"\D", "", l)))
     out = (["F.Cu"] if "F.Cu" in found else []) + inner
     if "B.Cu" in found:
         out.append("B.Cu")
@@ -202,11 +202,7 @@ def outline_from_fields(f: dict, unit: str) -> list:
     """
     pts, i = [], 0
     while True:
-        vx = _g(f, f"VX{i}")
-        vy = _g(f, f"VY{i}")
-        if vx is None or vy is None:
-            break
-        x, y = _len_mm(vx, unit), _len_mm(vy, unit)
+        x, y = _len_mm(_g(f, f"VX{i}"), unit), _len_mm(_g(f, f"VY{i}"), unit)   # a missing key reads None
         if x is None or y is None:
             break
         pts.append((x, -y))
@@ -215,7 +211,7 @@ def outline_from_fields(f: dict, unit: str) -> list:
 
 
 def _truthy(raw) -> bool:
-    return str(raw or "").strip().upper() in ("TRUE", "1", "YES")
+    return raw is not None and str(raw).strip().upper() in ("TRUE", "1", "YES")
 
 
 def _int(raw, default=None):
@@ -228,7 +224,7 @@ def _int(raw, default=None):
 def is_altium_ascii(text: str) -> bool:
     """True if this text looks like an Altium/Protel ASCII PCB."""
     head = text[:20000]
-    return bool(re.search(r"\|RECORD=", head, re.I))
+    return "|RECORD=" in head.upper()
 
 
 # --------------------------------------------------------------------------- #
@@ -253,8 +249,8 @@ def parse_altium_ascii(text: str) -> PcbBoard:
     pos = 0
     for line in text.splitlines(keepends=True):
         if _RECORD_RE.match(line):
-            f = _fields(line.rstrip("\r\n"), pos)
-            kind = re.sub(r"\W", "", (_g(f, "RECORD") or "")).upper()
+            f = _fields(line.rstrip("\r\n"), pos)  # pragma: no mutate (a line ending left on the last field is read the same: every reader strips or matches \s*$)
+            kind = re.sub(r"\W", "", _g(f, "RECORD")).upper()   # the line matched |RECORD=, so the key is there
             records.append((kind, f))
         pos += len(line)
 
@@ -319,7 +315,7 @@ def parse_altium_ascii(text: str) -> PcbBoard:
             ref=(_g(f, "SOURCEDESIGNATOR", "DESIGNATOR", "NAME") or "?").strip(),
             value=(_g(f, "COMMENT", "SOURCECOMMENT", "VALUE",
                       "SOURCEDESCRIPTION") or "").strip(),
-            layer=layer if layer in ("F.Cu", "B.Cu") else "F.Cu",
+            layer=layer if layer == "B.Cu" else "F.Cu",
             at=(x, -y)))
     # Free pads — Altium allows pads that belong to no component (castellations,
     # antenna feeds, test points), and a real board is full of them. They are
@@ -328,7 +324,7 @@ def parse_altium_ascii(text: str) -> PcbBoard:
     loose = PcbFootprint(ref="?", value="free pads (no component)", layer="F.Cu",
                          at=(0.0, 0.0))
 
-    found_layers, plane_nets = set(), set()
+    found_layers = set()
     n_region = 0
 
     # --- pass 2: geometry ---------------------------------------------------- #
@@ -348,7 +344,7 @@ def parse_altium_ascii(text: str) -> PcbBoard:
             board.segments.append(PcbSegment(
                 net=net_id(_g(f, "NET")), layer=layer, width_mm=w,
                 start=(x1, -y1), end=(x2, -y2),
-                width_span=_span(f, "WIDTH") or (0, 0),
+                width_span=_span(f, "WIDTH"),        # WIDTH is there: w was read from it
                 width_scale_mm=scale, width_unit=suffix))
 
         elif kind == "ARC":
@@ -360,7 +356,7 @@ def parse_altium_ascii(text: str) -> PcbBoard:
             r = _len_mm(_g(f, "RADIUS"), unit)
             wraw = _g(f, "WIDTH")
             w = _len_mm(wraw, unit)
-            if None in (cx, cy, r) or not w or r <= 0:
+            if None in (cx, cy, r) or not w or r <= 0:  # pragma: no mutate (a zero-radius arc chords to nothing either way)
                 continue
             try:
                 a0 = float(_g(f, "STARTANGLE") or 0.0)
@@ -373,7 +369,7 @@ def parse_altium_ascii(text: str) -> PcbBoard:
             board.segments.extend(_chord_segments(
                 [(px, -py) for px, py in pts],
                 net=net_id(_g(f, "NET")), layer=layer, width_mm=w,
-                width_span=_span(f, "WIDTH") or (0, 0),
+                width_span=_span(f, "WIDTH"),
                 width_scale_mm=scale, width_unit=suffix))
 
         elif kind == "VIA":
@@ -406,13 +402,13 @@ def parse_altium_ascii(text: str) -> PcbBoard:
             sx = _len_mm(_g(f, "XSIZE", "TOPXSIZE", "SIZEX"), unit) or 1.0
             sy = _len_mm(_g(f, "YSIZE", "TOPYSIZE", "SIZEY"), unit) or 1.0
             nid = net_id(_g(f, "NET"))
-            _shp = (_g(f, "SHAPE", "TOPSHAPE") or "").upper()
+            _shp = str(_g(f, "SHAPE", "TOPSHAPE")).upper()   # a missing shape reads "NONE": no shape
             try:
                 _rot = float(_g(f, "ROTATION") or 0.0)
             except ValueError:
                 _rot = 0.0
             pad = PcbPad(number=(_g(f, "NAME", "DESIGNATOR") or "?").strip(),
-                         net=nid, net_name=board.nets.get(nid, ""),
+                         net=nid, net_name=board.nets[nid],
                          at=(x, -y), size=(sx, sy), through=through,
                          layer=(layer if layer in ("F.Cu", "B.Cu")
                                 else ("" if through else "F.Cu")),
@@ -422,7 +418,7 @@ def parse_altium_ascii(text: str) -> PcbBoard:
                                 "roundrect" if "ROUNDED" in _shp else
                                 "rect" if _shp.startswith("RECT") else ""),
                          angle_deg=_rot)
-            ci = _int(_g(f, "COMPONENT"), -1)
+            ci = _int(_g(f, "COMPONENT"))
             (comps[ci] if (ci is not None and 0 <= ci < len(comps))
              else loose).pads.append(pad)
             if layer in ("F.Cu", "B.Cu"):
@@ -448,8 +444,6 @@ def parse_altium_ascii(text: str) -> PcbBoard:
             layer = altium_layer_to_kicad(_g(f, "LAYER"))
             if layer and layer != MULTILAYER:
                 found_layers.add(layer)
-            if _is_plane(_g(f, "LAYER")) and nid:
-                plane_nets.add(nid)
             if nid and layer and layer != MULTILAYER:
                 _o = outline_from_fields(f, unit)
                 if len(_o) >= 3:
@@ -491,7 +485,6 @@ def parse_altium_ascii(text: str) -> PcbBoard:
     board.footprints = [c for c in comps if c.pads or c.ref != "?"]
     if loose.pads:
         board.footprints.append(loose)
-    board.zone_nets |= plane_nets
 
     # --- layer bookkeeping: canonical for the physics, native for the human -- #
     board.copper_layers = _order_layers(found_layers)
@@ -575,7 +568,7 @@ ALTIUM_BINARY_HELP = (
 def is_altium_binary(data) -> bool:
     """True for a native binary .PcbDoc (OLE compound document)."""
     if isinstance(data, str):
-        data = data.encode("utf-8", errors="replace")[:8]
+        data = data.encode("utf-8", errors="replace")[:8]  # pragma: no mutate (text never starts with the OLE bytes: their UTF-8 is longer, so any slice and handler read False)
     return bytes(data)[:8] == OLE_MAGIC
 
 
@@ -590,7 +583,7 @@ _DEMO_Y0_MM = 60.0        # Altium Y origin, so the flip lands on the same board
 
 
 def _mil(mm: float) -> str:
-    return f"{mm / 0.0254:.4f}".rstrip("0").rstrip(".") + "mil"
+    return re.sub(r"\.?0+$", "", f"{mm / 0.0254:.4f}") + "mil"     # 10.0000 -> 10, 39.3701 stays
 
 
 def _xy(x_mm: float, y_mm: float, px="X", py="Y") -> str:

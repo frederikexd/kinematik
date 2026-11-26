@@ -1,0 +1,4102 @@
+{
+"unitless": {
+"nets": {
+"0": "",
+"1": "GND",
+"2": "VBAT"
+},
+"segments": [
+{
+"net": 2,
+"layer": "F.Cu",
+"width_mm": 0.381,
+"start": [
+0.0,
+-0.0
+],
+"end": [
+10.16,
+-0.0
+],
+"width_span": [
+778,
+780
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": false,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.508,
+"start": [
+0.0,
+-1.27
+],
+"end": [
+10.16,
+-1.27
+],
+"width_span": [
+945,
+947
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": false,
+"arc_id": -1
+},
+{
+"net": 2,
+"layer": "F.Cu",
+"width_mm": 0.254,
+"start": [
+5.97802561,
+-5.97802561
+],
+"end": [
+5.80844207,
+-6.1203231
+],
+"width_span": [
+1005,
+1007
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 2,
+"layer": "F.Cu",
+"width_mm": 0.254,
+"start": [
+5.80844207,
+-6.1203231
+],
+"end": [
+5.61672519,
+-6.23101089
+],
+"width_span": [
+1005,
+1007
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 2,
+"layer": "F.Cu",
+"width_mm": 0.254,
+"start": [
+5.61672519,
+-6.23101089
+],
+"end": [
+5.40870019,
+-6.3067258
+],
+"width_span": [
+1005,
+1007
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 2,
+"layer": "F.Cu",
+"width_mm": 0.254,
+"start": [
+5.40870019,
+-6.3067258
+],
+"end": [
+5.19068779,
+-6.34516727
+],
+"width_span": [
+1005,
+1007
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 2,
+"layer": "F.Cu",
+"width_mm": 0.254,
+"start": [
+5.19068779,
+-6.34516727
+],
+"end": [
+4.96931221,
+-6.34516727
+],
+"width_span": [
+1005,
+1007
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 2,
+"layer": "F.Cu",
+"width_mm": 0.254,
+"start": [
+4.96931221,
+-6.34516727
+],
+"end": [
+4.75129981,
+-6.3067258
+],
+"width_span": [
+1005,
+1007
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 2,
+"layer": "F.Cu",
+"width_mm": 0.254,
+"start": [
+4.75129981,
+-6.3067258
+],
+"end": [
+4.54327481,
+-6.23101089
+],
+"width_span": [
+1005,
+1007
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 2,
+"layer": "F.Cu",
+"width_mm": 0.254,
+"start": [
+4.54327481,
+-6.23101089
+],
+"end": [
+4.35155793,
+-6.1203231
+],
+"width_span": [
+1005,
+1007
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 2,
+"layer": "F.Cu",
+"width_mm": 0.254,
+"start": [
+4.35155793,
+-6.1203231
+],
+"end": [
+4.18197439,
+-5.97802561
+],
+"width_span": [
+1005,
+1007
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+7.112,
+-6.35
+],
+"end": [
+7.10042351,
+-6.48231991
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+7.10042351,
+-6.48231991
+],
+"end": [
+7.06604578,
+-6.61061935
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+7.06604578,
+-6.61061935
+],
+"end": [
+7.00991136,
+-6.731
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+7.00991136,
+-6.731
+],
+"end": [
+6.93372587,
+-6.83980416
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+6.93372587,
+-6.83980416
+],
+"end": [
+6.83980416,
+-6.93372587
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+6.83980416,
+-6.93372587
+],
+"end": [
+6.731,
+-7.00991136
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+6.731,
+-7.00991136
+],
+"end": [
+6.61061935,
+-7.06604578
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+6.61061935,
+-7.06604578
+],
+"end": [
+6.48231991,
+-7.10042351
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+6.48231991,
+-7.10042351
+],
+"end": [
+6.35,
+-7.112
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+6.35,
+-7.112
+],
+"end": [
+6.21768009,
+-7.10042351
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+6.21768009,
+-7.10042351
+],
+"end": [
+6.08938065,
+-7.06604578
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+6.08938065,
+-7.06604578
+],
+"end": [
+5.969,
+-7.00991136
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+5.969,
+-7.00991136
+],
+"end": [
+5.86019584,
+-6.93372587
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+5.86019584,
+-6.93372587
+],
+"end": [
+5.76627413,
+-6.83980416
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+5.76627413,
+-6.83980416
+],
+"end": [
+5.69008864,
+-6.731
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+5.69008864,
+-6.731
+],
+"end": [
+5.63395422,
+-6.61061935
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+5.63395422,
+-6.61061935
+],
+"end": [
+5.59957649,
+-6.48231991
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+5.59957649,
+-6.48231991
+],
+"end": [
+5.588,
+-6.35
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+5.588,
+-6.35
+],
+"end": [
+5.59957649,
+-6.21768009
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+5.59957649,
+-6.21768009
+],
+"end": [
+5.63395422,
+-6.08938065
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+5.63395422,
+-6.08938065
+],
+"end": [
+5.69008864,
+-5.969
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+5.69008864,
+-5.969
+],
+"end": [
+5.76627413,
+-5.86019584
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+5.76627413,
+-5.86019584
+],
+"end": [
+5.86019584,
+-5.76627413
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+5.86019584,
+-5.76627413
+],
+"end": [
+5.969,
+-5.69008864
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+5.969,
+-5.69008864
+],
+"end": [
+6.08938065,
+-5.63395422
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+6.08938065,
+-5.63395422
+],
+"end": [
+6.21768009,
+-5.59957649
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+6.21768009,
+-5.59957649
+],
+"end": [
+6.35,
+-5.588
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+6.35,
+-5.588
+],
+"end": [
+6.48231991,
+-5.59957649
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+6.48231991,
+-5.59957649
+],
+"end": [
+6.61061935,
+-5.63395422
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+6.61061935,
+-5.63395422
+],
+"end": [
+6.731,
+-5.69008864
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+6.731,
+-5.69008864
+],
+"end": [
+6.83980416,
+-5.76627413
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+6.83980416,
+-5.76627413
+],
+"end": [
+6.93372587,
+-5.86019584
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+6.93372587,
+-5.86019584
+],
+"end": [
+7.00991136,
+-5.969
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+7.00991136,
+-5.969
+],
+"end": [
+7.06604578,
+-6.08938065
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+7.06604578,
+-6.08938065
+],
+"end": [
+7.10042351,
+-6.21768009
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.2032,
+"start": [
+7.10042351,
+-6.21768009
+],
+"end": [
+7.112,
+-6.35
+],
+"width_span": [
+1276,
+1277
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+}
+],
+"vias": [
+{
+"net": 2,
+"at": [
+2.54,
+-7.62
+],
+"size_mm": 0.762,
+"drill_mm": 0.3556,
+"layers": [
+"F.Cu",
+"B.Cu"
+]
+},
+{
+"net": 2,
+"at": [
+5.08,
+-7.62
+],
+"size_mm": 0.7112,
+"drill_mm": 0.381,
+"layers": [
+"In2.Cu",
+"B.Cu"
+]
+},
+{
+"net": 1,
+"at": [
+7.62,
+-7.62
+],
+"size_mm": 0.6604,
+"drill_mm": 0.2794,
+"layers": [
+"F.Cu",
+"B.Cu"
+]
+}
+],
+"footprints": [
+{
+"ref": "U7",
+"value": "regulator",
+"layer": "B.Cu",
+"at": [
+0.0,
+-0.0
+],
+"pads": [
+{
+"number": "1",
+"net": 2,
+"net_name": "VBAT",
+"at": [
+2.54,
+-2.54
+],
+"size": [
+1.016,
+0.762
+],
+"through": true,
+"layer": "B.Cu",
+"shape": "roundrect",
+"angle_deg": 30.0,
+"copper_offset": [
+0.0,
+0.0
+],
+"primitives": [],
+"rratio": 0.25
+},
+{
+"number": "2",
+"net": 2,
+"net_name": "VBAT",
+"at": [
+5.08,
+-2.54
+],
+"size": [
+1.27,
+0.508
+],
+"through": true,
+"layer": "F.Cu",
+"shape": "rect",
+"angle_deg": 0.0,
+"copper_offset": [
+0.0,
+0.0
+],
+"primitives": [],
+"rratio": 0.25
+}
+]
+},
+{
+"ref": "U8",
+"value": "v",
+"layer": "F.Cu",
+"at": [
+2.54,
+-5.08
+],
+"pads": [
+{
+"number": "3",
+"net": 1,
+"net_name": "GND",
+"at": [
+7.62,
+-2.54
+],
+"size": [
+1.524,
+1.524
+],
+"through": true,
+"layer": "",
+"shape": "",
+"angle_deg": 0.0,
+"copper_offset": [
+0.0,
+0.0
+],
+"primitives": [],
+"rratio": 0.25
+},
+{
+"number": "4",
+"net": 1,
+"net_name": "GND",
+"at": [
+10.16,
+-2.54
+],
+"size": [
+1.0,
+1.0
+],
+"through": false,
+"layer": "F.Cu",
+"shape": "",
+"angle_deg": 0.0,
+"copper_offset": [
+0.0,
+0.0
+],
+"primitives": [],
+"rratio": 0.25
+}
+]
+},
+{
+"ref": "?",
+"value": "free pads (no component)",
+"layer": "F.Cu",
+"at": [
+0.0,
+0.0
+],
+"pads": [
+{
+"number": "5",
+"net": 2,
+"net_name": "VBAT",
+"at": [
+12.7,
+-2.54
+],
+"size": [
+0.508,
+0.508
+],
+"through": false,
+"layer": "F.Cu",
+"shape": "",
+"angle_deg": 0.0,
+"copper_offset": [
+0.0,
+0.0
+],
+"primitives": [],
+"rratio": 0.25
+}
+]
+}
+],
+"zone_nets": [
+1,
+2
+],
+"zones": [
+{
+"net": 2,
+"layer": "F.Cu",
+"outline": [
+[
+0.0,
+-0.0
+],
+[
+2.54,
+-0.0
+],
+[
+2.54,
+-2.54
+]
+],
+"spoke_mm": 0.5,
+"stroke_mm": 0.0
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"outline": [
+[
+0.0,
+-0.0
+],
+[
+0.254,
+-0.0
+],
+[
+0.254,
+-0.254
+]
+],
+"spoke_mm": 0.5,
+"stroke_mm": 0.0
+}
+],
+"copper_layers": [
+"F.Cu",
+"In2.Cu",
+"In3.Cu",
+"B.Cu"
+],
+"board_thickness_mm": 1.1938,
+"copper_oz": 1.0,
+"fmt": "altium",
+"patchable": true,
+"length_unit": "mil",
+"native_layers": {
+"F.Cu": "Top Layer",
+"B.Cu": "Bottom Layer",
+"In2.Cu": "Mid Layer 2",
+"In3.Cu": "Mid Layer 3"
+},
+"notes": [
+"Net references resolved against the ID field on each |RECORD=Net| (this export numbers nets from 0).",
+"Lengths without a unit suffix read as mil; widths are written back in the unit the file used, so the patched board stays imperial.",
+"3 Region/Fill shapes read. Those attached to a net count as pours (so the net is not falsely called open); keepouts, board cutouts and teardrops are excluded. Pour *geometry* is still not meshed, so resistance stays trace-only and conservative.",
+"Routed arcs were chorded into straight segments so connectivity and length are right; each arc still has one width token, patched once."
+]
+},
+"thick": {
+"nets": {
+"0": ""
+},
+"segments": [
+{
+"net": 0,
+"layer": "F.Cu",
+"width_mm": 0.2,
+"start": [
+0.0,
+-0.0
+],
+"end": [
+1.0,
+-0.0
+],
+"width_span": [
+88,
+93
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": false,
+"arc_id": -1
+}
+],
+"vias": [],
+"footprints": [],
+"zone_nets": [],
+"zones": [],
+"copper_layers": [
+"F.Cu"
+],
+"board_thickness_mm": 1.6,
+"copper_oz": 1.0,
+"fmt": "altium",
+"patchable": true,
+"length_unit": "mm",
+"native_layers": {
+"F.Cu": "Top Layer",
+"B.Cu": "Bottom Layer"
+},
+"notes": [
+"This export's Net records carry no usable ID, so net references were resolved 0-based against file order \u2014 check a familiar net name in the current table; if the names look shifted, do not trust the diagnosis.",
+"Board thickness not stated in the export \u2014 assumed 1.6 mm, which only affects via-barrel length. Set your real stackup thickness if it differs.",
+"Lengths without a unit suffix read as mm; widths are written back in the unit the file used, so the patched board stays metric."
+]
+},
+"aliases": {
+"nets": {
+"0": "",
+"1": "A",
+"2": "B",
+"3": "",
+"4": "FOX"
+},
+"segments": [
+{
+"net": 2,
+"layer": "In10.Cu",
+"width_mm": 0.3,
+"start": [
+0.0,
+-0.0
+],
+"end": [
+5.0,
+-0.0
+],
+"width_span": [
+750,
+755
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": false,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "In2.Cu",
+"width_mm": 0.3048,
+"start": [
+0.0,
+-1.0
+],
+"end": [
+5.0,
+-1.0
+],
+"width_span": [
+829,
+834
+],
+"width_scale_mm": 0.0254,
+"width_unit": "mil",
+"from_arc": false,
+"arc_id": -1
+},
+{
+"net": 0,
+"layer": "F.Cu",
+"width_mm": 8.0,
+"start": [
+0.0,
+-3.0
+],
+"end": [
+5.0,
+-3.0
+],
+"width_span": [
+978,
+979
+],
+"width_scale_mm": 1.0,
+"width_unit": "",
+"from_arc": false,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "B.Cu",
+"width_mm": 0.25,
+"start": [
+8.0,
+-6.0
+],
+"end": [
+7.96961551,
+-6.34729636
+],
+"width_span": [
+1059,
+1065
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "B.Cu",
+"width_mm": 0.25,
+"start": [
+7.96961551,
+-6.34729636
+],
+"end": [
+7.87938524,
+-6.68404029
+],
+"width_span": [
+1059,
+1065
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "B.Cu",
+"width_mm": 0.25,
+"start": [
+7.87938524,
+-6.68404029
+],
+"end": [
+7.73205081,
+-7.0
+],
+"width_span": [
+1059,
+1065
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "B.Cu",
+"width_mm": 0.25,
+"start": [
+7.73205081,
+-7.0
+],
+"end": [
+7.53208889,
+-7.28557522
+],
+"width_span": [
+1059,
+1065
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "B.Cu",
+"width_mm": 0.25,
+"start": [
+7.53208889,
+-7.28557522
+],
+"end": [
+7.28557522,
+-7.53208889
+],
+"width_span": [
+1059,
+1065
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "B.Cu",
+"width_mm": 0.25,
+"start": [
+7.28557522,
+-7.53208889
+],
+"end": [
+7.0,
+-7.73205081
+],
+"width_span": [
+1059,
+1065
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "B.Cu",
+"width_mm": 0.25,
+"start": [
+7.0,
+-7.73205081
+],
+"end": [
+6.68404029,
+-7.87938524
+],
+"width_span": [
+1059,
+1065
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "B.Cu",
+"width_mm": 0.25,
+"start": [
+6.68404029,
+-7.87938524
+],
+"end": [
+6.34729636,
+-7.96961551
+],
+"width_span": [
+1059,
+1065
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "B.Cu",
+"width_mm": 0.25,
+"start": [
+6.34729636,
+-7.96961551
+],
+"end": [
+6.0,
+-8.0
+],
+"width_span": [
+1059,
+1065
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+7.0,
+-6.0
+],
+"end": [
+6.98480775,
+-6.17364818
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+6.98480775,
+-6.17364818
+],
+"end": [
+6.93969262,
+-6.34202014
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+6.93969262,
+-6.34202014
+],
+"end": [
+6.8660254,
+-6.5
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+6.8660254,
+-6.5
+],
+"end": [
+6.76604444,
+-6.64278761
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+6.76604444,
+-6.64278761
+],
+"end": [
+6.64278761,
+-6.76604444
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+6.64278761,
+-6.76604444
+],
+"end": [
+6.5,
+-6.8660254
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+6.5,
+-6.8660254
+],
+"end": [
+6.34202014,
+-6.93969262
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+6.34202014,
+-6.93969262
+],
+"end": [
+6.17364818,
+-6.98480775
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+6.17364818,
+-6.98480775
+],
+"end": [
+6.0,
+-7.0
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+6.0,
+-7.0
+],
+"end": [
+5.82635182,
+-6.98480775
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+5.82635182,
+-6.98480775
+],
+"end": [
+5.65797986,
+-6.93969262
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+5.65797986,
+-6.93969262
+],
+"end": [
+5.5,
+-6.8660254
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+5.5,
+-6.8660254
+],
+"end": [
+5.35721239,
+-6.76604444
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+5.35721239,
+-6.76604444
+],
+"end": [
+5.23395556,
+-6.64278761
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+5.23395556,
+-6.64278761
+],
+"end": [
+5.1339746,
+-6.5
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+5.1339746,
+-6.5
+],
+"end": [
+5.06030738,
+-6.34202014
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+5.06030738,
+-6.34202014
+],
+"end": [
+5.01519225,
+-6.17364818
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+5.01519225,
+-6.17364818
+],
+"end": [
+5.0,
+-6.0
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+5.0,
+-6.0
+],
+"end": [
+5.01519225,
+-5.82635182
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+5.01519225,
+-5.82635182
+],
+"end": [
+5.06030738,
+-5.65797986
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+5.06030738,
+-5.65797986
+],
+"end": [
+5.1339746,
+-5.5
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+5.1339746,
+-5.5
+],
+"end": [
+5.23395556,
+-5.35721239
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+5.23395556,
+-5.35721239
+],
+"end": [
+5.35721239,
+-5.23395556
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+5.35721239,
+-5.23395556
+],
+"end": [
+5.5,
+-5.1339746
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+5.5,
+-5.1339746
+],
+"end": [
+5.65797986,
+-5.06030738
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+5.65797986,
+-5.06030738
+],
+"end": [
+5.82635182,
+-5.01519225
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+5.82635182,
+-5.01519225
+],
+"end": [
+6.0,
+-5.0
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+6.0,
+-5.0
+],
+"end": [
+6.17364818,
+-5.01519225
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+6.17364818,
+-5.01519225
+],
+"end": [
+6.34202014,
+-5.06030738
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+6.34202014,
+-5.06030738
+],
+"end": [
+6.5,
+-5.1339746
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+6.5,
+-5.1339746
+],
+"end": [
+6.64278761,
+-5.23395556
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+6.64278761,
+-5.23395556
+],
+"end": [
+6.76604444,
+-5.35721239
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+6.76604444,
+-5.35721239
+],
+"end": [
+6.8660254,
+-5.5
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+6.8660254,
+-5.5
+],
+"end": [
+6.93969262,
+-5.65797986
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+6.93969262,
+-5.65797986
+],
+"end": [
+6.98480775,
+-5.82635182
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.25,
+"start": [
+6.98480775,
+-5.82635182
+],
+"end": [
+7.0,
+-6.0
+],
+"width_span": [
+1149,
+1155
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": true,
+"arc_id": -1
+}
+],
+"vias": [
+{
+"net": 3,
+"at": [
+3.0,
+-3.0
+],
+"size_mm": 0.8,
+"drill_mm": 0.4,
+"layers": [
+"F.Cu",
+"In10.Cu"
+]
+},
+{
+"net": 2,
+"at": [
+4.0,
+-3.0
+],
+"size_mm": 0.6,
+"drill_mm": 0.3,
+"layers": [
+"F.Cu",
+"B.Cu"
+]
+}
+],
+"footprints": [
+{
+"ref": "U1",
+"value": "chip",
+"layer": "B.Cu",
+"at": [
+10.0,
+-5.0
+],
+"pads": [
+{
+"number": "3",
+"net": 2,
+"net_name": "B",
+"at": [
+10.0,
+-5.0
+],
+"size": [
+1.0,
+2.0
+],
+"through": false,
+"layer": "B.Cu",
+"shape": "",
+"angle_deg": 0.0,
+"copper_offset": [
+0.0,
+0.0
+],
+"primitives": [],
+"rratio": 0.25
+}
+]
+},
+{
+"ref": "J1",
+"value": "conn",
+"layer": "F.Cu",
+"at": [
+1.0,
+-1.0
+],
+"pads": []
+},
+{
+"ref": "R9",
+"value": "R=10k",
+"layer": "F.Cu",
+"at": [
+3.0,
+-4.0
+],
+"pads": []
+},
+{
+"ref": "?",
+"value": "free pads (no component)",
+"layer": "F.Cu",
+"at": [
+0.0,
+0.0
+],
+"pads": [
+{
+"number": "1",
+"net": 0,
+"net_name": "",
+"at": [
+2.0,
+-2.0
+],
+"size": [
+1.5,
+1.5
+],
+"through": true,
+"layer": "",
+"shape": "round",
+"angle_deg": 45.0,
+"copper_offset": [
+0.0,
+0.0
+],
+"primitives": [],
+"rratio": 0.25
+},
+{
+"number": "2",
+"net": 0,
+"net_name": "",
+"at": [
+4.0,
+-4.0
+],
+"size": [
+1.0,
+1.0
+],
+"through": false,
+"layer": "F.Cu",
+"shape": "",
+"angle_deg": 0.0,
+"copper_offset": [
+0.0,
+0.0
+],
+"primitives": [],
+"rratio": 0.25
+}
+]
+}
+],
+"zone_nets": [
+2,
+3
+],
+"zones": [
+{
+"net": 2,
+"layer": "In1.Cu",
+"outline": [
+[
+0.0,
+-0.0
+],
+[
+10.0,
+-0.0
+],
+[
+10.0,
+-10.0
+]
+],
+"spoke_mm": 0.5,
+"stroke_mm": 0.0
+},
+{
+"net": 2,
+"layer": "B.Cu",
+"outline": [
+[
+0.0,
+-0.0
+],
+[
+3.0,
+-0.0
+],
+[
+3.0,
+-3.0
+]
+],
+"spoke_mm": 0.5,
+"stroke_mm": 0.0
+}
+],
+"copper_layers": [
+"F.Cu",
+"In1.Cu",
+"In2.Cu",
+"In3.Cu",
+"In10.Cu",
+"B.Cu"
+],
+"board_thickness_mm": 1.2,
+"copper_oz": 1.0,
+"fmt": "altium",
+"patchable": true,
+"length_unit": "mm",
+"native_layers": {
+"F.Cu": "Top Layer",
+"B.Cu": "Bottom Layer",
+"In1.Cu": "Mid Layer 1",
+"In2.Cu": "Mid Layer 2",
+"In3.Cu": "Mid Layer 3",
+"In10.Cu": "Mid Layer 10"
+},
+"notes": [
+"This export's Net records carry no usable ID, so net references were resolved 0-based against file order \u2014 check a familiar net name in the current table; if the names look shifted, do not trust the diagnosis.",
+"Lengths without a unit suffix read as mm; widths are written back in the unit the file used, so the patched board stays metric.",
+"4 Region/Fill shapes read. Those attached to a net count as pours (so the net is not falsely called open); keepouts, board cutouts and teardrops are excluded. Pour *geometry* is still not meshed, so resistance stays trace-only and conservative.",
+"Routed arcs were chorded into straight segments so connectivity and length are right; each arc still has one width token, patched once."
+]
+},
+"ids_from_5": {
+"nets": {
+"0": "",
+"1": "P",
+"2": "Q"
+},
+"segments": [
+{
+"net": 2,
+"layer": "F.Cu",
+"width_mm": 0.254,
+"start": [
+0.0,
+-0.0
+],
+"end": [
+2.54,
+-0.0
+],
+"width_span": [
+108,
+110
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": false,
+"arc_id": -1
+},
+{
+"net": 0,
+"layer": "F.Cu",
+"width_mm": 0.254,
+"start": [
+0.0,
+-0.254
+],
+"end": [
+2.54,
+-0.254
+],
+"width_span": [
+172,
+177
+],
+"width_scale_mm": 0.0254,
+"width_unit": "mil",
+"from_arc": false,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "B.Cu",
+"width_mm": 1.0,
+"start": [
+0.0,
+-0.508
+],
+"end": [
+2.54,
+-0.508
+],
+"width_span": [
+242,
+245
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": false,
+"arc_id": -1
+},
+{
+"net": 0,
+"layer": "B.Cu",
+"width_mm": 0.254,
+"start": [
+0.0,
+-0.762
+],
+"end": [
+2.54,
+-0.762
+],
+"width_span": [
+304,
+306
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": false,
+"arc_id": -1
+}
+],
+"vias": [],
+"footprints": [],
+"zone_nets": [
+1
+],
+"zones": [
+{
+"net": 1,
+"layer": "B.Cu",
+"outline": [
+[
+0.0,
+-0.0
+],
+[
+2.54,
+-0.0
+],
+[
+2.54,
+-2.54
+]
+],
+"spoke_mm": 0.5,
+"stroke_mm": 0.0
+}
+],
+"copper_layers": [
+"F.Cu",
+"B.Cu"
+],
+"board_thickness_mm": 1.6,
+"copper_oz": 1.0,
+"fmt": "altium",
+"patchable": true,
+"length_unit": "mil",
+"native_layers": {
+"F.Cu": "Top Layer",
+"B.Cu": "Bottom Layer"
+},
+"notes": [
+"Net references resolved against the ID field on each |RECORD=Net| (this export numbers nets from 5).",
+"Board thickness not stated in the export \u2014 assumed 1.6 mm, which only affects via-barrel length. Set your real stackup thickness if it differs.",
+"Lengths without a unit suffix read as mil; widths are written back in the unit the file used, so the patched board stays imperial.",
+"1 Region/Fill shapes read. Those attached to a net count as pours (so the net is not falsely called open); keepouts, board cutouts and teardrops are excluded. Pour *geometry* is still not meshed, so resistance stays trace-only and conservative."
+]
+},
+"duplicate_ids": {
+"nets": {
+"0": "",
+"1": "P",
+"2": "Q"
+},
+"segments": [
+{
+"net": 2,
+"layer": "F.Cu",
+"width_mm": 0.2,
+"start": [
+0.0,
+-0.0
+],
+"end": [
+1.0,
+-0.0
+],
+"width_span": [
+116,
+121
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": false,
+"arc_id": -1
+}
+],
+"vias": [],
+"footprints": [],
+"zone_nets": [],
+"zones": [],
+"copper_layers": [
+"F.Cu"
+],
+"board_thickness_mm": 1.6,
+"copper_oz": 1.0,
+"fmt": "altium",
+"patchable": true,
+"length_unit": "mm",
+"native_layers": {
+"F.Cu": "Top Layer",
+"B.Cu": "Bottom Layer"
+},
+"notes": [
+"This export's Net records carry no usable ID, so net references were resolved 0-based against file order \u2014 check a familiar net name in the current table; if the names look shifted, do not trust the diagnosis.",
+"Board thickness not stated in the export \u2014 assumed 1.6 mm, which only affects via-barrel length. Set your real stackup thickness if it differs.",
+"Lengths without a unit suffix read as mm; widths are written back in the unit the file used, so the patched board stays metric."
+]
+},
+"tie": {
+"nets": {
+"0": ""
+},
+"segments": [
+{
+"net": 0,
+"layer": "F.Cu",
+"width_mm": 0.254,
+"start": [
+1.0,
+-0.0
+],
+"end": [
+2.54,
+-0.0
+],
+"width_span": [
+96,
+98
+],
+"width_scale_mm": 0.0254,
+"width_unit": "",
+"from_arc": false,
+"arc_id": -1
+}
+],
+"vias": [],
+"footprints": [],
+"zone_nets": [],
+"zones": [],
+"copper_layers": [
+"F.Cu"
+],
+"board_thickness_mm": 1.5748,
+"copper_oz": 1.0,
+"fmt": "altium",
+"patchable": true,
+"length_unit": "mil",
+"native_layers": {
+"F.Cu": "Top Layer",
+"B.Cu": "Bottom Layer"
+},
+"notes": [
+"This export's Net records carry no usable ID, so net references were resolved 0-based against file order \u2014 check a familiar net name in the current table; if the names look shifted, do not trust the diagnosis.",
+"Lengths without a unit suffix read as mil; widths are written back in the unit the file used, so the patched board stays imperial."
+]
+},
+"no_copper": {
+"nets": {
+"0": "",
+"1": "GND"
+},
+"segments": [],
+"vias": [],
+"footprints": [
+{
+"ref": "U1",
+"value": "",
+"layer": "F.Cu",
+"at": [
+1.0,
+-1.0
+],
+"pads": []
+}
+],
+"zone_nets": [],
+"zones": [],
+"copper_layers": [
+"F.Cu",
+"B.Cu"
+],
+"board_thickness_mm": 1.6,
+"copper_oz": 1.0,
+"fmt": "altium",
+"patchable": true,
+"length_unit": "mm",
+"native_layers": {
+"F.Cu": "Top Layer",
+"B.Cu": "Bottom Layer"
+},
+"notes": [
+"Net references resolved against the ID field on each |RECORD=Net| (this export numbers nets from 0).",
+"Board thickness not stated in the export \u2014 assumed 1.6 mm, which only affects via-barrel length. Set your real stackup thickness if it differs.",
+"Lengths without a unit suffix read as mm; widths are written back in the unit the file used, so the patched board stays metric."
+]
+},
+"demo": {
+"nets": {
+"0": "",
+"1": "GND",
+"2": "FAN_PWR",
+"3": "CAN_H",
+"4": "CAN_L",
+"5": "HV_INV_SENSE",
+"6": "LV_5V"
+},
+"segments": [
+{
+"net": 2,
+"layer": "F.Cu",
+"width_mm": 0.2999994,
+"start": [
+5.00000016,
+-49.9999991
+],
+"end": [
+17.9999996,
+-49.9999991
+],
+"width_span": [
+4306,
+4315
+],
+"width_scale_mm": 0.0254,
+"width_unit": "mil",
+"from_arc": false,
+"arc_id": -1
+},
+{
+"net": 2,
+"layer": "F.Cu",
+"width_mm": 0.2999994,
+"start": [
+21.9999992,
+-49.9999991
+],
+"end": [
+39.9999987,
+-49.9999991
+],
+"width_span": [
+4429,
+4438
+],
+"width_scale_mm": 0.0254,
+"width_unit": "mil",
+"from_arc": false,
+"arc_id": -1
+},
+{
+"net": 2,
+"layer": "F.Cu",
+"width_mm": 0.2999994,
+"start": [
+39.9999987,
+-49.9999991
+],
+"end": [
+39.9999987,
+-48.4999995
+],
+"width_span": [
+4553,
+4562
+],
+"width_scale_mm": 0.0254,
+"width_unit": "mil",
+"from_arc": false,
+"arc_id": -1
+},
+{
+"net": 2,
+"layer": "F.Cu",
+"width_mm": 0.2999994,
+"start": [
+39.9999987,
+-49.9999991
+],
+"end": [
+44.9999989,
+-49.9999991
+],
+"width_span": [
+4677,
+4686
+],
+"width_scale_mm": 0.0254,
+"width_unit": "mil",
+"from_arc": false,
+"arc_id": -1
+},
+{
+"net": 2,
+"layer": "B.Cu",
+"width_mm": 0.2999994,
+"start": [
+44.9999989,
+-49.9999991
+],
+"end": [
+69.9999997,
+-49.9999991
+],
+"width_span": [
+4804,
+4813
+],
+"width_scale_mm": 0.0254,
+"width_unit": "mil",
+"from_arc": false,
+"arc_id": -1
+},
+{
+"net": 3,
+"layer": "F.Cu",
+"width_mm": 0.1999996,
+"start": [
+5.00000016,
+-20.0000006
+],
+"end": [
+69.9999997,
+-20.0000006
+],
+"width_span": [
+4925,
+4933
+],
+"width_scale_mm": 0.0254,
+"width_unit": "mil",
+"from_arc": false,
+"arc_id": -1
+},
+{
+"net": 4,
+"layer": "F.Cu",
+"width_mm": 0.1999996,
+"start": [
+5.00000016,
+-18.5000011
+],
+"end": [
+54.9999992,
+-18.5000011
+],
+"width_span": [
+5045,
+5053
+],
+"width_scale_mm": 0.0254,
+"width_unit": "mil",
+"from_arc": false,
+"arc_id": -1
+},
+{
+"net": 4,
+"layer": "F.Cu",
+"width_mm": 0.1999996,
+"start": [
+54.9999992,
+-18.5000011
+],
+"end": [
+59.9999994,
+-13.9999999
+],
+"width_span": [
+5166,
+5174
+],
+"width_scale_mm": 0.0254,
+"width_unit": "mil",
+"from_arc": false,
+"arc_id": -1
+},
+{
+"net": 4,
+"layer": "F.Cu",
+"width_mm": 0.1999996,
+"start": [
+59.9999994,
+-13.9999999
+],
+"end": [
+68.0000012,
+-13.9999999
+],
+"width_span": [
+5287,
+5295
+],
+"width_scale_mm": 0.0254,
+"width_unit": "mil",
+"from_arc": false,
+"arc_id": -1
+},
+{
+"net": 4,
+"layer": "F.Cu",
+"width_mm": 0.1999996,
+"start": [
+68.0000012,
+-13.9999999
+],
+"end": [
+69.9999997,
+-18.5000011
+],
+"width_span": [
+5408,
+5416
+],
+"width_scale_mm": 0.0254,
+"width_unit": "mil",
+"from_arc": false,
+"arc_id": -1
+},
+{
+"net": 5,
+"layer": "F.Cu",
+"width_mm": 0.2499995,
+"start": [
+11.9999989,
+-26.9999993
+],
+"end": [
+11.9999989,
+-20.799999
+],
+"width_span": [
+5528,
+5537
+],
+"width_scale_mm": 0.0254,
+"width_unit": "mil",
+"from_arc": false,
+"arc_id": -1
+},
+{
+"net": 5,
+"layer": "F.Cu",
+"width_mm": 0.2499995,
+"start": [
+11.9999989,
+-20.799999
+],
+"end": [
+59.9999994,
+-20.799999
+],
+"width_span": [
+5649,
+5658
+],
+"width_scale_mm": 0.0254,
+"width_unit": "mil",
+"from_arc": false,
+"arc_id": -1
+},
+{
+"net": 5,
+"layer": "F.Cu",
+"width_mm": 0.2499995,
+"start": [
+59.9999994,
+-20.799999
+],
+"end": [
+59.9999994,
+-26.9999993
+],
+"width_span": [
+5772,
+5781
+],
+"width_scale_mm": 0.0254,
+"width_unit": "mil",
+"from_arc": false,
+"arc_id": -1
+},
+{
+"net": 6,
+"layer": "F.Cu",
+"width_mm": 0.499999,
+"start": [
+69.9999997,
+-47.0
+],
+"end": [
+69.9999997,
+-35.0000011
+],
+"width_span": [
+5896,
+5905
+],
+"width_scale_mm": 0.0254,
+"width_unit": "mil",
+"from_arc": false,
+"arc_id": -1
+}
+],
+"vias": [
+{
+"net": 2,
+"at": [
+44.9999989,
+-49.9999991
+],
+"size_mm": 0.5999988,
+"drill_mm": 0.2999994,
+"layers": [
+"F.Cu",
+"B.Cu"
+]
+},
+{
+"net": 2,
+"at": [
+69.9999997,
+-49.9999991
+],
+"size_mm": 0.5999988,
+"drill_mm": 0.2999994,
+"layers": [
+"F.Cu",
+"B.Cu"
+]
+}
+],
+"footprints": [
+{
+"ref": "J1",
+"value": "FanConn",
+"layer": "F.Cu",
+"at": [
+5.00000016,
+-49.9999991
+],
+"pads": [
+{
+"number": "1",
+"net": 2,
+"net_name": "FAN_PWR",
+"at": [
+5.00000016,
+-49.9999991
+],
+"size": [
+1.69999914,
+1.69999914
+],
+"through": true,
+"layer": "",
+"shape": "round",
+"angle_deg": 0.0,
+"copper_offset": [
+0.0,
+0.0
+],
+"primitives": [],
+"rratio": 0.25
+},
+{
+"number": "2",
+"net": 1,
+"net_name": "GND",
+"at": [
+5.00000016,
+-47.4599991
+],
+"size": [
+1.69999914,
+1.69999914
+],
+"through": true,
+"layer": "",
+"shape": "round",
+"angle_deg": 0.0,
+"copper_offset": [
+0.0,
+0.0
+],
+"primitives": [],
+"rratio": 0.25
+}
+]
+},
+{
+"ref": "U1",
+"value": "VNH7070",
+"layer": "F.Cu",
+"at": [
+69.9999997,
+-49.9999991
+],
+"pads": [
+{
+"number": "1",
+"net": 2,
+"net_name": "FAN_PWR",
+"at": [
+69.9999997,
+-49.9999991
+],
+"size": [
+2.00000108,
+2.00000108
+],
+"through": false,
+"layer": "F.Cu",
+"shape": "rect",
+"angle_deg": 0.0,
+"copper_offset": [
+0.0,
+0.0
+],
+"primitives": [],
+"rratio": 0.25
+},
+{
+"number": "2",
+"net": 6,
+"net_name": "LV_5V",
+"at": [
+69.9999997,
+-47.0
+],
+"size": [
+2.00000108,
+2.00000108
+],
+"through": false,
+"layer": "F.Cu",
+"shape": "rect",
+"angle_deg": 0.0,
+"copper_offset": [
+0.0,
+0.0
+],
+"primitives": [],
+"rratio": 0.25
+}
+]
+},
+{
+"ref": "C1",
+"value": "470uF 16V",
+"layer": "F.Cu",
+"at": [
+39.9999987,
+-48.4999995
+],
+"pads": [
+{
+"number": "1",
+"net": 2,
+"net_name": "FAN_PWR",
+"at": [
+39.9999987,
+-48.4999995
+],
+"size": [
+1.49999954,
+1.49999954
+],
+"through": false,
+"layer": "F.Cu",
+"shape": "rect",
+"angle_deg": 0.0,
+"copper_offset": [
+0.0,
+0.0
+],
+"primitives": [],
+"rratio": 0.25
+},
+{
+"number": "2",
+"net": 1,
+"net_name": "GND",
+"at": [
+39.9999987,
+-46.500001
+],
+"size": [
+1.49999954,
+1.49999954
+],
+"through": false,
+"layer": "F.Cu",
+"shape": "rect",
+"angle_deg": 0.0,
+"copper_offset": [
+0.0,
+0.0
+],
+"primitives": [],
+"rratio": 0.25
+}
+]
+},
+{
+"ref": "C2",
+"value": "10uF 0805",
+"layer": "F.Cu",
+"at": [
+69.9999997,
+-35.0000011
+],
+"pads": [
+{
+"number": "1",
+"net": 6,
+"net_name": "LV_5V",
+"at": [
+69.9999997,
+-35.0000011
+],
+"size": [
+1.20000014,
+1.20000014
+],
+"through": false,
+"layer": "F.Cu",
+"shape": "rect",
+"angle_deg": 0.0,
+"copper_offset": [
+0.0,
+0.0
+],
+"primitives": [],
+"rratio": 0.25
+},
+{
+"number": "2",
+"net": 1,
+"net_name": "GND",
+"at": [
+69.9999997,
+-33.0
+],
+"size": [
+1.20000014,
+1.20000014
+],
+"through": false,
+"layer": "F.Cu",
+"shape": "rect",
+"angle_deg": 0.0,
+"copper_offset": [
+0.0,
+0.0
+],
+"primitives": [],
+"rratio": 0.25
+}
+]
+},
+{
+"ref": "F1",
+"value": "5A blade",
+"layer": "F.Cu",
+"at": [
+20.0000006,
+-49.9999991
+],
+"pads": [
+{
+"number": "1",
+"net": 2,
+"net_name": "FAN_PWR",
+"at": [
+17.9999996,
+-49.9999991
+],
+"size": [
+2.00000108,
+2.00000108
+],
+"through": false,
+"layer": "F.Cu",
+"shape": "rect",
+"angle_deg": 0.0,
+"copper_offset": [
+0.0,
+0.0
+],
+"primitives": [],
+"rratio": 0.25
+},
+{
+"number": "2",
+"net": 2,
+"net_name": "FAN_PWR",
+"at": [
+21.9999992,
+-49.9999991
+],
+"size": [
+2.00000108,
+2.00000108
+],
+"through": false,
+"layer": "F.Cu",
+"shape": "rect",
+"angle_deg": 0.0,
+"copper_offset": [
+0.0,
+0.0
+],
+"primitives": [],
+"rratio": 0.25
+}
+]
+},
+{
+"ref": "U2",
+"value": "STM32F4",
+"layer": "F.Cu",
+"at": [
+69.9999997,
+-20.0000006
+],
+"pads": [
+{
+"number": "1",
+"net": 3,
+"net_name": "CAN_H",
+"at": [
+69.9999997,
+-20.0000006
+],
+"size": [
+1.00000054,
+1.00000054
+],
+"through": false,
+"layer": "F.Cu",
+"shape": "rect",
+"angle_deg": 0.0,
+"copper_offset": [
+0.0,
+0.0
+],
+"primitives": [],
+"rratio": 0.25
+},
+{
+"number": "2",
+"net": 4,
+"net_name": "CAN_L",
+"at": [
+69.9999997,
+-18.5000011
+],
+"size": [
+1.00000054,
+1.00000054
+],
+"through": false,
+"layer": "F.Cu",
+"shape": "rect",
+"angle_deg": 0.0,
+"copper_offset": [
+0.0,
+0.0
+],
+"primitives": [],
+"rratio": 0.25
+}
+]
+},
+{
+"ref": "J2",
+"value": "CAN out",
+"layer": "F.Cu",
+"at": [
+5.00000016,
+-20.0000006
+],
+"pads": [
+{
+"number": "1",
+"net": 3,
+"net_name": "CAN_H",
+"at": [
+5.00000016,
+-20.0000006
+],
+"size": [
+1.10000034,
+1.10000034
+],
+"through": true,
+"layer": "",
+"shape": "round",
+"angle_deg": 0.0,
+"copper_offset": [
+0.0,
+0.0
+],
+"primitives": [],
+"rratio": 0.25
+},
+{
+"number": "2",
+"net": 4,
+"net_name": "CAN_L",
+"at": [
+5.00000016,
+-18.5000011
+],
+"size": [
+1.10000034,
+1.10000034
+],
+"through": true,
+"layer": "",
+"shape": "round",
+"angle_deg": 0.0,
+"copper_offset": [
+0.0,
+0.0
+],
+"primitives": [],
+"rratio": 0.25
+}
+]
+},
+{
+"ref": "J3",
+"value": "HV sense in",
+"layer": "F.Cu",
+"at": [
+11.9999989,
+-26.9999993
+],
+"pads": [
+{
+"number": "1",
+"net": 5,
+"net_name": "HV_INV_SENSE",
+"at": [
+11.9999989,
+-26.9999993
+],
+"size": [
+2.00000108,
+2.00000108
+],
+"through": true,
+"layer": "",
+"shape": "round",
+"angle_deg": 0.0,
+"copper_offset": [
+0.0,
+0.0
+],
+"primitives": [],
+"rratio": 0.25
+}
+]
+},
+{
+"ref": "R1",
+"value": "1M HV divider 2512",
+"layer": "F.Cu",
+"at": [
+59.9999994,
+-26.9999993
+],
+"pads": [
+{
+"number": "1",
+"net": 5,
+"net_name": "HV_INV_SENSE",
+"at": [
+59.9999994,
+-26.9999993
+],
+"size": [
+1.59999934,
+3.20000122
+],
+"through": false,
+"layer": "F.Cu",
+"shape": "rect",
+"angle_deg": 0.0,
+"copper_offset": [
+0.0,
+0.0
+],
+"primitives": [],
+"rratio": 0.25
+},
+{
+"number": "2",
+"net": 1,
+"net_name": "GND",
+"at": [
+65.5000011,
+-26.9999993
+],
+"size": [
+1.59999934,
+3.20000122
+],
+"through": false,
+"layer": "F.Cu",
+"shape": "rect",
+"angle_deg": 0.0,
+"copper_offset": [
+0.0,
+0.0
+],
+"primitives": [],
+"rratio": 0.25
+}
+]
+}
+],
+"zone_nets": [],
+"zones": [],
+"copper_layers": [
+"F.Cu",
+"B.Cu"
+],
+"board_thickness_mm": 1.59999934,
+"copper_oz": 1.0,
+"fmt": "altium",
+"patchable": true,
+"length_unit": "mil",
+"native_layers": {
+"F.Cu": "Top Layer",
+"B.Cu": "Bottom Layer"
+},
+"notes": [
+"Net references resolved against the ID field on each |RECORD=Net| (this export numbers nets from 0).",
+"Lengths without a unit suffix read as mil; widths are written back in the unit the file used, so the patched board stays imperial."
+]
+},
+"edges": {
+"nets": {
+"0": "",
+"1": "P"
+},
+"segments": [
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 0.3,
+"start": [
+0.0,
+-0.0
+],
+"end": [
+5.0,
+-0.0
+],
+"width_span": [
+189,
+194
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": false,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 10.0,
+"start": [
+6.0,
+-5.0
+],
+"end": [
+5.98768834,
+-5.15643447
+],
+"width_span": [
+253,
+255
+],
+"width_scale_mm": 1.0,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 10.0,
+"start": [
+5.98768834,
+-5.15643447
+],
+"end": [
+5.95105652,
+-5.30901699
+],
+"width_span": [
+253,
+255
+],
+"width_scale_mm": 1.0,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 10.0,
+"start": [
+5.95105652,
+-5.30901699
+],
+"end": [
+5.89100652,
+-5.4539905
+],
+"width_span": [
+253,
+255
+],
+"width_scale_mm": 1.0,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 10.0,
+"start": [
+5.89100652,
+-5.4539905
+],
+"end": [
+5.80901699,
+-5.58778525
+],
+"width_span": [
+253,
+255
+],
+"width_scale_mm": 1.0,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+},
+{
+"net": 1,
+"layer": "F.Cu",
+"width_mm": 10.0,
+"start": [
+5.80901699,
+-5.58778525
+],
+"end": [
+5.70710678,
+-5.70710678
+],
+"width_span": [
+253,
+255
+],
+"width_scale_mm": 1.0,
+"width_unit": "",
+"from_arc": true,
+"arc_id": -1
+}
+],
+"vias": [
+{
+"net": 1,
+"at": [
+4.0,
+-3.0
+],
+"size_mm": 0.6,
+"drill_mm": 0.3,
+"layers": [
+"F.Cu",
+"B.Cu"
+]
+}
+],
+"footprints": [
+{
+"ref": "?",
+"value": "free pads (no component)",
+"layer": "F.Cu",
+"at": [
+0.0,
+0.0
+],
+"pads": [
+{
+"number": "?",
+"net": 1,
+"net_name": "P",
+"at": [
+2.0,
+-2.0
+],
+"size": [
+1.0,
+1.0
+],
+"through": true,
+"layer": "F.Cu",
+"shape": "",
+"angle_deg": 0.0,
+"copper_offset": [
+0.0,
+0.0
+],
+"primitives": [],
+"rratio": 0.25
+}
+]
+}
+],
+"zone_nets": [
+1
+],
+"zones": [
+{
+"net": 1,
+"layer": "In2.Cu",
+"outline": [
+[
+0.0,
+-0.0
+],
+[
+3.0,
+-0.0
+],
+[
+3.0,
+-3.0
+]
+],
+"spoke_mm": 0.5,
+"stroke_mm": 0.0
+},
+{
+"net": 1,
+"layer": "In5.Cu",
+"outline": [
+[
+0.0,
+-0.0
+],
+[
+2.0,
+-0.0
+],
+[
+2.0,
+-2.0
+]
+],
+"spoke_mm": 0.5,
+"stroke_mm": 0.0
+}
+],
+"copper_layers": [
+"F.Cu",
+"In2.Cu",
+"In5.Cu",
+"B.Cu"
+],
+"board_thickness_mm": 1.0,
+"copper_oz": 1.0,
+"fmt": "altium",
+"patchable": true,
+"length_unit": "mm",
+"native_layers": {
+"F.Cu": "Top Layer",
+"B.Cu": "Bottom Layer",
+"In2.Cu": "Mid Layer 2",
+"In5.Cu": "Mid Layer 5"
+},
+"notes": [
+"Net references resolved against the ID field on each |RECORD=Net| (this export numbers nets from 1).",
+"Lengths without a unit suffix read as mm; widths are written back in the unit the file used, so the patched board stays metric.",
+"1 Region/Fill shapes read. Those attached to a net count as pours (so the net is not falsely called open); keepouts, board cutouts and teardrops are excluded. Pour *geometry* is still not meshed, so resistance stays trace-only and conservative.",
+"Routed arcs were chorded into straight segments so connectivity and length are right; each arc still has one width token, patched once."
+]
+},
+"offset": {
+"nets": {
+"0": ""
+},
+"segments": [
+{
+"net": 0,
+"layer": "F.Cu",
+"width_mm": 0.3,
+"start": [
+3000.0,
+-0.0
+],
+"end": [
+3010.0,
+-0.0
+],
+"width_span": [
+70,
+75
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": false,
+"arc_id": -1
+}
+],
+"vias": [],
+"footprints": [],
+"zone_nets": [],
+"zones": [],
+"copper_layers": [
+"F.Cu"
+],
+"board_thickness_mm": 1.6,
+"copper_oz": 1.0,
+"fmt": "altium",
+"patchable": true,
+"length_unit": "mm",
+"native_layers": {
+"F.Cu": "Top Layer",
+"B.Cu": "Bottom Layer"
+},
+"notes": [
+"This export's Net records carry no usable ID, so net references were resolved 0-based against file order \u2014 check a familiar net name in the current table; if the names look shifted, do not trust the diagnosis.",
+"Board thickness not stated in the export \u2014 assumed 1.6 mm, which only affects via-barrel length. Set your real stackup thickness if it differs.",
+"Lengths without a unit suffix read as mm; widths are written back in the unit the file used, so the patched board stays metric."
+]
+},
+"tiny": {
+"nets": {
+"0": ""
+},
+"segments": [
+{
+"net": 0,
+"layer": "F.Cu",
+"width_mm": 0.1,
+"start": [
+0.0,
+-0.0
+],
+"end": [
+0.5,
+-0.0
+],
+"width_span": [
+66,
+71
+],
+"width_scale_mm": 1.0,
+"width_unit": "mm",
+"from_arc": false,
+"arc_id": -1
+}
+],
+"vias": [],
+"footprints": [],
+"zone_nets": [],
+"zones": [],
+"copper_layers": [
+"F.Cu"
+],
+"board_thickness_mm": 1.6,
+"copper_oz": 1.0,
+"fmt": "altium",
+"patchable": true,
+"length_unit": "mm",
+"native_layers": {
+"F.Cu": "Top Layer",
+"B.Cu": "Bottom Layer"
+},
+"notes": [
+"This export's Net records carry no usable ID, so net references were resolved 0-based against file order \u2014 check a familiar net name in the current table; if the names look shifted, do not trust the diagnosis.",
+"Board thickness not stated in the export \u2014 assumed 1.6 mm, which only affects via-barrel length. Set your real stackup thickness if it differs.",
+"Lengths without a unit suffix read as mm; widths are written back in the unit the file used, so the patched board stays metric.",
+"This board measures only 0.50 mm across \u2014 check the units are right before trusting any width verdict."
+]
+},
+"pads": {
+"nets": {
+"0": ""
+},
+"segments": [],
+"vias": [],
+"footprints": [
+{
+"ref": "?",
+"value": "free pads (no component)",
+"layer": "F.Cu",
+"at": [
+0.0,
+0.0
+],
+"pads": [
+{
+"number": "1",
+"net": 0,
+"net_name": "",
+"at": [
+1.0,
+-1.0
+],
+"size": [
+1.0,
+1.0
+],
+"through": false,
+"layer": "F.Cu",
+"shape": "",
+"angle_deg": 0.0,
+"copper_offset": [
+0.0,
+0.0
+],
+"primitives": [],
+"rratio": 0.25
+},
+{
+"number": "2",
+"net": 0,
+"net_name": "",
+"at": [
+3.0,
+-1.0
+],
+"size": [
+1.0,
+1.0
+],
+"through": false,
+"layer": "B.Cu",
+"shape": "",
+"angle_deg": 0.0,
+"copper_offset": [
+0.0,
+0.0
+],
+"primitives": [],
+"rratio": 0.25
+}
+]
+}
+],
+"zone_nets": [],
+"zones": [],
+"copper_layers": [
+"F.Cu",
+"B.Cu"
+],
+"board_thickness_mm": 1.6,
+"copper_oz": 1.0,
+"fmt": "altium",
+"patchable": true,
+"length_unit": "mm",
+"native_layers": {
+"F.Cu": "Top Layer",
+"B.Cu": "Bottom Layer"
+},
+"notes": [
+"This export's Net records carry no usable ID, so net references were resolved 0-based against file order \u2014 check a familiar net name in the current table; if the names look shifted, do not trust the diagnosis.",
+"Board thickness not stated in the export \u2014 assumed 1.6 mm, which only affects via-barrel length. Set your real stackup thickness if it differs.",
+"Lengths without a unit suffix read as mm; widths are written back in the unit the file used, so the patched board stays metric."
+]
+}
+}
