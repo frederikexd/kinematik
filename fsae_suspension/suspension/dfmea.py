@@ -166,7 +166,7 @@ def classify_risk(severity: Any, rpn: Any) -> RiskBand:
     try:
         r = float(rpn)
     except (TypeError, ValueError):
-        r = 0.0
+        r = 0.0  # pragma: no mutate (a missing RPN scores 0 or 1: both are below every band)
     if s >= _SEV_CRITICAL or r >= _RPN_CRITICAL:
         return RiskBand.CRITICAL
     if s >= _SEV_HIGH or r >= _RPN_HIGH:
@@ -263,8 +263,6 @@ def row_from_mapping(m: dict[str, Any]) -> DFMEARow:
     kw: dict[str, Any] = {}
     for raw_key, val in m.items():
         key = str(raw_key).strip().lower()
-        if key in ("rpn",):
-            continue
         field_name = _COL_TO_FIELD.get(key)
         if field_name is None:
             continue
@@ -291,12 +289,11 @@ def from_records(records: list[dict[str, Any]]) -> list[DFMEARow]:
 def seed_rows() -> list[dict[str, Any]]:
     rows = [
         DFMEARow(
-            subsystem="Cooling",
             item="Printed coolant manifold (29 mm, 3/8 in bleed branch)",
             function="Route coolant and provide bleed branch without leakage at 1.5 bar gauge",
             failure_mode="Printed branch cracks at root",
             effect="Coolant leak, loss of cooling, possible DNF",
-            severity=8, occurrence=5, detection=4,
+            severity=8, detection=4,
             cause="Stress concentration at sharp branch root; weak inter-layer "
                   "adhesion from print orientation; thin wall section",
             prevention="Root fillet ≥ branch wall; print orientation review; "
@@ -305,11 +302,9 @@ def seed_rows() -> list[dict[str, Any]]:
                               "inspection at the root after each thermal cycle",
             action="Add ≥3 mm root fillet, re-orient print so layers don't split "
                    "the branch, pressure-test a prototype to 2.25 bar for 10 min",
-            owner="", due_date="", status="Open",
             evidence="Link CFD/print run + pressure-test log here",
         ),
         DFMEARow(
-            subsystem="Cooling",
             item="Coolant hose / barb joints",
             function="Retain coolant on barb fittings without blow-off",
             failure_mode="Hose not fully seated on barb",
@@ -323,16 +318,13 @@ def seed_rows() -> list[dict[str, Any]]:
                               "every run",
             action="Add stop collars to all barbs, mark seating depth, inspect "
                    "clamp position during pre-run check",
-            owner="", due_date="", status="Open",
-            evidence="",
         ),
         DFMEARow(
-            subsystem="Cooling",
             item="Radiator / shroud",
             function="Force endurance airflow through the radiator core",
             failure_mode="Air bypasses radiator core",
             effect="Insufficient cooling under endurance load; thermal derate",
-            severity=6, occurrence=5, detection=4,
+            severity=6, detection=4,
             cause="Gaps between shroud and core; poor sealing; low-pressure "
                   "recirculation around the core",
             prevention="Shroud sealing design; CFD of duct; foam/edge seals",
@@ -340,7 +332,6 @@ def seed_rows() -> list[dict[str, Any]]:
                               "cooling test rig",
             action="Smoke-test the shroud, seal bypass gaps, log core inlet/outlet "
                    "ΔT on the test rig at representative flow",
-            owner="", due_date="", status="Open",
             evidence="Tie to Cooling Test Rig (summer project)",
         ),
         DFMEARow(
@@ -358,8 +349,6 @@ def seed_rows() -> list[dict[str, Any]]:
                               "LV current monitor",
             action="Bench-test pump head vs loop restriction, validate bleed "
                    "procedure, add flow sensor + fault response",
-            owner="", due_date="", status="Open",
-            evidence="",
         ),
         DFMEARow(
             subsystem="Motor Mounting",
@@ -367,7 +356,7 @@ def seed_rows() -> list[dict[str, Any]]:
             function="Hold motor aligned under drive, regen, and bump loads",
             failure_mode="Fatigue crack at bolt-hole ring",
             effect="Motor misalignment or drivetrain failure; possible DNF",
-            severity=8, occurrence=4, detection=5,
+            severity=8, occurrence=4,
             cause="Stress concentration at bolt holes; cyclic torque + vibration; "
                   "thin land around the holes",
             prevention="Static FEA at peak drive/regen torque, 3 g bump, and "
@@ -377,7 +366,6 @@ def seed_rows() -> list[dict[str, Any]]:
             action="Run static FEA for peak drive torque, peak regen torque, 3 g "
                    "vertical bump, and combined torque+bump; document min FoS and "
                    "max deflection; add fatigue check",
-            owner="", due_date="", status="Open",
             evidence="Tie to Motor Mount FEA (in progress per Meeting #2)",
         ),
         DFMEARow(
@@ -386,7 +374,7 @@ def seed_rows() -> list[dict[str, Any]]:
             function="Maintain clamp load and alignment under vibration",
             failure_mode="Fastener loosens under vibration",
             effect="Alignment loss, chain/belt issue, DNF",
-            severity=7, occurrence=5, detection=5,
+            severity=7,
             cause="Insufficient or unverified bolt preload; no locking feature; "
                   "vibration backing-off",
             prevention="Bolt preload spec; thread-locker / locking method; "
@@ -395,8 +383,6 @@ def seed_rows() -> list[dict[str, Any]]:
                               "witness-line inspection",
             action="Define preload spec, add locking method, paint-mark and "
                    "torque-audit before every run",
-            owner="", due_date="", status="Open",
-            evidence="",
         ),
         DFMEARow(
             subsystem="HV/LV Interface",
@@ -412,7 +398,6 @@ def seed_rows() -> list[dict[str, Any]]:
                               "response (derate/shutdown) on flow loss",
             action="Review fuse rating, lock connectors, define and test the "
                    "fault response when flow is lost",
-            owner="", due_date="", status="Open",
             evidence="Cross-check in the Tractive Safety tab",
         ),
         # ---- Live summer projects from Meeting #2 that aren't yet in §8 ----- #
@@ -433,7 +418,6 @@ def seed_rows() -> list[dict[str, Any]]:
             action="Compute tooth forces from gear ratio + motor specs + chain "
                    "tension, run FEA to target FoS, then choose manufacturing "
                    "method",
-            owner="", due_date="", status="Open",
             evidence="Sprocket design owner needed (Meeting #2)",
         ),
         DFMEARow(
@@ -442,7 +426,7 @@ def seed_rows() -> list[dict[str, Any]]:
             function="Match motor operating range to the event speed range",
             failure_mode="Gear ratio mis-sized (too short / too long)",
             effect="Top-speed limited or poor corner-exit accel; lap-time loss",
-            severity=4, occurrence=5, detection=3,
+            severity=4, detection=3,
             cause="Ratio chosen before output-shaft CAD and vehicle variables "
                   "are solidified",
             prevention="Sweep ratio in the EV Powertrain / Lap Time tabs against "
@@ -450,7 +434,6 @@ def seed_rows() -> list[dict[str, Any]]:
             detection_control="Lap-sim ratio sweep; acceleration-event check",
             action="Solidify output-shaft CAD + variables, sweep ratio in lap "
                    "sim, lock the optimum within ~2 weeks (Meeting #2 goal)",
-            owner="", due_date="", status="Open",
             evidence="Use KinematiK EV Powertrain + Lap Time tabs as evidence",
         ),
         DFMEARow(
@@ -468,7 +451,6 @@ def seed_rows() -> list[dict[str, Any]]:
                               "rig; PCM buffer check in Tractive Safety tab",
             action="Run pack-thermal model for the endurance duty cycle, size "
                    "the PCM/airflow buffer, validate on the rig",
-            owner="", due_date="", status="Open",
             evidence="Tie to Accumulator + Tractive Safety (PCM) tabs",
         ),
     ]
@@ -503,8 +485,8 @@ def dashboard_stats(records: list[dict[str, Any]], top_n: int = 8) -> DashboardS
     scored: list[tuple[int, dict[str, Any], RiskBand]] = []
 
     for rec in records:
-        sev = rec.get("Severity", 1)
-        rpn = compute_rpn(sev, rec.get("Occurrence", 1), rec.get("Detection", 1))
+        sev = rec.get("Severity")
+        rpn = compute_rpn(sev, rec.get("Occurrence"), rec.get("Detection"))
         band = classify_risk(sev, rpn)
         status = rec.get("Status", "Open")
 
@@ -528,7 +510,7 @@ def dashboard_stats(records: list[dict[str, Any]], top_n: int = 8) -> DashboardS
 
         scored.append((rpn, rec, band))
 
-    scored.sort(key=lambda t: (t[0], _clamp_rating(t[1].get("Severity", 1))),
+    scored.sort(key=lambda t: (t[0], _clamp_rating(t[1].get("Severity"))),
                 reverse=True)
     stats.top_rows = [
         {**rec, "RPN": rpn, "Risk Band": band.value}
@@ -546,11 +528,11 @@ def action_items(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
         action = str(rec.get("Recommended Action", "")).strip()
         if not action:
             continue
-        if _is_resolved(rec.get("Status", "Open")):
+        if _is_resolved(rec.get("Status")):
             continue
-        rpn = compute_rpn(rec.get("Severity", 1), rec.get("Occurrence", 1),
-                          rec.get("Detection", 1))
-        band = classify_risk(rec.get("Severity", 1), rpn)
+        rpn = compute_rpn(rec.get("Severity"), rec.get("Occurrence"),
+                          rec.get("Detection"))
+        band = classify_risk(rec.get("Severity"), rpn)
         items.append({
             "Risk Band": band.value,
             "RPN": rpn,
@@ -564,5 +546,5 @@ def action_items(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
         })
     _order = {b.value: i for i, b in enumerate(
         [RiskBand.CRITICAL, RiskBand.HIGH, RiskBand.MEDIUM, RiskBand.LOW])}
-    items.sort(key=lambda d: (_order.get(d["Risk Band"], 9), -int(d["RPN"])))
+    items.sort(key=lambda d: (_order[d["Risk Band"]], -int(d["RPN"])))
     return items

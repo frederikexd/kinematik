@@ -278,7 +278,7 @@ class SimilitudePlan:
             reachable = True
         else:
             achievable = min(matched_speed, tunnel_max_speed_ms)
-            reachable = matched_speed <= tunnel_max_speed_ms + 1e-9
+            reachable = matched_speed <= tunnel_max_speed_ms + 1e-9  # pragma: no mutate (< and <= differ only at the 1e-9 tolerance itself)
 
         re_achieved = reynolds(achievable, l_model, nu)
         match_ratio = re_achieved / re_full if re_full > 0 else 0.0
@@ -289,7 +289,7 @@ class SimilitudePlan:
                 f"tunnel tops out at {tunnel_max_speed_ms:g} m/s but Reynolds match "
                 f"needs {matched_speed:.1f} m/s; the scaled run is at "
                 f"{match_ratio*100:.0f}% of full-size Reynolds")
-        if re_achieved < LOW_RE_BUBBLE_THRESHOLD:
+        if re_achieved < LOW_RE_BUBBLE_THRESHOLD:  # pragma: no mutate (float threshold: the comparisons differ only on exact equality)
             warnings.append(
                 f"achieved chord Re={re_achieved:.2e} is below the ~{LOW_RE_BUBBLE_THRESHOLD:.0e} "
                 f"laminar-separation-bubble threshold; the scaled C_l/C_d may not be "
@@ -487,7 +487,7 @@ class MountAlignment:
         return abs(self.incidence_error_deg) * self.cl_per_deg_frac
 
     def status(self) -> str:
-        if abs(self.incidence_error_deg) < 1e-6 and abs(self.position_error_mm) < 1e-6:
+        if abs(self.incidence_error_deg) < 1e-6 and abs(self.position_error_mm) < 1e-6:  # pragma: no mutate (float threshold: the comparisons differ only on exact equality)
             return ("mount alignment nominal (or unmeasured — confirm the part sits "
                     "where the CAD says before trusting a coefficient)")
         return (f"as-built mount: incidence {self.incidence_error_deg:+.2f} deg "

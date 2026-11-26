@@ -1,0 +1,1760 @@
+{
+ "consts": [
+  1.225,
+  1.48e-05,
+  200000.0
+ ],
+ "errors": [
+  "length and viscosity must be positive",
+  "length and viscosity must be positive",
+  "length and viscosity must be positive",
+  "length and viscosity must be positive",
+  499999.99999999994,
+  "ratio must be in (0, 1]; 0.4 means a 40%/1:2.5 model",
+  "ratio must be in (0, 1]; 0.4 means a 40%/1:2.5 model",
+  "ratio must be in (0, 1]; 0.4 means a 40%/1:2.5 model",
+  "scaled chord must be positive",
+  "scaled chord must be positive",
+  {
+   "note": "",
+   "ratio": 0.5,
+   "scaled_chord_mm": 0.5,
+   "scaled_height_mm": null,
+   "scaled_width_mm": null
+  },
+  {
+   "note": "",
+   "ratio": 1.0,
+   "scaled_chord_mm": 10.0,
+   "scaled_height_mm": null,
+   "scaled_width_mm": null
+  },
+  "scaled span must be positive",
+  "scaled span must be positive",
+  {
+   "cd_uncertainty_frac": 0.12,
+   "cl_uncertainty_frac": 0.4,
+   "contributions": [
+    {
+     "basis": "fractional span error, ~1:1 on C_l via planform area",
+     "cd_frac": 0.12,
+     "cl_frac": 0.4,
+     "deviation_mm": 0.2,
+     "source": "span"
+    }
+   ],
+   "summary": "build tolerance implies +-40.0% on C_l, +-12.0% on C_d (RSS of independent sources):\n  - span: +0.20 mm -> C_l +-40.0%, C_d +-12.0% [fractional span error, ~1:1 on C_l via planform area]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+  }
+ ],
+ "mount.-1.5.-3.0": [
+  {
+   "cl_per_deg_frac": 0.08,
+   "incidence_error_deg": -1.5,
+   "note": "as built",
+   "position_error_mm": -3.0
+  },
+  0.12,
+  "as-built mount: incidence -1.50 deg -> C_l +-12.0%, position -3.0 mm. Reminder: finalise Dzus holes only AFTER welding so this stays small."
+ ],
+ "mount.0.0.0.0": [
+  {
+   "cl_per_deg_frac": 0.08,
+   "incidence_error_deg": 0.0,
+   "note": "as built",
+   "position_error_mm": 0.0
+  },
+  0.0,
+  "mount alignment nominal (or unmeasured — confirm the part sits where the CAD says before trusting a coefficient)"
+ ],
+ "mount.0.0.2.0": [
+  {
+   "cl_per_deg_frac": 0.08,
+   "incidence_error_deg": 0.0,
+   "note": "as built",
+   "position_error_mm": 2.0
+  },
+  0.0,
+  "as-built mount: incidence +0.00 deg -> C_l +-0.0%, position +2.0 mm. Reminder: finalise Dzus holes only AFTER welding so this stays small."
+ ],
+ "mount.0.5.0.0": [
+  {
+   "cl_per_deg_frac": 0.08,
+   "incidence_error_deg": 0.5,
+   "note": "as built",
+   "position_error_mm": 0.0
+  },
+  0.04,
+  "as-built mount: incidence +0.50 deg -> C_l +-4.0%, position +0.0 mm. Reminder: finalise Dzus holes only AFTER welding so this stays small."
+ ],
+ "mount.1e-07.1e-07": [
+  {
+   "cl_per_deg_frac": 0.08,
+   "incidence_error_deg": 1e-07,
+   "note": "as built",
+   "position_error_mm": 1e-07
+  },
+  8e-09,
+  "mount alignment nominal (or unmeasured — confirm the part sits where the CAD says before trusting a coefficient)"
+ ],
+ "mount.slope": [
+  0.1,
+  "as-built mount: incidence +1.00 deg -> C_l +-10.0%, position +0.0 mm. Reminder: finalise Dzus holes only AFTER welding so this stays small."
+ ],
+ "nu": [
+  1.158401423234325e-05,
+  1.3278818264988892e-05,
+  1.4606364978623528e-05,
+  1.5517445240485032e-05,
+  1.6922119442130813e-05,
+  1.4606364978623528e-05
+ ],
+ "plan.30.0.False": {
+  "combined_cl_uncertainty_frac": 0.05609422875840259,
+  "model_scale": 0.5,
+  "provenance": "SCALED MODEL — 1:2 (50%) — model chord 400 mm; Re-MISMATCHED (model Re=8.22e+05, 75% of full-size); build +-0.3% C_l / +-0.2% C_d; mount incidence +-5.6% C_l; combined +-5.6% C_l. Not a full-size measurement.",
+  "report": "Scaled-model run plan\n=====================\n  1:2 (50%) — model chord 400 mm stands in for a full-size part: chord 800, height 240, width 1800 mm\n  similitude : Reynolds NOT matched. Best reachable 30.0 m/s gives Re=8.22e+05 = 75% of the full-size Re=1.10e+06. tunnel tops out at 30 m/s but Reynolds match needs 40.0 m/s; the scaled run is at 75% of full-size Reynolds\n  run speed  : 30.0 m/s (model Re=8.22e+05)\n  tolerance  : build tolerance implies +-0.3% on C_l, +-0.2% on C_d (RSS of independent sources):\n  - camber / LE profile: +0.40 mm -> C_l +-0.3%, C_d +-0.2% [thin-aerofoil camber sensitivity, ~3x chord-fraction onto C_l]\n  - chord length: +0.50 mm -> C_l +-0.1%, C_d +-0.1% [fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force.\n  mount      : as-built mount: incidence +0.70 deg -> C_l +-5.6%, position +1.0 mm. Reminder: finalise Dzus holes only AFTER welding so this stays small.\n  combined   : +-5.6% on C_l from build + mount\n  provenance : SCALED MODEL — 1:2 (50%) — model chord 400 mm; Re-MISMATCHED (model Re=8.22e+05, 75% of full-size); build +-0.3% C_l / +-0.2% C_d; mount incidence +-5.6% C_l; combined +-5.6% C_l. Not a full-size measurement.",
+  "tunnel_reynolds": 821559.6431803564
+ },
+ "plan.30.0.True": {
+  "combined_cl_uncertainty_frac": 0.0032500000000000003,
+  "model_scale": 0.5,
+  "provenance": "SCALED MODEL — 1:2 (50%) — model chord 400 mm; Re-MISMATCHED (model Re=8.22e+05, 75% of full-size); build +-0.3% C_l / +-0.2% C_d; mount incidence +-0.0% C_l; combined +-0.3% C_l. Not a full-size measurement.",
+  "report": "Scaled-model run plan\n=====================\n  1:2 (50%) — model chord 400 mm stands in for a full-size part: chord 800, height 240, width 1800 mm\n  similitude : Reynolds NOT matched. Best reachable 30.0 m/s gives Re=8.22e+05 = 75% of the full-size Re=1.10e+06. tunnel tops out at 30 m/s but Reynolds match needs 40.0 m/s; the scaled run is at 75% of full-size Reynolds\n  run speed  : 30.0 m/s (model Re=8.22e+05)\n  tolerance  : build tolerance implies +-0.3% on C_l, +-0.2% on C_d (RSS of independent sources):\n  - camber / LE profile: +0.40 mm -> C_l +-0.3%, C_d +-0.2% [thin-aerofoil camber sensitivity, ~3x chord-fraction onto C_l]\n  - chord length: +0.50 mm -> C_l +-0.1%, C_d +-0.1% [fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force.\n  mount      : mount alignment nominal (or unmeasured — confirm the part sits where the CAD says before trusting a coefficient)\n  combined   : +-0.3% on C_l from build + mount\n  provenance : SCALED MODEL — 1:2 (50%) — model chord 400 mm; Re-MISMATCHED (model Re=8.22e+05, 75% of full-size); build +-0.3% C_l / +-0.2% C_d; mount incidence +-0.0% C_l; combined +-0.3% C_l. Not a full-size measurement.",
+  "tunnel_reynolds": 821559.6431803564
+ },
+ "plan.None.False": {
+  "combined_cl_uncertainty_frac": 0.05609422875840259,
+  "model_scale": 0.5,
+  "provenance": "SCALED MODEL — 1:2 (50%) — model chord 400 mm; Re-matched (model Re=1.10e+06, 100% of full-size); build +-0.3% C_l / +-0.2% C_d; mount incidence +-5.6% C_l; combined +-5.6% C_l. Not a full-size measurement.",
+  "report": "Scaled-model run plan\n=====================\n  1:2 (50%) — model chord 400 mm stands in for a full-size part: chord 800, height 240, width 1800 mm\n  similitude : Reynolds MATCHED at 40.0 m/s (Re=1.10e+06); scaled coefficients transfer to full size within similitude.\n  run speed  : 40.0 m/s (model Re=1.10e+06)\n  tolerance  : build tolerance implies +-0.3% on C_l, +-0.2% on C_d (RSS of independent sources):\n  - camber / LE profile: +0.40 mm -> C_l +-0.3%, C_d +-0.2% [thin-aerofoil camber sensitivity, ~3x chord-fraction onto C_l]\n  - chord length: +0.50 mm -> C_l +-0.1%, C_d +-0.1% [fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force.\n  mount      : as-built mount: incidence +0.70 deg -> C_l +-5.6%, position +1.0 mm. Reminder: finalise Dzus holes only AFTER welding so this stays small.\n  combined   : +-5.6% on C_l from build + mount\n  provenance : SCALED MODEL — 1:2 (50%) — model chord 400 mm; Re-matched (model Re=1.10e+06, 100% of full-size); build +-0.3% C_l / +-0.2% C_d; mount incidence +-5.6% C_l; combined +-5.6% C_l. Not a full-size measurement.",
+  "tunnel_reynolds": 1095412.8575738086
+ },
+ "plan.None.True": {
+  "combined_cl_uncertainty_frac": 0.0032500000000000003,
+  "model_scale": 0.5,
+  "provenance": "SCALED MODEL — 1:2 (50%) — model chord 400 mm; Re-matched (model Re=1.10e+06, 100% of full-size); build +-0.3% C_l / +-0.2% C_d; mount incidence +-0.0% C_l; combined +-0.3% C_l. Not a full-size measurement.",
+  "report": "Scaled-model run plan\n=====================\n  1:2 (50%) — model chord 400 mm stands in for a full-size part: chord 800, height 240, width 1800 mm\n  similitude : Reynolds MATCHED at 40.0 m/s (Re=1.10e+06); scaled coefficients transfer to full size within similitude.\n  run speed  : 40.0 m/s (model Re=1.10e+06)\n  tolerance  : build tolerance implies +-0.3% on C_l, +-0.2% on C_d (RSS of independent sources):\n  - camber / LE profile: +0.40 mm -> C_l +-0.3%, C_d +-0.2% [thin-aerofoil camber sensitivity, ~3x chord-fraction onto C_l]\n  - chord length: +0.50 mm -> C_l +-0.1%, C_d +-0.1% [fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force.\n  mount      : mount alignment nominal (or unmeasured — confirm the part sits where the CAD says before trusting a coefficient)\n  combined   : +-0.3% on C_l from build + mount\n  provenance : SCALED MODEL — 1:2 (50%) — model chord 400 mm; Re-matched (model Re=1.10e+06, 100% of full-size); build +-0.3% C_l / +-0.2% C_d; mount incidence +-0.0% C_l; combined +-0.3% C_l. Not a full-size measurement.",
+  "tunnel_reynolds": 1095412.8575738086
+ },
+ "plan.big": {
+  "provenance": "SCALED MODEL — 1:10 (10%) — model chord 60 mm; Re-MISMATCHED (model Re=1.64e+05, 13% of full-size); build +-29.2% C_l / +-18.0% C_d; mount incidence +-16.0% C_l; combined +-33.3% C_l. Not a full-size measurement.",
+  "report": "Scaled-model run plan\n=====================\n  1:10 (10%) — model chord 60 mm stands in for a full-size part: chord 600, height 150 mm\n  similitude : Reynolds NOT matched. Best reachable 40.0 m/s gives Re=1.64e+05 = 13% of the full-size Re=1.23e+06. tunnel tops out at 40 m/s but Reynolds match needs 300.0 m/s; the scaled run is at 13% of full-size Reynolds ; achieved chord Re=1.64e+05 is below the ~2e+05 laminar-separation-bubble threshold; the scaled C_l/C_d may not be the full-size value regardless of how well the part is built — consider a turbulator/trip strip or a larger scale\n  run speed  : 40.0 m/s (model Re=1.64e+05)\n  tolerance  : build tolerance implies +-29.2% on C_l, +-18.0% on C_d (RSS of independent sources):\n  - camber / LE profile: +4.00 mm -> C_l +-20.0%, C_d +-13.3% [thin-aerofoil camber sensitivity, ~3x chord-fraction onto C_l]\n  - chord length: +9.00 mm -> C_l +-15.0%, C_d +-7.5% [fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d]\n  - span: +6.00 mm -> C_l +-15.0%, C_d +-4.5% [fractional span error, ~1:1 on C_l via planform area]\n  - surface waviness: +2.00 mm -> C_l +-0.7%, C_d +-8.3% [roughness/waviness trips BL; loads onto C_d (~2.5x), little on C_l]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force.\n  mount      : as-built mount: incidence +2.00 deg -> C_l +-16.0%, position +5.0 mm. Reminder: finalise Dzus holes only AFTER welding so this stays small.\n  combined   : +-33.3% on C_l from build + mount\n  provenance : SCALED MODEL — 1:10 (10%) — model chord 60 mm; Re-MISMATCHED (model Re=1.64e+05, 13% of full-size); build +-29.2% C_l / +-18.0% C_d; mount incidence +-16.0% C_l; combined +-33.3% C_l. Not a full-size measurement."
+ },
+ "re": [
+  33783.78378378378,
+  168918.9189189189,
+  422297.2972972973,
+  135135.13513513512,
+  675675.6756756756,
+  1689189.189189189,
+  270270.27027027024,
+  1351351.3513513512,
+  3378378.378378378,
+  625000.0,
+  0.0
+ ],
+ "sim.full.10.0.8.0.0.0": [
+  {
+   "achievable_speed_ms": 8.0,
+   "achieved_reynolds": 753079.06173896,
+   "full_reynolds": 941348.8271737,
+   "full_speed_ms": 10.0,
+   "matched_speed_ms": 10.0,
+   "nu": 1.3278818264988892e-05,
+   "reachable": false,
+   "reynolds_match_ratio": 0.8,
+   "spec": {
+    "note": "",
+    "ratio": 1.0,
+    "scaled_chord_mm": 1250.0,
+    "scaled_height_mm": null,
+    "scaled_width_mm": 1400.0
+   },
+   "verdict": "Reynolds NOT matched. Best reachable 8.0 m/s gives Re=7.53e+05 = 80% of the full-size Re=9.41e+05. tunnel tops out at 8 m/s but Reynolds match needs 10.0 m/s; the scaled run is at 80% of full-size Reynolds",
+   "warnings": [
+    "tunnel tops out at 8 m/s but Reynolds match needs 10.0 m/s; the scaled run is at 80% of full-size Reynolds"
+   ]
+  },
+  "1:1 (100%) — model chord 1250 mm; Re-MISMATCHED (model Re=7.53e+05, 80% of full-size)"
+ ],
+ "sim.full.20.0.60.0.15.0": [
+  {
+   "achievable_speed_ms": 20.0,
+   "achieved_reynolds": 1711582.589959076,
+   "full_reynolds": 1711582.589959076,
+   "full_speed_ms": 20.0,
+   "matched_speed_ms": 20.0,
+   "nu": 1.4606364978623528e-05,
+   "reachable": true,
+   "reynolds_match_ratio": 1.0,
+   "spec": {
+    "note": "",
+    "ratio": 1.0,
+    "scaled_chord_mm": 1250.0,
+    "scaled_height_mm": null,
+    "scaled_width_mm": 1400.0
+   },
+   "verdict": "Reynolds MATCHED at 20.0 m/s (Re=1.71e+06); scaled coefficients transfer to full size within similitude.",
+   "warnings": []
+  },
+  "1:1 (100%) — model chord 1250 mm; Re-matched (model Re=1.71e+06, 100% of full-size)"
+ ],
+ "sim.full.20.0.None.15.0": [
+  {
+   "achievable_speed_ms": 20.0,
+   "achieved_reynolds": 1711582.589959076,
+   "full_reynolds": 1711582.589959076,
+   "full_speed_ms": 20.0,
+   "matched_speed_ms": 20.0,
+   "nu": 1.4606364978623528e-05,
+   "reachable": true,
+   "reynolds_match_ratio": 1.0,
+   "spec": {
+    "note": "",
+    "ratio": 1.0,
+    "scaled_chord_mm": 1250.0,
+    "scaled_height_mm": null,
+    "scaled_width_mm": 1400.0
+   },
+   "verdict": "Reynolds MATCHED at 20.0 m/s (Re=1.71e+06); scaled coefficients transfer to full size within similitude.",
+   "warnings": []
+  },
+  "1:1 (100%) — model chord 1250 mm; Re-matched (model Re=1.71e+06, 100% of full-size)"
+ ],
+ "sim.full.25.0.30.0.25.0": [
+  {
+   "achievable_speed_ms": 25.0,
+   "achieved_reynolds": 2013862.4313278527,
+   "full_reynolds": 2013862.4313278527,
+   "full_speed_ms": 25.0,
+   "matched_speed_ms": 25.0,
+   "nu": 1.5517445240485032e-05,
+   "reachable": true,
+   "reynolds_match_ratio": 1.0,
+   "spec": {
+    "note": "",
+    "ratio": 1.0,
+    "scaled_chord_mm": 1250.0,
+    "scaled_height_mm": null,
+    "scaled_width_mm": 1400.0
+   },
+   "verdict": "Reynolds MATCHED at 25.0 m/s (Re=2.01e+06); scaled coefficients transfer to full size within similitude.",
+   "warnings": []
+  },
+  "1:1 (100%) — model chord 1250 mm; Re-matched (model Re=2.01e+06, 100% of full-size)"
+ ],
+ "sim.full.5.0.100.0.40.0": [
+  {
+   "achievable_speed_ms": 5.0,
+   "achieved_reynolds": 369339.0784395154,
+   "full_reynolds": 369339.0784395154,
+   "full_speed_ms": 5.0,
+   "matched_speed_ms": 5.0,
+   "nu": 1.6922119442130813e-05,
+   "reachable": true,
+   "reynolds_match_ratio": 1.0,
+   "spec": {
+    "note": "",
+    "ratio": 1.0,
+    "scaled_chord_mm": 1250.0,
+    "scaled_height_mm": null,
+    "scaled_width_mm": 1400.0
+   },
+   "verdict": "Reynolds MATCHED at 5.0 m/s (Re=3.69e+05); scaled coefficients transfer to full size within similitude.",
+   "warnings": []
+  },
+  "1:1 (100%) — model chord 1250 mm; Re-matched (model Re=3.69e+05, 100% of full-size)"
+ ],
+ "sim.half.10.0.8.0.0.0": [
+  {
+   "achievable_speed_ms": 8.0,
+   "achieved_reynolds": 240985.29975646723,
+   "full_reynolds": 602463.249391168,
+   "full_speed_ms": 10.0,
+   "matched_speed_ms": 20.0,
+   "nu": 1.3278818264988892e-05,
+   "reachable": false,
+   "reynolds_match_ratio": 0.4,
+   "spec": {
+    "note": "half-scale wing",
+    "ratio": 0.5,
+    "scaled_chord_mm": 400.0,
+    "scaled_height_mm": 120.0,
+    "scaled_width_mm": 900.0
+   },
+   "verdict": "Reynolds NOT matched. Best reachable 8.0 m/s gives Re=2.41e+05 = 40% of the full-size Re=6.02e+05. tunnel tops out at 8 m/s but Reynolds match needs 20.0 m/s; the scaled run is at 40% of full-size Reynolds",
+   "warnings": [
+    "tunnel tops out at 8 m/s but Reynolds match needs 20.0 m/s; the scaled run is at 40% of full-size Reynolds"
+   ]
+  },
+  "1:2 (50%) — model chord 400 mm; Re-MISMATCHED (model Re=2.41e+05, 40% of full-size)"
+ ],
+ "sim.half.20.0.60.0.15.0": [
+  {
+   "achievable_speed_ms": 40.0,
+   "achieved_reynolds": 1095412.8575738086,
+   "full_reynolds": 1095412.8575738086,
+   "full_speed_ms": 20.0,
+   "matched_speed_ms": 40.0,
+   "nu": 1.4606364978623528e-05,
+   "reachable": true,
+   "reynolds_match_ratio": 1.0,
+   "spec": {
+    "note": "half-scale wing",
+    "ratio": 0.5,
+    "scaled_chord_mm": 400.0,
+    "scaled_height_mm": 120.0,
+    "scaled_width_mm": 900.0
+   },
+   "verdict": "Reynolds MATCHED at 40.0 m/s (Re=1.10e+06); scaled coefficients transfer to full size within similitude.",
+   "warnings": []
+  },
+  "1:2 (50%) — model chord 400 mm; Re-matched (model Re=1.10e+06, 100% of full-size)"
+ ],
+ "sim.half.20.0.None.15.0": [
+  {
+   "achievable_speed_ms": 40.0,
+   "achieved_reynolds": 1095412.8575738086,
+   "full_reynolds": 1095412.8575738086,
+   "full_speed_ms": 20.0,
+   "matched_speed_ms": 40.0,
+   "nu": 1.4606364978623528e-05,
+   "reachable": true,
+   "reynolds_match_ratio": 1.0,
+   "spec": {
+    "note": "half-scale wing",
+    "ratio": 0.5,
+    "scaled_chord_mm": 400.0,
+    "scaled_height_mm": 120.0,
+    "scaled_width_mm": 900.0
+   },
+   "verdict": "Reynolds MATCHED at 40.0 m/s (Re=1.10e+06); scaled coefficients transfer to full size within similitude.",
+   "warnings": []
+  },
+  "1:2 (50%) — model chord 400 mm; Re-matched (model Re=1.10e+06, 100% of full-size)"
+ ],
+ "sim.half.25.0.30.0.25.0": [
+  {
+   "achievable_speed_ms": 30.0,
+   "achieved_reynolds": 773323.1736298954,
+   "full_reynolds": 1288871.9560498255,
+   "full_speed_ms": 25.0,
+   "matched_speed_ms": 50.0,
+   "nu": 1.5517445240485032e-05,
+   "reachable": false,
+   "reynolds_match_ratio": 0.6000000000000001,
+   "spec": {
+    "note": "half-scale wing",
+    "ratio": 0.5,
+    "scaled_chord_mm": 400.0,
+    "scaled_height_mm": 120.0,
+    "scaled_width_mm": 900.0
+   },
+   "verdict": "Reynolds NOT matched. Best reachable 30.0 m/s gives Re=7.73e+05 = 60% of the full-size Re=1.29e+06. tunnel tops out at 30 m/s but Reynolds match needs 50.0 m/s; the scaled run is at 60% of full-size Reynolds",
+   "warnings": [
+    "tunnel tops out at 30 m/s but Reynolds match needs 50.0 m/s; the scaled run is at 60% of full-size Reynolds"
+   ]
+  },
+  "1:2 (50%) — model chord 400 mm; Re-MISMATCHED (model Re=7.73e+05, 60% of full-size)"
+ ],
+ "sim.half.5.0.100.0.40.0": [
+  {
+   "achievable_speed_ms": 9.999999999999998,
+   "achieved_reynolds": 236377.0102012898,
+   "full_reynolds": 236377.0102012898,
+   "full_speed_ms": 5.0,
+   "matched_speed_ms": 9.999999999999998,
+   "nu": 1.6922119442130813e-05,
+   "reachable": true,
+   "reynolds_match_ratio": 1.0,
+   "spec": {
+    "note": "half-scale wing",
+    "ratio": 0.5,
+    "scaled_chord_mm": 400.0,
+    "scaled_height_mm": 120.0,
+    "scaled_width_mm": 900.0
+   },
+   "verdict": "Reynolds MATCHED at 10.0 m/s (Re=2.36e+05); scaled coefficients transfer to full size within similitude.",
+   "warnings": []
+  },
+  "1:2 (50%) — model chord 400 mm; Re-matched (model Re=2.36e+05, 100% of full-size)"
+ ],
+ "sim.need": 40.0,
+ "sim.tall_only.10.0.8.0.0.0": [
+  {
+   "achievable_speed_ms": 8.0,
+   "achieved_reynolds": 180738.9748173504,
+   "full_reynolds": 564809.29630422,
+   "full_speed_ms": 10.0,
+   "matched_speed_ms": 25.0,
+   "nu": 1.3278818264988892e-05,
+   "reachable": false,
+   "reynolds_match_ratio": 0.32,
+   "spec": {
+    "note": "",
+    "ratio": 0.4,
+    "scaled_chord_mm": 300.0,
+    "scaled_height_mm": 200.0,
+    "scaled_width_mm": null
+   },
+   "verdict": "Reynolds NOT matched. Best reachable 8.0 m/s gives Re=1.81e+05 = 32% of the full-size Re=5.65e+05. tunnel tops out at 8 m/s but Reynolds match needs 25.0 m/s; the scaled run is at 32% of full-size Reynolds ; achieved chord Re=1.81e+05 is below the ~2e+05 laminar-separation-bubble threshold; the scaled C_l/C_d may not be the full-size value regardless of how well the part is built — consider a turbulator/trip strip or a larger scale",
+   "warnings": [
+    "tunnel tops out at 8 m/s but Reynolds match needs 25.0 m/s; the scaled run is at 32% of full-size Reynolds",
+    "achieved chord Re=1.81e+05 is below the ~2e+05 laminar-separation-bubble threshold; the scaled C_l/C_d may not be the full-size value regardless of how well the part is built — consider a turbulator/trip strip or a larger scale"
+   ]
+  },
+  "1:2.5 (40%) — model chord 300 mm; Re-MISMATCHED (model Re=1.81e+05, 32% of full-size)"
+ ],
+ "sim.tall_only.20.0.60.0.15.0": [
+  {
+   "achievable_speed_ms": 50.0,
+   "achieved_reynolds": 1026949.5539754455,
+   "full_reynolds": 1026949.5539754455,
+   "full_speed_ms": 20.0,
+   "matched_speed_ms": 50.0,
+   "nu": 1.4606364978623528e-05,
+   "reachable": true,
+   "reynolds_match_ratio": 1.0,
+   "spec": {
+    "note": "",
+    "ratio": 0.4,
+    "scaled_chord_mm": 300.0,
+    "scaled_height_mm": 200.0,
+    "scaled_width_mm": null
+   },
+   "verdict": "Reynolds MATCHED at 50.0 m/s (Re=1.03e+06); scaled coefficients transfer to full size within similitude.",
+   "warnings": []
+  },
+  "1:2.5 (40%) — model chord 300 mm; Re-matched (model Re=1.03e+06, 100% of full-size)"
+ ],
+ "sim.tall_only.20.0.None.15.0": [
+  {
+   "achievable_speed_ms": 50.0,
+   "achieved_reynolds": 1026949.5539754455,
+   "full_reynolds": 1026949.5539754455,
+   "full_speed_ms": 20.0,
+   "matched_speed_ms": 50.0,
+   "nu": 1.4606364978623528e-05,
+   "reachable": true,
+   "reynolds_match_ratio": 1.0,
+   "spec": {
+    "note": "",
+    "ratio": 0.4,
+    "scaled_chord_mm": 300.0,
+    "scaled_height_mm": 200.0,
+    "scaled_width_mm": null
+   },
+   "verdict": "Reynolds MATCHED at 50.0 m/s (Re=1.03e+06); scaled coefficients transfer to full size within similitude.",
+   "warnings": []
+  },
+  "1:2.5 (40%) — model chord 300 mm; Re-matched (model Re=1.03e+06, 100% of full-size)"
+ ],
+ "sim.tall_only.25.0.30.0.25.0": [
+  {
+   "achievable_speed_ms": 30.0,
+   "achieved_reynolds": 579992.3802224215,
+   "full_reynolds": 1208317.4587967116,
+   "full_speed_ms": 25.0,
+   "matched_speed_ms": 62.5,
+   "nu": 1.5517445240485032e-05,
+   "reachable": false,
+   "reynolds_match_ratio": 0.4799999999999999,
+   "spec": {
+    "note": "",
+    "ratio": 0.4,
+    "scaled_chord_mm": 300.0,
+    "scaled_height_mm": 200.0,
+    "scaled_width_mm": null
+   },
+   "verdict": "Reynolds NOT matched. Best reachable 30.0 m/s gives Re=5.80e+05 = 48% of the full-size Re=1.21e+06. tunnel tops out at 30 m/s but Reynolds match needs 62.5 m/s; the scaled run is at 48% of full-size Reynolds",
+   "warnings": [
+    "tunnel tops out at 30 m/s but Reynolds match needs 62.5 m/s; the scaled run is at 48% of full-size Reynolds"
+   ]
+  },
+  "1:2.5 (40%) — model chord 300 mm; Re-MISMATCHED (model Re=5.80e+05, 48% of full-size)"
+ ],
+ "sim.tall_only.5.0.100.0.40.0": [
+  {
+   "achievable_speed_ms": 12.5,
+   "achieved_reynolds": 221603.4470637092,
+   "full_reynolds": 221603.4470637092,
+   "full_speed_ms": 5.0,
+   "matched_speed_ms": 12.5,
+   "nu": 1.6922119442130813e-05,
+   "reachable": true,
+   "reynolds_match_ratio": 1.0,
+   "spec": {
+    "note": "",
+    "ratio": 0.4,
+    "scaled_chord_mm": 300.0,
+    "scaled_height_mm": 200.0,
+    "scaled_width_mm": null
+   },
+   "verdict": "Reynolds MATCHED at 12.5 m/s (Re=2.22e+05); scaled coefficients transfer to full size within similitude.",
+   "warnings": []
+  },
+  "1:2.5 (40%) — model chord 300 mm; Re-matched (model Re=2.22e+05, 100% of full-size)"
+ ],
+ "sim.third.10.0.8.0.0.0": [
+  {
+   "achievable_speed_ms": 8.0,
+   "achieved_reynolds": 150615.812347792,
+   "full_reynolds": 564809.29630422,
+   "full_speed_ms": 10.0,
+   "matched_speed_ms": 30.0,
+   "nu": 1.3278818264988892e-05,
+   "reachable": false,
+   "reynolds_match_ratio": 0.26666666666666666,
+   "spec": {
+    "note": "",
+    "ratio": 0.3333333333333333,
+    "scaled_chord_mm": 250.0,
+    "scaled_height_mm": null,
+    "scaled_width_mm": null
+   },
+   "verdict": "Reynolds NOT matched. Best reachable 8.0 m/s gives Re=1.51e+05 = 27% of the full-size Re=5.65e+05. tunnel tops out at 8 m/s but Reynolds match needs 30.0 m/s; the scaled run is at 27% of full-size Reynolds ; achieved chord Re=1.51e+05 is below the ~2e+05 laminar-separation-bubble threshold; the scaled C_l/C_d may not be the full-size value regardless of how well the part is built — consider a turbulator/trip strip or a larger scale",
+   "warnings": [
+    "tunnel tops out at 8 m/s but Reynolds match needs 30.0 m/s; the scaled run is at 27% of full-size Reynolds",
+    "achieved chord Re=1.51e+05 is below the ~2e+05 laminar-separation-bubble threshold; the scaled C_l/C_d may not be the full-size value regardless of how well the part is built — consider a turbulator/trip strip or a larger scale"
+   ]
+  },
+  "1:3 (33.3333%) — model chord 250 mm; Re-MISMATCHED (model Re=1.51e+05, 27% of full-size)"
+ ],
+ "sim.third.20.0.60.0.15.0": [
+  {
+   "achievable_speed_ms": 60.0,
+   "achieved_reynolds": 1026949.5539754455,
+   "full_reynolds": 1026949.5539754455,
+   "full_speed_ms": 20.0,
+   "matched_speed_ms": 60.0,
+   "nu": 1.4606364978623528e-05,
+   "reachable": true,
+   "reynolds_match_ratio": 1.0,
+   "spec": {
+    "note": "",
+    "ratio": 0.3333333333333333,
+    "scaled_chord_mm": 250.0,
+    "scaled_height_mm": null,
+    "scaled_width_mm": null
+   },
+   "verdict": "Reynolds MATCHED at 60.0 m/s (Re=1.03e+06); scaled coefficients transfer to full size within similitude.",
+   "warnings": []
+  },
+  "1:3 (33.3333%) — model chord 250 mm; Re-matched (model Re=1.03e+06, 100% of full-size)"
+ ],
+ "sim.third.20.0.None.15.0": [
+  {
+   "achievable_speed_ms": 60.0,
+   "achieved_reynolds": 1026949.5539754455,
+   "full_reynolds": 1026949.5539754455,
+   "full_speed_ms": 20.0,
+   "matched_speed_ms": 60.0,
+   "nu": 1.4606364978623528e-05,
+   "reachable": true,
+   "reynolds_match_ratio": 1.0,
+   "spec": {
+    "note": "",
+    "ratio": 0.3333333333333333,
+    "scaled_chord_mm": 250.0,
+    "scaled_height_mm": null,
+    "scaled_width_mm": null
+   },
+   "verdict": "Reynolds MATCHED at 60.0 m/s (Re=1.03e+06); scaled coefficients transfer to full size within similitude.",
+   "warnings": []
+  },
+  "1:3 (33.3333%) — model chord 250 mm; Re-matched (model Re=1.03e+06, 100% of full-size)"
+ ],
+ "sim.third.25.0.30.0.25.0": [
+  {
+   "achievable_speed_ms": 30.0,
+   "achieved_reynolds": 483326.98351868463,
+   "full_reynolds": 1208317.4587967116,
+   "full_speed_ms": 25.0,
+   "matched_speed_ms": 75.0,
+   "nu": 1.5517445240485032e-05,
+   "reachable": false,
+   "reynolds_match_ratio": 0.39999999999999997,
+   "spec": {
+    "note": "",
+    "ratio": 0.3333333333333333,
+    "scaled_chord_mm": 250.0,
+    "scaled_height_mm": null,
+    "scaled_width_mm": null
+   },
+   "verdict": "Reynolds NOT matched. Best reachable 30.0 m/s gives Re=4.83e+05 = 40% of the full-size Re=1.21e+06. tunnel tops out at 30 m/s but Reynolds match needs 75.0 m/s; the scaled run is at 40% of full-size Reynolds",
+   "warnings": [
+    "tunnel tops out at 30 m/s but Reynolds match needs 75.0 m/s; the scaled run is at 40% of full-size Reynolds"
+   ]
+  },
+  "1:3 (33.3333%) — model chord 250 mm; Re-MISMATCHED (model Re=4.83e+05, 40% of full-size)"
+ ],
+ "sim.third.5.0.100.0.40.0": [
+  {
+   "achievable_speed_ms": 15.0,
+   "achieved_reynolds": 221603.4470637092,
+   "full_reynolds": 221603.4470637092,
+   "full_speed_ms": 5.0,
+   "matched_speed_ms": 15.0,
+   "nu": 1.6922119442130813e-05,
+   "reachable": true,
+   "reynolds_match_ratio": 1.0,
+   "spec": {
+    "note": "",
+    "ratio": 0.3333333333333333,
+    "scaled_chord_mm": 250.0,
+    "scaled_height_mm": null,
+    "scaled_width_mm": null
+   },
+   "verdict": "Reynolds MATCHED at 15.0 m/s (Re=2.22e+05); scaled coefficients transfer to full size within similitude.",
+   "warnings": []
+  },
+  "1:3 (33.3333%) — model chord 250 mm; Re-matched (model Re=2.22e+05, 100% of full-size)"
+ ],
+ "sim.tiny.10.0.8.0.0.0": [
+  {
+   "achievable_speed_ms": 8.0,
+   "achieved_reynolds": 36147.79496347008,
+   "full_reynolds": 451847.43704337603,
+   "full_speed_ms": 10.0,
+   "matched_speed_ms": 100.0,
+   "nu": 1.3278818264988892e-05,
+   "reachable": false,
+   "reynolds_match_ratio": 0.07999999999999999,
+   "spec": {
+    "note": "",
+    "ratio": 0.1,
+    "scaled_chord_mm": 60.0,
+    "scaled_height_mm": 15.0,
+    "scaled_width_mm": null
+   },
+   "verdict": "Reynolds NOT matched. Best reachable 8.0 m/s gives Re=3.61e+04 = 8% of the full-size Re=4.52e+05. tunnel tops out at 8 m/s but Reynolds match needs 100.0 m/s; the scaled run is at 8% of full-size Reynolds ; achieved chord Re=3.61e+04 is below the ~2e+05 laminar-separation-bubble threshold; the scaled C_l/C_d may not be the full-size value regardless of how well the part is built — consider a turbulator/trip strip or a larger scale",
+   "warnings": [
+    "tunnel tops out at 8 m/s but Reynolds match needs 100.0 m/s; the scaled run is at 8% of full-size Reynolds",
+    "achieved chord Re=3.61e+04 is below the ~2e+05 laminar-separation-bubble threshold; the scaled C_l/C_d may not be the full-size value regardless of how well the part is built — consider a turbulator/trip strip or a larger scale"
+   ]
+  },
+  "1:10 (10%) — model chord 60 mm; Re-MISMATCHED (model Re=3.61e+04, 8% of full-size)"
+ ],
+ "sim.tiny.20.0.60.0.15.0": [
+  {
+   "achievable_speed_ms": 60.0,
+   "achieved_reynolds": 246467.8929541069,
+   "full_reynolds": 821559.6431803564,
+   "full_speed_ms": 20.0,
+   "matched_speed_ms": 200.0,
+   "nu": 1.4606364978623528e-05,
+   "reachable": false,
+   "reynolds_match_ratio": 0.3,
+   "spec": {
+    "note": "",
+    "ratio": 0.1,
+    "scaled_chord_mm": 60.0,
+    "scaled_height_mm": 15.0,
+    "scaled_width_mm": null
+   },
+   "verdict": "Reynolds NOT matched. Best reachable 60.0 m/s gives Re=2.46e+05 = 30% of the full-size Re=8.22e+05. tunnel tops out at 60 m/s but Reynolds match needs 200.0 m/s; the scaled run is at 30% of full-size Reynolds",
+   "warnings": [
+    "tunnel tops out at 60 m/s but Reynolds match needs 200.0 m/s; the scaled run is at 30% of full-size Reynolds"
+   ]
+  },
+  "1:10 (10%) — model chord 60 mm; Re-MISMATCHED (model Re=2.46e+05, 30% of full-size)"
+ ],
+ "sim.tiny.20.0.None.15.0": [
+  {
+   "achievable_speed_ms": 200.0,
+   "achieved_reynolds": 821559.6431803564,
+   "full_reynolds": 821559.6431803564,
+   "full_speed_ms": 20.0,
+   "matched_speed_ms": 200.0,
+   "nu": 1.4606364978623528e-05,
+   "reachable": true,
+   "reynolds_match_ratio": 1.0,
+   "spec": {
+    "note": "",
+    "ratio": 0.1,
+    "scaled_chord_mm": 60.0,
+    "scaled_height_mm": 15.0,
+    "scaled_width_mm": null
+   },
+   "verdict": "Reynolds MATCHED at 200.0 m/s (Re=8.22e+05); scaled coefficients transfer to full size within similitude.",
+   "warnings": []
+  },
+  "1:10 (10%) — model chord 60 mm; Re-matched (model Re=8.22e+05, 100% of full-size)"
+ ],
+ "sim.tiny.25.0.30.0.25.0": [
+  {
+   "achievable_speed_ms": 30.0,
+   "achieved_reynolds": 115998.4760444843,
+   "full_reynolds": 966653.9670373693,
+   "full_speed_ms": 25.0,
+   "matched_speed_ms": 250.0,
+   "nu": 1.5517445240485032e-05,
+   "reachable": false,
+   "reynolds_match_ratio": 0.11999999999999998,
+   "spec": {
+    "note": "",
+    "ratio": 0.1,
+    "scaled_chord_mm": 60.0,
+    "scaled_height_mm": 15.0,
+    "scaled_width_mm": null
+   },
+   "verdict": "Reynolds NOT matched. Best reachable 30.0 m/s gives Re=1.16e+05 = 12% of the full-size Re=9.67e+05. tunnel tops out at 30 m/s but Reynolds match needs 250.0 m/s; the scaled run is at 12% of full-size Reynolds ; achieved chord Re=1.16e+05 is below the ~2e+05 laminar-separation-bubble threshold; the scaled C_l/C_d may not be the full-size value regardless of how well the part is built — consider a turbulator/trip strip or a larger scale",
+   "warnings": [
+    "tunnel tops out at 30 m/s but Reynolds match needs 250.0 m/s; the scaled run is at 12% of full-size Reynolds",
+    "achieved chord Re=1.16e+05 is below the ~2e+05 laminar-separation-bubble threshold; the scaled C_l/C_d may not be the full-size value regardless of how well the part is built — consider a turbulator/trip strip or a larger scale"
+   ]
+  },
+  "1:10 (10%) — model chord 60 mm; Re-MISMATCHED (model Re=1.16e+05, 12% of full-size)"
+ ],
+ "sim.tiny.5.0.100.0.40.0": [
+  {
+   "achievable_speed_ms": 50.0,
+   "achieved_reynolds": 177282.75765096737,
+   "full_reynolds": 177282.75765096737,
+   "full_speed_ms": 5.0,
+   "matched_speed_ms": 50.0,
+   "nu": 1.6922119442130813e-05,
+   "reachable": true,
+   "reynolds_match_ratio": 1.0,
+   "spec": {
+    "note": "",
+    "ratio": 0.1,
+    "scaled_chord_mm": 60.0,
+    "scaled_height_mm": 15.0,
+    "scaled_width_mm": null
+   },
+   "verdict": "Reynolds matched at 50.0 m/s, but: achieved chord Re=1.77e+05 is below the ~2e+05 laminar-separation-bubble threshold; the scaled C_l/C_d may not be the full-size value regardless of how well the part is built — consider a turbulator/trip strip or a larger scale",
+   "warnings": [
+    "achieved chord Re=1.77e+05 is below the ~2e+05 laminar-separation-bubble threshold; the scaled C_l/C_d may not be the full-size value regardless of how well the part is built — consider a turbulator/trip strip or a larger scale"
+   ]
+  },
+  "1:10 (10%) — model chord 60 mm; Re-MISMATCHED (model Re=1.77e+05, 100% of full-size)"
+ ],
+ "sim.tunnel.+0.0": {
+  "achievable_speed_ms": 40.0,
+  "achieved_reynolds": 1095412.8575738086,
+  "full_reynolds": 1095412.8575738086,
+  "full_speed_ms": 20.0,
+  "matched_speed_ms": 40.0,
+  "nu": 1.4606364978623528e-05,
+  "reachable": true,
+  "reynolds_match_ratio": 1.0,
+  "spec": {
+   "note": "half-scale wing",
+   "ratio": 0.5,
+   "scaled_chord_mm": 400.0,
+   "scaled_height_mm": 120.0,
+   "scaled_width_mm": 900.0
+  },
+  "verdict": "Reynolds MATCHED at 40.0 m/s (Re=1.10e+06); scaled coefficients transfer to full size within similitude.",
+  "warnings": []
+ },
+ "sim.tunnel.+0.5": {
+  "achievable_speed_ms": 40.0,
+  "achieved_reynolds": 1095412.8575738086,
+  "full_reynolds": 1095412.8575738086,
+  "full_speed_ms": 20.0,
+  "matched_speed_ms": 40.0,
+  "nu": 1.4606364978623528e-05,
+  "reachable": true,
+  "reynolds_match_ratio": 1.0,
+  "spec": {
+   "note": "half-scale wing",
+   "ratio": 0.5,
+   "scaled_chord_mm": 400.0,
+   "scaled_height_mm": 120.0,
+   "scaled_width_mm": 900.0
+  },
+  "verdict": "Reynolds MATCHED at 40.0 m/s (Re=1.10e+06); scaled coefficients transfer to full size within similitude.",
+  "warnings": []
+ },
+ "sim.tunnel.-0.5": {
+  "achievable_speed_ms": 39.5,
+  "achieved_reynolds": 1081720.196854136,
+  "full_reynolds": 1095412.8575738086,
+  "full_speed_ms": 20.0,
+  "matched_speed_ms": 40.0,
+  "nu": 1.4606364978623528e-05,
+  "reachable": false,
+  "reynolds_match_ratio": 0.9874999999999999,
+  "spec": {
+   "note": "half-scale wing",
+   "ratio": 0.5,
+   "scaled_chord_mm": 400.0,
+   "scaled_height_mm": 120.0,
+   "scaled_width_mm": 900.0
+  },
+  "verdict": "Reynolds NOT matched. Best reachable 39.5 m/s gives Re=1.08e+06 = 99% of the full-size Re=1.10e+06. tunnel tops out at 39.5 m/s but Reynolds match needs 40.0 m/s; the scaled run is at 99% of full-size Reynolds",
+  "warnings": [
+   "tunnel tops out at 39.5 m/s but Reynolds match needs 40.0 m/s; the scaled run is at 99% of full-size Reynolds"
+  ]
+ },
+ "sim.two_warnings": {
+  "achievable_speed_ms": 5.0,
+  "achieved_reynolds": 20538.99107950891,
+  "full_reynolds": 1232339.4647705345,
+  "full_speed_ms": 30.0,
+  "matched_speed_ms": 300.0,
+  "nu": 1.4606364978623528e-05,
+  "reachable": false,
+  "reynolds_match_ratio": 0.016666666666666666,
+  "spec": {
+   "note": "",
+   "ratio": 0.1,
+   "scaled_chord_mm": 60.0,
+   "scaled_height_mm": 15.0,
+   "scaled_width_mm": null
+  },
+  "verdict": "Reynolds NOT matched. Best reachable 5.0 m/s gives Re=2.05e+04 = 2% of the full-size Re=1.23e+06. tunnel tops out at 5 m/s but Reynolds match needs 300.0 m/s; the scaled run is at 2% of full-size Reynolds ; achieved chord Re=2.05e+04 is below the ~2e+05 laminar-separation-bubble threshold; the scaled C_l/C_d may not be the full-size value regardless of how well the part is built — consider a turbulator/trip strip or a larger scale",
+  "warnings": [
+   "tunnel tops out at 5 m/s but Reynolds match needs 300.0 m/s; the scaled run is at 2% of full-size Reynolds",
+   "achieved chord Re=2.05e+04 is below the ~2e+05 laminar-separation-bubble threshold; the scaled C_l/C_d may not be the full-size value regardless of how well the part is built — consider a turbulator/trip strip or a larger scale"
+  ]
+ },
+ "sim.zero_speed": {
+  "achievable_speed_ms": 0.0,
+  "achieved_reynolds": 0.0,
+  "full_reynolds": 0.0,
+  "full_speed_ms": 0.0,
+  "matched_speed_ms": 0.0,
+  "nu": 1.4606364978623528e-05,
+  "reachable": true,
+  "reynolds_match_ratio": 0.0,
+  "spec": {
+   "note": "half-scale wing",
+   "ratio": 0.5,
+   "scaled_chord_mm": 400.0,
+   "scaled_height_mm": 120.0,
+   "scaled_width_mm": 900.0
+  },
+  "verdict": "Reynolds matched at 0.0 m/s, but: achieved chord Re=0.00e+00 is below the ~2e+05 laminar-separation-bubble threshold; the scaled C_l/C_d may not be the full-size value regardless of how well the part is built — consider a turbulator/trip strip or a larger scale",
+  "warnings": [
+   "achieved chord Re=0.00e+00 is below the ~2e+05 laminar-separation-bubble threshold; the scaled C_l/C_d may not be the full-size value regardless of how well the part is built — consider a turbulator/trip strip or a larger scale"
+  ]
+ },
+ "spec.full": [
+  {
+   "note": "",
+   "ratio": 1.0,
+   "scaled_chord_mm": 1250.0,
+   "scaled_height_mm": null,
+   "scaled_width_mm": 1400.0
+  },
+  {
+   "area_ratio": 1.0,
+   "full_chord_m": 1.25,
+   "full_chord_mm": 1250.0,
+   "full_height_mm": null,
+   "full_size_label": "1:1 (100%) — model chord 1250 mm stands in for a full-size part: chord 1250, width 1400 mm",
+   "full_width_mm": 1400.0,
+   "inverse_ratio": 1.0,
+   "label": "1:1 (100%) — model chord 1250 mm",
+   "scaled_chord_m": 1.25,
+   "scaled_frontal_area_m2": null
+  }
+ ],
+ "spec.half": [
+  {
+   "note": "half-scale wing",
+   "ratio": 0.5,
+   "scaled_chord_mm": 400.0,
+   "scaled_height_mm": 120.0,
+   "scaled_width_mm": 900.0
+  },
+  {
+   "area_ratio": 0.25,
+   "full_chord_m": 0.8,
+   "full_chord_mm": 800.0,
+   "full_height_mm": 240.0,
+   "full_size_label": "1:2 (50%) — model chord 400 mm stands in for a full-size part: chord 800, height 240, width 1800 mm",
+   "full_width_mm": 1800.0,
+   "inverse_ratio": 2.0,
+   "label": "1:2 (50%) — model chord 400 mm",
+   "scaled_chord_m": 0.4,
+   "scaled_frontal_area_m2": 0.108
+  }
+ ],
+ "spec.tall_only": [
+  {
+   "note": "",
+   "ratio": 0.4,
+   "scaled_chord_mm": 300.0,
+   "scaled_height_mm": 200.0,
+   "scaled_width_mm": null
+  },
+  {
+   "area_ratio": 0.16000000000000003,
+   "full_chord_m": 0.75,
+   "full_chord_mm": 750.0,
+   "full_height_mm": 500.0,
+   "full_size_label": "1:2.5 (40%) — model chord 300 mm stands in for a full-size part: chord 750, height 500 mm",
+   "full_width_mm": null,
+   "inverse_ratio": 2.5,
+   "label": "1:2.5 (40%) — model chord 300 mm",
+   "scaled_chord_m": 0.3,
+   "scaled_frontal_area_m2": null
+  }
+ ],
+ "spec.third": [
+  {
+   "note": "",
+   "ratio": 0.3333333333333333,
+   "scaled_chord_mm": 250.0,
+   "scaled_height_mm": null,
+   "scaled_width_mm": null
+  },
+  {
+   "area_ratio": 0.1111111111111111,
+   "full_chord_m": 0.75,
+   "full_chord_mm": 750.0,
+   "full_height_mm": null,
+   "full_size_label": "1:3 (33.3333%) — model chord 250 mm stands in for a full-size part: chord 750 mm",
+   "full_width_mm": null,
+   "inverse_ratio": 3.0,
+   "label": "1:3 (33.3333%) — model chord 250 mm",
+   "scaled_chord_m": 0.25,
+   "scaled_frontal_area_m2": null
+  }
+ ],
+ "spec.tiny": [
+  {
+   "note": "",
+   "ratio": 0.1,
+   "scaled_chord_mm": 60.0,
+   "scaled_height_mm": 15.0,
+   "scaled_width_mm": null
+  },
+  {
+   "area_ratio": 0.010000000000000002,
+   "full_chord_m": 0.6,
+   "full_chord_mm": 600.0,
+   "full_height_mm": 150.0,
+   "full_size_label": "1:10 (10%) — model chord 60 mm stands in for a full-size part: chord 600, height 150 mm",
+   "full_width_mm": null,
+   "inverse_ratio": 10.0,
+   "label": "1:10 (10%) — model chord 60 mm",
+   "scaled_chord_m": 0.06,
+   "scaled_frontal_area_m2": null
+  }
+ ],
+ "tol.big": {
+  "cd_uncertainty_frac": 0.17992282296090795,
+  "cl_uncertainty_frac": 0.29162380637465873,
+  "contributions": [
+   {
+    "basis": "fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d",
+    "cd_frac": 0.075,
+    "cl_frac": 0.15,
+    "deviation_mm": 9.0,
+    "source": "chord length"
+   },
+   {
+    "basis": "thin-aerofoil camber sensitivity, ~3x chord-fraction onto C_l",
+    "cd_frac": 0.13333333333333333,
+    "cl_frac": 0.2,
+    "deviation_mm": 4.0,
+    "source": "camber / LE profile"
+   },
+   {
+    "basis": "fractional span error, ~1:1 on C_l via planform area",
+    "cd_frac": 0.045,
+    "cl_frac": 0.15,
+    "deviation_mm": 6.0,
+    "source": "span"
+   },
+   {
+    "basis": "roughness/waviness trips BL; loads onto C_d (~2.5x), little on C_l",
+    "cd_frac": 0.08333333333333333,
+    "cl_frac": 0.006666666666666667,
+    "deviation_mm": 2.0,
+    "source": "surface waviness"
+   }
+  ],
+  "summary": "build tolerance implies +-29.2% on C_l, +-18.0% on C_d (RSS of independent sources):\n  - camber / LE profile: +4.00 mm -> C_l +-20.0%, C_d +-13.3% [thin-aerofoil camber sensitivity, ~3x chord-fraction onto C_l]\n  - chord length: +9.00 mm -> C_l +-15.0%, C_d +-7.5% [fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d]\n  - span: +6.00 mm -> C_l +-15.0%, C_d +-4.5% [fractional span error, ~1:1 on C_l via planform area]\n  - surface waviness: +2.00 mm -> C_l +-0.7%, C_d +-8.3% [roughness/waviness trips BL; loads onto C_d (~2.5x), little on C_l]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+ },
+ "tol.full.all": {
+  "cd_uncertainty_frac": 0.0200776138467144,
+  "cl_uncertainty_frac": 0.011069172978129536,
+  "contributions": [
+   {
+    "basis": "fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d",
+    "cd_frac": 0.00032,
+    "cl_frac": 0.00064,
+    "deviation_mm": 0.8,
+    "source": "chord length"
+   },
+   {
+    "basis": "thin-aerofoil camber sensitivity, ~3x chord-fraction onto C_l",
+    "cd_frac": 0.0008,
+    "cl_frac": 0.0012000000000000001,
+    "deviation_mm": 0.5,
+    "source": "camber / LE profile"
+   },
+   {
+    "basis": "fractional span error, ~1:1 on C_l via planform area",
+    "cd_frac": 0.0013333333333333333,
+    "cl_frac": 0.0044444444444444444,
+    "deviation_mm": 2.0,
+    "source": "span"
+   },
+   {
+    "basis": "roughness/waviness trips BL; loads onto C_d (~2.5x), little on C_l",
+    "cd_frac": 0.0006,
+    "cl_frac": 4.8e-05,
+    "deviation_mm": 0.3,
+    "source": "surface waviness"
+   },
+   {
+    "basis": "fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d",
+    "cd_frac": 0.00047999999999999996,
+    "cl_frac": 0.0009599999999999999,
+    "deviation_mm": -1.2,
+    "source": "chord length"
+   },
+   {
+    "basis": "spray test",
+    "cd_frac": 0.02,
+    "cl_frac": 0.01,
+    "deviation_mm": 0.0,
+    "source": "paint"
+   }
+  ],
+  "summary": "build tolerance implies +-1.1% on C_l, +-2.0% on C_d (RSS of independent sources):\n  - paint: +0.00 mm -> C_l +-1.0%, C_d +-2.0% [spray test]\n  - span: +2.00 mm -> C_l +-0.4%, C_d +-0.1% [fractional span error, ~1:1 on C_l via planform area]\n  - camber / LE profile: +0.50 mm -> C_l +-0.1%, C_d +-0.1% [thin-aerofoil camber sensitivity, ~3x chord-fraction onto C_l]\n  - chord length: -1.20 mm -> C_l +-0.1%, C_d +-0.0% [fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d]\n  - chord length: +0.80 mm -> C_l +-0.1%, C_d +-0.0% [fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d]\n  - surface waviness: +0.30 mm -> C_l +-0.0%, C_d +-0.1% [roughness/waviness trips BL; loads onto C_d (~2.5x), little on C_l]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+ },
+ "tol.full.camber": [
+  {
+   "cd_uncertainty_frac": 0.0008,
+   "cl_uncertainty_frac": 0.0012000000000000001,
+   "contributions": [
+    {
+     "basis": "thin-aerofoil camber sensitivity, ~3x chord-fraction onto C_l",
+     "cd_frac": 0.0008,
+     "cl_frac": 0.0012000000000000001,
+     "deviation_mm": 0.5,
+     "source": "camber / LE profile"
+    }
+   ],
+   "summary": "build tolerance implies +-0.1% on C_l, +-0.1% on C_d (RSS of independent sources):\n  - camber / LE profile: +0.50 mm -> C_l +-0.1%, C_d +-0.1% [thin-aerofoil camber sensitivity, ~3x chord-fraction onto C_l]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+  },
+  true
+ ],
+ "tol.full.chord": [
+  {
+   "cd_uncertainty_frac": 0.00032,
+   "cl_uncertainty_frac": 0.00064,
+   "contributions": [
+    {
+     "basis": "fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d",
+     "cd_frac": 0.00032,
+     "cl_frac": 0.00064,
+     "deviation_mm": 0.8,
+     "source": "chord length"
+    }
+   ],
+   "summary": "build tolerance implies +-0.1% on C_l, +-0.0% on C_d (RSS of independent sources):\n  - chord length: +0.80 mm -> C_l +-0.1%, C_d +-0.0% [fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+  },
+  true
+ ],
+ "tol.full.custom": [
+  {
+   "cd_uncertainty_frac": 0.02,
+   "cl_uncertainty_frac": 0.01,
+   "contributions": [
+    {
+     "basis": "spray test",
+     "cd_frac": 0.02,
+     "cl_frac": 0.01,
+     "deviation_mm": 0.0,
+     "source": "paint"
+    }
+   ],
+   "summary": "build tolerance implies +-1.0% on C_l, +-2.0% on C_d (RSS of independent sources):\n  - paint: +0.00 mm -> C_l +-1.0%, C_d +-2.0% [spray test]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+  },
+  true
+ ],
+ "tol.full.empty": {
+  "cd_uncertainty_frac": 0.0,
+  "cl_uncertainty_frac": 0.0,
+  "contributions": [],
+  "summary": "no tolerance entered yet — measure the built part and add its deviations; an unmeasured build has UNKNOWN, not zero, uncertainty"
+ },
+ "tol.full.neg": [
+  {
+   "cd_uncertainty_frac": 0.00047999999999999996,
+   "cl_uncertainty_frac": 0.0009599999999999999,
+   "contributions": [
+    {
+     "basis": "fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d",
+     "cd_frac": 0.00047999999999999996,
+     "cl_frac": 0.0009599999999999999,
+     "deviation_mm": -1.2,
+     "source": "chord length"
+    }
+   ],
+   "summary": "build tolerance implies +-0.1% on C_l, +-0.0% on C_d (RSS of independent sources):\n  - chord length: -1.20 mm -> C_l +-0.1%, C_d +-0.0% [fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+  },
+  true
+ ],
+ "tol.full.span": [
+  {
+   "cd_uncertainty_frac": 0.0013333333333333333,
+   "cl_uncertainty_frac": 0.0044444444444444444,
+   "contributions": [
+    {
+     "basis": "fractional span error, ~1:1 on C_l via planform area",
+     "cd_frac": 0.0013333333333333333,
+     "cl_frac": 0.0044444444444444444,
+     "deviation_mm": 2.0,
+     "source": "span"
+    }
+   ],
+   "summary": "build tolerance implies +-0.4% on C_l, +-0.1% on C_d (RSS of independent sources):\n  - span: +2.00 mm -> C_l +-0.4%, C_d +-0.1% [fractional span error, ~1:1 on C_l via planform area]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+  },
+  true
+ ],
+ "tol.full.wavy": [
+  {
+   "cd_uncertainty_frac": 0.0006,
+   "cl_uncertainty_frac": 4.8e-05,
+   "contributions": [
+    {
+     "basis": "roughness/waviness trips BL; loads onto C_d (~2.5x), little on C_l",
+     "cd_frac": 0.0006,
+     "cl_frac": 4.8e-05,
+     "deviation_mm": 0.3,
+     "source": "surface waviness"
+    }
+   ],
+   "summary": "build tolerance implies +-0.0% on C_l, +-0.1% on C_d (RSS of independent sources):\n  - surface waviness: +0.30 mm -> C_l +-0.0%, C_d +-0.1% [roughness/waviness trips BL; loads onto C_d (~2.5x), little on C_l]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+  },
+  true
+ ],
+ "tol.half.all": {
+  "cd_uncertainty_frac": 0.020366477426834957,
+  "cl_uncertainty_frac": 0.012117676609802439,
+  "contributions": [
+   {
+    "basis": "fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d",
+    "cd_frac": 0.001,
+    "cl_frac": 0.002,
+    "deviation_mm": 0.8,
+    "source": "chord length"
+   },
+   {
+    "basis": "thin-aerofoil camber sensitivity, ~3x chord-fraction onto C_l",
+    "cd_frac": 0.0025,
+    "cl_frac": 0.00375,
+    "deviation_mm": 0.5,
+    "source": "camber / LE profile"
+   },
+   {
+    "basis": "fractional span error, ~1:1 on C_l via planform area",
+    "cd_frac": 0.0013333333333333333,
+    "cl_frac": 0.0044444444444444444,
+    "deviation_mm": 2.0,
+    "source": "span"
+   },
+   {
+    "basis": "roughness/waviness trips BL; loads onto C_d (~2.5x), little on C_l",
+    "cd_frac": 0.001875,
+    "cl_frac": 0.00015000000000000001,
+    "deviation_mm": 0.3,
+    "source": "surface waviness"
+   },
+   {
+    "basis": "fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d",
+    "cd_frac": 0.0015,
+    "cl_frac": 0.003,
+    "deviation_mm": -1.2,
+    "source": "chord length"
+   },
+   {
+    "basis": "spray test",
+    "cd_frac": 0.02,
+    "cl_frac": 0.01,
+    "deviation_mm": 0.0,
+    "source": "paint"
+   }
+  ],
+  "summary": "build tolerance implies +-1.2% on C_l, +-2.0% on C_d (RSS of independent sources):\n  - paint: +0.00 mm -> C_l +-1.0%, C_d +-2.0% [spray test]\n  - span: +2.00 mm -> C_l +-0.4%, C_d +-0.1% [fractional span error, ~1:1 on C_l via planform area]\n  - camber / LE profile: +0.50 mm -> C_l +-0.4%, C_d +-0.2% [thin-aerofoil camber sensitivity, ~3x chord-fraction onto C_l]\n  - chord length: -1.20 mm -> C_l +-0.3%, C_d +-0.1% [fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d]\n  - chord length: +0.80 mm -> C_l +-0.2%, C_d +-0.1% [fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d]\n  - surface waviness: +0.30 mm -> C_l +-0.0%, C_d +-0.2% [roughness/waviness trips BL; loads onto C_d (~2.5x), little on C_l]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+ },
+ "tol.half.camber": [
+  {
+   "cd_uncertainty_frac": 0.0025,
+   "cl_uncertainty_frac": 0.00375,
+   "contributions": [
+    {
+     "basis": "thin-aerofoil camber sensitivity, ~3x chord-fraction onto C_l",
+     "cd_frac": 0.0025,
+     "cl_frac": 0.00375,
+     "deviation_mm": 0.5,
+     "source": "camber / LE profile"
+    }
+   ],
+   "summary": "build tolerance implies +-0.4% on C_l, +-0.2% on C_d (RSS of independent sources):\n  - camber / LE profile: +0.50 mm -> C_l +-0.4%, C_d +-0.2% [thin-aerofoil camber sensitivity, ~3x chord-fraction onto C_l]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+  },
+  true
+ ],
+ "tol.half.chord": [
+  {
+   "cd_uncertainty_frac": 0.001,
+   "cl_uncertainty_frac": 0.002,
+   "contributions": [
+    {
+     "basis": "fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d",
+     "cd_frac": 0.001,
+     "cl_frac": 0.002,
+     "deviation_mm": 0.8,
+     "source": "chord length"
+    }
+   ],
+   "summary": "build tolerance implies +-0.2% on C_l, +-0.1% on C_d (RSS of independent sources):\n  - chord length: +0.80 mm -> C_l +-0.2%, C_d +-0.1% [fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+  },
+  true
+ ],
+ "tol.half.custom": [
+  {
+   "cd_uncertainty_frac": 0.02,
+   "cl_uncertainty_frac": 0.01,
+   "contributions": [
+    {
+     "basis": "spray test",
+     "cd_frac": 0.02,
+     "cl_frac": 0.01,
+     "deviation_mm": 0.0,
+     "source": "paint"
+    }
+   ],
+   "summary": "build tolerance implies +-1.0% on C_l, +-2.0% on C_d (RSS of independent sources):\n  - paint: +0.00 mm -> C_l +-1.0%, C_d +-2.0% [spray test]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+  },
+  true
+ ],
+ "tol.half.empty": {
+  "cd_uncertainty_frac": 0.0,
+  "cl_uncertainty_frac": 0.0,
+  "contributions": [],
+  "summary": "no tolerance entered yet — measure the built part and add its deviations; an unmeasured build has UNKNOWN, not zero, uncertainty"
+ },
+ "tol.half.neg": [
+  {
+   "cd_uncertainty_frac": 0.0015,
+   "cl_uncertainty_frac": 0.003,
+   "contributions": [
+    {
+     "basis": "fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d",
+     "cd_frac": 0.0015,
+     "cl_frac": 0.003,
+     "deviation_mm": -1.2,
+     "source": "chord length"
+    }
+   ],
+   "summary": "build tolerance implies +-0.3% on C_l, +-0.1% on C_d (RSS of independent sources):\n  - chord length: -1.20 mm -> C_l +-0.3%, C_d +-0.1% [fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+  },
+  true
+ ],
+ "tol.half.span": [
+  {
+   "cd_uncertainty_frac": 0.0013333333333333333,
+   "cl_uncertainty_frac": 0.0044444444444444444,
+   "contributions": [
+    {
+     "basis": "fractional span error, ~1:1 on C_l via planform area",
+     "cd_frac": 0.0013333333333333333,
+     "cl_frac": 0.0044444444444444444,
+     "deviation_mm": 2.0,
+     "source": "span"
+    }
+   ],
+   "summary": "build tolerance implies +-0.4% on C_l, +-0.1% on C_d (RSS of independent sources):\n  - span: +2.00 mm -> C_l +-0.4%, C_d +-0.1% [fractional span error, ~1:1 on C_l via planform area]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+  },
+  true
+ ],
+ "tol.half.wavy": [
+  {
+   "cd_uncertainty_frac": 0.001875,
+   "cl_uncertainty_frac": 0.00015000000000000001,
+   "contributions": [
+    {
+     "basis": "roughness/waviness trips BL; loads onto C_d (~2.5x), little on C_l",
+     "cd_frac": 0.001875,
+     "cl_frac": 0.00015000000000000001,
+     "deviation_mm": 0.3,
+     "source": "surface waviness"
+    }
+   ],
+   "summary": "build tolerance implies +-0.0% on C_l, +-0.2% on C_d (RSS of independent sources):\n  - surface waviness: +0.30 mm -> C_l +-0.0%, C_d +-0.2% [roughness/waviness trips BL; loads onto C_d (~2.5x), little on C_l]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+  },
+  true
+ ],
+ "tol.tall_only.all": {
+  "cd_uncertainty_frac": 0.02061350689879494,
+  "cl_uncertainty_frac": 0.012957785209319693,
+  "contributions": [
+   {
+    "basis": "fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d",
+    "cd_frac": 0.0013333333333333335,
+    "cl_frac": 0.002666666666666667,
+    "deviation_mm": 0.8,
+    "source": "chord length"
+   },
+   {
+    "basis": "thin-aerofoil camber sensitivity, ~3x chord-fraction onto C_l",
+    "cd_frac": 0.0033333333333333335,
+    "cl_frac": 0.005,
+    "deviation_mm": 0.5,
+    "source": "camber / LE profile"
+   },
+   {
+    "basis": "fractional span error, ~1:1 on C_l via planform area",
+    "cd_frac": 0.0013333333333333333,
+    "cl_frac": 0.0044444444444444444,
+    "deviation_mm": 2.0,
+    "source": "span"
+   },
+   {
+    "basis": "roughness/waviness trips BL; loads onto C_d (~2.5x), little on C_l",
+    "cd_frac": 0.0025,
+    "cl_frac": 0.0002,
+    "deviation_mm": 0.3,
+    "source": "surface waviness"
+   },
+   {
+    "basis": "fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d",
+    "cd_frac": 0.002,
+    "cl_frac": 0.004,
+    "deviation_mm": -1.2,
+    "source": "chord length"
+   },
+   {
+    "basis": "spray test",
+    "cd_frac": 0.02,
+    "cl_frac": 0.01,
+    "deviation_mm": 0.0,
+    "source": "paint"
+   }
+  ],
+  "summary": "build tolerance implies +-1.3% on C_l, +-2.1% on C_d (RSS of independent sources):\n  - paint: +0.00 mm -> C_l +-1.0%, C_d +-2.0% [spray test]\n  - camber / LE profile: +0.50 mm -> C_l +-0.5%, C_d +-0.3% [thin-aerofoil camber sensitivity, ~3x chord-fraction onto C_l]\n  - span: +2.00 mm -> C_l +-0.4%, C_d +-0.1% [fractional span error, ~1:1 on C_l via planform area]\n  - chord length: -1.20 mm -> C_l +-0.4%, C_d +-0.2% [fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d]\n  - chord length: +0.80 mm -> C_l +-0.3%, C_d +-0.1% [fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d]\n  - surface waviness: +0.30 mm -> C_l +-0.0%, C_d +-0.2% [roughness/waviness trips BL; loads onto C_d (~2.5x), little on C_l]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+ },
+ "tol.tall_only.camber": [
+  {
+   "cd_uncertainty_frac": 0.0033333333333333335,
+   "cl_uncertainty_frac": 0.005,
+   "contributions": [
+    {
+     "basis": "thin-aerofoil camber sensitivity, ~3x chord-fraction onto C_l",
+     "cd_frac": 0.0033333333333333335,
+     "cl_frac": 0.005,
+     "deviation_mm": 0.5,
+     "source": "camber / LE profile"
+    }
+   ],
+   "summary": "build tolerance implies +-0.5% on C_l, +-0.3% on C_d (RSS of independent sources):\n  - camber / LE profile: +0.50 mm -> C_l +-0.5%, C_d +-0.3% [thin-aerofoil camber sensitivity, ~3x chord-fraction onto C_l]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+  },
+  true
+ ],
+ "tol.tall_only.chord": [
+  {
+   "cd_uncertainty_frac": 0.0013333333333333335,
+   "cl_uncertainty_frac": 0.002666666666666667,
+   "contributions": [
+    {
+     "basis": "fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d",
+     "cd_frac": 0.0013333333333333335,
+     "cl_frac": 0.002666666666666667,
+     "deviation_mm": 0.8,
+     "source": "chord length"
+    }
+   ],
+   "summary": "build tolerance implies +-0.3% on C_l, +-0.1% on C_d (RSS of independent sources):\n  - chord length: +0.80 mm -> C_l +-0.3%, C_d +-0.1% [fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+  },
+  true
+ ],
+ "tol.tall_only.custom": [
+  {
+   "cd_uncertainty_frac": 0.02,
+   "cl_uncertainty_frac": 0.01,
+   "contributions": [
+    {
+     "basis": "spray test",
+     "cd_frac": 0.02,
+     "cl_frac": 0.01,
+     "deviation_mm": 0.0,
+     "source": "paint"
+    }
+   ],
+   "summary": "build tolerance implies +-1.0% on C_l, +-2.0% on C_d (RSS of independent sources):\n  - paint: +0.00 mm -> C_l +-1.0%, C_d +-2.0% [spray test]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+  },
+  true
+ ],
+ "tol.tall_only.empty": {
+  "cd_uncertainty_frac": 0.0,
+  "cl_uncertainty_frac": 0.0,
+  "contributions": [],
+  "summary": "no tolerance entered yet — measure the built part and add its deviations; an unmeasured build has UNKNOWN, not zero, uncertainty"
+ },
+ "tol.tall_only.neg": [
+  {
+   "cd_uncertainty_frac": 0.002,
+   "cl_uncertainty_frac": 0.004,
+   "contributions": [
+    {
+     "basis": "fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d",
+     "cd_frac": 0.002,
+     "cl_frac": 0.004,
+     "deviation_mm": -1.2,
+     "source": "chord length"
+    }
+   ],
+   "summary": "build tolerance implies +-0.4% on C_l, +-0.2% on C_d (RSS of independent sources):\n  - chord length: -1.20 mm -> C_l +-0.4%, C_d +-0.2% [fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+  },
+  true
+ ],
+ "tol.tall_only.span": [
+  {
+   "cd_uncertainty_frac": 0.0013333333333333333,
+   "cl_uncertainty_frac": 0.0044444444444444444,
+   "contributions": [
+    {
+     "basis": "fractional span error, ~1:1 on C_l via planform area",
+     "cd_frac": 0.0013333333333333333,
+     "cl_frac": 0.0044444444444444444,
+     "deviation_mm": 2.0,
+     "source": "span"
+    }
+   ],
+   "summary": "build tolerance implies +-0.4% on C_l, +-0.1% on C_d (RSS of independent sources):\n  - span: +2.00 mm -> C_l +-0.4%, C_d +-0.1% [fractional span error, ~1:1 on C_l via planform area]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+  },
+  true
+ ],
+ "tol.tall_only.wavy": [
+  {
+   "cd_uncertainty_frac": 0.0025,
+   "cl_uncertainty_frac": 0.0002,
+   "contributions": [
+    {
+     "basis": "roughness/waviness trips BL; loads onto C_d (~2.5x), little on C_l",
+     "cd_frac": 0.0025,
+     "cl_frac": 0.0002,
+     "deviation_mm": 0.3,
+     "source": "surface waviness"
+    }
+   ],
+   "summary": "build tolerance implies +-0.0% on C_l, +-0.2% on C_d (RSS of independent sources):\n  - surface waviness: +0.30 mm -> C_l +-0.0%, C_d +-0.2% [roughness/waviness trips BL; loads onto C_d (~2.5x), little on C_l]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+  },
+  true
+ ],
+ "tol.third.all": {
+  "cd_uncertainty_frac": 0.02085899752571484,
+  "cl_uncertainty_frac": 0.013751024922519525,
+  "contributions": [
+   {
+    "basis": "fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d",
+    "cd_frac": 0.0016,
+    "cl_frac": 0.0032,
+    "deviation_mm": 0.8,
+    "source": "chord length"
+   },
+   {
+    "basis": "thin-aerofoil camber sensitivity, ~3x chord-fraction onto C_l",
+    "cd_frac": 0.004,
+    "cl_frac": 0.006,
+    "deviation_mm": 0.5,
+    "source": "camber / LE profile"
+   },
+   {
+    "basis": "fractional span error, ~1:1 on C_l via planform area",
+    "cd_frac": 0.0013333333333333333,
+    "cl_frac": 0.0044444444444444444,
+    "deviation_mm": 2.0,
+    "source": "span"
+   },
+   {
+    "basis": "roughness/waviness trips BL; loads onto C_d (~2.5x), little on C_l",
+    "cd_frac": 0.0029999999999999996,
+    "cl_frac": 0.00023999999999999998,
+    "deviation_mm": 0.3,
+    "source": "surface waviness"
+   },
+   {
+    "basis": "fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d",
+    "cd_frac": 0.0024,
+    "cl_frac": 0.0048,
+    "deviation_mm": -1.2,
+    "source": "chord length"
+   },
+   {
+    "basis": "spray test",
+    "cd_frac": 0.02,
+    "cl_frac": 0.01,
+    "deviation_mm": 0.0,
+    "source": "paint"
+   }
+  ],
+  "summary": "build tolerance implies +-1.4% on C_l, +-2.1% on C_d (RSS of independent sources):\n  - paint: +0.00 mm -> C_l +-1.0%, C_d +-2.0% [spray test]\n  - camber / LE profile: +0.50 mm -> C_l +-0.6%, C_d +-0.4% [thin-aerofoil camber sensitivity, ~3x chord-fraction onto C_l]\n  - chord length: -1.20 mm -> C_l +-0.5%, C_d +-0.2% [fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d]\n  - span: +2.00 mm -> C_l +-0.4%, C_d +-0.1% [fractional span error, ~1:1 on C_l via planform area]\n  - chord length: +0.80 mm -> C_l +-0.3%, C_d +-0.2% [fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d]\n  - surface waviness: +0.30 mm -> C_l +-0.0%, C_d +-0.3% [roughness/waviness trips BL; loads onto C_d (~2.5x), little on C_l]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+ },
+ "tol.third.camber": [
+  {
+   "cd_uncertainty_frac": 0.004,
+   "cl_uncertainty_frac": 0.006,
+   "contributions": [
+    {
+     "basis": "thin-aerofoil camber sensitivity, ~3x chord-fraction onto C_l",
+     "cd_frac": 0.004,
+     "cl_frac": 0.006,
+     "deviation_mm": 0.5,
+     "source": "camber / LE profile"
+    }
+   ],
+   "summary": "build tolerance implies +-0.6% on C_l, +-0.4% on C_d (RSS of independent sources):\n  - camber / LE profile: +0.50 mm -> C_l +-0.6%, C_d +-0.4% [thin-aerofoil camber sensitivity, ~3x chord-fraction onto C_l]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+  },
+  true
+ ],
+ "tol.third.chord": [
+  {
+   "cd_uncertainty_frac": 0.0016,
+   "cl_uncertainty_frac": 0.0032,
+   "contributions": [
+    {
+     "basis": "fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d",
+     "cd_frac": 0.0016,
+     "cl_frac": 0.0032,
+     "deviation_mm": 0.8,
+     "source": "chord length"
+    }
+   ],
+   "summary": "build tolerance implies +-0.3% on C_l, +-0.2% on C_d (RSS of independent sources):\n  - chord length: +0.80 mm -> C_l +-0.3%, C_d +-0.2% [fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+  },
+  true
+ ],
+ "tol.third.custom": [
+  {
+   "cd_uncertainty_frac": 0.02,
+   "cl_uncertainty_frac": 0.01,
+   "contributions": [
+    {
+     "basis": "spray test",
+     "cd_frac": 0.02,
+     "cl_frac": 0.01,
+     "deviation_mm": 0.0,
+     "source": "paint"
+    }
+   ],
+   "summary": "build tolerance implies +-1.0% on C_l, +-2.0% on C_d (RSS of independent sources):\n  - paint: +0.00 mm -> C_l +-1.0%, C_d +-2.0% [spray test]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+  },
+  true
+ ],
+ "tol.third.empty": {
+  "cd_uncertainty_frac": 0.0,
+  "cl_uncertainty_frac": 0.0,
+  "contributions": [],
+  "summary": "no tolerance entered yet — measure the built part and add its deviations; an unmeasured build has UNKNOWN, not zero, uncertainty"
+ },
+ "tol.third.neg": [
+  {
+   "cd_uncertainty_frac": 0.0024,
+   "cl_uncertainty_frac": 0.0048,
+   "contributions": [
+    {
+     "basis": "fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d",
+     "cd_frac": 0.0024,
+     "cl_frac": 0.0048,
+     "deviation_mm": -1.2,
+     "source": "chord length"
+    }
+   ],
+   "summary": "build tolerance implies +-0.5% on C_l, +-0.2% on C_d (RSS of independent sources):\n  - chord length: -1.20 mm -> C_l +-0.5%, C_d +-0.2% [fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+  },
+  true
+ ],
+ "tol.third.span": [
+  {
+   "cd_uncertainty_frac": 0.0013333333333333333,
+   "cl_uncertainty_frac": 0.0044444444444444444,
+   "contributions": [
+    {
+     "basis": "fractional span error, ~1:1 on C_l via planform area",
+     "cd_frac": 0.0013333333333333333,
+     "cl_frac": 0.0044444444444444444,
+     "deviation_mm": 2.0,
+     "source": "span"
+    }
+   ],
+   "summary": "build tolerance implies +-0.4% on C_l, +-0.1% on C_d (RSS of independent sources):\n  - span: +2.00 mm -> C_l +-0.4%, C_d +-0.1% [fractional span error, ~1:1 on C_l via planform area]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+  },
+  true
+ ],
+ "tol.third.wavy": [
+  {
+   "cd_uncertainty_frac": 0.0029999999999999996,
+   "cl_uncertainty_frac": 0.00023999999999999998,
+   "contributions": [
+    {
+     "basis": "roughness/waviness trips BL; loads onto C_d (~2.5x), little on C_l",
+     "cd_frac": 0.0029999999999999996,
+     "cl_frac": 0.00023999999999999998,
+     "deviation_mm": 0.3,
+     "source": "surface waviness"
+    }
+   ],
+   "summary": "build tolerance implies +-0.0% on C_l, +-0.3% on C_d (RSS of independent sources):\n  - surface waviness: +0.30 mm -> C_l +-0.0%, C_d +-0.3% [roughness/waviness trips BL; loads onto C_d (~2.5x), little on C_l]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+  },
+  true
+ ],
+ "tol.tiny.all": {
+  "cd_uncertainty_frac": 0.03130894440890654,
+  "cl_uncertainty_frac": 0.036380363717224314,
+  "contributions": [
+   {
+    "basis": "fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d",
+    "cd_frac": 0.006666666666666667,
+    "cl_frac": 0.013333333333333334,
+    "deviation_mm": 0.8,
+    "source": "chord length"
+   },
+   {
+    "basis": "thin-aerofoil camber sensitivity, ~3x chord-fraction onto C_l",
+    "cd_frac": 0.016666666666666666,
+    "cl_frac": 0.025,
+    "deviation_mm": 0.5,
+    "source": "camber / LE profile"
+   },
+   {
+    "basis": "fractional span error, ~1:1 on C_l via planform area",
+    "cd_frac": 0.0013333333333333333,
+    "cl_frac": 0.0044444444444444444,
+    "deviation_mm": 2.0,
+    "source": "span"
+   },
+   {
+    "basis": "roughness/waviness trips BL; loads onto C_d (~2.5x), little on C_l",
+    "cd_frac": 0.0125,
+    "cl_frac": 0.001,
+    "deviation_mm": 0.3,
+    "source": "surface waviness"
+   },
+   {
+    "basis": "fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d",
+    "cd_frac": 0.01,
+    "cl_frac": 0.02,
+    "deviation_mm": -1.2,
+    "source": "chord length"
+   },
+   {
+    "basis": "spray test",
+    "cd_frac": 0.02,
+    "cl_frac": 0.01,
+    "deviation_mm": 0.0,
+    "source": "paint"
+   }
+  ],
+  "summary": "build tolerance implies +-3.6% on C_l, +-3.1% on C_d (RSS of independent sources):\n  - camber / LE profile: +0.50 mm -> C_l +-2.5%, C_d +-1.7% [thin-aerofoil camber sensitivity, ~3x chord-fraction onto C_l]\n  - chord length: -1.20 mm -> C_l +-2.0%, C_d +-1.0% [fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d]\n  - chord length: +0.80 mm -> C_l +-1.3%, C_d +-0.7% [fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d]\n  - paint: +0.00 mm -> C_l +-1.0%, C_d +-2.0% [spray test]\n  - span: +2.00 mm -> C_l +-0.4%, C_d +-0.1% [fractional span error, ~1:1 on C_l via planform area]\n  - surface waviness: +0.30 mm -> C_l +-0.1%, C_d +-1.2% [roughness/waviness trips BL; loads onto C_d (~2.5x), little on C_l]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+ },
+ "tol.tiny.camber": [
+  {
+   "cd_uncertainty_frac": 0.016666666666666666,
+   "cl_uncertainty_frac": 0.025,
+   "contributions": [
+    {
+     "basis": "thin-aerofoil camber sensitivity, ~3x chord-fraction onto C_l",
+     "cd_frac": 0.016666666666666666,
+     "cl_frac": 0.025,
+     "deviation_mm": 0.5,
+     "source": "camber / LE profile"
+    }
+   ],
+   "summary": "build tolerance implies +-2.5% on C_l, +-1.7% on C_d (RSS of independent sources):\n  - camber / LE profile: +0.50 mm -> C_l +-2.5%, C_d +-1.7% [thin-aerofoil camber sensitivity, ~3x chord-fraction onto C_l]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+  },
+  true
+ ],
+ "tol.tiny.chord": [
+  {
+   "cd_uncertainty_frac": 0.006666666666666667,
+   "cl_uncertainty_frac": 0.013333333333333334,
+   "contributions": [
+    {
+     "basis": "fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d",
+     "cd_frac": 0.006666666666666667,
+     "cl_frac": 0.013333333333333334,
+     "deviation_mm": 0.8,
+     "source": "chord length"
+    }
+   ],
+   "summary": "build tolerance implies +-1.3% on C_l, +-0.7% on C_d (RSS of independent sources):\n  - chord length: +0.80 mm -> C_l +-1.3%, C_d +-0.7% [fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+  },
+  true
+ ],
+ "tol.tiny.custom": [
+  {
+   "cd_uncertainty_frac": 0.02,
+   "cl_uncertainty_frac": 0.01,
+   "contributions": [
+    {
+     "basis": "spray test",
+     "cd_frac": 0.02,
+     "cl_frac": 0.01,
+     "deviation_mm": 0.0,
+     "source": "paint"
+    }
+   ],
+   "summary": "build tolerance implies +-1.0% on C_l, +-2.0% on C_d (RSS of independent sources):\n  - paint: +0.00 mm -> C_l +-1.0%, C_d +-2.0% [spray test]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+  },
+  true
+ ],
+ "tol.tiny.empty": {
+  "cd_uncertainty_frac": 0.0,
+  "cl_uncertainty_frac": 0.0,
+  "contributions": [],
+  "summary": "no tolerance entered yet — measure the built part and add its deviations; an unmeasured build has UNKNOWN, not zero, uncertainty"
+ },
+ "tol.tiny.neg": [
+  {
+   "cd_uncertainty_frac": 0.01,
+   "cl_uncertainty_frac": 0.02,
+   "contributions": [
+    {
+     "basis": "fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d",
+     "cd_frac": 0.01,
+     "cl_frac": 0.02,
+     "deviation_mm": -1.2,
+     "source": "chord length"
+    }
+   ],
+   "summary": "build tolerance implies +-2.0% on C_l, +-1.0% on C_d (RSS of independent sources):\n  - chord length: -1.20 mm -> C_l +-2.0%, C_d +-1.0% [fractional chord error, ~1:1 on C_l reference, ~0.5:1 on C_d]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+  },
+  true
+ ],
+ "tol.tiny.span": [
+  {
+   "cd_uncertainty_frac": 0.0013333333333333333,
+   "cl_uncertainty_frac": 0.0044444444444444444,
+   "contributions": [
+    {
+     "basis": "fractional span error, ~1:1 on C_l via planform area",
+     "cd_frac": 0.0013333333333333333,
+     "cl_frac": 0.0044444444444444444,
+     "deviation_mm": 2.0,
+     "source": "span"
+    }
+   ],
+   "summary": "build tolerance implies +-0.4% on C_l, +-0.1% on C_d (RSS of independent sources):\n  - span: +2.00 mm -> C_l +-0.4%, C_d +-0.1% [fractional span error, ~1:1 on C_l via planform area]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+  },
+  true
+ ],
+ "tol.tiny.wavy": [
+  {
+   "cd_uncertainty_frac": 0.0125,
+   "cl_uncertainty_frac": 0.001,
+   "contributions": [
+    {
+     "basis": "roughness/waviness trips BL; loads onto C_d (~2.5x), little on C_l",
+     "cd_frac": 0.0125,
+     "cl_frac": 0.001,
+     "deviation_mm": 0.3,
+     "source": "surface waviness"
+    }
+   ],
+   "summary": "build tolerance implies +-0.1% on C_l, +-1.2% on C_d (RSS of independent sources):\n  - surface waviness: +0.30 mm -> C_l +-0.1%, C_d +-1.2% [roughness/waviness trips BL; loads onto C_d (~2.5x), little on C_l]\n  NOTE: sensitivities are order-of-magnitude ENGINEERING ESTIMATES, not measured for this wing — they size a band, not a force."
+  },
+  true
+ ]
+}

@@ -723,3 +723,21 @@ tests = [
     "tests/test_mutation_units.py",
 ]
 deselect = []
+
+[[group]]
+name = "dfmea"
+files = ["suspension/dfmea.py"]
+tests = [
+    "tests/test_mutation_dfmea.py",
+    "tests/test_dfmea.py",
+]
+deselect = []
+
+[[group]]
+name = "aero_scale_model"
+files = ["suspension/aero/scale_model.py"]
+tests = [
+    "tests/test_mutation_aero_scale_model.py",
+    "tests/test_scale_model.py",
+]
+deselect = []
