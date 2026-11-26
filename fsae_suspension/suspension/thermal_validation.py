@@ -117,8 +117,9 @@ def validate_traces(log_text: str) -> dict:
     out = []
     for i, r in enumerate(_rows(log_text), start=2):
         try:
+            ext = r.get("external", "1") not in ("0", "false")  # pragma: no mutate (IPC-2152 uses one k for both layers, so the layer does not enter the rise)
             tr = Trace(name=f"row{i}", net="test", owner_subsystem="electrics", width_mm=float(r["width_mm"]),  # pragma: no mutate (name, net and owner do not enter the rise)
-                       copper_oz=float(r["copper_oz"]), is_external=r.get("external", "1") not in ("0", "false"))  # pragma: no mutate (IPC-2152 uses one k for both layers, so the layer does not enter the rise)
+                       copper_oz=float(r["copper_oz"]), is_external=ext)
             current, measured = float(r["current_a"]), float(r["measured_rise_c"])
         except (KeyError, ValueError):
             raise ValueError(f"trace log line {i}: needs width_mm, copper_oz, current_a and measured_rise_c "
@@ -166,8 +167,8 @@ def main(argv=None) -> int:
     a = ap.parse_args(argv)
     try:
         if a.kind == "pack":
-            res = validate_pack(json.loads(Path(a.config).read_text(encoding="utf-8")),  # pragma: no mutate (codec names are case-blind and the locale default is UTF-8 here)
-                                Path(a.log).read_text(encoding="utf-8-sig"))  # pragma: no mutate (same; a kept BOM is stripped by _rows)
+            log = Path(a.log).read_text(encoding="utf-8-sig")  # pragma: no mutate (same; a kept BOM is stripped by _rows)
+            res = validate_pack(json.loads(Path(a.config).read_text(encoding="utf-8")), log)  # pragma: no mutate (codec names are case-blind and the locale default is UTF-8 here)
         else:
             res = validate_traces(Path(a.log).read_text(encoding="utf-8-sig"))  # pragma: no mutate (same; a kept BOM is stripped by _rows)
     except (OSError, ValueError, KeyError, json.JSONDecodeError) as e:
