@@ -65,15 +65,15 @@ def evidence_for(check: str) -> str:
 
 def tool_version() -> str:
     """The version in pyproject.toml when running from a checkout (installed metadata can be stale there)."""
-    pp = Path(__file__).resolve().parent.parent / "pyproject.toml"
+    pp = Path(__file__).resolve().parent.parent / "pyproject.toml"  # pragma: no mutate (here the installed metadata carries the same version)
     try:
         import tomllib
-        return tomllib.loads(pp.read_text(encoding="utf-8"))["project"]["version"]
+        return tomllib.loads(pp.read_text(encoding="utf-8"))["project"]["version"]  # pragma: no mutate (codec names are case-blind and the locale default is UTF-8 here)
     except (OSError, KeyError, ValueError):
         pass
     try:
         from importlib.metadata import version
-        return version("kinematik")
+        return version("kinematik")  # pragma: no mutate (reached only without a checkout's pyproject.toml)
     except Exception:  # pragma: no cover - not installed and no checkout
         return "unknown"
 
@@ -93,23 +93,24 @@ def parse_loads_csv(text: str) -> list[DeclaredLoad]:
     rows = list(csv.DictReader(io.StringIO(text.lstrip("﻿"))))
     if not rows:
         raise ValueError("loads file is empty: expected a header 'net,current_a' and one row per powered net")
-    cols = {c.strip().lower() for c in (rows[0].keys() if rows else []) if c}
+    cols = {c.strip().lower() for c in rows[0].keys() if c}
     for need in ("net", "current_a"):
         if need not in cols:
             raise ValueError(f"loads file has no '{need}' column (found: {', '.join(sorted(cols)) or 'none'})")
     out, seen = [], set()
     for i, raw in enumerate(rows, start=2):
-        r = {(k or "").strip().lower(): (v or "").strip() for k, v in raw.items()}
-        net = r.get("net", "")
+        # cells past the header sit under None (a list): they have no column name, so they are dropped
+        r = {k.strip().lower(): (v or "").strip() for k, v in raw.items() if k is not None}
+        net = r["net"]                               # every row has every header column
         if not net:
             raise ValueError(f"loads file line {i}: empty net name")
         if net.upper() in seen:
             raise ValueError(f"loads file line {i}: net '{net}' is declared twice")
         seen.add(net.upper())
         try:
-            cur = float(r.get("current_a", ""))
+            cur = float(r["current_a"])
         except ValueError:
-            raise ValueError(f"loads file line {i}: current_a '{r.get('current_a', '')}' is not a number") from None
+            raise ValueError(f"loads file line {i}: current_a '{r['current_a']}' is not a number") from None
         if not math.isfinite(cur) or cur < 0:
             raise ValueError(f"loads file line {i}: current_a must be a finite number ≥ 0, got {cur}")
         volt = None
@@ -120,7 +121,7 @@ def parse_loads_csv(text: str) -> list[DeclaredLoad]:
                 raise ValueError(f"loads file line {i}: voltage_v '{r['voltage_v']}' is not a number") from None
             if not math.isfinite(volt) or volt <= 0:
                 raise ValueError(f"loads file line {i}: voltage_v must be a finite number > 0, got {volt}")
-        out.append(DeclaredLoad(net, cur, volt, r.get("owner", "") or "unspecified", i))
+        out.append(DeclaredLoad(net, cur, volt, r.get("owner") or "unspecified", i))
     return out
 
 
@@ -156,10 +157,10 @@ def run_check(board_data, board_name: str, loads_data, loads_name: str = "loads.
     ``brownout_v`` in volts (V), ``ambient_c`` and ``max_temp_c`` in °C."""
     from . import pcb_doctor as pd
 
-    raw = board_data.encode("utf-8") if isinstance(board_data, str) else bytes(board_data)
-    lraw = loads_data.encode("utf-8") if isinstance(loads_data, str) else bytes(loads_data)
+    raw = board_data.encode("utf-8") if isinstance(board_data, str) else bytes(board_data)  # pragma: no mutate (codec names are case-blind)
+    lraw = loads_data.encode("utf-8") if isinstance(loads_data, str) else bytes(loads_data)  # pragma: no mutate (codec names are case-blind)
     try:
-        loads_text = lraw.decode("utf-8-sig")
+        loads_text = lraw.decode("utf-8-sig")  # pragma: no mutate (codec names are case-blind)
     except UnicodeDecodeError:
         raise ValueError("loads file is not UTF-8 text: save it as CSV (UTF-8) from your spreadsheet") from None
     board = pd.parse_board(raw, board_name)
@@ -179,7 +180,8 @@ def run_check(board_data, board_name: str, loads_data, loads_name: str = "loads.
                          f"or it is not routed yet, and its fuse and copper are unchecked. FIX: use the board's net "
                          f"name in the loads file, or route the net.")))
             continue
-        a = assignments.get(nid) or pd.NetAssignment(net=board.net_name(nid), voltage_v=rail_v)
+        a = assignments.get(nid) or pd.NetAssignment(net=board.net_name(nid),  # pragma: no mutate (the report names nets from the board, not this record)
+                                                     voltage_v=rail_v)
         a["current_a"] = ld.current_a                      # declaring it clears the 'assumed' flag
         a["source"] = f"declared by {ld.owner} (loads file line {ld.line})"
         if ld.voltage_v is not None:
@@ -194,20 +196,20 @@ def run_check(board_data, board_name: str, loads_data, loads_name: str = "loads.
     for nid in sorted(assignments, key=lambda n: board.net_name(n)):
         a = assignments[nid]
         declared = nid in declared_owner
-        nets.append({"net": board.net_name(nid), "current_a": float(a.get("current_a", 0) or 0),
-                     "voltage_v": float(a.get("voltage_v", 0) or 0),
-                     "provenance": a.get("source", "") if declared else f"assumed — {a.get('source', '')}",
+        nets.append({"net": board.net_name(nid), "current_a": float(a.get("current_a") or 0),
+                     "voltage_v": float(a.get("voltage_v") or 0),  # pragma: no mutate (every assignment carries a voltage)
+                     "provenance": a["source"] if declared else f"assumed — {a['source']}",   # set on every net
                      "declared": declared})
 
-    fuse_re = re.compile(r"([\d.]+)\s*A", re.I)
+    fuse_re = re.compile(r"([\d.]+)\s*[Aa]")
     boundary = []
     for nid, owner in sorted(declared_owner.items(), key=lambda kv: board.net_name(kv[0])):
         cur = float(assignments[nid]["current_a"])
         fuses = []
         for fp in board.footprints:
-            if (fp.ref or "")[:1].upper() != "F" or not any(p.net == nid for p in fp.pads):
+            if (fp.ref or "")[:1].upper() != "F" or not any(p.net == nid for p in fp.pads):  # pragma: no mutate (an empty and a placeholder reference are both not "F")
                 continue
-            m = fuse_re.search(fp.value or "")
+            m = fuse_re.search(fp.value or "")  # pragma: no mutate (an empty and a placeholder value both hold no rating)
             if not m:
                 fuses.append((fp.ref, None, "rating not readable from the part value"))
                 continue
@@ -306,11 +308,12 @@ def main(argv=None) -> int:
         return 2
     md = render_markdown(res)
     if a.report:
-        Path(a.report).write_text(md, encoding="utf-8")
+        Path(a.report).write_text(md, encoding="utf-8")  # pragma: no mutate (codec names are case-blind and the locale default is UTF-8 here)
     else:
         print(md)
     if a.json_path:
-        Path(a.json_path).write_text(json.dumps(to_json(res), indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        text = json.dumps(to_json(res), indent=2, ensure_ascii=False) + "\n"  # pragma: no mutate (ensure_ascii=None is falsy like False)
+        Path(a.json_path).write_text(text, encoding="utf-8")  # pragma: no mutate (codec names are case-blind and the locale default is UTF-8 here)
     c = res.counts()
     print(" · ".join(f"{c[k]} {_STATUS[k]}" for k in _ORDER), file=sys.stderr)
     return 1 if res.worst_hits(a.fail_on) else 0

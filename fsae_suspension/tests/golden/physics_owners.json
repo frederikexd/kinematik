@@ -1,0 +1,238 @@
+{
+ "all": [
+  "Quantity",
+  "PHYSICS_OWNERS",
+  "owner_of",
+  "mirrors_of",
+  "unowned_report"
+ ],
+ "bare": {
+  "agreement": "",
+  "delegates": [],
+  "description": "d",
+  "key": "k",
+  "mirrors": [],
+  "owner": "o"
+ },
+ "lookup.air_density": [
+  "suspension/laptime.py",
+  [
+   "suspension/pt_integration.py",
+   "suspension/ggv.py",
+   "suspension/aero/scale_model.py"
+  ]
+ ],
+ "lookup.anti_dive_pct": [
+  "suspension/kinematics.py",
+  [
+   "suspension/adapter.py"
+  ]
+ ],
+ "lookup.anti_squat_pct": [
+  "suspension/kinematics.py",
+  [
+   "suspension/adapter.py"
+  ]
+ ],
+ "lookup.awg_area_mm2": [
+  "suspension/harness.py",
+  [
+   "suspension/fuse_test.py"
+  ]
+ ],
+ "lookup.compressible_mass_flow": [
+  "suspension/throttle_dynamics.py",
+  []
+ ],
+ "lookup.evidence_grade": [
+  "suspension/proof_engine.py",
+  [
+   "suspension/risk_propagation.py"
+  ]
+ ],
+ "lookup.front_view_instant_center": [
+  "suspension/kinematics.py",
+  [
+   "suspension/adapter.py"
+  ]
+ ],
+ "lookup.lateral_limit_at_speed": [
+  "suspension/ggv.py",
+  []
+ ],
+ "lookup.longitudinal_envelope": [
+  "suspension/laptime.py",
+  [
+   "suspension/ggv.py",
+   "suspension/lapsim.py"
+  ]
+ ],
+ "lookup.reference_geometry": [
+  "suspension/kinematics.py",
+  []
+ ],
+ "lookup.regen_energy": [
+  "suspension/ev_powertrain.py",
+  [
+   "suspension/pack_thermal.py"
+  ]
+ ],
+ "lookup.roll_center_height": [
+  "suspension/dynamics.py",
+  [
+   "suspension/ghost_topology.py"
+  ]
+ ],
+ "lookup.rotor_bulk_temperature": [
+  "suspension/brake_thermal.py::TwoNodeRotorPad",
+  [
+   "suspension/brake_thermal.py::OneDRotor"
+  ]
+ ],
+ "lookup.unknown": [
+  null,
+  [],
+  null
+ ],
+ "register": [
+  {
+   "agreement": "Native and generic solvers agree to 4e-6 on the shared reference geometry. Independently confirmed by static equilibrium of the upright (26.220% both ways) and by a virtual-work derivation. They once differed because each built a side-view instant centre from a different pair of carrier points — for a non-planar linkage that centre is not a shared object, so both now use the force point's own path slope.",
+   "delegates": [
+    "suspension/dynamics.py"
+   ],
+   "description": "Front anti-dive, % — outboard brakes, contact-patch reference",
+   "key": "anti_dive_pct",
+   "mirrors": [
+    "suspension/adapter.py"
+   ],
+   "owner": "suspension/kinematics.py"
+  },
+  {
+   "agreement": "Agree to 4e-6. Static equilibrium puts the wheel-centre shortcut at 17.1% against 16.1% for the fully modelled halfshaft torque path — the shortcut is exact only at zero camber and zero scrub, leaving ~1 pp. Bounded by test_anti_squat_shortcut_error_is_bounded.",
+   "delegates": [
+    "suspension/dynamics.py"
+   ],
+   "description": "Rear anti-squat, % — inboard drive, wheel-centre reference",
+   "key": "anti_squat_pct",
+   "mirrors": [
+    "suspension/adapter.py"
+   ],
+   "owner": "suspension/kinematics.py"
+  },
+  {
+   "agreement": "Identical through travel. They split only in the degenerate branch: with the IC directly above the contact patch the roll centre is at infinity, and dynamics returned contact-patch height — about 0 mm, which reads as a legitimate design target rather than a failure, and slipped past an isfinite() guard built for exactly that case.",
+   "delegates": [],
+   "description": "Front-view roll-centre height from one corner's IC, mm",
+   "key": "roll_center_height",
+   "mirrors": [
+    "suspension/ghost_topology.py"
+   ],
+   "owner": "suspension/dynamics.py"
+  },
+  {
+   "agreement": "Both use the exact velocity construction (axis x r, perpendiculars intersected). Reduces to the classic hand construction when the pivot axes are parallel to x; pinned by test_instant_centre_matches_hand_construction_on_flat_pickups.",
+   "delegates": [],
+   "description": "Front-view instant centre of the upright, (y, z) mm",
+   "key": "front_view_instant_center",
+   "mirrors": [
+    "suspension/adapter.py"
+   ],
+   "owner": "suspension/kinematics.py"
+  },
+  {
+   "agreement": "laptime and ggv agree to 0.2% across the envelope INTERIOR, not merely on its three axes — the pre-existing cross-check sampled only the axes and passed while the two were 43% apart two degrees off them. lapsim is a separate point-mass solver with no friction-circle coupling by design; it is a MIRROR for the brake ceiling only, not for the interior.",
+   "delegates": [],
+   "description": "Available longitudinal g at speed under combined slip",
+   "key": "longitudinal_envelope",
+   "mirrors": [
+    "suspension/ggv.py",
+    "suspension/lapsim.py"
+   ],
+   "owner": "suspension/laptime.py"
+  },
+  {
+   "agreement": "laptime calls ggv._max_lateral_g_at_speed rather than scaling mu linearly with downforce. Tyre mu falls with load, so the linear form overstated the limit by 4.9% at 30 m/s.",
+   "delegates": [
+    "suspension/laptime.py"
+   ],
+   "description": "Peak lateral g including aero downforce, load-sensitive",
+   "key": "lateral_limit_at_speed",
+   "mirrors": [],
+   "owner": "suspension/ggv.py"
+  },
+  {
+   "agreement": "The current trace integrates to the same energy as the energy model, 0.047% apart (discretisation only). Both subtract drag and rolling resistance, which are not recoverable — pack_thermal silently kept the old form after ev_powertrain was fixed.",
+   "delegates": [],
+   "description": "Energy recoverable under braking, J",
+   "key": "regen_energy",
+   "mirrors": [
+    "suspension/pack_thermal.py"
+   ],
+   "owner": "suspension/ev_powertrain.py"
+  },
+  {
+   "agreement": "topologies.example('double_wishbone') reads Hardpoints.default() rather than repeating the literals. It was a copy, so the cross-solver agreement test silently compared two different cars.",
+   "delegates": [
+    "suspension/topologies.py"
+   ],
+   "description": "The default double-wishbone hardpoint set",
+   "key": "reference_geometry",
+   "mirrors": [],
+   "owner": "suspension/kinematics.py"
+  },
+  {
+   "agreement": "risk_propagation.Confidence is a different axis (how an EDGE was derived) and maps onto EvidenceGrade via .evidence_grade, ceiling MODELLED. Its MEASURED once meant 'a solver produced this', which in the canonical vocabulary is MODELLED — the same badge claiming hardware where there was none.",
+   "delegates": [],
+   "description": "How well a number is known",
+   "key": "evidence_grade",
+   "mirrors": [
+    "suspension/risk_propagation.py"
+   ],
+   "owner": "suspension/proof_engine.py"
+  },
+  {
+   "agreement": "TWO OPPOSING EFFECTS that partially cancelled, which is why the raw comparison looked like one 28.8% gap and hid both.\n  (1) BUG, fixed. The 1-D model solves HALF the thickness and takes half the heat, but applied the FULL area_factor to its single face and implied the other half by symmetry — shedding twice. Halving it is demanded by that model's own energy budget, not tuned to match the lumped one. Endpoint moves -28.8% -> +14.8%.\n  (2) SCOPE, not an error. The 2-node conducts into a pad node and sheds from it; the 1-D has no pad. Remove the pad path from the 2-node and the two agree to 4.0% — discretisation plus the surface-vs-bulk definition.\nSo the models are now consistent where they model the same thing. The residual +14.8% is the pad, and it means the 1-D runs HOTTER: conservative for a rotor, but do not quote both figures in one report. Adding a pad node to the 1-D would close it. Bounded by test_rotor_models_gap_does_not_widen.",
+   "delegates": [],
+   "description": "Rotor bulk temperature under a duty cycle, degC",
+   "key": "rotor_bulk_temperature",
+   "mirrors": [
+    "suspension/brake_thermal.py::OneDRotor"
+   ],
+   "owner": "suspension/brake_thermal.py::TwoNodeRotorPad"
+  },
+  {
+   "agreement": "Identical: both compute the area from the AWG definition (ASTM B258).",
+   "delegates": [],
+   "description": "Conductor cross-section by AWG, mm^2",
+   "key": "awg_area_mm2",
+   "mirrors": [
+    "suspension/fuse_test.py"
+   ],
+   "owner": "suspension/harness.py"
+  },
+  {
+   "agreement": "All 1.225. Enforced by test_shared_constants_do_not_drift; three modules were on 1.20, making their drag and downforce 2% low against the aero stack they are cross-checked with.",
+   "delegates": [],
+   "description": "Air density, kg/m^3 (ISA sea level)",
+   "key": "air_density",
+   "mirrors": [
+    "suspension/pt_integration.py",
+    "suspension/ggv.py",
+    "suspension/aero/scale_model.py"
+   ],
+   "owner": "suspension/laptime.py"
+  },
+  {
+   "agreement": "ice_powertrain.choked_mass_flow_kg_s calls the owner with zero back pressure; test_ice_powertrain checks the result against the isentropic closed form.",
+   "delegates": [
+    "suspension/ice_powertrain.py"
+   ],
+   "description": "Compressible orifice mass flow with choking, kg/s (throttle plate, intake restrictor)",
+   "key": "compressible_mass_flow",
+   "mirrors": [],
+   "owner": "suspension/throttle_dynamics.py"
+  }
+ ],
+ "report": "anti_dive_pct  —  Front anti-dive, % — outboard brakes, contact-patch reference\n    owner    : suspension/kinematics.py\n    mirrors  : suspension/adapter.py\n    delegates: suspension/dynamics.py\n\nanti_squat_pct  —  Rear anti-squat, % — inboard drive, wheel-centre reference\n    owner    : suspension/kinematics.py\n    mirrors  : suspension/adapter.py\n    delegates: suspension/dynamics.py\n\nroll_center_height  —  Front-view roll-centre height from one corner's IC, mm\n    owner    : suspension/dynamics.py\n    mirrors  : suspension/ghost_topology.py\n\nfront_view_instant_center  —  Front-view instant centre of the upright, (y, z) mm\n    owner    : suspension/kinematics.py\n    mirrors  : suspension/adapter.py\n\nlongitudinal_envelope  —  Available longitudinal g at speed under combined slip\n    owner    : suspension/laptime.py\n    mirrors  : suspension/ggv.py, suspension/lapsim.py\n\nlateral_limit_at_speed  —  Peak lateral g including aero downforce, load-sensitive\n    owner    : suspension/ggv.py\n    delegates: suspension/laptime.py\n\nregen_energy  —  Energy recoverable under braking, J\n    owner    : suspension/ev_powertrain.py\n    mirrors  : suspension/pack_thermal.py\n\nreference_geometry  —  The default double-wishbone hardpoint set\n    owner    : suspension/kinematics.py\n    delegates: suspension/topologies.py\n\nevidence_grade  —  How well a number is known\n    owner    : suspension/proof_engine.py\n    mirrors  : suspension/risk_propagation.py\n\nrotor_bulk_temperature  —  Rotor bulk temperature under a duty cycle, degC\n    owner    : suspension/brake_thermal.py::TwoNodeRotorPad\n    mirrors  : suspension/brake_thermal.py::OneDRotor\n\nawg_area_mm2  —  Conductor cross-section by AWG, mm^2\n    owner    : suspension/harness.py\n    mirrors  : suspension/fuse_test.py\n\nair_density  —  Air density, kg/m^3 (ISA sea level)\n    owner    : suspension/laptime.py\n    mirrors  : suspension/pt_integration.py, suspension/ggv.py, suspension/aero/scale_model.py\n\ncompressible_mass_flow  —  Compressible orifice mass flow with choking, kg/s (throttle plate, intake restrictor)\n    owner    : suspension/throttle_dynamics.py\n    delegates: suspension/ice_powertrain.py\n",
+ "report.two": "anti_dive_pct  —  Front anti-dive, % — outboard brakes, contact-patch reference\n    owner    : suspension/kinematics.py\n    mirrors  : suspension/adapter.py\n    delegates: suspension/dynamics.py\n\nanti_squat_pct  —  Rear anti-squat, % — inboard drive, wheel-centre reference\n    owner    : suspension/kinematics.py\n    mirrors  : suspension/adapter.py\n    delegates: suspension/dynamics.py\n\nroll_center_height  —  Front-view roll-centre height from one corner's IC, mm\n    owner    : suspension/dynamics.py\n    mirrors  : suspension/ghost_topology.py\n\nfront_view_instant_center  —  Front-view instant centre of the upright, (y, z) mm\n    owner    : suspension/kinematics.py\n    mirrors  : suspension/adapter.py\n\nlongitudinal_envelope  —  Available longitudinal g at speed under combined slip\n    owner    : suspension/laptime.py\n    mirrors  : suspension/ggv.py, suspension/lapsim.py\n\nlateral_limit_at_speed  —  Peak lateral g including aero downforce, load-sensitive\n    owner    : suspension/ggv.py\n    delegates: suspension/laptime.py\n\nregen_energy  —  Energy recoverable under braking, J\n    owner    : suspension/ev_powertrain.py\n    mirrors  : suspension/pack_thermal.py\n\nreference_geometry  —  The default double-wishbone hardpoint set\n    owner    : suspension/kinematics.py\n    delegates: suspension/topologies.py\n\nevidence_grade  —  How well a number is known\n    owner    : suspension/proof_engine.py\n    mirrors  : suspension/risk_propagation.py\n\nrotor_bulk_temperature  —  Rotor bulk temperature under a duty cycle, degC\n    owner    : suspension/brake_thermal.py::TwoNodeRotorPad\n    mirrors  : suspension/brake_thermal.py::OneDRotor\n\nawg_area_mm2  —  Conductor cross-section by AWG, mm^2\n    owner    : suspension/harness.py\n    mirrors  : suspension/fuse_test.py\n\nair_density  —  Air density, kg/m^3 (ISA sea level)\n    owner    : suspension/laptime.py\n    mirrors  : suspension/pt_integration.py, suspension/ggv.py, suspension/aero/scale_model.py\n\ncompressible_mass_flow  —  Compressible orifice mass flow with choking, kg/s (throttle plate, intake restrictor)\n    owner    : suspension/throttle_dynamics.py\n    delegates: suspension/ice_powertrain.py\n\nk2  —  two delegates\n    owner    : o\n    delegates: a, b\n"
+}

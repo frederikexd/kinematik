@@ -1,0 +1,2892 @@
+{
+ "active.tie": [
+  "tgt|d:a",
+  "lo|c"
+ ],
+ "consts": [
+  [
+   "chassis",
+   "brakes",
+   "powertrain",
+   "cooling"
+  ],
+  [
+   "min",
+   "max"
+  ],
+  true
+ ],
+ "deficit": [
+  0.0,
+  0.20000000000000004,
+  -0.3333333333333333,
+  0.0,
+  0.14285714285714285,
+  -0.7142857142857143,
+  0.0,
+  0.5
+ ],
+ "dup": "duplicate rule_id in risk matrix",
+ "edges": [
+  {
+   "dst_rule_id": "BRK-MOUNT-SHEAR",
+   "mechanism": "under-margin chassis bracket softens the brake mount load path",
+   "occurrence_bump": 2,
+   "src_channel": "bracket_fos",
+   "src_subsystem": "chassis"
+  },
+  {
+   "dst_rule_id": "PT-MOUNT-FATIGUE",
+   "mechanism": "chassis node margin loss feeds alternating load into motor mounts",
+   "occurrence_bump": 2,
+   "src_channel": "node_fos",
+   "src_subsystem": "chassis"
+  },
+  {
+   "dst_rule_id": "PT-MOTOR-OVERTEMP",
+   "mechanism": "starved branch behind the localized ΔP under-cools the motor loop",
+   "occurrence_bump": 3,
+   "src_channel": "manifold_dp_kpa:",
+   "src_subsystem": "cooling"
+  },
+  {
+   "dst_rule_id": "PT-INV-DERATE",
+   "mechanism": "flow imbalance from the localized ΔP derates the inverter branch",
+   "occurrence_bump": 2,
+   "src_channel": "manifold_dp_kpa:",
+   "src_subsystem": "cooling"
+  },
+  {
+   "dst_rule_id": "BRK-BIAS-SHIFT",
+   "mechanism": "driveline margin loss changes decel torque split assumptions",
+   "occurrence_bump": 1,
+   "src_channel": "shaft_fos",
+   "src_subsystem": "powertrain"
+  },
+  {
+   "dst_rule_id": "CHS-PEDALBOX-PEEL",
+   "mechanism": "slipping slotted pedal-tab joint peels load into the pedal-box floor",
+   "occurrence_bump": 2,
+   "src_channel": "pedal_tab_joint_fos",
+   "src_subsystem": "brakes"
+  }
+ ],
+ "elevate": [
+  5,
+  5,
+  6,
+  6,
+  10,
+  1,
+  10,
+  6,
+  1,
+  8,
+  8,
+  3
+ ],
+ "eval.all": {
+  "active": [
+   "COOL-CAVITATION|pump_inlet_margin_kpa",
+   "COOL-MANIFOLD-DP|manifold_dp_kpa:seg1",
+   "BRK-PEDALTAB-SLIP|pedal_tab_joint_fos",
+   "BRK-MOUNT-SHEAR|caliper_bracket_fos",
+   "PT-SHAFT-YIELD|shaft_fos",
+   "CHS-BRACKET-YIELD|bracket_fos",
+   "CHS-NODE-BUCKLE|node_fos",
+   "PT-MOTOR-OVERTEMP|motor_temp_margin_fos"
+  ],
+  "all_records": [
+   {
+    "Detection": 5,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "spin under threshold braking",
+    "Evidence / Notes": "live value 1.2 vs limit 1.1 (ledger); deficit -9.1%",
+    "Failure Mode": "lock-up order inverts (rears lock first)",
+    "Function / Requirement": "bias_margin_fos min limit 1.1",
+    "Item / Component": "brake bias",
+    "Occurrence": 3,
+    "Owner": "",
+    "Potential Cause / Mechanism": "bias margin below floor; driveline margin loss changes decel torque split assumptions",
+    "Prevention Controls": "",
+    "RPN": 120,
+    "Recommended Action": "",
+    "Severity": 8,
+    "Status": "Closed",
+    "Subsystem": "Brakes"
+   },
+   {
+    "Detection": 3,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "corner loses braking; car pulls under braking",
+    "Evidence / Notes": "live value 1.3 vs limit 1.6 (ledger); deficit +18.8%",
+    "Failure Mode": "caliper bracket shears",
+    "Function / Requirement": "caliper_bracket_fos min limit 1.6",
+    "Item / Component": "caliper bracket",
+    "Occurrence": 8,
+    "Owner": "",
+    "Potential Cause / Mechanism": "bracket FoS below brake floor; under-margin chassis bracket softens the brake mount load path",
+    "Prevention Controls": "",
+    "RPN": 240,
+    "Recommended Action": "",
+    "Severity": 10,
+    "Status": "Open",
+    "Subsystem": "Brakes"
+   },
+   {
+    "Detection": 6,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "pedal geometry shifts; ratio changes under the driver's foot",
+    "Evidence / Notes": "live value 0.9 vs limit 1.2 (ledger); deficit +25.0%",
+    "Failure Mode": "slotted pedal-tab joint slips / loses preload",
+    "Function / Requirement": "pedal_tab_joint_fos min limit 1.2",
+    "Item / Component": "brake pedal tab (slotted holes)",
+    "Occurrence": 7,
+    "Owner": "",
+    "Potential Cause / Mechanism": "clamp force below slip demand at reduced bearing area",
+    "Prevention Controls": "",
+    "RPN": 420,
+    "Recommended Action": "",
+    "Severity": 10,
+    "Status": "Open",
+    "Subsystem": "Brakes"
+   },
+   {
+    "Detection": 3,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "mount migrates; alignment lost mid-run",
+    "Evidence / Notes": "live value 1.2 vs limit 1.5 (ledger); deficit +20.0%",
+    "Failure Mode": "bolted bracket yields at mount",
+    "Function / Requirement": "bracket_fos min limit 1.5",
+    "Item / Component": "chassis bracket",
+    "Occurrence": 7,
+    "Owner": "",
+    "Potential Cause / Mechanism": "bracket FoS below floor",
+    "Prevention Controls": "",
+    "RPN": 189,
+    "Recommended Action": "",
+    "Severity": 9,
+    "Status": "Open",
+    "Subsystem": "Chassis"
+   },
+   {
+    "Detection": 4,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "load path lost; frame deformation; likely DNF + driver hazard",
+    "Evidence / Notes": "live value 1.4 vs limit 1.5 (ledger); deficit +6.7%",
+    "Failure Mode": "primary-structure node buckles under combined load",
+    "Function / Requirement": "node_fos min limit 1.5",
+    "Item / Component": "frame node",
+    "Occurrence": 5,
+    "Owner": "",
+    "Potential Cause / Mechanism": "FoS below floor at audited node",
+    "Prevention Controls": "",
+    "RPN": 180,
+    "Recommended Action": "",
+    "Severity": 9,
+    "Status": "Open",
+    "Subsystem": "Chassis"
+   },
+   {
+    "Detection": 4,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "pedal feel lost; brake application compromised",
+    "Evidence / Notes": "live value 2 vs limit 1.5 (ledger); deficit -33.3%",
+    "Failure Mode": "pedal-box base peels off floor under panic-stop load",
+    "Function / Requirement": "pedalbox_base_fos min limit 1.5",
+    "Item / Component": "pedal-box base",
+    "Occurrence": 4,
+    "Owner": "",
+    "Potential Cause / Mechanism": "prying-amplified pull-off exceeds margin; slipping slotted pedal-tab joint peels load into the pedal-box floor",
+    "Prevention Controls": "",
+    "RPN": 144,
+    "Recommended Action": "",
+    "Severity": 9,
+    "Status": "Closed",
+    "Subsystem": "Chassis"
+   },
+   {
+    "Detection": 6,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "flow collapse; pump damage; whole-loop overheating",
+    "Evidence / Notes": "live value 10 vs limit 20 (ledger); deficit +50.0%",
+    "Failure Mode": "pump inlet pressure approaches vapor margin — cavitation",
+    "Function / Requirement": "pump_inlet_margin_kpa min limit 20",
+    "Item / Component": "coolant pump inlet",
+    "Occurrence": 10,
+    "Owner": "",
+    "Potential Cause / Mechanism": "suction-side ΔP eats the vapor margin",
+    "Prevention Controls": "",
+    "RPN": 600,
+    "Recommended Action": "",
+    "Severity": 10,
+    "Status": "Open",
+    "Subsystem": "Cooling"
+   },
+   {
+    "Detection": 5,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "branch starvation downstream; hot spot on the starved consumer",
+    "Evidence / Notes": "live value 50 vs limit 35 (solver); deficit +42.9%",
+    "Failure Mode": "dangerous localized pressure drop across a manifold segment",
+    "Function / Requirement": "manifold_dp_kpa:seg1 max limit 35",
+    "Item / Component": "cooling manifold segment",
+    "Occurrence": 10,
+    "Owner": "",
+    "Potential Cause / Mechanism": "local ΔP exceeds ceiling (blockage, kink, undersized branch)",
+    "Prevention Controls": "",
+    "RPN": 500,
+    "Recommended Action": "",
+    "Severity": 10,
+    "Status": "Open",
+    "Subsystem": "Cooling"
+   },
+   {
+    "Detection": 5,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "branch starvation downstream; hot spot on the starved consumer",
+    "Evidence / Notes": "live value 20 vs limit 35 (ledger); deficit -42.9%",
+    "Failure Mode": "dangerous localized pressure drop across a manifold segment",
+    "Function / Requirement": "manifold_dp_kpa:seg2 max limit 35",
+    "Item / Component": "cooling manifold segment",
+    "Occurrence": 2,
+    "Owner": "",
+    "Potential Cause / Mechanism": "local ΔP exceeds ceiling (blockage, kink, undersized branch)",
+    "Prevention Controls": "",
+    "RPN": 80,
+    "Recommended Action": "",
+    "Severity": 8,
+    "Status": "Closed",
+    "Subsystem": "Cooling"
+   },
+   {
+    "Detection": 3,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "power loss mid-lap",
+    "Evidence / Notes": "live value 1.1 vs limit 1 (ledger); deficit -10.0%",
+    "Failure Mode": "inverter derates on junction temp",
+    "Function / Requirement": "inverter_temp_margin_fos min limit 1",
+    "Item / Component": "inverter",
+    "Occurrence": 4,
+    "Owner": "",
+    "Potential Cause / Mechanism": "thermal margin consumed; flow imbalance from the localized ΔP derates the inverter branch",
+    "Prevention Controls": "",
+    "RPN": 72,
+    "Recommended Action": "",
+    "Severity": 6,
+    "Status": "Closed",
+    "Subsystem": "Powertrain"
+   },
+   {
+    "Detection": 3,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "derate or shutdown in endurance",
+    "Evidence / Notes": "live value 0.95 vs limit 1 (ledger); deficit +5.0%",
+    "Failure Mode": "motor exceeds winding temp limit",
+    "Function / Requirement": "motor_temp_margin_fos min limit 1",
+    "Item / Component": "motor",
+    "Occurrence": 7,
+    "Owner": "",
+    "Potential Cause / Mechanism": "thermal margin consumed; starved branch behind the localized ΔP under-cools the motor loop",
+    "Prevention Controls": "",
+    "RPN": 147,
+    "Recommended Action": "",
+    "Severity": 7,
+    "Status": "Open",
+    "Subsystem": "Powertrain"
+   },
+   {
+    "Detection": 4,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "driveline misalignment; chain/belt loss",
+    "Evidence / Notes": "live value 1.6 vs limit 1.5 (ledger); deficit -6.7%",
+    "Failure Mode": "motor mount fatigues at weld",
+    "Function / Requirement": "motor_mount_fos min limit 1.5",
+    "Item / Component": "motor mount",
+    "Occurrence": 4,
+    "Owner": "",
+    "Potential Cause / Mechanism": "mount FoS below floor; chassis node margin loss feeds alternating load into motor mounts",
+    "Prevention Controls": "",
+    "RPN": 112,
+    "Recommended Action": "",
+    "Severity": 7,
+    "Status": "Closed",
+    "Subsystem": "Powertrain"
+   },
+   {
+    "Detection": 3,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "immediate DNF; debris hazard",
+    "Evidence / Notes": "live value 1 vs limit 1.4 (ledger); deficit +28.6%",
+    "Failure Mode": "output shaft yields at peak torque",
+    "Function / Requirement": "shaft_fos min limit 1.4",
+    "Item / Component": "output shaft",
+    "Occurrence": 8,
+    "Owner": "",
+    "Potential Cause / Mechanism": "shaft FoS below floor",
+    "Prevention Controls": "",
+    "RPN": 240,
+    "Recommended Action": "",
+    "Severity": 10,
+    "Status": "Open",
+    "Subsystem": "Powertrain"
+   }
+  ],
+  "records": [
+   {
+    "Detection": 6,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "flow collapse; pump damage; whole-loop overheating",
+    "Evidence / Notes": "live value 10 vs limit 20 (ledger); deficit +50.0%",
+    "Failure Mode": "pump inlet pressure approaches vapor margin — cavitation",
+    "Function / Requirement": "pump_inlet_margin_kpa min limit 20",
+    "Item / Component": "coolant pump inlet",
+    "Occurrence": 10,
+    "Owner": "",
+    "Potential Cause / Mechanism": "suction-side ΔP eats the vapor margin",
+    "Prevention Controls": "",
+    "RPN": 600,
+    "Recommended Action": "",
+    "Severity": 10,
+    "Status": "Open",
+    "Subsystem": "Cooling"
+   },
+   {
+    "Detection": 5,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "branch starvation downstream; hot spot on the starved consumer",
+    "Evidence / Notes": "live value 50 vs limit 35 (solver); deficit +42.9%",
+    "Failure Mode": "dangerous localized pressure drop across a manifold segment",
+    "Function / Requirement": "manifold_dp_kpa:seg1 max limit 35",
+    "Item / Component": "cooling manifold segment",
+    "Occurrence": 10,
+    "Owner": "",
+    "Potential Cause / Mechanism": "local ΔP exceeds ceiling (blockage, kink, undersized branch)",
+    "Prevention Controls": "",
+    "RPN": 500,
+    "Recommended Action": "",
+    "Severity": 10,
+    "Status": "Open",
+    "Subsystem": "Cooling"
+   },
+   {
+    "Detection": 6,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "pedal geometry shifts; ratio changes under the driver's foot",
+    "Evidence / Notes": "live value 0.9 vs limit 1.2 (ledger); deficit +25.0%",
+    "Failure Mode": "slotted pedal-tab joint slips / loses preload",
+    "Function / Requirement": "pedal_tab_joint_fos min limit 1.2",
+    "Item / Component": "brake pedal tab (slotted holes)",
+    "Occurrence": 7,
+    "Owner": "",
+    "Potential Cause / Mechanism": "clamp force below slip demand at reduced bearing area",
+    "Prevention Controls": "",
+    "RPN": 420,
+    "Recommended Action": "",
+    "Severity": 10,
+    "Status": "Open",
+    "Subsystem": "Brakes"
+   },
+   {
+    "Detection": 3,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "corner loses braking; car pulls under braking",
+    "Evidence / Notes": "live value 1.3 vs limit 1.6 (ledger); deficit +18.8%",
+    "Failure Mode": "caliper bracket shears",
+    "Function / Requirement": "caliper_bracket_fos min limit 1.6",
+    "Item / Component": "caliper bracket",
+    "Occurrence": 8,
+    "Owner": "",
+    "Potential Cause / Mechanism": "bracket FoS below brake floor; under-margin chassis bracket softens the brake mount load path",
+    "Prevention Controls": "",
+    "RPN": 240,
+    "Recommended Action": "",
+    "Severity": 10,
+    "Status": "Open",
+    "Subsystem": "Brakes"
+   },
+   {
+    "Detection": 3,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "immediate DNF; debris hazard",
+    "Evidence / Notes": "live value 1 vs limit 1.4 (ledger); deficit +28.6%",
+    "Failure Mode": "output shaft yields at peak torque",
+    "Function / Requirement": "shaft_fos min limit 1.4",
+    "Item / Component": "output shaft",
+    "Occurrence": 8,
+    "Owner": "",
+    "Potential Cause / Mechanism": "shaft FoS below floor",
+    "Prevention Controls": "",
+    "RPN": 240,
+    "Recommended Action": "",
+    "Severity": 10,
+    "Status": "Open",
+    "Subsystem": "Powertrain"
+   },
+   {
+    "Detection": 3,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "mount migrates; alignment lost mid-run",
+    "Evidence / Notes": "live value 1.2 vs limit 1.5 (ledger); deficit +20.0%",
+    "Failure Mode": "bolted bracket yields at mount",
+    "Function / Requirement": "bracket_fos min limit 1.5",
+    "Item / Component": "chassis bracket",
+    "Occurrence": 7,
+    "Owner": "",
+    "Potential Cause / Mechanism": "bracket FoS below floor",
+    "Prevention Controls": "",
+    "RPN": 189,
+    "Recommended Action": "",
+    "Severity": 9,
+    "Status": "Open",
+    "Subsystem": "Chassis"
+   },
+   {
+    "Detection": 4,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "load path lost; frame deformation; likely DNF + driver hazard",
+    "Evidence / Notes": "live value 1.4 vs limit 1.5 (ledger); deficit +6.7%",
+    "Failure Mode": "primary-structure node buckles under combined load",
+    "Function / Requirement": "node_fos min limit 1.5",
+    "Item / Component": "frame node",
+    "Occurrence": 5,
+    "Owner": "",
+    "Potential Cause / Mechanism": "FoS below floor at audited node",
+    "Prevention Controls": "",
+    "RPN": 180,
+    "Recommended Action": "",
+    "Severity": 9,
+    "Status": "Open",
+    "Subsystem": "Chassis"
+   },
+   {
+    "Detection": 3,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "derate or shutdown in endurance",
+    "Evidence / Notes": "live value 0.95 vs limit 1 (ledger); deficit +5.0%",
+    "Failure Mode": "motor exceeds winding temp limit",
+    "Function / Requirement": "motor_temp_margin_fos min limit 1",
+    "Item / Component": "motor",
+    "Occurrence": 7,
+    "Owner": "",
+    "Potential Cause / Mechanism": "thermal margin consumed; starved branch behind the localized ΔP under-cools the motor loop",
+    "Prevention Controls": "",
+    "RPN": 147,
+    "Recommended Action": "",
+    "Severity": 7,
+    "Status": "Open",
+    "Subsystem": "Powertrain"
+   }
+  ],
+  "risks": [
+   {
+    "band": "High",
+    "channel": "bias_margin_fos",
+    "deficit_ratio": -0.090909,
+    "detection": 5,
+    "effect": "spin under threshold braking",
+    "failure_mode": "lock-up order inverts (rears lock first)",
+    "item": "brake bias",
+    "kind": "min",
+    "limit": 1.1,
+    "mechanisms": [
+     "bias margin below floor",
+     "driveline margin loss changes decel torque split assumptions"
+    ],
+    "occurrence": 3,
+    "propagated_from": [
+     "PT-SHAFT-YIELD"
+    ],
+    "rpn": 120,
+    "rule_id": "BRK-BIAS-SHIFT",
+    "severity": 8,
+    "source": "ledger",
+    "subsystem": "brakes",
+    "triggered": false,
+    "value": 1.2
+   },
+   {
+    "band": "Critical",
+    "channel": "caliper_bracket_fos",
+    "deficit_ratio": 0.1875,
+    "detection": 3,
+    "effect": "corner loses braking; car pulls under braking",
+    "failure_mode": "caliper bracket shears",
+    "item": "caliper bracket",
+    "kind": "min",
+    "limit": 1.6,
+    "mechanisms": [
+     "bracket FoS below brake floor",
+     "under-margin chassis bracket softens the brake mount load path"
+    ],
+    "occurrence": 8,
+    "propagated_from": [
+     "CHS-BRACKET-YIELD"
+    ],
+    "rpn": 240,
+    "rule_id": "BRK-MOUNT-SHEAR",
+    "severity": 10,
+    "source": "ledger",
+    "subsystem": "brakes",
+    "triggered": true,
+    "value": 1.3
+   },
+   {
+    "band": "Critical",
+    "channel": "pedal_tab_joint_fos",
+    "deficit_ratio": 0.25,
+    "detection": 6,
+    "effect": "pedal geometry shifts; ratio changes under the driver's foot",
+    "failure_mode": "slotted pedal-tab joint slips / loses preload",
+    "item": "brake pedal tab (slotted holes)",
+    "kind": "min",
+    "limit": 1.2,
+    "mechanisms": [
+     "clamp force below slip demand at reduced bearing area"
+    ],
+    "occurrence": 7,
+    "propagated_from": [],
+    "rpn": 420,
+    "rule_id": "BRK-PEDALTAB-SLIP",
+    "severity": 10,
+    "source": "ledger",
+    "subsystem": "brakes",
+    "triggered": true,
+    "value": 0.9
+   },
+   {
+    "band": "Critical",
+    "channel": "bracket_fos",
+    "deficit_ratio": 0.2,
+    "detection": 3,
+    "effect": "mount migrates; alignment lost mid-run",
+    "failure_mode": "bolted bracket yields at mount",
+    "item": "chassis bracket",
+    "kind": "min",
+    "limit": 1.5,
+    "mechanisms": [
+     "bracket FoS below floor"
+    ],
+    "occurrence": 7,
+    "propagated_from": [],
+    "rpn": 189,
+    "rule_id": "CHS-BRACKET-YIELD",
+    "severity": 9,
+    "source": "ledger",
+    "subsystem": "chassis",
+    "triggered": true,
+    "value": 1.2
+   },
+   {
+    "band": "Critical",
+    "channel": "node_fos",
+    "deficit_ratio": 0.066667,
+    "detection": 4,
+    "effect": "load path lost; frame deformation; likely DNF + driver hazard",
+    "failure_mode": "primary-structure node buckles under combined load",
+    "item": "frame node",
+    "kind": "min",
+    "limit": 1.5,
+    "mechanisms": [
+     "FoS below floor at audited node"
+    ],
+    "occurrence": 5,
+    "propagated_from": [],
+    "rpn": 180,
+    "rule_id": "CHS-NODE-BUCKLE",
+    "severity": 9,
+    "source": "ledger",
+    "subsystem": "chassis",
+    "triggered": true,
+    "value": 1.4
+   },
+   {
+    "band": "Critical",
+    "channel": "pedalbox_base_fos",
+    "deficit_ratio": -0.333333,
+    "detection": 4,
+    "effect": "pedal feel lost; brake application compromised",
+    "failure_mode": "pedal-box base peels off floor under panic-stop load",
+    "item": "pedal-box base",
+    "kind": "min",
+    "limit": 1.5,
+    "mechanisms": [
+     "prying-amplified pull-off exceeds margin",
+     "slipping slotted pedal-tab joint peels load into the pedal-box floor"
+    ],
+    "occurrence": 4,
+    "propagated_from": [
+     "BRK-PEDALTAB-SLIP"
+    ],
+    "rpn": 144,
+    "rule_id": "CHS-PEDALBOX-PEEL",
+    "severity": 9,
+    "source": "ledger",
+    "subsystem": "chassis",
+    "triggered": false,
+    "value": 2.0
+   },
+   {
+    "band": "Critical",
+    "channel": "pump_inlet_margin_kpa",
+    "deficit_ratio": 0.5,
+    "detection": 6,
+    "effect": "flow collapse; pump damage; whole-loop overheating",
+    "failure_mode": "pump inlet pressure approaches vapor margin — cavitation",
+    "item": "coolant pump inlet",
+    "kind": "min",
+    "limit": 20.0,
+    "mechanisms": [
+     "suction-side ΔP eats the vapor margin"
+    ],
+    "occurrence": 10,
+    "propagated_from": [],
+    "rpn": 600,
+    "rule_id": "COOL-CAVITATION",
+    "severity": 10,
+    "source": "ledger",
+    "subsystem": "cooling",
+    "triggered": true,
+    "value": 10.0
+   },
+   {
+    "band": "Critical",
+    "channel": "manifold_dp_kpa:seg1",
+    "deficit_ratio": 0.428571,
+    "detection": 5,
+    "effect": "branch starvation downstream; hot spot on the starved consumer",
+    "failure_mode": "dangerous localized pressure drop across a manifold segment",
+    "item": "cooling manifold segment",
+    "kind": "max",
+    "limit": 35.0,
+    "mechanisms": [
+     "local ΔP exceeds ceiling (blockage, kink, undersized branch)"
+    ],
+    "occurrence": 10,
+    "propagated_from": [],
+    "rpn": 500,
+    "rule_id": "COOL-MANIFOLD-DP",
+    "severity": 10,
+    "source": "solver",
+    "subsystem": "cooling",
+    "triggered": true,
+    "value": 50.0
+   },
+   {
+    "band": "High",
+    "channel": "manifold_dp_kpa:seg2",
+    "deficit_ratio": -0.428571,
+    "detection": 5,
+    "effect": "branch starvation downstream; hot spot on the starved consumer",
+    "failure_mode": "dangerous localized pressure drop across a manifold segment",
+    "item": "cooling manifold segment",
+    "kind": "max",
+    "limit": 35.0,
+    "mechanisms": [
+     "local ΔP exceeds ceiling (blockage, kink, undersized branch)"
+    ],
+    "occurrence": 2,
+    "propagated_from": [],
+    "rpn": 80,
+    "rule_id": "COOL-MANIFOLD-DP",
+    "severity": 8,
+    "source": "ledger",
+    "subsystem": "cooling",
+    "triggered": false,
+    "value": 20.0
+   },
+   {
+    "band": "Low",
+    "channel": "inverter_temp_margin_fos",
+    "deficit_ratio": -0.1,
+    "detection": 3,
+    "effect": "power loss mid-lap",
+    "failure_mode": "inverter derates on junction temp",
+    "item": "inverter",
+    "kind": "min",
+    "limit": 1.0,
+    "mechanisms": [
+     "thermal margin consumed",
+     "flow imbalance from the localized ΔP derates the inverter branch"
+    ],
+    "occurrence": 4,
+    "propagated_from": [
+     "COOL-MANIFOLD-DP"
+    ],
+    "rpn": 72,
+    "rule_id": "PT-INV-DERATE",
+    "severity": 6,
+    "source": "ledger",
+    "subsystem": "powertrain",
+    "triggered": false,
+    "value": 1.1
+   },
+   {
+    "band": "High",
+    "channel": "motor_temp_margin_fos",
+    "deficit_ratio": 0.05,
+    "detection": 3,
+    "effect": "derate or shutdown in endurance",
+    "failure_mode": "motor exceeds winding temp limit",
+    "item": "motor",
+    "kind": "min",
+    "limit": 1.0,
+    "mechanisms": [
+     "thermal margin consumed",
+     "starved branch behind the localized ΔP under-cools the motor loop"
+    ],
+    "occurrence": 7,
+    "propagated_from": [
+     "COOL-MANIFOLD-DP"
+    ],
+    "rpn": 147,
+    "rule_id": "PT-MOTOR-OVERTEMP",
+    "severity": 7,
+    "source": "ledger",
+    "subsystem": "powertrain",
+    "triggered": true,
+    "value": 0.95
+   },
+   {
+    "band": "High",
+    "channel": "motor_mount_fos",
+    "deficit_ratio": -0.066667,
+    "detection": 4,
+    "effect": "driveline misalignment; chain/belt loss",
+    "failure_mode": "motor mount fatigues at weld",
+    "item": "motor mount",
+    "kind": "min",
+    "limit": 1.5,
+    "mechanisms": [
+     "mount FoS below floor",
+     "chassis node margin loss feeds alternating load into motor mounts"
+    ],
+    "occurrence": 4,
+    "propagated_from": [
+     "CHS-NODE-BUCKLE"
+    ],
+    "rpn": 112,
+    "rule_id": "PT-MOUNT-FATIGUE",
+    "severity": 7,
+    "source": "ledger",
+    "subsystem": "powertrain",
+    "triggered": false,
+    "value": 1.6
+   },
+   {
+    "band": "Critical",
+    "channel": "shaft_fos",
+    "deficit_ratio": 0.285714,
+    "detection": 3,
+    "effect": "immediate DNF; debris hazard",
+    "failure_mode": "output shaft yields at peak torque",
+    "item": "output shaft",
+    "kind": "min",
+    "limit": 1.4,
+    "mechanisms": [
+     "shaft FoS below floor"
+    ],
+    "occurrence": 8,
+    "propagated_from": [],
+    "rpn": 240,
+    "rule_id": "PT-SHAFT-YIELD",
+    "severity": 10,
+    "source": "ledger",
+    "subsystem": "powertrain",
+    "triggered": true,
+    "value": 1.0
+   }
+  ],
+  "summary": {
+   "critical": 7,
+   "max_rpn": 600,
+   "monitored": 13,
+   "triggered": 8,
+   "unmatched_readings": [
+    "aero.wing_fos",
+    "chassis.mystery"
+   ]
+  },
+  "unmatched": [
+   {
+    "channel": "wing_fos",
+    "source": "ledger",
+    "subsystem": "aero",
+    "unit": "",
+    "value": 3.0
+   },
+   {
+    "channel": "mystery",
+    "source": "ledger",
+    "subsystem": "chassis",
+    "unit": "",
+    "value": 1.0
+   }
+  ],
+  "worst": "COOL-CAVITATION"
+ },
+ "eval.at_limit": {
+  "active": [],
+  "all_records": [
+   {
+    "Detection": 2,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "e2",
+    "Evidence / Notes": "live value 2 vs limit 4 (ledger); deficit -50.0%",
+    "Failure Mode": "f2",
+    "Function / Requirement": "c max limit 4",
+    "Item / Component": "it",
+    "Occurrence": 2,
+    "Owner": "",
+    "Potential Cause / Mechanism": "heat",
+    "Prevention Controls": "",
+    "RPN": 20,
+    "Recommended Action": "",
+    "Severity": 5,
+    "Status": "Closed",
+    "Subsystem": "S"
+   },
+   {
+    "Detection": 8,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "e",
+    "Evidence / Notes": "live value 2 vs limit 2 (ledger); deficit +0.0%",
+    "Failure Mode": "f",
+    "Function / Requirement": "c min limit 2",
+    "Item / Component": "c",
+    "Occurrence": 2,
+    "Owner": "",
+    "Potential Cause / Mechanism": "c",
+    "Prevention Controls": "",
+    "RPN": 64,
+    "Recommended Action": "",
+    "Severity": 4,
+    "Status": "Closed",
+    "Subsystem": "S"
+   },
+   {
+    "Detection": 6,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "e3",
+    "Evidence / Notes": "live value 1 vs limit 1 (ledger); deficit +0.0%",
+    "Failure Mode": "f3",
+    "Function / Requirement": "d:x min limit 1",
+    "Item / Component": "d:x",
+    "Occurrence": 2,
+    "Owner": "",
+    "Potential Cause / Mechanism": "m",
+    "Prevention Controls": "",
+    "RPN": 72,
+    "Recommended Action": "",
+    "Severity": 6,
+    "Status": "Closed",
+    "Subsystem": "T"
+   }
+  ],
+  "records": [],
+  "risks": [
+   {
+    "band": "Low",
+    "channel": "c",
+    "deficit_ratio": -0.5,
+    "detection": 2,
+    "effect": "e2",
+    "failure_mode": "f2",
+    "item": "it",
+    "kind": "max",
+    "limit": 4.0,
+    "mechanisms": [
+     "heat"
+    ],
+    "occurrence": 2,
+    "propagated_from": [],
+    "rpn": 20,
+    "rule_id": "hi",
+    "severity": 5,
+    "source": "ledger",
+    "subsystem": "s",
+    "triggered": false,
+    "value": 2.0
+   },
+   {
+    "band": "Low",
+    "channel": "c",
+    "deficit_ratio": 0.0,
+    "detection": 8,
+    "effect": "e",
+    "failure_mode": "f",
+    "item": "c",
+    "kind": "min",
+    "limit": 2.0,
+    "mechanisms": [],
+    "occurrence": 2,
+    "propagated_from": [],
+    "rpn": 64,
+    "rule_id": "lo",
+    "severity": 4,
+    "source": "ledger",
+    "subsystem": "s",
+    "triggered": false,
+    "value": 2.0
+   },
+   {
+    "band": "Low",
+    "channel": "d:x",
+    "deficit_ratio": 0.0,
+    "detection": 6,
+    "effect": "e3",
+    "failure_mode": "f3",
+    "item": "d:x",
+    "kind": "min",
+    "limit": 1.0,
+    "mechanisms": [
+     "m"
+    ],
+    "occurrence": 2,
+    "propagated_from": [],
+    "rpn": 72,
+    "rule_id": "tgt",
+    "severity": 6,
+    "source": "ledger",
+    "subsystem": "t",
+    "triggered": false,
+    "value": 1.0
+   }
+  ],
+  "summary": {
+   "critical": 0,
+   "max_rpn": 0,
+   "monitored": 3,
+   "triggered": 0,
+   "unmatched_readings": []
+  },
+  "unmatched": [],
+  "worst": null
+ },
+ "eval.clean": {
+  "active": [],
+  "all_records": [
+   {
+    "Detection": 3,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "corner loses braking; car pulls under braking",
+    "Evidence / Notes": "live value 2 vs limit 1.6 (ledger); deficit -25.0%",
+    "Failure Mode": "caliper bracket shears",
+    "Function / Requirement": "caliper_bracket_fos min limit 1.6",
+    "Item / Component": "caliper bracket",
+    "Occurrence": 2,
+    "Owner": "",
+    "Potential Cause / Mechanism": "bracket FoS below brake floor",
+    "Prevention Controls": "",
+    "RPN": 54,
+    "Recommended Action": "",
+    "Severity": 9,
+    "Status": "Closed",
+    "Subsystem": "Brakes"
+   },
+   {
+    "Detection": 4,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "load path lost; frame deformation; likely DNF + driver hazard",
+    "Evidence / Notes": "live value 3 vs limit 1.5 (ledger); deficit -100.0%",
+    "Failure Mode": "primary-structure node buckles under combined load",
+    "Function / Requirement": "node_fos min limit 1.5",
+    "Item / Component": "frame node",
+    "Occurrence": 2,
+    "Owner": "",
+    "Potential Cause / Mechanism": "FoS below floor at audited node",
+    "Prevention Controls": "",
+    "RPN": 64,
+    "Recommended Action": "",
+    "Severity": 8,
+    "Status": "Closed",
+    "Subsystem": "Chassis"
+   },
+   {
+    "Detection": 4,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "driveline misalignment; chain/belt loss",
+    "Evidence / Notes": "live value 2 vs limit 1.5 (ledger); deficit -33.3%",
+    "Failure Mode": "motor mount fatigues at weld",
+    "Function / Requirement": "motor_mount_fos min limit 1.5",
+    "Item / Component": "motor mount",
+    "Occurrence": 2,
+    "Owner": "",
+    "Potential Cause / Mechanism": "mount FoS below floor",
+    "Prevention Controls": "",
+    "RPN": 56,
+    "Recommended Action": "",
+    "Severity": 7,
+    "Status": "Closed",
+    "Subsystem": "Powertrain"
+   }
+  ],
+  "records": [],
+  "risks": [
+   {
+    "band": "Critical",
+    "channel": "caliper_bracket_fos",
+    "deficit_ratio": -0.25,
+    "detection": 3,
+    "effect": "corner loses braking; car pulls under braking",
+    "failure_mode": "caliper bracket shears",
+    "item": "caliper bracket",
+    "kind": "min",
+    "limit": 1.6,
+    "mechanisms": [
+     "bracket FoS below brake floor"
+    ],
+    "occurrence": 2,
+    "propagated_from": [],
+    "rpn": 54,
+    "rule_id": "BRK-MOUNT-SHEAR",
+    "severity": 9,
+    "source": "ledger",
+    "subsystem": "brakes",
+    "triggered": false,
+    "value": 2.0
+   },
+   {
+    "band": "High",
+    "channel": "node_fos",
+    "deficit_ratio": -1.0,
+    "detection": 4,
+    "effect": "load path lost; frame deformation; likely DNF + driver hazard",
+    "failure_mode": "primary-structure node buckles under combined load",
+    "item": "frame node",
+    "kind": "min",
+    "limit": 1.5,
+    "mechanisms": [
+     "FoS below floor at audited node"
+    ],
+    "occurrence": 2,
+    "propagated_from": [],
+    "rpn": 64,
+    "rule_id": "CHS-NODE-BUCKLE",
+    "severity": 8,
+    "source": "ledger",
+    "subsystem": "chassis",
+    "triggered": false,
+    "value": 3.0
+   },
+   {
+    "band": "High",
+    "channel": "motor_mount_fos",
+    "deficit_ratio": -0.333333,
+    "detection": 4,
+    "effect": "driveline misalignment; chain/belt loss",
+    "failure_mode": "motor mount fatigues at weld",
+    "item": "motor mount",
+    "kind": "min",
+    "limit": 1.5,
+    "mechanisms": [
+     "mount FoS below floor"
+    ],
+    "occurrence": 2,
+    "propagated_from": [],
+    "rpn": 56,
+    "rule_id": "PT-MOUNT-FATIGUE",
+    "severity": 7,
+    "source": "ledger",
+    "subsystem": "powertrain",
+    "triggered": false,
+    "value": 2.0
+   }
+  ],
+  "summary": {
+   "critical": 0,
+   "max_rpn": 0,
+   "monitored": 3,
+   "triggered": 0,
+   "unmatched_readings": []
+  },
+  "unmatched": [],
+  "worst": null
+ },
+ "eval.custom": {
+  "active": [
+   "tgt|d:a",
+   "lo|c",
+   "hi|c"
+  ],
+  "all_records": [
+   {
+    "Detection": 2,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "e2",
+    "Evidence / Notes": "live value 5 vs limit 4 (second); deficit +25.0%",
+    "Failure Mode": "f2",
+    "Function / Requirement": "c max limit 4",
+    "Item / Component": "it",
+    "Occurrence": 7,
+    "Owner": "",
+    "Potential Cause / Mechanism": "heat",
+    "Prevention Controls": "",
+    "RPN": 84,
+    "Recommended Action": "",
+    "Severity": 6,
+    "Status": "Open",
+    "Subsystem": "S"
+   },
+   {
+    "Detection": 8,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "e",
+    "Evidence / Notes": "live value 1.5 vs limit 2 (first); deficit +25.0%",
+    "Failure Mode": "f",
+    "Function / Requirement": "c min limit 2",
+    "Item / Component": "c",
+    "Occurrence": 7,
+    "Owner": "",
+    "Potential Cause / Mechanism": "c",
+    "Prevention Controls": "",
+    "RPN": 336,
+    "Recommended Action": "",
+    "Severity": 6,
+    "Status": "Open",
+    "Subsystem": "S"
+   },
+   {
+    "Detection": 6,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "e3",
+    "Evidence / Notes": "live value 0.9 vs limit 1 (ledger); deficit +10.0%",
+    "Failure Mode": "f3",
+    "Function / Requirement": "d:a min limit 1",
+    "Item / Component": "d:a",
+    "Occurrence": 10,
+    "Owner": "",
+    "Potential Cause / Mechanism": "m; heat-soak",
+    "Prevention Controls": "",
+    "RPN": 420,
+    "Recommended Action": "",
+    "Severity": 7,
+    "Status": "Open",
+    "Subsystem": "T"
+   },
+   {
+    "Detection": 6,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "e3",
+    "Evidence / Notes": "live value 1 vs limit 1 (ledger); deficit +0.0%",
+    "Failure Mode": "f3",
+    "Function / Requirement": "d:b min limit 1",
+    "Item / Component": "d:b",
+    "Occurrence": 10,
+    "Owner": "",
+    "Potential Cause / Mechanism": "m; heat-soak",
+    "Prevention Controls": "",
+    "RPN": 360,
+    "Recommended Action": "",
+    "Severity": 6,
+    "Status": "Closed",
+    "Subsystem": "T"
+   },
+   {
+    "Detection": 6,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "e3",
+    "Evidence / Notes": "live value 2 vs limit 1 (ledger); deficit -100.0%",
+    "Failure Mode": "f3",
+    "Function / Requirement": "d:c min limit 1",
+    "Item / Component": "d:c",
+    "Occurrence": 10,
+    "Owner": "",
+    "Potential Cause / Mechanism": "m; heat-soak",
+    "Prevention Controls": "",
+    "RPN": 360,
+    "Recommended Action": "",
+    "Severity": 6,
+    "Status": "Closed",
+    "Subsystem": "T"
+   }
+  ],
+  "records": [
+   {
+    "Detection": 6,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "e3",
+    "Evidence / Notes": "live value 0.9 vs limit 1 (ledger); deficit +10.0%",
+    "Failure Mode": "f3",
+    "Function / Requirement": "d:a min limit 1",
+    "Item / Component": "d:a",
+    "Occurrence": 10,
+    "Owner": "",
+    "Potential Cause / Mechanism": "m; heat-soak",
+    "Prevention Controls": "",
+    "RPN": 420,
+    "Recommended Action": "",
+    "Severity": 7,
+    "Status": "Open",
+    "Subsystem": "T"
+   },
+   {
+    "Detection": 8,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "e",
+    "Evidence / Notes": "live value 1.5 vs limit 2 (first); deficit +25.0%",
+    "Failure Mode": "f",
+    "Function / Requirement": "c min limit 2",
+    "Item / Component": "c",
+    "Occurrence": 7,
+    "Owner": "",
+    "Potential Cause / Mechanism": "c",
+    "Prevention Controls": "",
+    "RPN": 336,
+    "Recommended Action": "",
+    "Severity": 6,
+    "Status": "Open",
+    "Subsystem": "S"
+   },
+   {
+    "Detection": 2,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "e2",
+    "Evidence / Notes": "live value 5 vs limit 4 (second); deficit +25.0%",
+    "Failure Mode": "f2",
+    "Function / Requirement": "c max limit 4",
+    "Item / Component": "it",
+    "Occurrence": 7,
+    "Owner": "",
+    "Potential Cause / Mechanism": "heat",
+    "Prevention Controls": "",
+    "RPN": 84,
+    "Recommended Action": "",
+    "Severity": 6,
+    "Status": "Open",
+    "Subsystem": "S"
+   }
+  ],
+  "risks": [
+   {
+    "band": "Medium",
+    "channel": "c",
+    "deficit_ratio": 0.25,
+    "detection": 2,
+    "effect": "e2",
+    "failure_mode": "f2",
+    "item": "it",
+    "kind": "max",
+    "limit": 4.0,
+    "mechanisms": [
+     "heat"
+    ],
+    "occurrence": 7,
+    "propagated_from": [],
+    "rpn": 84,
+    "rule_id": "hi",
+    "severity": 6,
+    "source": "second",
+    "subsystem": "s",
+    "triggered": true,
+    "value": 5.0
+   },
+   {
+    "band": "Critical",
+    "channel": "c",
+    "deficit_ratio": 0.25,
+    "detection": 8,
+    "effect": "e",
+    "failure_mode": "f",
+    "item": "c",
+    "kind": "min",
+    "limit": 2.0,
+    "mechanisms": [],
+    "occurrence": 7,
+    "propagated_from": [],
+    "rpn": 336,
+    "rule_id": "lo",
+    "severity": 6,
+    "source": "first",
+    "subsystem": "s",
+    "triggered": true,
+    "value": 1.5
+   },
+   {
+    "band": "Critical",
+    "channel": "d:a",
+    "deficit_ratio": 0.1,
+    "detection": 6,
+    "effect": "e3",
+    "failure_mode": "f3",
+    "item": "d:a",
+    "kind": "min",
+    "limit": 1.0,
+    "mechanisms": [
+     "m",
+     "heat-soak"
+    ],
+    "occurrence": 10,
+    "propagated_from": [
+     "lo",
+     "hi"
+    ],
+    "rpn": 420,
+    "rule_id": "tgt",
+    "severity": 7,
+    "source": "ledger",
+    "subsystem": "t",
+    "triggered": true,
+    "value": 0.9
+   },
+   {
+    "band": "Critical",
+    "channel": "d:b",
+    "deficit_ratio": 0.0,
+    "detection": 6,
+    "effect": "e3",
+    "failure_mode": "f3",
+    "item": "d:b",
+    "kind": "min",
+    "limit": 1.0,
+    "mechanisms": [
+     "m",
+     "heat-soak"
+    ],
+    "occurrence": 10,
+    "propagated_from": [
+     "lo",
+     "hi"
+    ],
+    "rpn": 360,
+    "rule_id": "tgt",
+    "severity": 6,
+    "source": "ledger",
+    "subsystem": "t",
+    "triggered": false,
+    "value": 1.0
+   },
+   {
+    "band": "Critical",
+    "channel": "d:c",
+    "deficit_ratio": -1.0,
+    "detection": 6,
+    "effect": "e3",
+    "failure_mode": "f3",
+    "item": "d:c",
+    "kind": "min",
+    "limit": 1.0,
+    "mechanisms": [
+     "m",
+     "heat-soak"
+    ],
+    "occurrence": 10,
+    "propagated_from": [
+     "lo",
+     "hi"
+    ],
+    "rpn": 360,
+    "rule_id": "tgt",
+    "severity": 6,
+    "source": "ledger",
+    "subsystem": "t",
+    "triggered": false,
+    "value": 2.0
+   }
+  ],
+  "summary": {
+   "critical": 2,
+   "max_rpn": 420,
+   "monitored": 5,
+   "triggered": 3,
+   "unmatched_readings": [
+    "u.c"
+   ]
+  },
+  "unmatched": [
+   {
+    "channel": "c",
+    "source": "ledger",
+    "subsystem": "u",
+    "unit": "",
+    "value": 1.0
+   }
+  ],
+  "worst": "tgt"
+ },
+ "eval.dp_only": {
+  "active": [
+   "COOL-MANIFOLD-DP|manifold_dp_kpa:b",
+   "COOL-MANIFOLD-DP|manifold_dp_kpa:a"
+  ],
+  "all_records": [
+   {
+    "Detection": 5,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "branch starvation downstream; hot spot on the starved consumer",
+    "Evidence / Notes": "live value 36 vs limit 35 (ledger); deficit +2.9%",
+    "Failure Mode": "dangerous localized pressure drop across a manifold segment",
+    "Function / Requirement": "manifold_dp_kpa:a max limit 35",
+    "Item / Component": "cooling manifold segment",
+    "Occurrence": 4,
+    "Owner": "",
+    "Potential Cause / Mechanism": "local ΔP exceeds ceiling (blockage, kink, undersized branch)",
+    "Prevention Controls": "",
+    "RPN": 180,
+    "Recommended Action": "",
+    "Severity": 9,
+    "Status": "Open",
+    "Subsystem": "Cooling"
+   },
+   {
+    "Detection": 5,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "branch starvation downstream; hot spot on the starved consumer",
+    "Evidence / Notes": "live value 70 vs limit 35 (ledger); deficit +100.0%",
+    "Failure Mode": "dangerous localized pressure drop across a manifold segment",
+    "Function / Requirement": "manifold_dp_kpa:b max limit 35",
+    "Item / Component": "cooling manifold segment",
+    "Occurrence": 10,
+    "Owner": "",
+    "Potential Cause / Mechanism": "local ΔP exceeds ceiling (blockage, kink, undersized branch)",
+    "Prevention Controls": "",
+    "RPN": 500,
+    "Recommended Action": "",
+    "Severity": 10,
+    "Status": "Open",
+    "Subsystem": "Cooling"
+   },
+   {
+    "Detection": 3,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "power loss mid-lap",
+    "Evidence / Notes": "live value 1.2 vs limit 1 (ledger); deficit -20.0%",
+    "Failure Mode": "inverter derates on junction temp",
+    "Function / Requirement": "inverter_temp_margin_fos min limit 1",
+    "Item / Component": "inverter",
+    "Occurrence": 4,
+    "Owner": "",
+    "Potential Cause / Mechanism": "thermal margin consumed; flow imbalance from the localized ΔP derates the inverter branch",
+    "Prevention Controls": "",
+    "RPN": 72,
+    "Recommended Action": "",
+    "Severity": 6,
+    "Status": "Closed",
+    "Subsystem": "Powertrain"
+   },
+   {
+    "Detection": 3,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "derate or shutdown in endurance",
+    "Evidence / Notes": "live value 1.2 vs limit 1 (ledger); deficit -20.0%",
+    "Failure Mode": "motor exceeds winding temp limit",
+    "Function / Requirement": "motor_temp_margin_fos min limit 1",
+    "Item / Component": "motor",
+    "Occurrence": 5,
+    "Owner": "",
+    "Potential Cause / Mechanism": "thermal margin consumed; starved branch behind the localized ΔP under-cools the motor loop",
+    "Prevention Controls": "",
+    "RPN": 90,
+    "Recommended Action": "",
+    "Severity": 6,
+    "Status": "Closed",
+    "Subsystem": "Powertrain"
+   }
+  ],
+  "records": [
+   {
+    "Detection": 5,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "branch starvation downstream; hot spot on the starved consumer",
+    "Evidence / Notes": "live value 70 vs limit 35 (ledger); deficit +100.0%",
+    "Failure Mode": "dangerous localized pressure drop across a manifold segment",
+    "Function / Requirement": "manifold_dp_kpa:b max limit 35",
+    "Item / Component": "cooling manifold segment",
+    "Occurrence": 10,
+    "Owner": "",
+    "Potential Cause / Mechanism": "local ΔP exceeds ceiling (blockage, kink, undersized branch)",
+    "Prevention Controls": "",
+    "RPN": 500,
+    "Recommended Action": "",
+    "Severity": 10,
+    "Status": "Open",
+    "Subsystem": "Cooling"
+   },
+   {
+    "Detection": 5,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "branch starvation downstream; hot spot on the starved consumer",
+    "Evidence / Notes": "live value 36 vs limit 35 (ledger); deficit +2.9%",
+    "Failure Mode": "dangerous localized pressure drop across a manifold segment",
+    "Function / Requirement": "manifold_dp_kpa:a max limit 35",
+    "Item / Component": "cooling manifold segment",
+    "Occurrence": 4,
+    "Owner": "",
+    "Potential Cause / Mechanism": "local ΔP exceeds ceiling (blockage, kink, undersized branch)",
+    "Prevention Controls": "",
+    "RPN": 180,
+    "Recommended Action": "",
+    "Severity": 9,
+    "Status": "Open",
+    "Subsystem": "Cooling"
+   }
+  ],
+  "risks": [
+   {
+    "band": "Critical",
+    "channel": "manifold_dp_kpa:a",
+    "deficit_ratio": 0.028571,
+    "detection": 5,
+    "effect": "branch starvation downstream; hot spot on the starved consumer",
+    "failure_mode": "dangerous localized pressure drop across a manifold segment",
+    "item": "cooling manifold segment",
+    "kind": "max",
+    "limit": 35.0,
+    "mechanisms": [
+     "local ΔP exceeds ceiling (blockage, kink, undersized branch)"
+    ],
+    "occurrence": 4,
+    "propagated_from": [],
+    "rpn": 180,
+    "rule_id": "COOL-MANIFOLD-DP",
+    "severity": 9,
+    "source": "ledger",
+    "subsystem": "cooling",
+    "triggered": true,
+    "value": 36.0
+   },
+   {
+    "band": "Critical",
+    "channel": "manifold_dp_kpa:b",
+    "deficit_ratio": 1.0,
+    "detection": 5,
+    "effect": "branch starvation downstream; hot spot on the starved consumer",
+    "failure_mode": "dangerous localized pressure drop across a manifold segment",
+    "item": "cooling manifold segment",
+    "kind": "max",
+    "limit": 35.0,
+    "mechanisms": [
+     "local ΔP exceeds ceiling (blockage, kink, undersized branch)"
+    ],
+    "occurrence": 10,
+    "propagated_from": [],
+    "rpn": 500,
+    "rule_id": "COOL-MANIFOLD-DP",
+    "severity": 10,
+    "source": "ledger",
+    "subsystem": "cooling",
+    "triggered": true,
+    "value": 70.0
+   },
+   {
+    "band": "Low",
+    "channel": "inverter_temp_margin_fos",
+    "deficit_ratio": -0.2,
+    "detection": 3,
+    "effect": "power loss mid-lap",
+    "failure_mode": "inverter derates on junction temp",
+    "item": "inverter",
+    "kind": "min",
+    "limit": 1.0,
+    "mechanisms": [
+     "thermal margin consumed",
+     "flow imbalance from the localized ΔP derates the inverter branch"
+    ],
+    "occurrence": 4,
+    "propagated_from": [
+     "COOL-MANIFOLD-DP"
+    ],
+    "rpn": 72,
+    "rule_id": "PT-INV-DERATE",
+    "severity": 6,
+    "source": "ledger",
+    "subsystem": "powertrain",
+    "triggered": false,
+    "value": 1.2
+   },
+   {
+    "band": "Medium",
+    "channel": "motor_temp_margin_fos",
+    "deficit_ratio": -0.2,
+    "detection": 3,
+    "effect": "derate or shutdown in endurance",
+    "failure_mode": "motor exceeds winding temp limit",
+    "item": "motor",
+    "kind": "min",
+    "limit": 1.0,
+    "mechanisms": [
+     "thermal margin consumed",
+     "starved branch behind the localized ΔP under-cools the motor loop"
+    ],
+    "occurrence": 5,
+    "propagated_from": [
+     "COOL-MANIFOLD-DP"
+    ],
+    "rpn": 90,
+    "rule_id": "PT-MOTOR-OVERTEMP",
+    "severity": 6,
+    "source": "ledger",
+    "subsystem": "powertrain",
+    "triggered": false,
+    "value": 1.2
+   }
+  ],
+  "summary": {
+   "critical": 2,
+   "max_rpn": 500,
+   "monitored": 4,
+   "triggered": 2,
+   "unmatched_readings": []
+  },
+  "unmatched": [],
+  "worst": "COOL-MANIFOLD-DP"
+ },
+ "eval.empty": {
+  "active": [],
+  "all_records": [],
+  "records": [],
+  "risks": [],
+  "summary": {
+   "critical": 0,
+   "max_rpn": 0,
+   "monitored": 0,
+   "triggered": 0,
+   "unmatched_readings": []
+  },
+  "unmatched": [],
+  "worst": null
+ },
+ "eval.twice": {
+  "active": [
+   "CHS-NODE-BUCKLE|node_fos"
+  ],
+  "all_records": [
+   {
+    "Detection": 3,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "mount migrates; alignment lost mid-run",
+    "Evidence / Notes": "live value 1.6 vs limit 1.5 (ledger); deficit -6.7%",
+    "Failure Mode": "bolted bracket yields at mount",
+    "Function / Requirement": "bracket_fos min limit 1.5",
+    "Item / Component": "chassis bracket",
+    "Occurrence": 2,
+    "Owner": "",
+    "Potential Cause / Mechanism": "bracket FoS below floor",
+    "Prevention Controls": "",
+    "RPN": 42,
+    "Recommended Action": "",
+    "Severity": 7,
+    "Status": "Closed",
+    "Subsystem": "Chassis"
+   },
+   {
+    "Detection": 4,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "load path lost; frame deformation; likely DNF + driver hazard",
+    "Evidence / Notes": "live value 1 vs limit 1.5 (ledger); deficit +33.3%",
+    "Failure Mode": "primary-structure node buckles under combined load",
+    "Function / Requirement": "node_fos min limit 1.5",
+    "Item / Component": "frame node",
+    "Occurrence": 8,
+    "Owner": "",
+    "Potential Cause / Mechanism": "FoS below floor at audited node",
+    "Prevention Controls": "",
+    "RPN": 320,
+    "Recommended Action": "",
+    "Severity": 10,
+    "Status": "Open",
+    "Subsystem": "Chassis"
+   }
+  ],
+  "records": [
+   {
+    "Detection": 4,
+    "Detection Controls": "",
+    "Due Date": "",
+    "Effect of Failure": "load path lost; frame deformation; likely DNF + driver hazard",
+    "Evidence / Notes": "live value 1 vs limit 1.5 (ledger); deficit +33.3%",
+    "Failure Mode": "primary-structure node buckles under combined load",
+    "Function / Requirement": "node_fos min limit 1.5",
+    "Item / Component": "frame node",
+    "Occurrence": 8,
+    "Owner": "",
+    "Potential Cause / Mechanism": "FoS below floor at audited node",
+    "Prevention Controls": "",
+    "RPN": 320,
+    "Recommended Action": "",
+    "Severity": 10,
+    "Status": "Open",
+    "Subsystem": "Chassis"
+   }
+  ],
+  "risks": [
+   {
+    "band": "High",
+    "channel": "bracket_fos",
+    "deficit_ratio": -0.066667,
+    "detection": 3,
+    "effect": "mount migrates; alignment lost mid-run",
+    "failure_mode": "bolted bracket yields at mount",
+    "item": "chassis bracket",
+    "kind": "min",
+    "limit": 1.5,
+    "mechanisms": [
+     "bracket FoS below floor"
+    ],
+    "occurrence": 2,
+    "propagated_from": [],
+    "rpn": 42,
+    "rule_id": "CHS-BRACKET-YIELD",
+    "severity": 7,
+    "source": "ledger",
+    "subsystem": "chassis",
+    "triggered": false,
+    "value": 1.6
+   },
+   {
+    "band": "Critical",
+    "channel": "node_fos",
+    "deficit_ratio": 0.333333,
+    "detection": 4,
+    "effect": "load path lost; frame deformation; likely DNF + driver hazard",
+    "failure_mode": "primary-structure node buckles under combined load",
+    "item": "frame node",
+    "kind": "min",
+    "limit": 1.5,
+    "mechanisms": [
+     "FoS below floor at audited node"
+    ],
+    "occurrence": 8,
+    "propagated_from": [],
+    "rpn": 320,
+    "rule_id": "CHS-NODE-BUCKLE",
+    "severity": 10,
+    "source": "ledger",
+    "subsystem": "chassis",
+    "triggered": true,
+    "value": 1.0
+   }
+  ],
+  "summary": {
+   "critical": 1,
+   "max_rpn": 320,
+   "monitored": 2,
+   "triggered": 1,
+   "unmatched_readings": []
+  },
+  "unmatched": [],
+  "worst": "CHS-NODE-BUCKLE"
+ },
+ "joint.bad.grade": "unknown bolt grade '4.6'",
+ "joint.bad.slot": "slot_width_mm must exceed the bolt diameter",
+ "joint.bad.thread": "unknown thread M7.0; supply stress_area_mm2",
+ "joint.bad.washer": "washer_od_mm must exceed slot_width_mm — no bearing land",
+ "joint.custom_area": [
+  {
+   "F_bearing_cap_N": 26303.1,
+   "F_clamp_at_torque_N": null,
+   "F_target_N": 15106.0,
+   "K_eff": 0.2654,
+   "K_nominal": 0.2567,
+   "area_ratio": 0.6254,
+   "bearing_area_full_mm2": 210.29,
+   "bearing_area_slotted_mm2": 131.52,
+   "bearing_capped": false,
+   "bearing_stress_MPa": null,
+   "is_estimate": false,
+   "notes": "",
+   "r_head_eff_mm": 7.142,
+   "r_head_full_mm": 6.735,
+   "torque_for_target_Nm": 28.06
+  },
+  {
+   "F_bearing_cap_N": 19727.3,
+   "F_clamp_at_torque_N": 4844.8,
+   "F_target_N": 11620.0,
+   "K_eff": 0.2654,
+   "K_nominal": 0.2567,
+   "area_ratio": 0.6254,
+   "bearing_area_full_mm2": 210.29,
+   "bearing_area_slotted_mm2": 131.52,
+   "bearing_capped": false,
+   "bearing_stress_MPa": 36.8,
+   "is_estimate": false,
+   "notes": "",
+   "r_head_eff_mm": 7.142,
+   "r_head_full_mm": 6.735,
+   "torque_for_target_Nm": 21.59
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": 3.524733333333333
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": 2.4224
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": "inf"
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": 3.39136
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": 10574.199999999999
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": "inf"
+  }
+ ],
+ "joint.default": [
+  {
+   "F_bearing_cap_N": 29012.8,
+   "F_clamp_at_torque_N": null,
+   "F_target_N": 10844.0,
+   "K_eff": 0.2783,
+   "K_nominal": 0.2685,
+   "area_ratio": 0.6586,
+   "bearing_area_full_mm2": 220.26,
+   "bearing_area_slotted_mm2": 145.06,
+   "bearing_capped": false,
+   "bearing_stress_MPa": null,
+   "is_estimate": false,
+   "notes": "",
+   "r_head_eff_mm": 6.981,
+   "r_head_full_mm": 6.59,
+   "torque_for_target_Nm": 18.11
+  },
+  {
+   "F_bearing_cap_N": 21759.6,
+   "F_clamp_at_torque_N": 5390.4,
+   "F_target_N": 8341.5,
+   "K_eff": 0.2783,
+   "K_nominal": 0.2685,
+   "area_ratio": 0.6586,
+   "bearing_area_full_mm2": 220.26,
+   "bearing_area_slotted_mm2": 145.06,
+   "bearing_capped": false,
+   "bearing_stress_MPa": 37.2,
+   "is_estimate": false,
+   "notes": "",
+   "r_head_eff_mm": 6.981,
+   "r_head_full_mm": 6.59,
+   "torque_for_target_Nm": 13.93
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": 2.5302666666666664
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": 2.6952
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": "inf"
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": 3.7732799999999993
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": 7590.799999999999
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": "inf"
+  }
+ ],
+ "joint.m8": [
+  {
+   "F_bearing_cap_N": 35028.9,
+   "F_clamp_at_torque_N": null,
+   "F_target_N": 13798.2,
+   "K_eff": 0.1875,
+   "K_nominal": 0.1806,
+   "area_ratio": 0.684,
+   "bearing_area_full_mm2": 256.07,
+   "bearing_area_slotted_mm2": 175.14,
+   "bearing_capped": false,
+   "bearing_stress_MPa": null,
+   "is_estimate": false,
+   "notes": "",
+   "r_head_eff_mm": 8.081,
+   "r_head_full_mm": 7.529,
+   "torque_for_target_Nm": 20.7
+  },
+  {
+   "F_bearing_cap_N": 26271.7,
+   "F_clamp_at_torque_N": 5999.5,
+   "F_target_N": 10614.0,
+   "K_eff": 0.1875,
+   "K_nominal": 0.1806,
+   "area_ratio": 0.684,
+   "bearing_area_full_mm2": 256.07,
+   "bearing_area_slotted_mm2": 175.14,
+   "bearing_capped": false,
+   "bearing_stress_MPa": 34.3,
+   "is_estimate": false,
+   "notes": "",
+   "r_head_eff_mm": 8.081,
+   "r_head_full_mm": 7.529,
+   "torque_for_target_Nm": 15.92
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": 3.21958
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": 2.99975
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": "inf"
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": 4.199649999999999
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": 9658.74
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": "inf"
+  }
+ ],
+ "joint.narrow": [
+  {
+   "F_bearing_cap_N": 3538.5,
+   "F_clamp_at_torque_N": null,
+   "F_target_N": 3538.5,
+   "K_eff": 0.2124,
+   "K_nominal": 0.209,
+   "area_ratio": 0.3991,
+   "bearing_area_full_mm2": 44.33,
+   "bearing_area_slotted_mm2": 17.69,
+   "bearing_capped": true,
+   "bearing_stress_MPa": null,
+   "is_estimate": true,
+   "notes": "preload BEARING-CAPPED: slotted contact (40% of full annulus) crushes before 65%·proof; contact area < 55% of full annulus — fit a slot washer / load-spreader plate; hand-calc K is an estimate here",
+   "r_head_eff_mm": 4.345,
+   "r_head_full_mm": 4.208,
+   "torque_for_target_Nm": 4.51
+  },
+  {
+   "F_bearing_cap_N": 2653.9,
+   "F_clamp_at_torque_N": 7062.5,
+   "F_target_N": 2653.9,
+   "K_eff": 0.2124,
+   "K_nominal": 0.209,
+   "area_ratio": 0.3991,
+   "bearing_area_full_mm2": 44.33,
+   "bearing_area_slotted_mm2": 17.69,
+   "bearing_capped": true,
+   "bearing_stress_MPa": 399.2,
+   "is_estimate": true,
+   "notes": "preload BEARING-CAPPED: slotted contact (40% of full annulus) crushes before 50%·proof; contact area < 55% of full annulus — fit a slot washer / load-spreader plate; hand-calc K is an estimate here",
+   "r_head_eff_mm": 4.345,
+   "r_head_full_mm": 4.208,
+   "torque_for_target_Nm": 3.38
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": 0.8256499999999999
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": 3.53125
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": "inf"
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": 4.94375
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": 2476.95
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": "inf"
+  }
+ ],
+ "joint.none": {
+  "channel": "pedal_tab_joint_fos",
+  "source": "slotted-joint-calc",
+  "subsystem": "brakes",
+  "unit": "",
+  "value": 0.0
+ },
+ "joint.offset": [
+  {
+   "F_bearing_cap_N": 33629.9,
+   "F_clamp_at_torque_N": null,
+   "F_target_N": 10844.0,
+   "K_eff": 0.2761,
+   "K_nominal": 0.2685,
+   "area_ratio": 0.7634,
+   "bearing_area_full_mm2": 220.26,
+   "bearing_area_slotted_mm2": 168.15,
+   "bearing_capped": false,
+   "bearing_stress_MPa": null,
+   "is_estimate": true,
+   "notes": "bolt offset in slot: contact is asymmetric; K_eff uses the uniform-pressure friction radius of the actual patch",
+   "r_head_eff_mm": 6.894,
+   "r_head_full_mm": 6.59,
+   "torque_for_target_Nm": 17.96
+  },
+  {
+   "F_bearing_cap_N": 25222.4,
+   "F_clamp_at_torque_N": 5432.7,
+   "F_target_N": 8341.5,
+   "K_eff": 0.2761,
+   "K_nominal": 0.2685,
+   "area_ratio": 0.7634,
+   "bearing_area_full_mm2": 220.26,
+   "bearing_area_slotted_mm2": 168.15,
+   "bearing_capped": false,
+   "bearing_stress_MPa": 32.3,
+   "is_estimate": true,
+   "notes": "bolt offset in slot: contact is asymmetric; K_eff uses the uniform-pressure friction radius of the actual patch",
+   "r_head_eff_mm": 6.894,
+   "r_head_full_mm": 6.59,
+   "torque_for_target_Nm": 13.82
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": 2.5302666666666664
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": 2.71635
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": "inf"
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": 3.802889999999999
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": 7590.799999999999
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": "inf"
+  }
+ ],
+ "joint.round": [
+  {
+   "F_bearing_cap_N": 44051.4,
+   "F_clamp_at_torque_N": null,
+   "F_target_N": 10844.0,
+   "K_eff": 0.2685,
+   "K_nominal": 0.2685,
+   "area_ratio": 1.0,
+   "bearing_area_full_mm2": 220.26,
+   "bearing_area_slotted_mm2": 220.26,
+   "bearing_capped": false,
+   "bearing_stress_MPa": null,
+   "is_estimate": false,
+   "notes": "",
+   "r_head_eff_mm": 6.59,
+   "r_head_full_mm": 6.59,
+   "torque_for_target_Nm": 17.47
+  },
+  {
+   "F_bearing_cap_N": 33038.6,
+   "F_clamp_at_torque_N": 5586.4,
+   "F_target_N": 8341.5,
+   "K_eff": 0.2685,
+   "K_nominal": 0.2685,
+   "area_ratio": 1.0,
+   "bearing_area_full_mm2": 220.26,
+   "bearing_area_slotted_mm2": 220.26,
+   "bearing_capped": false,
+   "bearing_stress_MPa": 25.4,
+   "is_estimate": false,
+   "notes": "",
+   "r_head_eff_mm": 6.59,
+   "r_head_full_mm": 6.59,
+   "torque_for_target_Nm": 13.44
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": 2.5302666666666664
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": 2.7932
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": "inf"
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": 3.9104799999999997
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": 7590.799999999999
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": "inf"
+  }
+ ],
+ "joint.soft": [
+  {
+   "F_bearing_cap_N": 5802.6,
+   "F_clamp_at_torque_N": null,
+   "F_target_N": 5802.6,
+   "K_eff": 0.2783,
+   "K_nominal": 0.2685,
+   "area_ratio": 0.6586,
+   "bearing_area_full_mm2": 220.26,
+   "bearing_area_slotted_mm2": 145.06,
+   "bearing_capped": true,
+   "bearing_stress_MPa": null,
+   "is_estimate": false,
+   "notes": "preload BEARING-CAPPED: slotted contact (66% of full annulus) crushes before 65%·proof",
+   "r_head_eff_mm": 6.981,
+   "r_head_full_mm": 6.59,
+   "torque_for_target_Nm": 9.69
+  },
+  {
+   "F_bearing_cap_N": 4351.9,
+   "F_clamp_at_torque_N": 5390.4,
+   "F_target_N": 4351.9,
+   "K_eff": 0.2783,
+   "K_nominal": 0.2685,
+   "area_ratio": 0.6586,
+   "bearing_area_full_mm2": 220.26,
+   "bearing_area_slotted_mm2": 145.06,
+   "bearing_capped": true,
+   "bearing_stress_MPa": 37.2,
+   "is_estimate": false,
+   "notes": "preload BEARING-CAPPED: slotted contact (66% of full annulus) crushes before 50%·proof",
+   "r_head_eff_mm": 6.981,
+   "r_head_full_mm": 6.59,
+   "torque_for_target_Nm": 7.27
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": 1.3539400000000001
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": 2.6952
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": "inf"
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": 3.7732799999999993
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": 4061.82
+  },
+  {
+   "channel": "pedal_tab_joint_fos",
+   "source": "slotted-joint-calc",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": "inf"
+  }
+ ],
+ "manifold": [
+  [
+   {
+    "channel": "manifold_dp_kpa:a",
+    "source": "cooling-solver",
+    "subsystem": "cooling",
+    "unit": "kPa",
+    "value": 40.0
+   },
+   {
+    "channel": "manifold_dp_kpa:b",
+    "source": "cooling-solver",
+    "subsystem": "cooling",
+    "unit": "kPa",
+    "value": 12.0
+   }
+  ],
+  [
+   {
+    "channel": "manifold_dp_kpa:x",
+    "source": "cooling-solver",
+    "subsystem": "cooling",
+    "unit": "kPa",
+    "value": 1.0
+   },
+   {
+    "channel": "pump_inlet_margin_kpa",
+    "source": "cooling-solver",
+    "subsystem": "cooling",
+    "unit": "kPa",
+    "value": 89.0
+   }
+  ],
+  [
+   {
+    "channel": "pump_inlet_margin_kpa",
+    "source": "s",
+    "subsystem": "cooling",
+    "unit": "kPa",
+    "value": 20.0
+   }
+  ]
+ ],
+ "match": [
+  true,
+  false,
+  false,
+  true,
+  false
+ ],
+ "network": [
+  [
+   {
+    "channel": "manifold_dp_kpa:a",
+    "source": "powertrain.engine",
+    "subsystem": "cooling",
+    "unit": "kPa",
+    "value": 10.0
+   },
+   {
+    "channel": "manifold_dp_kpa:b",
+    "source": "powertrain.engine",
+    "subsystem": "cooling",
+    "unit": "kPa",
+    "value": 40.0
+   },
+   {
+    "channel": "manifold_dp_kpa:seg2",
+    "source": "powertrain.engine",
+    "subsystem": "cooling",
+    "unit": "kPa",
+    "value": 5.0
+   }
+  ],
+  [
+   {
+    "channel": "manifold_dp_kpa:a",
+    "source": "t",
+    "subsystem": "cooling",
+    "unit": "kPa",
+    "value": 5.0
+   },
+   {
+    "channel": "manifold_dp_kpa:b",
+    "source": "t",
+    "subsystem": "cooling",
+    "unit": "kPa",
+    "value": 20.0
+   },
+   {
+    "channel": "manifold_dp_kpa:seg2",
+    "source": "t",
+    "subsystem": "cooling",
+    "unit": "kPa",
+    "value": 5.0
+   }
+  ]
+ ],
+ "occurrence": [
+  2,
+  2,
+  4,
+  6,
+  10,
+  1,
+  2,
+  4,
+  1
+ ],
+ "patch": [
+  [
+   145.29866022852804,
+   6.969932432432429
+  ],
+  [
+   151.1545889348189,
+   7.000000000000016
+  ],
+  [
+   0.0,
+   0.0
+  ],
+  [
+   0.589048622548086,
+   0.38802083333333287
+  ],
+  [
+   220.2570609431804,
+   6.590243902439024
+  ]
+ ],
+ "readings": [
+  {
+   "channel": "x",
+   "source": "ledger",
+   "subsystem": "brakes",
+   "unit": "",
+   "value": 1.0
+  },
+  {
+   "channel": "y",
+   "source": "ledger",
+   "subsystem": "cooling",
+   "unit": "kPa",
+   "value": 2.5
+  },
+  {
+   "channel": "b",
+   "source": "solver",
+   "subsystem": "a",
+   "unit": "",
+   "value": 3.0
+  }
+ ],
+ "rules": [
+  {
+   "base_severity": 8,
+   "cause": "FoS below floor at audited node",
+   "channel": "node_fos",
+   "detection": 4,
+   "effect": "load path lost; frame deformation; likely DNF + driver hazard",
+   "failure_mode": "primary-structure node buckles under combined load",
+   "item": "frame node",
+   "kind": "min",
+   "limit": 1.5,
+   "rule_id": "CHS-NODE-BUCKLE",
+   "severity_gain": 6.0,
+   "subsystem": "chassis"
+  },
+  {
+   "base_severity": 7,
+   "cause": "bracket FoS below floor",
+   "channel": "bracket_fos",
+   "detection": 3,
+   "effect": "mount migrates; alignment lost mid-run",
+   "failure_mode": "bolted bracket yields at mount",
+   "item": "chassis bracket",
+   "kind": "min",
+   "limit": 1.5,
+   "rule_id": "CHS-BRACKET-YIELD",
+   "severity_gain": 6.0,
+   "subsystem": "chassis"
+  },
+  {
+   "base_severity": 9,
+   "cause": "prying-amplified pull-off exceeds margin",
+   "channel": "pedalbox_base_fos",
+   "detection": 4,
+   "effect": "pedal feel lost; brake application compromised",
+   "failure_mode": "pedal-box base peels off floor under panic-stop load",
+   "item": "pedal-box base",
+   "kind": "min",
+   "limit": 1.5,
+   "rule_id": "CHS-PEDALBOX-PEEL",
+   "severity_gain": 6.0,
+   "subsystem": "chassis"
+  },
+  {
+   "base_severity": 9,
+   "cause": "bracket FoS below brake floor",
+   "channel": "caliper_bracket_fos",
+   "detection": 3,
+   "effect": "corner loses braking; car pulls under braking",
+   "failure_mode": "caliper bracket shears",
+   "item": "caliper bracket",
+   "kind": "min",
+   "limit": 1.6,
+   "rule_id": "BRK-MOUNT-SHEAR",
+   "severity_gain": 6.0,
+   "subsystem": "brakes"
+  },
+  {
+   "base_severity": 7,
+   "cause": "thermal margin below floor",
+   "channel": "rotor_thermal_fos",
+   "detection": 4,
+   "effect": "fade / cracking",
+   "failure_mode": "rotor exceeds thermal limit late in endurance",
+   "item": "brake rotor",
+   "kind": "min",
+   "limit": 1.6,
+   "rule_id": "BRK-ROTOR-MARGIN",
+   "severity_gain": 6.0,
+   "subsystem": "brakes"
+  },
+  {
+   "base_severity": 8,
+   "cause": "bias margin below floor",
+   "channel": "bias_margin_fos",
+   "detection": 5,
+   "effect": "spin under threshold braking",
+   "failure_mode": "lock-up order inverts (rears lock first)",
+   "item": "brake bias",
+   "kind": "min",
+   "limit": 1.1,
+   "rule_id": "BRK-BIAS-SHIFT",
+   "severity_gain": 6.0,
+   "subsystem": "brakes"
+  },
+  {
+   "base_severity": 9,
+   "cause": "clamp force below slip demand at reduced bearing area",
+   "channel": "pedal_tab_joint_fos",
+   "detection": 6,
+   "effect": "pedal geometry shifts; ratio changes under the driver's foot",
+   "failure_mode": "slotted pedal-tab joint slips / loses preload",
+   "item": "brake pedal tab (slotted holes)",
+   "kind": "min",
+   "limit": 1.2,
+   "rule_id": "BRK-PEDALTAB-SLIP",
+   "severity_gain": 6.0,
+   "subsystem": "brakes"
+  },
+  {
+   "base_severity": 7,
+   "cause": "mount FoS below floor",
+   "channel": "motor_mount_fos",
+   "detection": 4,
+   "effect": "driveline misalignment; chain/belt loss",
+   "failure_mode": "motor mount fatigues at weld",
+   "item": "motor mount",
+   "kind": "min",
+   "limit": 1.5,
+   "rule_id": "PT-MOUNT-FATIGUE",
+   "severity_gain": 6.0,
+   "subsystem": "powertrain"
+  },
+  {
+   "base_severity": 8,
+   "cause": "shaft FoS below floor",
+   "channel": "shaft_fos",
+   "detection": 3,
+   "effect": "immediate DNF; debris hazard",
+   "failure_mode": "output shaft yields at peak torque",
+   "item": "output shaft",
+   "kind": "min",
+   "limit": 1.4,
+   "rule_id": "PT-SHAFT-YIELD",
+   "severity_gain": 6.0,
+   "subsystem": "powertrain"
+  },
+  {
+   "base_severity": 6,
+   "cause": "thermal margin consumed",
+   "channel": "motor_temp_margin_fos",
+   "detection": 3,
+   "effect": "derate or shutdown in endurance",
+   "failure_mode": "motor exceeds winding temp limit",
+   "item": "motor",
+   "kind": "min",
+   "limit": 1.0,
+   "rule_id": "PT-MOTOR-OVERTEMP",
+   "severity_gain": 6.0,
+   "subsystem": "powertrain"
+  },
+  {
+   "base_severity": 6,
+   "cause": "thermal margin consumed",
+   "channel": "inverter_temp_margin_fos",
+   "detection": 3,
+   "effect": "power loss mid-lap",
+   "failure_mode": "inverter derates on junction temp",
+   "item": "inverter",
+   "kind": "min",
+   "limit": 1.0,
+   "rule_id": "PT-INV-DERATE",
+   "severity_gain": 6.0,
+   "subsystem": "powertrain"
+  },
+  {
+   "base_severity": 8,
+   "cause": "local ΔP exceeds ceiling (blockage, kink, undersized branch)",
+   "channel": "manifold_dp_kpa:",
+   "detection": 5,
+   "effect": "branch starvation downstream; hot spot on the starved consumer",
+   "failure_mode": "dangerous localized pressure drop across a manifold segment",
+   "item": "cooling manifold segment",
+   "kind": "max",
+   "limit": 35.0,
+   "rule_id": "COOL-MANIFOLD-DP",
+   "severity_gain": 8.0,
+   "subsystem": "cooling"
+  },
+  {
+   "base_severity": 9,
+   "cause": "suction-side ΔP eats the vapor margin",
+   "channel": "pump_inlet_margin_kpa",
+   "detection": 6,
+   "effect": "flow collapse; pump damage; whole-loop overheating",
+   "failure_mode": "pump inlet pressure approaches vapor margin — cavitation",
+   "item": "coolant pump inlet",
+   "kind": "min",
+   "limit": 20.0,
+   "rule_id": "COOL-CAVITATION",
+   "severity_gain": 8.0,
+   "subsystem": "cooling"
+  }
+ ],
+ "rules.custom": [
+  {
+   "base_severity": 8,
+   "cause": "FoS below floor at audited node",
+   "channel": "node_fos",
+   "detection": 4,
+   "effect": "load path lost; frame deformation; likely DNF + driver hazard",
+   "failure_mode": "primary-structure node buckles under combined load",
+   "item": "frame node",
+   "kind": "min",
+   "limit": 2.0,
+   "rule_id": "CHS-NODE-BUCKLE",
+   "severity_gain": 6.0,
+   "subsystem": "chassis"
+  },
+  {
+   "base_severity": 7,
+   "cause": "bracket FoS below floor",
+   "channel": "bracket_fos",
+   "detection": 3,
+   "effect": "mount migrates; alignment lost mid-run",
+   "failure_mode": "bolted bracket yields at mount",
+   "item": "chassis bracket",
+   "kind": "min",
+   "limit": 2.0,
+   "rule_id": "CHS-BRACKET-YIELD",
+   "severity_gain": 6.0,
+   "subsystem": "chassis"
+  },
+  {
+   "base_severity": 9,
+   "cause": "prying-amplified pull-off exceeds margin",
+   "channel": "pedalbox_base_fos",
+   "detection": 4,
+   "effect": "pedal feel lost; brake application compromised",
+   "failure_mode": "pedal-box base peels off floor under panic-stop load",
+   "item": "pedal-box base",
+   "kind": "min",
+   "limit": 2.0,
+   "rule_id": "CHS-PEDALBOX-PEEL",
+   "severity_gain": 6.0,
+   "subsystem": "chassis"
+  },
+  {
+   "base_severity": 9,
+   "cause": "bracket FoS below brake floor",
+   "channel": "caliper_bracket_fos",
+   "detection": 3,
+   "effect": "corner loses braking; car pulls under braking",
+   "failure_mode": "caliper bracket shears",
+   "item": "caliper bracket",
+   "kind": "min",
+   "limit": 1.8,
+   "rule_id": "BRK-MOUNT-SHEAR",
+   "severity_gain": 6.0,
+   "subsystem": "brakes"
+  },
+  {
+   "base_severity": 7,
+   "cause": "thermal margin below floor",
+   "channel": "rotor_thermal_fos",
+   "detection": 4,
+   "effect": "fade / cracking",
+   "failure_mode": "rotor exceeds thermal limit late in endurance",
+   "item": "brake rotor",
+   "kind": "min",
+   "limit": 1.8,
+   "rule_id": "BRK-ROTOR-MARGIN",
+   "severity_gain": 6.0,
+   "subsystem": "brakes"
+  },
+  {
+   "base_severity": 8,
+   "cause": "bias margin below floor",
+   "channel": "bias_margin_fos",
+   "detection": 5,
+   "effect": "spin under threshold braking",
+   "failure_mode": "lock-up order inverts (rears lock first)",
+   "item": "brake bias",
+   "kind": "min",
+   "limit": 1.1,
+   "rule_id": "BRK-BIAS-SHIFT",
+   "severity_gain": 6.0,
+   "subsystem": "brakes"
+  },
+  {
+   "base_severity": 9,
+   "cause": "clamp force below slip demand at reduced bearing area",
+   "channel": "pedal_tab_joint_fos",
+   "detection": 6,
+   "effect": "pedal geometry shifts; ratio changes under the driver's foot",
+   "failure_mode": "slotted pedal-tab joint slips / loses preload",
+   "item": "brake pedal tab (slotted holes)",
+   "kind": "min",
+   "limit": 1.3,
+   "rule_id": "BRK-PEDALTAB-SLIP",
+   "severity_gain": 6.0,
+   "subsystem": "brakes"
+  },
+  {
+   "base_severity": 7,
+   "cause": "mount FoS below floor",
+   "channel": "motor_mount_fos",
+   "detection": 4,
+   "effect": "driveline misalignment; chain/belt loss",
+   "failure_mode": "motor mount fatigues at weld",
+   "item": "motor mount",
+   "kind": "min",
+   "limit": 2.0,
+   "rule_id": "PT-MOUNT-FATIGUE",
+   "severity_gain": 6.0,
+   "subsystem": "powertrain"
+  },
+  {
+   "base_severity": 8,
+   "cause": "shaft FoS below floor",
+   "channel": "shaft_fos",
+   "detection": 3,
+   "effect": "immediate DNF; debris hazard",
+   "failure_mode": "output shaft yields at peak torque",
+   "item": "output shaft",
+   "kind": "min",
+   "limit": 1.5,
+   "rule_id": "PT-SHAFT-YIELD",
+   "severity_gain": 6.0,
+   "subsystem": "powertrain"
+  },
+  {
+   "base_severity": 6,
+   "cause": "thermal margin consumed",
+   "channel": "motor_temp_margin_fos",
+   "detection": 3,
+   "effect": "derate or shutdown in endurance",
+   "failure_mode": "motor exceeds winding temp limit",
+   "item": "motor",
+   "kind": "min",
+   "limit": 1.0,
+   "rule_id": "PT-MOTOR-OVERTEMP",
+   "severity_gain": 6.0,
+   "subsystem": "powertrain"
+  },
+  {
+   "base_severity": 6,
+   "cause": "thermal margin consumed",
+   "channel": "inverter_temp_margin_fos",
+   "detection": 3,
+   "effect": "power loss mid-lap",
+   "failure_mode": "inverter derates on junction temp",
+   "item": "inverter",
+   "kind": "min",
+   "limit": 1.0,
+   "rule_id": "PT-INV-DERATE",
+   "severity_gain": 6.0,
+   "subsystem": "powertrain"
+  },
+  {
+   "base_severity": 8,
+   "cause": "local ΔP exceeds ceiling (blockage, kink, undersized branch)",
+   "channel": "manifold_dp_kpa:",
+   "detection": 5,
+   "effect": "branch starvation downstream; hot spot on the starved consumer",
+   "failure_mode": "dangerous localized pressure drop across a manifold segment",
+   "item": "cooling manifold segment",
+   "kind": "max",
+   "limit": 30.0,
+   "rule_id": "COOL-MANIFOLD-DP",
+   "severity_gain": 8.0,
+   "subsystem": "cooling"
+  },
+  {
+   "base_severity": 9,
+   "cause": "suction-side ΔP eats the vapor margin",
+   "channel": "pump_inlet_margin_kpa",
+   "detection": 6,
+   "effect": "flow collapse; pump damage; whole-loop overheating",
+   "failure_mode": "pump inlet pressure approaches vapor margin — cavitation",
+   "item": "coolant pump inlet",
+   "kind": "min",
+   "limit": 25.0,
+   "rule_id": "COOL-CAVITATION",
+   "severity_gain": 8.0,
+   "subsystem": "cooling"
+  }
+ ]
+}

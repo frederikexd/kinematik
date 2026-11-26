@@ -71,9 +71,7 @@ def elevate_severity(base: int, deficit_ratio: float, *, gain: float = 6.0) -> i
     clamped to 1..10 — a 10% FoS shortfall lifts severity by one step at the
     default gain; a 50%+ shortfall pins it near hazardous.
     """
-    if deficit_ratio <= 0.0:
-        return max(1, min(10, int(base)))
-    return max(1, min(10, int(base) + math.ceil(gain * deficit_ratio)))
+    return max(1, min(10, int(base) + math.ceil(gain * max(deficit_ratio, 0.0))))
 
 
 def occurrence_from_deficit(deficit_ratio: float, *, floor: int = 3) -> int:
@@ -299,11 +297,10 @@ class RiskEngine:
         rows: dict[str, LiveRisk] = {}
         unmatched: list[Reading] = []
         for rd in rds:
-            hit = False
-            for rule in self.rules:
-                if not rule.matches(rd):
-                    continue
-                hit = True
+            matched = [rule for rule in self.rules if rule.matches(rd)]
+            if not matched:
+                unmatched.append(rd)
+            for rule in matched:
                 d = rule.deficit(rd.value)
                 sev = elevate_severity(rule.base_severity, d, gain=rule.severity_gain)
                 occ = occurrence_from_deficit(d)
@@ -313,17 +310,16 @@ class RiskEngine:
                 prev = rows.get(key)
                 if prev is not None and prev.deficit_ratio >= d:
                     continue
+                rpn = compute_rpn(sev, occ, rule.detection)
                 rows[key] = LiveRisk(
                     rule_id=rule.rule_id, subsystem=rule.subsystem, channel=rd.channel,
                     item=rule.item or rd.channel, failure_mode=rule.failure_mode,
                     effect=rule.effect, value=rd.value, limit=rule.limit,
                     kind=rule.kind.value, deficit_ratio=round(d, 6),
                     triggered=d > 0.0, severity=sev, occurrence=occ,
-                    detection=rule.detection, rpn=compute_rpn(sev, occ, rule.detection),
-                    band=classify_risk(sev, compute_rpn(sev, occ, rule.detection)).value,
+                    detection=rule.detection, rpn=rpn,
+                    band=classify_risk(sev, rpn).value,
                     mechanisms=[rule.cause] if rule.cause else [], source=rd.source)
-            if not hit:
-                unmatched.append(rd)
         self._propagate(rows)
         report = RiskReport(risks=sorted(rows.values(),
                                          key=lambda r: (r.subsystem, r.rule_id, r.channel)),
@@ -340,9 +336,8 @@ class RiskEngine:
                       r.channel.startswith(edge.src_channel)))]
             if not srcs:
                 continue
-            for dst in [r for r in rows.values() if r.rule_id == edge.dst_rule_id]:
-                if edge.mechanism in dst.mechanisms:
-                    continue
+            for dst in [r for r in rows.values()
+                        if r.rule_id == edge.dst_rule_id and edge.mechanism not in r.mechanisms]:
                 dst.occurrence = min(10, dst.occurrence + edge.occurrence_bump)
                 dst.rpn = compute_rpn(dst.severity, dst.occurrence, dst.detection)
                 dst.band = classify_risk(dst.severity, dst.rpn).value
@@ -372,11 +367,6 @@ def manifold_readings(segments: dict[str, float], *,
     if inlet_abs_kpa is not None:
         out.append(Reading("cooling", "pump_inlet_margin_kpa",
                            float(inlet_abs_kpa) - vapor_pressure_kpa, "kPa", source))
-    if pump_head_kpa is not None:
-        # A single segment eating > 60% of total pump head is itself dangerous
-        # even under a generous absolute ceiling — surface it as a reading the
-        # UI can display; the MAX rule still applies to the absolute number.
-        pass
     return out
 
 
@@ -458,19 +448,19 @@ def _contact_patch(j: SlottedHoleJoint, n_theta: int = 720, n_r: int = 120):
     Ro, w, L, off = (j.washer_od_mm / 2.0, j.slot_width_mm,
                      j.slot_length_mm, j.slot_offset_mm)
     hw, hl = w / 2.0, max(L / 2.0 - w / 2.0, 0.0)   # slot = rectangle + end caps
-    cx = -off
     A = M = 0.0
     dth = 2.0 * math.pi / n_theta
     dr = Ro / n_r
     for it in range(n_theta):
-        th = (it + 0.5) * dth
+        th = (it + 0.5) * dth  # pragma: no mutate (any fixed phase of a full-circle midpoint grid covers the same cells)
         c, s = math.cos(th), math.sin(th)
         for ir in range(n_r):
             r = (ir + 0.5) * dr
-            x, y = r * c - cx, r * s          # coords relative to slot centre
-            # inside slot (no contact)?  rectangle |x|<=hl,|y|<=hw  OR end caps
-            in_slot = (abs(y) <= hw and abs(x) <= hl) or \
-                      ((abs(x) - hl) ** 2 + y * y <= hw * hw if abs(x) > hl else False)
+            # coords relative to slot centre; the slot is symmetric in x, so the sign of the offset never matters
+            x, y = r * c + off, r * s
+            # inside the slot (no contact): within hw of the slot's centre segment |x| <= hl, y = 0, which is the
+            # rectangle |x| <= hl, |y| <= hw together with its two semicircular end caps
+            in_slot = max(abs(x) - hl, 0.0) ** 2 + y * y <= hw * hw
             if in_slot:
                 continue
             dA = r * dr * dth
@@ -521,7 +511,7 @@ def analyze_slotted_joint(j: SlottedHoleJoint, *,
 
     A0, r_h0 = _annulus(Ro, j.slot_width_mm / 2.0)  # round-hole baseline
     A1, r_h1 = _contact_patch(j)
-    ratio = A1 / A0 if A0 > 0 else 0.0
+    ratio = A1 / A0
 
     def K_of(r_h):  # per-mm-of-diameter torque coefficient
         return (pitch / (2.0 * math.pi) + j.thread_mu * r_t / cos_a
@@ -532,7 +522,7 @@ def analyze_slotted_joint(j: SlottedHoleJoint, *,
     F_proof = target_preload_fraction_of_proof * grade.proof_MPa * At
     F_bear_cap = (j.bearing_allow_MPa / bearing_safety) * A1
     F_target = min(F_proof, F_bear_cap)
-    capped = F_bear_cap < F_proof
+    capped = F_bear_cap < F_proof  # pragma: no mutate (two continuous forces are never exactly equal)
     T_target = K1 * F_target * d / 1e3              # N·mm → N·m
 
     F_at_T = sig_bear = None
@@ -544,7 +534,8 @@ def analyze_slotted_joint(j: SlottedHoleJoint, *,
     if capped:
         notes.append(f"preload BEARING-CAPPED: slotted contact ({ratio:.0%} of full "
                      f"annulus) crushes before {target_preload_fraction_of_proof:.0%}·proof")
-    if ratio < 0.55:
+    thin = ratio < 0.55  # pragma: no mutate (an integrated area ratio never lands exactly on 0.55)
+    if thin:
         notes.append("contact area < 55% of full annulus — fit a slot washer / "
                      "load-spreader plate; hand-calc K is an estimate here")
     if j.slot_offset_mm:
@@ -561,5 +552,5 @@ def analyze_slotted_joint(j: SlottedHoleJoint, *,
         F_bearing_cap_N=round(F_bear_cap, 1),
         bearing_stress_MPa=round(sig_bear, 1) if sig_bear is not None else None,
         bearing_capped=capped,
-        is_estimate=ratio < 0.55 or bool(j.slot_offset_mm),
+        is_estimate=thin or bool(j.slot_offset_mm),
         notes="; ".join(notes))

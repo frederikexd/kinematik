@@ -1,0 +1,1576 @@
+{
+ "cli.": [
+  1,
+  "# KinematiK consistency check: declared loads vs electrical hardware\n\nTool version 1.7.12. Same inputs and version give this report byte for byte.\n\n## Inputs\n\n| File | SHA-256 |\n|---|---|\n| demo.kicad_pcb | `3483a2a47ab7571ea34170746a500d55f9b2de8a2a4fbd50633de963ea835f57` |\n| decl.csv | `5f07cd79e1c643a295d0a0ccb6df82c0b8afd37ad74f4185f7df837bc26e1372` |\n\nParameters: rail_v = 5, brownout_v = 4.5, ambient_c = 40, max_temp_c = 105\n\n## Summary\n\n2 FAIL · 2 WARN · 0 INSUFFICIENT EVIDENCE · 1 INFO · 0 PASS\n\n## Declared loads vs the hardware that carries them\n\n| Net | Declared by | Current | Fuse | Rating | Verdict |\n|---|---|---|---|---|---|\n| AUX_5V | unspecified | 0 A | F2 | — | rating not readable from the part value |\n| AUX_5V | unspecified | 0 A | F3 | 2.5 A | holds (no declared load) |\n| LV_12V | electrics | 1.5 A | F4 | 3 A | holds (2.00× the load) |\n| STATOR_PWR | powertrain | 25 A | F1 | 10 A | FAIL: blows in normal operation |\n\n## Results\n\n| Status | Check | Evidence behind the method |\n|---|---|---|\n| FAIL | component — F1 | rule: a part's rating or placement vs the declared current and copper temperature |\n| FAIL | fusing margin — STATOR_PWR | calibrated: Onderdonk fusing with the NBS-fitted heating model (fit, not a held-out test) |\n| WARN | declared load — MOTOR_CTRL_12V | input gap: the loads file and the board disagree |\n| WARN | trace ampacity — STATOR_PWR | calibrated: heating fitted to the 1956 NBS data behind IPC-2221 (fit, not a held-out test) |\n| INFO | component — J1 | rule: a part's rating or placement vs the declared current and copper temperature |\n\n### Details\n\n**FAIL — component — F1.** Fuse F1 is marked 10 A but its net carries 25 A — it blows in normal operation, the exact 'component failed even though the design was fine' report. FIX: fit ≥32 A (25% headroom) and re-check the trace fusing margin above.\n\n**FAIL — fusing margin — STATOR_PWR.** 'STATOR_PWR' bottleneck fuses (physically melts, Onderdonk 10 s) at 31.2 A — under the required 2× safety factor on 25 A (50.0 A). A stalled fan or a short below the fuse rating opens this trace like a fuse wire, and the 'random component failure' the team chases later is actually vaporised copper. FIX covered by the ampacity width above; verify the upstream fuse trips below 31.2 A.\n\n**WARN — declared load — MOTOR_CTRL_12V.** 'MOTOR_CTRL_12V' is declared at 3 A by powertrain (loads file line 3) but no routed net on the board has that name. Either the two teams name it differently or it is not routed yet, and its fuse and copper are unchecked. FIX: use the board's net name in the loads file, or route the net.\n\n**WARN — trace ampacity — STATOR_PWR.** Bottleneck segment on 'STATOR_PWR' (F.Cu) is 10.00 mm wide; at the assigned 25 A (declared by powertrain (loads file line 2)) it runs ≈90 °C (rise 50 °C over 40 °C ambient) — eating into the 105 °C derate ceiling. This is the failure that passes every simulation: the schematic has no widths, DRC has no amps. FIX: widen to ≥20.39 mm (IPC-2221 heating + Onderdonk fusing at 2×, 1 oz) or move the net to 2 oz copper (≥10.20 mm).\n\n## Where each net's current came from\n\n| Net | Current | Voltage | Source |\n|---|---|---|---|\n| AUX_5V | 0 A | 5 V | declared by unspecified (loads file line 4) |\n| LV_12V | 1.5 A | 12 V | declared by electrics (loads file line 5) |\n| STATOR_PWR | 25 A | 12 V | declared by powertrain (loads file line 2) |\n\n## Limits of this report\n\n- No result here is correlated with a built board. Measure the real board before relying on a margin.\n- Assumed currents are guesses from net names; every one is reported as insufficient evidence.\n- Pads and pours are left to the layout tool's DRC; this is not an EMC check or a certification.\n\n",
+  "2 FAIL · 2 WARN · 0 INSUFFICIENT EVIDENCE · 1 INFO · 0 PASS\n"
+ ],
+ "cli.--fail-on never": [
+  0,
+  "# KinematiK consistency check: declared loads vs electrical hardware\n\nTool version 1.7.12. Same inputs and version give this report byte for byte.\n\n## Inputs\n\n| File | SHA-256 |\n|---|---|\n| demo.kicad_pcb | `3483a2a47ab7571ea34170746a500d55f9b2de8a2a4fbd50633de963ea835f57` |\n| decl.csv | `5f07cd79e1c643a295d0a0ccb6df82c0b8afd37ad74f4185f7df837bc26e1372` |\n\nParameters: rail_v = 5, brownout_v = 4.5, ambient_c = 40, max_temp_c = 105\n\n## Summary\n\n2 FAIL · 2 WARN · 0 INSUFFICIENT EVIDENCE · 1 INFO · 0 PASS\n\n## Declared loads vs the hardware that carries them\n\n| Net | Declared by | Current | Fuse | Rating | Verdict |\n|---|---|---|---|---|---|\n| AUX_5V | unspecified | 0 A | F2 | — | rating not readable from the part value |\n| AUX_5V | unspecified | 0 A | F3 | 2.5 A | holds (no declared load) |\n| LV_12V | electrics | 1.5 A | F4 | 3 A | holds (2.00× the load) |\n| STATOR_PWR | powertrain | 25 A | F1 | 10 A | FAIL: blows in normal operation |\n\n## Results\n\n| Status | Check | Evidence behind the method |\n|---|---|---|\n| FAIL | component — F1 | rule: a part's rating or placement vs the declared current and copper temperature |\n| FAIL | fusing margin — STATOR_PWR | calibrated: Onderdonk fusing with the NBS-fitted heating model (fit, not a held-out test) |\n| WARN | declared load — MOTOR_CTRL_12V | input gap: the loads file and the board disagree |\n| WARN | trace ampacity — STATOR_PWR | calibrated: heating fitted to the 1956 NBS data behind IPC-2221 (fit, not a held-out test) |\n| INFO | component — J1 | rule: a part's rating or placement vs the declared current and copper temperature |\n\n### Details\n\n**FAIL — component — F1.** Fuse F1 is marked 10 A but its net carries 25 A — it blows in normal operation, the exact 'component failed even though the design was fine' report. FIX: fit ≥32 A (25% headroom) and re-check the trace fusing margin above.\n\n**FAIL — fusing margin — STATOR_PWR.** 'STATOR_PWR' bottleneck fuses (physically melts, Onderdonk 10 s) at 31.2 A — under the required 2× safety factor on 25 A (50.0 A). A stalled fan or a short below the fuse rating opens this trace like a fuse wire, and the 'random component failure' the team chases later is actually vaporised copper. FIX covered by the ampacity width above; verify the upstream fuse trips below 31.2 A.\n\n**WARN — declared load — MOTOR_CTRL_12V.** 'MOTOR_CTRL_12V' is declared at 3 A by powertrain (loads file line 3) but no routed net on the board has that name. Either the two teams name it differently or it is not routed yet, and its fuse and copper are unchecked. FIX: use the board's net name in the loads file, or route the net.\n\n**WARN — trace ampacity — STATOR_PWR.** Bottleneck segment on 'STATOR_PWR' (F.Cu) is 10.00 mm wide; at the assigned 25 A (declared by powertrain (loads file line 2)) it runs ≈90 °C (rise 50 °C over 40 °C ambient) — eating into the 105 °C derate ceiling. This is the failure that passes every simulation: the schematic has no widths, DRC has no amps. FIX: widen to ≥20.39 mm (IPC-2221 heating + Onderdonk fusing at 2×, 1 oz) or move the net to 2 oz copper (≥10.20 mm).\n\n## Where each net's current came from\n\n| Net | Current | Voltage | Source |\n|---|---|---|---|\n| AUX_5V | 0 A | 5 V | declared by unspecified (loads file line 4) |\n| LV_12V | 1.5 A | 12 V | declared by electrics (loads file line 5) |\n| STATOR_PWR | 25 A | 12 V | declared by powertrain (loads file line 2) |\n\n## Limits of this report\n\n- No result here is correlated with a built board. Measure the real board before relying on a margin.\n- Assumed currents are guesses from net names; every one is reported as insufficient evidence.\n- Pads and pours are left to the layout tool's DRC; this is not an EMC check or a certification.\n\n",
+  "2 FAIL · 2 WARN · 0 INSUFFICIENT EVIDENCE · 1 INFO · 0 PASS\n"
+ ],
+ "cli.--fail-on warning --rail-v 3.3 --brownout-v 3.1 --ambient-c 20 --max-temp-c 90": [
+  1,
+  "# KinematiK consistency check: declared loads vs electrical hardware\n\nTool version 1.7.12. Same inputs and version give this report byte for byte.\n\n## Inputs\n\n| File | SHA-256 |\n|---|---|\n| demo.kicad_pcb | `3483a2a47ab7571ea34170746a500d55f9b2de8a2a4fbd50633de963ea835f57` |\n| decl.csv | `5f07cd79e1c643a295d0a0ccb6df82c0b8afd37ad74f4185f7df837bc26e1372` |\n\nParameters: rail_v = 3.3, brownout_v = 3.1, ambient_c = 20, max_temp_c = 90\n\n## Summary\n\n2 FAIL · 2 WARN · 0 INSUFFICIENT EVIDENCE · 1 INFO · 0 PASS\n\n## Declared loads vs the hardware that carries them\n\n| Net | Declared by | Current | Fuse | Rating | Verdict |\n|---|---|---|---|---|---|\n| AUX_5V | unspecified | 0 A | F2 | — | rating not readable from the part value |\n| AUX_5V | unspecified | 0 A | F3 | 2.5 A | holds (no declared load) |\n| LV_12V | electrics | 1.5 A | F4 | 3 A | holds (2.00× the load) |\n| STATOR_PWR | powertrain | 25 A | F1 | 10 A | FAIL: blows in normal operation |\n\n## Results\n\n| Status | Check | Evidence behind the method |\n|---|---|---|\n| FAIL | component — F1 | rule: a part's rating or placement vs the declared current and copper temperature |\n| FAIL | fusing margin — STATOR_PWR | calibrated: Onderdonk fusing with the NBS-fitted heating model (fit, not a held-out test) |\n| WARN | declared load — MOTOR_CTRL_12V | input gap: the loads file and the board disagree |\n| WARN | trace ampacity — STATOR_PWR | calibrated: heating fitted to the 1956 NBS data behind IPC-2221 (fit, not a held-out test) |\n| INFO | component — J1 | rule: a part's rating or placement vs the declared current and copper temperature |\n\n### Details\n\n**FAIL — component — F1.** Fuse F1 is marked 10 A but its net carries 25 A — it blows in normal operation, the exact 'component failed even though the design was fine' report. FIX: fit ≥32 A (25% headroom) and re-check the trace fusing margin above.\n\n**FAIL — fusing margin — STATOR_PWR.** 'STATOR_PWR' bottleneck fuses (physically melts, Onderdonk 10 s) at 32.0 A — under the required 2× safety factor on 25 A (50.0 A). A stalled fan or a short below the fuse rating opens this trace like a fuse wire, and the 'random component failure' the team chases later is actually vaporised copper. FIX covered by the ampacity width above; verify the upstream fuse trips below 32.0 A.\n\n**WARN — declared load — MOTOR_CTRL_12V.** 'MOTOR_CTRL_12V' is declared at 3 A by powertrain (loads file line 3) but no routed net on the board has that name. Either the two teams name it differently or it is not routed yet, and its fuse and copper are unchecked. FIX: use the board's net name in the loads file, or route the net.\n\n**WARN — trace ampacity — STATOR_PWR.** Bottleneck segment on 'STATOR_PWR' (F.Cu) is 10.00 mm wide; at the assigned 25 A (declared by powertrain (loads file line 2)) it runs ≈70 °C (rise 50 °C over 20 °C ambient) — eating into the 90 °C derate ceiling. This is the failure that passes every simulation: the schematic has no widths, DRC has no amps. FIX: widen to ≥19.92 mm (IPC-2221 heating + Onderdonk fusing at 2×, 1 oz) or move the net to 2 oz copper (≥9.96 mm).\n\n## Where each net's current came from\n\n| Net | Current | Voltage | Source |\n|---|---|---|---|\n| AUX_5V | 0 A | 5 V | declared by unspecified (loads file line 4) |\n| LV_12V | 1.5 A | 12 V | declared by electrics (loads file line 5) |\n| STATOR_PWR | 25 A | 12 V | declared by powertrain (loads file line 2) |\n\n## Limits of this report\n\n- No result here is correlated with a built board. Measure the real board before relying on a margin.\n- Assumed currents are guesses from net names; every one is reported as insufficient evidence.\n- Pads and pours are left to the layout tool's DRC; this is not an EMC check or a certification.\n\n",
+  "2 FAIL · 2 WARN · 0 INSUFFICIENT EVIDENCE · 1 INFO · 0 PASS\n"
+ ],
+ "cli.args": [
+  "exit 2",
+  "exit 2",
+  "exit 2"
+ ],
+ "cli.bad": [
+  2,
+  "",
+  "kinematik-check: loads file line 2: current_a 'x' is not a number\n"
+ ],
+ "cli.clean": [
+  0,
+  0,
+  0
+ ],
+ "cli.files": [
+  1,
+  "",
+  "2 FAIL · 2 WARN · 0 INSUFFICIENT EVIDENCE · 1 INFO · 0 PASS\n",
+  "# KinematiK consistency check: declared loads vs electrical hardware\n\nTool version 1.7.12. Same inputs and version give this report byte for byte.\n\n## Inputs\n\n| File | SHA-256 |\n|---|---|\n| demo.kicad_pcb | `3483a2a47ab7571ea34170746a500d55f9b2de8a2a4fbd50633de963ea835f57` |\n| decl.csv | `5f07cd79e1c643a295d0a0ccb6df82c0b8afd37ad74f4185f7df837bc26e1372` |\n\nParameters: rail_v = 5, brownout_v = 4.5, ambient_c = 40, max_temp_c = 105\n\n## Summary\n\n2 FAIL · 2 WARN · 0 INSUFFICIENT EVIDENCE · 1 INFO · 0 PASS\n\n## Declared loads vs the hardware that carries them\n\n| Net | Declared by | Current | Fuse | Rating | Verdict |\n|---|---|---|---|---|---|\n| AUX_5V | unspecified | 0 A | F2 | — | rating not readable from the part value |\n| AUX_5V | unspecified | 0 A | F3 | 2.5 A | holds (no declared load) |\n| LV_12V | electrics | 1.5 A | F4 | 3 A | holds (2.00× the load) |\n| STATOR_PWR | powertrain | 25 A | F1 | 10 A | FAIL: blows in normal operation |\n\n## Results\n\n| Status | Check | Evidence behind the method |\n|---|---|---|\n| FAIL | component — F1 | rule: a part's rating or placement vs the declared current and copper temperature |\n| FAIL | fusing margin — STATOR_PWR | calibrated: Onderdonk fusing with the NBS-fitted heating model (fit, not a held-out test) |\n| WARN | declared load — MOTOR_CTRL_12V | input gap: the loads file and the board disagree |\n| WARN | trace ampacity — STATOR_PWR | calibrated: heating fitted to the 1956 NBS data behind IPC-2221 (fit, not a held-out test) |\n| INFO | component — J1 | rule: a part's rating or placement vs the declared current and copper temperature |\n\n### Details\n\n**FAIL — component — F1.** Fuse F1 is marked 10 A but its net carries 25 A — it blows in normal operation, the exact 'component failed even though the design was fine' report. FIX: fit ≥32 A (25% headroom) and re-check the trace fusing margin above.\n\n**FAIL — fusing margin — STATOR_PWR.** 'STATOR_PWR' bottleneck fuses (physically melts, Onderdonk 10 s) at 31.2 A — under the required 2× safety factor on 25 A (50.0 A). A stalled fan or a short below the fuse rating opens this trace like a fuse wire, and the 'random component failure' the team chases later is actually vaporised copper. FIX covered by the ampacity width above; verify the upstream fuse trips below 31.2 A.\n\n**WARN — declared load — MOTOR_CTRL_12V.** 'MOTOR_CTRL_12V' is declared at 3 A by powertrain (loads file line 3) but no routed net on the board has that name. Either the two teams name it differently or it is not routed yet, and its fuse and copper are unchecked. FIX: use the board's net name in the loads file, or route the net.\n\n**WARN — trace ampacity — STATOR_PWR.** Bottleneck segment on 'STATOR_PWR' (F.Cu) is 10.00 mm wide; at the assigned 25 A (declared by powertrain (loads file line 2)) it runs ≈90 °C (rise 50 °C over 40 °C ambient) — eating into the 105 °C derate ceiling. This is the failure that passes every simulation: the schematic has no widths, DRC has no amps. FIX: widen to ≥20.39 mm (IPC-2221 heating + Onderdonk fusing at 2×, 1 oz) or move the net to 2 oz copper (≥10.20 mm).\n\n## Where each net's current came from\n\n| Net | Current | Voltage | Source |\n|---|---|---|---|\n| AUX_5V | 0 A | 5 V | declared by unspecified (loads file line 4) |\n| LV_12V | 1.5 A | 12 V | declared by electrics (loads file line 5) |\n| STATOR_PWR | 25 A | 12 V | declared by powertrain (loads file line 2) |\n\n## Limits of this report\n\n- No result here is correlated with a built board. Measure the real board before relying on a margin.\n- Assumed currents are guesses from net names; every one is reported as insufficient evidence.\n- Pads and pours are left to the layout tool's DRC; this is not an EMC check or a certification.\n",
+  "{\n  \"tool\": \"kinematik-check\",\n  \"version\": \"1.7.12\",\n  \"inputs\": {\n    \"board\": {\n      \"file\": \"demo.kicad_pcb\",\n      \"sha256\": \"3483a2a47ab7571ea34170746a500d55f9b2de8a2a4fbd50633de963ea835f57\"\n    },\n    \"loads\": {\n      \"file\": \"decl.csv\",\n      \"sha256\": \"5f07cd79e1c643a295d0a0ccb6df82c0b8afd37ad74f4185f7df837bc26e1372\"\n    }\n  },\n  \"params\": {\n    \"rail_v\": 5.0,\n    \"brownout_v\": 4.5,\n    \"ambient_c\": 40.0,\n    \"max_temp_c\": 105.0\n  },\n  \"counts\": {\n    \"fail\": 2,\n    \"warning\": 2,\n    \"missing\": 0,\n    \"info\": 1,\n    \"ok\": 0\n  },\n  \"boundary\": [\n    {\n      \"net\": \"AUX_5V\",\n      \"owner\": \"unspecified\",\n      \"current_a\": 0.0,\n      \"fuses\": [\n        {\n          \"ref\": \"F2\",\n          \"rating_a\": null,\n          \"verdict\": \"rating not readable from the part value\"\n        },\n        {\n          \"ref\": \"F3\",\n          \"rating_a\": 2.5,\n          \"verdict\": \"holds (no declared load)\"\n        }\n      ]\n    },\n    {\n      \"net\": \"LV_12V\",\n      \"owner\": \"electrics\",\n      \"current_a\": 1.5,\n      \"fuses\": [\n        {\n          \"ref\": \"F4\",\n          \"rating_a\": 3.0,\n          \"verdict\": \"holds (2.00× the load)\"\n        }\n      ]\n    },\n    {\n      \"net\": \"STATOR_PWR\",\n      \"owner\": \"powertrain\",\n      \"current_a\": 25.0,\n      \"fuses\": [\n        {\n          \"ref\": \"F1\",\n          \"rating_a\": 10.0,\n          \"verdict\": \"FAIL: blows in normal operation\"\n        }\n      ]\n    }\n  ],\n  \"findings\": [\n    {\n      \"check\": \"component — F1\",\n      \"severity\": \"fail\",\n      \"message\": \"Fuse F1 is marked 10 A but its net carries 25 A — it blows in normal operation, the exact 'component failed even though the design was fine' report. FIX: fit ≥32 A (25% headroom) and re-check the trace fusing margin above.\",\n      \"subsystems\": [\n        \"electrics\"\n      ],\n      \"detail\": {},\n      \"status\": \"FAIL\",\n      \"evidence\": \"rule: a part's rating or placement vs the declared current and copper temperature\"\n    },\n    {\n      \"check\": \"fusing margin — STATOR_PWR\",\n      \"severity\": \"fail\",\n      \"message\": \"'STATOR_PWR' bottleneck fuses (physically melts, Onderdonk 10 s) at 31.2 A — under the required 2× safety factor on 25 A (50.0 A). A stalled fan or a short below the fuse rating opens this trace like a fuse wire, and the 'random component failure' the team chases later is actually vaporised copper. FIX covered by the ampacity width above; verify the upstream fuse trips below 31.2 A.\",\n      \"subsystems\": [\n        \"electrics\"\n      ],\n      \"detail\": {},\n      \"status\": \"FAIL\",\n      \"evidence\": \"calibrated: Onderdonk fusing with the NBS-fitted heating model (fit, not a held-out test)\"\n    },\n    {\n      \"check\": \"declared load — MOTOR_CTRL_12V\",\n      \"severity\": \"warning\",\n      \"message\": \"'MOTOR_CTRL_12V' is declared at 3 A by powertrain (loads file line 3) but no routed net on the board has that name. Either the two teams name it differently or it is not routed yet, and its fuse and copper are unchecked. FIX: use the board's net name in the loads file, or route the net.\",\n      \"subsystems\": [\n        \"electrics\",\n        \"powertrain\"\n      ],\n      \"detail\": {},\n      \"status\": \"WARN\",\n      \"evidence\": \"input gap: the loads file and the board disagree\"\n    },\n    {\n      \"check\": \"trace ampacity — STATOR_PWR\",\n      \"severity\": \"warning\",\n      \"message\": \"Bottleneck segment on 'STATOR_PWR' (F.Cu) is 10.00 mm wide; at the assigned 25 A (declared by powertrain (loads file line 2)) it runs ≈90 °C (rise 50 °C over 40 °C ambient) — eating into the 105 °C derate ceiling. This is the failure that passes every simulation: the schematic has no widths, DRC has no amps. FIX: widen to ≥20.39 mm (IPC-2221 heating + Onderdonk fusing at 2×, 1 oz) or move the net to 2 oz copper (≥10.20 mm).\",\n      \"subsystems\": [\n        \"electrics\"\n      ],\n      \"detail\": {\n        \"required_width_mm\": 20.39271180031406,\n        \"run_temp_c\": 89.87220028555228\n      },\n      \"status\": \"WARN\",\n      \"evidence\": \"calibrated: heating fitted to the 1956 NBS data behind IPC-2221 (fit, not a held-out test)\"\n    },\n    {\n      \"check\": \"component — J1\",\n      \"severity\": \"info\",\n      \"message\": \"Connector J1 carries a 25 A net; a typical 2.54 mm header pin is rated ~3 A and derates hot. The pin, not the trace, becomes the fuse. Verify the contact rating or split the current across paralleled pins.\",\n      \"subsystems\": [\n        \"electrics\"\n      ],\n      \"detail\": {},\n      \"status\": \"INFO\",\n      \"evidence\": \"rule: a part's rating or placement vs the declared current and copper temperature\"\n    }\n  ],\n  \"nets\": [\n    {\n      \"net\": \"AUX_5V\",\n      \"current_a\": 0.0,\n      \"voltage_v\": 5.0,\n      \"provenance\": \"declared by unspecified (loads file line 4)\",\n      \"declared\": true\n    },\n    {\n      \"net\": \"LV_12V\",\n      \"current_a\": 1.5,\n      \"voltage_v\": 12.0,\n      \"provenance\": \"declared by electrics (loads file line 5)\",\n      \"declared\": true\n    },\n    {\n      \"net\": \"STATOR_PWR\",\n      \"current_a\": 25.0,\n      \"voltage_v\": 12.0,\n      \"provenance\": \"declared by powertrain (loads file line 2)\",\n      \"declared\": true\n    }\n  ]\n}\n"
+ ],
+ "cli.help": [
+  "exit 0",
+  [
+   true,
+   true,
+   true,
+   true,
+   true,
+   true,
+   true,
+   true,
+   true,
+   true,
+   true,
+   true,
+   true,
+   true,
+   true,
+   true,
+   true,
+   true,
+   true,
+   true
+  ]
+ ],
+ "cli.missing": [
+  2,
+  "kinematik-check: [Errno 2] No such file or directory: '<tmp>/none.csv'\n"
+ ],
+ "evidence": [
+  "benchmarked: net resistance vs an independent 2-D copper solve, 92/92 held-out nets within 2 %",
+  "calibrated: heating fitted to the 1956 NBS data behind IPC-2221 (fit, not a held-out test)",
+  "calibrated: Onderdonk fusing with the NBS-fitted heating model (fit, not a held-out test)",
+  "rule: a part's rating or placement vs the declared current and copper temperature",
+  "geometric: copper of two nets overlapping on one layer",
+  "geometric: a net's copper not connected end to end",
+  "analytical: via barrel current density",
+  "rule: IPC-2221 clearance by voltage",
+  "rule: matched width and length",
+  "input gap: no declared current for this net",
+  "input gap: the loads file and the board disagree",
+  "benchmarked: board reading vs Altium 26.11.1 and KiCad 9.0.3",
+  "analytical",
+  "analytical"
+ ],
+ "loads.''": {
+  "raised": "loads file is empty: expected a header 'net,current_a' and one row per powered net"
+ },
+ "loads.',\\n,\\n'": {
+  "raised": "loads file has no 'net' column (found: none)"
+ },
+ "loads.'Xnet,current_a\\nA,1\\n'": {
+  "raised": "loads file has no 'net' column (found: current_a, xnet)"
+ },
+ "loads.'\\ufeffNet , Current_A ,Owner\\n a , 2.5 , pt \\n'": [
+  {
+   "current_a": 2.5,
+   "line": 2,
+   "net": "a",
+   "owner": "pt",
+   "voltage_v": null
+  }
+ ],
+ "loads.'current_a\\n1\\n'": {
+  "raised": "loads file has no 'net' column (found: current_a)"
+ },
+ "loads.'net,current_a,extra\\nA,1,x,y\\n'": [
+  {
+   "current_a": 1.0,
+   "line": 2,
+   "net": "A",
+   "owner": "unspecified",
+   "voltage_v": null
+  }
+ ],
+ "loads.'net,current_a,owner\\nA,1,\\nB,2,me\\n'": [
+  {
+   "current_a": 1.0,
+   "line": 2,
+   "net": "A",
+   "owner": "unspecified",
+   "voltage_v": null
+  },
+  {
+   "current_a": 2.0,
+   "line": 3,
+   "net": "B",
+   "owner": "me",
+   "voltage_v": null
+  }
+ ],
+ "loads.'net,current_a,voltage_v\\nA,0,5\\n'": [
+  {
+   "current_a": 0.0,
+   "line": 2,
+   "net": "A",
+   "owner": "unspecified",
+   "voltage_v": 5.0
+  }
+ ],
+ "loads.'net,current_a,voltage_v\\nA,1,-5\\n'": {
+  "raised": "loads file line 2: voltage_v must be a finite number > 0, got -5.0"
+ },
+ "loads.'net,current_a,voltage_v\\nA,1,0.5\\n'": [
+  {
+   "current_a": 1.0,
+   "line": 2,
+   "net": "A",
+   "owner": "unspecified",
+   "voltage_v": 0.5
+  }
+ ],
+ "loads.'net,current_a,voltage_v\\nA,1,0\\n'": {
+  "raised": "loads file line 2: voltage_v must be a finite number > 0, got 0.0"
+ },
+ "loads.'net,current_a,voltage_v\\nA,1,inf\\n'": {
+  "raised": "loads file line 2: voltage_v must be a finite number > 0, got inf"
+ },
+ "loads.'net,current_a,voltage_v\\nA,1,x\\n'": {
+  "raised": "loads file line 2: voltage_v 'x' is not a number"
+ },
+ "loads.'net,current_a\\n'": {
+  "raised": "loads file is empty: expected a header 'net,current_a' and one row per powered net"
+ },
+ "loads.'net,current_a\\n,1\\n'": {
+  "raised": "loads file line 2: empty net name"
+ },
+ "loads.'net,current_a\\nA,-1\\n'": {
+  "raised": "loads file line 2: current_a must be a finite number ≥ 0, got -1.0"
+ },
+ "loads.'net,current_a\\nA,1,2\\n'": [
+  {
+   "current_a": 1.0,
+   "line": 2,
+   "net": "A",
+   "owner": "unspecified",
+   "voltage_v": null
+  }
+ ],
+ "loads.'net,current_a\\nA,1\\n'": [
+  {
+   "current_a": 1.0,
+   "line": 2,
+   "net": "A",
+   "owner": "unspecified",
+   "voltage_v": null
+  }
+ ],
+ "loads.'net,current_a\\nA,1\\na,2\\n'": {
+  "raised": "loads file line 3: net 'a' is declared twice"
+ },
+ "loads.'net,current_a\\nA,inf\\n'": {
+  "raised": "loads file line 2: current_a must be a finite number ≥ 0, got inf"
+ },
+ "loads.'net,current_a\\nA,nan\\n'": {
+  "raised": "loads file line 2: current_a must be a finite number ≥ 0, got nan"
+ },
+ "loads.'net,current_a\\nA,x\\n'": {
+  "raised": "loads file line 2: current_a 'x' is not a number"
+ },
+ "loads.'net\\nA\\n'": {
+  "raised": "loads file has no 'current_a' column (found: net)"
+ },
+ "run": {
+  "board": [
+   "demo.kicad_pcb",
+   64
+  ],
+  "boundary": [
+   {
+    "current_a": 0.0,
+    "fuses": [
+     [
+      "F2",
+      null,
+      "rating not readable from the part value"
+     ],
+     [
+      "F3",
+      2.5,
+      "holds (no declared load)"
+     ]
+    ],
+    "net": "AUX_5V",
+    "owner": "unspecified"
+   },
+   {
+    "current_a": 1.5,
+    "fuses": [
+     [
+      "F4",
+      3.0,
+      "holds (2.00× the load)"
+     ]
+    ],
+    "net": "LV_12V",
+    "owner": "electrics"
+   },
+   {
+    "current_a": 25.0,
+    "fuses": [
+     [
+      "F1",
+      10.0,
+      "FAIL: blows in normal operation"
+     ]
+    ],
+    "net": "STATOR_PWR",
+    "owner": "powertrain"
+   }
+  ],
+  "counts": {
+   "fail": 2,
+   "info": 1,
+   "missing": 0,
+   "ok": 0,
+   "warning": 2
+  },
+  "findings": [
+   {
+    "check": "component — F1",
+    "detail": {},
+    "message": "Fuse F1 is marked 10 A but its net carries 25 A — it blows in normal operation, the exact 'component failed even though the design was fine' report. FIX: fit ≥32 A (25% headroom) and re-check the trace fusing margin above.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics"
+    ]
+   },
+   {
+    "check": "fusing margin — STATOR_PWR",
+    "detail": {},
+    "message": "'STATOR_PWR' bottleneck fuses (physically melts, Onderdonk 10 s) at 31.2 A — under the required 2× safety factor on 25 A (50.0 A). A stalled fan or a short below the fuse rating opens this trace like a fuse wire, and the 'random component failure' the team chases later is actually vaporised copper. FIX covered by the ampacity width above; verify the upstream fuse trips below 31.2 A.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics"
+    ]
+   },
+   {
+    "check": "declared load — MOTOR_CTRL_12V",
+    "detail": {},
+    "message": "'MOTOR_CTRL_12V' is declared at 3 A by powertrain (loads file line 3) but no routed net on the board has that name. Either the two teams name it differently or it is not routed yet, and its fuse and copper are unchecked. FIX: use the board's net name in the loads file, or route the net.",
+    "severity": "warning",
+    "subsystems": [
+     "electrics",
+     "powertrain"
+    ]
+   },
+   {
+    "check": "trace ampacity — STATOR_PWR",
+    "detail": {
+     "required_width_mm": 20.39271180031406,
+     "run_temp_c": 89.87220028555228
+    },
+    "message": "Bottleneck segment on 'STATOR_PWR' (F.Cu) is 10.00 mm wide; at the assigned 25 A (declared by powertrain (loads file line 2)) it runs ≈90 °C (rise 50 °C over 40 °C ambient) — eating into the 105 °C derate ceiling. This is the failure that passes every simulation: the schematic has no widths, DRC has no amps. FIX: widen to ≥20.39 mm (IPC-2221 heating + Onderdonk fusing at 2×, 1 oz) or move the net to 2 oz copper (≥10.20 mm).",
+    "severity": "warning",
+    "subsystems": [
+     "electrics"
+    ]
+   },
+   {
+    "check": "component — J1",
+    "detail": {},
+    "message": "Connector J1 carries a 25 A net; a typical 2.54 mm header pin is rated ~3 A and derates hot. The pin, not the trace, becomes the fuse. Verify the contact rating or split the current across paralleled pins.",
+    "severity": "info",
+    "subsystems": [
+     "electrics"
+    ]
+   }
+  ],
+  "hits": [
+   2,
+   4,
+   0
+  ],
+  "json": {
+   "boundary": [
+    {
+     "current_a": 0.0,
+     "fuses": [
+      {
+       "rating_a": null,
+       "ref": "F2",
+       "verdict": "rating not readable from the part value"
+      },
+      {
+       "rating_a": 2.5,
+       "ref": "F3",
+       "verdict": "holds (no declared load)"
+      }
+     ],
+     "net": "AUX_5V",
+     "owner": "unspecified"
+    },
+    {
+     "current_a": 1.5,
+     "fuses": [
+      {
+       "rating_a": 3.0,
+       "ref": "F4",
+       "verdict": "holds (2.00× the load)"
+      }
+     ],
+     "net": "LV_12V",
+     "owner": "electrics"
+    },
+    {
+     "current_a": 25.0,
+     "fuses": [
+      {
+       "rating_a": 10.0,
+       "ref": "F1",
+       "verdict": "FAIL: blows in normal operation"
+      }
+     ],
+     "net": "STATOR_PWR",
+     "owner": "powertrain"
+    }
+   ],
+   "counts": {
+    "fail": 2,
+    "info": 1,
+    "missing": 0,
+    "ok": 0,
+    "warning": 2
+   },
+   "findings": [
+    {
+     "check": "component — F1",
+     "detail": {},
+     "evidence": "rule: a part's rating or placement vs the declared current and copper temperature",
+     "message": "Fuse F1 is marked 10 A but its net carries 25 A — it blows in normal operation, the exact 'component failed even though the design was fine' report. FIX: fit ≥32 A (25% headroom) and re-check the trace fusing margin above.",
+     "severity": "fail",
+     "status": "FAIL",
+     "subsystems": [
+      "electrics"
+     ]
+    },
+    {
+     "check": "fusing margin — STATOR_PWR",
+     "detail": {},
+     "evidence": "calibrated: Onderdonk fusing with the NBS-fitted heating model (fit, not a held-out test)",
+     "message": "'STATOR_PWR' bottleneck fuses (physically melts, Onderdonk 10 s) at 31.2 A — under the required 2× safety factor on 25 A (50.0 A). A stalled fan or a short below the fuse rating opens this trace like a fuse wire, and the 'random component failure' the team chases later is actually vaporised copper. FIX covered by the ampacity width above; verify the upstream fuse trips below 31.2 A.",
+     "severity": "fail",
+     "status": "FAIL",
+     "subsystems": [
+      "electrics"
+     ]
+    },
+    {
+     "check": "declared load — MOTOR_CTRL_12V",
+     "detail": {},
+     "evidence": "input gap: the loads file and the board disagree",
+     "message": "'MOTOR_CTRL_12V' is declared at 3 A by powertrain (loads file line 3) but no routed net on the board has that name. Either the two teams name it differently or it is not routed yet, and its fuse and copper are unchecked. FIX: use the board's net name in the loads file, or route the net.",
+     "severity": "warning",
+     "status": "WARN",
+     "subsystems": [
+      "electrics",
+      "powertrain"
+     ]
+    },
+    {
+     "check": "trace ampacity — STATOR_PWR",
+     "detail": {
+      "required_width_mm": 20.39271180031406,
+      "run_temp_c": 89.87220028555228
+     },
+     "evidence": "calibrated: heating fitted to the 1956 NBS data behind IPC-2221 (fit, not a held-out test)",
+     "message": "Bottleneck segment on 'STATOR_PWR' (F.Cu) is 10.00 mm wide; at the assigned 25 A (declared by powertrain (loads file line 2)) it runs ≈90 °C (rise 50 °C over 40 °C ambient) — eating into the 105 °C derate ceiling. This is the failure that passes every simulation: the schematic has no widths, DRC has no amps. FIX: widen to ≥20.39 mm (IPC-2221 heating + Onderdonk fusing at 2×, 1 oz) or move the net to 2 oz copper (≥10.20 mm).",
+     "severity": "warning",
+     "status": "WARN",
+     "subsystems": [
+      "electrics"
+     ]
+    },
+    {
+     "check": "component — J1",
+     "detail": {},
+     "evidence": "rule: a part's rating or placement vs the declared current and copper temperature",
+     "message": "Connector J1 carries a 25 A net; a typical 2.54 mm header pin is rated ~3 A and derates hot. The pin, not the trace, becomes the fuse. Verify the contact rating or split the current across paralleled pins.",
+     "severity": "info",
+     "status": "INFO",
+     "subsystems": [
+      "electrics"
+     ]
+    }
+   ],
+   "inputs": {
+    "board": {
+     "file": "demo.kicad_pcb",
+     "sha256": "3483a2a47ab7571ea34170746a500d55f9b2de8a2a4fbd50633de963ea835f57"
+    },
+    "loads": {
+     "file": "loads.csv",
+     "sha256": "5f07cd79e1c643a295d0a0ccb6df82c0b8afd37ad74f4185f7df837bc26e1372"
+    }
+   },
+   "nets": [
+    {
+     "current_a": 0.0,
+     "declared": true,
+     "net": "AUX_5V",
+     "provenance": "declared by unspecified (loads file line 4)",
+     "voltage_v": 5.0
+    },
+    {
+     "current_a": 1.5,
+     "declared": true,
+     "net": "LV_12V",
+     "provenance": "declared by electrics (loads file line 5)",
+     "voltage_v": 12.0
+    },
+    {
+     "current_a": 25.0,
+     "declared": true,
+     "net": "STATOR_PWR",
+     "provenance": "declared by powertrain (loads file line 2)",
+     "voltage_v": 12.0
+    }
+   ],
+   "params": {
+    "ambient_c": 40.0,
+    "brownout_v": 4.5,
+    "max_temp_c": 105.0,
+    "rail_v": 5.0
+   },
+   "tool": "kinematik-check",
+   "version": "1.7.12"
+  },
+  "loads": [
+   "loads.csv",
+   "5f07cd79e1c643a295d0a0ccb6df82c0b8afd37ad74f4185f7df837bc26e1372"
+  ],
+  "md": "# KinematiK consistency check: declared loads vs electrical hardware\n\nTool version 1.7.12. Same inputs and version give this report byte for byte.\n\n## Inputs\n\n| File | SHA-256 |\n|---|---|\n| demo.kicad_pcb | `3483a2a47ab7571ea34170746a500d55f9b2de8a2a4fbd50633de963ea835f57` |\n| loads.csv | `5f07cd79e1c643a295d0a0ccb6df82c0b8afd37ad74f4185f7df837bc26e1372` |\n\nParameters: rail_v = 5, brownout_v = 4.5, ambient_c = 40, max_temp_c = 105\n\n## Summary\n\n2 FAIL · 2 WARN · 0 INSUFFICIENT EVIDENCE · 1 INFO · 0 PASS\n\n## Declared loads vs the hardware that carries them\n\n| Net | Declared by | Current | Fuse | Rating | Verdict |\n|---|---|---|---|---|---|\n| AUX_5V | unspecified | 0 A | F2 | — | rating not readable from the part value |\n| AUX_5V | unspecified | 0 A | F3 | 2.5 A | holds (no declared load) |\n| LV_12V | electrics | 1.5 A | F4 | 3 A | holds (2.00× the load) |\n| STATOR_PWR | powertrain | 25 A | F1 | 10 A | FAIL: blows in normal operation |\n\n## Results\n\n| Status | Check | Evidence behind the method |\n|---|---|---|\n| FAIL | component — F1 | rule: a part's rating or placement vs the declared current and copper temperature |\n| FAIL | fusing margin — STATOR_PWR | calibrated: Onderdonk fusing with the NBS-fitted heating model (fit, not a held-out test) |\n| WARN | declared load — MOTOR_CTRL_12V | input gap: the loads file and the board disagree |\n| WARN | trace ampacity — STATOR_PWR | calibrated: heating fitted to the 1956 NBS data behind IPC-2221 (fit, not a held-out test) |\n| INFO | component — J1 | rule: a part's rating or placement vs the declared current and copper temperature |\n\n### Details\n\n**FAIL — component — F1.** Fuse F1 is marked 10 A but its net carries 25 A — it blows in normal operation, the exact 'component failed even though the design was fine' report. FIX: fit ≥32 A (25% headroom) and re-check the trace fusing margin above.\n\n**FAIL — fusing margin — STATOR_PWR.** 'STATOR_PWR' bottleneck fuses (physically melts, Onderdonk 10 s) at 31.2 A — under the required 2× safety factor on 25 A (50.0 A). A stalled fan or a short below the fuse rating opens this trace like a fuse wire, and the 'random component failure' the team chases later is actually vaporised copper. FIX covered by the ampacity width above; verify the upstream fuse trips below 31.2 A.\n\n**WARN — declared load — MOTOR_CTRL_12V.** 'MOTOR_CTRL_12V' is declared at 3 A by powertrain (loads file line 3) but no routed net on the board has that name. Either the two teams name it differently or it is not routed yet, and its fuse and copper are unchecked. FIX: use the board's net name in the loads file, or route the net.\n\n**WARN — trace ampacity — STATOR_PWR.** Bottleneck segment on 'STATOR_PWR' (F.Cu) is 10.00 mm wide; at the assigned 25 A (declared by powertrain (loads file line 2)) it runs ≈90 °C (rise 50 °C over 40 °C ambient) — eating into the 105 °C derate ceiling. This is the failure that passes every simulation: the schematic has no widths, DRC has no amps. FIX: widen to ≥20.39 mm (IPC-2221 heating + Onderdonk fusing at 2×, 1 oz) or move the net to 2 oz copper (≥10.20 mm).\n\n## Where each net's current came from\n\n| Net | Current | Voltage | Source |\n|---|---|---|---|\n| AUX_5V | 0 A | 5 V | declared by unspecified (loads file line 4) |\n| LV_12V | 1.5 A | 12 V | declared by electrics (loads file line 5) |\n| STATOR_PWR | 25 A | 12 V | declared by powertrain (loads file line 2) |\n\n## Limits of this report\n\n- No result here is correlated with a built board. Measure the real board before relying on a margin.\n- Assumed currents are guesses from net names; every one is reported as insufficient evidence.\n- Pads and pours are left to the layout tool's DRC; this is not an EMC check or a certification.\n",
+  "nets": [
+   {
+    "current_a": 0.0,
+    "declared": true,
+    "net": "AUX_5V",
+    "provenance": "declared by unspecified (loads file line 4)",
+    "voltage_v": 5.0
+   },
+   {
+    "current_a": 1.5,
+    "declared": true,
+    "net": "LV_12V",
+    "provenance": "declared by electrics (loads file line 5)",
+    "voltage_v": 12.0
+   },
+   {
+    "current_a": 25.0,
+    "declared": true,
+    "net": "STATOR_PWR",
+    "provenance": "declared by powertrain (loads file line 2)",
+    "voltage_v": 12.0
+   }
+  ],
+  "params": {
+   "ambient_c": 40.0,
+   "brownout_v": 4.5,
+   "max_temp_c": 105.0,
+   "rail_v": 5.0
+  }
+ },
+ "run.badboard.": "not a KiCad board file (expected a kicad_pcb node)",
+ "run.badboard.(not a board)": "not a KiCad board file (expected a kicad_pcb node)",
+ "run.bytes": {
+  "board": [
+   "demo.kicad_pcb",
+   64
+  ],
+  "boundary": [
+   {
+    "current_a": 0.0,
+    "fuses": [
+     [
+      "F2",
+      null,
+      "rating not readable from the part value"
+     ],
+     [
+      "F3",
+      2.5,
+      "holds (no declared load)"
+     ]
+    ],
+    "net": "AUX_5V",
+    "owner": "unspecified"
+   },
+   {
+    "current_a": 1.5,
+    "fuses": [
+     [
+      "F4",
+      3.0,
+      "holds (2.00× the load)"
+     ]
+    ],
+    "net": "LV_12V",
+    "owner": "electrics"
+   },
+   {
+    "current_a": 25.0,
+    "fuses": [
+     [
+      "F1",
+      10.0,
+      "FAIL: blows in normal operation"
+     ]
+    ],
+    "net": "STATOR_PWR",
+    "owner": "powertrain"
+   }
+  ],
+  "counts": {
+   "fail": 2,
+   "info": 1,
+   "missing": 0,
+   "ok": 0,
+   "warning": 2
+  },
+  "findings": [
+   {
+    "check": "component — F1",
+    "detail": {},
+    "message": "Fuse F1 is marked 10 A but its net carries 25 A — it blows in normal operation, the exact 'component failed even though the design was fine' report. FIX: fit ≥32 A (25% headroom) and re-check the trace fusing margin above.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics"
+    ]
+   },
+   {
+    "check": "fusing margin — STATOR_PWR",
+    "detail": {},
+    "message": "'STATOR_PWR' bottleneck fuses (physically melts, Onderdonk 10 s) at 31.8 A — under the required 2× safety factor on 25 A (50.0 A). A stalled fan or a short below the fuse rating opens this trace like a fuse wire, and the 'random component failure' the team chases later is actually vaporised copper. FIX covered by the ampacity width above; verify the upstream fuse trips below 31.8 A.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics"
+    ]
+   },
+   {
+    "check": "declared load — MOTOR_CTRL_12V",
+    "detail": {},
+    "message": "'MOTOR_CTRL_12V' is declared at 3 A by powertrain (loads file line 3) but no routed net on the board has that name. Either the two teams name it differently or it is not routed yet, and its fuse and copper are unchecked. FIX: use the board's net name in the loads file, or route the net.",
+    "severity": "warning",
+    "subsystems": [
+     "electrics",
+     "powertrain"
+    ]
+   },
+   {
+    "check": "trace ampacity — STATOR_PWR",
+    "detail": {
+     "required_width_mm": 20.036616796349968,
+     "run_temp_c": 74.87220028555228
+    },
+    "message": "Bottleneck segment on 'STATOR_PWR' (F.Cu) is 10.00 mm wide; at the assigned 25 A (declared by powertrain (loads file line 2)) it runs ≈75 °C (rise 50 °C over 25 °C ambient) — eating into the 85 °C derate ceiling. This is the failure that passes every simulation: the schematic has no widths, DRC has no amps. FIX: widen to ≥20.04 mm (IPC-2221 heating + Onderdonk fusing at 2×, 1 oz) or move the net to 2 oz copper (≥10.02 mm).",
+    "severity": "warning",
+    "subsystems": [
+     "electrics"
+    ]
+   },
+   {
+    "check": "component — J1",
+    "detail": {},
+    "message": "Connector J1 carries a 25 A net; a typical 2.54 mm header pin is rated ~3 A and derates hot. The pin, not the trace, becomes the fuse. Verify the contact rating or split the current across paralleled pins.",
+    "severity": "info",
+    "subsystems": [
+     "electrics"
+    ]
+   }
+  ],
+  "hits": [
+   2,
+   4,
+   0
+  ],
+  "json": {
+   "boundary": [
+    {
+     "current_a": 0.0,
+     "fuses": [
+      {
+       "rating_a": null,
+       "ref": "F2",
+       "verdict": "rating not readable from the part value"
+      },
+      {
+       "rating_a": 2.5,
+       "ref": "F3",
+       "verdict": "holds (no declared load)"
+      }
+     ],
+     "net": "AUX_5V",
+     "owner": "unspecified"
+    },
+    {
+     "current_a": 1.5,
+     "fuses": [
+      {
+       "rating_a": 3.0,
+       "ref": "F4",
+       "verdict": "holds (2.00× the load)"
+      }
+     ],
+     "net": "LV_12V",
+     "owner": "electrics"
+    },
+    {
+     "current_a": 25.0,
+     "fuses": [
+      {
+       "rating_a": 10.0,
+       "ref": "F1",
+       "verdict": "FAIL: blows in normal operation"
+      }
+     ],
+     "net": "STATOR_PWR",
+     "owner": "powertrain"
+    }
+   ],
+   "counts": {
+    "fail": 2,
+    "info": 1,
+    "missing": 0,
+    "ok": 0,
+    "warning": 2
+   },
+   "findings": [
+    {
+     "check": "component — F1",
+     "detail": {},
+     "evidence": "rule: a part's rating or placement vs the declared current and copper temperature",
+     "message": "Fuse F1 is marked 10 A but its net carries 25 A — it blows in normal operation, the exact 'component failed even though the design was fine' report. FIX: fit ≥32 A (25% headroom) and re-check the trace fusing margin above.",
+     "severity": "fail",
+     "status": "FAIL",
+     "subsystems": [
+      "electrics"
+     ]
+    },
+    {
+     "check": "fusing margin — STATOR_PWR",
+     "detail": {},
+     "evidence": "calibrated: Onderdonk fusing with the NBS-fitted heating model (fit, not a held-out test)",
+     "message": "'STATOR_PWR' bottleneck fuses (physically melts, Onderdonk 10 s) at 31.8 A — under the required 2× safety factor on 25 A (50.0 A). A stalled fan or a short below the fuse rating opens this trace like a fuse wire, and the 'random component failure' the team chases later is actually vaporised copper. FIX covered by the ampacity width above; verify the upstream fuse trips below 31.8 A.",
+     "severity": "fail",
+     "status": "FAIL",
+     "subsystems": [
+      "electrics"
+     ]
+    },
+    {
+     "check": "declared load — MOTOR_CTRL_12V",
+     "detail": {},
+     "evidence": "input gap: the loads file and the board disagree",
+     "message": "'MOTOR_CTRL_12V' is declared at 3 A by powertrain (loads file line 3) but no routed net on the board has that name. Either the two teams name it differently or it is not routed yet, and its fuse and copper are unchecked. FIX: use the board's net name in the loads file, or route the net.",
+     "severity": "warning",
+     "status": "WARN",
+     "subsystems": [
+      "electrics",
+      "powertrain"
+     ]
+    },
+    {
+     "check": "trace ampacity — STATOR_PWR",
+     "detail": {
+      "required_width_mm": 20.036616796349968,
+      "run_temp_c": 74.87220028555228
+     },
+     "evidence": "calibrated: heating fitted to the 1956 NBS data behind IPC-2221 (fit, not a held-out test)",
+     "message": "Bottleneck segment on 'STATOR_PWR' (F.Cu) is 10.00 mm wide; at the assigned 25 A (declared by powertrain (loads file line 2)) it runs ≈75 °C (rise 50 °C over 25 °C ambient) — eating into the 85 °C derate ceiling. This is the failure that passes every simulation: the schematic has no widths, DRC has no amps. FIX: widen to ≥20.04 mm (IPC-2221 heating + Onderdonk fusing at 2×, 1 oz) or move the net to 2 oz copper (≥10.02 mm).",
+     "severity": "warning",
+     "status": "WARN",
+     "subsystems": [
+      "electrics"
+     ]
+    },
+    {
+     "check": "component — J1",
+     "detail": {},
+     "evidence": "rule: a part's rating or placement vs the declared current and copper temperature",
+     "message": "Connector J1 carries a 25 A net; a typical 2.54 mm header pin is rated ~3 A and derates hot. The pin, not the trace, becomes the fuse. Verify the contact rating or split the current across paralleled pins.",
+     "severity": "info",
+     "status": "INFO",
+     "subsystems": [
+      "electrics"
+     ]
+    }
+   ],
+   "inputs": {
+    "board": {
+     "file": "demo.kicad_pcb",
+     "sha256": "3483a2a47ab7571ea34170746a500d55f9b2de8a2a4fbd50633de963ea835f57"
+    },
+    "loads": {
+     "file": "loads.csv",
+     "sha256": "5f07cd79e1c643a295d0a0ccb6df82c0b8afd37ad74f4185f7df837bc26e1372"
+    }
+   },
+   "nets": [
+    {
+     "current_a": 0.0,
+     "declared": true,
+     "net": "AUX_5V",
+     "provenance": "declared by unspecified (loads file line 4)",
+     "voltage_v": 5.0
+    },
+    {
+     "current_a": 1.5,
+     "declared": true,
+     "net": "LV_12V",
+     "provenance": "declared by electrics (loads file line 5)",
+     "voltage_v": 12.0
+    },
+    {
+     "current_a": 25.0,
+     "declared": true,
+     "net": "STATOR_PWR",
+     "provenance": "declared by powertrain (loads file line 2)",
+     "voltage_v": 12.0
+    }
+   ],
+   "params": {
+    "ambient_c": 25.0,
+    "brownout_v": 3.0,
+    "max_temp_c": 85.0,
+    "rail_v": 3.3
+   },
+   "tool": "kinematik-check",
+   "version": "1.7.12"
+  },
+  "loads": [
+   "loads.csv",
+   "5f07cd79e1c643a295d0a0ccb6df82c0b8afd37ad74f4185f7df837bc26e1372"
+  ],
+  "md": "# KinematiK consistency check: declared loads vs electrical hardware\n\nTool version 1.7.12. Same inputs and version give this report byte for byte.\n\n## Inputs\n\n| File | SHA-256 |\n|---|---|\n| demo.kicad_pcb | `3483a2a47ab7571ea34170746a500d55f9b2de8a2a4fbd50633de963ea835f57` |\n| loads.csv | `5f07cd79e1c643a295d0a0ccb6df82c0b8afd37ad74f4185f7df837bc26e1372` |\n\nParameters: rail_v = 3.3, brownout_v = 3, ambient_c = 25, max_temp_c = 85\n\n## Summary\n\n2 FAIL · 2 WARN · 0 INSUFFICIENT EVIDENCE · 1 INFO · 0 PASS\n\n## Declared loads vs the hardware that carries them\n\n| Net | Declared by | Current | Fuse | Rating | Verdict |\n|---|---|---|---|---|---|\n| AUX_5V | unspecified | 0 A | F2 | — | rating not readable from the part value |\n| AUX_5V | unspecified | 0 A | F3 | 2.5 A | holds (no declared load) |\n| LV_12V | electrics | 1.5 A | F4 | 3 A | holds (2.00× the load) |\n| STATOR_PWR | powertrain | 25 A | F1 | 10 A | FAIL: blows in normal operation |\n\n## Results\n\n| Status | Check | Evidence behind the method |\n|---|---|---|\n| FAIL | component — F1 | rule: a part's rating or placement vs the declared current and copper temperature |\n| FAIL | fusing margin — STATOR_PWR | calibrated: Onderdonk fusing with the NBS-fitted heating model (fit, not a held-out test) |\n| WARN | declared load — MOTOR_CTRL_12V | input gap: the loads file and the board disagree |\n| WARN | trace ampacity — STATOR_PWR | calibrated: heating fitted to the 1956 NBS data behind IPC-2221 (fit, not a held-out test) |\n| INFO | component — J1 | rule: a part's rating or placement vs the declared current and copper temperature |\n\n### Details\n\n**FAIL — component — F1.** Fuse F1 is marked 10 A but its net carries 25 A — it blows in normal operation, the exact 'component failed even though the design was fine' report. FIX: fit ≥32 A (25% headroom) and re-check the trace fusing margin above.\n\n**FAIL — fusing margin — STATOR_PWR.** 'STATOR_PWR' bottleneck fuses (physically melts, Onderdonk 10 s) at 31.8 A — under the required 2× safety factor on 25 A (50.0 A). A stalled fan or a short below the fuse rating opens this trace like a fuse wire, and the 'random component failure' the team chases later is actually vaporised copper. FIX covered by the ampacity width above; verify the upstream fuse trips below 31.8 A.\n\n**WARN — declared load — MOTOR_CTRL_12V.** 'MOTOR_CTRL_12V' is declared at 3 A by powertrain (loads file line 3) but no routed net on the board has that name. Either the two teams name it differently or it is not routed yet, and its fuse and copper are unchecked. FIX: use the board's net name in the loads file, or route the net.\n\n**WARN — trace ampacity — STATOR_PWR.** Bottleneck segment on 'STATOR_PWR' (F.Cu) is 10.00 mm wide; at the assigned 25 A (declared by powertrain (loads file line 2)) it runs ≈75 °C (rise 50 °C over 25 °C ambient) — eating into the 85 °C derate ceiling. This is the failure that passes every simulation: the schematic has no widths, DRC has no amps. FIX: widen to ≥20.04 mm (IPC-2221 heating + Onderdonk fusing at 2×, 1 oz) or move the net to 2 oz copper (≥10.02 mm).\n\n## Where each net's current came from\n\n| Net | Current | Voltage | Source |\n|---|---|---|---|\n| AUX_5V | 0 A | 5 V | declared by unspecified (loads file line 4) |\n| LV_12V | 1.5 A | 12 V | declared by electrics (loads file line 5) |\n| STATOR_PWR | 25 A | 12 V | declared by powertrain (loads file line 2) |\n\n## Limits of this report\n\n- No result here is correlated with a built board. Measure the real board before relying on a margin.\n- Assumed currents are guesses from net names; every one is reported as insufficient evidence.\n- Pads and pours are left to the layout tool's DRC; this is not an EMC check or a certification.\n",
+  "nets": [
+   {
+    "current_a": 0.0,
+    "declared": true,
+    "net": "AUX_5V",
+    "provenance": "declared by unspecified (loads file line 4)",
+    "voltage_v": 5.0
+   },
+   {
+    "current_a": 1.5,
+    "declared": true,
+    "net": "LV_12V",
+    "provenance": "declared by electrics (loads file line 5)",
+    "voltage_v": 12.0
+   },
+   {
+    "current_a": 25.0,
+    "declared": true,
+    "net": "STATOR_PWR",
+    "provenance": "declared by powertrain (loads file line 2)",
+    "voltage_v": 12.0
+   }
+  ],
+  "params": {
+   "ambient_c": 25.0,
+   "brownout_v": 3.0,
+   "max_temp_c": 85.0,
+   "rail_v": 3.3
+  }
+ },
+ "run.gnd": {
+  "board": [
+   "demo.kicad_pcb",
+   64
+  ],
+  "boundary": [
+   {
+    "current_a": 0.5,
+    "fuses": [
+     [
+      "F2",
+      null,
+      "rating not readable from the part value"
+     ],
+     [
+      "F3",
+      2.5,
+      "holds (5.00× the load)"
+     ]
+    ],
+    "net": "AUX_5V",
+    "owner": "unspecified"
+   },
+   {
+    "current_a": 0.1,
+    "fuses": [],
+    "net": "GND",
+    "owner": "unspecified"
+   }
+  ],
+  "counts": {
+   "fail": 1,
+   "info": 0,
+   "missing": 2,
+   "ok": 0,
+   "warning": 0
+  },
+  "findings": [
+   {
+    "check": "IR drop / brown-out — AUX_5V",
+    "detail": {},
+    "message": "Nodal analysis of the routed copper on 'AUX_5V' gives 56 mΩ between F2.1 and F3.1, taken as up to 69 mΩ with the model's margin and copper up to 10 % thin from the fab. At 0.5 A that drops 0.03 V — the 5 V rail arrives at 4.97 V, below the 6.82 V brown-out (4.5 V on 3.3 V, the board's brown-out fraction, applied to this 5 V net). On track this is the ECU resetting exactly when the fans and brake light fire together — invisible on the bench at idle current. FIX: apply the width fixes below, add a pour, or feed F3.1 directly from the rail.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics"
+    ]
+   },
+   {
+    "check": "current not declared — LV_12V",
+    "detail": {},
+    "message": "No peak current is declared for 'LV_12V', so its copper cannot be judged: its narrowest segment is 2.00 mm on F.Cu, which is fine for 5.21 A and not fine above it. FIX: declare this net's peak in the integration ledger, or type its current into the table above — the Doctor will not guess a number and then fail your board against its own guess.",
+    "severity": "missing",
+    "subsystems": [
+     "electrics"
+    ]
+   },
+   {
+    "check": "current not declared — STATOR_PWR",
+    "detail": {},
+    "message": "No peak current is declared for 'STATOR_PWR', so its copper cannot be judged: its narrowest segment is 10.00 mm on F.Cu, which is fine for 16.72 A and not fine above it. FIX: declare this net's peak in the integration ledger, or type its current into the table above — the Doctor will not guess a number and then fail your board against its own guess.",
+    "severity": "missing",
+    "subsystems": [
+     "electrics"
+    ]
+   }
+  ],
+  "hits": [
+   1,
+   1,
+   0
+  ],
+  "json": {
+   "boundary": [
+    {
+     "current_a": 0.5,
+     "fuses": [
+      {
+       "rating_a": null,
+       "ref": "F2",
+       "verdict": "rating not readable from the part value"
+      },
+      {
+       "rating_a": 2.5,
+       "ref": "F3",
+       "verdict": "holds (5.00× the load)"
+      }
+     ],
+     "net": "AUX_5V",
+     "owner": "unspecified"
+    },
+    {
+     "current_a": 0.1,
+     "fuses": [],
+     "net": "GND",
+     "owner": "unspecified"
+    }
+   ],
+   "counts": {
+    "fail": 1,
+    "info": 0,
+    "missing": 2,
+    "ok": 0,
+    "warning": 0
+   },
+   "findings": [
+    {
+     "check": "IR drop / brown-out — AUX_5V",
+     "detail": {},
+     "evidence": "benchmarked: net resistance vs an independent 2-D copper solve, 92/92 held-out nets within 2 %",
+     "message": "Nodal analysis of the routed copper on 'AUX_5V' gives 56 mΩ between F2.1 and F3.1, taken as up to 69 mΩ with the model's margin and copper up to 10 % thin from the fab. At 0.5 A that drops 0.03 V — the 5 V rail arrives at 4.97 V, below the 6.82 V brown-out (4.5 V on 3.3 V, the board's brown-out fraction, applied to this 5 V net). On track this is the ECU resetting exactly when the fans and brake light fire together — invisible on the bench at idle current. FIX: apply the width fixes below, add a pour, or feed F3.1 directly from the rail.",
+     "severity": "fail",
+     "status": "FAIL",
+     "subsystems": [
+      "electrics"
+     ]
+    },
+    {
+     "check": "current not declared — LV_12V",
+     "detail": {},
+     "evidence": "input gap: no declared current for this net",
+     "message": "No peak current is declared for 'LV_12V', so its copper cannot be judged: its narrowest segment is 2.00 mm on F.Cu, which is fine for 5.21 A and not fine above it. FIX: declare this net's peak in the integration ledger, or type its current into the table above — the Doctor will not guess a number and then fail your board against its own guess.",
+     "severity": "missing",
+     "status": "INSUFFICIENT EVIDENCE",
+     "subsystems": [
+      "electrics"
+     ]
+    },
+    {
+     "check": "current not declared — STATOR_PWR",
+     "detail": {},
+     "evidence": "input gap: no declared current for this net",
+     "message": "No peak current is declared for 'STATOR_PWR', so its copper cannot be judged: its narrowest segment is 10.00 mm on F.Cu, which is fine for 16.72 A and not fine above it. FIX: declare this net's peak in the integration ledger, or type its current into the table above — the Doctor will not guess a number and then fail your board against its own guess.",
+     "severity": "missing",
+     "status": "INSUFFICIENT EVIDENCE",
+     "subsystems": [
+      "electrics"
+     ]
+    }
+   ],
+   "inputs": {
+    "board": {
+     "file": "demo.kicad_pcb",
+     "sha256": "3483a2a47ab7571ea34170746a500d55f9b2de8a2a4fbd50633de963ea835f57"
+    },
+    "loads": {
+     "file": "loads.csv",
+     "sha256": "760b52ae32a98eee69f2cb169b7214eda6ef4c3a97d3b569a3e7f6701fa3d869"
+    }
+   },
+   "nets": [
+    {
+     "current_a": 0.5,
+     "declared": true,
+     "net": "AUX_5V",
+     "provenance": "declared by unspecified (loads file line 3)",
+     "voltage_v": 5.0
+    },
+    {
+     "current_a": 0.1,
+     "declared": true,
+     "net": "GND",
+     "provenance": "declared by unspecified (loads file line 2)",
+     "voltage_v": 3.3
+    },
+    {
+     "current_a": 1.0,
+     "declared": false,
+     "net": "LV_12V",
+     "provenance": "assumed — name matches electrics but no ledger peak declared — assumed 1 A",
+     "voltage_v": 5.0
+    },
+    {
+     "current_a": 1.0,
+     "declared": false,
+     "net": "STATOR_PWR",
+     "provenance": "assumed — name matches electrics but no ledger peak declared — assumed 1 A",
+     "voltage_v": 5.0
+    }
+   ],
+   "params": {
+    "ambient_c": 40.0,
+    "brownout_v": 4.5,
+    "max_temp_c": 105.0,
+    "rail_v": 3.3
+   },
+   "tool": "kinematik-check",
+   "version": "1.7.12"
+  },
+  "loads": [
+   "loads.csv",
+   "760b52ae32a98eee69f2cb169b7214eda6ef4c3a97d3b569a3e7f6701fa3d869"
+  ],
+  "md": "# KinematiK consistency check: declared loads vs electrical hardware\n\nTool version 1.7.12. Same inputs and version give this report byte for byte.\n\n## Inputs\n\n| File | SHA-256 |\n|---|---|\n| demo.kicad_pcb | `3483a2a47ab7571ea34170746a500d55f9b2de8a2a4fbd50633de963ea835f57` |\n| loads.csv | `760b52ae32a98eee69f2cb169b7214eda6ef4c3a97d3b569a3e7f6701fa3d869` |\n\nParameters: rail_v = 3.3, brownout_v = 4.5, ambient_c = 40, max_temp_c = 105\n\n## Summary\n\n1 FAIL · 0 WARN · 2 INSUFFICIENT EVIDENCE · 0 INFO · 0 PASS\n\n## Declared loads vs the hardware that carries them\n\n| Net | Declared by | Current | Fuse | Rating | Verdict |\n|---|---|---|---|---|---|\n| AUX_5V | unspecified | 0.5 A | F2 | — | rating not readable from the part value |\n| AUX_5V | unspecified | 0.5 A | F3 | 2.5 A | holds (5.00× the load) |\n| GND | unspecified | 0.1 A | none on this net | — | copper checks only (below) |\n\n## Results\n\n| Status | Check | Evidence behind the method |\n|---|---|---|\n| FAIL | IR drop / brown-out — AUX_5V | benchmarked: net resistance vs an independent 2-D copper solve, 92/92 held-out nets within 2 % |\n| INSUFFICIENT EVIDENCE | current not declared — LV_12V | input gap: no declared current for this net |\n| INSUFFICIENT EVIDENCE | current not declared — STATOR_PWR | input gap: no declared current for this net |\n\n### Details\n\n**FAIL — IR drop / brown-out — AUX_5V.** Nodal analysis of the routed copper on 'AUX_5V' gives 56 mΩ between F2.1 and F3.1, taken as up to 69 mΩ with the model's margin and copper up to 10 % thin from the fab. At 0.5 A that drops 0.03 V — the 5 V rail arrives at 4.97 V, below the 6.82 V brown-out (4.5 V on 3.3 V, the board's brown-out fraction, applied to this 5 V net). On track this is the ECU resetting exactly when the fans and brake light fire together — invisible on the bench at idle current. FIX: apply the width fixes below, add a pour, or feed F3.1 directly from the rail.\n\n**INSUFFICIENT EVIDENCE — current not declared — LV_12V.** No peak current is declared for 'LV_12V', so its copper cannot be judged: its narrowest segment is 2.00 mm on F.Cu, which is fine for 5.21 A and not fine above it. FIX: declare this net's peak in the integration ledger, or type its current into the table above — the Doctor will not guess a number and then fail your board against its own guess.\n\n**INSUFFICIENT EVIDENCE — current not declared — STATOR_PWR.** No peak current is declared for 'STATOR_PWR', so its copper cannot be judged: its narrowest segment is 10.00 mm on F.Cu, which is fine for 16.72 A and not fine above it. FIX: declare this net's peak in the integration ledger, or type its current into the table above — the Doctor will not guess a number and then fail your board against its own guess.\n\n## Where each net's current came from\n\n| Net | Current | Voltage | Source |\n|---|---|---|---|\n| AUX_5V | 0.5 A | 5 V | declared by unspecified (loads file line 3) |\n| GND | 0.1 A | 3.3 V | declared by unspecified (loads file line 2) |\n| LV_12V | 1 A | 5 V | assumed — name matches electrics but no ledger peak declared — assumed 1 A |\n| STATOR_PWR | 1 A | 5 V | assumed — name matches electrics but no ledger peak declared — assumed 1 A |\n\n## Limits of this report\n\n- No result here is correlated with a built board. Measure the real board before relying on a margin.\n- Assumed currents are guesses from net names; every one is reported as insufficient evidence.\n- Pads and pours are left to the layout tool's DRC; this is not an EMC check or a certification.\n",
+  "nets": [
+   {
+    "current_a": 0.5,
+    "declared": true,
+    "net": "AUX_5V",
+    "provenance": "declared by unspecified (loads file line 3)",
+    "voltage_v": 5.0
+   },
+   {
+    "current_a": 0.1,
+    "declared": true,
+    "net": "GND",
+    "provenance": "declared by unspecified (loads file line 2)",
+    "voltage_v": 3.3
+   },
+   {
+    "current_a": 1.0,
+    "declared": false,
+    "net": "LV_12V",
+    "provenance": "assumed — name matches electrics but no ledger peak declared — assumed 1 A",
+    "voltage_v": 5.0
+   },
+   {
+    "current_a": 1.0,
+    "declared": false,
+    "net": "STATOR_PWR",
+    "provenance": "assumed — name matches electrics but no ledger peak declared — assumed 1 A",
+    "voltage_v": 5.0
+   }
+  ],
+  "params": {
+   "ambient_c": 40.0,
+   "brownout_v": 4.5,
+   "max_temp_c": 105.0,
+   "rail_v": 3.3
+  }
+ },
+ "run.light": {
+  "board": [
+   "demo.kicad_pcb",
+   64
+  ],
+  "boundary": [
+   {
+    "current_a": 2.5,
+    "fuses": [
+     [
+      "F2",
+      null,
+      "rating not readable from the part value"
+     ],
+     [
+      "F3",
+      2.5,
+      "holds (1.00× the load)"
+     ]
+    ],
+    "net": "AUX_5V",
+    "owner": "unspecified"
+   },
+   {
+    "current_a": 10.0,
+    "fuses": [
+     [
+      "F1",
+      10.0,
+      "holds (1.00× the load)"
+     ]
+    ],
+    "net": "STATOR_PWR",
+    "owner": "unspecified"
+   }
+  ],
+  "counts": {
+   "fail": 1,
+   "info": 1,
+   "missing": 1,
+   "ok": 0,
+   "warning": 2
+  },
+  "findings": [
+   {
+    "check": "fusing margin — AUX_5V",
+    "detail": {},
+    "message": "'AUX_5V' bottleneck fuses (physically melts, Onderdonk 10 s) at 1.6 A — under the required 2× safety factor on 2.5 A (5.0 A). A stalled fan or a short below the fuse rating opens this trace like a fuse wire, and the 'random component failure' the team chases later is actually vaporised copper. FIX covered by the ampacity width above; verify the upstream fuse trips below 1.6 A.",
+    "severity": "fail",
+    "subsystems": [
+     "electrics"
+    ]
+   },
+   {
+    "check": "IR drop — AUX_5V",
+    "detail": {},
+    "message": "'AUX_5V' drops 0.17 V at 2.5 A over its real routed mesh (up to 69 mΩ, F2.1→F3.1) — 34% of the brown-out margin gone in copper before any connector or harness drop is counted.",
+    "severity": "warning",
+    "subsystems": [
+     "electrics"
+    ]
+   },
+   {
+    "check": "trace ampacity — AUX_5V",
+    "detail": {
+     "required_width_mm": 2.0392711800314056,
+     "run_temp_c": 77.05730763147346
+    },
+    "message": "Bottleneck segment on 'AUX_5V' (F.Cu) is 0.50 mm wide; at the assigned 2.5 A (declared by unspecified (loads file line 3)) it runs ≈77 °C (rise 37 °C over 40 °C ambient) — eating into the 105 °C derate ceiling. This is the failure that passes every simulation: the schematic has no widths, DRC has no amps. FIX: widen to ≥2.04 mm (IPC-2221 heating + Onderdonk fusing at 2×, 1 oz) or move the net to 2 oz copper (≥1.02 mm).",
+    "severity": "warning",
+    "subsystems": [
+     "electrics"
+    ]
+   },
+   {
+    "check": "current not declared — LV_12V",
+    "detail": {},
+    "message": "No peak current is declared for 'LV_12V', so its copper cannot be judged: its narrowest segment is 2.00 mm on F.Cu, which is fine for 5.21 A and not fine above it. FIX: declare this net's peak in the integration ledger, or type its current into the table above — the Doctor will not guess a number and then fail your board against its own guess.",
+    "severity": "missing",
+    "subsystems": [
+     "electrics"
+    ]
+   },
+   {
+    "check": "component — J1",
+    "detail": {},
+    "message": "Connector J1 carries a 10 A net; a typical 2.54 mm header pin is rated ~3 A and derates hot. The pin, not the trace, becomes the fuse. Verify the contact rating or split the current across paralleled pins.",
+    "severity": "info",
+    "subsystems": [
+     "electrics"
+    ]
+   }
+  ],
+  "hits": [
+   1,
+   3,
+   0
+  ],
+  "json": {
+   "boundary": [
+    {
+     "current_a": 2.5,
+     "fuses": [
+      {
+       "rating_a": null,
+       "ref": "F2",
+       "verdict": "rating not readable from the part value"
+      },
+      {
+       "rating_a": 2.5,
+       "ref": "F3",
+       "verdict": "holds (1.00× the load)"
+      }
+     ],
+     "net": "AUX_5V",
+     "owner": "unspecified"
+    },
+    {
+     "current_a": 10.0,
+     "fuses": [
+      {
+       "rating_a": 10.0,
+       "ref": "F1",
+       "verdict": "holds (1.00× the load)"
+      }
+     ],
+     "net": "STATOR_PWR",
+     "owner": "unspecified"
+    }
+   ],
+   "counts": {
+    "fail": 1,
+    "info": 1,
+    "missing": 1,
+    "ok": 0,
+    "warning": 2
+   },
+   "findings": [
+    {
+     "check": "fusing margin — AUX_5V",
+     "detail": {},
+     "evidence": "calibrated: Onderdonk fusing with the NBS-fitted heating model (fit, not a held-out test)",
+     "message": "'AUX_5V' bottleneck fuses (physically melts, Onderdonk 10 s) at 1.6 A — under the required 2× safety factor on 2.5 A (5.0 A). A stalled fan or a short below the fuse rating opens this trace like a fuse wire, and the 'random component failure' the team chases later is actually vaporised copper. FIX covered by the ampacity width above; verify the upstream fuse trips below 1.6 A.",
+     "severity": "fail",
+     "status": "FAIL",
+     "subsystems": [
+      "electrics"
+     ]
+    },
+    {
+     "check": "IR drop — AUX_5V",
+     "detail": {},
+     "evidence": "benchmarked: net resistance vs an independent 2-D copper solve, 92/92 held-out nets within 2 %",
+     "message": "'AUX_5V' drops 0.17 V at 2.5 A over its real routed mesh (up to 69 mΩ, F2.1→F3.1) — 34% of the brown-out margin gone in copper before any connector or harness drop is counted.",
+     "severity": "warning",
+     "status": "WARN",
+     "subsystems": [
+      "electrics"
+     ]
+    },
+    {
+     "check": "trace ampacity — AUX_5V",
+     "detail": {
+      "required_width_mm": 2.0392711800314056,
+      "run_temp_c": 77.05730763147346
+     },
+     "evidence": "calibrated: heating fitted to the 1956 NBS data behind IPC-2221 (fit, not a held-out test)",
+     "message": "Bottleneck segment on 'AUX_5V' (F.Cu) is 0.50 mm wide; at the assigned 2.5 A (declared by unspecified (loads file line 3)) it runs ≈77 °C (rise 37 °C over 40 °C ambient) — eating into the 105 °C derate ceiling. This is the failure that passes every simulation: the schematic has no widths, DRC has no amps. FIX: widen to ≥2.04 mm (IPC-2221 heating + Onderdonk fusing at 2×, 1 oz) or move the net to 2 oz copper (≥1.02 mm).",
+     "severity": "warning",
+     "status": "WARN",
+     "subsystems": [
+      "electrics"
+     ]
+    },
+    {
+     "check": "current not declared — LV_12V",
+     "detail": {},
+     "evidence": "input gap: no declared current for this net",
+     "message": "No peak current is declared for 'LV_12V', so its copper cannot be judged: its narrowest segment is 2.00 mm on F.Cu, which is fine for 5.21 A and not fine above it. FIX: declare this net's peak in the integration ledger, or type its current into the table above — the Doctor will not guess a number and then fail your board against its own guess.",
+     "severity": "missing",
+     "status": "INSUFFICIENT EVIDENCE",
+     "subsystems": [
+      "electrics"
+     ]
+    },
+    {
+     "check": "component — J1",
+     "detail": {},
+     "evidence": "rule: a part's rating or placement vs the declared current and copper temperature",
+     "message": "Connector J1 carries a 10 A net; a typical 2.54 mm header pin is rated ~3 A and derates hot. The pin, not the trace, becomes the fuse. Verify the contact rating or split the current across paralleled pins.",
+     "severity": "info",
+     "status": "INFO",
+     "subsystems": [
+      "electrics"
+     ]
+    }
+   ],
+   "inputs": {
+    "board": {
+     "file": "demo.kicad_pcb",
+     "sha256": "3483a2a47ab7571ea34170746a500d55f9b2de8a2a4fbd50633de963ea835f57"
+    },
+    "loads": {
+     "file": "loads.csv",
+     "sha256": "f4970fc846790e5422364dd9d508aa4daf3511984eccddcffb3055932592bc4f"
+    }
+   },
+   "nets": [
+    {
+     "current_a": 2.5,
+     "declared": true,
+     "net": "AUX_5V",
+     "provenance": "declared by unspecified (loads file line 3)",
+     "voltage_v": 5.0
+    },
+    {
+     "current_a": 1.0,
+     "declared": false,
+     "net": "LV_12V",
+     "provenance": "assumed — name matches electrics but no ledger peak declared — assumed 1 A",
+     "voltage_v": 5.0
+    },
+    {
+     "current_a": 10.0,
+     "declared": true,
+     "net": "STATOR_PWR",
+     "provenance": "declared by unspecified (loads file line 2)",
+     "voltage_v": 5.0
+    }
+   ],
+   "params": {
+    "ambient_c": 40.0,
+    "brownout_v": 4.5,
+    "max_temp_c": 105.0,
+    "rail_v": 5.0
+   },
+   "tool": "kinematik-check",
+   "version": "1.7.12"
+  },
+  "loads": [
+   "loads.csv",
+   "f4970fc846790e5422364dd9d508aa4daf3511984eccddcffb3055932592bc4f"
+  ],
+  "md": "# KinematiK consistency check: declared loads vs electrical hardware\n\nTool version 1.7.12. Same inputs and version give this report byte for byte.\n\n## Inputs\n\n| File | SHA-256 |\n|---|---|\n| demo.kicad_pcb | `3483a2a47ab7571ea34170746a500d55f9b2de8a2a4fbd50633de963ea835f57` |\n| loads.csv | `f4970fc846790e5422364dd9d508aa4daf3511984eccddcffb3055932592bc4f` |\n\nParameters: rail_v = 5, brownout_v = 4.5, ambient_c = 40, max_temp_c = 105\n\n## Summary\n\n1 FAIL · 2 WARN · 1 INSUFFICIENT EVIDENCE · 1 INFO · 0 PASS\n\n## Declared loads vs the hardware that carries them\n\n| Net | Declared by | Current | Fuse | Rating | Verdict |\n|---|---|---|---|---|---|\n| AUX_5V | unspecified | 2.5 A | F2 | — | rating not readable from the part value |\n| AUX_5V | unspecified | 2.5 A | F3 | 2.5 A | holds (1.00× the load) |\n| STATOR_PWR | unspecified | 10 A | F1 | 10 A | holds (1.00× the load) |\n\n## Results\n\n| Status | Check | Evidence behind the method |\n|---|---|---|\n| FAIL | fusing margin — AUX_5V | calibrated: Onderdonk fusing with the NBS-fitted heating model (fit, not a held-out test) |\n| WARN | IR drop — AUX_5V | benchmarked: net resistance vs an independent 2-D copper solve, 92/92 held-out nets within 2 % |\n| WARN | trace ampacity — AUX_5V | calibrated: heating fitted to the 1956 NBS data behind IPC-2221 (fit, not a held-out test) |\n| INSUFFICIENT EVIDENCE | current not declared — LV_12V | input gap: no declared current for this net |\n| INFO | component — J1 | rule: a part's rating or placement vs the declared current and copper temperature |\n\n### Details\n\n**FAIL — fusing margin — AUX_5V.** 'AUX_5V' bottleneck fuses (physically melts, Onderdonk 10 s) at 1.6 A — under the required 2× safety factor on 2.5 A (5.0 A). A stalled fan or a short below the fuse rating opens this trace like a fuse wire, and the 'random component failure' the team chases later is actually vaporised copper. FIX covered by the ampacity width above; verify the upstream fuse trips below 1.6 A.\n\n**WARN — IR drop — AUX_5V.** 'AUX_5V' drops 0.17 V at 2.5 A over its real routed mesh (up to 69 mΩ, F2.1→F3.1) — 34% of the brown-out margin gone in copper before any connector or harness drop is counted.\n\n**WARN — trace ampacity — AUX_5V.** Bottleneck segment on 'AUX_5V' (F.Cu) is 0.50 mm wide; at the assigned 2.5 A (declared by unspecified (loads file line 3)) it runs ≈77 °C (rise 37 °C over 40 °C ambient) — eating into the 105 °C derate ceiling. This is the failure that passes every simulation: the schematic has no widths, DRC has no amps. FIX: widen to ≥2.04 mm (IPC-2221 heating + Onderdonk fusing at 2×, 1 oz) or move the net to 2 oz copper (≥1.02 mm).\n\n**INSUFFICIENT EVIDENCE — current not declared — LV_12V.** No peak current is declared for 'LV_12V', so its copper cannot be judged: its narrowest segment is 2.00 mm on F.Cu, which is fine for 5.21 A and not fine above it. FIX: declare this net's peak in the integration ledger, or type its current into the table above — the Doctor will not guess a number and then fail your board against its own guess.\n\n## Where each net's current came from\n\n| Net | Current | Voltage | Source |\n|---|---|---|---|\n| AUX_5V | 2.5 A | 5 V | declared by unspecified (loads file line 3) |\n| LV_12V | 1 A | 5 V | assumed — name matches electrics but no ledger peak declared — assumed 1 A |\n| STATOR_PWR | 10 A | 5 V | declared by unspecified (loads file line 2) |\n\n## Limits of this report\n\n- No result here is correlated with a built board. Measure the real board before relying on a margin.\n- Assumed currents are guesses from net names; every one is reported as insufficient evidence.\n- Pads and pours are left to the layout tool's DRC; this is not an EMC check or a certification.\n",
+  "nets": [
+   {
+    "current_a": 2.5,
+    "declared": true,
+    "net": "AUX_5V",
+    "provenance": "declared by unspecified (loads file line 3)",
+    "voltage_v": 5.0
+   },
+   {
+    "current_a": 1.0,
+    "declared": false,
+    "net": "LV_12V",
+    "provenance": "assumed — name matches electrics but no ledger peak declared — assumed 1 A",
+    "voltage_v": 5.0
+   },
+   {
+    "current_a": 10.0,
+    "declared": true,
+    "net": "STATOR_PWR",
+    "provenance": "declared by unspecified (loads file line 2)",
+    "voltage_v": 5.0
+   }
+  ],
+  "params": {
+   "ambient_c": 40.0,
+   "brownout_v": 4.5,
+   "max_temp_c": 105.0,
+   "rail_v": 5.0
+  }
+ },
+ "run.none": {
+  "board": [
+   "demo.kicad_pcb",
+   64
+  ],
+  "boundary": [],
+  "counts": {
+   "fail": 0,
+   "info": 0,
+   "missing": 3,
+   "ok": 0,
+   "warning": 1
+  },
+  "findings": [
+   {
+    "check": "declared load — NOPE",
+    "detail": {},
+    "message": "'NOPE' is declared at 1 A by unspecified (loads file line 2) but no routed net on the board has that name. Either the two teams name it differently or it is not routed yet, and its fuse and copper are unchecked. FIX: use the board's net name in the loads file, or route the net.",
+    "severity": "warning",
+    "subsystems": [
+     "electrics",
+     "unspecified"
+    ]
+   },
+   {
+    "check": "current not declared — AUX_5V",
+    "detail": {},
+    "message": "No peak current is declared for 'AUX_5V', so its copper cannot be judged: its narrowest segment is 0.50 mm on F.Cu, which is fine for 1.91 A and not fine above it. FIX: declare this net's peak in the integration ledger, or type its current into the table above — the Doctor will not guess a number and then fail your board against its own guess.",
+    "severity": "missing",
+    "subsystems": [
+     "electrics"
+    ]
+   },
+   {
+    "check": "current not declared — LV_12V",
+    "detail": {},
+    "message": "No peak current is declared for 'LV_12V', so its copper cannot be judged: its narrowest segment is 2.00 mm on F.Cu, which is fine for 5.21 A and not fine above it. FIX: declare this net's peak in the integration ledger, or type its current into the table above — the Doctor will not guess a number and then fail your board against its own guess.",
+    "severity": "missing",
+    "subsystems": [
+     "electrics"
+    ]
+   },
+   {
+    "check": "current not declared — STATOR_PWR",
+    "detail": {},
+    "message": "No peak current is declared for 'STATOR_PWR', so its copper cannot be judged: its narrowest segment is 10.00 mm on F.Cu, which is fine for 16.72 A and not fine above it. FIX: declare this net's peak in the integration ledger, or type its current into the table above — the Doctor will not guess a number and then fail your board against its own guess.",
+    "severity": "missing",
+    "subsystems": [
+     "electrics"
+    ]
+   }
+  ],
+  "hits": [
+   0,
+   1,
+   0
+  ],
+  "json": {
+   "boundary": [],
+   "counts": {
+    "fail": 0,
+    "info": 0,
+    "missing": 3,
+    "ok": 0,
+    "warning": 1
+   },
+   "findings": [
+    {
+     "check": "declared load — NOPE",
+     "detail": {},
+     "evidence": "input gap: the loads file and the board disagree",
+     "message": "'NOPE' is declared at 1 A by unspecified (loads file line 2) but no routed net on the board has that name. Either the two teams name it differently or it is not routed yet, and its fuse and copper are unchecked. FIX: use the board's net name in the loads file, or route the net.",
+     "severity": "warning",
+     "status": "WARN",
+     "subsystems": [
+      "electrics",
+      "unspecified"
+     ]
+    },
+    {
+     "check": "current not declared — AUX_5V",
+     "detail": {},
+     "evidence": "input gap: no declared current for this net",
+     "message": "No peak current is declared for 'AUX_5V', so its copper cannot be judged: its narrowest segment is 0.50 mm on F.Cu, which is fine for 1.91 A and not fine above it. FIX: declare this net's peak in the integration ledger, or type its current into the table above — the Doctor will not guess a number and then fail your board against its own guess.",
+     "severity": "missing",
+     "status": "INSUFFICIENT EVIDENCE",
+     "subsystems": [
+      "electrics"
+     ]
+    },
+    {
+     "check": "current not declared — LV_12V",
+     "detail": {},
+     "evidence": "input gap: no declared current for this net",
+     "message": "No peak current is declared for 'LV_12V', so its copper cannot be judged: its narrowest segment is 2.00 mm on F.Cu, which is fine for 5.21 A and not fine above it. FIX: declare this net's peak in the integration ledger, or type its current into the table above — the Doctor will not guess a number and then fail your board against its own guess.",
+     "severity": "missing",
+     "status": "INSUFFICIENT EVIDENCE",
+     "subsystems": [
+      "electrics"
+     ]
+    },
+    {
+     "check": "current not declared — STATOR_PWR",
+     "detail": {},
+     "evidence": "input gap: no declared current for this net",
+     "message": "No peak current is declared for 'STATOR_PWR', so its copper cannot be judged: its narrowest segment is 10.00 mm on F.Cu, which is fine for 16.72 A and not fine above it. FIX: declare this net's peak in the integration ledger, or type its current into the table above — the Doctor will not guess a number and then fail your board against its own guess.",
+     "severity": "missing",
+     "status": "INSUFFICIENT EVIDENCE",
+     "subsystems": [
+      "electrics"
+     ]
+    }
+   ],
+   "inputs": {
+    "board": {
+     "file": "demo.kicad_pcb",
+     "sha256": "3483a2a47ab7571ea34170746a500d55f9b2de8a2a4fbd50633de963ea835f57"
+    },
+    "loads": {
+     "file": "loads.csv",
+     "sha256": "6f433e14f1ae2db688e68fa8446ce381e27a4c658509ebc42cc4a6cd5921cfa4"
+    }
+   },
+   "nets": [
+    {
+     "current_a": 1.0,
+     "declared": false,
+     "net": "AUX_5V",
+     "provenance": "assumed — name matches electrics but no ledger peak declared — assumed 1 A",
+     "voltage_v": 5.0
+    },
+    {
+     "current_a": 1.0,
+     "declared": false,
+     "net": "LV_12V",
+     "provenance": "assumed — name matches electrics but no ledger peak declared — assumed 1 A",
+     "voltage_v": 5.0
+    },
+    {
+     "current_a": 1.0,
+     "declared": false,
+     "net": "STATOR_PWR",
+     "provenance": "assumed — name matches electrics but no ledger peak declared — assumed 1 A",
+     "voltage_v": 5.0
+    }
+   ],
+   "params": {
+    "ambient_c": 40.0,
+    "brownout_v": 4.5,
+    "max_temp_c": 105.0,
+    "rail_v": 5.0
+   },
+   "tool": "kinematik-check",
+   "version": "1.7.12"
+  },
+  "loads": [
+   "loads.csv",
+   "6f433e14f1ae2db688e68fa8446ce381e27a4c658509ebc42cc4a6cd5921cfa4"
+  ],
+  "md": "# KinematiK consistency check: declared loads vs electrical hardware\n\nTool version 1.7.12. Same inputs and version give this report byte for byte.\n\n## Inputs\n\n| File | SHA-256 |\n|---|---|\n| demo.kicad_pcb | `3483a2a47ab7571ea34170746a500d55f9b2de8a2a4fbd50633de963ea835f57` |\n| loads.csv | `6f433e14f1ae2db688e68fa8446ce381e27a4c658509ebc42cc4a6cd5921cfa4` |\n\nParameters: rail_v = 5, brownout_v = 4.5, ambient_c = 40, max_temp_c = 105\n\n## Summary\n\n0 FAIL · 1 WARN · 3 INSUFFICIENT EVIDENCE · 0 INFO · 0 PASS\n\n## Declared loads vs the hardware that carries them\n\nNo declared load matched a net on the board.\n\n## Results\n\n| Status | Check | Evidence behind the method |\n|---|---|---|\n| WARN | declared load — NOPE | input gap: the loads file and the board disagree |\n| INSUFFICIENT EVIDENCE | current not declared — AUX_5V | input gap: no declared current for this net |\n| INSUFFICIENT EVIDENCE | current not declared — LV_12V | input gap: no declared current for this net |\n| INSUFFICIENT EVIDENCE | current not declared — STATOR_PWR | input gap: no declared current for this net |\n\n### Details\n\n**WARN — declared load — NOPE.** 'NOPE' is declared at 1 A by unspecified (loads file line 2) but no routed net on the board has that name. Either the two teams name it differently or it is not routed yet, and its fuse and copper are unchecked. FIX: use the board's net name in the loads file, or route the net.\n\n**INSUFFICIENT EVIDENCE — current not declared — AUX_5V.** No peak current is declared for 'AUX_5V', so its copper cannot be judged: its narrowest segment is 0.50 mm on F.Cu, which is fine for 1.91 A and not fine above it. FIX: declare this net's peak in the integration ledger, or type its current into the table above — the Doctor will not guess a number and then fail your board against its own guess.\n\n**INSUFFICIENT EVIDENCE — current not declared — LV_12V.** No peak current is declared for 'LV_12V', so its copper cannot be judged: its narrowest segment is 2.00 mm on F.Cu, which is fine for 5.21 A and not fine above it. FIX: declare this net's peak in the integration ledger, or type its current into the table above — the Doctor will not guess a number and then fail your board against its own guess.\n\n**INSUFFICIENT EVIDENCE — current not declared — STATOR_PWR.** No peak current is declared for 'STATOR_PWR', so its copper cannot be judged: its narrowest segment is 10.00 mm on F.Cu, which is fine for 16.72 A and not fine above it. FIX: declare this net's peak in the integration ledger, or type its current into the table above — the Doctor will not guess a number and then fail your board against its own guess.\n\n## Where each net's current came from\n\n| Net | Current | Voltage | Source |\n|---|---|---|---|\n| AUX_5V | 1 A | 5 V | assumed — name matches electrics but no ledger peak declared — assumed 1 A |\n| LV_12V | 1 A | 5 V | assumed — name matches electrics but no ledger peak declared — assumed 1 A |\n| STATOR_PWR | 1 A | 5 V | assumed — name matches electrics but no ledger peak declared — assumed 1 A |\n\n## Limits of this report\n\n- No result here is correlated with a built board. Measure the real board before relying on a margin.\n- Assumed currents are guesses from net names; every one is reported as insufficient evidence.\n- Pads and pours are left to the layout tool's DRC; this is not an EMC check or a certification.\n",
+  "nets": [
+   {
+    "current_a": 1.0,
+    "declared": false,
+    "net": "AUX_5V",
+    "provenance": "assumed — name matches electrics but no ledger peak declared — assumed 1 A",
+    "voltage_v": 5.0
+   },
+   {
+    "current_a": 1.0,
+    "declared": false,
+    "net": "LV_12V",
+    "provenance": "assumed — name matches electrics but no ledger peak declared — assumed 1 A",
+    "voltage_v": 5.0
+   },
+   {
+    "current_a": 1.0,
+    "declared": false,
+    "net": "STATOR_PWR",
+    "provenance": "assumed — name matches electrics but no ledger peak declared — assumed 1 A",
+    "voltage_v": 5.0
+   }
+  ],
+  "params": {
+   "ambient_c": 40.0,
+   "brownout_v": 4.5,
+   "max_temp_c": 105.0,
+   "rail_v": 5.0
+  }
+ },
+ "run.notutf8": "loads file is not UTF-8 text: save it as CSV (UTF-8) from your spreadsheet",
+ "tables": [
+  {
+   "fail": "FAIL",
+   "info": "INFO",
+   "missing": "INSUFFICIENT EVIDENCE",
+   "ok": "PASS",
+   "warning": "WARN"
+  },
+  [
+   "fail",
+   "warning",
+   "missing",
+   "info",
+   "ok"
+  ],
+  {
+   "fail": [
+    "fail"
+   ],
+   "never": [],
+   "warning": [
+    "fail",
+    "warning"
+   ]
+  },
+  [
+   [
+    "IR drop",
+    "benchmarked: net resistance vs an independent 2-D copper solve, 92/92 held-out nets within 2 %"
+   ],
+   [
+    "trace ampacity",
+    "calibrated: heating fitted to the 1956 NBS data behind IPC-2221 (fit, not a held-out test)"
+   ],
+   [
+    "fusing margin",
+    "calibrated: Onderdonk fusing with the NBS-fitted heating model (fit, not a held-out test)"
+   ],
+   [
+    "component",
+    "rule: a part's rating or placement vs the declared current and copper temperature"
+   ],
+   [
+    "copper short",
+    "geometric: copper of two nets overlapping on one layer"
+   ],
+   [
+    "copper open",
+    "geometric: a net's copper not connected end to end"
+   ],
+   [
+    "via bottleneck",
+    "analytical: via barrel current density"
+   ],
+   [
+    "HV",
+    "rule: IPC-2221 clearance by voltage"
+   ],
+   [
+    "diff pair",
+    "rule: matched width and length"
+   ],
+   [
+    "current not declared",
+    "input gap: no declared current for this net"
+   ],
+   [
+    "declared load",
+    "input gap: the loads file and the board disagree"
+   ],
+   [
+    "board",
+    "benchmarked: board reading vs Altium 26.11.1 and KiCad 9.0.3"
+   ]
+  ]
+ ],
+ "version": true
+}

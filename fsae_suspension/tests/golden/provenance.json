@@ -1,0 +1,1239 @@
+{
+ "graded.0": [
+  "12.35 ⚪ guess · ±40%",
+  "12 mm ⚪ guess · ±40%",
+  "n/a N ⚪ guess, uncalibrated · trust the delta (limited by cg)",
+  "None ⚪ guess · ±40%",
+  "1e-09 ⚪ guess · ±40% (limited by x)"
+ ],
+ "graded.1": [
+  "12.35 🟡 estimate · ±20%",
+  "12 mm 🟡 estimate · ±20%",
+  "n/a N 🟡 estimate, uncalibrated · trust the delta (limited by cg)",
+  "None 🟡 estimate · ±20%",
+  "1e-09 🟡 estimate · ±20% (limited by x)"
+ ],
+ "graded.10": [
+  "12.35 🟡 estimate · ±20%",
+  "12 mm 🟡 estimate · ±20%",
+  "n/a N 🟡 estimate, uncalibrated · trust the delta (limited by cg)",
+  "None 🟡 estimate · ±20%",
+  "1e-09 🟡 estimate · ±20% (limited by x)"
+ ],
+ "graded.11": [
+  "12.35 🟢 measured · ±3%",
+  "12 mm 🟢 measured · ±3%",
+  "n/a N 🟢 measured, uncalibrated · trust the delta (limited by cg)",
+  "None 🟢 measured · ±3%",
+  "1e-09 🟢 measured · ±3% (limited by x)"
+ ],
+ "graded.12": [
+  "12.35 ✅ verified · ±1%",
+  "12 mm ✅ verified · ±1%",
+  "n/a N ✅ verified, uncalibrated · trust the delta (limited by cg)",
+  "None ✅ verified · ±1%",
+  "1e-09 ✅ verified · ±1% (limited by x)"
+ ],
+ "graded.13": [
+  "12.35 🟡 estimate · ±20%",
+  "12 mm 🟡 estimate · ±20%",
+  "n/a N 🟡 estimate, uncalibrated · trust the delta (limited by cg)",
+  "None 🟡 estimate · ±20%",
+  "1e-09 🟡 estimate · ±20% (limited by x)"
+ ],
+ "graded.2": [
+  "12.35 🔵 modelled · ±10%",
+  "12 mm 🔵 modelled · ±10%",
+  "n/a N 🔵 modelled, uncalibrated · trust the delta (limited by cg)",
+  "None 🔵 modelled · ±10%",
+  "1e-09 🔵 modelled · ±10% (limited by x)"
+ ],
+ "graded.3": [
+  "12.35 🟢 measured · ±3%",
+  "12 mm 🟢 measured · ±3%",
+  "n/a N 🟢 measured, uncalibrated · trust the delta (limited by cg)",
+  "None 🟢 measured · ±3%",
+  "1e-09 🟢 measured · ±3% (limited by x)"
+ ],
+ "graded.4": [
+  "12.35 ✅ verified · ±1%",
+  "12 mm ✅ verified · ±1%",
+  "n/a N ✅ verified, uncalibrated · trust the delta (limited by cg)",
+  "None ✅ verified · ±1%",
+  "1e-09 ✅ verified · ±1% (limited by x)"
+ ],
+ "graded.5": [
+  "12.35 ⚪ guess · ±40%",
+  "12 mm ⚪ guess · ±40%",
+  "n/a N ⚪ guess, uncalibrated · trust the delta (limited by cg)",
+  "None ⚪ guess · ±40%",
+  "1e-09 ⚪ guess · ±40% (limited by x)"
+ ],
+ "graded.6": [
+  "12.35 🔵 modelled · ±10%",
+  "12 mm 🔵 modelled · ±10%",
+  "n/a N 🔵 modelled, uncalibrated · trust the delta (limited by cg)",
+  "None 🔵 modelled · ±10%",
+  "1e-09 🔵 modelled · ±10% (limited by x)"
+ ],
+ "graded.7": [
+  "12.35 🟡 estimate · ±20%",
+  "12 mm 🟡 estimate · ±20%",
+  "n/a N 🟡 estimate, uncalibrated · trust the delta (limited by cg)",
+  "None 🟡 estimate · ±20%",
+  "1e-09 🟡 estimate · ±20% (limited by x)"
+ ],
+ "graded.8": [
+  "12.35 🟡 estimate · ±20%",
+  "12 mm 🟡 estimate · ±20%",
+  "n/a N 🟡 estimate, uncalibrated · trust the delta (limited by cg)",
+  "None 🟡 estimate · ±20%",
+  "1e-09 🟡 estimate · ±20% (limited by x)"
+ ],
+ "graded.9": [
+  "12.35 🟡 estimate · ±20%",
+  "12 mm 🟡 estimate · ±20%",
+  "n/a N 🟡 estimate, uncalibrated · trust the delta (limited by cg)",
+  "None 🟡 estimate · ±20%",
+  "1e-09 🟡 estimate · ±20% (limited by x)"
+ ],
+ "keys": [
+  "guess",
+  "estimate",
+  "modelled",
+  "measured",
+  "verified",
+  "guess",
+  "modelled",
+  "estimate",
+  "estimate",
+  "estimate",
+  "estimate",
+  "measured",
+  "verified",
+  "estimate"
+ ],
+ "none_container": [
+  null,
+  null
+ ],
+ "note.0": [
+  [
+   [
+    "caption",
+    "⚪ guess · ±40%"
+   ]
+  ],
+  [
+   [
+    "caption",
+    "⚪ guess · ±40%"
+   ],
+   [
+    "caption",
+    "↑ Calibrate with a sweep — then this output reads as a measured number, not an indicative one."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "⚪ guess · **uncalibrated** — trust the shape & the delta, not the absolute — e"
+   ],
+   [
+    "caption",
+    "↑ Calibrate with a pass — then this output reads as a measured number, not an indicative one."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "⚪ guess · **uncalibrated** — trust the shape & the delta, not the absolute"
+   ]
+  ],
+  [
+   [
+    "caption",
+    "⚪ guess · ±40%"
+   ]
+  ]
+ ],
+ "note.1": [
+  [
+   [
+    "caption",
+    "🟡 estimate · ±20%"
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🟡 estimate · ±20%"
+   ],
+   [
+    "caption",
+    "↑ Calibrate with a sweep — then this output reads as a measured number, not an indicative one."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🟡 estimate · **uncalibrated** — trust the shape & the delta, not the absolute — e"
+   ],
+   [
+    "caption",
+    "↑ Calibrate with a pass — then this output reads as a measured number, not an indicative one."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🟡 estimate · **uncalibrated** — trust the shape & the delta, not the absolute"
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🟡 estimate · ±20%"
+   ]
+  ]
+ ],
+ "note.10": [
+  [
+   [
+    "caption",
+    "🟡 estimate · ±20%"
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🟡 estimate · ±20%"
+   ],
+   [
+    "caption",
+    "↑ Calibrate with a sweep — then this output reads as a measured number, not an indicative one."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🟡 estimate · **uncalibrated** — trust the shape & the delta, not the absolute — e"
+   ],
+   [
+    "caption",
+    "↑ Calibrate with a pass — then this output reads as a measured number, not an indicative one."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🟡 estimate · **uncalibrated** — trust the shape & the delta, not the absolute"
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🟡 estimate · ±20%"
+   ]
+  ]
+ ],
+ "note.11": [
+  [
+   [
+    "caption",
+    "🟢 measured · ±3%"
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🟢 measured · ±3%"
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🟢 measured · **uncalibrated** — trust the shape & the delta, not the absolute — e"
+   ],
+   [
+    "caption",
+    "↑ Calibrate with a pass — then this output reads as a measured number, not an indicative one."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🟢 measured · **uncalibrated** — trust the shape & the delta, not the absolute"
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🟢 measured · ±3%"
+   ]
+  ]
+ ],
+ "note.12": [
+  [
+   [
+    "caption",
+    "✅ verified · ±1%"
+   ]
+  ],
+  [
+   [
+    "caption",
+    "✅ verified · ±1%"
+   ]
+  ],
+  [
+   [
+    "caption",
+    "✅ verified · **uncalibrated** — trust the shape & the delta, not the absolute — e"
+   ],
+   [
+    "caption",
+    "↑ Calibrate with a pass — then this output reads as a measured number, not an indicative one."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "✅ verified · **uncalibrated** — trust the shape & the delta, not the absolute"
+   ]
+  ],
+  [
+   [
+    "caption",
+    "✅ verified · ±1%"
+   ]
+  ]
+ ],
+ "note.13": [
+  [
+   [
+    "caption",
+    "🟡 estimate · ±20%"
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🟡 estimate · ±20%"
+   ],
+   [
+    "caption",
+    "↑ Calibrate with a sweep — then this output reads as a measured number, not an indicative one."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🟡 estimate · **uncalibrated** — trust the shape & the delta, not the absolute — e"
+   ],
+   [
+    "caption",
+    "↑ Calibrate with a pass — then this output reads as a measured number, not an indicative one."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🟡 estimate · **uncalibrated** — trust the shape & the delta, not the absolute"
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🟡 estimate · ±20%"
+   ]
+  ]
+ ],
+ "note.2": [
+  [
+   [
+    "caption",
+    "🔵 modelled · ±10%"
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🔵 modelled · ±10%"
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🔵 modelled · **uncalibrated** — trust the shape & the delta, not the absolute — e"
+   ],
+   [
+    "caption",
+    "↑ Calibrate with a pass — then this output reads as a measured number, not an indicative one."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🔵 modelled · **uncalibrated** — trust the shape & the delta, not the absolute"
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🔵 modelled · ±10%"
+   ]
+  ]
+ ],
+ "note.3": [
+  [
+   [
+    "caption",
+    "🟢 measured · ±3%"
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🟢 measured · ±3%"
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🟢 measured · **uncalibrated** — trust the shape & the delta, not the absolute — e"
+   ],
+   [
+    "caption",
+    "↑ Calibrate with a pass — then this output reads as a measured number, not an indicative one."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🟢 measured · **uncalibrated** — trust the shape & the delta, not the absolute"
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🟢 measured · ±3%"
+   ]
+  ]
+ ],
+ "note.4": [
+  [
+   [
+    "caption",
+    "✅ verified · ±1%"
+   ]
+  ],
+  [
+   [
+    "caption",
+    "✅ verified · ±1%"
+   ]
+  ],
+  [
+   [
+    "caption",
+    "✅ verified · **uncalibrated** — trust the shape & the delta, not the absolute — e"
+   ],
+   [
+    "caption",
+    "↑ Calibrate with a pass — then this output reads as a measured number, not an indicative one."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "✅ verified · **uncalibrated** — trust the shape & the delta, not the absolute"
+   ]
+  ],
+  [
+   [
+    "caption",
+    "✅ verified · ±1%"
+   ]
+  ]
+ ],
+ "note.5": [
+  [
+   [
+    "caption",
+    "⚪ guess · ±40%"
+   ]
+  ],
+  [
+   [
+    "caption",
+    "⚪ guess · ±40%"
+   ],
+   [
+    "caption",
+    "↑ Calibrate with a sweep — then this output reads as a measured number, not an indicative one."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "⚪ guess · **uncalibrated** — trust the shape & the delta, not the absolute — e"
+   ],
+   [
+    "caption",
+    "↑ Calibrate with a pass — then this output reads as a measured number, not an indicative one."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "⚪ guess · **uncalibrated** — trust the shape & the delta, not the absolute"
+   ]
+  ],
+  [
+   [
+    "caption",
+    "⚪ guess · ±40%"
+   ]
+  ]
+ ],
+ "note.6": [
+  [
+   [
+    "caption",
+    "🔵 modelled · ±10%"
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🔵 modelled · ±10%"
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🔵 modelled · **uncalibrated** — trust the shape & the delta, not the absolute — e"
+   ],
+   [
+    "caption",
+    "↑ Calibrate with a pass — then this output reads as a measured number, not an indicative one."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🔵 modelled · **uncalibrated** — trust the shape & the delta, not the absolute"
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🔵 modelled · ±10%"
+   ]
+  ]
+ ],
+ "note.7": [
+  [
+   [
+    "caption",
+    "🟡 estimate · ±20%"
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🟡 estimate · ±20%"
+   ],
+   [
+    "caption",
+    "↑ Calibrate with a sweep — then this output reads as a measured number, not an indicative one."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🟡 estimate · **uncalibrated** — trust the shape & the delta, not the absolute — e"
+   ],
+   [
+    "caption",
+    "↑ Calibrate with a pass — then this output reads as a measured number, not an indicative one."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🟡 estimate · **uncalibrated** — trust the shape & the delta, not the absolute"
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🟡 estimate · ±20%"
+   ]
+  ]
+ ],
+ "note.8": [
+  [
+   [
+    "caption",
+    "🟡 estimate · ±20%"
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🟡 estimate · ±20%"
+   ],
+   [
+    "caption",
+    "↑ Calibrate with a sweep — then this output reads as a measured number, not an indicative one."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🟡 estimate · **uncalibrated** — trust the shape & the delta, not the absolute — e"
+   ],
+   [
+    "caption",
+    "↑ Calibrate with a pass — then this output reads as a measured number, not an indicative one."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🟡 estimate · **uncalibrated** — trust the shape & the delta, not the absolute"
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🟡 estimate · ±20%"
+   ]
+  ]
+ ],
+ "note.9": [
+  [
+   [
+    "caption",
+    "🟡 estimate · ±20%"
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🟡 estimate · ±20%"
+   ],
+   [
+    "caption",
+    "↑ Calibrate with a sweep — then this output reads as a measured number, not an indicative one."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🟡 estimate · **uncalibrated** — trust the shape & the delta, not the absolute — e"
+   ],
+   [
+    "caption",
+    "↑ Calibrate with a pass — then this output reads as a measured number, not an indicative one."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🟡 estimate · **uncalibrated** — trust the shape & the delta, not the absolute"
+   ]
+  ],
+  [
+   [
+    "caption",
+    "🟡 estimate · ±20%"
+   ]
+  ]
+ ],
+ "report.0": [
+  [
+   [
+    "markdown",
+    "**Lap:** 61.2 s ⚪ guess · ±40%"
+   ]
+  ],
+  [
+   [
+    "markdown",
+    "**Lap:** 61.2 s ⚪ guess · ±40%"
+   ],
+   [
+    "caption",
+    "↑ Upgrade with a log."
+   ]
+  ],
+  [
+   [
+    "markdown",
+    "**F:** x ⚪ guess, uncalibrated · trust the delta (limited by m)"
+   ],
+   [
+    "caption",
+    "↑ Upgrade with a test."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "**F:** 1 ⚪ guess · ±40%"
+   ]
+  ]
+ ],
+ "report.1": [
+  [
+   [
+    "markdown",
+    "**Lap:** 61.2 s 🟡 estimate · ±20%"
+   ]
+  ],
+  [
+   [
+    "markdown",
+    "**Lap:** 61.2 s 🟡 estimate · ±20%"
+   ],
+   [
+    "caption",
+    "↑ Upgrade with a log."
+   ]
+  ],
+  [
+   [
+    "markdown",
+    "**F:** x 🟡 estimate, uncalibrated · trust the delta (limited by m)"
+   ],
+   [
+    "caption",
+    "↑ Upgrade with a test."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "**F:** 1 🟡 estimate · ±20%"
+   ]
+  ]
+ ],
+ "report.10": [
+  [
+   [
+    "markdown",
+    "**Lap:** 61.2 s 🟡 estimate · ±20%"
+   ]
+  ],
+  [
+   [
+    "markdown",
+    "**Lap:** 61.2 s 🟡 estimate · ±20%"
+   ],
+   [
+    "caption",
+    "↑ Upgrade with a log."
+   ]
+  ],
+  [
+   [
+    "markdown",
+    "**F:** x 🟡 estimate, uncalibrated · trust the delta (limited by m)"
+   ],
+   [
+    "caption",
+    "↑ Upgrade with a test."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "**F:** 1 🟡 estimate · ±20%"
+   ]
+  ]
+ ],
+ "report.11": [
+  [
+   [
+    "markdown",
+    "**Lap:** 61.2 s 🟢 measured · ±3%"
+   ]
+  ],
+  [
+   [
+    "markdown",
+    "**Lap:** 61.2 s 🟢 measured · ±3%"
+   ]
+  ],
+  [
+   [
+    "markdown",
+    "**F:** x 🟢 measured, uncalibrated · trust the delta (limited by m)"
+   ],
+   [
+    "caption",
+    "↑ Upgrade with a test."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "**F:** 1 🟢 measured · ±3%"
+   ]
+  ]
+ ],
+ "report.12": [
+  [
+   [
+    "markdown",
+    "**Lap:** 61.2 s ✅ verified · ±1%"
+   ]
+  ],
+  [
+   [
+    "markdown",
+    "**Lap:** 61.2 s ✅ verified · ±1%"
+   ]
+  ],
+  [
+   [
+    "markdown",
+    "**F:** x ✅ verified, uncalibrated · trust the delta (limited by m)"
+   ],
+   [
+    "caption",
+    "↑ Upgrade with a test."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "**F:** 1 ✅ verified · ±1%"
+   ]
+  ]
+ ],
+ "report.13": [
+  [
+   [
+    "markdown",
+    "**Lap:** 61.2 s 🟡 estimate · ±20%"
+   ]
+  ],
+  [
+   [
+    "markdown",
+    "**Lap:** 61.2 s 🟡 estimate · ±20%"
+   ],
+   [
+    "caption",
+    "↑ Upgrade with a log."
+   ]
+  ],
+  [
+   [
+    "markdown",
+    "**F:** x 🟡 estimate, uncalibrated · trust the delta (limited by m)"
+   ],
+   [
+    "caption",
+    "↑ Upgrade with a test."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "**F:** 1 🟡 estimate · ±20%"
+   ]
+  ]
+ ],
+ "report.2": [
+  [
+   [
+    "markdown",
+    "**Lap:** 61.2 s 🔵 modelled · ±10%"
+   ]
+  ],
+  [
+   [
+    "markdown",
+    "**Lap:** 61.2 s 🔵 modelled · ±10%"
+   ]
+  ],
+  [
+   [
+    "markdown",
+    "**F:** x 🔵 modelled, uncalibrated · trust the delta (limited by m)"
+   ],
+   [
+    "caption",
+    "↑ Upgrade with a test."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "**F:** 1 🔵 modelled · ±10%"
+   ]
+  ]
+ ],
+ "report.3": [
+  [
+   [
+    "markdown",
+    "**Lap:** 61.2 s 🟢 measured · ±3%"
+   ]
+  ],
+  [
+   [
+    "markdown",
+    "**Lap:** 61.2 s 🟢 measured · ±3%"
+   ]
+  ],
+  [
+   [
+    "markdown",
+    "**F:** x 🟢 measured, uncalibrated · trust the delta (limited by m)"
+   ],
+   [
+    "caption",
+    "↑ Upgrade with a test."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "**F:** 1 🟢 measured · ±3%"
+   ]
+  ]
+ ],
+ "report.4": [
+  [
+   [
+    "markdown",
+    "**Lap:** 61.2 s ✅ verified · ±1%"
+   ]
+  ],
+  [
+   [
+    "markdown",
+    "**Lap:** 61.2 s ✅ verified · ±1%"
+   ]
+  ],
+  [
+   [
+    "markdown",
+    "**F:** x ✅ verified, uncalibrated · trust the delta (limited by m)"
+   ],
+   [
+    "caption",
+    "↑ Upgrade with a test."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "**F:** 1 ✅ verified · ±1%"
+   ]
+  ]
+ ],
+ "report.5": [
+  [
+   [
+    "markdown",
+    "**Lap:** 61.2 s ⚪ guess · ±40%"
+   ]
+  ],
+  [
+   [
+    "markdown",
+    "**Lap:** 61.2 s ⚪ guess · ±40%"
+   ],
+   [
+    "caption",
+    "↑ Upgrade with a log."
+   ]
+  ],
+  [
+   [
+    "markdown",
+    "**F:** x ⚪ guess, uncalibrated · trust the delta (limited by m)"
+   ],
+   [
+    "caption",
+    "↑ Upgrade with a test."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "**F:** 1 ⚪ guess · ±40%"
+   ]
+  ]
+ ],
+ "report.6": [
+  [
+   [
+    "markdown",
+    "**Lap:** 61.2 s 🔵 modelled · ±10%"
+   ]
+  ],
+  [
+   [
+    "markdown",
+    "**Lap:** 61.2 s 🔵 modelled · ±10%"
+   ]
+  ],
+  [
+   [
+    "markdown",
+    "**F:** x 🔵 modelled, uncalibrated · trust the delta (limited by m)"
+   ],
+   [
+    "caption",
+    "↑ Upgrade with a test."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "**F:** 1 🔵 modelled · ±10%"
+   ]
+  ]
+ ],
+ "report.7": [
+  [
+   [
+    "markdown",
+    "**Lap:** 61.2 s 🟡 estimate · ±20%"
+   ]
+  ],
+  [
+   [
+    "markdown",
+    "**Lap:** 61.2 s 🟡 estimate · ±20%"
+   ],
+   [
+    "caption",
+    "↑ Upgrade with a log."
+   ]
+  ],
+  [
+   [
+    "markdown",
+    "**F:** x 🟡 estimate, uncalibrated · trust the delta (limited by m)"
+   ],
+   [
+    "caption",
+    "↑ Upgrade with a test."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "**F:** 1 🟡 estimate · ±20%"
+   ]
+  ]
+ ],
+ "report.8": [
+  [
+   [
+    "markdown",
+    "**Lap:** 61.2 s 🟡 estimate · ±20%"
+   ]
+  ],
+  [
+   [
+    "markdown",
+    "**Lap:** 61.2 s 🟡 estimate · ±20%"
+   ],
+   [
+    "caption",
+    "↑ Upgrade with a log."
+   ]
+  ],
+  [
+   [
+    "markdown",
+    "**F:** x 🟡 estimate, uncalibrated · trust the delta (limited by m)"
+   ],
+   [
+    "caption",
+    "↑ Upgrade with a test."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "**F:** 1 🟡 estimate · ±20%"
+   ]
+  ]
+ ],
+ "report.9": [
+  [
+   [
+    "markdown",
+    "**Lap:** 61.2 s 🟡 estimate · ±20%"
+   ]
+  ],
+  [
+   [
+    "markdown",
+    "**Lap:** 61.2 s 🟡 estimate · ±20%"
+   ],
+   [
+    "caption",
+    "↑ Upgrade with a log."
+   ]
+  ],
+  [
+   [
+    "markdown",
+    "**F:** x 🟡 estimate, uncalibrated · trust the delta (limited by m)"
+   ],
+   [
+    "caption",
+    "↑ Upgrade with a test."
+   ]
+  ],
+  [
+   [
+    "caption",
+    "**F:** 1 🟡 estimate · ±20%"
+   ]
+  ]
+ ],
+ "tables": [
+  [
+   "guess",
+   "estimate",
+   "modelled",
+   "measured",
+   "verified"
+  ],
+  {
+   "estimate": [
+    "🟡",
+    "estimate",
+    "±20%"
+   ],
+   "guess": [
+    "⚪",
+    "guess",
+    "±40%"
+   ],
+   "measured": [
+    "🟢",
+    "measured",
+    "±3%"
+   ],
+   "modelled": [
+    "🔵",
+    "modelled",
+    "±10%"
+   ],
+   "verified": [
+    "✅",
+    "verified",
+    "±1%"
+   ]
+  }
+ ],
+ "tag.0": [
+  "⚪ guess · ±40%",
+  "⚪ guess · **uncalibrated** — trust the shape & the delta, not the absolute",
+  "⚪ guess · ±40% — closed form",
+  "⚪ guess · **uncalibrated** — trust the shape & the delta, not the absolute — x"
+ ],
+ "tag.1": [
+  "🟡 estimate · ±20%",
+  "🟡 estimate · **uncalibrated** — trust the shape & the delta, not the absolute",
+  "🟡 estimate · ±20% — closed form",
+  "🟡 estimate · **uncalibrated** — trust the shape & the delta, not the absolute — x"
+ ],
+ "tag.10": [
+  "🟡 estimate · ±20%",
+  "🟡 estimate · **uncalibrated** — trust the shape & the delta, not the absolute",
+  "🟡 estimate · ±20% — closed form",
+  "🟡 estimate · **uncalibrated** — trust the shape & the delta, not the absolute — x"
+ ],
+ "tag.11": [
+  "🟢 measured · ±3%",
+  "🟢 measured · **uncalibrated** — trust the shape & the delta, not the absolute",
+  "🟢 measured · ±3% — closed form",
+  "🟢 measured · **uncalibrated** — trust the shape & the delta, not the absolute — x"
+ ],
+ "tag.12": [
+  "✅ verified · ±1%",
+  "✅ verified · **uncalibrated** — trust the shape & the delta, not the absolute",
+  "✅ verified · ±1% — closed form",
+  "✅ verified · **uncalibrated** — trust the shape & the delta, not the absolute — x"
+ ],
+ "tag.13": [
+  "🟡 estimate · ±20%",
+  "🟡 estimate · **uncalibrated** — trust the shape & the delta, not the absolute",
+  "🟡 estimate · ±20% — closed form",
+  "🟡 estimate · **uncalibrated** — trust the shape & the delta, not the absolute — x"
+ ],
+ "tag.2": [
+  "🔵 modelled · ±10%",
+  "🔵 modelled · **uncalibrated** — trust the shape & the delta, not the absolute",
+  "🔵 modelled · ±10% — closed form",
+  "🔵 modelled · **uncalibrated** — trust the shape & the delta, not the absolute — x"
+ ],
+ "tag.3": [
+  "🟢 measured · ±3%",
+  "🟢 measured · **uncalibrated** — trust the shape & the delta, not the absolute",
+  "🟢 measured · ±3% — closed form",
+  "🟢 measured · **uncalibrated** — trust the shape & the delta, not the absolute — x"
+ ],
+ "tag.4": [
+  "✅ verified · ±1%",
+  "✅ verified · **uncalibrated** — trust the shape & the delta, not the absolute",
+  "✅ verified · ±1% — closed form",
+  "✅ verified · **uncalibrated** — trust the shape & the delta, not the absolute — x"
+ ],
+ "tag.5": [
+  "⚪ guess · ±40%",
+  "⚪ guess · **uncalibrated** — trust the shape & the delta, not the absolute",
+  "⚪ guess · ±40% — closed form",
+  "⚪ guess · **uncalibrated** — trust the shape & the delta, not the absolute — x"
+ ],
+ "tag.6": [
+  "🔵 modelled · ±10%",
+  "🔵 modelled · **uncalibrated** — trust the shape & the delta, not the absolute",
+  "🔵 modelled · ±10% — closed form",
+  "🔵 modelled · **uncalibrated** — trust the shape & the delta, not the absolute — x"
+ ],
+ "tag.7": [
+  "🟡 estimate · ±20%",
+  "🟡 estimate · **uncalibrated** — trust the shape & the delta, not the absolute",
+  "🟡 estimate · ±20% — closed form",
+  "🟡 estimate · **uncalibrated** — trust the shape & the delta, not the absolute — x"
+ ],
+ "tag.8": [
+  "🟡 estimate · ±20%",
+  "🟡 estimate · **uncalibrated** — trust the shape & the delta, not the absolute",
+  "🟡 estimate · ±20% — closed form",
+  "🟡 estimate · **uncalibrated** — trust the shape & the delta, not the absolute — x"
+ ],
+ "tag.9": [
+  "🟡 estimate · ±20%",
+  "🟡 estimate · **uncalibrated** — trust the shape & the delta, not the absolute",
+  "🟡 estimate · ±20% — closed form",
+  "🟡 estimate · **uncalibrated** — trust the shape & the delta, not the absolute — x"
+ ],
+ "worst": [
+  "estimate",
+  "verified",
+  "guess",
+  "modelled",
+  "estimate",
+  "measured",
+  "estimate",
+  "guess",
+  "modelled"
+ ]
+}
