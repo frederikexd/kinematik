@@ -214,6 +214,10 @@ def _solve_channel(xs_l, area_l, width_l, speed_ms, ref_area_m2, rho,
         notes += (f" Diffuser half-angle {angle:.1f}°, inside the "
                   f"{SEPARATION_ANGLE_DEG:.0f}° attachment limit.")
 
+    notes += (" RANKING ONLY: against a measured diffuser body in a moving-ground tunnel this model put 91 % of "
+              "design pairs in the right order but read 6 to 47 times the downforce (benchmarks/underbody_diffuser). "
+              "Use it to compare floors; confirm the downforce with CFD or a tunnel.")
+
     return UnderfloorResult(c_lift=c_lift, downforce_N=-lift_N,
                             throat_x_frac=(x_t - xs_l[0]) / span,
                             area_ratio=a_in / a_throat,

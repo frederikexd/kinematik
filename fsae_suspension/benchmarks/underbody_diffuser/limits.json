@@ -46,5 +46,13 @@
    "relative_each_held_out_point": 0.3
   }
  },
- "note_after_reruns": "registered_2 and registered_3 both failed. The open-sided model was then moved out of suspension/aero/underfloor.py into scripts/underbody_diffuser_benchmark.py (solve_leaky), unchanged, so the reruns stay reproducible without shipping a model that failed."
+ "note_after_reruns": "registered_2 and registered_3 both failed. The open-sided model was then moved out of suspension/aero/underfloor.py into scripts/underbody_diffuser_benchmark.py (solve_leaky), unchanged, so the reruns stay reproducible without shipping a model that failed.",
+ "registered_4_ranking": {
+  "registered": "2026-11-25, after the three absolute-value misses and before this test was computed. Not blind: both the measured values and the model's values had been seen, and the model looked to order them right; this registration says so.",
+  "why": "KinematiK is a prevalidation tool: its floor model is for ranking designs before CFD or a tunnel, so the claim to test is the order of downforce across designs, not its size",
+  "test": "the shipped underfloor model (first-run mapping, unchanged), all nine measured points: every pair of points; a pair whose measured CL differ by 0.05 or less (the reading uncertainty) is a tie and is left out; the model must put at least 90 % of the remaining pairs in the measured order",
+  "limits": {
+   "min_fraction_ordered": 0.9
+  }
+ }
 }

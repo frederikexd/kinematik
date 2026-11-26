@@ -26,3 +26,8 @@ def test_reruns_with_open_sides_also_fail_and_are_kept():
     assert not r["rerun_2"]["passed"] and all(x["rel"] > 3.0 for x in r["rerun_2"]["rows"])
     r3 = r["rerun_3"]
     assert not r3["passed"] and 0.05 < r3["eta_fitted"] < 0.2
+
+
+def test_ranking_passes_as_registered():
+    rk = ub.run()["ranking"]
+    assert rk["passed"] and rk["pairs_compared"] == 34 and rk["pairs_ordered"] == 31

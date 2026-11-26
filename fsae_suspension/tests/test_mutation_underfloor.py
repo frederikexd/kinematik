@@ -42,6 +42,11 @@ def _check(r, want):
         assert getattr(r, k) == pytest.approx(v, rel=1e-12, abs=1e-15), k
 
 
+_RANK = (" RANKING ONLY: against a measured diffuser body in a moving-ground tunnel this model put 91 % of "
+         "design pairs in the right order but read 6 to 47 times the downforce (benchmarks/underbody_diffuser). "
+         "Use it to compare floors; confirm the downforce with CFD or a tunnel.")
+
+
 def _note(xt_pct, ratio, cd, ang):
     head = (f"quasi-1D underfloor: throat at {xt_pct:.0f}% of floor length, inlet/throat area ratio {ratio:.2f}, "
             f"discharge coefficient {cd:.2f}. Incompressible continuity plus Bernoulli — one-dimensional, so no "
@@ -50,8 +55,8 @@ def _note(xt_pct, ratio, cd, ang):
         return head + (f" WARNING: the diffuser expands at an equivalent {ang:.1f}° half-angle, past the 7° where a "
                        "plane diffuser is normally taken to separate. This model assumes the flow stays attached and "
                        "recovers the pressure, so the real part will make LESS than this. Treat the number as an "
-                       "upper bound and shallow the ramp.")
-    return head + f" Diffuser half-angle {ang:.1f}°, inside the 7° attachment limit."
+                       "upper bound and shallow the ramp.") + _RANK
+    return head + f" Diffuser half-angle {ang:.1f}°, inside the 7° attachment limit." + _RANK
 
 
 def test_the_channel_physics():

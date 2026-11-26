@@ -159,6 +159,26 @@ def run_rerun_3() -> dict:
             "passed": bool(all(abs(r["rel"]) <= lim for r in rows if r["role"] == "held out"))}
 
 
+def run_ranking(rows) -> dict:
+    """registered_4_ranking: pairwise order of the shipped model's CL against the measured CL."""
+    tie = 0.05
+    ok = n = 0
+    wrong = []
+    for i in range(len(rows)):
+        for j in range(i + 1, len(rows)):
+            a, b = rows[i], rows[j]
+            if abs(a["measured"] - b["measured"]) <= tie:
+                continue
+            n += 1
+            if (a["measured"] - b["measured"]) * (a["kinematik"] - b["kinematik"]) > 0:
+                ok += 1
+            else:
+                wrong.append([(a["theta_deg"], a["h_over_d"]), (b["theta_deg"], b["h_over_d"])])
+    frac = ok / n
+    return {"pairs_compared": n, "pairs_ordered": ok, "fraction": frac, "misordered": wrong,
+            "passed": bool(frac >= REG["registered_4_ranking"]["limits"]["min_fraction_ordered"])}
+
+
 def run() -> dict:
     lim = REG["limits"]["relative_each_graded_point"]
     rows, ok = [], True
@@ -171,7 +191,8 @@ def run() -> dict:
                 ok = ok and abs(rel) <= lim
             rows.append({"theta_deg": float(th), "h_over_d": float(h), "measured": m, "kinematik": k, "rel": rel,
                          "graded": graded})
-    return {"A_ref_m2": A_REF, "rows": rows, "passed": bool(ok), "rerun_2": run_rerun_2(), "rerun_3": run_rerun_3()}
+    return {"A_ref_m2": A_REF, "rows": rows, "passed": bool(ok), "rerun_2": run_rerun_2(), "rerun_3": run_rerun_3(),
+            "ranking": run_ranking(rows)}
 
 
 if __name__ == "__main__":
@@ -188,4 +209,7 @@ if __name__ == "__main__":
             print(f"  {r['theta_deg']:4.0f} deg h/d {r['h_over_d']:.2f}: measured {r['measured']:.2f}, KinematiK "
                   f"{r['kinematik']:.2f} ({100 * r['rel']:+.0f} %) {r.get('role', '')}")
         print(" ", "PASSED" if rr["passed"] else "FAILED")
-    sys.exit(0 if res["rerun_3"]["passed"] else 1)
+    rk = res["ranking"]
+    print(f"ranking: {rk['pairs_ordered']}/{rk['pairs_compared']} pairs in the measured order "
+          f"({100 * rk['fraction']:.0f} %); misordered {rk['misordered']}", "PASSED" if rk["passed"] else "FAILED")
+    sys.exit(0 if rk["passed"] else 1)
