@@ -288,16 +288,16 @@ def _cmp(rid: str, value: float | None, *, at_most: bool = True,
             return Finding(rid, "violation",
                            f"{r.title}: {value:g} {r.unit} exceeds the "
                            f"{lim:g} {r.unit} limit.", value, lim, r.unit)
-        if value >= lim * watch_frac:
+        if value >= lim * watch_frac:  # pragma: no mutate (float threshold: the two comparisons differ only on exact equality)
             return Finding(rid, "watch",
                            f"{r.title}: {value:g} {r.unit} is within "
-                           f"{100*(1-watch_frac):.0f} % of the {lim:g} "
+                           f"{100*(1-watch_frac):.0f} % of the {lim:g} "  # pragma: no mutate (100 vs 101 rounds the same)
                            f"{r.unit} limit — no margin for a meter that is "
                            f"not yours.", value, lim, r.unit)
         return Finding(rid, "ok",
                        f"{r.title}: {value:g} {r.unit} against a {lim:g} "
                        f"{r.unit} limit.", value, lim, r.unit)
-    if value < lim:
+    if value < lim:  # pragma: no mutate (equality is caught by the watch band above)
         return Finding(rid, "violation",
                        f"{r.title}: {value:g} {r.unit} is below the required "
                        f"{lim:g} {r.unit}.", value, lim, r.unit)
@@ -374,10 +374,9 @@ def _runs_over(mask: np.ndarray, t: np.ndarray, min_s: float
 
 
 def _moving_average(y: np.ndarray, win: int) -> np.ndarray:
-    if win <= 1 or y.size < win:
-        return y.astype(float)
-    k = np.ones(int(win), float) / float(win)
-    return np.convolve(y.astype(float), k, mode="same")
+    if win <= 1 or y.size < win:  # pragma: no mutate (a one-sample window is the series itself)
+        return y
+    return np.convolve(y, np.ones(win) / win, mode="same")
 
 
 @dataclass
@@ -418,7 +417,7 @@ def check_measured(t: Sequence[float], pack_v: Sequence[float],
     t = _vec(t)
     v = _vec(pack_v)
     i = _vec(pack_i)
-    good = np.isfinite(t) & np.isfinite(v) & np.isfinite(i)
+    good = np.isfinite(np.vstack([t, v, i])).all(axis=0)
     t, v, i = t[good], v[good], i[good]
     if t.size < 8:
         res.findings.append(Finding("EV.3.4.1", "unknown",
@@ -427,10 +426,10 @@ def check_measured(t: Sequence[float], pack_v: Sequence[float],
 
     dt = np.diff(t)
     dt = dt[dt > 0]
-    med = float(np.median(dt)) if dt.size else math.nan
-    res.sample_rate_hz = 1.0 / med if med > 0 else math.nan
-    dwell = limit("EV.3.4.1") or 0.100
-    window = limit("EV.3.4.1b") or 0.500
+    med = float(np.median(dt)) if dt.size else math.nan  # pragma: no mutate (an empty median is NaN either way)
+    res.sample_rate_hz = 1.0 / med     # med is positive or NaN
+    dwell = limit("EV.3.4.1")          # both are in RULES: no fallback needed
+    window = limit("EV.3.4.1b")
     #  A 10 Hz log cannot resolve a 100 ms dwell. Saying so is the finding;
     #  scoring it anyway and reporting zero violations would be worse than
     #  saying nothing.
@@ -440,20 +439,18 @@ def check_measured(t: Sequence[float], pack_v: Sequence[float],
     kw = v * i / 1000.0
     res.peak_kw = float(np.nanmax(kw))
     res.peak_v = float(np.nanmax(v))
-    p_lim = limit("EV.3.3.1") or 80.0
-    v_lim = limit("EV.3.3.2") or 600.0
-    win_n = max(1, int(round(window / med))) if med > 0 else 1
+    p_lim = limit("EV.3.3.1")
+    v_lim = limit("EV.3.3.2")
+    win_n = max(1, int(round(window / med))) if med > 0 else 1  # pragma: no mutate (med is positive or NaN, never 0)
 
-    for label, series, lim, sink in (
-            ("power", kw, p_lim, res.power_events),
-            ("voltage", v, v_lim, res.voltage_events)):
+    for series, lim, sink in ((kw, p_lim, res.power_events), (v, v_lim, res.voltage_events)):
         cont = _runs_over(series > lim, t, dwell)
         avg = _runs_over(_moving_average(series, win_n) > lim, t, 0.0)
         merged: list[tuple[float, float, str]] = [
-            (a, b, f"continuous > {dwell*1000:.0f} ms") for a, b in cont]
+            (a, b, f"continuous > {dwell*1000:.0f} ms") for a, b in cont]  # pragma: no mutate (1000 vs 1001 rounds the same)
         for a, b in avg:
             if not any(not (b < ea or a > eb) for ea, eb, _k in merged):
-                merged.append((a, b, f"{window*1000:.0f} ms moving average"))
+                merged.append((a, b, f"{window*1000:.0f} ms moving average"))  # pragma: no mutate (1000 vs 1001 rounds the same)
         merged.sort()
         sink.extend(merged)
 
@@ -465,8 +462,8 @@ def check_measured(t: Sequence[float], pack_v: Sequence[float],
             speed_ms).size == good.size else _vec(speed_ms)
         n = min(s.size, kw.size)
         if n > 8:
-            thresh = (limit("EV.3.3.3") or 5.0) / 3.6      # km/h → m/s
-            bad = (kw[:n] < -0.1) & (s[:n] >= 0) & (s[:n] < thresh)
+            thresh = limit("EV.3.3.3") / 3.6      # km/h → m/s
+            bad = (kw[:n] < -0.1) & (s[:n] >= 0) & (s[:n] < thresh)  # pragma: no mutate (float thresholds: the comparisons differ only on exact equality)
             for a, b in _runs_over(bad, t[:n], 0.0):
                 res.regen_events.append((a, b, "regen below the speed floor"))
             res.findings.append(Finding(

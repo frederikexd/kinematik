@@ -707,3 +707,19 @@ tests = [
     "tests/test_pcb_upload_fuzz.py",
 ]
 deselect = []
+
+[[group]]
+name = "rules_fsae"
+files = ["suspension/rules_fsae.py"]
+tests = [
+    "tests/test_mutation_rules_fsae.py",
+]
+deselect = []
+
+[[group]]
+name = "units"
+files = ["suspension/units.py"]
+tests = [
+    "tests/test_mutation_units.py",
+]
+deselect = []

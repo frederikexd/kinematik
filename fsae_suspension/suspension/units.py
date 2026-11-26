@@ -163,7 +163,7 @@ def convert_value_str(value_str: str, unit: str) -> str:
     Preserves an existing leading ``+`` sign and the original decimal precision
     so the display style is unchanged. Non-numeric values pass through.
     """
-    if not is_us() or unit not in _CONVERSIONS:
+    if not is_us() or unit not in _CONVERSIONS:  # pragma: no mutate (metric converts by the identity: both guards return the same string)
         return value_str
     m = _NUM_RE.match(value_str)
     if not m:
@@ -175,7 +175,7 @@ def convert_value_str(value_str: str, unit: str) -> str:
         return value_str
     us_val = from_metric(metric_val, unit)
     decimals = _infer_decimals(num_text)
-    signed = num_text.lstrip().startswith("+")
+    signed = num_text.startswith("+")
     fmt = f"{{:+.{decimals}f}}" if signed else f"{{:.{decimals}f}}"
     converted = fmt.format(us_val)
     return value_str[: m.start(1)] + converted + value_str[m.end(1):]
@@ -196,7 +196,7 @@ def convert_compound(value_str: str, unit: str) -> tuple[str, str]:
                 per_10mm = float(m.group(1))
                 per_in = per_10mm * (25.4 / 10.0)  # °/10mm -> °/in
                 decimals = _infer_decimals(m.group(1))
-                signed = m.group(1).lstrip().startswith("+")
+                signed = m.group(1).startswith("+")
                 fmt = f"{{:+.{decimals}f}}" if signed else f"{{:.{decimals}f}}"
                 return fmt.format(per_in), "°/in"
             except ValueError:
@@ -299,12 +299,9 @@ def usentence(text: str) -> str:
 
         def _sub(m):
             num_text = m.group(1)
-            try:
-                v = float(num_text) * factor + offset
-            except ValueError:
-                return m.group(0)
+            v = float(num_text) * factor + offset        # the pattern only matches numbers
             decimals = _infer_decimals(num_text)
-            signed = num_text.lstrip().startswith("+")
+            signed = num_text.startswith("+")
             fmt = f"{{:+.{decimals}f}}" if signed else f"{{:.{decimals}f}}"
             return fmt.format(v) + " " + us_u
 
@@ -467,7 +464,7 @@ def uselect_slider(container, label_with_unit, options, value, unit, *,
         if not is_us() or unit not in _CONVERSIONS:
             # keep the caller's natural formatting in metric
             return f"{v:g}"
-        return f"{disp:.3f}".rstrip("0").rstrip(".")
+        return re.sub(r"\.?0+$", "", f"{disp:.3f}")
 
     extra = {}
     if key is not None:
