@@ -33,7 +33,9 @@ def _solve(m):
     out = {}
     for t, s in ((0.0, 0.0), (15.0, 0.0), (-15.0, 0.0), (0.0, 3.0)):
         r = m.solve(t, steer=s)
-        out[f"{t}.{s}"] = {k: plain(v) for k, v in sorted(r.items()) if k != "positions"} | {
+        # the solver residual is round-off (1e-10 here, 5e-9 on CI's BLAS): record that it converged, not its digits
+        out[f"{t}.{s}"] = {k: (bool(v < 1e-6) if k == "max_residual" else plain(v))
+                           for k, v in sorted(r.items()) if k != "positions"} | {
             "positions": {n: plain(p) for n, p in sorted(r["positions"].items())}}
     return out
 

@@ -21,7 +21,10 @@ def _gold(name, text):
     f = GOLD / name
     if os.environ.get("KINEMATIK_REGOLD"):
         f.write_text(text, encoding="utf-8")
-    assert text == f.read_text(encoding="utf-8")
+    # pypdf versions differ in trailing spaces on extracted lines; the words and their order are what is pinned
+    def norm(t):
+        return "\n".join(line.rstrip() for line in t.splitlines())
+    assert norm(text) == norm(f.read_text(encoding="utf-8"))
 
 
 TUNE = dict(do={1: "Fan", 9: "Water P", 10: "Fuel Pum"}, di={1: "Clutch", 2: "MPH", 3: "Launch"},

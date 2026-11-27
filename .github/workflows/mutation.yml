@@ -97,7 +97,7 @@ jobs:
       - name: Install
         run: |
           pip install -r requirements.txt
-          pip install -e ./fsae_suspension pytest hypothesis pypdf 'mutmut>=3.2'
+          pip install -e ./fsae_suspension pytest hypothesis pypdf==6.17.0 'mutmut>=3.2'
       - name: Mutate the group's files and hold each one at the floor
         working-directory: fsae_suspension
         shell: bash          # -o pipefail, so the gate's exit status survives the tee
@@ -130,7 +130,7 @@ jobs:
       - name: Install
         run: |
           pip install -r requirements.txt
-          pip install -e ./fsae_suspension pytest hypothesis pypdf 'mutmut>=3.2'
+          pip install -e ./fsae_suspension pytest hypothesis pypdf==6.17.0 'mutmut>=3.2'
       - name: Measure the module against the tests that import it
         working-directory: fsae_suspension
         env:

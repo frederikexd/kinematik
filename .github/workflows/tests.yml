@@ -26,7 +26,7 @@ jobs:
           python-version: '3.12'
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt pytest pytest-xdist pypdf pytest-cov hypothesis
+          pip install -r requirements.txt pytest pytest-xdist pypdf==6.17.0 pytest-cov hypothesis
       - name: Install local package and run tests
         run: |
           pip install -e './fsae_suspension[excel,cad,pdf,cloud,drive]'
