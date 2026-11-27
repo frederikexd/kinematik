@@ -1,0 +1,786 @@
+{
+ "best": "b",
+ "best.none": null,
+ "compare.defaults": {
+  "baseline": "open",
+  "best": "lsd",
+  "cost_event": null,
+  "decidable": true,
+  "pairwise": {},
+  "provenance": {
+   "estimate_flagged": [
+    "every band in Uncertainty — these are judgements, not measurements",
+    "the lock/yaw penalty coefficient",
+    "any vendor figure not confirmed against the vendor's own data",
+    "Cost-event points, unless the year's Cmin/Cmax are supplied"
+   ],
+   "hard_rule": "No winner and no $/point when the points delta changes sign across the swept band. A trade study that always produces a ranking is not a trade study, it is a random number generator with a house style.",
+   "physics_grounded": [
+    "lap times (real LapSimulator over the standard events)",
+    "points curves (published-form FSAE event_points)",
+    "rear-axle torque split (driveline.py, exact for a given TBR/preload)",
+    "mass effect (exact — the part's mass enters the vehicle model)"
+   ]
+  },
+  "resolution": 32.384249512412595,
+  "results": [
+   {
+    "acquisition_usd": 900.0,
+    "actionable": true,
+    "delta_points_median": 54.47486771619279,
+    "delta_points_p05": 47.838544834514764,
+    "delta_points_p95": 80.22279434692736,
+    "fab_hours": 6.0,
+    "label": "lsd",
+    "nominal": {
+     "drive_grip_frac": 0.36824997522547426,
+     "fz_inside_n": 487.01368481872754,
+     "fz_outside_n": 1139.6500151812725,
+     "lateral_util": 0.7,
+     "lock_ratio": 0.3655006725393521,
+     "mass_kg": 284.0,
+     "notes": [],
+     "t_total_nm": 360.7075466122314,
+     "times": {
+      "acceleration": 5.967111003972214,
+      "autocross": 35.054801407401065,
+      "skidpad": 4.927229934946219
+     }
+    },
+    "notes": [],
+    "sign_stable": true,
+    "usd_per_point": 16.521380183773676
+   }
+  ],
+  "text": "SEPARABLE FROM THE BASELINE. 'lsd' beats 'open' by +54.5 points (90% band +47.8 … +80.2); the sign holds across the whole swept band at $17 per point, plus 6 team-hours of fabrication."
+ },
+ "compare.floor": {
+  "baseline": "open",
+  "best": null,
+  "cost_event": null,
+  "decidable": false,
+  "pairwise": {},
+  "provenance": {
+   "estimate_flagged": [
+    "every band in Uncertainty — these are judgements, not measurements",
+    "the lock/yaw penalty coefficient",
+    "any vendor figure not confirmed against the vendor's own data",
+    "Cost-event points, unless the year's Cmin/Cmax are supplied"
+   ],
+   "hard_rule": "No winner and no $/point when the points delta changes sign across the swept band. A trade study that always produces a ranking is not a trade study, it is a random number generator with a house style.",
+   "physics_grounded": [
+    "lap times (real LapSimulator over the standard events)",
+    "points curves (published-form FSAE event_points)",
+    "rear-axle torque split (driveline.py, exact for a given TBR/preload)",
+    "mass effect (exact — the part's mass enters the vehicle model)"
+   ]
+  },
+  "resolution": 51.49873235479461,
+  "results": [
+   {
+    "acquisition_usd": 900.0,
+    "actionable": false,
+    "delta_points_median": 56.12812762477,
+    "delta_points_p05": 39.44317521947595,
+    "delta_points_p95": 90.94190757427056,
+    "fab_hours": 6.0,
+    "label": "lsd",
+    "nominal": {
+     "drive_grip_frac": 0.36824997522547426,
+     "fz_inside_n": 487.01368481872754,
+     "fz_outside_n": 1139.6500151812725,
+     "lateral_util": 0.7,
+     "lock_ratio": 0.3655006725393521,
+     "mass_kg": 284.0,
+     "notes": [],
+     "t_total_nm": 360.7075466122314,
+     "times": {
+      "acceleration": 5.967111003972214,
+      "autocross": 35.054801407401065,
+      "skidpad": 4.927229934946219
+     }
+    },
+    "notes": [],
+    "sign_stable": true,
+    "usd_per_point": null
+   }
+  ],
+  "text": "NOT SEPARABLE — no winner declared. Across the swept band every option's points delta versus 'open' changes sign, i.e. the difference between these parts is smaller than the uncertainty in the inputs (mu, torque bias ratio, preload, lock penalty, which corner you evaluate). The honest reading is that THIS MODEL CANNOT TELL THEM APART at a magnitude worth acting on (floor: 1000 points), so no $/point is printed. Narrow the band with real data — tyre data, the vendor's own TBR figure, a measured corner-exit case — or decide on the grounds the model is not disputing: reliability, adjustability, packaging, lead time and team hours."
+ },
+ "compare.free": {
+  "baseline": "open",
+  "best": "free",
+  "cost_event": null,
+  "decidable": true,
+  "pairwise": {},
+  "provenance": {
+   "estimate_flagged": [
+    "every band in Uncertainty — these are judgements, not measurements",
+    "the lock/yaw penalty coefficient",
+    "any vendor figure not confirmed against the vendor's own data",
+    "Cost-event points, unless the year's Cmin/Cmax are supplied"
+   ],
+   "hard_rule": "No winner and no $/point when the points delta changes sign across the swept band. A trade study that always produces a ranking is not a trade study, it is a random number generator with a house style.",
+   "physics_grounded": [
+    "lap times (real LapSimulator over the standard events)",
+    "points curves (published-form FSAE event_points)",
+    "rear-axle torque split (driveline.py, exact for a given TBR/preload)",
+    "mass effect (exact — the part's mass enters the vehicle model)"
+   ]
+  },
+  "resolution": 51.49873235479461,
+  "results": [
+   {
+    "acquisition_usd": null,
+    "actionable": true,
+    "delta_points_median": 56.12812762477,
+    "delta_points_p05": 39.44317521947595,
+    "delta_points_p95": 90.94190757427056,
+    "fab_hours": 0.0,
+    "label": "free",
+    "nominal": {
+     "drive_grip_frac": 0.36824997522547426,
+     "fz_inside_n": 487.01368481872754,
+     "fz_outside_n": 1139.6500151812725,
+     "lateral_util": 0.7,
+     "lock_ratio": 0.3655006725393521,
+     "mass_kg": 284.0,
+     "notes": [],
+     "t_total_nm": 360.7075466122314,
+     "times": {
+      "acceleration": 5.967111003972214,
+      "autocross": 35.054801407401065,
+      "skidpad": 4.927229934946219
+     }
+    },
+    "notes": [],
+    "sign_stable": true,
+    "usd_per_point": null
+   }
+  ],
+  "text": "SEPARABLE FROM THE BASELINE. 'free' beats 'open' by +56.1 points (90% band +39.4 … +90.9); the sign holds across the whole swept band."
+ },
+ "compare.negative": {
+  "baseline": "open",
+  "best": null,
+  "cost_event": null,
+  "decidable": true,
+  "pairwise": {},
+  "provenance": {
+   "estimate_flagged": [
+    "every band in Uncertainty — these are judgements, not measurements",
+    "the lock/yaw penalty coefficient",
+    "any vendor figure not confirmed against the vendor's own data",
+    "Cost-event points, unless the year's Cmin/Cmax are supplied"
+   ],
+   "hard_rule": "No winner and no $/point when the points delta changes sign across the swept band. A trade study that always produces a ranking is not a trade study, it is a random number generator with a house style.",
+   "physics_grounded": [
+    "lap times (real LapSimulator over the standard events)",
+    "points curves (published-form FSAE event_points)",
+    "rear-axle torque split (driveline.py, exact for a given TBR/preload)",
+    "mass effect (exact — the part's mass enters the vehicle model)"
+   ]
+  },
+  "resolution": 3.6181583754242412,
+  "results": [
+   {
+    "acquisition_usd": 400.0,
+    "actionable": true,
+    "delta_points_median": -8.914980861209528,
+    "delta_points_p05": -10.066678882168947,
+    "delta_points_p95": -6.448520506744706,
+    "fab_hours": 0.0,
+    "label": "heavy",
+    "nominal": {
+     "drive_grip_frac": 0.2370994440443157,
+     "fz_inside_n": 583.4728754628234,
+     "fz_outside_n": 1352.0292445371767,
+     "lateral_util": 0.7,
+     "lock_ratio": 0.0,
+     "mass_kg": 343.4,
+     "notes": [],
+     "t_total_nm": 270.94339672066707,
+     "times": {
+      "acceleration": 7.5932194806137945,
+      "autocross": 37.67226570711234,
+      "skidpad": 4.9931212712112725
+     }
+    },
+    "notes": [],
+    "sign_stable": true,
+    "usd_per_point": null
+   }
+  ],
+  "text": "SEPARABLE, AND NEGATIVE. Every separable option is WORSE than 'open'; 'heavy' loses -8.9 points. Do not buy on lap time."
+ },
+ "compare.spool": {
+  "baseline": "open",
+  "best": "spool",
+  "cost_event": null,
+  "decidable": true,
+  "pairwise": {
+   "spool|lsd": {
+    "median": 0.30602787691361755,
+    "p05": 0.2357645278648647,
+    "p95": 0.491375061290978,
+    "separable": false,
+    "sign_stable": true
+   }
+  },
+  "provenance": {
+   "estimate_flagged": [
+    "every band in Uncertainty — these are judgements, not measurements",
+    "the lock/yaw penalty coefficient",
+    "any vendor figure not confirmed against the vendor's own data",
+    "Cost-event points, unless the year's Cmin/Cmax are supplied"
+   ],
+   "hard_rule": "No winner and no $/point when the points delta changes sign across the swept band. A trade study that always produces a ranking is not a trade study, it is a random number generator with a house style.",
+   "physics_grounded": [
+    "lap times (real LapSimulator over the standard events)",
+    "points curves (published-form FSAE event_points)",
+    "rear-axle torque split (driveline.py, exact for a given TBR/preload)",
+    "mass effect (exact — the part's mass enters the vehicle model)"
+   ]
+  },
+  "resolution": 51.516322546561604,
+  "results": [
+   {
+    "acquisition_usd": 150.0,
+    "actionable": true,
+    "delta_points_median": 56.459009011208764,
+    "delta_points_p05": 39.78581156176855,
+    "delta_points_p95": 91.2547937814453,
+    "fab_hours": 0.0,
+    "label": "spool",
+    "nominal": {
+     "drive_grip_frac": 0.36829255620644535,
+     "fz_inside_n": 483.82375114517066,
+     "fz_outside_n": 1132.4413488548294,
+     "lateral_util": 0.7,
+     "lock_ratio": 0.3658462751896951,
+     "mass_kg": 282.0,
+     "notes": [],
+     "t_total_nm": 358.6809894018575,
+     "times": {
+      "acceleration": 5.964485216578971,
+      "autocross": 70.08664430398991,
+      "skidpad": 4.925869811972003
+     }
+    },
+    "notes": [],
+    "sign_stable": true,
+    "usd_per_point": 2.656794772473258
+   },
+   {
+    "acquisition_usd": 900.0,
+    "actionable": true,
+    "delta_points_median": 56.152981134295146,
+    "delta_points_p05": 39.46105266571059,
+    "delta_points_p95": 90.9773752122722,
+    "fab_hours": 6.0,
+    "label": "lsd",
+    "nominal": {
+     "drive_grip_frac": 0.36824997522547426,
+     "fz_inside_n": 487.01368481872754,
+     "fz_outside_n": 1139.6500151812725,
+     "lateral_util": 0.7,
+     "lock_ratio": 0.3655006725393521,
+     "mass_kg": 284.0,
+     "notes": [],
+     "t_total_nm": 360.7075466122314,
+     "times": {
+      "acceleration": 5.967111003972214,
+      "autocross": 70.10960281480213,
+      "skidpad": 4.927229934946219
+     }
+    },
+    "notes": [],
+    "sign_stable": true,
+    "usd_per_point": 16.02764415744135
+   }
+  ],
+  "text": "SEPARABLE FROM THE BASELINE. 'spool' beats 'open' by +56.5 points (90% band +39.8 … +91.3); the sign holds across the whole swept band at $3 per point.\n\nBUT IT IS NOT SEPARABLE FROM: lsd. Paired across every draw, the points difference between them changes sign, so this model cannot say the winner is actually the better part."
+ },
+ "compare.tie": {
+  "baseline": "open",
+  "best": null,
+  "cost_event": null,
+  "decidable": false,
+  "pairwise": {},
+  "provenance": {
+   "estimate_flagged": [
+    "every band in Uncertainty — these are judgements, not measurements",
+    "the lock/yaw penalty coefficient",
+    "any vendor figure not confirmed against the vendor's own data",
+    "Cost-event points, unless the year's Cmin/Cmax are supplied"
+   ],
+   "hard_rule": "No winner and no $/point when the points delta changes sign across the swept band. A trade study that always produces a ranking is not a trade study, it is a random number generator with a house style.",
+   "physics_grounded": [
+    "lap times (real LapSimulator over the standard events)",
+    "points curves (published-form FSAE event_points)",
+    "rear-axle torque split (driveline.py, exact for a given TBR/preload)",
+    "mass effect (exact — the part's mass enters the vehicle model)"
+   ]
+  },
+  "resolution": 0.0,
+  "results": [
+   {
+    "acquisition_usd": 400.0,
+    "actionable": false,
+    "delta_points_median": 0.0,
+    "delta_points_p05": 0.0,
+    "delta_points_p95": 0.0,
+    "fab_hours": 0.0,
+    "label": "same",
+    "nominal": {
+     "drive_grip_frac": 0.23362415194119154,
+     "fz_inside_n": 486.05630380195595,
+     "fz_outside_n": 1137.4878161980441,
+     "lateral_util": 0.7,
+     "lock_ratio": 0.0,
+     "mass_kg": 283.4,
+     "notes": [],
+     "t_total_nm": 228.4456991018308,
+     "times": {
+      "acceleration": 7.579126622025491,
+      "autocross": 37.22214522593812,
+      "skidpad": 4.912106741873275
+     }
+    },
+    "notes": [],
+    "sign_stable": false,
+    "usd_per_point": null
+   }
+  ],
+  "text": "NOT SEPARABLE — no winner declared. Across the swept band every option's points delta versus 'open' changes sign, i.e. the difference between these parts is smaller than the uncertainty in the inputs (mu, torque bias ratio, preload, lock penalty, which corner you evaluate). The honest reading is that THIS MODEL CANNOT TELL THEM APART at a magnitude worth acting on (floor: 5 points), so no $/point is printed. Narrow the band with real data — tyre data, the vendor's own TBR figure, a measured corner-exit case — or decide on the grounds the model is not disputing: reliability, adjustability, packaging, lead time and team hours."
+ },
+ "compare.ties": {
+  "baseline": "open",
+  "best": "lsd",
+  "cost_event": null,
+  "decidable": true,
+  "pairwise": {
+   "lsd2|lsd3": {
+    "median": 0.0,
+    "p05": 0.0,
+    "p95": 0.0,
+    "separable": false,
+    "sign_stable": false
+   },
+   "lsd|lsd2": {
+    "median": 0.0,
+    "p05": 0.0,
+    "p95": 0.0,
+    "separable": false,
+    "sign_stable": false
+   },
+   "lsd|lsd3": {
+    "median": 0.0,
+    "p05": 0.0,
+    "p95": 0.0,
+    "separable": false,
+    "sign_stable": false
+   }
+  },
+  "provenance": {
+   "estimate_flagged": [
+    "every band in Uncertainty — these are judgements, not measurements",
+    "the lock/yaw penalty coefficient",
+    "any vendor figure not confirmed against the vendor's own data",
+    "Cost-event points, unless the year's Cmin/Cmax are supplied"
+   ],
+   "hard_rule": "No winner and no $/point when the points delta changes sign across the swept band. A trade study that always produces a ranking is not a trade study, it is a random number generator with a house style.",
+   "physics_grounded": [
+    "lap times (real LapSimulator over the standard events)",
+    "points curves (published-form FSAE event_points)",
+    "rear-axle torque split (driveline.py, exact for a given TBR/preload)",
+    "mass effect (exact — the part's mass enters the vehicle model)"
+   ]
+  },
+  "resolution": 51.49873235479461,
+  "results": [
+   {
+    "acquisition_usd": 900.0,
+    "actionable": true,
+    "delta_points_median": 56.12812762477,
+    "delta_points_p05": 39.44317521947595,
+    "delta_points_p95": 90.94190757427056,
+    "fab_hours": 6.0,
+    "label": "lsd",
+    "nominal": {
+     "drive_grip_frac": 0.36824997522547426,
+     "fz_inside_n": 487.01368481872754,
+     "fz_outside_n": 1139.6500151812725,
+     "lateral_util": 0.7,
+     "lock_ratio": 0.3655006725393521,
+     "mass_kg": 284.0,
+     "notes": [],
+     "t_total_nm": 360.7075466122314,
+     "times": {
+      "acceleration": 5.967111003972214,
+      "autocross": 35.054801407401065,
+      "skidpad": 4.927229934946219
+     }
+    },
+    "notes": [],
+    "sign_stable": true,
+    "usd_per_point": 16.03474119102486
+   },
+   {
+    "acquisition_usd": 600.0,
+    "actionable": true,
+    "delta_points_median": 56.12812762477,
+    "delta_points_p05": 39.44317521947595,
+    "delta_points_p95": 90.94190757427056,
+    "fab_hours": 0.0,
+    "label": "lsd2",
+    "nominal": {
+     "drive_grip_frac": 0.36824997522547426,
+     "fz_inside_n": 487.01368481872754,
+     "fz_outside_n": 1139.6500151812725,
+     "lateral_util": 0.7,
+     "lock_ratio": 0.3655006725393521,
+     "mass_kg": 284.0,
+     "notes": [],
+     "t_total_nm": 360.7075466122314,
+     "times": {
+      "acceleration": 5.967111003972214,
+      "autocross": 35.054801407401065,
+      "skidpad": 4.927229934946219
+     }
+    },
+    "notes": [],
+    "sign_stable": true,
+    "usd_per_point": 10.689827460683242
+   },
+   {
+    "acquisition_usd": 1500.0,
+    "actionable": true,
+    "delta_points_median": 56.12812762477,
+    "delta_points_p05": 39.44317521947595,
+    "delta_points_p95": 90.94190757427056,
+    "fab_hours": 0.0,
+    "label": "lsd3",
+    "nominal": {
+     "drive_grip_frac": 0.36824997522547426,
+     "fz_inside_n": 487.01368481872754,
+     "fz_outside_n": 1139.6500151812725,
+     "lateral_util": 0.7,
+     "lock_ratio": 0.3655006725393521,
+     "mass_kg": 284.0,
+     "notes": [],
+     "t_total_nm": 360.7075466122314,
+     "times": {
+      "acceleration": 5.967111003972214,
+      "autocross": 35.054801407401065,
+      "skidpad": 4.927229934946219
+     }
+    },
+    "notes": [],
+    "sign_stable": true,
+    "usd_per_point": 26.724568651708104
+   }
+  ],
+  "text": "SEPARABLE FROM THE BASELINE. 'lsd' beats 'open' by +56.1 points (90% band +39.4 … +90.9); the sign holds across the whole swept band at $16 per point, plus 6 team-hours of fabrication.\n\nBUT IT IS NOT SEPARABLE FROM: lsd2; lsd3. Paired across every draw, the points difference between them changes sign, so this model cannot say the winner is actually the better part. Cheaper and equally indistinguishable: lsd2 ($600, 0 h). On points alone there is no case for the more expensive one — the case has to be made on what the model is not simulating."
+ },
+ "compare.winner": {
+  "baseline": "open",
+  "best": "lsd",
+  "cost_event": null,
+  "decidable": true,
+  "pairwise": {},
+  "provenance": {
+   "estimate_flagged": [
+    "every band in Uncertainty — these are judgements, not measurements",
+    "the lock/yaw penalty coefficient",
+    "any vendor figure not confirmed against the vendor's own data",
+    "Cost-event points, unless the year's Cmin/Cmax are supplied"
+   ],
+   "hard_rule": "No winner and no $/point when the points delta changes sign across the swept band. A trade study that always produces a ranking is not a trade study, it is a random number generator with a house style.",
+   "physics_grounded": [
+    "lap times (real LapSimulator over the standard events)",
+    "points curves (published-form FSAE event_points)",
+    "rear-axle torque split (driveline.py, exact for a given TBR/preload)",
+    "mass effect (exact — the part's mass enters the vehicle model)"
+   ]
+  },
+  "resolution": 51.49873235479461,
+  "results": [
+   {
+    "acquisition_usd": 900.0,
+    "actionable": true,
+    "delta_points_median": 56.12812762477,
+    "delta_points_p05": 39.44317521947595,
+    "delta_points_p95": 90.94190757427056,
+    "fab_hours": 6.0,
+    "label": "lsd",
+    "nominal": {
+     "drive_grip_frac": 0.36824997522547426,
+     "fz_inside_n": 487.01368481872754,
+     "fz_outside_n": 1139.6500151812725,
+     "lateral_util": 0.7,
+     "lock_ratio": 0.3655006725393521,
+     "mass_kg": 284.0,
+     "notes": [],
+     "t_total_nm": 360.7075466122314,
+     "times": {
+      "acceleration": 5.967111003972214,
+      "autocross": 35.054801407401065,
+      "skidpad": 4.927229934946219
+     }
+    },
+    "notes": [],
+    "sign_stable": true,
+    "usd_per_point": 16.03474119102486
+   }
+  ],
+  "text": "SEPARABLE FROM THE BASELINE. 'lsd' beats 'open' by +56.1 points (90% band +39.4 … +90.9); the sign holds across the whole swept band at $16 per point, plus 6 team-hours of fabrication."
+ },
+ "cost": [
+  50.0,
+  100.0,
+  0.0,
+  null,
+  null,
+  null,
+  null,
+  null,
+  37.5,
+  50.0
+ ],
+ "cost_delta": [
+  -1.25,
+  1.0,
+  null,
+  null
+ ],
+ "eval.heavy": [
+  {
+   "drive_grip_frac": 0.2370994440443157,
+   "fz_inside_n": 583.4728754628234,
+   "fz_outside_n": 1352.0292445371767,
+   "lateral_util": 0.7,
+   "lock_ratio": 0.0,
+   "mass_kg": 343.4,
+   "notes": [],
+   "t_total_nm": 270.94339672066707,
+   "times": {
+    "acceleration": 7.5932194806137945,
+    "autocross": 37.67226570711234,
+    "skidpad": 4.9931212712112725
+   }
+  },
+  {
+   "drive_grip_frac": 0.30443410770507434,
+   "fz_inside_n": 673.7367883355748,
+   "fz_outside_n": 1261.7653316644253,
+   "lateral_util": 0.6,
+   "lock_ratio": 0.0,
+   "mass_kg": 343.4,
+   "notes": [],
+   "t_total_nm": 308.93651745692927,
+   "times": {
+    "acceleration": 7.181007557862062,
+    "autocross": 38.91688156648414,
+    "skidpad": 5.311196694882743
+   }
+  }
+ ],
+ "eval.lsd": [
+  {
+   "drive_grip_frac": 0.36824997522547426,
+   "fz_inside_n": 487.01368481872754,
+   "fz_outside_n": 1139.6500151812725,
+   "lateral_util": 0.7,
+   "lock_ratio": 0.3655006725393521,
+   "mass_kg": 284.0,
+   "notes": [],
+   "t_total_nm": 360.7075466122314,
+   "times": {
+    "acceleration": 5.967111003972214,
+    "autocross": 35.054801407401065,
+    "skidpad": 4.927229934946219
+   }
+  },
+  {
+   "drive_grip_frac": 0.4146590476772784,
+   "fz_inside_n": 563.2340417541545,
+   "fz_outside_n": 1063.4296582458455,
+   "lateral_util": 0.6,
+   "lock_ratio": 0.27448654981407,
+   "mass_kg": 284.0,
+   "notes": [],
+   "t_total_nm": 361.53632181798594,
+   "times": {
+    "acceleration": 6.4128993165264765,
+    "autocross": 38.81480843504506,
+    "skidpad": 5.496286386558371
+   }
+  }
+ ],
+ "eval.nofrac": {
+  "drive_grip_frac": 0.36824997522547426,
+  "fz_inside_n": 487.01368481872754,
+  "fz_outside_n": 1139.6500151812725,
+  "lateral_util": 0.7,
+  "lock_ratio": 0.3655006725393521,
+  "mass_kg": 284.0,
+  "notes": [],
+  "t_total_nm": 360.7075466122314,
+  "times": {
+   "acceleration": 5.967111003972214,
+   "autocross": 35.054801407401065,
+   "skidpad": 4.927229934946219
+  }
+ },
+ "eval.open": [
+  {
+   "drive_grip_frac": 0.23362415194119154,
+   "fz_inside_n": 486.05630380195595,
+   "fz_outside_n": 1137.4878161980441,
+   "lateral_util": 0.7,
+   "lock_ratio": 0.0,
+   "mass_kg": 283.4,
+   "notes": [],
+   "t_total_nm": 228.4456991018308,
+   "times": {
+    "acceleration": 7.579126622025491,
+    "autocross": 37.22214522593812,
+    "skidpad": 4.912106741873275
+   }
+  },
+  {
+   "drive_grip_frac": 0.30080816188653775,
+   "fz_inside_n": 562.1317813774266,
+   "fz_outside_n": 1061.4123386225733,
+   "lateral_util": 0.6,
+   "lock_ratio": 0.0,
+   "mass_kg": 283.4,
+   "notes": [],
+   "t_total_nm": 261.82628995942423,
+   "times": {
+    "acceleration": 7.141176559031108,
+    "autocross": 38.365057578616245,
+    "skidpad": 5.224959257648507
+   }
+  }
+ ],
+ "eval.spool": [
+  {
+   "drive_grip_frac": 0.36829255620644535,
+   "fz_inside_n": 483.82375114517066,
+   "fz_outside_n": 1132.4413488548294,
+   "lateral_util": 0.7,
+   "lock_ratio": 0.3658462751896951,
+   "mass_kg": 282.0,
+   "notes": [],
+   "t_total_nm": 358.6809894018575,
+   "times": {
+    "acceleration": 5.964485216578971,
+    "autocross": 35.04332215199496,
+    "skidpad": 4.925869811972003
+   }
+  },
+  {
+   "drive_grip_frac": 0.4146930129806006,
+   "fz_inside_n": 559.5609368475862,
+   "fz_outside_n": 1056.704163152414,
+   "lateral_util": 0.6,
+   "lock_ratio": 0.274806791751792,
+   "mass_kg": 282.0,
+   "notes": [],
+   "t_total_nm": 359.5208455827918,
+   "times": {
+    "acceleration": 6.41010195774189,
+    "autocross": 38.79440712338156,
+    "skidpad": 5.4906375029286325
+   }
+  }
+ ],
+ "option": [
+  400.0,
+  6.0,
+  null,
+  {
+   "label": "heavy",
+   "mass_offset_kg": 60.0,
+   "notes": "ballast",
+   "spec": {
+    "adjustable_preload": false,
+    "cg_x_mm": null,
+    "cg_y_mm": null,
+    "cg_z_mm": null,
+    "cost_usd": 400.0,
+    "env_x_mm": null,
+    "env_y_mm": null,
+    "env_z_mm": null,
+    "extra_fab_hours": 0.0,
+    "extra_parts_usd": 0.0,
+    "is_estimate": true,
+    "kind": "open",
+    "lead_time_weeks": null,
+    "mass_kg": 3.4,
+    "mount_points": null,
+    "name": "Open differential (baseline)",
+    "peak_torque_nm": null,
+    "preload_nm": 0.0,
+    "source": "Baseline concept — supply your own mass/cost.",
+    "sprocket_adapter_included": true,
+    "tbr": 1.0
+   }
+  }
+ ],
+ "ref": [
+  {
+   "a": 9.0,
+   "b": null,
+   "c": 4.0
+  },
+  {}
+ ],
+ "sample": [
+  {
+   "exit_lateral_frac": 0.5840875243645087,
+   "lock_k": 0.047432472356862196,
+   "mu_scale": 1.0028371899280617,
+   "preload_rel": 0.6018234578074872,
+   "tbr_rel": 1.2727550329792645
+  },
+  {
+   "exit_lateral_frac": [
+    0.45,
+    0.88
+   ],
+   "lock_k": [
+    0.0,
+    0.05
+   ],
+   "mu_scale": [
+    0.88,
+    1.12
+   ],
+   "n_draws": 300,
+   "preload_rel": [
+    0.4,
+    1.8
+   ],
+   "seed": 12345,
+   "tbr_rel": [
+    0.75,
+    1.3
+   ]
+  }
+ ],
+ "score": [
+  {
+   "a": 95.74074074074073,
+   "b": 0.0,
+   "c": 0.0,
+   "total": 95.74074074074073
+  },
+  {
+   "a": 125.0,
+   "total": 125.0
+  }
+ ]
+}

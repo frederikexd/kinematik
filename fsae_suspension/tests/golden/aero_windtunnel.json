@@ -1,0 +1,2713 @@
+{
+ "corr.bal2": {
+  "backend": "star",
+  "cd_bias_pct": 0.0,
+  "cd_rms_pct": 0.0,
+  "cfd_provenance": "star (rans), UNCORRELATED — raw solver output not tied to measured data; treat absolute coefficients as provisional, trust deltas more than levels",
+  "cl_bias_pct": 0.0,
+  "cl_rms_pct": 0.0,
+  "n_paired": 4,
+  "ok": true,
+  "overall_within_tol": false,
+  "physical_provenance": "A2 (full-scale, moving-belt, blockage-corrected)",
+  "points": [
+   {
+    "bal_cfd": 0.47000000000000003,
+    "bal_err_pts": 2.0000000000000018,
+    "bal_phys": 0.45,
+    "cd_cfd": 1.2,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.2,
+    "cl_cfd": -3.0,
+    "cl_err_pct": -0.0,
+    "cl_phys": -3.0,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=25 RRH=35 (rake +10mm) V=20"
+   },
+   {
+    "bal_cfd": 0.48000000000000004,
+    "bal_err_pts": 2.0000000000000018,
+    "bal_phys": 0.46,
+    "cd_cfd": 1.22,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.22,
+    "cl_cfd": -3.1,
+    "cl_err_pct": -0.0,
+    "cl_phys": -3.1,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=25 RRH=45 (rake +20mm) V=20"
+   },
+   {
+    "bal_cfd": 0.49000000000000005,
+    "bal_err_pts": 2.0000000000000018,
+    "bal_phys": 0.47000000000000003,
+    "cd_cfd": 1.24,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.24,
+    "cl_cfd": -3.2,
+    "cl_err_pct": -0.0,
+    "cl_phys": -3.2,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=35 (rake +0mm) V=20"
+   },
+   {
+    "bal_cfd": 0.5,
+    "bal_err_pts": 2.0000000000000018,
+    "bal_phys": 0.48,
+    "cd_cfd": 1.26,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.26,
+    "cl_cfd": -3.3,
+    "cl_err_pct": -0.0,
+    "cl_phys": -3.3,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=45 (rake +10mm) V=20"
+   }
+  ],
+  "summary": "[Virtual Wind Tunnel] star (kOmegaSST) vs physical map: 4 point(s) paired. NOT CALIBRATED — the digital coefficients drift from the tunnel beyond tolerance; do NOT trust absolute CFD levels for decisions until the model is reconciled. C_l RMS 0.0% (bias +0.0%), C_d RMS 0.0% (bias +0.0%).  Worst point: FRH=25 RRH=35 (rake +10mm) V=20 C_l off -0.0%.",
+  "tolerances": {
+   "balance_pts": 2.0,
+   "cd_pct": 5.0,
+   "cl_pct": 5.0,
+   "map_rms_pct": 4.0
+  },
+  "turbulence_model": "kOmegaSST",
+  "worst": {
+   "bal_cfd": 0.47000000000000003,
+   "bal_err_pts": 2.0000000000000018,
+   "bal_phys": 0.45,
+   "cd_cfd": 1.2,
+   "cd_err_pct": 0.0,
+   "cd_phys": 1.2,
+   "cl_cfd": -3.0,
+   "cl_err_pct": -0.0,
+   "cl_phys": -3.0,
+   "note": "",
+   "paired": true,
+   "ride_heights": "FRH=25 RRH=35 (rake +10mm) V=20"
+  }
+ },
+ "corr.bal_none": {
+  "backend": "star",
+  "cd_bias_pct": 0.0,
+  "cd_rms_pct": 0.0,
+  "cfd_provenance": "star (rans), UNCORRELATED — raw solver output not tied to measured data; treat absolute coefficients as provisional, trust deltas more than levels",
+  "cl_bias_pct": 0.0,
+  "cl_rms_pct": 0.0,
+  "n_paired": 4,
+  "ok": true,
+  "overall_within_tol": true,
+  "physical_provenance": "A2 (full-scale, moving-belt, blockage-corrected)",
+  "points": [
+   {
+    "bal_cfd": null,
+    "bal_err_pts": "NaN",
+    "bal_phys": 0.45,
+    "cd_cfd": 1.2,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.2,
+    "cl_cfd": -3.0,
+    "cl_err_pct": -0.0,
+    "cl_phys": -3.0,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=25 RRH=35 (rake +10mm) V=20"
+   },
+   {
+    "bal_cfd": null,
+    "bal_err_pts": "NaN",
+    "bal_phys": 0.46,
+    "cd_cfd": 1.22,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.22,
+    "cl_cfd": -3.1,
+    "cl_err_pct": -0.0,
+    "cl_phys": -3.1,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=25 RRH=45 (rake +20mm) V=20"
+   },
+   {
+    "bal_cfd": null,
+    "bal_err_pts": "NaN",
+    "bal_phys": 0.47000000000000003,
+    "cd_cfd": 1.24,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.24,
+    "cl_cfd": -3.2,
+    "cl_err_pct": -0.0,
+    "cl_phys": -3.2,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=35 (rake +0mm) V=20"
+   },
+   {
+    "bal_cfd": null,
+    "bal_err_pts": "NaN",
+    "bal_phys": 0.48,
+    "cd_cfd": 1.26,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.26,
+    "cl_cfd": -3.3,
+    "cl_err_pct": -0.0,
+    "cl_phys": -3.3,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=45 (rake +10mm) V=20"
+   }
+  ],
+  "summary": "[Virtual Wind Tunnel] star (kOmegaSST) vs physical map: 4 point(s) paired. CALIBRATED — k-omega SST reproduced the tunnel inside tolerance; the CFD pipeline can be trusted to screen configurations the tunnel never saw. C_l RMS 0.0% (bias +0.0%), C_d RMS 0.0% (bias +0.0%).  Worst point: FRH=25 RRH=35 (rake +10mm) V=20 C_l off -0.0%.",
+  "tolerances": {
+   "balance_pts": 2.0,
+   "cd_pct": 5.0,
+   "cl_pct": 5.0,
+   "map_rms_pct": 4.0
+  },
+  "turbulence_model": "kOmegaSST",
+  "worst": {
+   "bal_cfd": null,
+   "bal_err_pts": "NaN",
+   "bal_phys": 0.45,
+   "cd_cfd": 1.2,
+   "cd_err_pct": 0.0,
+   "cd_phys": 1.2,
+   "cl_cfd": -3.0,
+   "cl_err_pct": -0.0,
+   "cl_phys": -3.0,
+   "note": "",
+   "paired": true,
+   "ride_heights": "FRH=25 RRH=35 (rake +10mm) V=20"
+  }
+ },
+ "corr.bal_off": {
+  "backend": "star",
+  "cd_bias_pct": 0.0,
+  "cd_rms_pct": 0.0,
+  "cfd_provenance": "star (rans), UNCORRELATED — raw solver output not tied to measured data; treat absolute coefficients as provisional, trust deltas more than levels",
+  "cl_bias_pct": 0.0,
+  "cl_rms_pct": 0.0,
+  "n_paired": 4,
+  "ok": true,
+  "overall_within_tol": false,
+  "physical_provenance": "A2 (full-scale, moving-belt, blockage-corrected)",
+  "points": [
+   {
+    "bal_cfd": 0.4701,
+    "bal_err_pts": 2.0100000000000007,
+    "bal_phys": 0.45,
+    "cd_cfd": 1.2,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.2,
+    "cl_cfd": -3.0,
+    "cl_err_pct": -0.0,
+    "cl_phys": -3.0,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=25 RRH=35 (rake +10mm) V=20"
+   },
+   {
+    "bal_cfd": 0.4801,
+    "bal_err_pts": 2.0100000000000007,
+    "bal_phys": 0.46,
+    "cd_cfd": 1.22,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.22,
+    "cl_cfd": -3.1,
+    "cl_err_pct": -0.0,
+    "cl_phys": -3.1,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=25 RRH=45 (rake +20mm) V=20"
+   },
+   {
+    "bal_cfd": 0.49010000000000004,
+    "bal_err_pts": 2.0100000000000007,
+    "bal_phys": 0.47000000000000003,
+    "cd_cfd": 1.24,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.24,
+    "cl_cfd": -3.2,
+    "cl_err_pct": -0.0,
+    "cl_phys": -3.2,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=35 (rake +0mm) V=20"
+   },
+   {
+    "bal_cfd": 0.5001,
+    "bal_err_pts": 2.0100000000000007,
+    "bal_phys": 0.48,
+    "cd_cfd": 1.26,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.26,
+    "cl_cfd": -3.3,
+    "cl_err_pct": -0.0,
+    "cl_phys": -3.3,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=45 (rake +10mm) V=20"
+   }
+  ],
+  "summary": "[Virtual Wind Tunnel] star (kOmegaSST) vs physical map: 4 point(s) paired. NOT CALIBRATED — the digital coefficients drift from the tunnel beyond tolerance; do NOT trust absolute CFD levels for decisions until the model is reconciled. C_l RMS 0.0% (bias +0.0%), C_d RMS 0.0% (bias +0.0%).  Worst point: FRH=25 RRH=35 (rake +10mm) V=20 C_l off -0.0%.",
+  "tolerances": {
+   "balance_pts": 2.0,
+   "cd_pct": 5.0,
+   "cl_pct": 5.0,
+   "map_rms_pct": 4.0
+  },
+  "turbulence_model": "kOmegaSST",
+  "worst": {
+   "bal_cfd": 0.4701,
+   "bal_err_pts": 2.0100000000000007,
+   "bal_phys": 0.45,
+   "cd_cfd": 1.2,
+   "cd_err_pct": 0.0,
+   "cd_phys": 1.2,
+   "cl_cfd": -3.0,
+   "cl_err_pct": -0.0,
+   "cl_phys": -3.0,
+   "note": "",
+   "paired": true,
+   "ride_heights": "FRH=25 RRH=35 (rake +10mm) V=20"
+  }
+ },
+ "corr.bias_edge": {
+  "backend": "star",
+  "cd_bias_pct": 3.0000000000000036,
+  "cd_rms_pct": 3.0000000000000036,
+  "cfd_provenance": "star (rans), UNCORRELATED — raw solver output not tied to measured data; treat absolute coefficients as provisional, trust deltas more than levels",
+  "cl_bias_pct": 5.000000000000006,
+  "cl_rms_pct": 5.000000000000006,
+  "n_paired": 4,
+  "ok": true,
+  "overall_within_tol": false,
+  "physical_provenance": "A2 (full-scale, moving-belt, blockage-corrected)",
+  "points": [
+   {
+    "bal_cfd": 0.46,
+    "bal_err_pts": 1.0000000000000009,
+    "bal_phys": 0.45,
+    "cd_cfd": 1.236,
+    "cd_err_pct": 3.0000000000000027,
+    "cd_phys": 1.2,
+    "cl_cfd": -3.1500000000000004,
+    "cl_err_pct": 5.0000000000000115,
+    "cl_phys": -3.0,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=25 RRH=35 (rake +10mm) V=20"
+   },
+   {
+    "bal_cfd": 0.47000000000000003,
+    "bal_err_pts": 1.0000000000000009,
+    "bal_phys": 0.46,
+    "cd_cfd": 1.2566,
+    "cd_err_pct": 2.9999999999999973,
+    "cd_phys": 1.22,
+    "cl_cfd": -3.2550000000000003,
+    "cl_err_pct": 5.000000000000008,
+    "cl_phys": -3.1,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=25 RRH=45 (rake +20mm) V=20"
+   },
+   {
+    "bal_cfd": 0.48000000000000004,
+    "bal_err_pts": 1.0000000000000009,
+    "bal_phys": 0.47000000000000003,
+    "cd_cfd": 1.2772000000000001,
+    "cd_err_pct": 3.0000000000000098,
+    "cd_phys": 1.24,
+    "cl_cfd": -3.3600000000000003,
+    "cl_err_pct": 5.000000000000004,
+    "cl_phys": -3.2,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=35 (rake +0mm) V=20"
+   },
+   {
+    "bal_cfd": 0.49,
+    "bal_err_pts": 1.0000000000000009,
+    "bal_phys": 0.48,
+    "cd_cfd": 1.2978,
+    "cd_err_pct": 3.0000000000000044,
+    "cd_phys": 1.26,
+    "cl_cfd": -3.465,
+    "cl_err_pct": 5.000000000000002,
+    "cl_phys": -3.3,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=45 (rake +10mm) V=20"
+   }
+  ],
+  "summary": "[Virtual Wind Tunnel] star (kOmegaSST) vs physical map: 4 point(s) paired. NOT CALIBRATED — the digital coefficients drift from the tunnel beyond tolerance; do NOT trust absolute CFD levels for decisions until the model is reconciled. C_l RMS 5.0% (bias +5.0%), C_d RMS 3.0% (bias +3.0%).  Worst point: FRH=25 RRH=35 (rake +10mm) V=20 C_l off +5.0%.",
+  "tolerances": {
+   "balance_pts": 2.0,
+   "cd_pct": 5.0,
+   "cl_pct": 5.000000000000006,
+   "map_rms_pct": 4.0
+  },
+  "turbulence_model": "kOmegaSST",
+  "worst": {
+   "bal_cfd": 0.46,
+   "bal_err_pts": 1.0000000000000009,
+   "bal_phys": 0.45,
+   "cd_cfd": 1.236,
+   "cd_err_pct": 3.0000000000000027,
+   "cd_phys": 1.2,
+   "cl_cfd": -3.1500000000000004,
+   "cl_err_pct": 5.0000000000000115,
+   "cl_phys": -3.0,
+   "note": "",
+   "paired": true,
+   "ride_heights": "FRH=25 RRH=35 (rake +10mm) V=20"
+  }
+ },
+ "corr.cd": {
+  "backend": "star",
+  "cd_bias_pct": 6.000000000000007,
+  "cd_rms_pct": 6.000000000000007,
+  "cfd_provenance": "star (rans), UNCORRELATED — raw solver output not tied to measured data; treat absolute coefficients as provisional, trust deltas more than levels",
+  "cl_bias_pct": 0.0,
+  "cl_rms_pct": 0.0,
+  "n_paired": 4,
+  "ok": true,
+  "overall_within_tol": false,
+  "physical_provenance": "A2 (full-scale, moving-belt, blockage-corrected)",
+  "points": [
+   {
+    "bal_cfd": 0.45,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.45,
+    "cd_cfd": 1.272,
+    "cd_err_pct": 6.000000000000005,
+    "cd_phys": 1.2,
+    "cl_cfd": -3.0,
+    "cl_err_pct": -0.0,
+    "cl_phys": -3.0,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=25 RRH=35 (rake +10mm) V=20"
+   },
+   {
+    "bal_cfd": 0.46,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.46,
+    "cd_cfd": 1.2932000000000001,
+    "cd_err_pct": 6.000000000000012,
+    "cd_phys": 1.22,
+    "cl_cfd": -3.1,
+    "cl_err_pct": -0.0,
+    "cl_phys": -3.1,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=25 RRH=45 (rake +20mm) V=20"
+   },
+   {
+    "bal_cfd": 0.47000000000000003,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.47000000000000003,
+    "cd_cfd": 1.3144,
+    "cd_err_pct": 6.000000000000002,
+    "cd_phys": 1.24,
+    "cl_cfd": -3.2,
+    "cl_err_pct": -0.0,
+    "cl_phys": -3.2,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=35 (rake +0mm) V=20"
+   },
+   {
+    "bal_cfd": 0.48,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.48,
+    "cd_cfd": 1.3356000000000001,
+    "cd_err_pct": 6.000000000000009,
+    "cd_phys": 1.26,
+    "cl_cfd": -3.3,
+    "cl_err_pct": -0.0,
+    "cl_phys": -3.3,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=45 (rake +10mm) V=20"
+   }
+  ],
+  "summary": "[Virtual Wind Tunnel] star (kOmegaSST) vs physical map: 4 point(s) paired. NOT CALIBRATED — the digital coefficients drift from the tunnel beyond tolerance; do NOT trust absolute CFD levels for decisions until the model is reconciled. C_l RMS 0.0% (bias +0.0%), C_d RMS 6.0% (bias +6.0%).  Worst point: FRH=25 RRH=35 (rake +10mm) V=20 C_l off -0.0%.",
+  "tolerances": {
+   "balance_pts": 2.0,
+   "cd_pct": 5.0,
+   "cl_pct": 5.0,
+   "map_rms_pct": 4.0
+  },
+  "turbulence_model": "kOmegaSST",
+  "worst": {
+   "bal_cfd": 0.45,
+   "bal_err_pts": 0.0,
+   "bal_phys": 0.45,
+   "cd_cfd": 1.272,
+   "cd_err_pct": 6.000000000000005,
+   "cd_phys": 1.2,
+   "cl_cfd": -3.0,
+   "cl_err_pct": -0.0,
+   "cl_phys": -3.0,
+   "note": "",
+   "paired": true,
+   "ride_heights": "FRH=25 RRH=35 (rake +10mm) V=20"
+  }
+ },
+ "corr.cl5": {
+  "backend": "star",
+  "cd_bias_pct": 0.0,
+  "cd_rms_pct": 0.0,
+  "cfd_provenance": "star (rans), UNCORRELATED — raw solver output not tied to measured data; treat absolute coefficients as provisional, trust deltas more than levels",
+  "cl_bias_pct": 5.000000000000006,
+  "cl_rms_pct": 5.000000000000006,
+  "n_paired": 4,
+  "ok": true,
+  "overall_within_tol": false,
+  "physical_provenance": "A2 (full-scale, moving-belt, blockage-corrected)",
+  "points": [
+   {
+    "bal_cfd": 0.45,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.45,
+    "cd_cfd": 1.2,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.2,
+    "cl_cfd": -3.1500000000000004,
+    "cl_err_pct": 5.0000000000000115,
+    "cl_phys": -3.0,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=25 RRH=35 (rake +10mm) V=20"
+   },
+   {
+    "bal_cfd": 0.46,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.46,
+    "cd_cfd": 1.22,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.22,
+    "cl_cfd": -3.2550000000000003,
+    "cl_err_pct": 5.000000000000008,
+    "cl_phys": -3.1,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=25 RRH=45 (rake +20mm) V=20"
+   },
+   {
+    "bal_cfd": 0.47000000000000003,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.47000000000000003,
+    "cd_cfd": 1.24,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.24,
+    "cl_cfd": -3.3600000000000003,
+    "cl_err_pct": 5.000000000000004,
+    "cl_phys": -3.2,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=35 (rake +0mm) V=20"
+   },
+   {
+    "bal_cfd": 0.48,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.48,
+    "cd_cfd": 1.26,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.26,
+    "cl_cfd": -3.465,
+    "cl_err_pct": 5.000000000000002,
+    "cl_phys": -3.3,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=45 (rake +10mm) V=20"
+   }
+  ],
+  "summary": "[Virtual Wind Tunnel] star (kOmegaSST) vs physical map: 4 point(s) paired. NOT CALIBRATED — the digital coefficients drift from the tunnel beyond tolerance; do NOT trust absolute CFD levels for decisions until the model is reconciled. C_l RMS 5.0% (bias +5.0%), C_d RMS 0.0% (bias +0.0%).  CFD systematically OVER-predicts downforce magnitude vs the tunnel — check mesh y+ in the floor/diffuser, transition, and that the tunnel was blockage-corrected.  Worst point: FRH=25 RRH=35 (rake +10mm) V=20 C_l off +5.0%.",
+  "tolerances": {
+   "balance_pts": 2.0,
+   "cd_pct": 5.0,
+   "cl_pct": 5.0,
+   "map_rms_pct": 4.0
+  },
+  "turbulence_model": "kOmegaSST",
+  "worst": {
+   "bal_cfd": 0.45,
+   "bal_err_pts": 0.0,
+   "bal_phys": 0.45,
+   "cd_cfd": 1.2,
+   "cd_err_pct": 0.0,
+   "cd_phys": 1.2,
+   "cl_cfd": -3.1500000000000004,
+   "cl_err_pct": 5.0000000000000115,
+   "cl_phys": -3.0,
+   "note": "",
+   "paired": true,
+   "ride_heights": "FRH=25 RRH=35 (rake +10mm) V=20"
+  }
+ },
+ "corr.cl5x": {
+  "backend": "star",
+  "cd_bias_pct": 0.0,
+  "cd_rms_pct": 0.0,
+  "cfd_provenance": "star (rans), UNCORRELATED — raw solver output not tied to measured data; treat absolute coefficients as provisional, trust deltas more than levels",
+  "cl_bias_pct": 5.010000000000002,
+  "cl_rms_pct": 5.010000000000002,
+  "n_paired": 4,
+  "ok": true,
+  "overall_within_tol": false,
+  "physical_provenance": "A2 (full-scale, moving-belt, blockage-corrected)",
+  "points": [
+   {
+    "bal_cfd": 0.45,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.45,
+    "cd_cfd": 1.2,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.2,
+    "cl_cfd": -3.1503,
+    "cl_err_pct": 5.010000000000003,
+    "cl_phys": -3.0,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=25 RRH=35 (rake +10mm) V=20"
+   },
+   {
+    "bal_cfd": 0.46,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.46,
+    "cd_cfd": 1.22,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.22,
+    "cl_cfd": -3.25531,
+    "cl_err_pct": 5.010000000000002,
+    "cl_phys": -3.1,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=25 RRH=45 (rake +20mm) V=20"
+   },
+   {
+    "bal_cfd": 0.47000000000000003,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.47000000000000003,
+    "cd_cfd": 1.24,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.24,
+    "cl_cfd": -3.36032,
+    "cl_err_pct": 5.010000000000001,
+    "cl_phys": -3.2,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=35 (rake +0mm) V=20"
+   },
+   {
+    "bal_cfd": 0.48,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.48,
+    "cd_cfd": 1.26,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.26,
+    "cl_cfd": -3.46533,
+    "cl_err_pct": 5.01,
+    "cl_phys": -3.3,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=45 (rake +10mm) V=20"
+   }
+  ],
+  "summary": "[Virtual Wind Tunnel] star (kOmegaSST) vs physical map: 4 point(s) paired. NOT CALIBRATED — the digital coefficients drift from the tunnel beyond tolerance; do NOT trust absolute CFD levels for decisions until the model is reconciled. C_l RMS 5.0% (bias +5.0%), C_d RMS 0.0% (bias +0.0%).  CFD systematically OVER-predicts downforce magnitude vs the tunnel — check mesh y+ in the floor/diffuser, transition, and that the tunnel was blockage-corrected.  Worst point: FRH=25 RRH=35 (rake +10mm) V=20 C_l off +5.0%.",
+  "tolerances": {
+   "balance_pts": 2.0,
+   "cd_pct": 5.0,
+   "cl_pct": 5.0,
+   "map_rms_pct": 4.0
+  },
+  "turbulence_model": "kOmegaSST",
+  "worst": {
+   "bal_cfd": 0.45,
+   "bal_err_pts": 0.0,
+   "bal_phys": 0.45,
+   "cd_cfd": 1.2,
+   "cd_err_pct": 0.0,
+   "cd_phys": 1.2,
+   "cl_cfd": -3.1503,
+   "cl_err_pct": 5.010000000000003,
+   "cl_phys": -3.0,
+   "note": "",
+   "paired": true,
+   "ride_heights": "FRH=25 RRH=35 (rake +10mm) V=20"
+  }
+ },
+ "corr.empty": {
+  "backend": "unknown",
+  "cd_bias_pct": "NaN",
+  "cd_rms_pct": "NaN",
+  "cfd_provenance": "",
+  "cl_bias_pct": "NaN",
+  "cl_rms_pct": "NaN",
+  "n_paired": 0,
+  "ok": false,
+  "overall_within_tol": false,
+  "physical_provenance": "A2 (full-scale, moving-belt, blockage-corrected)",
+  "points": [
+   {
+    "bal_cfd": null,
+    "bal_err_pts": "NaN",
+    "bal_phys": null,
+    "cd_cfd": null,
+    "cd_err_pct": "NaN",
+    "cd_phys": 1.2,
+    "cl_cfd": null,
+    "cl_err_pct": "NaN",
+    "cl_phys": -3.0,
+    "note": "physical point not covered by the CFD sweep — not paired",
+    "paired": false,
+    "ride_heights": "FRH=25 RRH=35 (rake +10mm) V=20"
+   },
+   {
+    "bal_cfd": null,
+    "bal_err_pts": "NaN",
+    "bal_phys": null,
+    "cd_cfd": null,
+    "cd_err_pct": "NaN",
+    "cd_phys": 1.22,
+    "cl_cfd": null,
+    "cl_err_pct": "NaN",
+    "cl_phys": -3.1,
+    "note": "physical point not covered by the CFD sweep — not paired",
+    "paired": false,
+    "ride_heights": "FRH=25 RRH=45 (rake +20mm) V=20"
+   },
+   {
+    "bal_cfd": null,
+    "bal_err_pts": "NaN",
+    "bal_phys": null,
+    "cd_cfd": null,
+    "cd_err_pct": "NaN",
+    "cd_phys": 1.24,
+    "cl_cfd": null,
+    "cl_err_pct": "NaN",
+    "cl_phys": -3.2,
+    "note": "physical point not covered by the CFD sweep — not paired",
+    "paired": false,
+    "ride_heights": "FRH=35 RRH=35 (rake +0mm) V=20"
+   },
+   {
+    "bal_cfd": null,
+    "bal_err_pts": "NaN",
+    "bal_phys": null,
+    "cd_cfd": null,
+    "cd_err_pct": "NaN",
+    "cd_phys": 1.26,
+    "cl_cfd": null,
+    "cl_err_pct": "NaN",
+    "cl_phys": -3.3,
+    "note": "physical point not covered by the CFD sweep — not paired",
+    "paired": false,
+    "ride_heights": "FRH=35 RRH=45 (rake +10mm) V=20"
+   }
+  ],
+  "summary": "[Virtual Wind Tunnel] CFD (turbulence model unknown) vs physical map: 0 point(s) paired, 4 unpaired (holes — not compared). Nothing could be compared like-for-like — generate the CFD run from this map's run_matrix() so the attitudes match exactly, then re-correlate.",
+  "tolerances": {
+   "balance_pts": 2.0,
+   "cd_pct": 5.0,
+   "cl_pct": 5.0,
+   "map_rms_pct": 4.0
+  },
+  "turbulence_model": "unknown",
+  "worst": null
+ },
+ "corr.exact": {
+  "backend": "star",
+  "cd_bias_pct": 3.0000000000000036,
+  "cd_rms_pct": 3.0000000000000036,
+  "cfd_provenance": "star (rans), UNCORRELATED — raw solver output not tied to measured data; treat absolute coefficients as provisional, trust deltas more than levels",
+  "cl_bias_pct": 5.000000000000006,
+  "cl_rms_pct": 5.000000000000006,
+  "n_paired": 4,
+  "ok": true,
+  "overall_within_tol": true,
+  "physical_provenance": "A2 (full-scale, moving-belt, blockage-corrected)",
+  "points": [
+   {
+    "bal_cfd": 0.46,
+    "bal_err_pts": 1.0000000000000009,
+    "bal_phys": 0.45,
+    "cd_cfd": 1.236,
+    "cd_err_pct": 3.0000000000000027,
+    "cd_phys": 1.2,
+    "cl_cfd": -3.1500000000000004,
+    "cl_err_pct": 5.0000000000000115,
+    "cl_phys": -3.0,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=25 RRH=35 (rake +10mm) V=20"
+   },
+   {
+    "bal_cfd": 0.47000000000000003,
+    "bal_err_pts": 1.0000000000000009,
+    "bal_phys": 0.46,
+    "cd_cfd": 1.2566,
+    "cd_err_pct": 2.9999999999999973,
+    "cd_phys": 1.22,
+    "cl_cfd": -3.2550000000000003,
+    "cl_err_pct": 5.000000000000008,
+    "cl_phys": -3.1,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=25 RRH=45 (rake +20mm) V=20"
+   },
+   {
+    "bal_cfd": 0.48000000000000004,
+    "bal_err_pts": 1.0000000000000009,
+    "bal_phys": 0.47000000000000003,
+    "cd_cfd": 1.2772000000000001,
+    "cd_err_pct": 3.0000000000000098,
+    "cd_phys": 1.24,
+    "cl_cfd": -3.3600000000000003,
+    "cl_err_pct": 5.000000000000004,
+    "cl_phys": -3.2,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=35 (rake +0mm) V=20"
+   },
+   {
+    "bal_cfd": 0.49,
+    "bal_err_pts": 1.0000000000000009,
+    "bal_phys": 0.48,
+    "cd_cfd": 1.2978,
+    "cd_err_pct": 3.0000000000000044,
+    "cd_phys": 1.26,
+    "cl_cfd": -3.465,
+    "cl_err_pct": 5.000000000000002,
+    "cl_phys": -3.3,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=45 (rake +10mm) V=20"
+   }
+  ],
+  "summary": "[Virtual Wind Tunnel] star (kOmegaSST) vs physical map: 4 point(s) paired. CALIBRATED — k-omega SST reproduced the tunnel inside tolerance; the CFD pipeline can be trusted to screen configurations the tunnel never saw. C_l RMS 5.0% (bias +5.0%), C_d RMS 3.0% (bias +3.0%).  Worst point: FRH=25 RRH=35 (rake +10mm) V=20 C_l off +5.0%.",
+  "tolerances": {
+   "balance_pts": 1.0000000000000009,
+   "cd_pct": 3.0000000000000098,
+   "cl_pct": 5.0000000000000115,
+   "map_rms_pct": 5.000000000000006
+  },
+  "turbulence_model": "kOmegaSST",
+  "worst": {
+   "bal_cfd": 0.46,
+   "bal_err_pts": 1.0000000000000009,
+   "bal_phys": 0.45,
+   "cd_cfd": 1.236,
+   "cd_err_pct": 3.0000000000000027,
+   "cd_phys": 1.2,
+   "cl_cfd": -3.1500000000000004,
+   "cl_err_pct": 5.0000000000000115,
+   "cl_phys": -3.0,
+   "note": "",
+   "paired": true,
+   "ride_heights": "FRH=25 RRH=35 (rake +10mm) V=20"
+  }
+ },
+ "corr.holes": {
+  "backend": "star",
+  "cd_bias_pct": 0.0,
+  "cd_rms_pct": 0.0,
+  "cfd_provenance": "star (rans), UNCORRELATED — raw solver output not tied to measured data; treat absolute coefficients as provisional, trust deltas more than levels",
+  "cl_bias_pct": 0.0,
+  "cl_rms_pct": 0.0,
+  "n_paired": 2,
+  "ok": true,
+  "overall_within_tol": true,
+  "physical_provenance": "A2 (full-scale, moving-belt, blockage-corrected)",
+  "points": [
+   {
+    "bal_cfd": 0.47000000000000003,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.47000000000000003,
+    "cd_cfd": 1.24,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.24,
+    "cl_cfd": -3.2,
+    "cl_err_pct": -0.0,
+    "cl_phys": -3.2,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=35 (rake +0mm) V=20"
+   },
+   {
+    "bal_cfd": 0.48,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.48,
+    "cd_cfd": 1.26,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.26,
+    "cl_cfd": -3.3,
+    "cl_err_pct": -0.0,
+    "cl_phys": -3.3,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=45 (rake +10mm) V=20"
+   },
+   {
+    "bal_cfd": null,
+    "bal_err_pts": "NaN",
+    "bal_phys": null,
+    "cd_cfd": 1.0,
+    "cd_err_pct": "NaN",
+    "cd_phys": null,
+    "cl_cfd": -1.0,
+    "cl_err_pct": "NaN",
+    "cl_phys": null,
+    "note": "no physical point at this attitude — not paired",
+    "paired": false,
+    "ride_heights": "FRH=99 RRH=99 (rake +0mm) V=20"
+   },
+   {
+    "bal_cfd": null,
+    "bal_err_pts": "NaN",
+    "bal_phys": null,
+    "cd_cfd": null,
+    "cd_err_pct": "NaN",
+    "cd_phys": 1.2,
+    "cl_cfd": null,
+    "cl_err_pct": "NaN",
+    "cl_phys": -3.0,
+    "note": "physical point not covered by the CFD sweep — not paired",
+    "paired": false,
+    "ride_heights": "FRH=25 RRH=35 (rake +10mm) V=20"
+   },
+   {
+    "bal_cfd": null,
+    "bal_err_pts": "NaN",
+    "bal_phys": null,
+    "cd_cfd": null,
+    "cd_err_pct": "NaN",
+    "cd_phys": 1.22,
+    "cl_cfd": null,
+    "cl_err_pct": "NaN",
+    "cl_phys": -3.1,
+    "note": "physical point not covered by the CFD sweep — not paired",
+    "paired": false,
+    "ride_heights": "FRH=25 RRH=45 (rake +20mm) V=20"
+   }
+  ],
+  "summary": "[Virtual Wind Tunnel] star (kOmegaSST) vs physical map: 2 point(s) paired, 3 unpaired (holes — not compared). CALIBRATED — k-omega SST reproduced the tunnel inside tolerance; the CFD pipeline can be trusted to screen configurations the tunnel never saw. C_l RMS 0.0% (bias +0.0%), C_d RMS 0.0% (bias +0.0%).  Worst point: FRH=35 RRH=35 (rake +0mm) V=20 C_l off -0.0%.",
+  "tolerances": {
+   "balance_pts": 2.0,
+   "cd_pct": 5.0,
+   "cl_pct": 5.0,
+   "map_rms_pct": 4.0
+  },
+  "turbulence_model": "kOmegaSST",
+  "worst": {
+   "bal_cfd": 0.47000000000000003,
+   "bal_err_pts": 0.0,
+   "bal_phys": 0.47000000000000003,
+   "cd_cfd": 1.24,
+   "cd_err_pct": 0.0,
+   "cd_phys": 1.24,
+   "cl_cfd": -3.2,
+   "cl_err_pct": -0.0,
+   "cl_phys": -3.2,
+   "note": "",
+   "paired": true,
+   "ride_heights": "FRH=35 RRH=35 (rake +0mm) V=20"
+  }
+ },
+ "corr.loose": {
+  "backend": "star",
+  "cd_bias_pct": 0.0,
+  "cd_rms_pct": 0.0,
+  "cfd_provenance": "star (rans), UNCORRELATED — raw solver output not tied to measured data; treat absolute coefficients as provisional, trust deltas more than levels",
+  "cl_bias_pct": 19.99999999999999,
+  "cl_rms_pct": 19.999999999999993,
+  "n_paired": 4,
+  "ok": true,
+  "overall_within_tol": true,
+  "physical_provenance": "A2 (full-scale, moving-belt, blockage-corrected)",
+  "points": [
+   {
+    "bal_cfd": 0.45,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.45,
+    "cd_cfd": 1.2,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.2,
+    "cl_cfd": -3.5999999999999996,
+    "cl_err_pct": 19.99999999999999,
+    "cl_phys": -3.0,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=25 RRH=35 (rake +10mm) V=20"
+   },
+   {
+    "bal_cfd": 0.46,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.46,
+    "cd_cfd": 1.22,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.22,
+    "cl_cfd": -3.7199999999999998,
+    "cl_err_pct": 19.99999999999999,
+    "cl_phys": -3.1,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=25 RRH=45 (rake +20mm) V=20"
+   },
+   {
+    "bal_cfd": 0.47000000000000003,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.47000000000000003,
+    "cd_cfd": 1.24,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.24,
+    "cl_cfd": -3.84,
+    "cl_err_pct": 19.99999999999999,
+    "cl_phys": -3.2,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=35 (rake +0mm) V=20"
+   },
+   {
+    "bal_cfd": 0.48,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.48,
+    "cd_cfd": 1.26,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.26,
+    "cl_cfd": -3.9599999999999995,
+    "cl_err_pct": 19.999999999999993,
+    "cl_phys": -3.3,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=45 (rake +10mm) V=20"
+   }
+  ],
+  "summary": "[Virtual Wind Tunnel] star (kOmegaSST) vs physical map: 4 point(s) paired. CALIBRATED — k-omega SST reproduced the tunnel inside tolerance; the CFD pipeline can be trusted to screen configurations the tunnel never saw. C_l RMS 20.0% (bias +20.0%), C_d RMS 0.0% (bias +0.0%).  Worst point: FRH=35 RRH=45 (rake +10mm) V=20 C_l off +20.0%.",
+  "tolerances": {
+   "balance_pts": 2.0,
+   "cd_pct": 5.0,
+   "cl_pct": 25.0,
+   "map_rms_pct": 25.0
+  },
+  "turbulence_model": "kOmegaSST",
+  "worst": {
+   "bal_cfd": 0.48,
+   "bal_err_pts": 0.0,
+   "bal_phys": 0.48,
+   "cd_cfd": 1.26,
+   "cd_err_pct": 0.0,
+   "cd_phys": 1.26,
+   "cl_cfd": -3.9599999999999995,
+   "cl_err_pct": 19.999999999999993,
+   "cl_phys": -3.3,
+   "note": "",
+   "paired": true,
+   "ride_heights": "FRH=35 RRH=45 (rake +10mm) V=20"
+  }
+ },
+ "corr.match": {
+  "backend": "star",
+  "cd_bias_pct": 0.0,
+  "cd_rms_pct": 0.0,
+  "cfd_provenance": "star (rans), UNCORRELATED — raw solver output not tied to measured data; treat absolute coefficients as provisional, trust deltas more than levels",
+  "cl_bias_pct": 0.0,
+  "cl_rms_pct": 0.0,
+  "n_paired": 4,
+  "ok": true,
+  "overall_within_tol": true,
+  "physical_provenance": "A2 (full-scale, moving-belt, blockage-corrected)",
+  "points": [
+   {
+    "bal_cfd": 0.45,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.45,
+    "cd_cfd": 1.2,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.2,
+    "cl_cfd": -3.0,
+    "cl_err_pct": -0.0,
+    "cl_phys": -3.0,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=25 RRH=35 (rake +10mm) V=20"
+   },
+   {
+    "bal_cfd": 0.46,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.46,
+    "cd_cfd": 1.22,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.22,
+    "cl_cfd": -3.1,
+    "cl_err_pct": -0.0,
+    "cl_phys": -3.1,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=25 RRH=45 (rake +20mm) V=20"
+   },
+   {
+    "bal_cfd": 0.47000000000000003,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.47000000000000003,
+    "cd_cfd": 1.24,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.24,
+    "cl_cfd": -3.2,
+    "cl_err_pct": -0.0,
+    "cl_phys": -3.2,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=35 (rake +0mm) V=20"
+   },
+   {
+    "bal_cfd": 0.48,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.48,
+    "cd_cfd": 1.26,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.26,
+    "cl_cfd": -3.3,
+    "cl_err_pct": -0.0,
+    "cl_phys": -3.3,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=45 (rake +10mm) V=20"
+   }
+  ],
+  "summary": "[Virtual Wind Tunnel] star (kOmegaSST) vs physical map: 4 point(s) paired. CALIBRATED — k-omega SST reproduced the tunnel inside tolerance; the CFD pipeline can be trusted to screen configurations the tunnel never saw. C_l RMS 0.0% (bias +0.0%), C_d RMS 0.0% (bias +0.0%).  Worst point: FRH=25 RRH=35 (rake +10mm) V=20 C_l off -0.0%.",
+  "tolerances": {
+   "balance_pts": 2.0,
+   "cd_pct": 5.0,
+   "cl_pct": 5.0,
+   "map_rms_pct": 4.0
+  },
+  "turbulence_model": "kOmegaSST",
+  "worst": {
+   "bal_cfd": 0.45,
+   "bal_err_pts": 0.0,
+   "bal_phys": 0.45,
+   "cd_cfd": 1.2,
+   "cd_err_pct": 0.0,
+   "cd_phys": 1.2,
+   "cl_cfd": -3.0,
+   "cl_err_pct": -0.0,
+   "cl_phys": -3.0,
+   "note": "",
+   "paired": true,
+   "ride_heights": "FRH=25 RRH=35 (rake +10mm) V=20"
+  }
+ },
+ "corr.noprov": {
+  "backend": "unknown",
+  "cd_bias_pct": 0.0,
+  "cd_rms_pct": 0.0,
+  "cfd_provenance": "",
+  "cl_bias_pct": 0.0,
+  "cl_rms_pct": 0.0,
+  "n_paired": 4,
+  "ok": true,
+  "overall_within_tol": true,
+  "physical_provenance": "A2 (full-scale, moving-belt, blockage-corrected)",
+  "points": [
+   {
+    "bal_cfd": 0.45,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.45,
+    "cd_cfd": 1.2,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.2,
+    "cl_cfd": -3.0,
+    "cl_err_pct": -0.0,
+    "cl_phys": -3.0,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=25 RRH=35 (rake +10mm) V=20"
+   },
+   {
+    "bal_cfd": 0.46,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.46,
+    "cd_cfd": 1.22,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.22,
+    "cl_cfd": -3.1,
+    "cl_err_pct": -0.0,
+    "cl_phys": -3.1,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=25 RRH=45 (rake +20mm) V=20"
+   },
+   {
+    "bal_cfd": 0.47000000000000003,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.47000000000000003,
+    "cd_cfd": 1.24,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.24,
+    "cl_cfd": -3.2,
+    "cl_err_pct": -0.0,
+    "cl_phys": -3.2,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=35 (rake +0mm) V=20"
+   },
+   {
+    "bal_cfd": 0.48,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.48,
+    "cd_cfd": 1.26,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.26,
+    "cl_cfd": -3.3,
+    "cl_err_pct": -0.0,
+    "cl_phys": -3.3,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=45 (rake +10mm) V=20"
+   }
+  ],
+  "summary": "[Virtual Wind Tunnel] CFD (turbulence model unknown) vs physical map: 4 point(s) paired. CALIBRATED — k-omega SST reproduced the tunnel inside tolerance; the CFD pipeline can be trusted to screen configurations the tunnel never saw. C_l RMS 0.0% (bias +0.0%), C_d RMS 0.0% (bias +0.0%).  Worst point: FRH=25 RRH=35 (rake +10mm) V=20 C_l off -0.0%.",
+  "tolerances": {
+   "balance_pts": 2.0,
+   "cd_pct": 5.0,
+   "cl_pct": 5.0,
+   "map_rms_pct": 4.0
+  },
+  "turbulence_model": "unknown",
+  "worst": {
+   "bal_cfd": 0.45,
+   "bal_err_pts": 0.0,
+   "bal_phys": 0.45,
+   "cd_cfd": 1.2,
+   "cd_err_pct": 0.0,
+   "cd_phys": 1.2,
+   "cl_cfd": -3.0,
+   "cl_err_pct": -0.0,
+   "cl_phys": -3.0,
+   "note": "",
+   "paired": true,
+   "ride_heights": "FRH=25 RRH=35 (rake +10mm) V=20"
+  }
+ },
+ "corr.only_extra": {
+  "backend": "star",
+  "cd_bias_pct": "NaN",
+  "cd_rms_pct": "NaN",
+  "cfd_provenance": "star (rans), UNCORRELATED — raw solver output not tied to measured data; treat absolute coefficients as provisional, trust deltas more than levels",
+  "cl_bias_pct": "NaN",
+  "cl_rms_pct": "NaN",
+  "n_paired": 0,
+  "ok": false,
+  "overall_within_tol": false,
+  "physical_provenance": "A2 (full-scale, moving-belt, blockage-corrected)",
+  "points": [
+   {
+    "bal_cfd": null,
+    "bal_err_pts": "NaN",
+    "bal_phys": null,
+    "cd_cfd": 1.0,
+    "cd_err_pct": "NaN",
+    "cd_phys": null,
+    "cl_cfd": -1.0,
+    "cl_err_pct": "NaN",
+    "cl_phys": null,
+    "note": "no physical point at this attitude — not paired",
+    "paired": false,
+    "ride_heights": "FRH=99 RRH=99 (rake +0mm) V=20"
+   },
+   {
+    "bal_cfd": null,
+    "bal_err_pts": "NaN",
+    "bal_phys": null,
+    "cd_cfd": null,
+    "cd_err_pct": "NaN",
+    "cd_phys": 1.2,
+    "cl_cfd": null,
+    "cl_err_pct": "NaN",
+    "cl_phys": -3.0,
+    "note": "physical point not covered by the CFD sweep — not paired",
+    "paired": false,
+    "ride_heights": "FRH=25 RRH=35 (rake +10mm) V=20"
+   },
+   {
+    "bal_cfd": null,
+    "bal_err_pts": "NaN",
+    "bal_phys": null,
+    "cd_cfd": null,
+    "cd_err_pct": "NaN",
+    "cd_phys": 1.22,
+    "cl_cfd": null,
+    "cl_err_pct": "NaN",
+    "cl_phys": -3.1,
+    "note": "physical point not covered by the CFD sweep — not paired",
+    "paired": false,
+    "ride_heights": "FRH=25 RRH=45 (rake +20mm) V=20"
+   },
+   {
+    "bal_cfd": null,
+    "bal_err_pts": "NaN",
+    "bal_phys": null,
+    "cd_cfd": null,
+    "cd_err_pct": "NaN",
+    "cd_phys": 1.24,
+    "cl_cfd": null,
+    "cl_err_pct": "NaN",
+    "cl_phys": -3.2,
+    "note": "physical point not covered by the CFD sweep — not paired",
+    "paired": false,
+    "ride_heights": "FRH=35 RRH=35 (rake +0mm) V=20"
+   },
+   {
+    "bal_cfd": null,
+    "bal_err_pts": "NaN",
+    "bal_phys": null,
+    "cd_cfd": null,
+    "cd_err_pct": "NaN",
+    "cd_phys": 1.26,
+    "cl_cfd": null,
+    "cl_err_pct": "NaN",
+    "cl_phys": -3.3,
+    "note": "physical point not covered by the CFD sweep — not paired",
+    "paired": false,
+    "ride_heights": "FRH=35 RRH=45 (rake +10mm) V=20"
+   }
+  ],
+  "summary": "[Virtual Wind Tunnel] star (kOmegaSST) vs physical map: 0 point(s) paired, 5 unpaired (holes — not compared). Nothing could be compared like-for-like — generate the CFD run from this map's run_matrix() so the attitudes match exactly, then re-correlate.",
+  "tolerances": {
+   "balance_pts": 2.0,
+   "cd_pct": 5.0,
+   "cl_pct": 5.0,
+   "map_rms_pct": 4.0
+  },
+  "turbulence_model": "kOmegaSST",
+  "worst": null
+ },
+ "corr.over": {
+  "backend": "star",
+  "cd_bias_pct": 0.0,
+  "cd_rms_pct": 0.0,
+  "cfd_provenance": "star (rans), UNCORRELATED — raw solver output not tied to measured data; treat absolute coefficients as provisional, trust deltas more than levels",
+  "cl_bias_pct": 10.000000000000009,
+  "cl_rms_pct": 10.00000000000001,
+  "n_paired": 4,
+  "ok": true,
+  "overall_within_tol": false,
+  "physical_provenance": "A2 (full-scale, moving-belt, blockage-corrected)",
+  "points": [
+   {
+    "bal_cfd": 0.45,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.45,
+    "cd_cfd": 1.2,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.2,
+    "cl_cfd": -3.3000000000000003,
+    "cl_err_pct": 10.000000000000009,
+    "cl_phys": -3.0,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=25 RRH=35 (rake +10mm) V=20"
+   },
+   {
+    "bal_cfd": 0.46,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.46,
+    "cd_cfd": 1.22,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.22,
+    "cl_cfd": -3.4100000000000006,
+    "cl_err_pct": 10.000000000000016,
+    "cl_phys": -3.1,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=25 RRH=45 (rake +20mm) V=20"
+   },
+   {
+    "bal_cfd": 0.47000000000000003,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.47000000000000003,
+    "cd_cfd": 1.24,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.24,
+    "cl_cfd": -3.5200000000000005,
+    "cl_err_pct": 10.000000000000009,
+    "cl_phys": -3.2,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=35 (rake +0mm) V=20"
+   },
+   {
+    "bal_cfd": 0.48,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.48,
+    "cd_cfd": 1.26,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.26,
+    "cl_cfd": -3.63,
+    "cl_err_pct": 10.000000000000004,
+    "cl_phys": -3.3,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=45 (rake +10mm) V=20"
+   }
+  ],
+  "summary": "[Virtual Wind Tunnel] star (kOmegaSST) vs physical map: 4 point(s) paired. NOT CALIBRATED — the digital coefficients drift from the tunnel beyond tolerance; do NOT trust absolute CFD levels for decisions until the model is reconciled. C_l RMS 10.0% (bias +10.0%), C_d RMS 0.0% (bias +0.0%).  CFD systematically OVER-predicts downforce magnitude vs the tunnel — check mesh y+ in the floor/diffuser, transition, and that the tunnel was blockage-corrected.  Worst point: FRH=25 RRH=45 (rake +20mm) V=20 C_l off +10.0%.",
+  "tolerances": {
+   "balance_pts": 2.0,
+   "cd_pct": 5.0,
+   "cl_pct": 5.0,
+   "map_rms_pct": 4.0
+  },
+  "turbulence_model": "kOmegaSST",
+  "worst": {
+   "bal_cfd": 0.46,
+   "bal_err_pts": 0.0,
+   "bal_phys": 0.46,
+   "cd_cfd": 1.22,
+   "cd_err_pct": 0.0,
+   "cd_phys": 1.22,
+   "cl_cfd": -3.4100000000000006,
+   "cl_err_pct": 10.000000000000016,
+   "cl_phys": -3.1,
+   "note": "",
+   "paired": true,
+   "ride_heights": "FRH=25 RRH=45 (rake +20mm) V=20"
+  }
+ },
+ "corr.rms": {
+  "backend": "star",
+  "cd_bias_pct": 0.0,
+  "cd_rms_pct": 0.0,
+  "cfd_provenance": "star (rans), UNCORRELATED — raw solver output not tied to measured data; treat absolute coefficients as provisional, trust deltas more than levels",
+  "cl_bias_pct": 4.499999999999995,
+  "cl_rms_pct": 4.499999999999995,
+  "n_paired": 4,
+  "ok": true,
+  "overall_within_tol": true,
+  "physical_provenance": "A2 (full-scale, moving-belt, blockage-corrected)",
+  "points": [
+   {
+    "bal_cfd": 0.45,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.45,
+    "cd_cfd": 1.2,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.2,
+    "cl_cfd": -3.135,
+    "cl_err_pct": 4.499999999999993,
+    "cl_phys": -3.0,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=25 RRH=35 (rake +10mm) V=20"
+   },
+   {
+    "bal_cfd": 0.46,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.46,
+    "cd_cfd": 1.22,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.22,
+    "cl_cfd": -3.2395,
+    "cl_err_pct": 4.499999999999998,
+    "cl_phys": -3.1,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=25 RRH=45 (rake +20mm) V=20"
+   },
+   {
+    "bal_cfd": 0.47000000000000003,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.47000000000000003,
+    "cd_cfd": 1.24,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.24,
+    "cl_cfd": -3.344,
+    "cl_err_pct": 4.49999999999999,
+    "cl_phys": -3.2,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=35 (rake +0mm) V=20"
+   },
+   {
+    "bal_cfd": 0.48,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.48,
+    "cd_cfd": 1.26,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.26,
+    "cl_cfd": -3.4484999999999997,
+    "cl_err_pct": 4.499999999999996,
+    "cl_phys": -3.3,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=45 (rake +10mm) V=20"
+   }
+  ],
+  "summary": "[Virtual Wind Tunnel] star (kOmegaSST) vs physical map: 4 point(s) paired. CALIBRATED — k-omega SST reproduced the tunnel inside tolerance; the CFD pipeline can be trusted to screen configurations the tunnel never saw. C_l RMS 4.5% (bias +4.5%), C_d RMS 0.0% (bias +0.0%).  Worst point: FRH=25 RRH=45 (rake +20mm) V=20 C_l off +4.5%.",
+  "tolerances": {
+   "balance_pts": 2.0,
+   "cd_pct": 5.0,
+   "cl_pct": 5.0,
+   "map_rms_pct": 4.5
+  },
+  "turbulence_model": "kOmegaSST",
+  "worst": {
+   "bal_cfd": 0.46,
+   "bal_err_pts": 0.0,
+   "bal_phys": 0.46,
+   "cd_cfd": 1.22,
+   "cd_err_pct": 0.0,
+   "cd_phys": 1.22,
+   "cl_cfd": -3.2395,
+   "cl_err_pct": 4.499999999999998,
+   "cl_phys": -3.1,
+   "note": "",
+   "paired": true,
+   "ride_heights": "FRH=25 RRH=45 (rake +20mm) V=20"
+  }
+ },
+ "corr.rms_tight": {
+  "backend": "star",
+  "cd_bias_pct": 0.0,
+  "cd_rms_pct": 0.0,
+  "cfd_provenance": "star (rans), UNCORRELATED — raw solver output not tied to measured data; treat absolute coefficients as provisional, trust deltas more than levels",
+  "cl_bias_pct": 4.499999999999995,
+  "cl_rms_pct": 4.499999999999995,
+  "n_paired": 4,
+  "ok": true,
+  "overall_within_tol": false,
+  "physical_provenance": "A2 (full-scale, moving-belt, blockage-corrected)",
+  "points": [
+   {
+    "bal_cfd": 0.45,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.45,
+    "cd_cfd": 1.2,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.2,
+    "cl_cfd": -3.135,
+    "cl_err_pct": 4.499999999999993,
+    "cl_phys": -3.0,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=25 RRH=35 (rake +10mm) V=20"
+   },
+   {
+    "bal_cfd": 0.46,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.46,
+    "cd_cfd": 1.22,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.22,
+    "cl_cfd": -3.2395,
+    "cl_err_pct": 4.499999999999998,
+    "cl_phys": -3.1,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=25 RRH=45 (rake +20mm) V=20"
+   },
+   {
+    "bal_cfd": 0.47000000000000003,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.47000000000000003,
+    "cd_cfd": 1.24,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.24,
+    "cl_cfd": -3.344,
+    "cl_err_pct": 4.49999999999999,
+    "cl_phys": -3.2,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=35 (rake +0mm) V=20"
+   },
+   {
+    "bal_cfd": 0.48,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.48,
+    "cd_cfd": 1.26,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.26,
+    "cl_cfd": -3.4484999999999997,
+    "cl_err_pct": 4.499999999999996,
+    "cl_phys": -3.3,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=45 (rake +10mm) V=20"
+   }
+  ],
+  "summary": "[Virtual Wind Tunnel] star (kOmegaSST) vs physical map: 4 point(s) paired. NOT CALIBRATED — the digital coefficients drift from the tunnel beyond tolerance; do NOT trust absolute CFD levels for decisions until the model is reconciled. C_l RMS 4.5% (bias +4.5%), C_d RMS 0.0% (bias +0.0%).  Worst point: FRH=25 RRH=45 (rake +20mm) V=20 C_l off +4.5%.",
+  "tolerances": {
+   "balance_pts": 2.0,
+   "cd_pct": 5.0,
+   "cl_pct": 5.0,
+   "map_rms_pct": 4.4
+  },
+  "turbulence_model": "kOmegaSST",
+  "worst": {
+   "bal_cfd": 0.46,
+   "bal_err_pts": 0.0,
+   "bal_phys": 0.46,
+   "cd_cfd": 1.22,
+   "cd_err_pct": 0.0,
+   "cd_phys": 1.22,
+   "cl_cfd": -3.2395,
+   "cl_err_pct": 4.499999999999998,
+   "cl_phys": -3.1,
+   "note": "",
+   "paired": true,
+   "ride_heights": "FRH=25 RRH=45 (rake +20mm) V=20"
+  }
+ },
+ "corr.small_bias": {
+  "backend": "star",
+  "cd_bias_pct": 0.0,
+  "cd_rms_pct": 0.0,
+  "cfd_provenance": "star (rans), UNCORRELATED — raw solver output not tied to measured data; treat absolute coefficients as provisional, trust deltas more than levels",
+  "cl_bias_pct": 0.7999999999999999,
+  "cl_rms_pct": 0.7999999999999999,
+  "n_paired": 4,
+  "ok": true,
+  "overall_within_tol": false,
+  "physical_provenance": "A2 (full-scale, moving-belt, blockage-corrected)",
+  "points": [
+   {
+    "bal_cfd": 0.45,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.45,
+    "cd_cfd": 1.2,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.2,
+    "cl_cfd": -3.024,
+    "cl_err_pct": 0.8000000000000007,
+    "cl_phys": -3.0,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=25 RRH=35 (rake +10mm) V=20"
+   },
+   {
+    "bal_cfd": 0.46,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.46,
+    "cd_cfd": 1.22,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.22,
+    "cl_cfd": -3.1248,
+    "cl_err_pct": 0.7999999999999978,
+    "cl_phys": -3.1,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=25 RRH=45 (rake +20mm) V=20"
+   },
+   {
+    "bal_cfd": 0.47000000000000003,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.47000000000000003,
+    "cd_cfd": 1.24,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.24,
+    "cl_cfd": -3.2256,
+    "cl_err_pct": 0.7999999999999952,
+    "cl_phys": -3.2,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=35 (rake +0mm) V=20"
+   },
+   {
+    "bal_cfd": 0.48,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.48,
+    "cd_cfd": 1.26,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.26,
+    "cl_cfd": -3.3264,
+    "cl_err_pct": 0.8000000000000062,
+    "cl_phys": -3.3,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=45 (rake +10mm) V=20"
+   }
+  ],
+  "summary": "[Virtual Wind Tunnel] star (kOmegaSST) vs physical map: 4 point(s) paired. NOT CALIBRATED — the digital coefficients drift from the tunnel beyond tolerance; do NOT trust absolute CFD levels for decisions until the model is reconciled. C_l RMS 0.8% (bias +0.8%), C_d RMS 0.0% (bias +0.0%).  CFD systematically OVER-predicts downforce magnitude vs the tunnel — check mesh y+ in the floor/diffuser, transition, and that the tunnel was blockage-corrected.  Worst point: FRH=35 RRH=45 (rake +10mm) V=20 C_l off +0.8%.",
+  "tolerances": {
+   "balance_pts": 2.0,
+   "cd_pct": 5.0,
+   "cl_pct": 0.5,
+   "map_rms_pct": 4.0
+  },
+  "turbulence_model": "kOmegaSST",
+  "worst": {
+   "bal_cfd": 0.48,
+   "bal_err_pts": 0.0,
+   "bal_phys": 0.48,
+   "cd_cfd": 1.26,
+   "cd_err_pct": 0.0,
+   "cd_phys": 1.26,
+   "cl_cfd": -3.3264,
+   "cl_err_pct": 0.8000000000000062,
+   "cl_phys": -3.3,
+   "note": "",
+   "paired": true,
+   "ride_heights": "FRH=35 RRH=45 (rake +10mm) V=20"
+  }
+ },
+ "corr.unconverged": {
+  "backend": "star",
+  "cd_bias_pct": "NaN",
+  "cd_rms_pct": "NaN",
+  "cfd_provenance": "star (rans), UNCORRELATED — raw solver output not tied to measured data; treat absolute coefficients as provisional, trust deltas more than levels",
+  "cl_bias_pct": "NaN",
+  "cl_rms_pct": "NaN",
+  "n_paired": 0,
+  "ok": false,
+  "overall_within_tol": false,
+  "physical_provenance": "A2 (full-scale, moving-belt, blockage-corrected)",
+  "points": [
+   {
+    "bal_cfd": 0.45,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.45,
+    "cd_cfd": 1.2,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.2,
+    "cl_cfd": -3.0,
+    "cl_err_pct": -0.0,
+    "cl_phys": -3.0,
+    "note": "CFD point not converged — error meaningless",
+    "paired": false,
+    "ride_heights": "FRH=25 RRH=35 (rake +10mm) V=20"
+   },
+   {
+    "bal_cfd": 0.46,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.46,
+    "cd_cfd": 1.22,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.22,
+    "cl_cfd": -3.1,
+    "cl_err_pct": -0.0,
+    "cl_phys": -3.1,
+    "note": "CFD point not converged — error meaningless",
+    "paired": false,
+    "ride_heights": "FRH=25 RRH=45 (rake +20mm) V=20"
+   },
+   {
+    "bal_cfd": 0.47000000000000003,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.47000000000000003,
+    "cd_cfd": 1.24,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.24,
+    "cl_cfd": -3.2,
+    "cl_err_pct": -0.0,
+    "cl_phys": -3.2,
+    "note": "CFD point not converged — error meaningless",
+    "paired": false,
+    "ride_heights": "FRH=35 RRH=35 (rake +0mm) V=20"
+   },
+   {
+    "bal_cfd": 0.48,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.48,
+    "cd_cfd": 1.26,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.26,
+    "cl_cfd": -3.3,
+    "cl_err_pct": -0.0,
+    "cl_phys": -3.3,
+    "note": "CFD point not converged — error meaningless",
+    "paired": false,
+    "ride_heights": "FRH=35 RRH=45 (rake +10mm) V=20"
+   }
+  ],
+  "summary": "[Virtual Wind Tunnel] star (kOmegaSST) vs physical map: 0 point(s) paired, 4 unpaired (holes — not compared). Nothing could be compared like-for-like — generate the CFD run from this map's run_matrix() so the attitudes match exactly, then re-correlate.",
+  "tolerances": {
+   "balance_pts": 2.0,
+   "cd_pct": 5.0,
+   "cl_pct": 5.0,
+   "map_rms_pct": 4.0
+  },
+  "turbulence_model": "kOmegaSST",
+  "worst": null
+ },
+ "corr.under": {
+  "backend": "star",
+  "cd_bias_pct": 0.0,
+  "cd_rms_pct": 0.0,
+  "cfd_provenance": "star (rans), UNCORRELATED — raw solver output not tied to measured data; treat absolute coefficients as provisional, trust deltas more than levels",
+  "cl_bias_pct": -9.999999999999998,
+  "cl_rms_pct": 9.999999999999998,
+  "n_paired": 4,
+  "ok": true,
+  "overall_within_tol": false,
+  "physical_provenance": "A2 (full-scale, moving-belt, blockage-corrected)",
+  "points": [
+   {
+    "bal_cfd": 0.45,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.45,
+    "cd_cfd": 1.2,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.2,
+    "cl_cfd": -2.7,
+    "cl_err_pct": -9.999999999999995,
+    "cl_phys": -3.0,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=25 RRH=35 (rake +10mm) V=20"
+   },
+   {
+    "bal_cfd": 0.46,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.46,
+    "cd_cfd": 1.22,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.22,
+    "cl_cfd": -2.79,
+    "cl_err_pct": -10.000000000000002,
+    "cl_phys": -3.1,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=25 RRH=45 (rake +20mm) V=20"
+   },
+   {
+    "bal_cfd": 0.47000000000000003,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.47000000000000003,
+    "cd_cfd": 1.24,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.24,
+    "cl_cfd": -2.8800000000000003,
+    "cl_err_pct": -9.999999999999995,
+    "cl_phys": -3.2,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=35 (rake +0mm) V=20"
+   },
+   {
+    "bal_cfd": 0.48,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.48,
+    "cd_cfd": 1.26,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.26,
+    "cl_cfd": -2.9699999999999998,
+    "cl_err_pct": -10.000000000000004,
+    "cl_phys": -3.3,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=45 (rake +10mm) V=20"
+   }
+  ],
+  "summary": "[Virtual Wind Tunnel] star (kOmegaSST) vs physical map: 4 point(s) paired. NOT CALIBRATED — the digital coefficients drift from the tunnel beyond tolerance; do NOT trust absolute CFD levels for decisions until the model is reconciled. C_l RMS 10.0% (bias -10.0%), C_d RMS 0.0% (bias +0.0%).  CFD systematically UNDER-predicts downforce magnitude vs the tunnel — check moving-ground modelling and underbody mesh resolution.  Worst point: FRH=35 RRH=45 (rake +10mm) V=20 C_l off -10.0%.",
+  "tolerances": {
+   "balance_pts": 2.0,
+   "cd_pct": 5.0,
+   "cl_pct": 5.0,
+   "map_rms_pct": 4.0
+  },
+  "turbulence_model": "kOmegaSST",
+  "worst": {
+   "bal_cfd": 0.48,
+   "bal_err_pts": 0.0,
+   "bal_phys": 0.48,
+   "cd_cfd": 1.26,
+   "cd_err_pct": 0.0,
+   "cd_phys": 1.26,
+   "cl_cfd": -2.9699999999999998,
+   "cl_err_pct": -10.000000000000004,
+   "cl_phys": -3.3,
+   "note": "",
+   "paired": true,
+   "ride_heights": "FRH=35 RRH=45 (rake +10mm) V=20"
+  }
+ },
+ "corr.wheelbase": {
+  "backend": "star",
+  "cd_bias_pct": 0.0,
+  "cd_rms_pct": 0.0,
+  "cfd_provenance": "star (rans), UNCORRELATED — raw solver output not tied to measured data; treat absolute coefficients as provisional, trust deltas more than levels",
+  "cl_bias_pct": 0.0,
+  "cl_rms_pct": 0.0,
+  "n_paired": 2,
+  "ok": true,
+  "overall_within_tol": true,
+  "physical_provenance": "A2 (full-scale, moving-belt, blockage-corrected)",
+  "points": [
+   {
+    "bal_cfd": null,
+    "bal_err_pts": "NaN",
+    "bal_phys": null,
+    "cd_cfd": 1.0,
+    "cd_err_pct": "NaN",
+    "cd_phys": null,
+    "cl_cfd": -1.0,
+    "cl_err_pct": "NaN",
+    "cl_phys": null,
+    "note": "no physical point at this attitude — not paired",
+    "paired": false,
+    "ride_heights": "FRH=99 RRH=99 (rake +0mm) V=20"
+   },
+   {
+    "bal_cfd": 0.48,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.48,
+    "cd_cfd": 1.26,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.26,
+    "cl_cfd": -3.3,
+    "cl_err_pct": -0.0,
+    "cl_phys": -3.3,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=45 (rake +10mm) V=20"
+   },
+   {
+    "bal_cfd": 0.47000000000000003,
+    "bal_err_pts": 0.0,
+    "bal_phys": 0.47000000000000003,
+    "cd_cfd": 1.24,
+    "cd_err_pct": 0.0,
+    "cd_phys": 1.24,
+    "cl_cfd": -3.2,
+    "cl_err_pct": -0.0,
+    "cl_phys": -3.2,
+    "note": "",
+    "paired": true,
+    "ride_heights": "FRH=35 RRH=35 (rake +0mm) V=20"
+   },
+   {
+    "bal_cfd": null,
+    "bal_err_pts": "NaN",
+    "bal_phys": null,
+    "cd_cfd": null,
+    "cd_err_pct": "NaN",
+    "cd_phys": 1.2,
+    "cl_cfd": null,
+    "cl_err_pct": "NaN",
+    "cl_phys": -3.0,
+    "note": "physical point not covered by the CFD sweep — not paired",
+    "paired": false,
+    "ride_heights": "FRH=25 RRH=35 (rake +10mm) V=20"
+   },
+   {
+    "bal_cfd": null,
+    "bal_err_pts": "NaN",
+    "bal_phys": null,
+    "cd_cfd": null,
+    "cd_err_pct": "NaN",
+    "cd_phys": 1.22,
+    "cl_cfd": null,
+    "cl_err_pct": "NaN",
+    "cl_phys": -3.1,
+    "note": "physical point not covered by the CFD sweep — not paired",
+    "paired": false,
+    "ride_heights": "FRH=25 RRH=45 (rake +20mm) V=20"
+   }
+  ],
+  "summary": "[Virtual Wind Tunnel] star (kOmegaSST) vs physical map: 2 point(s) paired, 3 unpaired (holes — not compared). CALIBRATED — k-omega SST reproduced the tunnel inside tolerance; the CFD pipeline can be trusted to screen configurations the tunnel never saw. C_l RMS 0.0% (bias +0.0%), C_d RMS 0.0% (bias +0.0%).  Worst point: FRH=35 RRH=45 (rake +10mm) V=20 C_l off -0.0%.",
+  "tolerances": {
+   "balance_pts": 2.0,
+   "cd_pct": 5.0,
+   "cl_pct": 5.0,
+   "map_rms_pct": 4.0
+  },
+  "turbulence_model": "kOmegaSST",
+  "worst": {
+   "bal_cfd": 0.48,
+   "bal_err_pts": 0.0,
+   "bal_phys": 0.48,
+   "cd_cfd": 1.26,
+   "cd_err_pct": 0.0,
+   "cd_phys": 1.26,
+   "cl_cfd": -3.3,
+   "cl_err_pct": -0.0,
+   "cl_phys": -3.3,
+   "note": "",
+   "paired": true,
+   "ride_heights": "FRH=35 RRH=45 (rake +10mm) V=20"
+  }
+ },
+ "forces": [
+  -3.339517625231911,
+  "NaN",
+  "NaN",
+  "NaN",
+  1.1131725417439704,
+  "NaN",
+  "NaN"
+ ],
+ "forces.slow": [
+  -0.7421150278293135,
+  0.7421150278293135,
+  "NaN"
+ ],
+ "from_att": [
+  {
+   "front_mm": 30.0,
+   "rear_mm": 42.0,
+   "speed_ms": 20.0,
+   "wheelbase_mm": 1550.0
+  },
+  {
+   "front_mm": 30.0,
+   "rear_mm": 42.38709677419355,
+   "speed_ms": 20.0,
+   "wheelbase_mm": 1600.0
+  },
+  {
+   "front_mm": 20.0,
+   "rear_mm": 47.05535063873725,
+   "speed_ms": 12.0,
+   "wheelbase_mm": 1550.0
+  }
+ ],
+ "grid": [
+  12,
+  [
+   {
+    "front_mm": 20.0,
+    "rear_mm": 30.0,
+    "speed_ms": 15.0,
+    "wheelbase_mm": 1600.0
+   },
+   {
+    "front_mm": 20.0,
+    "rear_mm": 40.0,
+    "speed_ms": 15.0,
+    "wheelbase_mm": 1600.0
+   },
+   {
+    "front_mm": 20.0,
+    "rear_mm": 50.0,
+    "speed_ms": 15.0,
+    "wheelbase_mm": 1600.0
+   },
+   {
+    "front_mm": 30.0,
+    "rear_mm": 30.0,
+    "speed_ms": 15.0,
+    "wheelbase_mm": 1600.0
+   },
+   {
+    "front_mm": 30.0,
+    "rear_mm": 40.0,
+    "speed_ms": 15.0,
+    "wheelbase_mm": 1600.0
+   },
+   {
+    "front_mm": 30.0,
+    "rear_mm": 50.0,
+    "speed_ms": 15.0,
+    "wheelbase_mm": 1600.0
+   },
+   {
+    "front_mm": 20.0,
+    "rear_mm": 30.0,
+    "speed_ms": 25.0,
+    "wheelbase_mm": 1600.0
+   },
+   {
+    "front_mm": 20.0,
+    "rear_mm": 40.0,
+    "speed_ms": 25.0,
+    "wheelbase_mm": 1600.0
+   },
+   {
+    "front_mm": 20.0,
+    "rear_mm": 50.0,
+    "speed_ms": 25.0,
+    "wheelbase_mm": 1600.0
+   },
+   {
+    "front_mm": 30.0,
+    "rear_mm": 30.0,
+    "speed_ms": 25.0,
+    "wheelbase_mm": 1600.0
+   },
+   {
+    "front_mm": 30.0,
+    "rear_mm": 40.0,
+    "speed_ms": 25.0,
+    "wheelbase_mm": 1600.0
+   },
+   {
+    "front_mm": 30.0,
+    "rear_mm": 50.0,
+    "speed_ms": 25.0,
+    "wheelbase_mm": 1600.0
+   }
+  ],
+  [
+   {
+    "pitch_deg": 0.35809395932357113,
+    "ride_height_mm": 20.0,
+    "roll_deg": 0.0,
+    "speed_ms": 15.0,
+    "yaw_deg": 0.0
+   },
+   {
+    "pitch_deg": 0.7161599454704085,
+    "ride_height_mm": 20.0,
+    "roll_deg": 0.0,
+    "speed_ms": 15.0,
+    "yaw_deg": 0.0
+   },
+   {
+    "pitch_deg": 1.0741699983726205,
+    "ride_height_mm": 20.0,
+    "roll_deg": 0.0,
+    "speed_ms": 15.0,
+    "yaw_deg": 0.0
+   },
+   {
+    "pitch_deg": 0.0,
+    "ride_height_mm": 30.0,
+    "roll_deg": 0.0,
+    "speed_ms": 15.0,
+    "yaw_deg": 0.0
+   },
+   {
+    "pitch_deg": 0.35809395932357113,
+    "ride_height_mm": 30.0,
+    "roll_deg": 0.0,
+    "speed_ms": 15.0,
+    "yaw_deg": 0.0
+   },
+   {
+    "pitch_deg": 0.7161599454704085,
+    "ride_height_mm": 30.0,
+    "roll_deg": 0.0,
+    "speed_ms": 15.0,
+    "yaw_deg": 0.0
+   },
+   {
+    "pitch_deg": 0.35809395932357113,
+    "ride_height_mm": 20.0,
+    "roll_deg": 0.0,
+    "speed_ms": 25.0,
+    "yaw_deg": 0.0
+   },
+   {
+    "pitch_deg": 0.7161599454704085,
+    "ride_height_mm": 20.0,
+    "roll_deg": 0.0,
+    "speed_ms": 25.0,
+    "yaw_deg": 0.0
+   },
+   {
+    "pitch_deg": 1.0741699983726205,
+    "ride_height_mm": 20.0,
+    "roll_deg": 0.0,
+    "speed_ms": 25.0,
+    "yaw_deg": 0.0
+   },
+   {
+    "pitch_deg": 0.0,
+    "ride_height_mm": 30.0,
+    "roll_deg": 0.0,
+    "speed_ms": 25.0,
+    "yaw_deg": 0.0
+   },
+   {
+    "pitch_deg": 0.35809395932357113,
+    "ride_height_mm": 30.0,
+    "roll_deg": 0.0,
+    "speed_ms": 25.0,
+    "yaw_deg": 0.0
+   },
+   {
+    "pitch_deg": 0.7161599454704085,
+    "ride_height_mm": 30.0,
+    "roll_deg": 0.0,
+    "speed_ms": 25.0,
+    "yaw_deg": 0.0
+   }
+  ],
+  {
+   "pitch_deg": [
+    0.0,
+    0.3581,
+    0.7162,
+    1.0742
+   ],
+   "ride_height_mm": [
+    20.0,
+    30.0
+   ],
+   "roll_deg": [
+    0.0
+   ],
+   "speed_ms": [
+    15.0,
+    25.0
+   ],
+   "yaw_deg": [
+    0.0
+   ]
+  }
+ ],
+ "grid.default": [
+  1,
+  [
+   {
+    "pitch_deg": 0.3696450618470238,
+    "ride_height_mm": 25.0,
+    "roll_deg": 0.0,
+    "speed_ms": 20.0,
+    "yaw_deg": 0.0
+   }
+  ]
+ ],
+ "grid.fine": {
+  "front_mm": [
+   25.0
+  ],
+  "rear_mm": [
+   35.0
+  ],
+  "speed_ms": [
+   20.0
+  ],
+  "wheelbase_mm": 1550.0
+ },
+ "map": [
+  1550.0,
+  [
+   {
+    "aero_balance_front": 0.45,
+    "attitude": {
+     "pitch_deg": 0.3696450618470238,
+     "ride_height_mm": 25.0,
+     "roll_deg": 0.0,
+     "speed_ms": 20.0,
+     "yaw_deg": 0.0
+    },
+    "c_drag": 1.2,
+    "c_lift": -3.0,
+    "c_pitch": null,
+    "c_side": null,
+    "converged": true,
+    "force_monitor_range": 0.0,
+    "notes": "measured @ FRH=25 RRH=35 (rake +10mm) V=20",
+    "provenance": {
+     "backend": "windtunnel:A2",
+     "cell_count": null,
+     "correlated_against": "A2",
+     "fidelity": "des",
+     "is_correlated": true,
+     "notes": "A2 (full-scale, moving-belt, blockage-corrected)",
+     "turbulence_model": "n/a (physical measurement)",
+     "yplus_mean": null
+    },
+    "wall_clock_s": null
+   },
+   {
+    "aero_balance_front": 0.46,
+    "attitude": {
+     "pitch_deg": 0.7392593554078475,
+     "ride_height_mm": 25.0,
+     "roll_deg": 0.0,
+     "speed_ms": 20.0,
+     "yaw_deg": 0.0
+    },
+    "c_drag": 1.22,
+    "c_lift": -3.1,
+    "c_pitch": null,
+    "c_side": 0.01,
+    "converged": true,
+    "force_monitor_range": 0.0,
+    "notes": "measured @ FRH=25 RRH=45 (rake +20mm) V=20",
+    "provenance": {
+     "backend": "windtunnel:A2",
+     "cell_count": null,
+     "correlated_against": "A2",
+     "fidelity": "des",
+     "is_correlated": true,
+     "notes": "A2 (full-scale, moving-belt, blockage-corrected)",
+     "turbulence_model": "n/a (physical measurement)",
+     "yplus_mean": null
+    },
+    "wall_clock_s": null
+   },
+   {
+    "aero_balance_front": 0.47000000000000003,
+    "attitude": {
+     "pitch_deg": 0.0,
+     "ride_height_mm": 35.0,
+     "roll_deg": 0.0,
+     "speed_ms": 20.0,
+     "yaw_deg": 0.0
+    },
+    "c_drag": 1.24,
+    "c_lift": -3.2,
+    "c_pitch": null,
+    "c_side": 0.02,
+    "converged": true,
+    "force_monitor_range": 0.0,
+    "notes": "measured @ FRH=35 RRH=35 (rake +0mm) V=20",
+    "provenance": {
+     "backend": "windtunnel:A2",
+     "cell_count": null,
+     "correlated_against": "A2",
+     "fidelity": "des",
+     "is_correlated": true,
+     "notes": "A2 (full-scale, moving-belt, blockage-corrected)",
+     "turbulence_model": "n/a (physical measurement)",
+     "yplus_mean": null
+    },
+    "wall_clock_s": null
+   },
+   {
+    "aero_balance_front": 0.48,
+    "attitude": {
+     "pitch_deg": 0.3696450618470238,
+     "ride_height_mm": 35.0,
+     "roll_deg": 0.0,
+     "speed_ms": 20.0,
+     "yaw_deg": 0.0
+    },
+    "c_drag": 1.26,
+    "c_lift": -3.3,
+    "c_pitch": null,
+    "c_side": 0.03,
+    "converged": true,
+    "force_monitor_range": 0.0,
+    "notes": "measured @ FRH=35 RRH=45 (rake +10mm) V=20",
+    "provenance": {
+     "backend": "windtunnel:A2",
+     "cell_count": null,
+     "correlated_against": "A2",
+     "fidelity": "des",
+     "is_correlated": true,
+     "notes": "A2 (full-scale, moving-belt, blockage-corrected)",
+     "turbulence_model": "n/a (physical measurement)",
+     "yplus_mean": null
+    },
+    "wall_clock_s": null
+   }
+  ],
+  {
+   "front_mm": [
+    25.0,
+    35.0
+   ],
+   "rear_mm": [
+    35.0,
+    45.0
+   ],
+   "speed_ms": [
+    20.0
+   ],
+   "wheelbase_mm": 1550.0
+  },
+  "AeroMap: 4 points over ['pitch_deg', 'ride_height_mm']; windtunnel:A2 (des), correlated against A2  [PHYSICAL — A2 (full-scale, moving-belt, blockage-corrected)]"
+ ],
+ "map.defaults": [
+  1.0,
+  1.55,
+  {
+   "backend": "windtunnel:D",
+   "cell_count": null,
+   "correlated_against": "D",
+   "fidelity": "des",
+   "is_correlated": true,
+   "notes": "D (full-scale, moving-belt, blockage-corrected)",
+   "turbulence_model": "n/a (physical measurement)",
+   "yplus_mean": null
+  },
+  1.225
+ ],
+ "map.wheelbase": [
+  1600.0,
+  {
+   "front_mm": [
+    25.0,
+    35.0
+   ],
+   "rear_mm": [
+    35.0,
+    45.0
+   ],
+   "speed_ms": [
+    20.0
+   ],
+   "wheelbase_mm": 1600.0
+  },
+  1700.0
+ ],
+ "nan": true,
+ "points": [
+  {
+   "bal_cfd": 0.47,
+   "bal_err_pts": 1.9999999999999962,
+   "bal_phys": 0.45,
+   "cd_cfd": 1.1,
+   "cd_err_pct": -8.333333333333321,
+   "cd_phys": 1.2,
+   "cl_cfd": -3.3,
+   "cl_err_pct": 9.999999999999995,
+   "cl_phys": -3.0,
+   "note": "",
+   "paired": true,
+   "ride_heights": "FRH=30 RRH=42 (rake +12mm) V=20"
+  },
+  {
+   "bal_cfd": null,
+   "bal_err_pts": "NaN",
+   "bal_phys": null,
+   "cd_cfd": 1.0,
+   "cd_err_pct": "NaN",
+   "cd_phys": 1e-10,
+   "cl_cfd": -3.0,
+   "cl_err_pct": "NaN",
+   "cl_phys": null,
+   "note": "",
+   "paired": false,
+   "ride_heights": "FRH=30 RRH=42 (rake +12mm) V=20"
+  },
+  {
+   "bal_cfd": 0.4,
+   "bal_err_pts": "NaN",
+   "bal_phys": null,
+   "cd_cfd": 1.2,
+   "cd_err_pct": 0.0,
+   "cd_phys": 1.2,
+   "cl_cfd": null,
+   "cl_err_pct": "NaN",
+   "cl_phys": -3.0,
+   "note": "",
+   "paired": false,
+   "ride_heights": "FRH=30 RRH=42 (rake +12mm) V=20"
+  },
+  {
+   "bal_cfd": null,
+   "bal_err_pts": "NaN",
+   "bal_phys": 0.4,
+   "cd_cfd": 1.0,
+   "cd_err_pct": 0.0,
+   "cd_phys": 1.0,
+   "cl_cfd": 1.0,
+   "cl_err_pct": "NaN",
+   "cl_phys": 0.0,
+   "note": "",
+   "paired": false,
+   "ride_heights": "FRH=30 RRH=42 (rake +12mm) V=20"
+  }
+ ],
+ "rh": [
+  12.0,
+  0.44357136643414774,
+  "FRH=30 RRH=42 (rake +12mm) V=20",
+  "FRH=40 RRH=30 (rake -10mm) V=15",
+  -0.35809395932357113
+ ],
+ "specs.length": [
+  1.7,
+  1.7,
+  1.7,
+  1.7
+ ],
+ "to_att": [
+  {
+   "pitch_deg": 0.44357136643414774,
+   "ride_height_mm": 30.0,
+   "roll_deg": 0.0,
+   "speed_ms": 20.0,
+   "yaw_deg": 0.0
+  },
+  {
+   "pitch_deg": 0.44357136643414774,
+   "ride_height_mm": 30.0,
+   "roll_deg": 1.5,
+   "speed_ms": 20.0,
+   "yaw_deg": -2.0
+  }
+ ],
+ "tol": {
+  "balance_pts": 2.0,
+  "cd_pct": 5.0,
+  "cl_pct": 5.0,
+  "map_rms_pct": 4.0
+ },
+ "tunnel.default": [
+  "A2 (full-scale, moving-belt, blockage-corrected)",
+  {
+   "backend": "windtunnel:A2",
+   "cell_count": null,
+   "correlated_against": "A2",
+   "fidelity": "des",
+   "is_correlated": true,
+   "notes": "A2 (full-scale, moving-belt, blockage-corrected)",
+   "turbulence_model": "n/a (physical measurement)",
+   "yplus_mean": null
+  }
+ ],
+ "tunnel.fixed": [
+  "Uni (0.5x scale, fixed-floor, NOT blockage-corrected, Re=1.20e+06) — WARNING: fixed/suction floor underpredicts ground-effect downforce; pair against free-air CFD with the same floor model — WARNING: uncorrected coefficients are inflated by tunnel blockage; correct before comparing to CFD",
+  {
+   "backend": "windtunnel:Uni",
+   "cell_count": null,
+   "correlated_against": "Uni",
+   "fidelity": "des",
+   "is_correlated": true,
+   "notes": "Uni (0.5x scale, fixed-floor, NOT blockage-corrected, Re=1.20e+06) — WARNING: fixed/suction floor underpredicts ground-effect downforce; pair against free-air CFD with the same floor model — WARNING: uncorrected coefficients are inflated by tunnel blockage; correct before comparing to CFD",
+   "turbulence_model": "n/a (physical measurement)",
+   "yplus_mean": null
+  }
+ ],
+ "tunnel.near_full": [
+  "N (full-scale, moving-belt, blockage-corrected)",
+  {
+   "backend": "windtunnel:N",
+   "cell_count": null,
+   "correlated_against": "N",
+   "fidelity": "des",
+   "is_correlated": true,
+   "notes": "N (full-scale, moving-belt, blockage-corrected)",
+   "turbulence_model": "n/a (physical measurement)",
+   "yplus_mean": null
+  }
+ ],
+ "tunnel.suction": [
+  "S (0.4x scale, suction-fixed, blockage-corrected) — WARNING: fixed/suction floor underpredicts ground-effect downforce; pair against free-air CFD with the same floor model",
+  {
+   "backend": "windtunnel:S",
+   "cell_count": null,
+   "correlated_against": "S",
+   "fidelity": "des",
+   "is_correlated": true,
+   "notes": "S (0.4x scale, suction-fixed, blockage-corrected) — WARNING: fixed/suction floor underpredicts ground-effect downforce; pair against free-air CFD with the same floor model",
+   "turbulence_model": "n/a (physical measurement)",
+   "yplus_mean": null
+  }
+ ],
+ "tunnel.uncorrected": [
+  "U (full-scale, moving-belt, NOT blockage-corrected, Re=3.30e+06) — WARNING: uncorrected coefficients are inflated by tunnel blockage; correct before comparing to CFD",
+  {
+   "backend": "windtunnel:U",
+   "cell_count": null,
+   "correlated_against": "U",
+   "fidelity": "des",
+   "is_correlated": true,
+   "notes": "U (full-scale, moving-belt, NOT blockage-corrected, Re=3.30e+06) — WARNING: uncorrected coefficients are inflated by tunnel blockage; correct before comparing to CFD",
+   "turbulence_model": "n/a (physical measurement)",
+   "yplus_mean": null
+  }
+ ],
+ "vt": [
+  {
+   "front_mm": [
+    25.0,
+    35.0
+   ],
+   "rear_mm": [
+    35.0,
+    45.0
+   ],
+   "speed_ms": [
+    20.0
+   ],
+   "wheelbase_mm": 1550.0
+  },
+  {
+   "pitch_deg": [
+    0.0,
+    0.3696,
+    0.7393
+   ],
+   "ride_height_mm": [
+    25.0,
+    35.0
+   ],
+   "roll_deg": [
+    0.0
+   ],
+   "speed_ms": [
+    20.0
+   ],
+   "yaw_deg": [
+    0.0
+   ]
+  },
+  [
+   {
+    "pitch_deg": 0.3696450618470238,
+    "ride_height_mm": 25.0,
+    "roll_deg": 0.0,
+    "speed_ms": 20.0,
+    "yaw_deg": 0.0
+   },
+   {
+    "pitch_deg": 0.7392593554078475,
+    "ride_height_mm": 25.0,
+    "roll_deg": 0.0,
+    "speed_ms": 20.0,
+    "yaw_deg": 0.0
+   },
+   {
+    "pitch_deg": 0.0,
+    "ride_height_mm": 35.0,
+    "roll_deg": 0.0,
+    "speed_ms": 20.0,
+    "yaw_deg": 0.0
+   },
+   {
+    "pitch_deg": 0.3696450618470238,
+    "ride_height_mm": 35.0,
+    "roll_deg": 0.0,
+    "speed_ms": 20.0,
+    "yaw_deg": 0.0
+   }
+  ],
+  [
+   {
+    "attitude": {
+     "pitch_deg": 0.3696450618470238,
+     "ride_height_mm": 25.0,
+     "roll_deg": 0.0,
+     "speed_ms": 20.0,
+     "yaw_deg": 0.0
+    },
+    "extra": {},
+    "fidelity": "rans",
+    "geometry_path": "car.stl",
+    "reference_area_m2": 1.1,
+    "reference_length_m": 1.55,
+    "rho": 1.2,
+    "target_cells": null,
+    "target_yplus": 1.0
+   },
+   {
+    "attitude": {
+     "pitch_deg": 0.7392593554078475,
+     "ride_height_mm": 25.0,
+     "roll_deg": 0.0,
+     "speed_ms": 20.0,
+     "yaw_deg": 0.0
+    },
+    "extra": {},
+    "fidelity": "rans",
+    "geometry_path": "car.stl",
+    "reference_area_m2": 1.1,
+    "reference_length_m": 1.55,
+    "rho": 1.2,
+    "target_cells": null,
+    "target_yplus": 1.0
+   },
+   {
+    "attitude": {
+     "pitch_deg": 0.0,
+     "ride_height_mm": 35.0,
+     "roll_deg": 0.0,
+     "speed_ms": 20.0,
+     "yaw_deg": 0.0
+    },
+    "extra": {},
+    "fidelity": "rans",
+    "geometry_path": "car.stl",
+    "reference_area_m2": 1.1,
+    "reference_length_m": 1.55,
+    "rho": 1.2,
+    "target_cells": null,
+    "target_yplus": 1.0
+   },
+   {
+    "attitude": {
+     "pitch_deg": 0.3696450618470238,
+     "ride_height_mm": 35.0,
+     "roll_deg": 0.0,
+     "speed_ms": 20.0,
+     "yaw_deg": 0.0
+    },
+    "extra": {},
+    "fidelity": "rans",
+    "geometry_path": "car.stl",
+    "reference_area_m2": 1.1,
+    "reference_length_m": 1.55,
+    "rho": 1.2,
+    "target_cells": null,
+    "target_yplus": 1.0
+   }
+  ],
+  [
+   {
+    "attitude": {
+     "pitch_deg": 0.3696450618470238,
+     "ride_height_mm": 25.0,
+     "roll_deg": 0.0,
+     "speed_ms": 20.0,
+     "yaw_deg": 0.0
+    },
+    "extra": {},
+    "fidelity": "des",
+    "geometry_path": "car.stl",
+    "reference_area_m2": 1.1,
+    "reference_length_m": 1.55,
+    "rho": 1.2,
+    "target_cells": null,
+    "target_yplus": 30.0
+   },
+   {
+    "attitude": {
+     "pitch_deg": 0.7392593554078475,
+     "ride_height_mm": 25.0,
+     "roll_deg": 0.0,
+     "speed_ms": 20.0,
+     "yaw_deg": 0.0
+    },
+    "extra": {},
+    "fidelity": "des",
+    "geometry_path": "car.stl",
+    "reference_area_m2": 1.1,
+    "reference_length_m": 1.55,
+    "rho": 1.2,
+    "target_cells": null,
+    "target_yplus": 30.0
+   },
+   {
+    "attitude": {
+     "pitch_deg": 0.0,
+     "ride_height_mm": 35.0,
+     "roll_deg": 0.0,
+     "speed_ms": 20.0,
+     "yaw_deg": 0.0
+    },
+    "extra": {},
+    "fidelity": "des",
+    "geometry_path": "car.stl",
+    "reference_area_m2": 1.1,
+    "reference_length_m": 1.55,
+    "rho": 1.2,
+    "target_cells": null,
+    "target_yplus": 30.0
+   },
+   {
+    "attitude": {
+     "pitch_deg": 0.3696450618470238,
+     "ride_height_mm": 35.0,
+     "roll_deg": 0.0,
+     "speed_ms": 20.0,
+     "yaw_deg": 0.0
+    },
+    "extra": {},
+    "fidelity": "des",
+    "geometry_path": "car.stl",
+    "reference_area_m2": 1.1,
+    "reference_length_m": 1.55,
+    "rho": 1.2,
+    "target_cells": null,
+    "target_yplus": 30.0
+   }
+  ],
+  "Virtual Wind Tunnel: 4 CFD case(s) matching the physical map (front [25.0, 35.0] mm x rear [35.0, 45.0] mm x speed [20.0] m/s); ~180 min/case at 1x => ~12.0 h wall-clock.",
+  "Virtual Wind Tunnel: 4 CFD case(s) matching the physical map (front [25.0, 35.0] mm x rear [35.0, 45.0] mm x speed [20.0] m/s); ~60 min/case at 4x => ~1.0 h wall-clock.",
+  "Virtual Wind Tunnel: 4 CFD case(s) matching the physical map (front [25.0, 35.0] mm x rear [35.0, 45.0] mm x speed [20.0] m/s); ~90 min/case at 0x => ~6.0 h wall-clock."
+ ]
+}

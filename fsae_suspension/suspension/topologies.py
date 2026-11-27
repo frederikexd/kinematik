@@ -74,7 +74,7 @@ def double_wishbone(
     b.link("tro", "lo"); b.link("tro", "uo")
     return b.finish(carrier="upright", wheel_center="wc", contact_patch="cp",
                     drive_point="lo", static_camber=static_camber,
-                    static_toe=static_toe, steer_point="tri", label=label,
+                    static_toe=static_toe, steer_point="tri",
                     meta={"family": "independent", "steered": True})
 
 
@@ -114,7 +114,7 @@ def macpherson_strut(
     b.link("tro", "lo"); b.link("tro", "sl")
     return b.finish(carrier="knuckle", wheel_center="wc", contact_patch="cp",
                     drive_point="lo", static_camber=static_camber,
-                    static_toe=static_toe, steer_point="tri", label=label,
+                    static_toe=static_toe, steer_point="tri",
                     meta={"family": "independent", "steered": True})
 
 
@@ -177,7 +177,7 @@ def multilink(
     steer_pt = f"in{steer_link_index}" if steer_link_index is not None else None
     return b.finish(carrier="upright", wheel_center="wc", contact_patch="cp",
                     drive_point=f"out{drive_i}", static_camber=static_camber,
-                    static_toe=static_toe, steer_point=steer_pt, label=label,
+                    static_toe=static_toe, steer_point=steer_pt,
                     meta={"family": "independent", "n_links": n,
                           "steered": steer_link_index is not None})
 
@@ -212,7 +212,7 @@ def trailing_arm(
     b.link("hub", "po", "arm_brace")
     return b.finish(carrier="arm", wheel_center="wc", contact_patch="cp",
                     drive_point="hub", static_camber=static_camber,
-                    static_toe=static_toe, label=label,
+                    static_toe=static_toe,
                     meta={"family": "dependent-arm", "steered": False})
 
 
@@ -296,7 +296,7 @@ def solid_axle(
     b.axle_roll("axL", "axR")
     return b.finish(carrier="axle", wheel_center="wc", contact_patch="cp",
                     drive_point="axL", static_camber=static_camber,
-                    static_toe=static_toe, label=label,
+                    static_toe=static_toe,
                     meta={"family": "beam-axle", "steered": False})
 
 
@@ -341,7 +341,7 @@ def twist_beam(
     b.link("beamL", "piL", "beam_brace")
     return b.finish(carrier="armL", wheel_center="wc", contact_patch="cp",
                     drive_point="hubL", static_camber=static_camber,
-                    static_toe=static_toe, label=label,
+                    static_toe=static_toe,
                     meta={"family": "semi-dependent", "steered": False})
 
 
@@ -394,7 +394,7 @@ def truck_steer_linkage(
     b.link("sp", "sa", "knuckle_rigid")        # 1 eqn  -> 5 of 6 fixed, 1 DOF
     return b.finish(carrier="knuckle", wheel_center="wc", contact_patch="cp",
                     drive_point="sa", static_camber=static_camber,
-                    static_toe=static_toe, steer_point="tri", label=label,
+                    static_toe=static_toe, steer_point="tri",
                     meta={"family": "beam-axle-steer", "steered": True,
                           "drive_is_steer": True,
                           "note": "1-DOF kingpin steer; 'travel' selects steer angle"})
@@ -453,7 +453,7 @@ def from_links(
                     contact_patch=contact_patch, drive_point=drive_point,
                     spin_axis_pts=None, static_camber=static_camber,
                     static_toe=static_toe, steer_point=steer_point,
-                    steer_axis=steer_axis, label=label,
+                    steer_axis=steer_axis,
                     meta={"family": "experimental"})
 
 
@@ -537,12 +537,12 @@ def example(name: str) -> Mechanism:
         ]
         return solid_axle(
             axle_left=[0, 600, 230], axle_right=[0, -600, 230], links=links,
-            lateral_device=("panhard", [-50, -550, 280], [-50, 580, 285]),
+            lateral_device=("panhard", [-50, -550, 280], [-50, 580, 285]),  # pragma: no mutate (example geometry the single-corner sweep does not read)
             wheel_center_left=[0, 620, 230], contact_patch_left=[0, 625, 0])
     if name == "twist_beam":
         return twist_beam(
-            pivot_left=[450, 350, 180], pivot_right=[450, -350, 180],
-            hub_left=[-150, 575, 160], hub_right=[-150, -575, 160],
+            pivot_left=[450, 350, 180], pivot_right=[450, -350, 180],  # pragma: no mutate (example geometry the single-corner sweep does not read)
+            hub_left=[-150, 575, 160], hub_right=[-150, -575, 160],  # pragma: no mutate (example geometry the single-corner sweep does not read)
             beam_left=[150, 300, 170], beam_right=[150, -300, 170],
             wheel_center_left=[0, 600, 228], contact_patch_left=[0, 605, 0])
     if name == "truck_steer_linkage":

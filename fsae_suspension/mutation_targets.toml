@@ -902,3 +902,57 @@ tests = [
     "tests/test_ledger.py",
 ]
 deselect = ["tests/test_ledger.py::test_csv_loaders_round_trip", "tests/test_ledger.py::test_repo_records_are_intact"]  # reads benchmarks/ from the repo root, which the mutation copy does not have
+
+[[group]]
+name = "ledger_v2"
+files = ["suspension/ledger_v2.py"]
+tests = [
+    "tests/test_mutation_ledger_v2.py",
+    "tests/test_ledger_v2.py",
+]
+deselect = ["tests/test_ledger_v2.py::test_repo_frozen_calibration_and_cross_year_records", "tests/test_ledger_v2.py::test_repo_records_all_verify", "tests/test_ledger_v2.py::test_other_events_results_reproduce", "tests/test_ledger_v2.py::test_registered_numbers_stay_frozen_and_reruns_are_checked"]  # reads benchmarks/ from the repo root, which the mutation copy does not have
+
+[[group]]
+name = "adapter"
+files = ["suspension/adapter.py"]
+tests = [
+    "tests/test_mutation_topologies.py",
+    "tests/test_topology.py",
+]
+deselect = []
+
+[[group]]
+name = "aero_ensemble"
+files = ["suspension/aero/ensemble.py"]
+tests = [
+    "tests/test_mutation_aero_ensemble.py",
+    "tests/test_ensemble.py",
+]
+deselect = []
+
+[[group]]
+name = "plausibility"
+files = ["suspension/plausibility.py"]
+tests = [
+    "tests/test_mutation_plausibility.py",
+    "tests/test_plausibility.py",
+]
+deselect = []
+
+[[group]]
+name = "aero_windtunnel"
+files = ["suspension/aero/windtunnel.py"]
+tests = [
+    "tests/test_mutation_aero_windtunnel.py",
+    "tests/test_windtunnel.py",
+]
+deselect = []
+
+[[group]]
+name = "trade"
+files = ["suspension/trade.py"]
+tests = [
+    "tests/test_mutation_trade.py",
+    "tests/test_driveline_trade.py",
+]
+deselect = []

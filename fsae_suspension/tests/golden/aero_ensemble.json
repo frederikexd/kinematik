@@ -1,0 +1,7338 @@
+{
+ "agree.[('agreement_tol', 10.0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2066666666666668,
+   "c_lift": -3.0100000000000002,
+   "cd_spread_pct": 3.314917127071826,
+   "cl_spread_pct": 2.9900332225913573,
+   "converged": true,
+   "fused": {
+    "aero_balance_front": 0.45999999999999996,
+    "c_pitch": 0.02,
+    "c_side": 0.15000000000000002,
+    "force_monitor_range": 0.03314917127071826,
+    "notes": "Virtual Tunnel Solver: mean consensus of 3 code(s) [a, b, c]; inter-code spread C_l 3.0% / C_d 3.3%; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.23,
+     "c_lift": -3.06,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "c",
+     "c_drag": 1.19,
+     "c_lift": -2.97,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 3,
+   "prov": {
+    "backend": "virtual-tunnel[a+b+c]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 3/3 codes voted, inter-code spread 3.3%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0100000000000002,
+  1.2066666666666668,
+  [
+   "a",
+   "b",
+   "c"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ]
+   ]
+  ]
+ ],
+ "agree.[('agreement_tol', 50.0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2066666666666668,
+   "c_lift": -3.0100000000000002,
+   "cd_spread_pct": 3.314917127071826,
+   "cl_spread_pct": 2.9900332225913573,
+   "converged": true,
+   "fused": {
+    "aero_balance_front": 0.45999999999999996,
+    "c_pitch": 0.02,
+    "c_side": 0.15000000000000002,
+    "force_monitor_range": 0.03314917127071826,
+    "notes": "Virtual Tunnel Solver: mean consensus of 3 code(s) [a, b, c]; inter-code spread C_l 3.0% / C_d 3.3%; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.23,
+     "c_lift": -3.06,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "c",
+     "c_drag": 1.19,
+     "c_lift": -2.97,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 3,
+   "prov": {
+    "backend": "virtual-tunnel[a+b+c]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 3/3 codes voted, inter-code spread 3.3%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0100000000000002,
+  1.2066666666666668,
+  [
+   "a",
+   "b",
+   "c"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ]
+   ]
+  ]
+ ],
+ "agree.[('min_members', 0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2066666666666668,
+   "c_lift": -3.0100000000000002,
+   "cd_spread_pct": 3.314917127071826,
+   "cl_spread_pct": 2.9900332225913573,
+   "converged": true,
+   "fused": {
+    "aero_balance_front": 0.45999999999999996,
+    "c_pitch": 0.02,
+    "c_side": 0.15000000000000002,
+    "force_monitor_range": 0.03314917127071826,
+    "notes": "Virtual Tunnel Solver: mean consensus of 3 code(s) [a, b, c]; inter-code spread C_l 3.0% / C_d 3.3%; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.23,
+     "c_lift": -3.06,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "c",
+     "c_drag": 1.19,
+     "c_lift": -2.97,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 3,
+   "prov": {
+    "backend": "virtual-tunnel[a+b+c]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 3/3 codes voted, inter-code spread 3.3%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0100000000000002,
+  1.2066666666666668,
+  [
+   "a",
+   "b",
+   "c"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ]
+   ]
+  ]
+ ],
+ "agree.[('min_members', 3)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2066666666666668,
+   "c_lift": -3.0100000000000002,
+   "cd_spread_pct": 3.314917127071826,
+   "cl_spread_pct": 2.9900332225913573,
+   "converged": true,
+   "fused": {
+    "aero_balance_front": 0.45999999999999996,
+    "c_pitch": 0.02,
+    "c_side": 0.15000000000000002,
+    "force_monitor_range": 0.03314917127071826,
+    "notes": "Virtual Tunnel Solver: mean consensus of 3 code(s) [a, b, c]; inter-code spread C_l 3.0% / C_d 3.3%; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.23,
+     "c_lift": -3.06,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "c",
+     "c_drag": 1.19,
+     "c_lift": -2.97,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 3,
+   "prov": {
+    "backend": "virtual-tunnel[a+b+c]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 3/3 codes voted, inter-code spread 3.3%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0100000000000002,
+  1.2066666666666668,
+  [
+   "a",
+   "b",
+   "c"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ]
+   ]
+  ]
+ ],
+ "agree.[('reduction', 'median')]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2,
+   "c_lift": -3.0,
+   "cd_spread_pct": 3.314917127071826,
+   "cl_spread_pct": 2.9900332225913573,
+   "converged": true,
+   "fused": {
+    "aero_balance_front": 0.45999999999999996,
+    "c_pitch": 0.02,
+    "c_side": 0.15000000000000002,
+    "force_monitor_range": 0.03314917127071826,
+    "notes": "Virtual Tunnel Solver: median consensus of 3 code(s) [a, b, c]; inter-code spread C_l 3.0% / C_d 3.3%; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.23,
+     "c_lift": -3.06,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "c",
+     "c_drag": 1.19,
+     "c_lift": -2.97,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 3,
+   "prov": {
+    "backend": "virtual-tunnel[a+b+c]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the median of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 3/3 codes voted, inter-code spread 3.3%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0,
+  1.2,
+  [
+   "a",
+   "b",
+   "c"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ]
+   ]
+  ]
+ ],
+ "agree.[]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2066666666666668,
+   "c_lift": -3.0100000000000002,
+   "cd_spread_pct": 3.314917127071826,
+   "cl_spread_pct": 2.9900332225913573,
+   "converged": true,
+   "fused": {
+    "aero_balance_front": 0.45999999999999996,
+    "c_pitch": 0.02,
+    "c_side": 0.15000000000000002,
+    "force_monitor_range": 0.03314917127071826,
+    "notes": "Virtual Tunnel Solver: mean consensus of 3 code(s) [a, b, c]; inter-code spread C_l 3.0% / C_d 3.3%; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.23,
+     "c_lift": -3.06,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "c",
+     "c_drag": 1.19,
+     "c_lift": -2.97,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 3,
+   "prov": {
+    "backend": "virtual-tunnel[a+b+c]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 3/3 codes voted, inter-code spread 3.3%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0100000000000002,
+  1.2066666666666668,
+  [
+   "a",
+   "b",
+   "c"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ]
+   ]
+  ]
+ ],
+ "at_tol.[('agreement_tol', 10.0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.0,
+   "c_lift": -4.0,
+   "cd_spread_pct": 0.0,
+   "cl_spread_pct": 50.0,
+   "converged": false,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.5,
+    "notes": "Virtual Tunnel Solver: mean consensus of 2 code(s) [a, b]; inter-code spread C_l 50.0% / C_d 0.0%; NOT converged — codes disagree beyond 10% (treat as a flag, not a number)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.0,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.0,
+     "c_lift": -5.0,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 50.0%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -4.0,
+  1.0,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "at_tol.[('agreement_tol', 50.0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.0,
+   "c_lift": -4.0,
+   "cd_spread_pct": 0.0,
+   "cl_spread_pct": 50.0,
+   "converged": true,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.5,
+    "notes": "Virtual Tunnel Solver: mean consensus of 2 code(s) [a, b]; inter-code spread C_l 50.0% / C_d 0.0%; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.0,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.0,
+     "c_lift": -5.0,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 50.0%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -4.0,
+  1.0,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "at_tol.[('min_members', 0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.0,
+   "c_lift": -4.0,
+   "cd_spread_pct": 0.0,
+   "cl_spread_pct": 50.0,
+   "converged": false,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.5,
+    "notes": "Virtual Tunnel Solver: mean consensus of 2 code(s) [a, b]; inter-code spread C_l 50.0% / C_d 0.0%; NOT converged — codes disagree beyond 5% (treat as a flag, not a number)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.0,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.0,
+     "c_lift": -5.0,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 50.0%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -4.0,
+  1.0,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "at_tol.[('min_members', 3)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.0,
+   "c_lift": -4.0,
+   "cd_spread_pct": 0.0,
+   "cl_spread_pct": 50.0,
+   "converged": false,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.5,
+    "notes": "Virtual Tunnel Solver: mean consensus of 2 code(s) [a, b]; inter-code spread C_l 50.0% / C_d 0.0%; NOT converged — only 2 code(s) voted, need 3"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.0,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.0,
+     "c_lift": -5.0,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 50.0%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -4.0,
+  1.0,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "at_tol.[('reduction', 'median')]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.0,
+   "c_lift": -4.0,
+   "cd_spread_pct": 0.0,
+   "cl_spread_pct": 50.0,
+   "converged": false,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.5,
+    "notes": "Virtual Tunnel Solver: median consensus of 2 code(s) [a, b]; inter-code spread C_l 50.0% / C_d 0.0%; NOT converged — codes disagree beyond 5% (treat as a flag, not a number)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.0,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.0,
+     "c_lift": -5.0,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the median of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 50.0%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -4.0,
+  1.0,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "at_tol.[]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.0,
+   "c_lift": -4.0,
+   "cd_spread_pct": 0.0,
+   "cl_spread_pct": 50.0,
+   "converged": false,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.5,
+    "notes": "Virtual Tunnel Solver: mean consensus of 2 code(s) [a, b]; inter-code spread C_l 50.0% / C_d 0.0%; NOT converged — codes disagree beyond 5% (treat as a flag, not a number)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.0,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.0,
+     "c_lift": -5.0,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 50.0%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -4.0,
+  1.0,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "bad.['members']": "EnsembleTunnelSolver needs at least one member backend",
+ "bad.['reduction']": "reduction must be 'mean' or 'median'",
+ "cd_disagree.[('agreement_tol', 10.0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.35,
+   "c_lift": -3.0,
+   "cd_spread_pct": 22.222222222222225,
+   "cl_spread_pct": 0.0,
+   "converged": false,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.22222222222222224,
+    "notes": "Virtual Tunnel Solver: mean consensus of 2 code(s) [a, b]; inter-code spread C_l 0.0% / C_d 22.2%; NOT converged — codes disagree beyond 10% (treat as a flag, not a number)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.5,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 22.2%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0,
+  1.35,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "cd_disagree.[('agreement_tol', 50.0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.35,
+   "c_lift": -3.0,
+   "cd_spread_pct": 22.222222222222225,
+   "cl_spread_pct": 0.0,
+   "converged": true,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.22222222222222224,
+    "notes": "Virtual Tunnel Solver: mean consensus of 2 code(s) [a, b]; inter-code spread C_l 0.0% / C_d 22.2%; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.5,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 22.2%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0,
+  1.35,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "cd_disagree.[('min_members', 0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.35,
+   "c_lift": -3.0,
+   "cd_spread_pct": 22.222222222222225,
+   "cl_spread_pct": 0.0,
+   "converged": false,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.22222222222222224,
+    "notes": "Virtual Tunnel Solver: mean consensus of 2 code(s) [a, b]; inter-code spread C_l 0.0% / C_d 22.2%; NOT converged — codes disagree beyond 5% (treat as a flag, not a number)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.5,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 22.2%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0,
+  1.35,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "cd_disagree.[('min_members', 3)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.35,
+   "c_lift": -3.0,
+   "cd_spread_pct": 22.222222222222225,
+   "cl_spread_pct": 0.0,
+   "converged": false,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.22222222222222224,
+    "notes": "Virtual Tunnel Solver: mean consensus of 2 code(s) [a, b]; inter-code spread C_l 0.0% / C_d 22.2%; NOT converged — only 2 code(s) voted, need 3"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.5,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 22.2%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0,
+  1.35,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "cd_disagree.[('reduction', 'median')]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.35,
+   "c_lift": -3.0,
+   "cd_spread_pct": 22.222222222222225,
+   "cl_spread_pct": 0.0,
+   "converged": false,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.22222222222222224,
+    "notes": "Virtual Tunnel Solver: median consensus of 2 code(s) [a, b]; inter-code spread C_l 0.0% / C_d 22.2%; NOT converged — codes disagree beyond 5% (treat as a flag, not a number)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.5,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the median of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 22.2%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0,
+  1.35,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "cd_disagree.[]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.35,
+   "c_lift": -3.0,
+   "cd_spread_pct": 22.222222222222225,
+   "cl_spread_pct": 0.0,
+   "converged": false,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.22222222222222224,
+    "notes": "Virtual Tunnel Solver: mean consensus of 2 code(s) [a, b]; inter-code spread C_l 0.0% / C_d 22.2%; NOT converged — codes disagree beyond 5% (treat as a flag, not a number)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.5,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 22.2%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0,
+  1.35,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "custom": [
+  "kEpsilon",
+  "des",
+  {
+   "backend": "virtual-tunnel[fluent]",
+   "cell_count": null,
+   "correlated_against": "",
+   "fidelity": "des",
+   "is_correlated": false,
+   "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels.",
+   "turbulence_model": "kEpsilon",
+   "yplus_mean": null
+  }
+ ],
+ "default": [
+  [
+   "fluent"
+  ],
+  "mean",
+  5.0,
+  1,
+  "kOmegaSST",
+  "rans",
+  "virtual-tunnel",
+  [
+   "fluent"
+  ]
+ ],
+ "default.prov": [
+  {
+   "backend": "virtual-tunnel[fluent]",
+   "cell_count": null,
+   "correlated_against": "",
+   "fidelity": "rans",
+   "is_correlated": false,
+   "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels.",
+   "turbulence_model": "kOmegaSST",
+   "yplus_mean": null
+  },
+  {
+   "backend": "virtual-tunnel[a+b]",
+   "cell_count": null,
+   "correlated_against": "",
+   "fidelity": "rans",
+   "is_correlated": false,
+   "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 3.2%.",
+   "turbulence_model": "kOmegaSST",
+   "yplus_mean": null
+  },
+  {
+   "backend": "virtual-tunnel[fluent]",
+   "cell_count": null,
+   "correlated_against": "",
+   "fidelity": "rans",
+   "is_correlated": false,
+   "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 0/1 codes voted.",
+   "turbulence_model": "kOmegaSST",
+   "yplus_mean": null
+  }
+ ],
+ "default.solve": {
+  "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+  "c_drag": 1.0651442307692307,
+  "c_lift": -2.65,
+  "cd_spread_pct": "NaN",
+  "cl_spread_pct": "NaN",
+  "converged": true,
+  "fused": {
+   "aero_balance_front": 0.4575,
+   "c_pitch": null,
+   "c_side": 0.0,
+   "force_monitor_range": null,
+   "notes": "Virtual Tunnel Solver: mean consensus of 1 code(s) [fluent]; converged consensus (codes agree within tolerance)"
+  },
+  "members": [
+   {
+    "backend": "fluent",
+    "c_drag": 1.0651442307692307,
+    "c_lift": -2.65,
+    "error": "",
+    "ok": true
+   }
+  ],
+  "n_voted": 1,
+  "prov": {
+   "backend": "virtual-tunnel[fluent]",
+   "cell_count": null,
+   "correlated_against": "",
+   "fidelity": "rans",
+   "is_correlated": false,
+   "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 1/1 codes voted.",
+   "turbulence_model": "kOmegaSST",
+   "yplus_mean": null
+  }
+ },
+ "disagree.[('agreement_tol', 10.0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2,
+   "c_lift": -3.3,
+   "cd_spread_pct": 0.0,
+   "cl_spread_pct": 18.181818181818183,
+   "converged": false,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.18181818181818182,
+    "notes": "Virtual Tunnel Solver: mean consensus of 2 code(s) [a, b]; inter-code spread C_l 18.2% / C_d 0.0%; NOT converged — codes disagree beyond 10% (treat as a flag, not a number)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.2,
+     "c_lift": -3.6,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 18.2%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.3,
+  1.2,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "disagree.[('agreement_tol', 50.0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2,
+   "c_lift": -3.3,
+   "cd_spread_pct": 0.0,
+   "cl_spread_pct": 18.181818181818183,
+   "converged": true,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.18181818181818182,
+    "notes": "Virtual Tunnel Solver: mean consensus of 2 code(s) [a, b]; inter-code spread C_l 18.2% / C_d 0.0%; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.2,
+     "c_lift": -3.6,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 18.2%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.3,
+  1.2,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "disagree.[('min_members', 0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2,
+   "c_lift": -3.3,
+   "cd_spread_pct": 0.0,
+   "cl_spread_pct": 18.181818181818183,
+   "converged": false,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.18181818181818182,
+    "notes": "Virtual Tunnel Solver: mean consensus of 2 code(s) [a, b]; inter-code spread C_l 18.2% / C_d 0.0%; NOT converged — codes disagree beyond 5% (treat as a flag, not a number)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.2,
+     "c_lift": -3.6,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 18.2%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.3,
+  1.2,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "disagree.[('min_members', 3)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2,
+   "c_lift": -3.3,
+   "cd_spread_pct": 0.0,
+   "cl_spread_pct": 18.181818181818183,
+   "converged": false,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.18181818181818182,
+    "notes": "Virtual Tunnel Solver: mean consensus of 2 code(s) [a, b]; inter-code spread C_l 18.2% / C_d 0.0%; NOT converged — only 2 code(s) voted, need 3"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.2,
+     "c_lift": -3.6,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 18.2%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.3,
+  1.2,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "disagree.[('reduction', 'median')]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2,
+   "c_lift": -3.3,
+   "cd_spread_pct": 0.0,
+   "cl_spread_pct": 18.181818181818183,
+   "converged": false,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.18181818181818182,
+    "notes": "Virtual Tunnel Solver: median consensus of 2 code(s) [a, b]; inter-code spread C_l 18.2% / C_d 0.0%; NOT converged — codes disagree beyond 5% (treat as a flag, not a number)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.2,
+     "c_lift": -3.6,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the median of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 18.2%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.3,
+  1.2,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "disagree.[]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2,
+   "c_lift": -3.3,
+   "cd_spread_pct": 0.0,
+   "cl_spread_pct": 18.181818181818183,
+   "converged": false,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.18181818181818182,
+    "notes": "Virtual Tunnel Solver: mean consensus of 2 code(s) [a, b]; inter-code spread C_l 18.2% / C_d 0.0%; NOT converged — codes disagree beyond 5% (treat as a flag, not a number)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.2,
+     "c_lift": -3.6,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 18.2%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.3,
+  1.2,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "edge.[('agreement_tol', 10.0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.025,
+   "c_lift": -2.05,
+   "cd_spread_pct": 4.878048780487809,
+   "cl_spread_pct": 4.878048780487809,
+   "converged": true,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.04878048780487809,
+    "notes": "Virtual Tunnel Solver: mean consensus of 2 code(s) [a, b]; inter-code spread C_l 4.9% / C_d 4.9%; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.0,
+     "c_lift": -2.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.05,
+     "c_lift": -2.1,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 4.9%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -2.05,
+  1.025,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "edge.[('agreement_tol', 50.0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.025,
+   "c_lift": -2.05,
+   "cd_spread_pct": 4.878048780487809,
+   "cl_spread_pct": 4.878048780487809,
+   "converged": true,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.04878048780487809,
+    "notes": "Virtual Tunnel Solver: mean consensus of 2 code(s) [a, b]; inter-code spread C_l 4.9% / C_d 4.9%; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.0,
+     "c_lift": -2.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.05,
+     "c_lift": -2.1,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 4.9%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -2.05,
+  1.025,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "edge.[('min_members', 0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.025,
+   "c_lift": -2.05,
+   "cd_spread_pct": 4.878048780487809,
+   "cl_spread_pct": 4.878048780487809,
+   "converged": true,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.04878048780487809,
+    "notes": "Virtual Tunnel Solver: mean consensus of 2 code(s) [a, b]; inter-code spread C_l 4.9% / C_d 4.9%; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.0,
+     "c_lift": -2.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.05,
+     "c_lift": -2.1,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 4.9%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -2.05,
+  1.025,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "edge.[('min_members', 3)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.025,
+   "c_lift": -2.05,
+   "cd_spread_pct": 4.878048780487809,
+   "cl_spread_pct": 4.878048780487809,
+   "converged": false,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.04878048780487809,
+    "notes": "Virtual Tunnel Solver: mean consensus of 2 code(s) [a, b]; inter-code spread C_l 4.9% / C_d 4.9%; NOT converged — only 2 code(s) voted, need 3"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.0,
+     "c_lift": -2.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.05,
+     "c_lift": -2.1,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 4.9%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -2.05,
+  1.025,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "edge.[('reduction', 'median')]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.025,
+   "c_lift": -2.05,
+   "cd_spread_pct": 4.878048780487809,
+   "cl_spread_pct": 4.878048780487809,
+   "converged": true,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.04878048780487809,
+    "notes": "Virtual Tunnel Solver: median consensus of 2 code(s) [a, b]; inter-code spread C_l 4.9% / C_d 4.9%; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.0,
+     "c_lift": -2.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.05,
+     "c_lift": -2.1,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the median of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 4.9%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -2.05,
+  1.025,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "edge.[]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.025,
+   "c_lift": -2.05,
+   "cd_spread_pct": 4.878048780487809,
+   "cl_spread_pct": 4.878048780487809,
+   "converged": true,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.04878048780487809,
+    "notes": "Virtual Tunnel Solver: mean consensus of 2 code(s) [a, b]; inter-code spread C_l 4.9% / C_d 4.9%; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.0,
+     "c_lift": -2.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.05,
+     "c_lift": -2.1,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 4.9%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -2.05,
+  1.025,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "err48.[('agreement_tol', 10.0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2,
+   "c_lift": -3.0,
+   "cd_spread_pct": "NaN",
+   "cl_spread_pct": "NaN",
+   "converged": true,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": null,
+    "notes": "Virtual Tunnel Solver: mean consensus of 1 code(s) [a]; converged consensus (codes agree within tolerance); holes: b (ValueError: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy…), c (ValueError: zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz…)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": null,
+     "c_lift": null,
+     "error": "ValueError: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+     "ok": false
+    },
+    {
+     "backend": "c",
+     "c_drag": null,
+     "c_lift": null,
+     "error": "ValueError: zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+     "ok": false
+    }
+   ],
+   "n_voted": 1,
+   "prov": {
+    "backend": "virtual-tunnel[a]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 1/1 codes voted.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0,
+  1.2,
+  [
+   "a",
+   "b",
+   "c"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ]
+   ]
+  ]
+ ],
+ "err48.[('agreement_tol', 50.0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2,
+   "c_lift": -3.0,
+   "cd_spread_pct": "NaN",
+   "cl_spread_pct": "NaN",
+   "converged": true,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": null,
+    "notes": "Virtual Tunnel Solver: mean consensus of 1 code(s) [a]; converged consensus (codes agree within tolerance); holes: b (ValueError: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy…), c (ValueError: zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz…)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": null,
+     "c_lift": null,
+     "error": "ValueError: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+     "ok": false
+    },
+    {
+     "backend": "c",
+     "c_drag": null,
+     "c_lift": null,
+     "error": "ValueError: zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+     "ok": false
+    }
+   ],
+   "n_voted": 1,
+   "prov": {
+    "backend": "virtual-tunnel[a]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 1/1 codes voted.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0,
+  1.2,
+  [
+   "a",
+   "b",
+   "c"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ]
+   ]
+  ]
+ ],
+ "err48.[('min_members', 0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2,
+   "c_lift": -3.0,
+   "cd_spread_pct": "NaN",
+   "cl_spread_pct": "NaN",
+   "converged": true,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": null,
+    "notes": "Virtual Tunnel Solver: mean consensus of 1 code(s) [a]; converged consensus (codes agree within tolerance); holes: b (ValueError: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy…), c (ValueError: zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz…)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": null,
+     "c_lift": null,
+     "error": "ValueError: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+     "ok": false
+    },
+    {
+     "backend": "c",
+     "c_drag": null,
+     "c_lift": null,
+     "error": "ValueError: zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+     "ok": false
+    }
+   ],
+   "n_voted": 1,
+   "prov": {
+    "backend": "virtual-tunnel[a]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 1/1 codes voted.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0,
+  1.2,
+  [
+   "a",
+   "b",
+   "c"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ]
+   ]
+  ]
+ ],
+ "err48.[('min_members', 3)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2,
+   "c_lift": -3.0,
+   "cd_spread_pct": "NaN",
+   "cl_spread_pct": "NaN",
+   "converged": false,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": null,
+    "notes": "Virtual Tunnel Solver: mean consensus of 1 code(s) [a]; NOT converged — only 1 code(s) voted, need 3; holes: b (ValueError: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy…), c (ValueError: zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz…)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": null,
+     "c_lift": null,
+     "error": "ValueError: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+     "ok": false
+    },
+    {
+     "backend": "c",
+     "c_drag": null,
+     "c_lift": null,
+     "error": "ValueError: zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+     "ok": false
+    }
+   ],
+   "n_voted": 1,
+   "prov": {
+    "backend": "virtual-tunnel[a]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 1/1 codes voted.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0,
+  1.2,
+  [
+   "a",
+   "b",
+   "c"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ]
+   ]
+  ]
+ ],
+ "err48.[('reduction', 'median')]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2,
+   "c_lift": -3.0,
+   "cd_spread_pct": "NaN",
+   "cl_spread_pct": "NaN",
+   "converged": true,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": null,
+    "notes": "Virtual Tunnel Solver: median consensus of 1 code(s) [a]; converged consensus (codes agree within tolerance); holes: b (ValueError: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy…), c (ValueError: zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz…)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": null,
+     "c_lift": null,
+     "error": "ValueError: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+     "ok": false
+    },
+    {
+     "backend": "c",
+     "c_drag": null,
+     "c_lift": null,
+     "error": "ValueError: zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+     "ok": false
+    }
+   ],
+   "n_voted": 1,
+   "prov": {
+    "backend": "virtual-tunnel[a]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the median of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 1/1 codes voted.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0,
+  1.2,
+  [
+   "a",
+   "b",
+   "c"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ]
+   ]
+  ]
+ ],
+ "err48.[]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2,
+   "c_lift": -3.0,
+   "cd_spread_pct": "NaN",
+   "cl_spread_pct": "NaN",
+   "converged": true,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": null,
+    "notes": "Virtual Tunnel Solver: mean consensus of 1 code(s) [a]; converged consensus (codes agree within tolerance); holes: b (ValueError: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy…), c (ValueError: zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz…)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": null,
+     "c_lift": null,
+     "error": "ValueError: yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+     "ok": false
+    },
+    {
+     "backend": "c",
+     "c_drag": null,
+     "c_lift": null,
+     "error": "ValueError: zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+     "ok": false
+    }
+   ],
+   "n_voted": 1,
+   "prov": {
+    "backend": "virtual-tunnel[a]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 1/1 codes voted.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0,
+  1.2,
+  [
+   "a",
+   "b",
+   "c"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ]
+   ]
+  ]
+ ],
+ "holes.[('agreement_tol', 10.0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2,
+   "c_lift": -3.0,
+   "cd_spread_pct": "NaN",
+   "cl_spread_pct": "NaN",
+   "converged": true,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": null,
+    "notes": "Virtual Tunnel Solver: mean consensus of 1 code(s) [a]; converged consensus (codes agree within tolerance); holes: b (no licence), c (unconverged), d (ValueError: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…), e (unconverged)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": null,
+     "c_lift": null,
+     "error": "no licence",
+     "ok": false
+    },
+    {
+     "backend": "c",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": false
+    },
+    {
+     "backend": "d",
+     "c_drag": null,
+     "c_lift": null,
+     "error": "ValueError: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+     "ok": false
+    },
+    {
+     "backend": "e",
+     "c_drag": 1.2,
+     "c_lift": null,
+     "error": "",
+     "ok": false
+    }
+   ],
+   "n_voted": 1,
+   "prov": {
+    "backend": "virtual-tunnel[a]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 1/1 codes voted.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0,
+  1.2,
+  [
+   "a",
+   "b",
+   "c",
+   "d",
+   "e"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "d"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "d"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "d"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "e"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "e"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "e"
+    ]
+   ]
+  ]
+ ],
+ "holes.[('agreement_tol', 50.0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2,
+   "c_lift": -3.0,
+   "cd_spread_pct": "NaN",
+   "cl_spread_pct": "NaN",
+   "converged": true,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": null,
+    "notes": "Virtual Tunnel Solver: mean consensus of 1 code(s) [a]; converged consensus (codes agree within tolerance); holes: b (no licence), c (unconverged), d (ValueError: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…), e (unconverged)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": null,
+     "c_lift": null,
+     "error": "no licence",
+     "ok": false
+    },
+    {
+     "backend": "c",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": false
+    },
+    {
+     "backend": "d",
+     "c_drag": null,
+     "c_lift": null,
+     "error": "ValueError: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+     "ok": false
+    },
+    {
+     "backend": "e",
+     "c_drag": 1.2,
+     "c_lift": null,
+     "error": "",
+     "ok": false
+    }
+   ],
+   "n_voted": 1,
+   "prov": {
+    "backend": "virtual-tunnel[a]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 1/1 codes voted.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0,
+  1.2,
+  [
+   "a",
+   "b",
+   "c",
+   "d",
+   "e"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "d"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "d"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "d"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "e"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "e"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "e"
+    ]
+   ]
+  ]
+ ],
+ "holes.[('min_members', 0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2,
+   "c_lift": -3.0,
+   "cd_spread_pct": "NaN",
+   "cl_spread_pct": "NaN",
+   "converged": true,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": null,
+    "notes": "Virtual Tunnel Solver: mean consensus of 1 code(s) [a]; converged consensus (codes agree within tolerance); holes: b (no licence), c (unconverged), d (ValueError: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…), e (unconverged)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": null,
+     "c_lift": null,
+     "error": "no licence",
+     "ok": false
+    },
+    {
+     "backend": "c",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": false
+    },
+    {
+     "backend": "d",
+     "c_drag": null,
+     "c_lift": null,
+     "error": "ValueError: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+     "ok": false
+    },
+    {
+     "backend": "e",
+     "c_drag": 1.2,
+     "c_lift": null,
+     "error": "",
+     "ok": false
+    }
+   ],
+   "n_voted": 1,
+   "prov": {
+    "backend": "virtual-tunnel[a]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 1/1 codes voted.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0,
+  1.2,
+  [
+   "a",
+   "b",
+   "c",
+   "d",
+   "e"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "d"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "d"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "d"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "e"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "e"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "e"
+    ]
+   ]
+  ]
+ ],
+ "holes.[('min_members', 3)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2,
+   "c_lift": -3.0,
+   "cd_spread_pct": "NaN",
+   "cl_spread_pct": "NaN",
+   "converged": false,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": null,
+    "notes": "Virtual Tunnel Solver: mean consensus of 1 code(s) [a]; NOT converged — only 1 code(s) voted, need 3; holes: b (no licence), c (unconverged), d (ValueError: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…), e (unconverged)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": null,
+     "c_lift": null,
+     "error": "no licence",
+     "ok": false
+    },
+    {
+     "backend": "c",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": false
+    },
+    {
+     "backend": "d",
+     "c_drag": null,
+     "c_lift": null,
+     "error": "ValueError: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+     "ok": false
+    },
+    {
+     "backend": "e",
+     "c_drag": 1.2,
+     "c_lift": null,
+     "error": "",
+     "ok": false
+    }
+   ],
+   "n_voted": 1,
+   "prov": {
+    "backend": "virtual-tunnel[a]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 1/1 codes voted.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0,
+  1.2,
+  [
+   "a",
+   "b",
+   "c",
+   "d",
+   "e"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "d"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "d"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "d"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "e"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "e"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "e"
+    ]
+   ]
+  ]
+ ],
+ "holes.[('reduction', 'median')]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2,
+   "c_lift": -3.0,
+   "cd_spread_pct": "NaN",
+   "cl_spread_pct": "NaN",
+   "converged": true,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": null,
+    "notes": "Virtual Tunnel Solver: median consensus of 1 code(s) [a]; converged consensus (codes agree within tolerance); holes: b (no licence), c (unconverged), d (ValueError: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…), e (unconverged)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": null,
+     "c_lift": null,
+     "error": "no licence",
+     "ok": false
+    },
+    {
+     "backend": "c",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": false
+    },
+    {
+     "backend": "d",
+     "c_drag": null,
+     "c_lift": null,
+     "error": "ValueError: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+     "ok": false
+    },
+    {
+     "backend": "e",
+     "c_drag": 1.2,
+     "c_lift": null,
+     "error": "",
+     "ok": false
+    }
+   ],
+   "n_voted": 1,
+   "prov": {
+    "backend": "virtual-tunnel[a]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the median of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 1/1 codes voted.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0,
+  1.2,
+  [
+   "a",
+   "b",
+   "c",
+   "d",
+   "e"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "d"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "d"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "d"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "e"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "e"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "e"
+    ]
+   ]
+  ]
+ ],
+ "holes.[]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2,
+   "c_lift": -3.0,
+   "cd_spread_pct": "NaN",
+   "cl_spread_pct": "NaN",
+   "converged": true,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": null,
+    "notes": "Virtual Tunnel Solver: mean consensus of 1 code(s) [a]; converged consensus (codes agree within tolerance); holes: b (no licence), c (unconverged), d (ValueError: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…), e (unconverged)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": null,
+     "c_lift": null,
+     "error": "no licence",
+     "ok": false
+    },
+    {
+     "backend": "c",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": false
+    },
+    {
+     "backend": "d",
+     "c_drag": null,
+     "c_lift": null,
+     "error": "ValueError: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+     "ok": false
+    },
+    {
+     "backend": "e",
+     "c_drag": 1.2,
+     "c_lift": null,
+     "error": "",
+     "ok": false
+    }
+   ],
+   "n_voted": 1,
+   "prov": {
+    "backend": "virtual-tunnel[a]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 1/1 codes voted.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0,
+  1.2,
+  [
+   "a",
+   "b",
+   "c",
+   "d",
+   "e"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "d"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "d"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "d"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "e"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "e"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "e"
+    ]
+   ]
+  ]
+ ],
+ "matrix": [
+  [
+   {
+    "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+    "c_drag": 1.2066666666666668,
+    "c_lift": -3.0100000000000002,
+    "cd_spread_pct": 3.314917127071826,
+    "cl_spread_pct": 2.9900332225913573,
+    "converged": true,
+    "fused": {
+     "aero_balance_front": 0.45999999999999996,
+     "c_pitch": 0.02,
+     "c_side": 0.15000000000000002,
+     "force_monitor_range": 0.03314917127071826,
+     "notes": "Virtual Tunnel Solver: mean consensus of 3 code(s) [a, b, c]; inter-code spread C_l 3.0% / C_d 3.3%; converged consensus (codes agree within tolerance)"
+    },
+    "members": [
+     {
+      "backend": "a",
+      "c_drag": 1.2,
+      "c_lift": -3.0,
+      "error": "",
+      "ok": true
+     },
+     {
+      "backend": "b",
+      "c_drag": 1.23,
+      "c_lift": -3.06,
+      "error": "",
+      "ok": true
+     },
+     {
+      "backend": "c",
+      "c_drag": 1.19,
+      "c_lift": -2.97,
+      "error": "",
+      "ok": true
+     }
+    ],
+    "n_voted": 3,
+    "prov": {
+     "backend": "virtual-tunnel[a+b+c]",
+     "cell_count": null,
+     "correlated_against": "",
+     "fidelity": "rans",
+     "is_correlated": false,
+     "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 3/3 codes voted, inter-code spread 3.3%.",
+     "turbulence_model": "kOmegaSST",
+     "yplus_mean": null
+    }
+   },
+   {
+    "attitude": "roll=+0.0 pitch=+0.0 yaw=+2.0 h=30mm V=20",
+    "c_drag": 1.2066666666666668,
+    "c_lift": -3.0100000000000002,
+    "cd_spread_pct": 3.314917127071826,
+    "cl_spread_pct": 2.9900332225913573,
+    "converged": true,
+    "fused": {
+     "aero_balance_front": 0.45999999999999996,
+     "c_pitch": 0.02,
+     "c_side": 0.15000000000000002,
+     "force_monitor_range": 0.03314917127071826,
+     "notes": "Virtual Tunnel Solver: mean consensus of 3 code(s) [a, b, c]; inter-code spread C_l 3.0% / C_d 3.3%; converged consensus (codes agree within tolerance)"
+    },
+    "members": [
+     {
+      "backend": "a",
+      "c_drag": 1.2,
+      "c_lift": -3.0,
+      "error": "",
+      "ok": true
+     },
+     {
+      "backend": "b",
+      "c_drag": 1.23,
+      "c_lift": -3.06,
+      "error": "",
+      "ok": true
+     },
+     {
+      "backend": "c",
+      "c_drag": 1.19,
+      "c_lift": -2.97,
+      "error": "",
+      "ok": true
+     }
+    ],
+    "n_voted": 3,
+    "prov": {
+     "backend": "virtual-tunnel[a+b+c]",
+     "cell_count": null,
+     "correlated_against": "",
+     "fidelity": "rans",
+     "is_correlated": false,
+     "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 3/3 codes voted, inter-code spread 3.3%.",
+     "turbulence_model": "kOmegaSST",
+     "yplus_mean": null
+    }
+   }
+  ],
+  [
+   -3.0100000000000002,
+   -3.0100000000000002
+  ],
+  [
+   {
+    "attitude": "roll=+0.0 pitch=+0.0 yaw=+2.0 h=30mm V=20",
+    "c_drag": 1.2066666666666668,
+    "c_lift": -3.0100000000000002,
+    "cd_spread_pct": 3.314917127071826,
+    "cl_spread_pct": 2.9900332225913573,
+    "converged": true,
+    "fused": {
+     "aero_balance_front": 0.45999999999999996,
+     "c_pitch": 0.02,
+     "c_side": 0.15000000000000002,
+     "force_monitor_range": 0.03314917127071826,
+     "notes": "Virtual Tunnel Solver: mean consensus of 3 code(s) [a, b, c]; inter-code spread C_l 3.0% / C_d 3.3%; converged consensus (codes agree within tolerance)"
+    },
+    "members": [
+     {
+      "backend": "a",
+      "c_drag": 1.2,
+      "c_lift": -3.0,
+      "error": "",
+      "ok": true
+     },
+     {
+      "backend": "b",
+      "c_drag": 1.23,
+      "c_lift": -3.06,
+      "error": "",
+      "ok": true
+     },
+     {
+      "backend": "c",
+      "c_drag": 1.19,
+      "c_lift": -2.97,
+      "error": "",
+      "ok": true
+     }
+    ],
+    "n_voted": 3,
+    "prov": {
+     "backend": "virtual-tunnel[a+b+c]",
+     "cell_count": null,
+     "correlated_against": "",
+     "fidelity": "rans",
+     "is_correlated": false,
+     "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 3/3 codes voted, inter-code spread 3.3%.",
+     "turbulence_model": "kOmegaSST",
+     "yplus_mean": null
+    }
+   }
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp000_yp020_h0030_v200",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp000_yp020_h0030_v200",
+     "b"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "run",
+     "case_rp000_pp000_yp020_h0030_v200",
+     "c"
+    ]
+   ]
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp000_yp020_h0030_v200",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp000_yp020_h0030_v200",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp000_yp020_h0030_v200",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp000_yp020_h0030_v200",
+     "b"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "run",
+     "case_rp000_pp000_yp020_h0030_v200",
+     "c"
+    ],
+    [
+     "read",
+     "case_rp000_pp000_yp020_h0030_v200",
+     "c"
+    ]
+   ]
+  ]
+ ],
+ "nameless.[('agreement_tol', 10.0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2,
+   "c_lift": -3.0,
+   "cd_spread_pct": 0.0,
+   "cl_spread_pct": 0.0,
+   "converged": true,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.0,
+    "notes": "Virtual Tunnel Solver: mean consensus of 2 code(s) [member0, n]; inter-code spread C_l 0.0% / C_d 0.0%; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "member0",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "n",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[member0+n]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 0.0%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0,
+  1.2,
+  [
+   "member0",
+   "n"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "member0"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "member0"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "member0"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "n"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "n"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "n"
+    ]
+   ]
+  ]
+ ],
+ "nameless.[('agreement_tol', 50.0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2,
+   "c_lift": -3.0,
+   "cd_spread_pct": 0.0,
+   "cl_spread_pct": 0.0,
+   "converged": true,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.0,
+    "notes": "Virtual Tunnel Solver: mean consensus of 2 code(s) [member0, n]; inter-code spread C_l 0.0% / C_d 0.0%; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "member0",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "n",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[member0+n]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 0.0%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0,
+  1.2,
+  [
+   "member0",
+   "n"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "member0"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "member0"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "member0"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "n"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "n"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "n"
+    ]
+   ]
+  ]
+ ],
+ "nameless.[('min_members', 0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2,
+   "c_lift": -3.0,
+   "cd_spread_pct": 0.0,
+   "cl_spread_pct": 0.0,
+   "converged": true,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.0,
+    "notes": "Virtual Tunnel Solver: mean consensus of 2 code(s) [member0, n]; inter-code spread C_l 0.0% / C_d 0.0%; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "member0",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "n",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[member0+n]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 0.0%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0,
+  1.2,
+  [
+   "member0",
+   "n"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "member0"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "member0"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "member0"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "n"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "n"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "n"
+    ]
+   ]
+  ]
+ ],
+ "nameless.[('min_members', 3)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2,
+   "c_lift": -3.0,
+   "cd_spread_pct": 0.0,
+   "cl_spread_pct": 0.0,
+   "converged": false,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.0,
+    "notes": "Virtual Tunnel Solver: mean consensus of 2 code(s) [member0, n]; inter-code spread C_l 0.0% / C_d 0.0%; NOT converged — only 2 code(s) voted, need 3"
+   },
+   "members": [
+    {
+     "backend": "member0",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "n",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[member0+n]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 0.0%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0,
+  1.2,
+  [
+   "member0",
+   "n"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "member0"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "member0"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "member0"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "n"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "n"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "n"
+    ]
+   ]
+  ]
+ ],
+ "nameless.[('reduction', 'median')]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2,
+   "c_lift": -3.0,
+   "cd_spread_pct": 0.0,
+   "cl_spread_pct": 0.0,
+   "converged": true,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.0,
+    "notes": "Virtual Tunnel Solver: median consensus of 2 code(s) [member0, n]; inter-code spread C_l 0.0% / C_d 0.0%; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "member0",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "n",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[member0+n]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the median of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 0.0%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0,
+  1.2,
+  [
+   "member0",
+   "n"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "member0"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "member0"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "member0"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "n"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "n"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "n"
+    ]
+   ]
+  ]
+ ],
+ "nameless.[]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2,
+   "c_lift": -3.0,
+   "cd_spread_pct": 0.0,
+   "cl_spread_pct": 0.0,
+   "converged": true,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.0,
+    "notes": "Virtual Tunnel Solver: mean consensus of 2 code(s) [member0, n]; inter-code spread C_l 0.0% / C_d 0.0%; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "member0",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "n",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[member0+n]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 0.0%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0,
+  1.2,
+  [
+   "member0",
+   "n"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "member0"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "member0"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "member0"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "n"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "n"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "n"
+    ]
+   ]
+  ]
+ ],
+ "none.[('agreement_tol', 10.0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": null,
+   "c_lift": null,
+   "cd_spread_pct": "NaN",
+   "cl_spread_pct": "NaN",
+   "converged": false,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": null,
+    "notes": "Virtual Tunnel Solver: no code produced a usable result — a: no licence; b: no usable result"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": null,
+     "c_lift": null,
+     "error": "no licence",
+     "ok": false
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": false
+    }
+   ],
+   "n_voted": 0,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 0/2 codes voted.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  null,
+  null,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "none.[('agreement_tol', 50.0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": null,
+   "c_lift": null,
+   "cd_spread_pct": "NaN",
+   "cl_spread_pct": "NaN",
+   "converged": false,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": null,
+    "notes": "Virtual Tunnel Solver: no code produced a usable result — a: no licence; b: no usable result"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": null,
+     "c_lift": null,
+     "error": "no licence",
+     "ok": false
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": false
+    }
+   ],
+   "n_voted": 0,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 0/2 codes voted.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  null,
+  null,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "none.[('min_members', 0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": null,
+   "c_lift": null,
+   "cd_spread_pct": "NaN",
+   "cl_spread_pct": "NaN",
+   "converged": false,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": null,
+    "notes": "Virtual Tunnel Solver: no code produced a usable result — a: no licence; b: no usable result"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": null,
+     "c_lift": null,
+     "error": "no licence",
+     "ok": false
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": false
+    }
+   ],
+   "n_voted": 0,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 0/2 codes voted.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  null,
+  null,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "none.[('min_members', 3)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": null,
+   "c_lift": null,
+   "cd_spread_pct": "NaN",
+   "cl_spread_pct": "NaN",
+   "converged": false,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": null,
+    "notes": "Virtual Tunnel Solver: no code produced a usable result — a: no licence; b: no usable result"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": null,
+     "c_lift": null,
+     "error": "no licence",
+     "ok": false
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": false
+    }
+   ],
+   "n_voted": 0,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 0/2 codes voted.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  null,
+  null,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "none.[('reduction', 'median')]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": null,
+   "c_lift": null,
+   "cd_spread_pct": "NaN",
+   "cl_spread_pct": "NaN",
+   "converged": false,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": null,
+    "notes": "Virtual Tunnel Solver: no code produced a usable result — a: no licence; b: no usable result"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": null,
+     "c_lift": null,
+     "error": "no licence",
+     "ok": false
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": false
+    }
+   ],
+   "n_voted": 0,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the median of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 0/2 codes voted.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  null,
+  null,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "none.[]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": null,
+   "c_lift": null,
+   "cd_spread_pct": "NaN",
+   "cl_spread_pct": "NaN",
+   "converged": false,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": null,
+    "notes": "Virtual Tunnel Solver: no code produced a usable result — a: no licence; b: no usable result"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": null,
+     "c_lift": null,
+     "error": "no licence",
+     "ok": false
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": false
+    }
+   ],
+   "n_voted": 0,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 0/2 codes voted.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  null,
+  null,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "outcome": [
+  [
+   false,
+   false
+  ],
+  [
+   true
+  ]
+ ],
+ "reduce": [
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  3.0,
+  2.0,
+  3.0,
+  2.0,
+  2.0,
+  2.0
+ ],
+ "single.[('agreement_tol', 10.0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.1,
+   "c_lift": -2.5,
+   "cd_spread_pct": "NaN",
+   "cl_spread_pct": "NaN",
+   "converged": true,
+   "fused": {
+    "aero_balance_front": 0.5,
+    "c_pitch": 0.1,
+    "c_side": 0.3,
+    "force_monitor_range": null,
+    "notes": "Virtual Tunnel Solver: mean consensus of 1 code(s) [solo]; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "solo",
+     "c_drag": 1.1,
+     "c_lift": -2.5,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 1,
+   "prov": {
+    "backend": "virtual-tunnel[solo]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 1/1 codes voted.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -2.5,
+  1.1,
+  [
+   "solo"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "solo"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "solo"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "solo"
+    ]
+   ]
+  ]
+ ],
+ "single.[('agreement_tol', 50.0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.1,
+   "c_lift": -2.5,
+   "cd_spread_pct": "NaN",
+   "cl_spread_pct": "NaN",
+   "converged": true,
+   "fused": {
+    "aero_balance_front": 0.5,
+    "c_pitch": 0.1,
+    "c_side": 0.3,
+    "force_monitor_range": null,
+    "notes": "Virtual Tunnel Solver: mean consensus of 1 code(s) [solo]; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "solo",
+     "c_drag": 1.1,
+     "c_lift": -2.5,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 1,
+   "prov": {
+    "backend": "virtual-tunnel[solo]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 1/1 codes voted.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -2.5,
+  1.1,
+  [
+   "solo"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "solo"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "solo"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "solo"
+    ]
+   ]
+  ]
+ ],
+ "single.[('min_members', 0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.1,
+   "c_lift": -2.5,
+   "cd_spread_pct": "NaN",
+   "cl_spread_pct": "NaN",
+   "converged": true,
+   "fused": {
+    "aero_balance_front": 0.5,
+    "c_pitch": 0.1,
+    "c_side": 0.3,
+    "force_monitor_range": null,
+    "notes": "Virtual Tunnel Solver: mean consensus of 1 code(s) [solo]; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "solo",
+     "c_drag": 1.1,
+     "c_lift": -2.5,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 1,
+   "prov": {
+    "backend": "virtual-tunnel[solo]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 1/1 codes voted.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -2.5,
+  1.1,
+  [
+   "solo"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "solo"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "solo"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "solo"
+    ]
+   ]
+  ]
+ ],
+ "single.[('min_members', 3)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.1,
+   "c_lift": -2.5,
+   "cd_spread_pct": "NaN",
+   "cl_spread_pct": "NaN",
+   "converged": false,
+   "fused": {
+    "aero_balance_front": 0.5,
+    "c_pitch": 0.1,
+    "c_side": 0.3,
+    "force_monitor_range": null,
+    "notes": "Virtual Tunnel Solver: mean consensus of 1 code(s) [solo]; NOT converged — only 1 code(s) voted, need 3"
+   },
+   "members": [
+    {
+     "backend": "solo",
+     "c_drag": 1.1,
+     "c_lift": -2.5,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 1,
+   "prov": {
+    "backend": "virtual-tunnel[solo]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 1/1 codes voted.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -2.5,
+  1.1,
+  [
+   "solo"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "solo"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "solo"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "solo"
+    ]
+   ]
+  ]
+ ],
+ "single.[('reduction', 'median')]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.1,
+   "c_lift": -2.5,
+   "cd_spread_pct": "NaN",
+   "cl_spread_pct": "NaN",
+   "converged": true,
+   "fused": {
+    "aero_balance_front": 0.5,
+    "c_pitch": 0.1,
+    "c_side": 0.3,
+    "force_monitor_range": null,
+    "notes": "Virtual Tunnel Solver: median consensus of 1 code(s) [solo]; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "solo",
+     "c_drag": 1.1,
+     "c_lift": -2.5,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 1,
+   "prov": {
+    "backend": "virtual-tunnel[solo]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the median of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 1/1 codes voted.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -2.5,
+  1.1,
+  [
+   "solo"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "solo"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "solo"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "solo"
+    ]
+   ]
+  ]
+ ],
+ "single.[]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.1,
+   "c_lift": -2.5,
+   "cd_spread_pct": "NaN",
+   "cl_spread_pct": "NaN",
+   "converged": true,
+   "fused": {
+    "aero_balance_front": 0.5,
+    "c_pitch": 0.1,
+    "c_side": 0.3,
+    "force_monitor_range": null,
+    "notes": "Virtual Tunnel Solver: mean consensus of 1 code(s) [solo]; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "solo",
+     "c_drag": 1.1,
+     "c_lift": -2.5,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 1,
+   "prov": {
+    "backend": "virtual-tunnel[solo]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 1/1 codes voted.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -2.5,
+  1.1,
+  [
+   "solo"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "solo"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "solo"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "solo"
+    ]
+   ]
+  ]
+ ],
+ "spread": [
+  "NaN",
+  "NaN",
+  "NaN",
+  9.523809523809533,
+  20.000000000000007,
+  "NaN",
+  "NaN"
+ ],
+ "triple.[('agreement_tol', 10.0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2,
+   "c_lift": -3.0,
+   "cd_spread_pct": 0.0,
+   "cl_spread_pct": 0.0,
+   "converged": true,
+   "fused": {
+    "aero_balance_front": 0.5166666666666667,
+    "c_pitch": 0.049999999999999996,
+    "c_side": 0.39999999999999997,
+    "force_monitor_range": 0.0,
+    "notes": "Virtual Tunnel Solver: mean consensus of 3 code(s) [a, b, c]; inter-code spread C_l 0.0% / C_d 0.0%; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "c",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 3,
+   "prov": {
+    "backend": "virtual-tunnel[a+b+c]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 3/3 codes voted, inter-code spread 0.0%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0,
+  1.2,
+  [
+   "a",
+   "b",
+   "c"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ]
+   ]
+  ]
+ ],
+ "triple.[('agreement_tol', 50.0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2,
+   "c_lift": -3.0,
+   "cd_spread_pct": 0.0,
+   "cl_spread_pct": 0.0,
+   "converged": true,
+   "fused": {
+    "aero_balance_front": 0.5166666666666667,
+    "c_pitch": 0.049999999999999996,
+    "c_side": 0.39999999999999997,
+    "force_monitor_range": 0.0,
+    "notes": "Virtual Tunnel Solver: mean consensus of 3 code(s) [a, b, c]; inter-code spread C_l 0.0% / C_d 0.0%; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "c",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 3,
+   "prov": {
+    "backend": "virtual-tunnel[a+b+c]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 3/3 codes voted, inter-code spread 0.0%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0,
+  1.2,
+  [
+   "a",
+   "b",
+   "c"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ]
+   ]
+  ]
+ ],
+ "triple.[('min_members', 0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2,
+   "c_lift": -3.0,
+   "cd_spread_pct": 0.0,
+   "cl_spread_pct": 0.0,
+   "converged": true,
+   "fused": {
+    "aero_balance_front": 0.5166666666666667,
+    "c_pitch": 0.049999999999999996,
+    "c_side": 0.39999999999999997,
+    "force_monitor_range": 0.0,
+    "notes": "Virtual Tunnel Solver: mean consensus of 3 code(s) [a, b, c]; inter-code spread C_l 0.0% / C_d 0.0%; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "c",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 3,
+   "prov": {
+    "backend": "virtual-tunnel[a+b+c]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 3/3 codes voted, inter-code spread 0.0%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0,
+  1.2,
+  [
+   "a",
+   "b",
+   "c"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ]
+   ]
+  ]
+ ],
+ "triple.[('min_members', 3)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2,
+   "c_lift": -3.0,
+   "cd_spread_pct": 0.0,
+   "cl_spread_pct": 0.0,
+   "converged": true,
+   "fused": {
+    "aero_balance_front": 0.5166666666666667,
+    "c_pitch": 0.049999999999999996,
+    "c_side": 0.39999999999999997,
+    "force_monitor_range": 0.0,
+    "notes": "Virtual Tunnel Solver: mean consensus of 3 code(s) [a, b, c]; inter-code spread C_l 0.0% / C_d 0.0%; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "c",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 3,
+   "prov": {
+    "backend": "virtual-tunnel[a+b+c]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 3/3 codes voted, inter-code spread 0.0%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0,
+  1.2,
+  [
+   "a",
+   "b",
+   "c"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ]
+   ]
+  ]
+ ],
+ "triple.[('reduction', 'median')]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2,
+   "c_lift": -3.0,
+   "cd_spread_pct": 0.0,
+   "cl_spread_pct": 0.0,
+   "converged": true,
+   "fused": {
+    "aero_balance_front": 0.45,
+    "c_pitch": 0.02,
+    "c_side": 0.2,
+    "force_monitor_range": 0.0,
+    "notes": "Virtual Tunnel Solver: median consensus of 3 code(s) [a, b, c]; inter-code spread C_l 0.0% / C_d 0.0%; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "c",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 3,
+   "prov": {
+    "backend": "virtual-tunnel[a+b+c]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the median of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 3/3 codes voted, inter-code spread 0.0%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0,
+  1.2,
+  [
+   "a",
+   "b",
+   "c"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ]
+   ]
+  ]
+ ],
+ "triple.[]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.2,
+   "c_lift": -3.0,
+   "cd_spread_pct": 0.0,
+   "cl_spread_pct": 0.0,
+   "converged": true,
+   "fused": {
+    "aero_balance_front": 0.5166666666666667,
+    "c_pitch": 0.049999999999999996,
+    "c_side": 0.39999999999999997,
+    "force_monitor_range": 0.0,
+    "notes": "Virtual Tunnel Solver: mean consensus of 3 code(s) [a, b, c]; inter-code spread C_l 0.0% / C_d 0.0%; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "c",
+     "c_drag": 1.2,
+     "c_lift": -3.0,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 3,
+   "prov": {
+    "backend": "virtual-tunnel[a+b+c]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 3/3 codes voted, inter-code spread 0.0%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  -3.0,
+  1.2,
+  [
+   "a",
+   "b",
+   "c"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "c"
+    ]
+   ]
+  ]
+ ],
+ "write": [
+  "case_rp000_pp005_yp000_h0025_v150",
+  [
+   "a",
+   "b",
+   "bad",
+   "c",
+   "d",
+   "e",
+   "member0",
+   "n",
+   "ok",
+   "solo"
+  ],
+  "bad write_case failed: disk full\n",
+  []
+ ],
+ "zero_mean.[('agreement_tol', 10.0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.0,
+   "c_lift": 0.0,
+   "cd_spread_pct": 0.0,
+   "cl_spread_pct": "NaN",
+   "converged": true,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.0,
+    "notes": "Virtual Tunnel Solver: mean consensus of 2 code(s) [a, b]; inter-code spread C_l nan% / C_d 0.0%; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.0,
+     "c_lift": 1e-13,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.0,
+     "c_lift": -1e-13,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 0.0%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  0.0,
+  1.0,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "zero_mean.[('agreement_tol', 50.0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.0,
+   "c_lift": 0.0,
+   "cd_spread_pct": 0.0,
+   "cl_spread_pct": "NaN",
+   "converged": true,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.0,
+    "notes": "Virtual Tunnel Solver: mean consensus of 2 code(s) [a, b]; inter-code spread C_l nan% / C_d 0.0%; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.0,
+     "c_lift": 1e-13,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.0,
+     "c_lift": -1e-13,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 0.0%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  0.0,
+  1.0,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "zero_mean.[('min_members', 0)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.0,
+   "c_lift": 0.0,
+   "cd_spread_pct": 0.0,
+   "cl_spread_pct": "NaN",
+   "converged": true,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.0,
+    "notes": "Virtual Tunnel Solver: mean consensus of 2 code(s) [a, b]; inter-code spread C_l nan% / C_d 0.0%; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.0,
+     "c_lift": 1e-13,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.0,
+     "c_lift": -1e-13,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 0.0%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  0.0,
+  1.0,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "zero_mean.[('min_members', 3)]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.0,
+   "c_lift": 0.0,
+   "cd_spread_pct": 0.0,
+   "cl_spread_pct": "NaN",
+   "converged": false,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.0,
+    "notes": "Virtual Tunnel Solver: mean consensus of 2 code(s) [a, b]; inter-code spread C_l nan% / C_d 0.0%; NOT converged — only 2 code(s) voted, need 3"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.0,
+     "c_lift": 1e-13,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.0,
+     "c_lift": -1e-13,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 0.0%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  0.0,
+  1.0,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "zero_mean.[('reduction', 'median')]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.0,
+   "c_lift": 0.0,
+   "cd_spread_pct": 0.0,
+   "cl_spread_pct": "NaN",
+   "converged": true,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.0,
+    "notes": "Virtual Tunnel Solver: median consensus of 2 code(s) [a, b]; inter-code spread C_l nan% / C_d 0.0%; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.0,
+     "c_lift": 1e-13,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.0,
+     "c_lift": -1e-13,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the median of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 0.0%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  0.0,
+  1.0,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ],
+ "zero_mean.[]": [
+  {
+   "attitude": "roll=+0.0 pitch=+0.5 yaw=+0.0 h=25mm V=15",
+   "c_drag": 1.0,
+   "c_lift": 0.0,
+   "cd_spread_pct": 0.0,
+   "cl_spread_pct": "NaN",
+   "converged": true,
+   "fused": {
+    "aero_balance_front": null,
+    "c_pitch": null,
+    "c_side": null,
+    "force_monitor_range": 0.0,
+    "notes": "Virtual Tunnel Solver: mean consensus of 2 code(s) [a, b]; inter-code spread C_l nan% / C_d 0.0%; converged consensus (codes agree within tolerance)"
+   },
+   "members": [
+    {
+     "backend": "a",
+     "c_drag": 1.0,
+     "c_lift": 1e-13,
+     "error": "",
+     "ok": true
+    },
+    {
+     "backend": "b",
+     "c_drag": 1.0,
+     "c_lift": -1e-13,
+     "error": "",
+     "ok": true
+    }
+   ],
+   "n_voted": 2,
+   "prov": {
+    "backend": "virtual-tunnel[a+b]",
+    "cell_count": null,
+    "correlated_against": "",
+    "fidelity": "rans",
+    "is_correlated": false,
+    "notes": "Virtual Tunnel Solver — self-contained on KinematiK's in-house ANSYS-Fluent backend. The coefficient is computed internally (no external solver, license or mesh required) and a Fluent journal is written for optional verification. When several backends are supplied the result is the mean of the converged members only; members that could not run or did not converge contribute nothing and are recorded as holes, and inter-code agreement is the confidence signal. Correlate against the physical tunnel map before trusting absolute levels, 2/2 codes voted, inter-code spread 0.0%.",
+    "turbulence_model": "kOmegaSST",
+    "yplus_mean": null
+   }
+  },
+  0.0,
+  1.0,
+  [
+   "a",
+   "b"
+  ],
+  [
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "a"
+    ]
+   ],
+   [
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "read",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ],
+    [
+     "run",
+     "case_rp000_pp005_yp000_h0025_v150",
+     "b"
+    ]
+   ]
+  ]
+ ]
+}

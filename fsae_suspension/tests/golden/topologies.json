@@ -1,0 +1,6279 @@
+{
+ "example.double_wishbone": {
+  "bodies": {
+   "upright": [
+    "lo",
+    "uo",
+    "tro"
+   ]
+  },
+  "carrier_body": "upright",
+  "constraints": [
+   [
+    "Link",
+    {
+     "a": "uo",
+     "b": "ufi",
+     "label": "UF",
+     "length": 320.22592025006344,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "uo",
+     "b": "uri",
+     "label": "UR",
+     "length": 322.9437102654269,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "lo",
+     "b": "lfi",
+     "label": "LF",
+     "length": 389.49486517796356,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "lo",
+     "b": "lri",
+     "label": "LR",
+     "length": 402.25147606938623,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "uo",
+     "b": "lo",
+     "label": "upright",
+     "length": 193.94329068054918,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "tro",
+     "b": "tri",
+     "label": "TR",
+     "length": 330.3028912982749,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "tro",
+     "b": "lo",
+     "label": "tro->lo",
+     "length": 104.1633332799983,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "tro",
+     "b": "uo",
+     "label": "tro->uo",
+     "length": 170.24687956024334,
+     "n_eq": 1
+    }
+   ],
+   [
+    "DriveZ",
+    {
+     "n_eq": 1,
+     "p": "lo",
+     "travel": 0.0,
+     "z0": 110.0
+    }
+   ],
+   [
+    "RackTranslation",
+    {
+     "axis": [
+      0.0,
+      1.0,
+      0.0
+     ],
+     "base_pos": [
+      100.0,
+      230.0,
+      160.0
+     ],
+     "delta": 0.0,
+     "n_eq": 3,
+     "p": "tri"
+    }
+   ]
+  ],
+  "contact_patch": "cp",
+  "drive_point": "lo",
+  "label": "double wishbone",
+  "members": [
+   [
+    "UF",
+    "uo",
+    "ufi"
+   ],
+   [
+    "UR",
+    "uo",
+    "uri"
+   ],
+   [
+    "LF",
+    "lo",
+    "lfi"
+   ],
+   [
+    "LR",
+    "lo",
+    "lri"
+   ],
+   [
+    "upright",
+    "uo",
+    "lo"
+   ],
+   [
+    "TR",
+    "tro",
+    "tri"
+   ],
+   [
+    "tro->lo",
+    "tro",
+    "lo"
+   ],
+   [
+    "tro->uo",
+    "tro",
+    "uo"
+   ]
+  ],
+  "meta": {
+   "family": "independent",
+   "steered": true
+  },
+  "points": {
+   "cp": [
+    "carried",
+    [
+     0.0,
+     605.0,
+     0.0
+    ],
+    null
+   ],
+   "lfi": [
+    "ground",
+    [
+     -110.0,
+     200.0,
+     117.5
+    ],
+    null
+   ],
+   "lo": [
+    "free",
+    [
+     -5.0,
+     575.0,
+     110.0
+    ],
+    null
+   ],
+   "lri": [
+    "ground",
+    [
+     140.0,
+     200.0,
+     122.5
+    ],
+    null
+   ],
+   "tri": [
+    "ground",
+    [
+     100.0,
+     230.0,
+     160.0
+    ],
+    null
+   ],
+   "tro": [
+    "free",
+    [
+     90.0,
+     560.0,
+     150.0
+    ],
+    null
+   ],
+   "ufi": [
+    "ground",
+    [
+     -100.0,
+     240.0,
+     299.2
+    ],
+    null
+   ],
+   "uo": [
+    "free",
+    [
+     12.0,
+     540.0,
+     300.0
+    ],
+    null
+   ],
+   "uri": [
+    "ground",
+    [
+     130.0,
+     240.0,
+     280.8
+    ],
+    null
+   ],
+   "wc": [
+    "carried",
+    [
+     0.0,
+     600.0,
+     228.0
+    ],
+    null
+   ]
+  },
+  "spin_axis_pts": null,
+  "static_camber": -1.5,
+  "static_toe": 0.0,
+  "steer_axis": null,
+  "steer_point": "tri",
+  "wheel_center": "wc"
+ },
+ "example.from_links": "no example for template 'from_links'; choose from ['double_wishbone', 'from_links', 'macpherson_strut', 'multilink', 'semi_trailing_arm', 'solid_axle', 'trailing_arm', 'truck_steer_linkage', 'twist_beam']",
+ "example.macpherson_strut": {
+  "bodies": {
+   "knuckle": [
+    "lo",
+    "sl",
+    "tro"
+   ]
+  },
+  "carrier_body": "knuckle",
+  "constraints": [
+   [
+    "Link",
+    {
+     "a": "lo",
+     "b": "lfi",
+     "label": "LF",
+     "length": 389.6232154274178,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "lo",
+     "b": "lri",
+     "label": "LR",
+     "length": 402.1271565064961,
+     "n_eq": 1
+    }
+   ],
+   [
+    "OnLine",
+    {
+     "_e1": [
+      0.0,
+      -0.9883716976506172,
+      -0.15205718425394113
+     ],
+     "_e2": [
+      -0.9992782388088907,
+      -0.0057761747908028375,
+      0.03754513614021844
+     ],
+     "axis": [
+      -10.0,
+      40.0,
+      -260.0
+     ],
+     "base": "st",
+     "n_eq": 2,
+     "p": "sl"
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "sl",
+     "b": "lo",
+     "label": "strut_body",
+     "length": 250.49950099750697,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "tro",
+     "b": "tri",
+     "label": "TR",
+     "length": 330.49205739321485,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "tro",
+     "b": "lo",
+     "label": "tro->lo",
+     "length": 132.9473580030833,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "tro",
+     "b": "sl",
+     "label": "tro->sl",
+     "length": 215.23243250030885,
+     "n_eq": 1
+    }
+   ],
+   [
+    "DriveZ",
+    {
+     "n_eq": 1,
+     "p": "lo",
+     "travel": 0.0,
+     "z0": 110.0
+    }
+   ],
+   [
+    "RackTranslation",
+    {
+     "axis": [
+      0.0,
+      1.0,
+      0.0
+     ],
+     "base_pos": [
+      120.0,
+      230.0,
+      160.0
+     ],
+     "delta": 0.0,
+     "n_eq": 3,
+     "p": "tri"
+    }
+   ]
+  ],
+  "contact_patch": "cp",
+  "drive_point": "lo",
+  "label": "MacPherson strut",
+  "members": [
+   [
+    "LF",
+    "lo",
+    "lfi"
+   ],
+   [
+    "LR",
+    "lo",
+    "lri"
+   ],
+   [
+    "strut_body",
+    "sl",
+    "lo"
+   ],
+   [
+    "TR",
+    "tro",
+    "tri"
+   ],
+   [
+    "tro->lo",
+    "tro",
+    "lo"
+   ],
+   [
+    "tro->sl",
+    "tro",
+    "sl"
+   ]
+  ],
+  "meta": {
+   "family": "independent",
+   "steered": true
+  },
+  "points": {
+   "cp": [
+    "carried",
+    [
+     0.0,
+     605.0,
+     0.0
+    ],
+    null
+   ],
+   "lfi": [
+    "ground",
+    [
+     -110.0,
+     200.0,
+     122.5
+    ],
+    null
+   ],
+   "lo": [
+    "free",
+    [
+     -5.0,
+     575.0,
+     110.0
+    ],
+    null
+   ],
+   "lri": [
+    "ground",
+    [
+     140.0,
+     200.0,
+     117.5
+    ],
+    null
+   ],
+   "sl": [
+    "free",
+    [
+     0.0,
+     560.0,
+     360.0
+    ],
+    null
+   ],
+   "st": [
+    "ground",
+    [
+     10.0,
+     520.0,
+     620.0
+    ],
+    null
+   ],
+   "tri": [
+    "ground",
+    [
+     120.0,
+     230.0,
+     160.0
+    ],
+    null
+   ],
+   "tro": [
+    "free",
+    [
+     110.0,
+     560.0,
+     175.0
+    ],
+    null
+   ],
+   "wc": [
+    "carried",
+    [
+     0.0,
+     600.0,
+     228.0
+    ],
+    null
+   ]
+  },
+  "spin_axis_pts": null,
+  "static_camber": -1.0,
+  "static_toe": 0.0,
+  "steer_axis": null,
+  "steer_point": "tri",
+  "wheel_center": "wc"
+ },
+ "example.multilink": {
+  "bodies": {
+   "upright": [
+    "out0",
+    "out2",
+    "out4"
+   ]
+  },
+  "carrier_body": "upright",
+  "constraints": [
+   [
+    "Link",
+    {
+     "a": "out0",
+     "b": "in0",
+     "label": "L0",
+     "length": 353.6947836765479,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "out1",
+     "b": "in1",
+     "label": "L1",
+     "length": 361.52454965050435,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "out2",
+     "b": "in2",
+     "label": "L2",
+     "length": 297.8674201721296,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "out3",
+     "b": "in3",
+     "label": "L3",
+     "length": 306.67409411295245,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "out4",
+     "b": "in4",
+     "label": "L4",
+     "length": 320.3123475609393,
+     "n_eq": 1
+    }
+   ],
+   [
+    "DriveZ",
+    {
+     "n_eq": 1,
+     "p": "out0",
+     "travel": 0.0,
+     "z0": 120.0
+    }
+   ],
+   [
+    "RackTranslation",
+    {
+     "axis": [
+      0.0,
+      1.0,
+      0.0
+     ],
+     "base_pos": [
+      130.0,
+      240.0,
+      200.0
+     ],
+     "delta": 0.0,
+     "n_eq": 3,
+     "p": "in4"
+    }
+   ]
+  ],
+  "contact_patch": "cp",
+  "drive_point": "out0",
+  "label": "multi-link",
+  "members": [
+   [
+    "L0",
+    "out0",
+    "in0"
+   ],
+   [
+    "L1",
+    "out1",
+    "in1"
+   ],
+   [
+    "L2",
+    "out2",
+    "in2"
+   ],
+   [
+    "L3",
+    "out3",
+    "in3"
+   ],
+   [
+    "L4",
+    "out4",
+    "in4"
+   ]
+  ],
+  "meta": {
+   "family": "independent",
+   "n_links": 5,
+   "steered": true
+  },
+  "points": {
+   "cp": [
+    "carried",
+    [
+     0.0,
+     605.0,
+     0.0
+    ],
+    null
+   ],
+   "in0": [
+    "ground",
+    [
+     -60.0,
+     210.0,
+     130.0
+    ],
+    null
+   ],
+   "in1": [
+    "ground",
+    [
+     150.0,
+     215.0,
+     128.0
+    ],
+    null
+   ],
+   "in2": [
+    "ground",
+    [
+     -40.0,
+     250.0,
+     330.0
+    ],
+    null
+   ],
+   "in3": [
+    "ground",
+    [
+     160.0,
+     255.0,
+     332.0
+    ],
+    null
+   ],
+   "in4": [
+    "ground",
+    [
+     130.0,
+     240.0,
+     200.0
+    ],
+    null
+   ],
+   "out0": [
+    "free",
+    [
+     -10.0,
+     560.0,
+     120.0
+    ],
+    null
+   ],
+   "out1": [
+    "carried",
+    [
+     60.0,
+     565.0,
+     118.0
+    ],
+    null
+   ],
+   "out2": [
+    "free",
+    [
+     0.0,
+     545.0,
+     320.0
+    ],
+    null
+   ],
+   "out3": [
+    "carried",
+    [
+     70.0,
+     548.0,
+     322.0
+    ],
+    null
+   ],
+   "out4": [
+    "free",
+    [
+     120.0,
+     560.0,
+     190.0
+    ],
+    null
+   ],
+   "wc": [
+    "carried",
+    [
+     0.0,
+     600.0,
+     228.0
+    ],
+    null
+   ]
+  },
+  "spin_axis_pts": null,
+  "static_camber": -1.0,
+  "static_toe": 0.0,
+  "steer_axis": null,
+  "steer_point": "in4",
+  "wheel_center": "wc"
+ },
+ "example.semi_trailing_arm": {
+  "bodies": {
+   "arm": [
+    "pi",
+    "po",
+    "hub"
+   ]
+  },
+  "carrier_body": "arm",
+  "constraints": [
+   [
+    "Revolute",
+    {
+     "axis": [
+      -40.0,
+      310.0,
+      45.0
+     ],
+     "base": "pi",
+     "n_eq": 2,
+     "offset": 470.7202601323555,
+     "p": "hub",
+     "radius": 583.9734583009745
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "hub",
+     "b": "po",
+     "label": "arm_brace",
+     "length": 378.7479372881125,
+     "n_eq": 1
+    }
+   ],
+   [
+    "DriveZ",
+    {
+     "n_eq": 1,
+     "p": "hub",
+     "travel": 0.0,
+     "z0": 150.0
+    }
+   ]
+  ],
+  "contact_patch": "cp",
+  "drive_point": "hub",
+  "label": "semi-trailing arm",
+  "members": [
+   [
+    "arm_brace",
+    "hub",
+    "po"
+   ]
+  ],
+  "meta": {
+   "family": "dependent-arm",
+   "steered": false
+  },
+  "points": {
+   "cp": [
+    "carried",
+    [
+     0.0,
+     605.0,
+     0.0
+    ],
+    null
+   ],
+   "hub": [
+    "free",
+    [
+     -100.0,
+     575.0,
+     150.0
+    ],
+    null
+   ],
+   "pi": [
+    "ground",
+    [
+     300.0,
+     150.0,
+     130.0
+    ],
+    null
+   ],
+   "po": [
+    "ground",
+    [
+     260.0,
+     460.0,
+     175.0
+    ],
+    null
+   ],
+   "wc": [
+    "carried",
+    [
+     0.0,
+     600.0,
+     228.0
+    ],
+    null
+   ]
+  },
+  "spin_axis_pts": null,
+  "static_camber": -1.0,
+  "static_toe": 0.0,
+  "steer_axis": null,
+  "steer_point": null,
+  "wheel_center": "wc"
+ },
+ "example.solid_axle": {
+  "bodies": {
+   "axle": [
+    "axL",
+    "axR",
+    "lat"
+   ]
+  },
+  "carrier_body": "axle",
+  "constraints": [
+   [
+    "Link",
+    {
+     "a": "lout0",
+     "b": "lin0",
+     "label": "L0",
+     "length": 280.0,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "lout1",
+     "b": "lin1",
+     "label": "L1",
+     "length": 280.0,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "lout2",
+     "b": "lin2",
+     "label": "L2",
+     "length": 230.8679276123039,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "lat",
+     "b": "lat_in",
+     "label": "panhard",
+     "length": 1130.0110618927586,
+     "n_eq": 1
+    }
+   ],
+   [
+    "AxleRoll",
+    {
+     "end_a": "axL",
+     "end_b": "axR",
+     "length": 1200.0,
+     "n_eq": 1
+    }
+   ],
+   [
+    "DriveZ",
+    {
+     "n_eq": 1,
+     "p": "axL",
+     "travel": 0.0,
+     "z0": 230.0
+    }
+   ]
+  ],
+  "contact_patch": "cp",
+  "drive_point": "axL",
+  "label": "solid axle",
+  "members": [
+   [
+    "L0",
+    "lout0",
+    "lin0"
+   ],
+   [
+    "L1",
+    "lout1",
+    "lin1"
+   ],
+   [
+    "L2",
+    "lout2",
+    "lin2"
+   ],
+   [
+    "panhard",
+    "lat",
+    "lat_in"
+   ]
+  ],
+  "meta": {
+   "family": "beam-axle",
+   "steered": false
+  },
+  "points": {
+   "axL": [
+    "free",
+    [
+     0.0,
+     600.0,
+     230.0
+    ],
+    null
+   ],
+   "axR": [
+    "free",
+    [
+     0.0,
+     -600.0,
+     230.0
+    ],
+    null
+   ],
+   "cp": [
+    "carried",
+    [
+     0.0,
+     625.0,
+     0.0
+    ],
+    null
+   ],
+   "lat": [
+    "free",
+    [
+     -50.0,
+     580.0,
+     285.0
+    ],
+    null
+   ],
+   "lat_in": [
+    "ground",
+    [
+     -50.0,
+     -550.0,
+     280.0
+    ],
+    null
+   ],
+   "lin0": [
+    "ground",
+    [
+     400.0,
+     250.0,
+     120.0
+    ],
+    null
+   ],
+   "lin1": [
+    "ground",
+    [
+     400.0,
+     -250.0,
+     120.0
+    ],
+    null
+   ],
+   "lin2": [
+    "ground",
+    [
+     350.0,
+     120.0,
+     320.0
+    ],
+    null
+   ],
+   "lout0": [
+    "carried",
+    [
+     120.0,
+     250.0,
+     120.0
+    ],
+    null
+   ],
+   "lout1": [
+    "carried",
+    [
+     120.0,
+     -250.0,
+     120.0
+    ],
+    null
+   ],
+   "lout2": [
+    "carried",
+    [
+     120.0,
+     120.0,
+     300.0
+    ],
+    null
+   ],
+   "wc": [
+    "carried",
+    [
+     0.0,
+     620.0,
+     230.0
+    ],
+    null
+   ]
+  },
+  "spin_axis_pts": null,
+  "static_camber": 0.0,
+  "static_toe": 0.0,
+  "steer_axis": null,
+  "steer_point": null,
+  "wheel_center": "wc"
+ },
+ "example.trailing_arm": {
+  "bodies": {
+   "arm": [
+    "pi",
+    "po",
+    "hub"
+   ]
+  },
+  "carrier_body": "arm",
+  "constraints": [
+   [
+    "Revolute",
+    {
+     "axis": [
+      0.0,
+      300.0,
+      0.0
+     ],
+     "base": "pi",
+     "n_eq": 2,
+     "offset": 425.0,
+     "p": "hub",
+     "radius": 583.6308764964376
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "hub",
+     "b": "po",
+     "label": "arm_brace",
+     "length": 419.0763653560052,
+     "n_eq": 1
+    }
+   ],
+   [
+    "DriveZ",
+    {
+     "n_eq": 1,
+     "p": "hub",
+     "travel": 0.0,
+     "z0": 150.0
+    }
+   ]
+  ],
+  "contact_patch": "cp",
+  "drive_point": "hub",
+  "label": "trailing arm",
+  "members": [
+   [
+    "arm_brace",
+    "hub",
+    "po"
+   ]
+  ],
+  "meta": {
+   "family": "dependent-arm",
+   "steered": false
+  },
+  "points": {
+   "cp": [
+    "carried",
+    [
+     0.0,
+     605.0,
+     0.0
+    ],
+    null
+   ],
+   "hub": [
+    "free",
+    [
+     -100.0,
+     575.0,
+     150.0
+    ],
+    null
+   ],
+   "pi": [
+    "ground",
+    [
+     300.0,
+     150.0,
+     150.0
+    ],
+    null
+   ],
+   "po": [
+    "ground",
+    [
+     300.0,
+     450.0,
+     150.0
+    ],
+    null
+   ],
+   "wc": [
+    "carried",
+    [
+     0.0,
+     600.0,
+     228.0
+    ],
+    null
+   ]
+  },
+  "spin_axis_pts": null,
+  "static_camber": 0.0,
+  "static_toe": 0.0,
+  "steer_axis": null,
+  "steer_point": null,
+  "wheel_center": "wc"
+ },
+ "example.truck_steer_linkage": {
+  "bodies": {
+   "knuckle": [
+    "kpb",
+    "sp",
+    "sa"
+   ]
+  },
+  "carrier_body": "knuckle",
+  "constraints": [
+   [
+    "Revolute",
+    {
+     "axis": [
+      0.0,
+      -20.0,
+      200.0
+     ],
+     "base": "kpb",
+     "n_eq": 2,
+     "offset": 103.48386778183887,
+     "p": "sp",
+     "radius": 125.29964086141668
+    }
+   ],
+   [
+    "Revolute",
+    {
+     "axis": [
+      0.0,
+      -20.0,
+      200.0
+     ],
+     "base": "kpb",
+     "n_eq": 2,
+     "offset": 24.87592975524973,
+     "p": "sa",
+     "radius": 168.81943016134133
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "sp",
+     "b": "sa",
+     "label": "knuckle_rigid",
+     "length": 214.00934559032697,
+     "n_eq": 1
+    }
+   ],
+   [
+    "DriveZ",
+    {
+     "n_eq": 1,
+     "p": "sa",
+     "travel": 0.0,
+     "z0": 380.0
+    }
+   ],
+   [
+    "RackTranslation",
+    {
+     "axis": [
+      0.0,
+      1.0,
+      0.0
+     ],
+     "base_pos": [
+      160.0,
+      400.0,
+      380.0
+     ],
+     "delta": 0.0,
+     "n_eq": 3,
+     "p": "tri"
+    }
+   ]
+  ],
+  "contact_patch": "cp",
+  "drive_point": "sa",
+  "label": "heavy-truck steer axle",
+  "members": [
+   [
+    "knuckle_rigid",
+    "sp",
+    "sa"
+   ]
+  ],
+  "meta": {
+   "drive_is_steer": true,
+   "family": "beam-axle-steer",
+   "note": "1-DOF kingpin steer; 'travel' selects steer angle",
+   "steered": true
+  },
+  "points": {
+   "cp": [
+    "carried",
+    [
+     0.0,
+     1015.0,
+     0.0
+    ],
+    null
+   ],
+   "dragc": [
+    "ground",
+    [
+     160.0,
+     300.0,
+     600.0
+    ],
+    null
+   ],
+   "kpb": [
+    "ground",
+    [
+     0.0,
+     920.0,
+     360.0
+    ],
+    null
+   ],
+   "kpt": [
+    "ground",
+    [
+     0.0,
+     900.0,
+     560.0
+    ],
+    null
+   ],
+   "sa": [
+    "free",
+    [
+     160.0,
+     870.0,
+     380.0
+    ],
+    null
+   ],
+   "sp": [
+    "free",
+    [
+     0.0,
+     980.0,
+     470.0
+    ],
+    null
+   ],
+   "tri": [
+    "ground",
+    [
+     160.0,
+     400.0,
+     380.0
+    ],
+    null
+   ],
+   "wc": [
+    "carried",
+    [
+     0.0,
+     1010.0,
+     470.0
+    ],
+    null
+   ]
+  },
+  "spin_axis_pts": null,
+  "static_camber": 0.0,
+  "static_toe": 0.0,
+  "steer_axis": null,
+  "steer_point": "tri",
+  "wheel_center": "wc"
+ },
+ "example.twist_beam": {
+  "bodies": {
+   "armL": [
+    "piL",
+    "hubL",
+    "beamL"
+   ]
+  },
+  "carrier_body": "armL",
+  "constraints": [
+   [
+    "Revolute",
+    {
+     "axis": [
+      -300.0,
+      -50.0,
+      -10.0
+     ],
+     "base": "piL",
+     "n_eq": 2,
+     "offset": 555.2041488211795,
+     "p": "hubL",
+     "radius": 641.1123146532127
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "hubL",
+     "b": "beamL",
+     "label": "arm_to_beam",
+     "length": 407.0933553866975,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "beamL",
+     "b": "beamR_ground",
+     "label": "torsion_beam",
+     "length": 600.0,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "beamL",
+     "b": "piL",
+     "label": "beam_brace",
+     "length": 304.3024810940588,
+     "n_eq": 1
+    }
+   ],
+   [
+    "DriveZ",
+    {
+     "n_eq": 1,
+     "p": "hubL",
+     "travel": 0.0,
+     "z0": 160.0
+    }
+   ]
+  ],
+  "contact_patch": "cp",
+  "drive_point": "hubL",
+  "label": "twist beam",
+  "members": [
+   [
+    "arm_to_beam",
+    "hubL",
+    "beamL"
+   ],
+   [
+    "torsion_beam",
+    "beamL",
+    "beamR_ground"
+   ],
+   [
+    "beam_brace",
+    "beamL",
+    "piL"
+   ]
+  ],
+  "meta": {
+   "family": "semi-dependent",
+   "steered": false
+  },
+  "points": {
+   "beamL": [
+    "free",
+    [
+     150.0,
+     300.0,
+     170.0
+    ],
+    null
+   ],
+   "beamR_ground": [
+    "ground",
+    [
+     150.0,
+     -300.0,
+     170.0
+    ],
+    null
+   ],
+   "cp": [
+    "carried",
+    [
+     0.0,
+     605.0,
+     0.0
+    ],
+    null
+   ],
+   "hubL": [
+    "free",
+    [
+     -150.0,
+     575.0,
+     160.0
+    ],
+    null
+   ],
+   "piL": [
+    "ground",
+    [
+     450.0,
+     350.0,
+     180.0
+    ],
+    null
+   ],
+   "wc": [
+    "carried",
+    [
+     0.0,
+     600.0,
+     228.0
+    ],
+    null
+   ]
+  },
+  "spin_axis_pts": null,
+  "static_camber": -0.5,
+  "static_toe": 0.0,
+  "steer_axis": null,
+  "steer_point": null,
+  "wheel_center": "wc"
+ },
+ "finish.examples": [
+  [
+   "double wishbone",
+   {
+    "carrier": "upright",
+    "contact_patch": "cp",
+    "drive_point": "lo",
+    "meta": {
+     "family": "independent",
+     "steered": true
+    },
+    "static_camber": -1.5,
+    "static_toe": 0.0,
+    "steer_point": "tri",
+    "wheel_center": "wc"
+   }
+  ],
+  [
+   "MacPherson strut",
+   {
+    "carrier": "knuckle",
+    "contact_patch": "cp",
+    "drive_point": "lo",
+    "meta": {
+     "family": "independent",
+     "steered": true
+    },
+    "static_camber": -1.0,
+    "static_toe": 0.0,
+    "steer_point": "tri",
+    "wheel_center": "wc"
+   }
+  ],
+  [
+   "multi-link",
+   {
+    "carrier": "upright",
+    "contact_patch": "cp",
+    "drive_point": "out0",
+    "meta": {
+     "family": "independent",
+     "n_links": 5,
+     "steered": true
+    },
+    "static_camber": -1.0,
+    "static_toe": 0.0,
+    "steer_point": "in4",
+    "wheel_center": "wc"
+   }
+  ],
+  [
+   "semi-trailing arm",
+   {
+    "carrier": "arm",
+    "contact_patch": "cp",
+    "drive_point": "hub",
+    "meta": {
+     "family": "dependent-arm",
+     "steered": false
+    },
+    "static_camber": -1.0,
+    "static_toe": 0.0,
+    "wheel_center": "wc"
+   }
+  ],
+  [
+   "solid axle",
+   {
+    "carrier": "axle",
+    "contact_patch": "cp",
+    "drive_point": "axL",
+    "meta": {
+     "family": "beam-axle",
+     "steered": false
+    },
+    "static_camber": 0.0,
+    "static_toe": 0.0,
+    "wheel_center": "wc"
+   }
+  ],
+  [
+   "trailing arm",
+   {
+    "carrier": "arm",
+    "contact_patch": "cp",
+    "drive_point": "hub",
+    "meta": {
+     "family": "dependent-arm",
+     "steered": false
+    },
+    "static_camber": 0.0,
+    "static_toe": 0.0,
+    "wheel_center": "wc"
+   }
+  ],
+  [
+   "heavy-truck steer axle",
+   {
+    "carrier": "knuckle",
+    "contact_patch": "cp",
+    "drive_point": "sa",
+    "meta": {
+     "drive_is_steer": true,
+     "family": "beam-axle-steer",
+     "note": "1-DOF kingpin steer; 'travel' selects steer angle",
+     "steered": true
+    },
+    "static_camber": 0.0,
+    "static_toe": 0.0,
+    "steer_point": "tri",
+    "wheel_center": "wc"
+   }
+  ],
+  [
+   "twist beam",
+   {
+    "carrier": "armL",
+    "contact_patch": "cp",
+    "drive_point": "hubL",
+    "meta": {
+     "family": "semi-dependent",
+     "steered": false
+    },
+    "static_camber": -0.5,
+    "static_toe": 0.0,
+    "wheel_center": "wc"
+   }
+  ]
+ ],
+ "free": {
+  "bodies": {
+   "knuckle": [
+    "lo",
+    "uo",
+    "tro"
+   ]
+  },
+  "carrier_body": "knuckle",
+  "constraints": [
+   [
+    "Link",
+    {
+     "a": "a",
+     "b": "lo",
+     "label": "a->lo",
+     "length": 360.1388621073821,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "b",
+     "b": "lo",
+     "label": "lower rear",
+     "length": 411.9465984809196,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "c",
+     "b": "uo",
+     "label": "c->uo",
+     "length": 320.62439083762797,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "d",
+     "b": "uo",
+     "label": "d->uo",
+     "length": 377.88887255382366,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "lo",
+     "b": "uo",
+     "label": "kingpin",
+     "length": 210.95023109728987,
+     "n_eq": 1
+    }
+   ],
+   [
+    "DriveZ",
+    {
+     "n_eq": 1,
+     "p": "lo",
+     "travel": 0.0,
+     "z0": 110.0
+    }
+   ]
+  ],
+  "contact_patch": "cp",
+  "drive_point": "lo",
+  "label": "free",
+  "members": [
+   [
+    "a->lo",
+    "lo",
+    "a"
+   ],
+   [
+    "lower rear",
+    "lo",
+    "b"
+   ],
+   [
+    "c->uo",
+    "uo",
+    "c"
+   ],
+   [
+    "d->uo",
+    "uo",
+    "d"
+   ],
+   [
+    "kingpin",
+    "lo",
+    "uo"
+   ]
+  ],
+  "meta": {
+   "family": "experimental"
+  },
+  "points": {
+   "a": [
+    "ground",
+    [
+     0.0,
+     200.0,
+     100.0
+    ],
+    null
+   ],
+   "b": [
+    "ground",
+    [
+     200.0,
+     200.0,
+     100.0
+    ],
+    null
+   ],
+   "c": [
+    "ground",
+    [
+     0.0,
+     220.0,
+     300.0
+    ],
+    null
+   ],
+   "cp": [
+    "carried",
+    [
+     0.0,
+     605.0,
+     0.0
+    ],
+    null
+   ],
+   "d": [
+    "ground",
+    [
+     200.0,
+     220.0,
+     300.0
+    ],
+    null
+   ],
+   "lo": [
+    "free",
+    [
+     0.0,
+     560.0,
+     110.0
+    ],
+    null
+   ],
+   "tro": [
+    "carried",
+    [
+     100.0,
+     560.0,
+     170.0
+    ],
+    null
+   ],
+   "uo": [
+    "free",
+    [
+     0.0,
+     540.0,
+     320.0
+    ],
+    null
+   ],
+   "wc": [
+    "carried",
+    [
+     0.0,
+     600.0,
+     228.0
+    ],
+    null
+   ],
+   "x": [
+    "carried",
+    [
+     0.0,
+     0.0,
+     0.0
+    ],
+    null
+   ]
+  },
+  "spin_axis_pts": null,
+  "static_camber": 0.0,
+  "static_toe": 0.0,
+  "steer_axis": null,
+  "steer_point": null,
+  "wheel_center": "wc"
+ },
+ "free.extra": {
+  "bodies": {
+   "knuckle": [
+    "lo",
+    "uo",
+    "tro"
+   ]
+  },
+  "carrier_body": "knuckle",
+  "constraints": [
+   [
+    "Link",
+    {
+     "a": "a",
+     "b": "lo",
+     "label": "a->lo",
+     "length": 360.1388621073821,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "b",
+     "b": "lo",
+     "label": "lower rear",
+     "length": 411.9465984809196,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "c",
+     "b": "uo",
+     "label": "c->uo",
+     "length": 320.62439083762797,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "d",
+     "b": "uo",
+     "label": "d->uo",
+     "length": 377.88887255382366,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "lo",
+     "b": "uo",
+     "label": "kingpin",
+     "length": 210.95023109728987,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "a",
+     "b": "uo",
+     "label": null,
+     "length": 404.96913462633177,
+     "n_eq": 1
+    }
+   ],
+   [
+    "DriveZ",
+    {
+     "n_eq": 1,
+     "p": "lo",
+     "travel": 0.0,
+     "z0": 110.0
+    }
+   ],
+   [
+    "RackTranslation",
+    {
+     "axis": [
+      "a",
+      "b"
+     ],
+     "base_pos": [
+      100.0,
+      560.0,
+      170.0
+     ],
+     "delta": 0.0,
+     "n_eq": 3,
+     "p": "tro"
+    }
+   ]
+  ],
+  "contact_patch": "cp",
+  "drive_point": "lo",
+  "label": "free",
+  "members": [
+   [
+    "a->lo",
+    "lo",
+    "a"
+   ],
+   [
+    "lower rear",
+    "lo",
+    "b"
+   ],
+   [
+    "c->uo",
+    "uo",
+    "c"
+   ],
+   [
+    "d->uo",
+    "uo",
+    "d"
+   ],
+   [
+    "kingpin",
+    "lo",
+    "uo"
+   ],
+   [
+    "a->uo",
+    "uo",
+    "a"
+   ]
+  ],
+  "meta": {
+   "family": "experimental"
+  },
+  "points": {
+   "a": [
+    "ground",
+    [
+     0.0,
+     200.0,
+     100.0
+    ],
+    null
+   ],
+   "b": [
+    "ground",
+    [
+     200.0,
+     200.0,
+     100.0
+    ],
+    null
+   ],
+   "c": [
+    "ground",
+    [
+     0.0,
+     220.0,
+     300.0
+    ],
+    null
+   ],
+   "cp": [
+    "carried",
+    [
+     0.0,
+     605.0,
+     0.0
+    ],
+    null
+   ],
+   "d": [
+    "ground",
+    [
+     200.0,
+     220.0,
+     300.0
+    ],
+    null
+   ],
+   "lo": [
+    "free",
+    [
+     0.0,
+     560.0,
+     110.0
+    ],
+    null
+   ],
+   "tro": [
+    "carried",
+    [
+     100.0,
+     560.0,
+     170.0
+    ],
+    null
+   ],
+   "uo": [
+    "free",
+    [
+     0.0,
+     540.0,
+     320.0
+    ],
+    null
+   ],
+   "wc": [
+    "carried",
+    [
+     0.0,
+     600.0,
+     228.0
+    ],
+    null
+   ],
+   "x": [
+    "carried",
+    [
+     0.0,
+     0.0,
+     0.0
+    ],
+    null
+   ]
+  },
+  "spin_axis_pts": null,
+  "static_camber": -1.0,
+  "static_toe": 0.2,
+  "steer_axis": [
+   "a",
+   "b"
+  ],
+  "steer_point": "tro",
+  "wheel_center": "wc"
+ },
+ "free.nolabel": [
+  "experimental",
+  {
+   "family": "experimental"
+  },
+  [
+   "knuckle"
+  ]
+ ],
+ "free.solve": {
+  "-15.0.0.0": {
+   "carrier_R": [
+    [
+     8.473183675080975e-16,
+     0.9977347204632465,
+     -0.06727129835321748
+    ],
+    [
+     -0.09253110454198743,
+     0.06698269065325423,
+     0.993454233392304
+    ],
+    [
+     0.9957097944141354,
+     0.006224687540595952,
+     0.09232149572435534
+    ]
+   ],
+   "carrier_o": [
+    -3.393009866995264e-14,
+    560.1041516006168,
+    95.0
+   ],
+   "contact_patch": [
+    -0.3607891909935776,
+    604.8504630345309,
+    -15.102849391915498
+   ],
+   "converged": true,
+   "free": [
+    -3.393009866995264e-14,
+    560.1041516006168,
+    95.0,
+    1.4481190676885892e-13,
+    540.584693713797,
+    305.04521123749686
+   ],
+   "max_residual": 0.0,
+   "positions": {
+    "a": [
+     0.0,
+     200.0,
+     100.0
+    ],
+    "b": [
+     200.0,
+     200.0,
+     100.0
+    ],
+    "c": [
+     0.0,
+     220.0,
+     300.0
+    ],
+    "cp": [
+     -0.3607891909935776,
+     604.8504630345309,
+     -15.102849391915498
+    ],
+    "d": [
+     200.0,
+     220.0,
+     300.0
+    ],
+    "lo": [
+     -3.393009866995264e-14,
+     560.1041516006168,
+     95.0
+    ],
+    "tro": [
+     99.9347728968144,
+     561.2863918226479,
+     155.0969506224695
+    ],
+    "uo": [
+     1.4481190676885892e-13,
+     540.584693713797,
+     305.04521123749686
+    ],
+    "wc": [
+     -0.5354609234605565,
+     600.3712378003266,
+     212.90790919435636
+    ],
+    "x": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "spin_axis": [
+    -0.010450445532223851,
+    0.9999427632512822,
+    -0.0022931222313934086
+   ],
+   "steer": 0.0,
+   "travel": -15.0,
+   "wheel_center": [
+    -0.5354609234605565,
+    600.3712378003266,
+    212.90790919435636
+   ]
+  },
+  "0.0.0.0": {
+   "carrier_R": [
+    [
+     0.0,
+     0.9983859386896662,
+     -0.05679363896383118
+    ],
+    [
+     -0.09480909262799544,
+     0.05653781046062942,
+     0.9938886818670258
+    ],
+    [
+     0.9954954725939521,
+     0.005384553377202801,
+     0.09465606493971675
+    ]
+   ],
+   "carrier_o": [
+    0.0,
+    560.0,
+    110.0
+   ],
+   "contact_patch": [
+    -3.384599440206377e-14,
+    605.0,
+    2.842170943040401e-14
+   ],
+   "converged": true,
+   "free": [
+    0.0,
+    560.0,
+    110.0,
+    0.0,
+    540.0,
+    320.0
+   ],
+   "max_residual": 0.0,
+   "positions": {
+    "a": [
+     0.0,
+     200.0,
+     100.0
+    ],
+    "b": [
+     200.0,
+     200.0,
+     100.0
+    ],
+    "c": [
+     0.0,
+     220.0,
+     300.0
+    ],
+    "cp": [
+     -3.384599440206377e-14,
+     605.0,
+     2.842170943040401e-14
+    ],
+    "d": [
+     200.0,
+     220.0,
+     300.0
+    ],
+    "lo": [
+     0.0,
+     560.0,
+     110.0
+    ],
+    "tro": [
+     99.99999999999999,
+     560.0000000000001,
+     170.0
+    ],
+    "uo": [
+     0.0,
+     540.0,
+     320.0
+    ],
+    "wc": [
+     -4.94932380950179e-14,
+     600.0,
+     228.0
+    ],
+    "x": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "spin_axis": [
+    -1.1321272310100863e-15,
+    1.0,
+    1.5674015392824605e-17
+   ],
+   "steer": 0.0,
+   "travel": 0.0,
+   "wheel_center": [
+    -4.94932380950179e-14,
+    600.0,
+    228.0
+   ]
+  },
+  "0.0.3.0": {
+   "carrier_R": [
+    [
+     5.415973005175344e-16,
+     0.9984566982667062,
+     -0.05553576943149061
+    ],
+    [
+     -0.09480909262799544,
+     0.05528560703607056,
+     0.9939591227056118
+    ],
+    [
+     0.9954954725939521,
+     0.005265295908196653,
+     0.09466277359101068
+    ]
+   ],
+   "carrier_o": [
+    -3.0329568225028175e-14,
+    560.0,
+    110.0
+   ],
+   "contact_patch": [
+    0.043299170961036706,
+    604.9999728474497,
+    -2.585957147971385e-06
+   ],
+   "converged": true,
+   "free": [
+    -3.0329568225028175e-14,
+    560.0,
+    110.0,
+    8.392050748081405e-14,
+    540.0,
+    320.0
+   ],
+   "max_residual": 0.0,
+   "positions": {
+    "a": [
+     0.0,
+     200.0,
+     100.0
+    ],
+    "b": [
+     200.0,
+     200.0,
+     100.0
+    ],
+    "c": [
+     0.0,
+     220.0,
+     300.0
+    ],
+    "cp": [
+     0.043299170961036706,
+     604.9999728474497,
+     -2.585957147971385e-06
+    ],
+    "d": [
+     200.0,
+     220.0,
+     300.0
+    ],
+    "lo": [
+     -3.0329568225028175e-14,
+     560.0,
+     110.0
+    ],
+    "tro": [
+     100.0070873971976,
+     559.8745772174835,
+     169.9880549730936
+    ],
+    "uo": [
+     8.392050748081405e-14,
+     540.0,
+     320.0
+    ],
+    "wc": [
+     0.06426194200578995,
+     599.9999597018701,
+     227.99999616208285
+    ],
+    "x": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "spin_axis": [
+    0.0012541828830124418,
+    0.999999213512336,
+    -7.490358704556705e-08
+   ],
+   "steer": 3.0,
+   "travel": 0.0,
+   "wheel_center": [
+    0.06426194200578995,
+    599.9999597018701,
+    227.99999616208285
+   ]
+  },
+  "15.0.0.0": {
+   "carrier_R": [
+    [
+     1.251230452494075e-16,
+     0.9986949121483585,
+     -0.05107320676227755
+    ],
+    [
+     -0.09744417863611382,
+     0.05083014895995933,
+     0.9939421150180938
+    ],
+    [
+     0.9952409919461381,
+     0.004976786683262426,
+     0.09731700542236268
+    ]
+   ],
+   "carrier_o": [
+    -1.4309803052252892e-14,
+    559.2700933837939,
+    125.0
+   ],
+   "contact_patch": [
+    0.19688726618723595,
+    604.5605821742861,
+    15.119460956351716
+   ],
+   "converged": true,
+   "free": [
+    -1.4309803052252892e-14,
+    559.2700933837939,
+    125.0,
+    1.208493225870627e-14,
+    538.7142213814201,
+    334.94631724853383
+   ],
+   "max_residual": 5.684341886080802e-14,
+   "positions": {
+    "a": [
+     0.0,
+     200.0,
+     100.0
+    ],
+    "b": [
+     200.0,
+     200.0,
+     100.0
+    ],
+    "c": [
+     0.0,
+     220.0,
+     300.0
+    ],
+    "cp": [
+     0.19688726618723595,
+     604.5605821742861,
+     15.119460956351716
+    ],
+    "d": [
+     200.0,
+     220.0,
+     300.0
+    ],
+    "lo": [
+     -1.4309803052252892e-14,
+     559.2700933837939,
+     125.0
+    ],
+    "tro": [
+     100.03094729670347,
+     558.5410115213479,
+     184.94395734819295
+    ],
+    "uo": [
+     1.208493225870627e-14,
+     538.7142213814201,
+     334.94631724853383
+    ],
+    "wc": [
+     0.2922078598862026,
+     598.9567336931243,
+     243.10539867222178
+    ],
+    "x": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "spin_axis": [
+    0.0057029415033555955,
+    0.9999802380334111,
+    0.00264575147208005
+   ],
+   "steer": 0.0,
+   "travel": 15.0,
+   "wheel_center": [
+    0.2922078598862026,
+    598.9567336931243,
+    243.10539867222178
+   ]
+  }
+ },
+ "list": [
+  "double_wishbone",
+  "from_links",
+  "macpherson_strut",
+  "multilink",
+  "semi_trailing_arm",
+  "solid_axle",
+  "trailing_arm",
+  "truck_steer_linkage",
+  "twist_beam"
+ ],
+ "multilink.bad.2.1": "multilink needs at least 3 links to locate an upright",
+ "multilink.bad.3.1": "upright_points must be three distinct link indices",
+ "multilink.bad.3.7": "list index out of range",
+ "multilink.drive": "out2",
+ "multilink.nosteer": {
+  "bodies": {
+   "upright": [
+    "out0",
+    "out2",
+    "out4"
+   ]
+  },
+  "carrier_body": "upright",
+  "constraints": [
+   [
+    "Link",
+    {
+     "a": "out0",
+     "b": "in0",
+     "label": "L0",
+     "length": 353.6947836765479,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "out1",
+     "b": "in1",
+     "label": "L1",
+     "length": 361.52454965050435,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "out2",
+     "b": "in2",
+     "label": "L2",
+     "length": 297.8674201721296,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "out3",
+     "b": "in3",
+     "label": "L3",
+     "length": 306.67409411295245,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "out4",
+     "b": "in4",
+     "label": "L4",
+     "length": 320.3123475609393,
+     "n_eq": 1
+    }
+   ],
+   [
+    "DriveZ",
+    {
+     "n_eq": 1,
+     "p": "out0",
+     "travel": 0.0,
+     "z0": 120.0
+    }
+   ]
+  ],
+  "contact_patch": "cp",
+  "drive_point": "out0",
+  "label": "ml",
+  "members": [
+   [
+    "L0",
+    "out0",
+    "in0"
+   ],
+   [
+    "L1",
+    "out1",
+    "in1"
+   ],
+   [
+    "L2",
+    "out2",
+    "in2"
+   ],
+   [
+    "L3",
+    "out3",
+    "in3"
+   ],
+   [
+    "L4",
+    "out4",
+    "in4"
+   ]
+  ],
+  "meta": {
+   "family": "independent",
+   "n_links": 5,
+   "steered": false
+  },
+  "points": {
+   "cp": [
+    "carried",
+    [
+     0.0,
+     605.0,
+     0.0
+    ],
+    null
+   ],
+   "in0": [
+    "ground",
+    [
+     -60.0,
+     210.0,
+     130.0
+    ],
+    null
+   ],
+   "in1": [
+    "ground",
+    [
+     150.0,
+     215.0,
+     128.0
+    ],
+    null
+   ],
+   "in2": [
+    "ground",
+    [
+     -40.0,
+     250.0,
+     330.0
+    ],
+    null
+   ],
+   "in3": [
+    "ground",
+    [
+     160.0,
+     255.0,
+     332.0
+    ],
+    null
+   ],
+   "in4": [
+    "ground",
+    [
+     130.0,
+     240.0,
+     200.0
+    ],
+    null
+   ],
+   "out0": [
+    "free",
+    [
+     -10.0,
+     560.0,
+     120.0
+    ],
+    null
+   ],
+   "out1": [
+    "carried",
+    [
+     60.0,
+     565.0,
+     118.0
+    ],
+    null
+   ],
+   "out2": [
+    "free",
+    [
+     0.0,
+     545.0,
+     320.0
+    ],
+    null
+   ],
+   "out3": [
+    "carried",
+    [
+     70.0,
+     548.0,
+     322.0
+    ],
+    null
+   ],
+   "out4": [
+    "free",
+    [
+     120.0,
+     560.0,
+     190.0
+    ],
+    null
+   ],
+   "wc": [
+    "carried",
+    [
+     0.0,
+     600.0,
+     228.0
+    ],
+    null
+   ]
+  },
+  "spin_axis_pts": null,
+  "static_camber": -2.0,
+  "static_toe": 0.0,
+  "steer_axis": null,
+  "steer_point": null,
+  "wheel_center": "wc"
+ },
+ "multilink.three": [
+  "out0",
+  "three",
+  [
+   "cp",
+   "in0",
+   "in1",
+   "in2",
+   "out0",
+   "out1",
+   "out2",
+   "wc"
+  ]
+ ],
+ "solid.bad": "lateral_device must be ('panhard',...) or ('watts',...)",
+ "solve.double_wishbone": {
+  "-15.0.0.0": {
+   "carrier_R": [
+    [
+     0.08003247072892543,
+     0.9933227777750481,
+     0.08309430054032657
+    ],
+    [
+     -0.17634001585380266,
+     -0.06793781632532916,
+     0.9819820018318189
+    ],
+    [
+     0.9810703351124751,
+     -0.09324329609257848,
+     0.16972532308435126
+    ]
+   ],
+   "carrier_o": [
+    -4.699999999999991,
+    574.3152548320734,
+    95.0
+   ],
+   "contact_patch": [
+    1.1795820658674048,
+    603.8155382566213,
+    -15.091615450960106
+   ],
+   "converged": true,
+   "free": [
+    10.821760734462536,
+    540.1152918787267,
+    285.27200918078256,
+    -4.699999999999991,
+    574.3152548320734,
+    95.0,
+    89.96709046702654,
+    559.2594960847846,
+    135.76108574426416
+   ],
+   "max_residual": 5.684341886080802e-14,
+   "positions": {
+    "cp": [
+     1.1795820658674048,
+     603.8155382566213,
+     -15.091615450960106
+    ],
+    "lfi": [
+     -110.0,
+     200.0,
+     117.5
+    ],
+    "lo": [
+     -4.699999999999991,
+     574.3152548320734,
+     95.0
+    ],
+    "lri": [
+     140.0,
+     200.0,
+     122.5
+    ],
+    "tri": [
+     100.0,
+     230.0,
+     160.0
+    ],
+    "tro": [
+     89.96709046702654,
+     559.2594960847846,
+     135.76108574426416
+    ],
+    "ufi": [
+     -100.0,
+     240.0,
+     299.2
+    ],
+    "uo": [
+     10.821760734462536,
+     540.1152918787267,
+     285.27200918078256
+    ],
+    "uri": [
+     130.0,
+     240.0,
+     280.8
+    ],
+    "wc": [
+     -0.5017249283536289,
+     599.8251564413479,
+     212.92209040848934
+    ]
+   },
+   "spin_axis": [
+    0.002293234355938956,
+    0.9997604249719801,
+    0.021767722343747967
+   ],
+   "steer": 0.0,
+   "travel": -15.0,
+   "wheel_center": [
+    -0.5017249283536289,
+    599.8251564413479,
+    212.92209040848934
+   ]
+  },
+  "0.0.0.0": {
+   "carrier_R": [
+    [
+     0.08765448879590941,
+     0.9927762471974372,
+     0.08192687956038094
+    ],
+    [
+     -0.18046512399157819,
+     -0.06505666899322421,
+     0.981427515837115
+    ],
+    [
+     0.9796678159542817,
+     -0.10081147166904884,
+     0.1734589794830134
+    ]
+   ],
+   "carrier_o": [
+    -5.0,
+    575.0,
+    110.0
+   ],
+   "contact_patch": [
+    3.552713678800501e-15,
+    605.0,
+    -1.4210854715202004e-14
+   ],
+   "converged": true,
+   "free": [
+    12.0,
+    540.0,
+    300.0,
+    -5.0,
+    575.0,
+    110.0,
+    90.0,
+    560.0,
+    150.0
+   ],
+   "max_residual": 0.0,
+   "positions": {
+    "cp": [
+     3.552713678800501e-15,
+     605.0,
+     -1.4210854715202004e-14
+    ],
+    "lfi": [
+     -110.0,
+     200.0,
+     117.5
+    ],
+    "lo": [
+     -5.0,
+     575.0,
+     110.0
+    ],
+    "lri": [
+     140.0,
+     200.0,
+     122.5
+    ],
+    "tri": [
+     100.0,
+     230.0,
+     160.0
+    ],
+    "tro": [
+     90.0,
+     560.0,
+     150.0
+    ],
+    "ufi": [
+     -100.0,
+     240.0,
+     299.2
+    ],
+    "uo": [
+     12.0,
+     540.0,
+     300.0
+    ],
+    "uri": [
+     130.0,
+     240.0,
+     280.8
+    ],
+    "wc": [
+     0.0,
+     600.0,
+     228.0
+    ]
+   },
+   "spin_axis": [
+    -5.543474303541493e-19,
+    0.9996573249755574,
+    0.026176948307873135
+   ],
+   "steer": 0.0,
+   "travel": 0.0,
+   "wheel_center": [
+    0.0,
+    600.0,
+    228.0
+   ]
+  },
+  "0.0.3.0": {
+   "carrier_R": [
+    [
+     0.08765448879584321,
+     0.9927762471974446,
+     0.08192687956036084
+    ],
+    [
+     -0.18046512399157466,
+     -0.06505666899321627,
+     0.9814275158371161
+    ],
+    [
+     0.9796678159542882,
+     -0.10081147166898005,
+     0.17345897948301622
+    ]
+   ],
+   "carrier_o": [
+    -4.999999999985711,
+    575.0000000000006,
+    110.0
+   ],
+   "contact_patch": [
+    2.1643131731252652e-11,
+    605.0000000000003,
+    2.4158453015843406e-13
+   ],
+   "converged": false,
+   "free": [
+    12.000000000001782,
+    540.0000000000006,
+    300.000000000005,
+    -4.999999999985711,
+    575.0000000000006,
+    110.0,
+    90.00000000001354,
+    560.0000000000013,
+    150.00000000000693
+   ],
+   "max_residual": 3.0,
+   "positions": {
+    "cp": [
+     2.1643131731252652e-11,
+     605.0000000000003,
+     2.4158453015843406e-13
+    ],
+    "lfi": [
+     -110.0,
+     200.0,
+     117.5
+    ],
+    "lo": [
+     -4.999999999985711,
+     575.0000000000006,
+     110.0
+    ],
+    "lri": [
+     140.0,
+     200.0,
+     122.5
+    ],
+    "tri": [
+     100.0,
+     230.0,
+     160.0
+    ],
+    "tro": [
+     90.00000000001354,
+     560.0000000000013,
+     150.00000000000693
+    ],
+    "ufi": [
+     -100.0,
+     240.0,
+     299.2
+    ],
+    "uo": [
+     12.000000000001782,
+     540.0000000000006,
+     300.000000000005
+    ],
+    "uri": [
+     130.0,
+     240.0,
+     280.8
+    ],
+    "wc": [
+     5.928590951498336e-12,
+     600.0000000000009,
+     228.00000000000028
+    ]
+   },
+   "spin_axis": [
+    -1.0092211362919045e-14,
+    0.9996573249755574,
+    0.026176948307870263
+   ],
+   "steer": 3.0,
+   "travel": 0.0,
+   "wheel_center": [
+    5.928590951498336e-12,
+    600.0000000000009,
+    228.00000000000028
+   ]
+  },
+  "15.0.0.0": {
+   "carrier_R": [
+    [
+     0.09526059218633227,
+     0.9921763280759179,
+     0.08069419794568695
+    ],
+    [
+     -0.1852339290760677,
+     -0.061979275424202396,
+     0.9807379675208527
+    ],
+    [
+     0.9780663633390894,
+     -0.10837298290477788,
+     0.17788053710557852
+    ]
+   ],
+   "carrier_o": [
+    -5.299999999999891,
+    575.0838706209586,
+    125.0
+   ],
+   "contact_patch": [
+    -1.1792437001521128,
+    605.6574695048374,
+    15.121547067657744
+   ],
+   "converged": true,
+   "free": [
+    13.175152720795202,
+    539.1589928702585,
+    314.6894090099407,
+    -5.299999999999891,
+    575.0838706209586,
+    125.0,
+    90.02723819859536,
+    560.1252112194518,
+    164.22953181390258
+   ],
+   "max_residual": 5.684341886080802e-14,
+   "positions": {
+    "cp": [
+     -1.1792437001521128,
+     605.6574695048374,
+     15.121547067657744
+    ],
+    "lfi": [
+     -110.0,
+     200.0,
+     117.5
+    ],
+    "lo": [
+     -5.299999999999891,
+     575.0838706209586,
+     125.0
+    ],
+    "lri": [
+     140.0,
+     200.0,
+     122.5
+    ],
+    "tri": [
+     100.0,
+     230.0,
+     160.0
+    ],
+    "tro": [
+     90.02723819859536,
+     560.1252112194518,
+     164.22953181390258
+    ],
+    "ufi": [
+     -100.0,
+     240.0,
+     299.2
+    ],
+    "uo": [
+     13.175152720795202,
+     539.1589928702585,
+     314.6894090099407
+    ],
+    "uri": [
+     130.0,
+     240.0,
+     280.8
+    ],
+    "wc": [
+     0.4974432070556851,
+     599.4943659524846,
+     243.0869060054099
+    ]
+   },
+   "spin_axis": [
+    -0.002351481402730266,
+    0.9995074402413766,
+    0.03129452727464833
+   ],
+   "steer": 0.0,
+   "travel": 15.0,
+   "wheel_center": [
+    0.4974432070556851,
+    599.4943659524846,
+    243.0869060054099
+   ]
+  }
+ },
+ "solve.macpherson_strut": {
+  "-15.0.0.0": {
+   "carrier_R": [
+    [
+     0.018880300040905323,
+     0.995334568242281,
+     0.09461834670040206
+    ],
+    [
+     -0.047909148834899884,
+     -0.09362586658860497,
+     0.9944540766488155
+    ],
+    [
+     0.9986732437230311,
+     -0.023308675798612816,
+     0.04591794751765762
+    ]
+   ],
+   "carrier_o": [
+    -5.299999999999959,
+    574.2831949206376,
+    95.0
+   ],
+   "contact_patch": [
+    -0.23546843880201873,
+    602.9788585971494,
+    -15.34450328960726
+   ],
+   "converged": true,
+   "free": [
+    -5.299999999999959,
+    574.2831949206376,
+    95.0,
+    -0.5704942610699649,
+    562.2819770442799,
+    345.16714921218096,
+    109.65511280105369,
+    560.3299654862489,
+    160.31178629656623
+   ],
+   "max_residual": 9.093588131304738e-15,
+   "positions": {
+    "cp": [
+     -0.23546843880201873,
+     602.9788585971494,
+     -15.34450328960726
+    ],
+    "lfi": [
+     -110.0,
+     200.0,
+     122.5
+    ],
+    "lo": [
+     -5.299999999999959,
+     574.2831949206376,
+     95.0
+    ],
+    "lri": [
+     140.0,
+     200.0,
+     117.5
+    ],
+    "sl": [
+     -0.5704942610699649,
+     562.2819770442799,
+     345.16714921218096
+    ],
+    "st": [
+     10.0,
+     520.0,
+     620.0
+    ],
+    "tri": [
+     120.0,
+     230.0,
+     160.0
+    ],
+    "tro": [
+     109.65511280105369,
+     560.3299654862489,
+     160.31178629656623
+    ],
+    "wc": [
+     -0.5023452404545772,
+     600.7024262419649,
+     212.69879661746086
+    ]
+   },
+   "spin_axis": [
+    -0.002348359473552657,
+    0.9999820827683465,
+    0.005506300941898708
+   ],
+   "steer": 0.0,
+   "travel": -15.0,
+   "wheel_center": [
+    -0.5023452404545772,
+    600.7024262419649,
+    212.69879661746086
+   ]
+  },
+  "0.0.0.0": {
+   "carrier_R": [
+    [
+     0.01996011960139497,
+     0.9950840521806618,
+     0.09700166349713737
+    ],
+    [
+     -0.059880358804184936,
+     -0.09565700711959667,
+     0.993611634200407
+    ],
+    [
+     0.9980059800697489,
+     -0.02564110147078903,
+     0.05767666478208168
+    ]
+   ],
+   "carrier_o": [
+    -5.0,
+    575.0,
+    110.0
+   ],
+   "contact_patch": [
+    -8.881784197001252e-16,
+    605.0,
+    -1.4210854715202004e-14
+   ],
+   "converged": true,
+   "free": [
+    -5.0,
+    575.0,
+    110.0,
+    -2.0793202754908375e-15,
+    560.0,
+    360.0,
+    110.0,
+    560.0,
+    175.0
+   ],
+   "max_residual": 7.216449660063518e-15,
+   "positions": {
+    "cp": [
+     -8.881784197001252e-16,
+     605.0,
+     -1.4210854715202004e-14
+    ],
+    "lfi": [
+     -110.0,
+     200.0,
+     122.5
+    ],
+    "lo": [
+     -5.0,
+     575.0,
+     110.0
+    ],
+    "lri": [
+     140.0,
+     200.0,
+     117.5
+    ],
+    "sl": [
+     -2.0793202754908375e-15,
+     560.0,
+     360.0
+    ],
+    "st": [
+     10.0,
+     520.0,
+     620.0
+    ],
+    "tri": [
+     120.0,
+     230.0,
+     160.0
+    ],
+    "tro": [
+     110.0,
+     560.0,
+     175.0
+    ],
+    "wc": [
+     -2.6645352591003757e-15,
+     600.0,
+     228.0
+    ]
+   },
+   "spin_axis": [
+    4.369263866153767e-18,
+    0.9998476951563913,
+    0.017452406437283522
+   ],
+   "steer": 0.0,
+   "travel": 0.0,
+   "wheel_center": [
+    -2.6645352591003757e-15,
+    600.0,
+    228.0
+   ]
+  },
+  "0.0.3.0": {
+   "carrier_R": [
+    [
+     0.019960119601358885,
+     0.9950840521806821,
+     0.09700166349693641
+    ],
+    [
+     -0.05988035880417909,
+     -0.09565700711939823,
+     0.9936116342004265
+    ],
+    [
+     0.9980059800697499,
+     -0.02564110147074096,
+     0.0576766647820845
+    ]
+   ],
+   "carrier_o": [
+    -4.999999999990448,
+    574.9999999999983,
+    110.0
+   ],
+   "contact_patch": [
+    8.86135609334815e-12,
+    604.9999999999991,
+    1.8474111129762605e-13
+   ],
+   "converged": false,
+   "free": [
+    -4.999999999990448,
+    574.9999999999983,
+    110.0,
+    5.442199662653632e-13,
+    559.9999999999997,
+    360.00000000000193,
+    110.00000000005538,
+    560.0000000000167,
+    175.0000000000082
+   ],
+   "max_residual": 3.0,
+   "positions": {
+    "cp": [
+     8.86135609334815e-12,
+     604.9999999999991,
+     1.8474111129762605e-13
+    ],
+    "lfi": [
+     -110.0,
+     200.0,
+     122.5
+    ],
+    "lo": [
+     -4.999999999990448,
+     574.9999999999983,
+     110.0
+    ],
+    "lri": [
+     140.0,
+     200.0,
+     117.5
+    ],
+    "sl": [
+     5.442199662653632e-13,
+     559.9999999999997,
+     360.00000000000193
+    ],
+    "st": [
+     10.0,
+     520.0,
+     620.0
+    ],
+    "tri": [
+     120.0,
+     230.0,
+     160.0
+    ],
+    "tro": [
+     110.00000000005538,
+     560.0000000000167,
+     175.0000000000082
+    ],
+    "wc": [
+     -1.1155520951433573e-12,
+     599.9999999999995,
+     228.00000000000017
+    ]
+   },
+   "spin_axis": [
+    -2.0027813192305735e-13,
+    0.9998476951563913,
+    0.017452406437281655
+   ],
+   "steer": 3.0,
+   "travel": 0.0,
+   "wheel_center": [
+    -1.1155520951433573e-12,
+    599.9999999999995,
+    228.00000000000017
+   ]
+  },
+  "15.0.0.0": {
+   "carrier_R": [
+    [
+     0.021040875941707216,
+     0.9946349986833156,
+     0.10128425807521332
+    ],
+    [
+     -0.06945633714960563,
+     -0.099607695373304,
+     0.9925996797562345
+    ],
+    [
+     0.9973630726918689,
+     -0.027920000298348926,
+     0.06698787064815685
+    ]
+   ],
+   "carrier_o": [
+    -4.699999999999901,
+    575.115862101298,
+    125.0
+   ],
+   "contact_patch": [
+    0.2798716274880384,
+    606.1396687813539,
+    15.283436539179434
+   ],
+   "converged": true,
+   "free": [
+    -4.699999999999901,
+    575.115862101298,
+    125.0,
+    0.5707289239482063,
+    557.7170843042072,
+    374.8389520226534,
+    110.32227741904082,
+    559.0129027800056,
+    189.69598440733427
+   ],
+   "max_residual": 5.684341886080802e-14,
+   "positions": {
+    "cp": [
+     0.2798716274880384,
+     606.1396687813539,
+     15.283436539179434
+    ],
+    "lfi": [
+     -110.0,
+     200.0,
+     122.5
+    ],
+    "lo": [
+     -4.699999999999901,
+     575.115862101298,
+     125.0
+    ],
+    "lri": [
+     140.0,
+     200.0,
+     117.5
+    ],
+    "sl": [
+     0.5707289239482063,
+     557.7170843042072,
+     374.8389520226534
+    ],
+    "st": [
+     10.0,
+     520.0,
+     620.0
+    ],
+    "tri": [
+     120.0,
+     230.0,
+     160.0
+    ],
+    "tro": [
+     110.32227741904082,
+     559.0129027800056,
+     189.69598440733427
+    ],
+    "wc": [
+     0.563567907166604,
+     598.9707590524564,
+     243.2253726758189
+    ]
+   },
+   "spin_axis": [
+    0.004256166038960393,
+    0.999627496411759,
+    0.026958365458753703
+   ],
+   "steer": 0.0,
+   "travel": 15.0,
+   "wheel_center": [
+    0.563567907166604,
+    598.9707590524564,
+    243.2253726758189
+   ]
+  }
+ },
+ "solve.multilink": {
+  "-15.0.0.0": {
+   "carrier_R": [
+    [
+     0.06831706587761148,
+     0.9958739414178075,
+     -0.05973166090806125
+    ],
+    [
+     -0.06930104277893004,
+     0.06446393982345178,
+     0.9955108065371221
+    ],
+    [
+     0.9952538088244762,
+     -0.0638709109642246,
+     0.07341908984026628
+    ]
+   ],
+   "carrier_o": [
+    -6.258800576550864,
+    558.6931078821735,
+    105.0
+   ],
+   "contact_patch": [
+    0.7919074534890242,
+    603.3511087209857,
+    -15.336820954169212
+   ],
+   "converged": true,
+   "free": [
+    -6.258800576550864,
+    558.6931078821735,
+    105.0,
+    8.499413894424235,
+    543.7223295084957,
+    320.0,
+    120.0,
+    560.0,
+    190.0
+   ],
+   "max_residual": 5.684341886080802e-14,
+   "positions": {
+    "cp": [
+     0.7919074534890242,
+     603.3511087209857,
+     -15.336820954169212
+    ],
+    "in0": [
+     -60.0,
+     210.0,
+     130.0
+    ],
+    "in1": [
+     150.0,
+     215.0,
+     128.0
+    ],
+    "in2": [
+     -40.0,
+     250.0,
+     330.0
+    ],
+    "in3": [
+     160.0,
+     255.0,
+     332.0
+    ],
+    "in4": [
+     130.0,
+     240.0,
+     200.0
+    ],
+    "out0": [
+     -6.258800576550864,
+     558.6931078821735,
+     105.0
+    ],
+    "out1": [
+     63.58400274428319,
+     565.0636144852715,
+     101.77517908913111
+    ],
+    "out2": [
+     8.499413894424235,
+     543.7223295084957,
+     320.0
+    ],
+    "out3": [
+     77.41090296372339,
+     549.16528796485,
+     305.6404778630316
+    ],
+    "out4": [
+     120.0,
+     560.0,
+     190.0
+    ],
+    "wc": [
+     4.795766958429275,
+     599.3591382303124,
+     212.64790064064795
+    ]
+   },
+   "spin_axis": [
+    -0.019490455557127313,
+    0.9997206056631663,
+    0.013372836447350305
+   ],
+   "steer": 0.0,
+   "travel": -15.0,
+   "wheel_center": [
+    4.795766958429275,
+    599.3591382303124,
+    212.64790064064795
+   ]
+  },
+  "0.0.0.0": {
+   "carrier_R": [
+    [
+     0.04979810447122927,
+     0.9979032183608703,
+     -0.0413438698731715
+    ],
+    [
+     -0.0746971567068439,
+     0.045000498818847524,
+     0.9961903883726082
+    ],
+    [
+     0.9959620894245853,
+     -0.04652012350662994,
+     0.07678147262160419
+    ]
+   ],
+   "carrier_o": [
+    -10.0,
+    560.0,
+    120.0
+   ],
+   "contact_patch": [
+    -1.7763568394002505e-15,
+    605.0,
+    1.4210854715202004e-14
+   ],
+   "converged": true,
+   "free": [
+    -10.0,
+    560.0,
+    120.0,
+    0.0,
+    545.0,
+    320.0,
+    120.0,
+    560.0,
+    190.0
+   ],
+   "max_residual": 0.0,
+   "positions": {
+    "cp": [
+     -1.7763568394002505e-15,
+     605.0,
+     1.4210854715202004e-14
+    ],
+    "in0": [
+     -60.0,
+     210.0,
+     130.0
+    ],
+    "in1": [
+     150.0,
+     215.0,
+     128.0
+    ],
+    "in2": [
+     -40.0,
+     250.0,
+     330.0
+    ],
+    "in3": [
+     160.0,
+     255.0,
+     332.0
+    ],
+    "in4": [
+     130.0,
+     240.0,
+     200.0
+    ],
+    "out0": [
+     -10.0,
+     560.0,
+     120.0
+    ],
+    "out1": [
+     60.000000000000014,
+     565.0,
+     118.0
+    ],
+    "out2": [
+     0.0,
+     545.0,
+     320.0
+    ],
+    "out3": [
+     69.99999999999999,
+     548.0,
+     322.0
+    ],
+    "out4": [
+     120.0,
+     560.0,
+     190.0
+    ],
+    "wc": [
+     0.0,
+     600.0,
+     228.0
+    ]
+   },
+   "spin_axis": [
+    -5.174209290561158e-18,
+    0.9998476951563913,
+    0.017452406437283487
+   ],
+   "steer": 0.0,
+   "travel": 0.0,
+   "wheel_center": [
+    0.0,
+    600.0,
+    228.0
+   ]
+  },
+  "0.0.3.0": {
+   "carrier_R": [
+    [
+     0.04979810447118018,
+     0.9979032183608727,
+     -0.041343869873172755
+    ],
+    [
+     -0.074697156706812,
+     0.045000498818843514,
+     0.9961903883726109
+    ],
+    [
+     0.9959620894245902,
+     -0.046520123506582405,
+     0.07678147262157013
+    ]
+   ],
+   "carrier_o": [
+    -9.99999999998768,
+    559.999999999998,
+    120.0
+   ],
+   "contact_patch": [
+    1.8324897155252984e-11,
+    604.9999999999941,
+    -9.521272659185342e-13
+   ],
+   "converged": false,
+   "free": [
+    -9.99999999998768,
+    559.999999999998,
+    120.0,
+    2.4147160224359846e-12,
+    545.0000000000044,
+    320.0,
+    120.0,
+    560.0,
+    190.0
+   ],
+   "max_residual": 3.0,
+   "positions": {
+    "cp": [
+     1.8324897155252984e-11,
+     604.9999999999941,
+     -9.521272659185342e-13
+    ],
+    "in0": [
+     -60.0,
+     210.0,
+     130.0
+    ],
+    "in1": [
+     150.0,
+     215.0,
+     128.0
+    ],
+    "in2": [
+     -40.0,
+     250.0,
+     330.0
+    ],
+    "in3": [
+     160.0,
+     255.0,
+     332.0
+    ],
+    "in4": [
+     130.0,
+     240.0,
+     200.0
+    ],
+    "out0": [
+     -9.99999999998768,
+     559.999999999998,
+     120.0
+    ],
+    "out1": [
+     60.000000000012434,
+     564.9999999999977,
+     118.00000000000328
+    ],
+    "out2": [
+     2.4147160224359846e-12,
+     545.0000000000044,
+     320.0
+    ],
+    "out3": [
+     70.00000000000236,
+     548.0000000000042,
+     322.0000000000043
+    ],
+    "out4": [
+     120.0,
+     560.0,
+     190.0
+    ],
+    "wc": [
+     7.117861855476804e-12,
+     600.0000000000014,
+     227.9999999999992
+    ]
+   },
+   "spin_axis": [
+    1.6703914351047927e-15,
+    0.9998476951563918,
+    0.017452406437251346
+   ],
+   "steer": 3.0,
+   "travel": 0.0,
+   "wheel_center": [
+    7.117861855476804e-12,
+    600.0000000000014,
+    227.9999999999992
+   ]
+  },
+  "15.0.0.0": {
+   "carrier_R": [
+    [
+     0.036722473812237644,
+     0.9988594143854123,
+     -0.03051770323502145
+    ],
+    [
+     -0.07932799358610905,
+     0.033355658510675956,
+     0.9962903540027482
+    ],
+    [
+     0.9961719376446577,
+     -0.03416533826776033,
+     0.08046241551393886
+    ]
+   ],
+   "carrier_o": [
+    -12.069517070713182,
+    560.3964451962454,
+    135.0
+   ],
+   "contact_patch": [
+    -0.07142472016926682,
+    605.7618889468041,
+    15.32117023774542
+   ],
+   "converged": true,
+   "free": [
+    -12.069517070713182,
+    560.3964451962454,
+    135.0,
+    -5.249752933081638,
+    545.6643710844919,
+    320.0,
+    120.0,
+    560.0,
+    190.0
+   ],
+   "max_residual": 5.684341886080802e-14,
+   "positions": {
+    "cp": [
+     -0.07142472016926682,
+     605.7618889468041,
+     15.32117023774542
+    ],
+    "in0": [
+     -60.0,
+     210.0,
+     130.0
+    ],
+    "in1": [
+     150.0,
+     215.0,
+     128.0
+    ],
+    "in2": [
+     -40.0,
+     250.0,
+     330.0
+    ],
+    "in3": [
+     160.0,
+     255.0,
+     332.0
+    ],
+    "in4": [
+     130.0,
+     240.0,
+     200.0
+    ],
+    "out0": [
+     -12.069517070713182,
+     560.3964451962454,
+     135.0
+    ],
+    "out1": [
+     58.00386015429974,
+     564.5743165959983,
+     133.87430250592467
+    ],
+    "out2": [
+     -5.249752933081638,
+     545.6643710844919,
+     320.0
+    ],
+    "out3": [
+     65.30557797242093,
+     546.6283003617025,
+     337.9076954057707
+    ],
+    "out4": [
+     120.0,
+     560.0,
+     190.0
+    ],
+    "wc": [
+     -2.920271040464481,
+     599.8359761723149,
+     243.28118346908494
+    ]
+   },
+   "spin_axis": [
+    0.011589318177617942,
+    0.9996982739990213,
+    0.02165753142801893
+   ],
+   "steer": 0.0,
+   "travel": 15.0,
+   "wheel_center": [
+    -2.920271040464481,
+    599.8359761723149,
+    243.28118346908494
+   ]
+  }
+ },
+ "solve.semi_trailing_arm": {
+  "-15.0.0.0": {
+   "carrier_R": [
+    [
+     -0.1266653912229682,
+     -0.9786206575896101,
+     -0.16204162182973678
+    ],
+    [
+     0.9816567819780034,
+     -0.10020052215119915,
+     -0.1622030140201398
+    ],
+    [
+     0.14249856512583922,
+     -0.17961476526028158,
+     0.9733615438456417
+    ]
+   ],
+   "carrier_o": [
+    300.0,
+    150.0,
+    130.0
+   ],
+   "contact_patch": [
+    8.783937468751958,
+    607.6321550424018,
+    -10.324679208766753
+   ],
+   "converged": true,
+   "free": [
+    -97.84670019924084,
+    577.4552644904205,
+    135.0
+   ],
+   "max_residual": 5.684341886080802e-14,
+   "positions": {
+    "cp": [
+     8.783937468751958,
+     607.6321550424018,
+     -10.324679208766753
+    ],
+    "hub": [
+     -97.84670019924084,
+     577.4552644904205,
+     135.0
+    ],
+    "pi": [
+     300.0,
+     150.0,
+     130.0
+    ],
+    "po": [
+     260.0,
+     460.0,
+     175.0
+    ],
+    "wc": [
+     -1.1902365915860855,
+     601.3813338764137,
+     217.4261563255182
+    ]
+   },
+   "spin_axis": [
+    0.005443231699451866,
+    0.9997160834719582,
+    0.02319749288511305
+   ],
+   "steer": 0.0,
+   "travel": -15.0,
+   "wheel_center": [
+    -1.1902365915860855,
+    601.3813338764137,
+    217.4261563255182
+   ]
+  },
+  "0.0.0.0": {
+   "carrier_R": [
+    [
+     -0.1266653912229682,
+     -0.984851059787178,
+     -0.11842410524215408
+    ],
+    [
+     0.9816567819780034,
+     -0.10730463522980216,
+     -0.15759339343636752
+    ],
+    [
+     0.14249856512583922,
+     -0.13621345489441,
+     0.9803775056797283
+    ]
+   ],
+   "carrier_o": [
+    300.0,
+    150.0,
+    130.0
+   ],
+   "contact_patch": [
+    -5.684341886080802e-14,
+    605.0,
+    0.0
+   ],
+   "converged": true,
+   "free": [
+    -100.0,
+    575.0,
+    150.0
+   ],
+   "max_residual": 0.0,
+   "positions": {
+    "cp": [
+     -5.684341886080802e-14,
+     605.0,
+     0.0
+    ],
+    "hub": [
+     -100.0,
+     575.0,
+     150.0
+    ],
+    "pi": [
+     300.0,
+     150.0,
+     130.0
+    ],
+    "po": [
+     260.0,
+     460.0,
+     175.0
+    ],
+    "wc": [
+     0.0,
+     600.0,
+     228.00000000000003
+    ]
+   },
+   "spin_axis": [
+    5.332612933672877e-18,
+    0.9998476951563913,
+    0.017452406437283505
+   ],
+   "steer": 0.0,
+   "travel": 0.0,
+   "wheel_center": [
+    0.0,
+    600.0,
+    228.00000000000003
+   ]
+  },
+  "0.0.3.0": {
+   "carrier_R": [
+    [
+     -0.1266653912229682,
+     -0.984851059787178,
+     -0.11842410524215408
+    ],
+    [
+     0.9816567819780034,
+     -0.10730463522980216,
+     -0.15759339343636752
+    ],
+    [
+     0.14249856512583922,
+     -0.13621345489441,
+     0.9803775056797283
+    ]
+   ],
+   "carrier_o": [
+    300.0,
+    150.0,
+    130.0
+   ],
+   "contact_patch": [
+    -5.684341886080802e-14,
+    605.0,
+    0.0
+   ],
+   "converged": true,
+   "free": [
+    -100.00000000000001,
+    575.0,
+    150.0
+   ],
+   "max_residual": 0.0,
+   "positions": {
+    "cp": [
+     -5.684341886080802e-14,
+     605.0,
+     0.0
+    ],
+    "hub": [
+     -100.00000000000001,
+     575.0,
+     150.0
+    ],
+    "pi": [
+     300.0,
+     150.0,
+     130.0
+    ],
+    "po": [
+     260.0,
+     460.0,
+     175.0
+    ],
+    "wc": [
+     0.0,
+     600.0,
+     228.00000000000003
+    ]
+   },
+   "spin_axis": [
+    5.332612933672877e-18,
+    0.9998476951563913,
+    0.017452406437283505
+   ],
+   "steer": 3.0,
+   "travel": 0.0,
+   "wheel_center": [
+    0.0,
+    600.0,
+    228.00000000000003
+   ]
+  },
+  "15.0.0.0": {
+   "carrier_R": [
+    [
+     -0.1266653912229682,
+     -0.9891180163998398,
+     -0.07484269035502973
+    ],
+    [
+     0.9816567819780034,
+     -0.11415540049099791,
+     -0.15270398467404347
+    ],
+    [
+     0.14249856512583922,
+     -0.09281214452853849,
+     0.9854339474389395
+    ]
+   ],
+   "carrier_o": [
+    300.0,
+    150.0,
+    130.0
+   ],
+   "contact_patch": [
+    -8.25901411984239,
+    602.3890339273315,
+    10.64530928296739
+   ],
+   "converged": true,
+   "free": [
+    -101.47471006405955,
+    572.6322954756052,
+    165.0
+   ],
+   "max_residual": 5.684341886080802e-14,
+   "positions": {
+    "cp": [
+     -8.25901411984239,
+     602.3890339273315,
+     10.64530928296739
+    ],
+    "hub": [
+     -101.47471006405955,
+     572.6322954756052,
+     165.0
+    ],
+    "pi": [
+     300.0,
+     150.0,
+     130.0
+    ],
+    "po": [
+     260.0,
+     460.0,
+     175.0
+    ],
+    "wc": [
+     1.6471371792305263,
+     598.6948832975027,
+     238.45492588763142
+    ]
+   },
+   "spin_axis": [
+    -0.005653483204396194,
+    0.9999122244222675,
+    0.011982553090673517
+   ],
+   "steer": 0.0,
+   "travel": 15.0,
+   "wheel_center": [
+    1.6471371792305263,
+    598.6948832975027,
+    238.45492588763142
+   ]
+  }
+ },
+ "solve.solid_axle": {
+  "-15.0.0.0": {
+   "carrier_R": [
+    [
+     -0.0003598052693565625,
+     -0.6692874818601304,
+     -0.7430034570346854
+    ],
+    [
+     -0.9999137297723663,
+     0.009996617308338805,
+     -0.008520601804209185
+    ],
+    [
+     0.013130253344220555,
+     0.7429362921998871,
+     -0.6692333391123012
+    ]
+   ],
+   "carrier_o": [
+    0.848173379736561,
+    599.8040670403761,
+    215.00000000132948
+   ],
+   "contact_patch": [
+    -0.19291556515956454,
+    621.7823610882729,
+    -15.306037098337072
+   ],
+   "converged": true,
+   "free": [
+    0.848173379736561,
+    599.8040670403761,
+    215.00000000132948,
+    0.4164070565086798,
+    -600.0924086864806,
+    230.75630401439437,
+    -56.7202274657371,
+    579.9907715433737,
+    279.1664715977162
+   ],
+   "max_residual": 1.059038368111942e-08,
+   "positions": {
+    "axL": [
+     0.848173379736561,
+     599.8040670403761,
+     215.00000000132948
+    ],
+    "axR": [
+     0.4164070565086798,
+     -600.0924086864806,
+     230.75630401439437
+    ],
+    "cp": [
+     -0.19291556515956454,
+     621.7823610882729,
+     -15.306037098337072
+    ],
+    "lat": [
+     -56.7202274657371,
+     579.9907715433737,
+     279.1664715977162
+    ],
+    "lat_in": [
+     -50.0,
+     -550.0,
+     280.0
+    ],
+    "lin0": [
+     400.0,
+     250.0,
+     120.0
+    ],
+    "lin1": [
+     400.0,
+     -250.0,
+     120.0
+    ],
+    "lin2": [
+     350.0,
+     120.0,
+     320.0
+    ],
+    "lout0": [
+     120.21876896481152,
+     248.33976326316542,
+     109.05895941712056
+    ],
+    "lout1": [
+     120.03886633013325,
+     -251.61710162301767,
+     115.62408608923083
+    ],
+    "lout2": [
+     120.99379920933173,
+     120.71410385081975,
+     290.7485033861779
+    ],
+    "wc": [
+     0.8553694851236923,
+     619.8023416358235,
+     214.73739493444506
+    ]
+   },
+   "spin_axis": [
+    0.00035980526935656254,
+    0.9999137297723664,
+    -0.013130253344220556
+   ],
+   "steer": 0.0,
+   "travel": -15.0,
+   "wheel_center": [
+    0.8553694851236923,
+    619.8023416358235,
+    214.73739493444506
+   ]
+  },
+  "0.0.0.0": {
+   "carrier_R": [
+    [
+     0.0,
+     -0.6726727939963125,
+     -0.7399400733959437
+    ],
+    [
+     -1.0,
+     0.0,
+     -0.0
+    ],
+    [
+     0.0,
+     0.7399400733959437,
+     -0.6726727939963125
+    ]
+   ],
+   "carrier_o": [
+    0.0,
+    600.0,
+    230.0
+   ],
+   "contact_patch": [
+    3.3637299438234936e-16,
+    625.0,
+    -2.842170943040401e-14
+   ],
+   "converged": true,
+   "free": [
+    0.0,
+    600.0,
+    230.0,
+    0.0,
+    -600.0,
+    230.0,
+    -50.0,
+    580.0,
+    285.0
+   ],
+   "max_residual": 0.0,
+   "positions": {
+    "axL": [
+     0.0,
+     600.0,
+     230.0
+    ],
+    "axR": [
+     0.0,
+     -600.0,
+     230.0
+    ],
+    "cp": [
+     3.3637299438234936e-16,
+     625.0,
+     -2.842170943040401e-14
+    ],
+    "lat": [
+     -50.0,
+     580.0,
+     285.0
+    ],
+    "lat_in": [
+     -50.0,
+     -550.0,
+     280.0
+    ],
+    "lin0": [
+     400.0,
+     250.0,
+     120.0
+    ],
+    "lin1": [
+     400.0,
+     -250.0,
+     120.0
+    ],
+    "lin2": [
+     350.0,
+     120.0,
+     320.0
+    ],
+    "lout0": [
+     120.0,
+     250.0,
+     120.0
+    ],
+    "lout1": [
+     120.0,
+     -250.0,
+     120.0
+    ],
+    "lout2": [
+     120.00000000000001,
+     120.0,
+     300.0
+    ],
+    "wc": [
+     0.0,
+     620.0,
+     230.0
+    ]
+   },
+   "spin_axis": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "steer": 0.0,
+   "travel": 0.0,
+   "wheel_center": [
+    0.0,
+    620.0,
+    230.0
+   ]
+  },
+  "0.0.3.0": {
+   "carrier_R": [
+    [
+     1.6693620420951322e-06,
+     -0.6728301500552875,
+     -0.7397969918658719
+    ],
+    [
+     -0.9999996287349323,
+     0.0006363600089709291,
+     -0.0005810128541660031
+    ],
+    [
+     0.0008617001862329951,
+     0.7397967181750125,
+     -0.6728298991946409
+    ]
+   ],
+   "carrier_o": [
+    -0.023629156798194866,
+    599.79869494622,
+    230.00000000231964
+   ],
+   "contact_patch": [
+    0.025245763629624125,
+    624.6004947079015,
+    -0.02145190993925894
+   ],
+   "converged": true,
+   "free": [
+    -0.023629156798194866,
+    599.79869494622,
+    230.00000000231964,
+    -0.02162592234768071,
+    -600.2008595356975,
+    231.03404022579923,
+    -50.126869901164795,
+    579.9995137350703,
+    285.107138386896
+   ],
+   "max_residual": 1.4492570699076168e-08,
+   "positions": {
+    "axL": [
+     -0.023629156798194866,
+     599.79869494622,
+     230.00000000231964
+    ],
+    "axR": [
+     -0.02162592234768071,
+     -600.2008595356975,
+     231.03404022579923
+    ],
+    "cp": [
+     0.025245763629624125,
+     624.6004947079015,
+     -0.02145190993925894
+    ],
+    "lat": [
+     -50.126869901164795,
+     579.9995137350703,
+     285.107138386896
+    ],
+    "lat_in": [
+     -50.0,
+     -550.0,
+     280.0
+    ],
+    "lin0": [
+     400.0,
+     250.0,
+     120.0
+    ],
+    "lin1": [
+     400.0,
+     -250.0,
+     120.0
+    ],
+    "lin2": [
+     350.0,
+     120.0,
+     320.0
+    ],
+    "lout0": [
+     120.00034732746143,
+     249.70426022515437,
+     120.32715994497728
+    ],
+    "lout1": [
+     120.00118200848247,
+     -250.29555414231174,
+     120.75801003809379
+    ],
+    "lout2": [
+     119.96228174536952,
+     119.85941445571984,
+     300.43911007079
+    ],
+    "wc": [
+     -0.023662544039036768,
+     619.7986875209187,
+     229.98276599859497
+    ]
+   },
+   "spin_axis": [
+    -1.6693620420951322e-06,
+    0.9999996287349323,
+    -0.0008617001862329951
+   ],
+   "steer": 3.0,
+   "travel": 0.0,
+   "wheel_center": [
+    -0.023662544039036768,
+    619.7986875209187,
+    229.98276599859497
+   ]
+  },
+  "15.0.0.0": {
+   "carrier_R": [
+    [
+     -0.00035892460673186673,
+     -0.6760093222869485,
+     -0.7368929822940826
+    ],
+    [
+     -0.9999235683155677,
+     -0.008864161279973966,
+     0.008618826594419047
+    ],
+    [
+     -0.012358345366137696,
+     0.7368397538311454,
+     -0.6759544721901529
+    ]
+   ],
+   "carrier_o": [
+    -0.1420711518487901,
+    599.9569700824081,
+    245.00000000106044
+   ],
+   "contact_patch": [
+    0.9061630061810535,
+    627.7970769025944,
+    15.328866295950348
+   ],
+   "converged": true,
+   "free": [
+    -0.1420711518487901,
+    599.9569700824081,
+    245.00000000106044,
+    -0.5727806799270271,
+    -599.9513118962647,
+    230.1699855616953,
+    -42.950261116949704,
+    579.9314428038116,
+    291.4120876691385
+   ],
+   "max_residual": 5.437868821900338e-09,
+   "positions": {
+    "axL": [
+     -0.1420711518487901,
+     599.9569700824081,
+     245.00000000106044
+    ],
+    "axR": [
+     -0.5727806799270271,
+     -599.9513118962647,
+     230.1699855616953
+    ],
+    "cp": [
+     0.9061630061810535,
+     627.7970769025944,
+     15.328866295950348
+    ],
+    "lat": [
+     -42.950261116949704,
+     579.9314428038116,
+     291.4120876691385
+    ],
+    "lat_in": [
+     -50.0,
+     -550.0,
+     280.0
+    ],
+    "lin0": [
+     400.0,
+     250.0,
+     120.0
+    ],
+    "lin1": [
+     400.0,
+     -250.0,
+     120.0
+    ],
+    "lin2": [
+     350.0,
+     120.0,
+     320.0
+    ],
+    "lout0": [
+     120.22811036513383,
+     251.29317878074897,
+     131.22574967735267
+    ],
+    "lout1": [
+     120.04864806176789,
+     -248.66860537703485,
+     125.04657699428381
+    ],
+    "lout2": [
+     119.3681154370627,
+     119.07892720314487,
+     309.60358487135227
+    ],
+    "wc": [
+     -0.13489265971415276,
+     619.9554414487195,
+     245.2471669083832
+    ]
+   },
+   "spin_axis": [
+    0.0003589246067318668,
+    0.9999235683155678,
+    0.012358345366137698
+   ],
+   "steer": 0.0,
+   "travel": 15.0,
+   "wheel_center": [
+    -0.13489265971415276,
+    619.9554414487195,
+    245.2471669083832
+   ]
+  }
+ },
+ "solve.trailing_arm": {
+  "-15.0.0.0": {
+   "carrier_R": [
+    [
+     0.0,
+     -0.9992966276336571,
+     -0.0375
+    ],
+    [
+     1.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     -0.0375,
+     0.9992966276336571
+    ]
+   ],
+   "carrier_o": [
+    300.0,
+    150.0,
+    150.0
+   ],
+   "contact_patch": [
+    5.836011709902891,
+    605.0,
+    -11.144494145048554
+   ],
+   "converged": true,
+   "free": [
+    -99.71865105346284,
+    575.0,
+    135.0
+   ],
+   "max_residual": 0.0,
+   "positions": {
+    "cp": [
+     5.836011709902891,
+     605.0,
+     -11.144494145048554
+    ],
+    "hub": [
+     -99.71865105346284,
+     575.0,
+     135.0
+    ],
+    "pi": [
+     300.0,
+     150.0,
+     150.0
+    ],
+    "po": [
+     300.0,
+     450.0,
+     150.0
+    ],
+    "wc": [
+     -2.71398829009712,
+     600.0,
+     216.69513695542526
+    ]
+   },
+   "spin_axis": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "steer": 0.0,
+   "travel": -15.0,
+   "wheel_center": [
+    -2.71398829009712,
+    600.0,
+    216.69513695542526
+   ]
+  },
+  "0.0.0.0": {
+   "carrier_R": [
+    [
+     0.0,
+     -1.0,
+     0.0
+    ],
+    [
+     1.0,
+     0.0,
+     -0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "carrier_o": [
+    300.0,
+    150.0,
+    150.0
+   ],
+   "contact_patch": [
+    0.0,
+    605.0,
+    0.0
+   ],
+   "converged": true,
+   "free": [
+    -100.0,
+    575.0,
+    150.0
+   ],
+   "max_residual": 0.0,
+   "positions": {
+    "cp": [
+     0.0,
+     605.0,
+     0.0
+    ],
+    "hub": [
+     -100.0,
+     575.0,
+     150.0
+    ],
+    "pi": [
+     300.0,
+     150.0,
+     150.0
+    ],
+    "po": [
+     300.0,
+     450.0,
+     150.0
+    ],
+    "wc": [
+     0.0,
+     600.0,
+     228.0
+    ]
+   },
+   "spin_axis": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "steer": 0.0,
+   "travel": 0.0,
+   "wheel_center": [
+    0.0,
+    600.0,
+    228.0
+   ]
+  },
+  "0.0.3.0": {
+   "carrier_R": [
+    [
+     0.0,
+     -1.0,
+     0.0
+    ],
+    [
+     1.0,
+     0.0,
+     -0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0
+    ]
+   ],
+   "carrier_o": [
+    300.0,
+    150.0,
+    150.0
+   ],
+   "contact_patch": [
+    0.0,
+    605.0,
+    0.0
+   ],
+   "converged": true,
+   "free": [
+    -99.99999999999999,
+    575.0,
+    150.0
+   ],
+   "max_residual": 0.0,
+   "positions": {
+    "cp": [
+     0.0,
+     605.0,
+     0.0
+    ],
+    "hub": [
+     -99.99999999999999,
+     575.0,
+     150.0
+    ],
+    "pi": [
+     300.0,
+     150.0,
+     150.0
+    ],
+    "po": [
+     300.0,
+     450.0,
+     150.0
+    ],
+    "wc": [
+     0.0,
+     600.0,
+     228.0
+    ]
+   },
+   "spin_axis": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "steer": 3.0,
+   "travel": 0.0,
+   "wheel_center": [
+    0.0,
+    600.0,
+    228.0
+   ]
+  },
+  "15.0.0.0": {
+   "carrier_R": [
+    [
+     0.0,
+     -0.9992966276336571,
+     0.0375
+    ],
+    [
+     1.0,
+     0.0,
+     -0.0
+    ],
+    [
+     0.0,
+     0.0375,
+     0.9992966276336571
+    ]
+   ],
+   "carrier_o": [
+    300.0,
+    150.0,
+    150.0
+   ],
+   "contact_patch": [
+    -5.413988290097109,
+    605.0,
+    11.355505854951446
+   ],
+   "converged": true,
+   "free": [
+    -99.71865105346286,
+    575.0,
+    165.0
+   ],
+   "max_residual": 0.0,
+   "positions": {
+    "cp": [
+     -5.413988290097109,
+     605.0,
+     11.355505854951446
+    ],
+    "hub": [
+     -99.71865105346286,
+     575.0,
+     165.0
+    ],
+    "pi": [
+     300.0,
+     150.0,
+     150.0
+    ],
+    "po": [
+     300.0,
+     450.0,
+     150.0
+    ],
+    "wc": [
+     3.1360117099029026,
+     600.0,
+     239.19513695542526
+    ]
+   },
+   "spin_axis": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "steer": 0.0,
+   "travel": 15.0,
+   "wheel_center": [
+    3.1360117099029026,
+    600.0,
+    239.19513695542526
+   ]
+  }
+ },
+ "solve.truck_steer_linkage": {
+  "-15.0.0.0": {
+   "carrier_R": [
+    [
+     0.5429670131623546,
+     0.01985563128591215,
+     0.8395192532180482
+    ],
+    [
+     0.06902246601226705,
+     -0.997392970582317,
+     -0.021051399444376357
+    ],
+    [
+     0.8369126130027775,
+     0.06937590460108724,
+     -0.542921966821793
+    ]
+   ],
+   "carrier_o": [
+    0.0,
+    920.0,
+    360.0
+   ],
+   "contact_patch": [
+    55.1550635790568,
+    977.0833452202768,
+    -3.764223996880844
+   ],
+   "converged": false,
+   "free": [
+    68.03357142356225,
+    928.6484901613569,
+    464.86484934026606,
+    -8.252685290885279e-05,
+    751.1520428835546,
+    366.5468275828854
+   ],
+   "max_residual": 1.5605931502017434,
+   "positions": {
+    "cp": [
+     55.1550635790568,
+     977.0833452202768,
+     -3.764223996880844
+    ],
+    "dragc": [
+     160.0,
+     300.0,
+     600.0
+    ],
+    "kpb": [
+     0.0,
+     920.0,
+     360.0
+    ],
+    "kpt": [
+     0.0,
+     900.0,
+     560.0
+    ],
+    "sa": [
+     -8.252685290885279e-05,
+     751.1520428835546,
+     366.5468275828854
+    ],
+    "sp": [
+     68.03357142356225,
+     928.6484901613569,
+     464.86484934026606
+    ],
+    "tri": [
+     160.0,
+     400.0,
+     380.0
+    ],
+    "wc": [
+     96.63807361150218,
+     937.4403383592163,
+     462.74686042198044
+    ]
+   },
+   "spin_axis": [
+    0.953483395422101,
+    0.29306160521699703,
+    -0.07059964732191193
+   ],
+   "steer": 0.0,
+   "travel": -15.0,
+   "wheel_center": [
+    96.63807361150218,
+    937.4403383592163,
+    462.74686042198044
+   ]
+  },
+  "0.0.0.0": {
+   "carrier_R": [
+    [
+     0.0,
+     0.9484367346610101,
+     0.31696649719735487
+    ],
+    [
+     0.4788521306805733,
+     -0.27826348465173745,
+     0.8326284105482754
+    ],
+    [
+     0.8778955729143844,
+     0.15178008253731134,
+     -0.4541609512081502
+    ]
+   ],
+   "carrier_o": [
+    0.0,
+    920.0,
+    360.0
+   ],
+   "contact_patch": [
+    -1.054599410744517e-15,
+    1015.0,
+    0.0
+   ],
+   "converged": true,
+   "free": [
+    0.0,
+    980.0,
+    470.0,
+    160.0,
+    870.0,
+    380.0
+   ],
+   "max_residual": 0.0,
+   "positions": {
+    "cp": [
+     -1.054599410744517e-15,
+     1015.0,
+     0.0
+    ],
+    "dragc": [
+     160.0,
+     300.0,
+     600.0
+    ],
+    "kpb": [
+     0.0,
+     920.0,
+     360.0
+    ],
+    "kpt": [
+     0.0,
+     900.0,
+     560.0
+    ],
+    "sa": [
+     160.0,
+     870.0,
+     380.0
+    ],
+    "sp": [
+     0.0,
+     980.0,
+     470.0
+    ],
+    "tri": [
+     160.0,
+     400.0,
+     380.0
+    ],
+    "wc": [
+     3.936631266686081e-15,
+     1010.0,
+     470.0
+    ]
+   },
+   "spin_axis": [
+    2.346949065767118e-17,
+    1.0,
+    -8.12438570156577e-18
+   ],
+   "steer": 0.0,
+   "travel": 0.0,
+   "wheel_center": [
+    3.936631266686081e-15,
+    1010.0,
+    470.0
+   ]
+  },
+  "0.0.3.0": {
+   "carrier_R": [
+    [
+     5.136541198963715e-12,
+     0.948436734661137,
+     0.31696649719697506
+    ],
+    [
+     0.4788521306881054,
+     -0.27826348465243456,
+     0.8326284105437106
+    ],
+    [
+     0.8778955729102759,
+     0.15178008253524006,
+     -0.4541609512167842
+    ]
+   ],
+   "carrier_o": [
+    0.0,
+    920.0,
+    360.0
+   ],
+   "contact_patch": [
+    -1.4921237612534136e-09,
+    1014.9999999969114,
+    -8.150777830451261e-10
+   ],
+   "converged": false,
+   "free": [
+    6.436067675037955e-10,
+    980.0000000012953,
+    470.0000000001298,
+    160.00000000001646,
+    870.0,
+    380.0
+   ],
+   "max_residual": 3.0,
+   "positions": {
+    "cp": [
+     -1.4921237612534136e-09,
+     1014.9999999969114,
+     -8.150777830451261e-10
+    ],
+    "dragc": [
+     160.0,
+     300.0,
+     600.0
+    ],
+    "kpb": [
+     0.0,
+     920.0,
+     360.0
+    ],
+    "kpt": [
+     0.0,
+     900.0,
+     560.0
+    ],
+    "sa": [
+     160.00000000001646,
+     870.0,
+     380.0
+    ],
+    "sp": [
+     6.436067675037955e-10,
+     980.0000000012953,
+     470.0000000001298
+    ],
+    "tri": [
+     160.0,
+     400.0,
+     380.0
+    ],
+    "wc": [
+     7.068531098494859e-10,
+     1010.0000000009438,
+     469.9999999992278
+    ]
+   },
+   "spin_axis": [
+    2.1081236314272178e-12,
+    1.0,
+    -8.579905609260487e-12
+   ],
+   "steer": 3.0,
+   "travel": 0.0,
+   "wheel_center": [
+    7.068531098494859e-10,
+    1010.0000000009438,
+    469.9999999992278
+   ]
+  },
+  "15.0.0.0": {
+   "carrier_R": [
+    [
+     -0.46017202735786356,
+     0.761691534531967,
+     -0.4561443975976146
+    ],
+    [
+     0.2420036136275817,
+     0.6019320084432073,
+     0.7609941577980206
+    ],
+    [
+     0.8542107212090854,
+     0.23979963184680594,
+     -0.46132437648317537
+    ]
+   ],
+   "carrier_o": [
+    0.0,
+    920.0,
+    360.0
+   ],
+   "contact_patch": [
+    -47.91414078848185,
+    990.3388026282729,
+    -2.4661197371726757
+   ],
+   "converged": true,
+   "free": [
+    -57.659389762410306,
+    950.322965874701,
+    467.0322965874701,
+    131.43439428094916,
+    1020.0,
+    395.0
+   ],
+   "max_residual": 1.4210854715202004e-14,
+   "positions": {
+    "cp": [
+     -47.91414078848185,
+     990.3388026282729,
+     -2.4661197371726757
+    ],
+    "dragc": [
+     160.0,
+     300.0,
+     600.0
+    ],
+    "kpb": [
+     0.0,
+     920.0,
+     360.0
+    ],
+    "kpt": [
+     0.0,
+     900.0,
+     560.0
+    ],
+    "sa": [
+     131.43439428094916,
+     1020.0,
+     395.0
+    ],
+    "sp": [
+     -57.659389762410306,
+     950.322965874701,
+     467.0322965874701
+    ],
+    "tri": [
+     160.0,
+     400.0,
+     380.0
+    ],
+    "wc": [
+     -82.02251219723156,
+     967.7833739907719,
+     465.7783373990772
+    ]
+   },
+   "spin_axis": [
+    -0.8121040811607089,
+    0.5820136038690292,
+    -0.04179863961309676
+   ],
+   "steer": 0.0,
+   "travel": 15.0,
+   "wheel_center": [
+    -82.02251219723156,
+    967.7833739907719,
+    465.7783373990772
+   ]
+  }
+ },
+ "solve.twist_beam": {
+  "-15.0.0.0": {
+   "carrier_R": [
+    [
+     -0.9350034048158391,
+     -0.34802553495792804,
+     -0.06816788100004396
+    ],
+    [
+     0.3504115851248672,
+     -0.9362204491066196,
+     -0.026513990361265723
+    ],
+    [
+     -0.05459261848515893,
+     -0.04867748649886651,
+     0.9973214869414407
+    ]
+   ],
+   "carrier_o": [
+    450.0,
+    350.0,
+    180.0
+   ],
+   "contact_patch": [
+    5.981335679547044,
+    609.07948523046,
+    -8.812727504797238
+   ],
+   "converged": true,
+   "free": [
+    -149.4421970701174,
+    574.6531824207049,
+    145.0,
+    150.64502480286643,
+    299.88373548776343,
+    158.20644920938557
+   ],
+   "max_residual": 1.1368683772161603e-13,
+   "positions": {
+    "beamL": [
+     150.64502480286643,
+     299.88373548776343,
+     158.20644920938557
+    ],
+    "beamR_ground": [
+     150.0,
+     -300.0,
+     170.0
+    ],
+    "cp": [
+     5.981335679547044,
+     609.07948523046,
+     -8.812727504797238
+    ],
+    "hubL": [
+     -149.4421970701174,
+     574.6531824207049,
+     145.0
+    ],
+    "piL": [
+     450.0,
+     350.0,
+     180.0
+    ],
+    "wc": [
+     -1.962955292932861,
+     598.0427963928048,
+     218.83630003638368
+    ]
+   },
+   "spin_axis": [
+    -0.0025574740827375418,
+    0.9993791621555279,
+    0.035139003623200854
+   ],
+   "steer": 0.0,
+   "travel": -15.0,
+   "wheel_center": [
+    -1.962955292932861,
+    598.0427963928048,
+    218.83630003638368
+   ]
+  },
+  "0.0.0.0": {
+   "carrier_R": [
+    [
+     -0.9358734597455814,
+     -0.35075773609488076,
+     -0.03331483023263848
+    ],
+    [
+     0.35095254740459303,
+     -0.9363932451007039,
+     0.0
+    ],
+    [
+     -0.031195781991519383,
+     -0.011691924536496026,
+     0.9994449069791543
+    ]
+   ],
+   "carrier_o": [
+    450.0,
+    350.0,
+    180.0
+   ],
+   "contact_patch": [
+    -5.684341886080802e-14,
+    605.0,
+    0.0
+   ],
+   "converged": true,
+   "free": [
+    -150.0,
+    575.0,
+    160.0,
+    150.0,
+    300.0,
+    170.0
+   ],
+   "max_residual": 0.0,
+   "positions": {
+    "beamL": [
+     150.0,
+     300.0,
+     170.0
+    ],
+    "beamR_ground": [
+     150.0,
+     -300.0,
+     170.0
+    ],
+    "cp": [
+     -5.684341886080802e-14,
+     605.0,
+     0.0
+    ],
+    "hubL": [
+     -150.0,
+     575.0,
+     160.0
+    ],
+    "piL": [
+     450.0,
+     350.0,
+     180.0
+    ],
+    "wc": [
+     0.0,
+     600.0,
+     228.0
+    ]
+   },
+   "spin_axis": [
+    6.608475281383613e-17,
+    0.9999619230641713,
+    0.008726535498373936
+   ],
+   "steer": 0.0,
+   "travel": 0.0,
+   "wheel_center": [
+    0.0,
+    600.0,
+    228.0
+   ]
+  },
+  "0.0.3.0": {
+   "carrier_R": [
+    [
+     -0.9358734597455814,
+     -0.3507577360031705,
+     -0.033314831198215974
+    ],
+    [
+     0.35095254740459303,
+     -0.9363932451007038,
+     -2.5777343011896322e-09
+    ],
+    [
+     -0.031195781991519383,
+     -0.011691927287801026,
+     0.9994449069469683
+    ]
+   ],
+   "carrier_o": [
+    450.0,
+    350.0,
+    180.0
+   ],
+   "contact_patch": [
+    1.5200185998764937e-07,
+    605.0000004250901,
+    2.2220618234314315e-07
+   ],
+   "converged": true,
+   "free": [
+    -150.00000000000003,
+    575.0,
+    160.0,
+    150.00000001395492,
+    299.99999999999994,
+    169.9999995813507
+   ],
+   "max_residual": 0.0,
+   "positions": {
+    "beamL": [
+     150.00000001395492,
+     299.99999999999994,
+     169.9999995813507
+    ],
+    "beamR_ground": [
+     150.0,
+     -300.0,
+     170.0
+    ],
+    "cp": [
+     1.5200185998764937e-07,
+     605.0000004250901,
+     2.2220618234314315e-07
+    ],
+    "hubL": [
+     -150.00000000000003,
+     575.0,
+     160.0
+    ],
+    "piL": [
+     450.0,
+     350.0,
+     180.0
+    ],
+    "wc": [
+     -6.784267725379323e-08,
+     599.9999998376929,
+     228.00000020932464
+    ]
+   },
+   "spin_axis": [
+    -9.430437029343856e-11,
+    0.9999619230416891,
+    0.008726538074579257
+   ],
+   "steer": 3.0,
+   "travel": 0.0,
+   "wheel_center": [
+    -6.784267725379323e-08,
+    599.9999998376929,
+    228.00000020932464
+   ]
+  },
+  "15.0.0.0": {
+   "carrier_R": [
+    [
+     -0.936563240190382,
+     -0.35049501920405507,
+     0.0015933101524487567
+    ],
+    [
+     0.3504118627746697,
+     -0.936220537982919,
+     0.026507181777011623
+    ],
+    [
+     -0.007798945497879846,
+     0.025383966831890814,
+     0.9996473531586019
+    ]
+   ],
+   "carrier_o": [
+    450.0,
+    350.0,
+    180.0
+   ],
+   "contact_patch": [
+    -6.133457115621127,
+    600.3359983988589,
+    9.122391152619457
+   ],
+   "converged": true,
+   "free": [
+    -150.44222673756857,
+    574.6533604254124,
+    175.0,
+    149.85820069172252,
+    299.8837951320431,
+    181.80729566552893
+   ],
+   "max_residual": 1.1368683772161603e-13,
+   "positions": {
+    "beamL": [
+     149.85820069172252,
+     299.8837951320431,
+     181.80729566552893
+    ],
+    "beamR_ground": [
+     150.0,
+     -300.0,
+     170.0
+    ],
+    "cp": [
+     -6.133457115621127,
+     600.3359983988589,
+     9.122391152619457
+    ],
+    "hubL": [
+     -150.44222673756857,
+     574.6533604254124,
+     175.0
+    ],
+    "piL": [
+     450.0,
+     350.0,
+     180.0
+    ],
+    "wc": [
+     1.827827127311366,
+     601.3814237438703,
+     237.03580681534706
+    ]
+   },
+   "spin_axis": [
+    -0.00018344893680973545,
+    0.9998417770514108,
+    -0.01778727660898921
+   ],
+   "steer": 0.0,
+   "travel": 15.0,
+   "wheel_center": [
+    1.827827127311366,
+    601.3814237438703,
+    237.03580681534706
+   ]
+  }
+ },
+ "templates": [
+  "double_wishbone",
+  "from_links",
+  "macpherson_strut",
+  "multilink",
+  "semi_trailing_arm",
+  "solid_axle",
+  "trailing_arm",
+  "truck_steer_linkage",
+  "twist_beam"
+ ],
+ "truck.perches": {
+  "bodies": {
+   "knuckle": [
+    "kpb",
+    "sp",
+    "sa"
+   ]
+  },
+  "carrier_body": "knuckle",
+  "constraints": [
+   [
+    "Revolute",
+    {
+     "axis": [
+      0.0,
+      -20.0,
+      200.0
+     ],
+     "base": "kpb",
+     "n_eq": 2,
+     "offset": 103.48386778183887,
+     "p": "sp",
+     "radius": 125.29964086141668
+    }
+   ],
+   [
+    "Revolute",
+    {
+     "axis": [
+      0.0,
+      -20.0,
+      200.0
+     ],
+     "base": "kpb",
+     "n_eq": 2,
+     "offset": 24.87592975524973,
+     "p": "sa",
+     "radius": 168.81943016134133
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "sp",
+     "b": "sa",
+     "label": "knuckle_rigid",
+     "length": 214.00934559032697,
+     "n_eq": 1
+    }
+   ],
+   [
+    "DriveZ",
+    {
+     "n_eq": 1,
+     "p": "sa",
+     "travel": 0.0,
+     "z0": 380.0
+    }
+   ],
+   [
+    "RackTranslation",
+    {
+     "axis": [
+      0.0,
+      1.0,
+      0.0
+     ],
+     "base_pos": [
+      160.0,
+      400.0,
+      380.0
+     ],
+     "delta": 0.0,
+     "n_eq": 3,
+     "p": "tri"
+    }
+   ]
+  ],
+  "contact_patch": "cp",
+  "drive_point": "sa",
+  "label": "heavy-truck steer axle",
+  "members": [
+   [
+    "knuckle_rigid",
+    "sp",
+    "sa"
+   ]
+  ],
+  "meta": {
+   "drive_is_steer": true,
+   "family": "beam-axle-steer",
+   "note": "1-DOF kingpin steer; 'travel' selects steer angle",
+   "steered": true
+  },
+  "points": {
+   "cp": [
+    "carried",
+    [
+     0.0,
+     1015.0,
+     0.0
+    ],
+    null
+   ],
+   "dragc": [
+    "ground",
+    [
+     160.0,
+     300.0,
+     600.0
+    ],
+    null
+   ],
+   "kpb": [
+    "ground",
+    [
+     0.0,
+     920.0,
+     360.0
+    ],
+    null
+   ],
+   "kpt": [
+    "ground",
+    [
+     0.0,
+     900.0,
+     560.0
+    ],
+    null
+   ],
+   "sa": [
+    "free",
+    [
+     160.0,
+     870.0,
+     380.0
+    ],
+    null
+   ],
+   "sp": [
+    "free",
+    [
+     0.0,
+     980.0,
+     470.0
+    ],
+    null
+   ],
+   "tri": [
+    "ground",
+    [
+     160.0,
+     400.0,
+     380.0
+    ],
+    null
+   ],
+   "wc": [
+    "carried",
+    [
+     0.0,
+     1010.0,
+     470.0
+    ],
+    null
+   ]
+  },
+  "spin_axis_pts": null,
+  "static_camber": 0.0,
+  "static_toe": 0.0,
+  "steer_axis": null,
+  "steer_point": "tri",
+  "wheel_center": "wc"
+ },
+ "v": [
+  1.0,
+  2.0,
+  3.0
+ ],
+ "v.nested": [
+  3
+ ],
+ "watts": {
+  "bodies": {
+   "axle": [
+    "axL",
+    "axR",
+    "lat"
+   ]
+  },
+  "carrier_body": "axle",
+  "constraints": [
+   [
+    "Link",
+    {
+     "a": "lout0",
+     "b": "lin0",
+     "label": "L0",
+     "length": 353.6947836765479,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "lout1",
+     "b": "lin1",
+     "label": "L1",
+     "length": 361.52454965050435,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "lout2",
+     "b": "lin2",
+     "label": "L2",
+     "length": 297.8674201721296,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "lat",
+     "b": "watt_top",
+     "label": "watt_top_link",
+     "length": 500.39984012787215,
+     "n_eq": 1
+    }
+   ],
+   [
+    "Link",
+    {
+     "a": "lat",
+     "b": "watt_bot",
+     "label": "watt_bot_link",
+     "length": 500.39984012787215,
+     "n_eq": 1
+    }
+   ],
+   [
+    "AxleRoll",
+    {
+     "end_a": "axL",
+     "end_b": "axR",
+     "length": 1200.0,
+     "n_eq": 1
+    }
+   ],
+   [
+    "DriveZ",
+    {
+     "n_eq": 1,
+     "p": "axL",
+     "travel": 0.0,
+     "z0": 230.0
+    }
+   ]
+  ],
+  "contact_patch": "cp",
+  "drive_point": "axL",
+  "label": "w",
+  "members": [
+   [
+    "L0",
+    "lout0",
+    "lin0"
+   ],
+   [
+    "L1",
+    "lout1",
+    "lin1"
+   ],
+   [
+    "L2",
+    "lout2",
+    "lin2"
+   ],
+   [
+    "watt_top_link",
+    "lat",
+    "watt_top"
+   ],
+   [
+    "watt_bot_link",
+    "lat",
+    "watt_bot"
+   ]
+  ],
+  "meta": {
+   "family": "beam-axle",
+   "steered": false
+  },
+  "points": {
+   "axL": [
+    "free",
+    [
+     0.0,
+     600.0,
+     230.0
+    ],
+    null
+   ],
+   "axR": [
+    "free",
+    [
+     0.0,
+     -600.0,
+     230.0
+    ],
+    null
+   ],
+   "cp": [
+    "carried",
+    [
+     0.0,
+     625.0,
+     0.0
+    ],
+    null
+   ],
+   "lat": [
+    "free",
+    [
+     -50.0,
+     0.0,
+     280.0
+    ],
+    null
+   ],
+   "lin0": [
+    "ground",
+    [
+     -60.0,
+     210.0,
+     130.0
+    ],
+    null
+   ],
+   "lin1": [
+    "ground",
+    [
+     150.0,
+     215.0,
+     128.0
+    ],
+    null
+   ],
+   "lin2": [
+    "ground",
+    [
+     -40.0,
+     250.0,
+     330.0
+    ],
+    null
+   ],
+   "lout0": [
+    "carried",
+    [
+     -10.0,
+     560.0,
+     120.0
+    ],
+    null
+   ],
+   "lout1": [
+    "carried",
+    [
+     60.0,
+     565.0,
+     118.0
+    ],
+    null
+   ],
+   "lout2": [
+    "carried",
+    [
+     0.0,
+     545.0,
+     320.0
+    ],
+    null
+   ],
+   "watt_bot": [
+    "ground",
+    [
+     -50.0,
+     -500.0,
+     260.0
+    ],
+    null
+   ],
+   "watt_top": [
+    "ground",
+    [
+     -50.0,
+     500.0,
+     300.0
+    ],
+    null
+   ],
+   "wc": [
+    "carried",
+    [
+     0.0,
+     620.0,
+     230.0
+    ],
+    null
+   ]
+  },
+  "spin_axis_pts": null,
+  "static_camber": 0.0,
+  "static_toe": 0.1,
+  "steer_axis": null,
+  "steer_point": null,
+  "wheel_center": "wc"
+ }
+}

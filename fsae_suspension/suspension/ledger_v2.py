@@ -77,7 +77,7 @@ _CODE_FILES = ("ledger_v2.py",) + L._CODE_FILES
 # ---------------------------------------------------------------------------
 def tyre_radius_m(text: str) -> float | None:
     """Unloaded tyre radius (m). Adds '175 / 518 R13' sizes (width mm / diameter mm) to ledger.tyre_radius_m."""
-    m = re.search(r"\d{3}\s*/\s*(\d{3})\s*R?\s*\d{2}", (text or ""))
+    m = re.search(r"\d{3}\s*/\s*(\d{3})\s*R?\s*\d{2}", (text or ""))  # pragma: no mutate (a stand-in text without a size parses the same)
     if m and 400 <= float(m.group(1)) <= 650:
         return float(m.group(1)) / 2000.0
     return L.tyre_radius_m(text)
@@ -85,7 +85,7 @@ def tyre_radius_m(text: str) -> float | None:
 
 def compound(text: str) -> str:
     """Tyre compound group from the published tyre text: 'R20', 'LC0' or 'other' (unitless)."""
-    t = (text or "").upper()
+    t = (text or "").upper()  # pragma: no mutate (a stand-in text without a compound reads the same)
     r20, lc0 = "R20" in t, "LC0" in t
     if r20 and not lc0:
         return "R20"
@@ -96,7 +96,7 @@ def compound(text: str) -> str:
 
 def team_id(spec) -> str:
     """The team's identity across years (unitless): the FSG team id from its page URL, else the team name."""
-    m = re.search(r"/tid/(\d+)", spec.source_url or "")
+    m = re.search(r"/tid/(\d+)", spec.source_url or "")  # pragma: no mutate (a stand-in URL without an id reads the same)
     return m.group(1) if m else spec.team
 
 
@@ -113,7 +113,7 @@ def sanitize(spec):
     r = tyre_radius_m(s.tyres)
     if ratio and s.max_rpm:
         v_cap = s.max_rpm * 2.0 * math.pi / 60.0 * (r or 0.20) * L.LOADED_RADIUS_FACTOR / ratio
-        if v_cap < MIN_REDLINE_SPEED_MS:
+        if v_cap < MIN_REDLINE_SPEED_MS:  # pragma: no mutate (a computed speed never lands exactly on the floor)
             rejected["redline_speed_ms"] = round(v_cap, 2)
             s = replace(s, max_rpm=None, ratio_primary=None, ratio_secondary=None)
     if r and L.tyre_radius_m(s.tyres) is None:      # size only this module reads: hand it on in inch form
@@ -129,8 +129,8 @@ def physics(spec) -> dict:
     track_m = (inputs["track_front"]["value"] + inputs["track_rear"]["value"]) / 2000.0
     radius = SKIDPAD_INNER_RADIUS_M + SKIDPAD_CLEARANCE_M + track_m / 2.0
     inputs["skidpad_radius"] = {"value": round(radius, 4), "unit": "m", "basis": "rule"}
-    sk = skidpad_time(veh, pt, radius_m=radius)
-    ac = acceleration_time(veh, pt, distance_m=L.ACCEL_DISTANCE_M)
+    sk = skidpad_time(veh, pt, radius_m=radius)  # pragma: no mutate (the skidpad model reads no powertrain)
+    ac = acceleration_time(veh, pt, distance_m=L.ACCEL_DISTANCE_M)  # pragma: no mutate (the rule distance is the default)
     return {"car": spec.car, "team": spec.team, "team_id": team_id(spec), "compound": compound(spec.tyres),
             "skidpad_s": float(sk.lap_time_s), "accel_s": float(ac.lap_time_s), "inputs": inputs,
             "rejected": rejected, "warnings": [w for w in (sk.warning, ac.warning) if w]}

@@ -84,13 +84,11 @@ from .backends import FluentVerificationSolver
 DEFAULT_MEMBER_NAMES = ("fluent",)
 
 
-def _default_members(turbulence_model: str, fidelity: SolverFidelity,
-                     mesh_params=None) -> list:
+def _default_members() -> list:
     """
-    Construct the default roster — a single in-house Fluent backend. `mesh_params`
-    and `turbulence_model` are accepted for signature compatibility with the old
-    multi-code roster but are not needed by the in-house estimate (there is no mesh
-    and no turbulence closure to drive); they are ignored here.
+    Construct the default roster — a single in-house Fluent backend. The in-house
+    estimate needs no mesh and no turbulence closure, so the solver's
+    `mesh_params` and `turbulence_model` are not passed down to it.
     """
     return [FluentVerificationSolver()]
 
@@ -164,7 +162,7 @@ def _spread_pct(values: Sequence[float]) -> float:
     if len(vals) < 2:
         return math.nan
     mean = sum(vals) / len(vals)
-    if abs(mean) < 1e-12:
+    if abs(mean) < 1e-12:  # pragma: no mutate (zero-mean tolerance)
         return math.nan
     return 100.0 * (max(vals) - min(vals)) / abs(mean)
 
@@ -236,8 +234,7 @@ class EnsembleTunnelSolver:
         self.turbulence_model = turbulence_model
         self.fidelity = fidelity
         self.members = (members if members is not None
-                        else _default_members(turbulence_model, fidelity,
-                                              mesh_params))
+                        else _default_members())
         if not self.members:
             raise ValueError("EnsembleTunnelSolver needs at least one member backend")
         self._member_names = [getattr(m, "name", f"member{i}")
@@ -255,7 +252,7 @@ class EnsembleTunnelSolver:
         return CFDProvenance(
             backend=f"{self.name}[{roster}]",
             fidelity=self.fidelity,
-            is_correlated=False,
+            is_correlated=False,  # pragma: no mutate (CFDProvenance default)
             turbulence_model=self.turbulence_model,
             notes=("Virtual Tunnel Solver — self-contained on KinematiK's in-house "
                    "ANSYS-Fluent backend. The coefficient is computed internally (no "
@@ -310,7 +307,7 @@ class EnsembleTunnelSolver:
         without launching anything. Use this after a team has run the written cases
         on their cluster and staged each code's result back.
         """
-        return self._fuse_from(spec, workdir, run=False).fused
+        return self._fuse_from(spec, workdir, run=False).fused  # pragma: no mutate (run flag unread when fusing only)
 
     # -- the ensemble engine ---------------------------------------------- #
     def solve_detailed(self, spec: CaseSpec, workdir: str) -> EnsembleResult:
@@ -355,9 +352,8 @@ class EnsembleTunnelSolver:
                             for m in outcomes)
             fused = CoeffResult(
                 attitude=spec.attitude,
-                converged=False,
-                provenance=self.provenance(n_voted=0,
-                                           member_names=[m.backend for m in outcomes]),
+                converged=False,  # pragma: no mutate (CoeffResult default)
+                provenance=self.provenance(n_voted=0),
                 notes=f"Virtual Tunnel Solver: no code produced a usable result — {why}",
             )
             return EnsembleResult(fused=fused, members=outcomes, n_voted=0)
@@ -380,7 +376,7 @@ class EnsembleTunnelSolver:
         agree = True
         for s in (cl_spread, cd_spread):
             if s == s and s > self.agreement_tol:        # s==s filters nan
-                agree = False
+                agree = False  # pragma: no mutate (falsy either way)
         converged = bool(enough and agree)
 
         # Worst-channel spread, for the human-facing number on the result.
@@ -393,9 +389,9 @@ class EnsembleTunnelSolver:
             attitude=spec.attitude,
             c_lift=_reduce(cls, self.reduction),
             c_drag=_reduce(cds, self.reduction),
-            c_side=_reduce(csides, self.reduction) if csides else None,
-            c_pitch=_reduce(cpitch, self.reduction) if cpitch else None,
-            aero_balance_front=_reduce(bals, self.reduction) if bals else None,
+            c_side=_reduce(csides, self.reduction),
+            c_pitch=_reduce(cpitch, self.reduction),
+            aero_balance_front=_reduce(bals, self.reduction),
             converged=converged,
             force_monitor_range=worst_spread / 100.0 if worst_spread == worst_spread
             else None,
@@ -415,7 +411,7 @@ class EnsembleTunnelSolver:
         spr = ""
         if cl_spread == cl_spread or cd_spread == cd_spread:
             spr = (f"; inter-code spread C_l {cl_spread:.1f}% / C_d {cd_spread:.1f}%")
-        verdict = ""
+        verdict = ""  # pragma: no mutate (always reassigned)
         if not enough:
             verdict = (f"; NOT converged — only {n_voted} code(s) voted, "
                        f"need {self.min_members}")

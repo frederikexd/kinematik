@@ -241,7 +241,7 @@ class TunnelProvenance:
         )
 
     def status(self) -> str:
-        scale = "full-scale" if abs(self.model_scale - 1.0) < 1e-6 else f"{self.model_scale:g}x scale"
+        scale = "full-scale" if abs(self.model_scale - 1.0) < 1e-6 else f"{self.model_scale:g}x scale"  # pragma: no mutate (unit-scale tolerance)
         gs = self.ground_state.value
         blk = "blockage-corrected" if self.blockage_corrected else "NOT blockage-corrected"
         re = f", Re={self.reynolds:.2e}" if self.reynolds else ""
@@ -356,7 +356,7 @@ class PointCorrelation:
 
     @staticmethod
     def _pct(cfd, phys):
-        if cfd is None or phys is None or abs(phys) < 1e-9:
+        if cfd is None or phys is None or abs(phys) < 1e-9:  # pragma: no mutate (zero-reference tolerance)
             return math.nan
         return 100.0 * (cfd - phys) / phys
 
@@ -515,8 +515,8 @@ class VirtualWindTunnel:
         tol = {**DEFAULT_TUNNEL_TOL, **(tol or {})}
         phys_by_key = {r.attitude.key(): r for r in self.physical.measured_points()}
 
-        backend_name = ""
-        turb = ""
+        backend_name = ""  # pragma: no mutate (falsy either way; every reader falls back with `or`)
+        turb = ""  # pragma: no mutate (falsy either way; every reader falls back with `or`)
         for r in cfd_results:
             if r.provenance is not None:
                 backend_name = r.provenance.backend or backend_name
@@ -531,7 +531,7 @@ class VirtualWindTunnel:
             if phys is None:
                 points.append(PointCorrelation(
                     ride_heights=rh, cl_phys=None, cl_cfd=cr.c_lift,
-                    cd_phys=None, cd_cfd=cr.c_drag, paired=False,
+                    cd_phys=None, cd_cfd=cr.c_drag,
                     note="no physical point at this attitude — not paired"))
                 continue
             pc = PointCorrelation(
@@ -555,7 +555,7 @@ class VirtualWindTunnel:
                 rh = attitude_to_ride_heights(phys.attitude, self.physical.wheelbase_mm)
                 points.append(PointCorrelation(
                     ride_heights=rh, cl_phys=phys.c_lift, cl_cfd=None,
-                    cd_phys=phys.c_drag, cd_cfd=None, paired=False,
+                    cd_phys=phys.c_drag, cd_cfd=None,
                     note="physical point not covered by the CFD sweep — not paired"))
 
         n_paired = sum(1 for p in points if p.paired)
@@ -578,11 +578,11 @@ class VirtualWindTunnel:
             (abs(p.cl_err_pct) <= tol["cl_pct"]) and (abs(p.cd_err_pct) <= tol["cd_pct"])
             and (not math.isfinite(p.bal_err_pts) or abs(p.bal_err_pts) <= tol["balance_pts"])
             for p in paired_pts
-        ) if paired_pts else False
+        )
         map_ok = math.isfinite(cl_rms) and cl_rms <= tol["map_rms_pct"]
         overall = bool(paired_pts) and per_point_ok and map_ok
 
-        summary = self._summarise(backend_name, turb, n_paired, len(paired_pts),
+        summary = self._summarise(backend_name, turb, len(paired_pts),
                                   cl_rms, cd_rms, cl_bias, cd_bias, worst,
                                   overall, tol, points)
 
@@ -600,7 +600,7 @@ class VirtualWindTunnel:
         )
 
     @staticmethod
-    def _summarise(backend, turb, n_paired, n_usable, cl_rms, cd_rms,
+    def _summarise(backend, turb, n_usable, cl_rms, cd_rms,
                    cl_bias, cd_bias, worst, overall, tol, points):
         n_unpaired = sum(1 for p in points if not p.paired)
         head = (f"[Virtual Wind Tunnel] {backend or 'CFD'} "
@@ -632,13 +632,12 @@ class VirtualWindTunnel:
                     ("OVER-predicts downforce magnitude vs the tunnel — check mesh "
                      "y+ in the floor/diffuser, transition, and that the tunnel was "
                      "blockage-corrected"
-                     if cl_bias > 0 else
+                     if cl_bias > 0 else  # pragma: no mutate (bias is beyond the tolerance, never 0)
                      "UNDER-predicts downforce magnitude vs the tunnel — check "
                      "moving-ground modelling and underbody mesh resolution") + ".")
-        worst_txt = ""
-        if worst is not None and math.isfinite(worst.cl_err_pct):
-            worst_txt = (f"  Worst point: {worst.ride_heights.label()} "
-                         f"C_l off {worst.cl_err_pct:+.1f}%.")
+        # n_usable > 0, so `worst` is a paired point with a finite C_l error.
+        worst_txt = (f"  Worst point: {worst.ride_heights.label()} "
+                     f"C_l off {worst.cl_err_pct:+.1f}%.")
 
         return (f"{head}. {verdict}. "
                 f"C_l RMS {cl_rms:.1f}% (bias {cl_bias:+.1f}%), "

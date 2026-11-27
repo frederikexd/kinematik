@@ -1,0 +1,4054 @@
+{
+ "compare.args": [
+  {
+   "baseline": "base",
+   "best": "b",
+   "cost_event": null,
+   "decidable": true,
+   "pairwise": {},
+   "provenance": {
+    "estimate_flagged": [
+     "every band in Uncertainty — these are judgements, not measurements",
+     "the lock/yaw penalty coefficient",
+     "any vendor figure not confirmed against the vendor's own data",
+     "Cost-event points, unless the year's Cmin/Cmax are supplied"
+    ],
+    "hard_rule": "No winner and no $/point when the points delta changes sign across the swept band. A trade study that always produces a ranking is not a trade study, it is a random number generator with a house style.",
+    "physics_grounded": [
+     "lap times (real LapSimulator over the standard events)",
+     "points curves (published-form FSAE event_points)",
+     "rear-axle torque split (driveline.py, exact for a given TBR/preload)",
+     "mass effect (exact — the part's mass enters the vehicle model)"
+    ]
+   },
+   "resolution": 0.0,
+   "results": [
+    {
+     "acquisition_usd": 500.0,
+     "actionable": true,
+     "delta_points_median": 31.77777777777778,
+     "delta_points_p05": 31.77777777777778,
+     "delta_points_p95": 31.77777777777778,
+     "fab_hours": 0.0,
+     "label": "b",
+     "nominal": {
+      "notes": [
+       "b-note",
+       "shared"
+      ],
+      "times": {
+       "accel": null,
+       "skidpad": 4.5
+      }
+     },
+     "notes": [
+      "b-note",
+      "shared"
+     ],
+     "sign_stable": true,
+     "usd_per_point": 15.734265734265733
+    }
+   ],
+   "text": "SEPARABLE FROM THE BASELINE. 'b' beats 'base' by +31.8 points (90% band +31.8 … +31.8); the sign holds across the whole swept band at $16 per point."
+  },
+  [
+   [
+    "b",
+    true,
+    270.0,
+    280.0,
+    3.3,
+    2.2,
+    "FK",
+    "RK",
+    "TY",
+    3
+   ],
+   [
+    "base",
+    true,
+    270.0,
+    280.0,
+    3.3,
+    2.2,
+    "FK",
+    "RK",
+    "TY",
+    3
+   ],
+   [
+    "b",
+    false,
+    270.0,
+    280.0,
+    3.3,
+    2.2,
+    "FK",
+    "RK",
+    "TY",
+    3
+   ],
+   [
+    "base",
+    false,
+    270.0,
+    280.0,
+    3.3,
+    2.2,
+    "FK",
+    "RK",
+    "TY",
+    3
+   ],
+   [
+    "b",
+    false,
+    270.0,
+    280.0,
+    3.3,
+    2.2,
+    "FK",
+    "RK",
+    "TY",
+    3
+   ],
+   [
+    "base",
+    false,
+    270.0,
+    280.0,
+    3.3,
+    2.2,
+    "FK",
+    "RK",
+    "TY",
+    3
+   ],
+   [
+    "b",
+    false,
+    270.0,
+    280.0,
+    3.3,
+    2.2,
+    "FK",
+    "RK",
+    "TY",
+    3
+   ],
+   [
+    "base",
+    false,
+    270.0,
+    280.0,
+    3.3,
+    2.2,
+    "FK",
+    "RK",
+    "TY",
+    3
+   ],
+   [
+    "b",
+    false,
+    270.0,
+    280.0,
+    3.3,
+    2.2,
+    "FK",
+    "RK",
+    "TY",
+    3
+   ],
+   [
+    "base",
+    false,
+    270.0,
+    280.0,
+    3.3,
+    2.2,
+    "FK",
+    "RK",
+    "TY",
+    3
+   ]
+  ]
+ ],
+ "compare.default_unc": [
+  602,
+  24.86956521739132
+ ],
+ "compare.defaults": [
+  {
+   "baseline": "base",
+   "best": "b",
+   "cost_event": null,
+   "decidable": true,
+   "pairwise": {},
+   "provenance": {
+    "estimate_flagged": [
+     "every band in Uncertainty — these are judgements, not measurements",
+     "the lock/yaw penalty coefficient",
+     "any vendor figure not confirmed against the vendor's own data",
+     "Cost-event points, unless the year's Cmin/Cmax are supplied"
+    ],
+    "hard_rule": "No winner and no $/point when the points delta changes sign across the swept band. A trade study that always produces a ranking is not a trade study, it is a random number generator with a house style.",
+    "physics_grounded": [
+     "lap times (real LapSimulator over the standard events)",
+     "points curves (published-form FSAE event_points)",
+     "rear-axle torque split (driveline.py, exact for a given TBR/preload)",
+     "mass effect (exact — the part's mass enters the vehicle model)"
+    ]
+   },
+   "resolution": 0.0,
+   "results": [
+    {
+     "acquisition_usd": 500.0,
+     "actionable": true,
+     "delta_points_median": 31.77777777777778,
+     "delta_points_p05": 31.77777777777778,
+     "delta_points_p95": 31.77777777777778,
+     "fab_hours": 0.0,
+     "label": "b",
+     "nominal": {
+      "notes": [
+       "b-note",
+       "shared"
+      ],
+      "times": {
+       "accel": null,
+       "skidpad": 4.5
+      }
+     },
+     "notes": [
+      "b-note",
+      "shared"
+     ],
+     "sign_stable": true,
+     "usd_per_point": 15.734265734265733
+    }
+   ],
+   "text": "SEPARABLE FROM THE BASELINE. 'b' beats 'base' by +31.8 points (90% band +31.8 … +31.8); the sign holds across the whole swept band at $16 per point."
+  },
+  [
+   [
+    "b",
+    true,
+    270.0,
+    270.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    true,
+    270.0,
+    270.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    false,
+    270.0,
+    270.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    270.0,
+    270.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    false,
+    270.0,
+    270.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    270.0,
+    270.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    false,
+    270.0,
+    270.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    270.0,
+    270.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    false,
+    270.0,
+    270.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    270.0,
+    270.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ]
+  ]
+ ],
+ "compare.floor_exact": [
+  {
+   "baseline": "base",
+   "best": "a",
+   "cost_event": null,
+   "decidable": true,
+   "pairwise": {},
+   "provenance": {
+    "estimate_flagged": [
+     "every band in Uncertainty — these are judgements, not measurements",
+     "the lock/yaw penalty coefficient",
+     "any vendor figure not confirmed against the vendor's own data",
+     "Cost-event points, unless the year's Cmin/Cmax are supplied"
+    ],
+    "hard_rule": "No winner and no $/point when the points delta changes sign across the swept band. A trade study that always produces a ranking is not a trade study, it is a random number generator with a house style.",
+    "physics_grounded": [
+     "lap times (real LapSimulator over the standard events)",
+     "points curves (published-form FSAE event_points)",
+     "rear-axle torque split (driveline.py, exact for a given TBR/preload)",
+     "mass effect (exact — the part's mass enters the vehicle model)"
+    ]
+   },
+   "resolution": 0.0,
+   "results": [
+    {
+     "acquisition_usd": 900.0,
+     "actionable": true,
+     "delta_points_median": 24.86956521739132,
+     "delta_points_p05": 24.86956521739132,
+     "delta_points_p95": 24.86956521739132,
+     "fab_hours": 4.0,
+     "label": "a",
+     "nominal": {
+      "notes": [
+       "a-note",
+       "shared"
+      ],
+      "times": {
+       "accel": null,
+       "skidpad": 4.6
+      }
+     },
+     "notes": [
+      "a-note",
+      "shared"
+     ],
+     "sign_stable": true,
+     "usd_per_point": 36.188811188811165
+    }
+   ],
+   "text": "SEPARABLE FROM THE BASELINE. 'a' beats 'base' by +24.9 points (90% band +24.9 … +24.9); the sign holds across the whole swept band at $36 per point, plus 4 team-hours of fabrication."
+  },
+  [
+   [
+    "a",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ]
+  ]
+ ],
+ "compare.nan": [
+  {
+   "baseline": "base",
+   "best": null,
+   "cost_event": null,
+   "decidable": false,
+   "pairwise": {
+    "a|b": {
+     "median": null,
+     "p05": null,
+     "p95": null,
+     "separable": false,
+     "sign_stable": false
+    }
+   },
+   "provenance": {
+    "estimate_flagged": [
+     "every band in Uncertainty — these are judgements, not measurements",
+     "the lock/yaw penalty coefficient",
+     "any vendor figure not confirmed against the vendor's own data",
+     "Cost-event points, unless the year's Cmin/Cmax are supplied"
+    ],
+    "hard_rule": "No winner and no $/point when the points delta changes sign across the swept band. A trade study that always produces a ranking is not a trade study, it is a random number generator with a house style.",
+    "physics_grounded": [
+     "lap times (real LapSimulator over the standard events)",
+     "points curves (published-form FSAE event_points)",
+     "rear-axle torque split (driveline.py, exact for a given TBR/preload)",
+     "mass effect (exact — the part's mass enters the vehicle model)"
+    ]
+   },
+   "resolution": 0.0,
+   "results": [
+    {
+     "acquisition_usd": 900.0,
+     "actionable": false,
+     "delta_points_median": null,
+     "delta_points_p05": null,
+     "delta_points_p95": null,
+     "fab_hours": 4.0,
+     "label": "a",
+     "nominal": {
+      "notes": [
+       "a-note",
+       "shared"
+      ],
+      "times": {
+       "accel": null,
+       "skidpad": "NaN"
+      }
+     },
+     "notes": [
+      "Lap sim produced no usable result."
+     ],
+     "sign_stable": false,
+     "usd_per_point": null
+    },
+    {
+     "acquisition_usd": 500.0,
+     "actionable": false,
+     "delta_points_median": null,
+     "delta_points_p05": null,
+     "delta_points_p95": null,
+     "fab_hours": 0.0,
+     "label": "b",
+     "nominal": {
+      "notes": [
+       "b-note",
+       "shared"
+      ],
+      "times": {
+       "accel": null,
+       "skidpad": 4.6
+      }
+     },
+     "notes": [
+      "Lap sim produced no usable result."
+     ],
+     "sign_stable": false,
+     "usd_per_point": null
+    }
+   ],
+   "text": "NOT SEPARABLE — no winner declared. Across the swept band every option's points delta versus 'base' changes sign, i.e. the difference between these parts is smaller than the uncertainty in the inputs (mu, torque bias ratio, preload, lock penalty, which corner you evaluate). The honest reading is that THIS MODEL CANNOT TELL THEM APART at a magnitude worth acting on (floor: 5 points), so no $/point is printed. Narrow the band with real data — tyre data, the vendor's own TBR figure, a measured corner-exit case — or decide on the grounds the model is not disputing: reliability, adjustability, packaging, lead time and team hours."
+  },
+  [
+   [
+    "a",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ]
+  ]
+ ],
+ "compare.negative": [
+  {
+   "baseline": "base",
+   "best": null,
+   "cost_event": null,
+   "decidable": true,
+   "pairwise": {
+    "a|b": {
+     "median": -6.217391304347807,
+     "p05": -6.217391304347807,
+     "p95": -6.217391304347807,
+     "separable": true,
+     "sign_stable": true
+    }
+   },
+   "provenance": {
+    "estimate_flagged": [
+     "every band in Uncertainty — these are judgements, not measurements",
+     "the lock/yaw penalty coefficient",
+     "any vendor figure not confirmed against the vendor's own data",
+     "Cost-event points, unless the year's Cmin/Cmax are supplied"
+    ],
+    "hard_rule": "No winner and no $/point when the points delta changes sign across the swept band. A trade study that always produces a ranking is not a trade study, it is a random number generator with a house style.",
+    "physics_grounded": [
+     "lap times (real LapSimulator over the standard events)",
+     "points curves (published-form FSAE event_points)",
+     "rear-axle torque split (driveline.py, exact for a given TBR/preload)",
+     "mass effect (exact — the part's mass enters the vehicle model)"
+    ]
+   },
+   "resolution": 0.0,
+   "results": [
+    {
+     "acquisition_usd": 900.0,
+     "actionable": true,
+     "delta_points_median": -24.86956521739132,
+     "delta_points_p05": -24.86956521739132,
+     "delta_points_p95": -24.86956521739132,
+     "fab_hours": 4.0,
+     "label": "a",
+     "nominal": {
+      "notes": [
+       "a-note",
+       "shared"
+      ],
+      "times": {
+       "accel": null,
+       "skidpad": 5.0
+      }
+     },
+     "notes": [
+      "a-note",
+      "shared"
+     ],
+     "sign_stable": true,
+     "usd_per_point": null
+    },
+    {
+     "acquisition_usd": 500.0,
+     "actionable": true,
+     "delta_points_median": -18.652173913043512,
+     "delta_points_p05": -18.652173913043512,
+     "delta_points_p95": -18.652173913043512,
+     "fab_hours": 0.0,
+     "label": "b",
+     "nominal": {
+      "notes": [
+       "b-note",
+       "shared"
+      ],
+      "times": {
+       "accel": null,
+       "skidpad": 4.9
+      }
+     },
+     "notes": [
+      "b-note",
+      "shared"
+     ],
+     "sign_stable": true,
+     "usd_per_point": null
+    }
+   ],
+   "text": "SEPARABLE, AND NEGATIVE. Every separable option is WORSE than 'base'; 'a' loses -24.9 points. Do not buy on lap time."
+  },
+  [
+   [
+    "a",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ]
+  ]
+ ],
+ "compare.negative_mixed": [
+  {
+   "baseline": "base",
+   "best": null,
+   "cost_event": null,
+   "decidable": true,
+   "pairwise": {
+    "a|b": {
+     "median": -25.21497584541065,
+     "p05": -31.77777777777778,
+     "p95": -18.65217391304352,
+     "separable": true,
+     "sign_stable": true
+    }
+   },
+   "provenance": {
+    "estimate_flagged": [
+     "every band in Uncertainty — these are judgements, not measurements",
+     "the lock/yaw penalty coefficient",
+     "any vendor figure not confirmed against the vendor's own data",
+     "Cost-event points, unless the year's Cmin/Cmax are supplied"
+    ],
+    "hard_rule": "No winner and no $/point when the points delta changes sign across the swept band. A trade study that always produces a ranking is not a trade study, it is a random number generator with a house style.",
+    "physics_grounded": [
+     "lap times (real LapSimulator over the standard events)",
+     "points curves (published-form FSAE event_points)",
+     "rear-axle torque split (driveline.py, exact for a given TBR/preload)",
+     "mass effect (exact — the part's mass enters the vehicle model)"
+    ]
+   },
+   "resolution": 12.572946859903325,
+   "results": [
+    {
+     "acquisition_usd": 900.0,
+     "actionable": true,
+     "delta_points_median": -25.145893719806786,
+     "delta_points_p05": -25.422222222222253,
+     "delta_points_p95": -24.86956521739132,
+     "fab_hours": 4.0,
+     "label": "a",
+     "nominal": {
+      "notes": [
+       "a-note",
+       "shared"
+      ],
+      "times": {
+       "accel": null,
+       "skidpad": 5.0
+      }
+     },
+     "notes": [
+      "a-note",
+      "shared"
+     ],
+     "sign_stable": true,
+     "usd_per_point": null
+    },
+    {
+     "acquisition_usd": 500.0,
+     "actionable": false,
+     "delta_points_median": 0.06908212560386318,
+     "delta_points_p05": -6.2173913043477995,
+     "delta_points_p95": 6.355555555555526,
+     "fab_hours": 0.0,
+     "label": "b",
+     "nominal": {
+      "notes": [
+       "b-note",
+       "shared"
+      ],
+      "times": {
+       "accel": null,
+       "skidpad": 4.699999999999999
+      }
+     },
+     "notes": [
+      "b-note",
+      "shared"
+     ],
+     "sign_stable": false,
+     "usd_per_point": null
+    }
+   ],
+   "text": "SEPARABLE, AND NEGATIVE. Every separable option is WORSE than 'base'; 'a' loses -25.1 points. Do not buy on lap time."
+  },
+  [
+   [
+    "a",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ]
+  ]
+ ],
+ "compare.noise": [
+  {
+   "baseline": "base",
+   "best": null,
+   "cost_event": null,
+   "decidable": false,
+   "pairwise": {},
+   "provenance": {
+    "estimate_flagged": [
+     "every band in Uncertainty — these are judgements, not measurements",
+     "the lock/yaw penalty coefficient",
+     "any vendor figure not confirmed against the vendor's own data",
+     "Cost-event points, unless the year's Cmin/Cmax are supplied"
+    ],
+    "hard_rule": "No winner and no $/point when the points delta changes sign across the swept band. A trade study that always produces a ranking is not a trade study, it is a random number generator with a house style.",
+    "physics_grounded": [
+     "lap times (real LapSimulator over the standard events)",
+     "points curves (published-form FSAE event_points)",
+     "rear-axle torque split (driveline.py, exact for a given TBR/preload)",
+     "mass effect (exact — the part's mass enters the vehicle model)"
+    ]
+   },
+   "resolution": 11.556734693877516,
+   "results": [
+    {
+     "acquisition_usd": 900.0,
+     "actionable": false,
+     "delta_points_median": 0.058367346938773323,
+     "delta_points_p05": -5.719999999999985,
+     "delta_points_p95": 5.836734693877531,
+     "fab_hours": 4.0,
+     "label": "a",
+     "nominal": {
+      "notes": [
+       "a-note",
+       "shared"
+      ],
+      "times": {
+       "accel": null,
+       "skidpad": 5.1
+      }
+     },
+     "notes": [
+      "a-note",
+      "shared"
+     ],
+     "sign_stable": false,
+     "usd_per_point": null
+    }
+   ],
+   "text": "NOT SEPARABLE — no winner declared. Across the swept band every option's points delta versus 'base' changes sign, i.e. the difference between these parts is smaller than the uncertainty in the inputs (mu, torque bias ratio, preload, lock penalty, which corner you evaluate). The honest reading is that THIS MODEL CANNOT TELL THEM APART at a magnitude worth acting on (floor: 5 points), so no $/point is printed. Narrow the band with real data — tyre data, the vendor's own TBR figure, a measured corner-exit case — or decide on the grounds the model is not disputing: reliability, adjustability, packaging, lead time and team hours."
+  },
+  [
+   [
+    "a",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ]
+  ]
+ ],
+ "compare.one_draw": [
+  {
+   "baseline": "base",
+   "best": "b",
+   "cost_event": null,
+   "decidable": true,
+   "pairwise": {
+    "a|b": {
+     "median": -6.355555555555526,
+     "p05": -6.355555555555526,
+     "p95": -6.355555555555526,
+     "separable": true,
+     "sign_stable": true
+    }
+   },
+   "provenance": {
+    "estimate_flagged": [
+     "every band in Uncertainty — these are judgements, not measurements",
+     "the lock/yaw penalty coefficient",
+     "any vendor figure not confirmed against the vendor's own data",
+     "Cost-event points, unless the year's Cmin/Cmax are supplied"
+    ],
+    "hard_rule": "No winner and no $/point when the points delta changes sign across the swept band. A trade study that always produces a ranking is not a trade study, it is a random number generator with a house style.",
+    "physics_grounded": [
+     "lap times (real LapSimulator over the standard events)",
+     "points curves (published-form FSAE event_points)",
+     "rear-axle torque split (driveline.py, exact for a given TBR/preload)",
+     "mass effect (exact — the part's mass enters the vehicle model)"
+    ]
+   },
+   "resolution": 0.0,
+   "results": [
+    {
+     "acquisition_usd": 900.0,
+     "actionable": true,
+     "delta_points_median": 25.422222222222253,
+     "delta_points_p05": 25.422222222222253,
+     "delta_points_p95": 25.422222222222253,
+     "fab_hours": 4.0,
+     "label": "a",
+     "nominal": {
+      "notes": [
+       "a-note",
+       "shared"
+      ],
+      "times": {
+       "accel": null,
+       "skidpad": 4.6
+      }
+     },
+     "notes": [
+      "a-note",
+      "shared"
+     ],
+     "sign_stable": true,
+     "usd_per_point": 35.40209790209786
+    },
+    {
+     "acquisition_usd": 500.0,
+     "actionable": true,
+     "delta_points_median": 31.77777777777778,
+     "delta_points_p05": 31.77777777777778,
+     "delta_points_p95": 31.77777777777778,
+     "fab_hours": 0.0,
+     "label": "b",
+     "nominal": {
+      "notes": [
+       "b-note",
+       "shared"
+      ],
+      "times": {
+       "accel": null,
+       "skidpad": 4.5
+      }
+     },
+     "notes": [
+      "b-note",
+      "shared"
+     ],
+     "sign_stable": true,
+     "usd_per_point": 15.734265734265733
+    }
+   ],
+   "text": "SEPARABLE FROM THE BASELINE. 'b' beats 'base' by +31.8 points (90% band +31.8 … +31.8); the sign holds across the whole swept band at $16 per point."
+  },
+  [
+   [
+    "a",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ]
+  ]
+ ],
+ "compare.pair_floor": [
+  {
+   "baseline": "base",
+   "best": "b",
+   "cost_event": null,
+   "decidable": true,
+   "pairwise": {
+    "a|b": {
+     "median": -6.355555555555526,
+     "p05": -6.355555555555526,
+     "p95": -6.355555555555526,
+     "separable": true,
+     "sign_stable": true
+    }
+   },
+   "provenance": {
+    "estimate_flagged": [
+     "every band in Uncertainty — these are judgements, not measurements",
+     "the lock/yaw penalty coefficient",
+     "any vendor figure not confirmed against the vendor's own data",
+     "Cost-event points, unless the year's Cmin/Cmax are supplied"
+    ],
+    "hard_rule": "No winner and no $/point when the points delta changes sign across the swept band. A trade study that always produces a ranking is not a trade study, it is a random number generator with a house style.",
+    "physics_grounded": [
+     "lap times (real LapSimulator over the standard events)",
+     "points curves (published-form FSAE event_points)",
+     "rear-axle torque split (driveline.py, exact for a given TBR/preload)",
+     "mass effect (exact — the part's mass enters the vehicle model)"
+    ]
+   },
+   "resolution": 0.0,
+   "results": [
+    {
+     "acquisition_usd": 900.0,
+     "actionable": true,
+     "delta_points_median": 25.422222222222253,
+     "delta_points_p05": 25.422222222222253,
+     "delta_points_p95": 25.422222222222253,
+     "fab_hours": 4.0,
+     "label": "a",
+     "nominal": {
+      "notes": [
+       "a-note",
+       "shared"
+      ],
+      "times": {
+       "accel": null,
+       "skidpad": 4.6
+      }
+     },
+     "notes": [
+      "a-note",
+      "shared"
+     ],
+     "sign_stable": true,
+     "usd_per_point": 35.40209790209786
+    },
+    {
+     "acquisition_usd": 500.0,
+     "actionable": true,
+     "delta_points_median": 31.77777777777778,
+     "delta_points_p05": 31.77777777777778,
+     "delta_points_p95": 31.77777777777778,
+     "fab_hours": 0.0,
+     "label": "b",
+     "nominal": {
+      "notes": [
+       "b-note",
+       "shared"
+      ],
+      "times": {
+       "accel": null,
+       "skidpad": 4.5
+      }
+     },
+     "notes": [
+      "b-note",
+      "shared"
+     ],
+     "sign_stable": true,
+     "usd_per_point": 15.734265734265733
+    }
+   ],
+   "text": "SEPARABLE FROM THE BASELINE. 'b' beats 'base' by +31.8 points (90% band +31.8 … +31.8); the sign holds across the whole swept band at $16 per point."
+  },
+  [
+   [
+    "a",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ]
+  ]
+ ],
+ "compare.small": [
+  {
+   "baseline": "base",
+   "best": "a",
+   "cost_event": null,
+   "decidable": true,
+   "pairwise": {},
+   "provenance": {
+    "estimate_flagged": [
+     "every band in Uncertainty — these are judgements, not measurements",
+     "the lock/yaw penalty coefficient",
+     "any vendor figure not confirmed against the vendor's own data",
+     "Cost-event points, unless the year's Cmin/Cmax are supplied"
+    ],
+    "hard_rule": "No winner and no $/point when the points delta changes sign across the swept band. A trade study that always produces a ranking is not a trade study, it is a random number generator with a house style.",
+    "physics_grounded": [
+     "lap times (real LapSimulator over the standard events)",
+     "points curves (published-form FSAE event_points)",
+     "rear-axle torque split (driveline.py, exact for a given TBR/preload)",
+     "mass effect (exact — the part's mass enters the vehicle model)"
+    ]
+   },
+   "resolution": 0.0,
+   "results": [
+    {
+     "acquisition_usd": 900.0,
+     "actionable": true,
+     "delta_points_median": 0.02860286028601422,
+     "delta_points_p05": 0.02860286028601422,
+     "delta_points_p95": 0.02860286028601422,
+     "fab_hours": 4.0,
+     "label": "a",
+     "nominal": {
+      "notes": [
+       "a-note",
+       "shared"
+      ],
+      "times": {
+       "accel": null,
+       "skidpad": 4.9995
+      }
+     },
+     "notes": [
+      "a-note",
+      "shared"
+     ],
+     "sign_stable": true,
+     "usd_per_point": 31465.38461540044
+    }
+   ],
+   "text": "SEPARABLE FROM THE BASELINE. 'a' beats 'base' by +0.0 points (90% band +0.0 … +0.0); the sign holds across the whole swept band at $31,465 per point, plus 4 team-hours of fabrication."
+  },
+  [
+   [
+    "a",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ]
+  ]
+ ],
+ "compare.win": [
+  {
+   "baseline": "base",
+   "best": "b",
+   "cost_event": null,
+   "decidable": true,
+   "pairwise": {
+    "a|b": {
+     "median": -0.0027150180368309407,
+     "p05": -1.248908296943199,
+     "p95": 1.2434782608695372,
+     "separable": false,
+     "sign_stable": false
+    }
+   },
+   "provenance": {
+    "estimate_flagged": [
+     "every band in Uncertainty — these are judgements, not measurements",
+     "the lock/yaw penalty coefficient",
+     "any vendor figure not confirmed against the vendor's own data",
+     "Cost-event points, unless the year's Cmin/Cmax are supplied"
+    ],
+    "hard_rule": "No winner and no $/point when the points delta changes sign across the swept band. A trade study that always produces a ranking is not a trade study, it is a random number generator with a house style.",
+    "physics_grounded": [
+     "lap times (real LapSimulator over the standard events)",
+     "points curves (published-form FSAE event_points)",
+     "rear-axle torque split (driveline.py, exact for a given TBR/preload)",
+     "mass effect (exact — the part's mass enters the vehicle model)"
+    ]
+   },
+   "resolution": 2.6009872792860875,
+   "results": [
+    {
+     "acquisition_usd": 900.0,
+     "actionable": true,
+     "delta_points_median": 24.923865578127995,
+     "delta_points_p05": 24.86956521739132,
+     "delta_points_p95": 24.97816593886467,
+     "fab_hours": 4.0,
+     "label": "a",
+     "nominal": {
+      "notes": [
+       "a-note",
+       "shared"
+      ],
+      "times": {
+       "accel": null,
+       "skidpad": 4.6
+      }
+     },
+     "notes": [
+      "a-note",
+      "shared"
+     ],
+     "sign_stable": true,
+     "usd_per_point": 36.1099684629096
+    },
+    {
+     "acquisition_usd": 500.0,
+     "actionable": true,
+     "delta_points_median": 24.926580596164825,
+     "delta_points_p05": 23.62608695652178,
+     "delta_points_p95": 26.22707423580787,
+     "fab_hours": 0.0,
+     "label": "b",
+     "nominal": {
+      "notes": [
+       "b-note",
+       "shared"
+      ],
+      "times": {
+       "accel": null,
+       "skidpad": 4.619999999999999
+      }
+     },
+     "notes": [
+      "b-note",
+      "shared"
+     ],
+     "sign_stable": true,
+     "usd_per_point": 20.058908524217294
+    }
+   ],
+   "text": "SEPARABLE FROM THE BASELINE. 'b' beats 'base' by +24.9 points (90% band +23.6 … +26.2); the sign holds across the whole swept band at $20 per point.\n\nBUT IT IS NOT SEPARABLE FROM: a. Paired across every draw, the points difference between them changes sign, so this model cannot say the winner is actually the better part."
+  },
+  [
+   [
+    "a",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ]
+  ]
+ ],
+ "compare.win_cheaper": [
+  {
+   "baseline": "base",
+   "best": "a",
+   "cost_event": null,
+   "decidable": true,
+   "pairwise": {
+    "a|b": {
+     "median": 0.6217391304348325,
+     "p05": 0.6217391304348325,
+     "p95": 0.6217391304348325,
+     "separable": false,
+     "sign_stable": true
+    },
+    "a|c": {
+     "median": 0.0,
+     "p05": 0.0,
+     "p95": 0.0,
+     "separable": false,
+     "sign_stable": false
+    },
+    "a|d": {
+     "median": 0.0,
+     "p05": 0.0,
+     "p95": 0.0,
+     "separable": false,
+     "sign_stable": false
+    },
+    "b|c": {
+     "median": -0.6217391304348325,
+     "p05": -0.6217391304348325,
+     "p95": -0.6217391304348325,
+     "separable": false,
+     "sign_stable": true
+    },
+    "b|d": {
+     "median": -0.6217391304348325,
+     "p05": -0.6217391304348325,
+     "p95": -0.6217391304348325,
+     "separable": false,
+     "sign_stable": true
+    },
+    "c|d": {
+     "median": 0.0,
+     "p05": 0.0,
+     "p95": 0.0,
+     "separable": false,
+     "sign_stable": false
+    }
+   },
+   "provenance": {
+    "estimate_flagged": [
+     "every band in Uncertainty — these are judgements, not measurements",
+     "the lock/yaw penalty coefficient",
+     "any vendor figure not confirmed against the vendor's own data",
+     "Cost-event points, unless the year's Cmin/Cmax are supplied"
+    ],
+    "hard_rule": "No winner and no $/point when the points delta changes sign across the swept band. A trade study that always produces a ranking is not a trade study, it is a random number generator with a house style.",
+    "physics_grounded": [
+     "lap times (real LapSimulator over the standard events)",
+     "points curves (published-form FSAE event_points)",
+     "rear-axle torque split (driveline.py, exact for a given TBR/preload)",
+     "mass effect (exact — the part's mass enters the vehicle model)"
+    ]
+   },
+   "resolution": 0.0,
+   "results": [
+    {
+     "acquisition_usd": 900.0,
+     "actionable": true,
+     "delta_points_median": 24.86956521739132,
+     "delta_points_p05": 24.86956521739132,
+     "delta_points_p95": 24.86956521739132,
+     "fab_hours": 4.0,
+     "label": "a",
+     "nominal": {
+      "notes": [
+       "a-note",
+       "shared"
+      ],
+      "times": {
+       "accel": null,
+       "skidpad": 4.6
+      }
+     },
+     "notes": [
+      "a-note",
+      "shared"
+     ],
+     "sign_stable": true,
+     "usd_per_point": 36.188811188811165
+    },
+    {
+     "acquisition_usd": 500.0,
+     "actionable": true,
+     "delta_points_median": 24.247826086956486,
+     "delta_points_p05": 24.247826086956486,
+     "delta_points_p95": 24.247826086956486,
+     "fab_hours": 0.0,
+     "label": "b",
+     "nominal": {
+      "notes": [
+       "b-note",
+       "shared"
+      ],
+      "times": {
+       "accel": null,
+       "skidpad": 4.61
+      }
+     },
+     "notes": [
+      "b-note",
+      "shared"
+     ],
+     "sign_stable": true,
+     "usd_per_point": 20.62040523578988
+    },
+    {
+     "acquisition_usd": null,
+     "actionable": true,
+     "delta_points_median": 24.86956521739132,
+     "delta_points_p05": 24.86956521739132,
+     "delta_points_p95": 24.86956521739132,
+     "fab_hours": 0.0,
+     "label": "c",
+     "nominal": {
+      "notes": [
+       "c-note",
+       "shared"
+      ],
+      "times": {
+       "accel": null,
+       "skidpad": 4.6
+      }
+     },
+     "notes": [
+      "c-note",
+      "shared"
+     ],
+     "sign_stable": true,
+     "usd_per_point": null
+    },
+    {
+     "acquisition_usd": 2000.0,
+     "actionable": true,
+     "delta_points_median": 24.86956521739132,
+     "delta_points_p05": 24.86956521739132,
+     "delta_points_p95": 24.86956521739132,
+     "fab_hours": 0.0,
+     "label": "d",
+     "nominal": {
+      "notes": [
+       "d-note",
+       "shared"
+      ],
+      "times": {
+       "accel": null,
+       "skidpad": 4.6
+      }
+     },
+     "notes": [
+      "d-note",
+      "shared"
+     ],
+     "sign_stable": true,
+     "usd_per_point": 80.41958041958037
+    }
+   ],
+   "text": "SEPARABLE FROM THE BASELINE. 'a' beats 'base' by +24.9 points (90% band +24.9 … +24.9); the sign holds across the whole swept band at $36 per point, plus 4 team-hours of fabrication.\n\nBUT IT IS NOT SEPARABLE FROM: b; c; d. Paired across every draw, the points difference between them changes sign, so this model cannot say the winner is actually the better part. Cheaper and equally indistinguishable: b ($500, 0 h). On points alone there is no case for the more expensive one — the case has to be made on what the model is not simulating."
+  },
+  [
+   [
+    "a",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "c",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "d",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "c",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "d",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "c",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "d",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "c",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "d",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "c",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "d",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ]
+  ]
+ ],
+ "compare.win_cheaper2": [
+  {
+   "baseline": "base",
+   "best": "a",
+   "cost_event": null,
+   "decidable": true,
+   "pairwise": {
+    "a|b": {
+     "median": 0.6217391304348325,
+     "p05": 0.6217391304348325,
+     "p95": 0.6217391304348325,
+     "separable": false,
+     "sign_stable": true
+    },
+    "a|c": {
+     "median": 0.0,
+     "p05": 0.0,
+     "p95": 0.0,
+     "separable": false,
+     "sign_stable": false
+    },
+    "a|d": {
+     "median": 0.0,
+     "p05": 0.0,
+     "p95": 0.0,
+     "separable": false,
+     "sign_stable": false
+    },
+    "a|e": {
+     "median": 0.0,
+     "p05": 0.0,
+     "p95": 0.0,
+     "separable": false,
+     "sign_stable": false
+    },
+    "a|f": {
+     "median": 0.0,
+     "p05": 0.0,
+     "p95": 0.0,
+     "separable": false,
+     "sign_stable": false
+    },
+    "b|c": {
+     "median": -0.6217391304348325,
+     "p05": -0.6217391304348325,
+     "p95": -0.6217391304348325,
+     "separable": false,
+     "sign_stable": true
+    },
+    "b|d": {
+     "median": -0.6217391304348325,
+     "p05": -0.6217391304348325,
+     "p95": -0.6217391304348325,
+     "separable": false,
+     "sign_stable": true
+    },
+    "b|e": {
+     "median": -0.6217391304348325,
+     "p05": -0.6217391304348325,
+     "p95": -0.6217391304348325,
+     "separable": false,
+     "sign_stable": true
+    },
+    "b|f": {
+     "median": -0.6217391304348325,
+     "p05": -0.6217391304348325,
+     "p95": -0.6217391304348325,
+     "separable": false,
+     "sign_stable": true
+    },
+    "c|d": {
+     "median": 0.0,
+     "p05": 0.0,
+     "p95": 0.0,
+     "separable": false,
+     "sign_stable": false
+    },
+    "c|e": {
+     "median": 0.0,
+     "p05": 0.0,
+     "p95": 0.0,
+     "separable": false,
+     "sign_stable": false
+    },
+    "c|f": {
+     "median": 0.0,
+     "p05": 0.0,
+     "p95": 0.0,
+     "separable": false,
+     "sign_stable": false
+    },
+    "d|e": {
+     "median": 0.0,
+     "p05": 0.0,
+     "p95": 0.0,
+     "separable": false,
+     "sign_stable": false
+    },
+    "d|f": {
+     "median": 0.0,
+     "p05": 0.0,
+     "p95": 0.0,
+     "separable": false,
+     "sign_stable": false
+    },
+    "e|f": {
+     "median": 0.0,
+     "p05": 0.0,
+     "p95": 0.0,
+     "separable": false,
+     "sign_stable": false
+    }
+   },
+   "provenance": {
+    "estimate_flagged": [
+     "every band in Uncertainty — these are judgements, not measurements",
+     "the lock/yaw penalty coefficient",
+     "any vendor figure not confirmed against the vendor's own data",
+     "Cost-event points, unless the year's Cmin/Cmax are supplied"
+    ],
+    "hard_rule": "No winner and no $/point when the points delta changes sign across the swept band. A trade study that always produces a ranking is not a trade study, it is a random number generator with a house style.",
+    "physics_grounded": [
+     "lap times (real LapSimulator over the standard events)",
+     "points curves (published-form FSAE event_points)",
+     "rear-axle torque split (driveline.py, exact for a given TBR/preload)",
+     "mass effect (exact — the part's mass enters the vehicle model)"
+    ]
+   },
+   "resolution": 0.0,
+   "results": [
+    {
+     "acquisition_usd": 900.0,
+     "actionable": true,
+     "delta_points_median": 24.86956521739132,
+     "delta_points_p05": 24.86956521739132,
+     "delta_points_p95": 24.86956521739132,
+     "fab_hours": 4.0,
+     "label": "a",
+     "nominal": {
+      "notes": [
+       "a-note",
+       "shared"
+      ],
+      "times": {
+       "accel": null,
+       "skidpad": 4.6
+      }
+     },
+     "notes": [
+      "a-note",
+      "shared"
+     ],
+     "sign_stable": true,
+     "usd_per_point": 36.188811188811165
+    },
+    {
+     "acquisition_usd": 500.0,
+     "actionable": true,
+     "delta_points_median": 24.247826086956486,
+     "delta_points_p05": 24.247826086956486,
+     "delta_points_p95": 24.247826086956486,
+     "fab_hours": 0.0,
+     "label": "b",
+     "nominal": {
+      "notes": [
+       "b-note",
+       "shared"
+      ],
+      "times": {
+       "accel": null,
+       "skidpad": 4.61
+      }
+     },
+     "notes": [
+      "b-note",
+      "shared"
+     ],
+     "sign_stable": true,
+     "usd_per_point": 20.62040523578988
+    },
+    {
+     "acquisition_usd": null,
+     "actionable": true,
+     "delta_points_median": 24.86956521739132,
+     "delta_points_p05": 24.86956521739132,
+     "delta_points_p95": 24.86956521739132,
+     "fab_hours": 0.0,
+     "label": "c",
+     "nominal": {
+      "notes": [
+       "c-note",
+       "shared"
+      ],
+      "times": {
+       "accel": null,
+       "skidpad": 4.6
+      }
+     },
+     "notes": [
+      "c-note",
+      "shared"
+     ],
+     "sign_stable": true,
+     "usd_per_point": null
+    },
+    {
+     "acquisition_usd": 2000.0,
+     "actionable": true,
+     "delta_points_median": 24.86956521739132,
+     "delta_points_p05": 24.86956521739132,
+     "delta_points_p95": 24.86956521739132,
+     "fab_hours": 0.0,
+     "label": "d",
+     "nominal": {
+      "notes": [
+       "d-note",
+       "shared"
+      ],
+      "times": {
+       "accel": null,
+       "skidpad": 4.6
+      }
+     },
+     "notes": [
+      "d-note",
+      "shared"
+     ],
+     "sign_stable": true,
+     "usd_per_point": 80.41958041958037
+    },
+    {
+     "acquisition_usd": 900.0,
+     "actionable": true,
+     "delta_points_median": 24.86956521739132,
+     "delta_points_p05": 24.86956521739132,
+     "delta_points_p95": 24.86956521739132,
+     "fab_hours": 0.0,
+     "label": "e",
+     "nominal": {
+      "notes": [
+       "e-note",
+       "shared"
+      ],
+      "times": {
+       "accel": null,
+       "skidpad": 4.6
+      }
+     },
+     "notes": [
+      "e-note",
+      "shared"
+     ],
+     "sign_stable": true,
+     "usd_per_point": 36.188811188811165
+    },
+    {
+     "acquisition_usd": 400.0,
+     "actionable": true,
+     "delta_points_median": 24.86956521739132,
+     "delta_points_p05": 24.86956521739132,
+     "delta_points_p95": 24.86956521739132,
+     "fab_hours": 0.0,
+     "label": "f",
+     "nominal": {
+      "notes": [
+       "f-note",
+       "shared"
+      ],
+      "times": {
+       "accel": null,
+       "skidpad": 4.6
+      }
+     },
+     "notes": [
+      "f-note",
+      "shared"
+     ],
+     "sign_stable": true,
+     "usd_per_point": 16.083916083916076
+    }
+   ],
+   "text": "SEPARABLE FROM THE BASELINE. 'a' beats 'base' by +24.9 points (90% band +24.9 … +24.9); the sign holds across the whole swept band at $36 per point, plus 4 team-hours of fabrication.\n\nBUT IT IS NOT SEPARABLE FROM: b; c; d; e; f. Paired across every draw, the points difference between them changes sign, so this model cannot say the winner is actually the better part. Cheaper and equally indistinguishable: b ($500, 0 h); f ($400, 0 h). On points alone there is no case for the more expensive one — the case has to be made on what the model is not simulating."
+  },
+  [
+   [
+    "a",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "c",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "d",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "e",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "f",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "c",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "d",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "e",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "f",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "c",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "d",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "e",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "f",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "c",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "d",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "e",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "f",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "a",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "c",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "d",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "e",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "f",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    false,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ]
+  ]
+ ],
+ "compare.zero_draws": [
+  {
+   "baseline": "base",
+   "best": null,
+   "cost_event": null,
+   "decidable": false,
+   "pairwise": {
+    "a|b": {
+     "median": null,
+     "p05": null,
+     "p95": null,
+     "separable": false,
+     "sign_stable": false
+    }
+   },
+   "provenance": {
+    "estimate_flagged": [
+     "every band in Uncertainty — these are judgements, not measurements",
+     "the lock/yaw penalty coefficient",
+     "any vendor figure not confirmed against the vendor's own data",
+     "Cost-event points, unless the year's Cmin/Cmax are supplied"
+    ],
+    "hard_rule": "No winner and no $/point when the points delta changes sign across the swept band. A trade study that always produces a ranking is not a trade study, it is a random number generator with a house style.",
+    "physics_grounded": [
+     "lap times (real LapSimulator over the standard events)",
+     "points curves (published-form FSAE event_points)",
+     "rear-axle torque split (driveline.py, exact for a given TBR/preload)",
+     "mass effect (exact — the part's mass enters the vehicle model)"
+    ]
+   },
+   "resolution": 0.0,
+   "results": [
+    {
+     "acquisition_usd": 900.0,
+     "actionable": false,
+     "delta_points_median": null,
+     "delta_points_p05": null,
+     "delta_points_p95": null,
+     "fab_hours": 4.0,
+     "label": "a",
+     "nominal": {
+      "notes": [
+       "a-note",
+       "shared"
+      ],
+      "times": {
+       "accel": null,
+       "skidpad": 4.6
+      }
+     },
+     "notes": [
+      "Lap sim produced no usable result."
+     ],
+     "sign_stable": false,
+     "usd_per_point": null
+    },
+    {
+     "acquisition_usd": 500.0,
+     "actionable": false,
+     "delta_points_median": null,
+     "delta_points_p05": null,
+     "delta_points_p95": null,
+     "fab_hours": 0.0,
+     "label": "b",
+     "nominal": {
+      "notes": [
+       "b-note",
+       "shared"
+      ],
+      "times": {
+       "accel": null,
+       "skidpad": 4.5
+      }
+     },
+     "notes": [
+      "Lap sim produced no usable result."
+     ],
+     "sign_stable": false,
+     "usd_per_point": null
+    }
+   ],
+   "text": "NOT SEPARABLE — no winner declared. Across the swept band every option's points delta versus 'base' changes sign, i.e. the difference between these parts is smaller than the uncertainty in the inputs (mu, torque bias ratio, preload, lock penalty, which corner you evaluate). The honest reading is that THIS MODEL CANNOT TELL THEM APART at a magnitude worth acting on (floor: 5 points), so no $/point is printed. Narrow the band with real data — tyre data, the vendor's own TBR figure, a measured corner-exit case — or decide on the grounds the model is not disputing: reliability, adjustability, packaging, lead time and team hours."
+  },
+  [
+   [
+    "a",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "b",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ],
+   [
+    "base",
+    true,
+    280.0,
+    280.0,
+    2.5,
+    2.5,
+    null,
+    null,
+    null,
+    1
+   ]
+  ]
+ ],
+ "cost_delta.inf": null,
+ "eval.default": [
+  {
+   "drive_grip_frac": 0.8,
+   "fz_inside_n": 1000.0,
+   "fz_outside_n": 1500.0,
+   "lateral_util": 0.7,
+   "lock_ratio": 0.4,
+   "mass_kg": 287.5,
+   "notes": [
+    "n1"
+   ],
+   "t_total_nm": 900.0,
+   "times": {
+    "skidpad": 5.0
+   }
+  },
+  [
+   [
+    "vd",
+    286.5,
+    1.55,
+    "FK",
+    "RK",
+    "TY"
+   ],
+   [
+    "trac",
+    3.0,
+    20.0,
+    4.0,
+    null,
+    0.55,
+    3.3
+   ],
+   [
+    "derate",
+    0.4,
+    0.015
+   ],
+   [
+    "vd",
+    287.5,
+    1.55,
+    "FK",
+    "RK",
+    "TY"
+   ],
+   [
+    "times",
+    287.5,
+    0.8,
+    4
+   ]
+  ]
+ ],
+ "eval.draw": [
+  {
+   "drive_grip_frac": 0.8,
+   "fz_inside_n": 1000.0,
+   "fz_outside_n": 1500.0,
+   "lateral_util": 0.7,
+   "lock_ratio": 0.4,
+   "mass_kg": 287.5,
+   "notes": [
+    "n1"
+   ],
+   "t_total_nm": 900.0,
+   "times": {
+    "skidpad": 5.0
+   }
+  },
+  [
+   [
+    "vd",
+    286.5,
+    1.395,
+    "FK",
+    "RK",
+    "TY"
+   ],
+   [
+    "trac",
+    3.5999999999999996,
+    10.0,
+    4.0,
+    null,
+    0.6,
+    3.3
+   ],
+   [
+    "derate",
+    0.4,
+    0.3
+   ],
+   [
+    "vd",
+    287.5,
+    1.395,
+    "FK",
+    "RK",
+    "TY"
+   ],
+   [
+    "times",
+    287.5,
+    0.8,
+    4
+   ]
+  ]
+ ],
+ "eval.nofrac": [
+  {
+   "drive_grip_frac": 0.8,
+   "fz_inside_n": 1000.0,
+   "fz_outside_n": 1500.0,
+   "lateral_util": 0.7,
+   "lock_ratio": 0.4,
+   "mass_kg": 287.5,
+   "notes": [
+    "n1"
+   ],
+   "t_total_nm": 900.0,
+   "times": {
+    "skidpad": 5.0
+   }
+  },
+  [
+   [
+    "vd",
+    286.5,
+    1.55,
+    "FK",
+    "RK",
+    "TY"
+   ],
+   [
+    "trac",
+    3.0,
+    20.0,
+    4.0,
+    null,
+    0.7,
+    3.3
+   ],
+   [
+    "derate",
+    0.4,
+    0.015
+   ],
+   [
+    "vd",
+    287.5,
+    1.55,
+    "FK",
+    "RK",
+    "TY"
+   ],
+   [
+    "times",
+    287.5,
+    0.8,
+    4
+   ]
+  ]
+ ],
+ "eval.nomass": [
+  {
+   "drive_grip_frac": 0.8,
+   "fz_inside_n": 1000.0,
+   "fz_outside_n": 1500.0,
+   "lateral_util": 0.7,
+   "lock_ratio": 0.4,
+   "mass_kg": 281.0,
+   "notes": [
+    "n1"
+   ],
+   "t_total_nm": 900.0,
+   "times": {
+    "skidpad": 5.0
+   }
+  },
+  [
+   [
+    "vd",
+    280.0,
+    1.55,
+    "FK",
+    "RK",
+    "TY"
+   ],
+   [
+    "trac",
+    "inf",
+    10.0,
+    null,
+    null,
+    0.7,
+    3.3
+   ],
+   [
+    "derate",
+    0.4,
+    0.015
+   ],
+   [
+    "vd",
+    281.0,
+    1.55,
+    "FK",
+    "RK",
+    "TY"
+   ],
+   [
+    "times",
+    281.0,
+    0.8,
+    4
+   ]
+  ]
+ ],
+ "score": {
+  "accel": 0.0,
+  "autocross": 6.5,
+  "endurance": 0.0,
+  "skidpad": 69.16326530612247,
+  "total": 75.66326530612247,
+  "x": 0.0
+ },
+ "score.noref": {
+  "skidpad": 0.0,
+  "total": 0.0
+ },
+ "times": [
+  {
+   "a": 5.0,
+   "b": null,
+   "c": null,
+   "d": null,
+   "e": null,
+   "f": 0.5,
+   "g": null,
+   "h": null,
+   "i": null,
+   "j": null
+  },
+  [
+   [
+    "veh",
+    "lp",
+    3
+   ]
+  ]
+ ]
+}

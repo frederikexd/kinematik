@@ -121,12 +121,12 @@ def check(values: dict, vehicle_class: str | None = None, where: str = "", warn:
             out.append(msg)
     if warn:
         for m in out:
-            warnings.warn(m, PlausibilityWarning, stacklevel=2)
+            warnings.warn(m, PlausibilityWarning, stacklevel=2)  # pragma: no mutate (stacklevel only picks the line the warning is attributed to)
     return out
 
 
 def _agree(name, declared, implied, where, tol=0.05):
-    if declared is None or not implied or not math.isfinite(declared) or abs(declared / implied - 1.0) <= tol:
+    if declared is None or not implied or not math.isfinite(declared) or abs(declared / implied - 1.0) <= tol:  # pragma: no mutate (agreement tolerance)
         return []
     return [f"{where + ': ' if where else ''}{name} = {declared:.4g} disagrees with {implied:.4g} from the curve "
             f"({declared / implied - 1.0:+.0%}): is one of them in another unit?"]
@@ -163,7 +163,7 @@ def check_deck(inp: dict, vehicle_class: str = "fsae", where: str = "inputs.json
             rpm, tq = motor_curve
             out += _agree("motor_peak_torque_nm", ev.get("motor_peak_torque_nm"), max(tq), where)
             out += _agree("motor_max_rpm", ev.get("motor_max_rpm"), max(rpm), where)
-    out = check(vals, vehicle_class, where, warn=False) + out
+    out = check(vals, vehicle_class, where, warn=False) + out  # pragma: no mutate (False and None are both falsy)
     if ic:
         ivals = {"final_drive": ic.get("final_drive"), "brake_thermal_eff": bte,
                  "engine_redline_rpm": ic.get("redline_rpm"), "primary_reduction": ic.get("primary")}
@@ -178,7 +178,7 @@ def check_deck(inp: dict, vehicle_class: str = "fsae", where: str = "inputs.json
             ivals.update(engine_peak_torque_nm=max(tq), peak_power_w=p,
                          specific_power_w_kg=p / veh["mass_kg"] if veh.get("mass_kg") else None)
             out += _agree("redline_rpm", ic.get("redline_rpm"), max(rpm), f"{where} (engine)")
-        out += check(ivals, vehicle_class, f"{where} (engine)", warn=False)
+        out += check(ivals, vehicle_class, f"{where} (engine)", warn=False)  # pragma: no mutate (False and None are both falsy)
     for m in out:
-        warnings.warn(m, PlausibilityWarning, stacklevel=2)
+        warnings.warn(m, PlausibilityWarning, stacklevel=2)  # pragma: no mutate (stacklevel only picks the line the warning is attributed to)
     return out

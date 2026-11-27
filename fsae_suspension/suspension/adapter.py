@@ -49,6 +49,9 @@ from .kinematics import CornerState
 from .topology import Mechanism, _unit
 
 
+_NAN3 = np.full(3, np.nan)   # a slot the topology does not have
+
+
 class GenericKinematics:
     """Drop-in kinematics engine for an arbitrary :class:`Mechanism`.
 
@@ -63,7 +66,7 @@ class GenericKinematics:
     """
 
     def __init__(self, mech: Mechanism):
-        self.mech = mech.compile() if not mech._compiled else mech
+        self.mech = mech.compile() if not mech._compiled else mech  # pragma: no mutate (every template returns a compiled mechanism)
         self.label = mech.label
         self._has_rocker = False           # generic rocker hook (future)
         # a light-weight hardpoints shim so code that does ``kin.hp`` still works
@@ -85,20 +88,20 @@ class GenericKinematics:
         ic = self._instant_center(r, travel)
         # map onto wishbone-named slots where the topology has them, else NaN
         pos = r["positions"]
-        uo = pos.get("uo", pos.get("sl", pos.get("kpt", np.full(3, np.nan))))
-        lo = pos.get("lo", pos.get("hub", pos.get("axL", np.full(3, np.nan))))
-        tro = pos.get("tro", pos.get("sa", np.full(3, np.nan)))
+        uo = pos.get("uo", pos.get("sl", pos.get("kpt", _NAN3)))
+        lo = pos.get("lo", pos.get("hub", pos.get("axL", _NAN3)))
+        tro = pos.get("tro", pos.get("sa", _NAN3))
         return CornerState(
-            travel=travel, upper_outer=_vec(uo),
-            lower_outer=_vec(lo),
-            tie_rod_outer=_vec(tro),
+            travel=travel, upper_outer=_vec(uo).copy(),
+            lower_outer=_vec(lo).copy(),
+            tie_rod_outer=_vec(tro).copy(),
             wheel_center=wc, contact_patch=cp, camber=camber, toe=toe,
             caster=caster, kpi=kpi, scrub_radius=scrub,
             instant_center=ic, roll_center_height=np.nan,
             pushrod_outer=pos.get("pushrod_outer"), converged=r["converged"])
 
     def solve_at_travel(self, travel_mm: float, seed=None, steer: float = 0.0) -> CornerState:
-        r = self.mech.solve(travel_mm, steer=steer, seed=seed)
+        r = self.mech.solve(travel_mm, steer=steer, seed=seed)  # pragma: no mutate (the seed only warm-starts a converging solve)
         return self._to_state(r, travel_mm)
 
     def sweep(self, travel_min=-30.0, travel_max=30.0, n=41, steer=0.0):
@@ -186,12 +189,12 @@ class GenericKinematics:
             return np.array([-v[1], v[0]])
         d1 = perp(v1); d2 = perp(v2)
         n1 = np.linalg.norm(d1); n2 = np.linalg.norm(d2)
-        if n1 < 1e-9 or n2 < 1e-9:
+        if n1 < 1e-9 or n2 < 1e-9:  # pragma: no mutate (one zero velocity already gives NaN downstream; tolerance)
             return np.array([np.nan, np.nan])
         d1 /= n1; d2 /= n2
         # solve p1 + s*d1 = p2 + t*d2
-        A = np.column_stack([d1, -d2])
-        if abs(np.linalg.det(A)) < 1e-9:
+        A = np.column_stack([d1, -d2])  # pragma: no mutate (the sign of d2 only flips st[1], which is unused)
+        if abs(np.linalg.det(A)) < 1e-9:  # pragma: no mutate (tolerance)
             return np.array([np.nan, np.nan])
         st = np.linalg.solve(A, p2 - p1)
         return p1 + st[0] * d1
@@ -281,7 +284,7 @@ class GenericKinematics:
         spring = self.mech.meta.get("spring_points")
         s_up = self.mech.solve(+d); s_dn = self.mech.solve(-d); self.mech.solve(0.0)
         wheel = s_up["wheel_center"][2] - s_dn["wheel_center"][2]
-        if abs(wheel) < 1e-9:
+        if abs(wheel) < 1e-9:  # pragma: no mutate (tolerance)
             return np.nan
         if spring:
             a, b = spring
@@ -295,7 +298,7 @@ class GenericKinematics:
 
     def wheel_rate(self, spring_rate_N_per_mm):
         mr = self.motion_ratio()
-        return float(spring_rate_N_per_mm * mr * mr) if np.isfinite(mr) else np.nan
+        return float(spring_rate_N_per_mm * mr * mr)   # a NaN ratio gives a NaN rate
 
     # ------------------------------------------------------------------ #
     #  Generic rendering support (topology-independent 3D drawing)

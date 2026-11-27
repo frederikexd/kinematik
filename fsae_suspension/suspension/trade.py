@@ -126,7 +126,7 @@ def _event_times(veh, sim_params, endurance_laps: int) -> dict:
     out = {}
     for ev, r in res.items():
         t = getattr(r, "event_time", None)
-        ok = getattr(r, "ok", False) and t is not None and np.isfinite(t) and t > 0
+        ok = getattr(r, "ok", False) and t is not None and np.isfinite(t) and t > 0  # pragma: no mutate (False and None are both falsy)
         out[ev] = float(t) if ok else None
     return out
 
@@ -155,9 +155,9 @@ def _score_against(times: dict, ref_times: dict) -> dict:
     pts = {}
     for ev, t in times.items():
         ref = ref_times.get(ev)
-        pts[ev] = 0.0 if (t is None or not ref or ref <= 0) else \
+        pts[ev] = 0.0 if (t is None or ref is None or ref <= 0) else \
             lapsim.event_points(ev, t, best_time=ref)
-    pts["total"] = float(sum(v for k, v in pts.items() if k != "total"))
+    pts["total"] = float(sum(pts.values()))
     return pts
 
 
@@ -172,9 +172,8 @@ def evaluate_option(opt: Option, base_params: VehicleParams,
     draw = draw or dict(mu_scale=1.0, tbr_rel=1.0, preload_rel=1.0,
                         lock_k=LOCK_PENALTY_K_DEFAULT,
                         exit_lateral_frac=cond.lateral_g_frac or 0.70)
-    spec = replace(opt.spec,
-                   tbr=opt.spec.tbr * draw["tbr_rel"]
-                   if np.isfinite(opt.spec.tbr) else opt.spec.tbr,
+    tbr = opt.spec.tbr * draw["tbr_rel"] if np.isfinite(opt.spec.tbr) else opt.spec.tbr  # pragma: no mutate (inf times a positive scale stays inf)
+    spec = replace(opt.spec, tbr=tbr,
                    preload_nm=opt.spec.preload_nm * draw["preload_rel"])
     c = replace(cond, lateral_g=None,
                 lateral_g_frac=draw["exit_lateral_frac"], cl_a=sim_params.cl_a)
@@ -312,7 +311,7 @@ def compare(options: Sequence[Option], baseline: Option,
         if med is None:
             results.append(OptionResult(o.label, None, None, None, False,
                                         o.acquisition_usd(), o.fab_hours(), None,
-                                        nominal.get(o.label, {}),
+                                        nominal[o.label],
                                         ["Lap sim produced no usable result."]))
             continue
         res_floor = max(res_floor, p95 - p05)
@@ -323,7 +322,7 @@ def compare(options: Sequence[Option], baseline: Option,
             label=o.label, delta_points_median=med,
             delta_points_p05=p05, delta_points_p95=p95, sign_stable=stable,
             acquisition_usd=usd, fab_hours=o.fab_hours(), usd_per_point=upp,
-            nominal=nominal.get(o.label, {}), notes=sorted(all_notes[o.label]),
+            nominal=nominal[o.label], notes=sorted(all_notes[o.label]),
             actionable=actionable))
 
     # ---- PAIRWISE: the comparison that usually decides the purchase ------ #
@@ -345,7 +344,7 @@ def compare(options: Sequence[Option], baseline: Option,
 
     decidable = any(r.actionable for r in results)
     winners = [r for r in results
-               if r.actionable and (r.delta_points_median or 0) > 0]
+               if r.actionable and r.delta_points_median > 0]
 
     if not decidable:
         txt = (f"NOT SEPARABLE — no winner declared. Across the swept band every "
@@ -382,7 +381,7 @@ def compare(options: Sequence[Option], baseline: Option,
         if ties:
             cheaper = []
             for t in ties:
-                r = next((x for x in results if x.label == t), None)
+                r = next(x for x in results if x.label == t)
                 if r and r.acquisition_usd and w.acquisition_usd and \
                         r.acquisition_usd < w.acquisition_usd:
                     cheaper.append(f"{t} (${r.acquisition_usd:,.0f}, "
