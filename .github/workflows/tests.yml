@@ -26,10 +26,10 @@ jobs:
           python-version: '3.12'
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt pytest pytest-xdist pypdf==6.17.0 pytest-cov hypothesis
+          pip install -r requirements-ci.lock
       - name: Install local package and run tests
         run: |
-          pip install -e './fsae_suspension[excel,cad,pdf,cloud,drive]'
+          pip install --no-deps -e ./fsae_suspension
           pytest fsae_suspension/tests/ \
             --ignore=fsae_suspension/tests/test_voice_memo.py \
             -n auto -v -ra --tb=short \
@@ -65,8 +65,8 @@ jobs:
           python-version: '3.12'
       - name: Install
         run: |
-          pip install -r requirements.txt pytest pytest-xdist pytest-cov hypothesis
-          pip install -e ./fsae_suspension
+          pip install -r requirements-ci.lock
+          pip install --no-deps -e ./fsae_suspension
       - name: Core solvers at 100% statement and branch coverage
         working-directory: fsae_suspension
         run: |

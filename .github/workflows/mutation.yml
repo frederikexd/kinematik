@@ -96,8 +96,8 @@ jobs:
           python-version: '3.12'
       - name: Install
         run: |
-          pip install -r requirements.txt
-          pip install -e ./fsae_suspension pytest hypothesis pypdf==6.17.0 'mutmut>=3.2'
+          pip install -r requirements-ci.lock
+          pip install --no-deps -e ./fsae_suspension
       - name: Mutate the group's files and hold each one at the floor
         working-directory: fsae_suspension
         shell: bash          # -o pipefail, so the gate's exit status survives the tee
@@ -129,8 +129,8 @@ jobs:
           python-version: '3.12'
       - name: Install
         run: |
-          pip install -r requirements.txt
-          pip install -e ./fsae_suspension pytest hypothesis pypdf==6.17.0 'mutmut>=3.2'
+          pip install -r requirements-ci.lock
+          pip install --no-deps -e ./fsae_suspension
       - name: Measure the module against the tests that import it
         working-directory: fsae_suspension
         env:
