@@ -12,6 +12,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from tests._golden import _same
+
 from suspension import harness as H
 from suspension.harness import Connector, HarnessLedger, WireRun, check_harness
 from suspension.mountpoints import KeepOut
@@ -270,9 +272,11 @@ def test_every_loom_word_for_word():
     if os.environ.get("KINEMATIK_REGOLD"):
         GOLD.write_text(json.dumps(got, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     want = json.loads(GOLD.read_text(encoding="utf-8"))
+    # The checks round to 0.01; a value sitting on a rounding edge can land one step apart on another CPU's float
+    # path, so numbers compare to one rounding step and everything else (text, flags, structure) exactly.
     for loom in want:
         for part in want[loom]:
-            assert got[loom][part] == want[loom][part], (loom, part)
+            _same(got[loom][part], want[loom][part], f"{loom}.{part}", rel=1e-6, abs_=0.0101)
 
 
 def test_editing_the_loom():
