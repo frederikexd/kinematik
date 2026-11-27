@@ -1,0 +1,2071 @@
+{
+ "build.1": [
+  {
+   "cda": {
+    "basis": "assumed",
+    "unit": "m^2",
+    "value": 1.1
+   },
+   "cg_height": {
+    "basis": "assumed",
+    "unit": "mm",
+    "value": 300.0
+   },
+   "cla": {
+    "basis": "assumed",
+    "unit": "m^2",
+    "value": 2.6
+   },
+   "drive": {
+    "basis": "published",
+    "unit": "-",
+    "value": "awd"
+   },
+   "mass": {
+    "basis": "published",
+    "unit": "kg",
+    "value": 250
+   },
+   "motor_torque": {
+    "basis": "assumed",
+    "unit": "N·m",
+    "value": 86.63038709677419
+   },
+   "overall_ratio": {
+    "basis": "published",
+    "unit": "-",
+    "value": 12.4
+   },
+   "power": {
+    "basis": "rule",
+    "unit": "kW",
+    "value": 80.0
+   },
+   "redline": {
+    "basis": "published",
+    "unit": "rpm",
+    "value": 20000
+   },
+   "track_front": {
+    "basis": "published",
+    "unit": "mm",
+    "value": 1220
+   },
+   "track_rear": {
+    "basis": "published",
+    "unit": "mm",
+    "value": 1200
+   },
+   "weight_dist_front": {
+    "basis": "published",
+    "unit": "-",
+    "value": 0.48
+   },
+   "wheel_radius": {
+    "basis": "published",
+    "unit": "m",
+    "value": 0.19710399999999997
+   },
+   "wheelbase": {
+    "basis": "published",
+    "unit": "mm",
+    "value": 1530
+   }
+  },
+  250,
+  0.48,
+  80.0,
+  "awd",
+  false
+ ],
+ "build.2": [
+  {
+   "cda": {
+    "basis": "assumed",
+    "unit": "m^2",
+    "value": 1.1
+   },
+   "cg_height": {
+    "basis": "assumed",
+    "unit": "mm",
+    "value": 300.0
+   },
+   "cla": {
+    "basis": "assumed",
+    "unit": "m^2",
+    "value": 2.6
+   },
+   "drive": {
+    "basis": "published",
+    "unit": "-",
+    "value": "rwd"
+   },
+   "mass": {
+    "basis": "published",
+    "unit": "kg",
+    "value": 250
+   },
+   "motor_torque": {
+    "basis": "assumed",
+    "unit": "N·m",
+    "value": 105.33351249999998
+   },
+   "overall_ratio": {
+    "basis": "published",
+    "unit": "-",
+    "value": 12.0
+   },
+   "power": {
+    "basis": "rule",
+    "unit": "kW",
+    "value": 85.0
+   },
+   "redline": {
+    "basis": "published",
+    "unit": "rpm",
+    "value": 20000
+   },
+   "track_front": {
+    "basis": "published",
+    "unit": "mm",
+    "value": 1220
+   },
+   "track_rear": {
+    "basis": "published",
+    "unit": "mm",
+    "value": 1200
+   },
+   "weight_dist_front": {
+    "basis": "published",
+    "unit": "-",
+    "value": 0.48
+   },
+   "wheel_radius": {
+    "basis": "published",
+    "unit": "m",
+    "value": 0.231927
+   },
+   "wheelbase": {
+    "basis": "published",
+    "unit": "mm",
+    "value": 1530
+   }
+  },
+  250,
+  0.48,
+  85.0,
+  "rwd",
+  false
+ ],
+ "build.3": [
+  {
+   "cda": {
+    "basis": "assumed",
+    "unit": "m^2",
+    "value": 1.1
+   },
+   "cg_height": {
+    "basis": "assumed",
+    "unit": "mm",
+    "value": 300.0
+   },
+   "cla": {
+    "basis": "assumed",
+    "unit": "m^2",
+    "value": 2.6
+   },
+   "drive": {
+    "basis": "assumed",
+    "unit": "-",
+    "value": "rwd"
+   },
+   "mass": {
+    "basis": "assumed",
+    "unit": "kg",
+    "value": 280.0
+   },
+   "power": {
+    "basis": "rule",
+    "unit": "kW",
+    "value": 80.0
+   },
+   "track_front": {
+    "basis": "assumed",
+    "unit": "mm",
+    "value": 1200.0
+   },
+   "track_rear": {
+    "basis": "assumed",
+    "unit": "mm",
+    "value": 1180.0
+   },
+   "weight_dist_front": {
+    "basis": "assumed",
+    "unit": "-",
+    "value": 0.47
+   },
+   "wheel_radius": {
+    "basis": "assumed",
+    "unit": "m",
+    "value": 0.2
+   },
+   "wheelbase": {
+    "basis": "assumed",
+    "unit": "mm",
+    "value": 1550.0
+   }
+  },
+  280.0,
+  0.47,
+  80.0,
+  "rwd",
+  true
+ ],
+ "build.4": [
+  {
+   "cda": {
+    "basis": "assumed",
+    "unit": "m^2",
+    "value": 1.1
+   },
+   "cg_height": {
+    "basis": "assumed",
+    "unit": "mm",
+    "value": 300.0
+   },
+   "cla": {
+    "basis": "assumed",
+    "unit": "m^2",
+    "value": 2.6
+   },
+   "drive": {
+    "basis": "published",
+    "unit": "-",
+    "value": "rwd"
+   },
+   "mass": {
+    "basis": "assumed",
+    "unit": "kg",
+    "value": 280.0
+   },
+   "motor_torque": {
+    "basis": "assumed",
+    "unit": "N·m",
+    "value": 338.378292
+   },
+   "overall_ratio": {
+    "basis": "published",
+    "unit": "-",
+    "value": 4.0
+   },
+   "power": {
+    "basis": "rule",
+    "unit": "kW",
+    "value": 80.0
+   },
+   "redline": {
+    "basis": "published",
+    "unit": "rpm",
+    "value": 20000
+   },
+   "track_front": {
+    "basis": "published",
+    "unit": "mm",
+    "value": 1220
+   },
+   "track_rear": {
+    "basis": "published",
+    "unit": "mm",
+    "value": 1200
+   },
+   "weight_dist_front": {
+    "basis": "assumed",
+    "unit": "-",
+    "value": 0.47
+   },
+   "wheel_radius": {
+    "basis": "published",
+    "unit": "m",
+    "value": 0.221742
+   },
+   "wheelbase": {
+    "basis": "published",
+    "unit": "mm",
+    "value": 1530
+   }
+  },
+  280.0,
+  0.47,
+  80.0,
+  "rwd",
+  false
+ ],
+ "build.edge.geo": [
+  {
+   "cda": {
+    "basis": "assumed",
+    "unit": "m^2",
+    "value": 1.1
+   },
+   "cg_height": {
+    "basis": "assumed",
+    "unit": "mm",
+    "value": 300.0
+   },
+   "cla": {
+    "basis": "assumed",
+    "unit": "m^2",
+    "value": 2.6
+   },
+   "drive": {
+    "basis": "published",
+    "unit": "-",
+    "value": "awd"
+   },
+   "mass": {
+    "basis": "published",
+    "unit": "kg",
+    "value": 250
+   },
+   "motor_torque": {
+    "basis": "assumed",
+    "unit": "N·m",
+    "value": 86.63038709677419
+   },
+   "overall_ratio": {
+    "basis": "published",
+    "unit": "-",
+    "value": 12.4
+   },
+   "power": {
+    "basis": "rule",
+    "unit": "kW",
+    "value": 80.0
+   },
+   "redline": {
+    "basis": "published",
+    "unit": "rpm",
+    "value": 20000
+   },
+   "track_front": {
+    "basis": "published",
+    "unit": "mm",
+    "value": 1250
+   },
+   "track_rear": {
+    "basis": "published",
+    "unit": "mm",
+    "value": 1180
+   },
+   "weight_dist_front": {
+    "basis": "published",
+    "unit": "-",
+    "value": 0.48
+   },
+   "wheel_radius": {
+    "basis": "published",
+    "unit": "m",
+    "value": 0.19710399999999997
+   },
+   "wheelbase": {
+    "basis": "published",
+    "unit": "mm",
+    "value": 1600
+   }
+  },
+  250,
+  0.48,
+  300.0,
+  1600,
+  1250,
+  1180,
+  80.0,
+  "awd",
+  false
+ ],
+ "build.edge.half": [
+  {
+   "cda": {
+    "basis": "assumed",
+    "unit": "m^2",
+    "value": 1.1
+   },
+   "cg_height": {
+    "basis": "assumed",
+    "unit": "mm",
+    "value": 300.0
+   },
+   "cla": {
+    "basis": "assumed",
+    "unit": "m^2",
+    "value": 2.6
+   },
+   "drive": {
+    "basis": "published",
+    "unit": "-",
+    "value": "awd"
+   },
+   "mass": {
+    "basis": "published",
+    "unit": "kg",
+    "value": 1.0
+   },
+   "motor_torque": {
+    "basis": "assumed",
+    "unit": "N·m",
+    "value": 0.3465215483870967
+   },
+   "overall_ratio": {
+    "basis": "published",
+    "unit": "-",
+    "value": 12.4
+   },
+   "power": {
+    "basis": "rule",
+    "unit": "kW",
+    "value": 80.0
+   },
+   "redline": {
+    "basis": "published",
+    "unit": "rpm",
+    "value": 20000
+   },
+   "track_front": {
+    "basis": "published",
+    "unit": "mm",
+    "value": 1220
+   },
+   "track_rear": {
+    "basis": "published",
+    "unit": "mm",
+    "value": 1200
+   },
+   "weight_dist_front": {
+    "basis": "published",
+    "unit": "-",
+    "value": 0.5
+   },
+   "wheel_radius": {
+    "basis": "published",
+    "unit": "m",
+    "value": 0.19710399999999997
+   },
+   "wheelbase": {
+    "basis": "published",
+    "unit": "mm",
+    "value": 1530
+   }
+  },
+  1.0,
+  0.5,
+  300.0,
+  1530,
+  1220,
+  1200,
+  80.0,
+  "awd",
+  false
+ ],
+ "build.edge.motors_only": [
+  {
+   "cda": {
+    "basis": "assumed",
+    "unit": "m^2",
+    "value": 1.1
+   },
+   "cg_height": {
+    "basis": "assumed",
+    "unit": "mm",
+    "value": 300.0
+   },
+   "cla": {
+    "basis": "assumed",
+    "unit": "m^2",
+    "value": 2.6
+   },
+   "drive": {
+    "basis": "published",
+    "unit": "-",
+    "value": "awd"
+   },
+   "mass": {
+    "basis": "published",
+    "unit": "kg",
+    "value": 250
+   },
+   "motor_torque": {
+    "basis": "assumed",
+    "unit": "N·m",
+    "value": 86.63038709677419
+   },
+   "overall_ratio": {
+    "basis": "published",
+    "unit": "-",
+    "value": 12.4
+   },
+   "power": {
+    "basis": "rule",
+    "unit": "kW",
+    "value": 80.0
+   },
+   "redline": {
+    "basis": "published",
+    "unit": "rpm",
+    "value": 20000
+   },
+   "track_front": {
+    "basis": "published",
+    "unit": "mm",
+    "value": 1220
+   },
+   "track_rear": {
+    "basis": "published",
+    "unit": "mm",
+    "value": 1200
+   },
+   "weight_dist_front": {
+    "basis": "published",
+    "unit": "-",
+    "value": 0.48
+   },
+   "wheel_radius": {
+    "basis": "published",
+    "unit": "m",
+    "value": 0.19710399999999997
+   },
+   "wheelbase": {
+    "basis": "published",
+    "unit": "mm",
+    "value": 1530
+   }
+  },
+  250,
+  0.48,
+  300.0,
+  1530,
+  1220,
+  1200,
+  80.0,
+  "awd",
+  false
+ ],
+ "build.edge.none_w": [
+  {
+   "cda": {
+    "basis": "assumed",
+    "unit": "m^2",
+    "value": 1.1
+   },
+   "cg_height": {
+    "basis": "assumed",
+    "unit": "mm",
+    "value": 300.0
+   },
+   "cla": {
+    "basis": "assumed",
+    "unit": "m^2",
+    "value": 2.6
+   },
+   "drive": {
+    "basis": "published",
+    "unit": "-",
+    "value": "awd"
+   },
+   "mass": {
+    "basis": "assumed",
+    "unit": "kg",
+    "value": 280.0
+   },
+   "motor_torque": {
+    "basis": "assumed",
+    "unit": "N·m",
+    "value": 97.02603354838708
+   },
+   "overall_ratio": {
+    "basis": "published",
+    "unit": "-",
+    "value": 12.4
+   },
+   "power": {
+    "basis": "rule",
+    "unit": "kW",
+    "value": 80.0
+   },
+   "redline": {
+    "basis": "published",
+    "unit": "rpm",
+    "value": 20000
+   },
+   "track_front": {
+    "basis": "published",
+    "unit": "mm",
+    "value": 1220
+   },
+   "track_rear": {
+    "basis": "published",
+    "unit": "mm",
+    "value": 1200
+   },
+   "weight_dist_front": {
+    "basis": "assumed",
+    "unit": "-",
+    "value": 0.47
+   },
+   "wheel_radius": {
+    "basis": "published",
+    "unit": "m",
+    "value": 0.19710399999999997
+   },
+   "wheelbase": {
+    "basis": "published",
+    "unit": "mm",
+    "value": 1530
+   }
+  },
+  280.0,
+  0.47,
+  300.0,
+  1530,
+  1220,
+  1200,
+  80.0,
+  "awd",
+  false
+ ],
+ "build.edge.power_only": [
+  {
+   "cda": {
+    "basis": "assumed",
+    "unit": "m^2",
+    "value": 1.1
+   },
+   "cg_height": {
+    "basis": "assumed",
+    "unit": "mm",
+    "value": 300.0
+   },
+   "cla": {
+    "basis": "assumed",
+    "unit": "m^2",
+    "value": 2.6
+   },
+   "drive": {
+    "basis": "assumed",
+    "unit": "-",
+    "value": "rwd"
+   },
+   "mass": {
+    "basis": "published",
+    "unit": "kg",
+    "value": 250
+   },
+   "motor_torque": {
+    "basis": "assumed",
+    "unit": "N·m",
+    "value": 86.63038709677419
+   },
+   "overall_ratio": {
+    "basis": "published",
+    "unit": "-",
+    "value": 12.4
+   },
+   "power": {
+    "basis": "rule",
+    "unit": "kW",
+    "value": 80.0
+   },
+   "redline": {
+    "basis": "published",
+    "unit": "rpm",
+    "value": 20000
+   },
+   "track_front": {
+    "basis": "published",
+    "unit": "mm",
+    "value": 1220
+   },
+   "track_rear": {
+    "basis": "published",
+    "unit": "mm",
+    "value": 1200
+   },
+   "weight_dist_front": {
+    "basis": "published",
+    "unit": "-",
+    "value": 0.48
+   },
+   "wheel_radius": {
+    "basis": "published",
+    "unit": "m",
+    "value": 0.19710399999999997
+   },
+   "wheelbase": {
+    "basis": "published",
+    "unit": "mm",
+    "value": 1530
+   }
+  },
+  250,
+  0.48,
+  300.0,
+  1530,
+  1220,
+  1200,
+  80.0,
+  "rwd",
+  false
+ ],
+ "build.edge.ratio_only": [
+  {
+   "cda": {
+    "basis": "assumed",
+    "unit": "m^2",
+    "value": 1.1
+   },
+   "cg_height": {
+    "basis": "assumed",
+    "unit": "mm",
+    "value": 300.0
+   },
+   "cla": {
+    "basis": "assumed",
+    "unit": "m^2",
+    "value": 2.6
+   },
+   "drive": {
+    "basis": "published",
+    "unit": "-",
+    "value": "awd"
+   },
+   "mass": {
+    "basis": "published",
+    "unit": "kg",
+    "value": 250
+   },
+   "power": {
+    "basis": "rule",
+    "unit": "kW",
+    "value": 80.0
+   },
+   "track_front": {
+    "basis": "published",
+    "unit": "mm",
+    "value": 1220
+   },
+   "track_rear": {
+    "basis": "published",
+    "unit": "mm",
+    "value": 1200
+   },
+   "weight_dist_front": {
+    "basis": "published",
+    "unit": "-",
+    "value": 0.48
+   },
+   "wheel_radius": {
+    "basis": "published",
+    "unit": "m",
+    "value": 0.19710399999999997
+   },
+   "wheelbase": {
+    "basis": "published",
+    "unit": "mm",
+    "value": 1530
+   }
+  },
+  250,
+  0.48,
+  300.0,
+  1530,
+  1220,
+  1200,
+  80.0,
+  "awd",
+  true
+ ],
+ "canon": "{\"a\":[2,\"é\"],\"b\":1}",
+ "card.all": "# Prediction ledger scorecard: FSG 2026\n\nKind: **blind** (sealed before the competition ran)\nRecord SHA-256: `R`\n\n## Skidpad\n\n- Cars scored: 3 (1 excluded, listed below)\n- Mean absolute error: 9.9 %; median 8.5 %\n- Bias: -9.9 % (+ = predicted slower than official)\n- Within 5 %: 0 of 3\n- Rank correlation (Spearman, predicted vs official order): 1.00\n\n## Acceleration (75 m)\n\n- Cars scored: 2 (2 excluded, listed below)\n- Mean absolute error: 7.0 %; median 7.0 %\n- Bias: -1.2 % (+ = predicted slower than official)\n- Within 5 %: 0 of 2\n- Rank correlation (Spearman, predicted vs official order): n/a\n\n## Every car\n\n| Car | Team | Event | Predicted (s) | Official (s) | Error | Note |\n|---|---|---|---|---|---|---|\n| 1 | A | Acceleration (75 m) | 3.397 | 3.700 | -8.2 % |  |\n| 4 | D | Acceleration (75 m) | 4.231 | 4.000 | +5.8 % |  |\n| 3 | C | Acceleration (75 m) | 4.298 | 4.200 | +2.3 % | best time includes a penalty |\n| 2 | B | Acceleration (75 m) | 4.265 | – | – | no valid official time |\n| 1 | A | Skidpad | 4.608 | 4.900 | -6.0 % |  |\n| 4 | D | Skidpad | 4.665 | 5.100 | -8.5 % |  |\n| 2 | B | Skidpad | 4.608 | 5.200 | -11.4 % | left/right laps 5.100 / 6.000 s differ by more than 10% |\n| 3 | C | Skidpad | 4.669 | 5.500 | -15.1 % |  |\n",
+ "card.hindcast": [
+  {
+   "event": "old",
+   "kind": "hindcast",
+   "record_sha256": "H",
+   "rows": [
+    {
+     "car": "1",
+     "error_pct": 15.189999999999992,
+     "error_s": 0.6075999999999997,
+     "event": "skidpad",
+     "excluded": "",
+     "official_s": 4.0,
+     "predicted_s": 4.6076,
+     "team": "A"
+    },
+    {
+     "car": "1",
+     "error_pct": "NaN",
+     "error_s": "NaN",
+     "event": "accel",
+     "excluded": "",
+     "official_s": 0.0,
+     "predicted_s": 3.3974,
+     "team": "A"
+    }
+   ],
+   "summary": {
+    "accel": {
+     "bias_pct": "NaN",
+     "excluded": 0,
+     "mae_pct": "NaN",
+     "median_abs_pct": "NaN",
+     "n": 1,
+     "spearman": "NaN",
+     "within_5pct": 0
+    },
+    "skidpad": {
+     "bias_pct": 15.189999999999992,
+     "excluded": 0,
+     "mae_pct": 15.189999999999992,
+     "median_abs_pct": 15.189999999999992,
+     "n": 1,
+     "spearman": "NaN",
+     "within_5pct": 0
+    }
+   }
+  },
+  "# Prediction ledger scorecard: old\n\nKind: **hindcast** (sealed after the results were public: development evidence, not proof)\nRecord SHA-256: `H`\n\n## Skidpad\n\n- Cars scored: 1 (0 excluded, listed below)\n- Mean absolute error: 15.2 %; median 15.2 %\n- Bias: +15.2 % (+ = predicted slower than official)\n- Within 5 %: 0 of 1\n- Rank correlation (Spearman, predicted vs official order): n/a\n\n## Acceleration (75 m)\n\n- Cars scored: 1 (0 excluded, listed below)\n- Mean absolute error: nan %; median nan %\n- Bias: +nan % (+ = predicted slower than official)\n- Within 5 %: 0 of 1\n- Rank correlation (Spearman, predicted vs official order): n/a\n\n## Every car\n\n| Car | Team | Event | Predicted (s) | Official (s) | Error | Note |\n|---|---|---|---|---|---|---|\n| 1 | A | Acceleration (75 m) | 3.397 | 0.000 | – |  |\n| 1 | A | Skidpad | 4.608 | 4.000 | +15.2 % |  |\n"
+ ],
+ "card.none": "# Prediction ledger scorecard: FSG 2026\n\nKind: **blind** (sealed before the competition ran)\nRecord SHA-256: `R`\n\n## Every car\n\n| Car | Team | Event | Predicted (s) | Official (s) | Error | Note |\n|---|---|---|---|---|---|---|\n",
+ "card.odd": "# Prediction ledger scorecard: FSG 2026\n\nKind: **blind** (sealed before the competition ran)\nRecord SHA-256: `R`\n\n## Skidpad\n\n- Cars scored: 3 (0 excluded, listed below)\n- Mean absolute error: 9.9 %; median 8.5 %\n- Bias: -9.9 % (+ = predicted slower than official)\n- Within 5 %: 0 of 3\n- Rank correlation (Spearman, predicted vs official order): 1.00\n\n## Acceleration (75 m)\n\n- Cars scored: 2 (1 excluded, listed below)\n- Mean absolute error: 7.0 %; median 7.0 %\n- Bias: -1.2 % (+ = predicted slower than official)\n- Within 5 %: 0 of 2\n- Rank correlation (Spearman, predicted vs official order): n/a\n\n## Every car\n\n| Car | Team | Event | Predicted (s) | Official (s) | Error | Note |\n|---|---|---|---|---|---|---|\n| 1 | A | Acceleration (75 m) | 3.397 | 3.700 | -8.2 % |  |\n| 4 | D | Acceleration (75 m) | 4.231 | 4.000 | +5.8 % |  |\n| 3 | C | Acceleration (75 m) | 4.298 | 4.200 | +2.3 % | best time includes a penalty |\n| 1 | A | Skidpad | 4.608 | 4.900 | -6.0 % |  |\n| 4 | D | Skidpad | 4.665 | 5.100 | -8.5 % |  |\n| 3 | C | Skidpad | 4.669 | 5.500 | -15.1 % |  |\n",
+ "card.one": "# Prediction ledger scorecard: FSG 2026\n\nKind: **blind** (sealed before the competition ran)\nRecord SHA-256: `R`\n\n## Skidpad\n\n- Cars scored: 1 (0 excluded, listed below)\n- Mean absolute error: 6.0 %; median 6.0 %\n- Bias: -6.0 % (+ = predicted slower than official)\n- Within 5 %: 0 of 1\n- Rank correlation (Spearman, predicted vs official order): n/a\n\n## Acceleration (75 m)\n\n- Cars scored: 1 (0 excluded, listed below)\n- Mean absolute error: 8.2 %; median 8.2 %\n- Bias: -8.2 % (+ = predicted slower than official)\n- Within 5 %: 0 of 1\n- Rank correlation (Spearman, predicted vs official order): n/a\n\n## Every car\n\n| Car | Team | Event | Predicted (s) | Official (s) | Error | Note |\n|---|---|---|---|---|---|---|\n| 1 | A | Acceleration (75 m) | 3.397 | 3.700 | -8.2 % |  |\n| 1 | A | Skidpad | 4.608 | 4.900 | -6.0 % |  |\n",
+ "consts": [
+  "1",
+  75.0,
+  0.97,
+  {
+   "2012": 85.0
+  },
+  80.0,
+  2.0,
+  0.1,
+  true,
+  {
+   "acceleration": "KinematiK laptime.acceleration_time over 75.0 m from rest",
+   "aero (ClA, CdA)": "assumed: KinematiK Powertrain defaults, never per car",
+   "cg_height": "assumed: KinematiK default (VehicleParams.cg_height), never per car",
+   "drive": "published: 4 motors = all-wheel drive, fewer = rear-wheel drive",
+   "mass": "published: front + rear weight with a 68 kg driver (FSG car data)",
+   "motor torque": "assumed: enough for 2.0 g at the wheels (grip-limited launch)",
+   "overall ratio": "published: the primary ratio; primary x secondary only when the primary is below 5; when front and rear ratios differ, the rear one",
+   "power": "rule: min(motors x published power per motor, FS accumulator power limit for the year)",
+   "redline": "published max motor rpm",
+   "scoring exclusions": "skidpad: left/right laps more than 10% apart, or any penalty in the best time; listed but left out of the summary",
+   "skidpad": "KinematiK laptime.skidpad_time, radius 9.125 m",
+   "tyre grip": "assumed: KinematiK default_tire(), never per car",
+   "weight_dist_front": "published: front weight / total",
+   "wheel radius": "published tyre diameter / 2 x 0.97 (loaded)",
+   "wheelbase, tracks": "published"
+  },
+  [
+   "ledger.py",
+   "laptime.py",
+   "dynamics.py",
+   "tiremodel.py"
+  ],
+  [
+   "wheelbase_mm",
+   "track_f_mm",
+   "track_r_mm",
+   "weight_f_kg",
+   "weight_r_kg",
+   "power_per_motor_kw",
+   "max_rpm",
+   "ratio_primary",
+   "ratio_secondary"
+  ],
+  true
+ ],
+ "excluded": [
+  "no valid official time",
+  "best time includes a penalty",
+  "",
+  "left/right laps 5.000 / 5.510 s differ by more than 10%",
+  "",
+  "",
+  "",
+  ""
+ ],
+ "fingerprint.root": [
+  {
+   "dynamics.py": "5f16fd9aeb70d3d239afadef37f50f6ad5fb386ba8bfe37ba8c6a2a8cd3fbd01",
+   "laptime.py": "49c452c8872b1bb64f27a99296d530399048bb14c7d03c26c2f1f46491b97c96",
+   "ledger.py": "c4797367134c1f90c5a20b792dcf11217399eaddec096db21409503ecf5286a0",
+   "tiremodel.py": "0b1ec2ae2cdd45ed7288ec6ef329e4269eb5edb0dab189345243b5cf7caf60bf"
+  },
+  true,
+  true,
+  true
+ ],
+ "load_results": {
+  "1": {
+   "accel": {
+    "best_s": 3.7,
+    "left_s": null,
+    "penalty_s": 0.0,
+    "right_s": null,
+    "source_url": ""
+   },
+   "skidpad": {
+    "best_s": 4.9,
+    "left_s": 4.95,
+    "penalty_s": 0.0,
+    "right_s": 4.85,
+    "source_url": "s"
+   }
+  },
+  "2": {
+   "skidpad": {
+    "best_s": null,
+    "left_s": null,
+    "penalty_s": 2.0,
+    "right_s": null,
+    "source_url": ""
+   }
+  }
+ },
+ "load_results.min": {
+  "3": {
+   "accel": {
+    "best_s": 4.1,
+    "left_s": null,
+    "penalty_s": 0.0,
+    "right_s": null,
+    "source_url": ""
+   }
+  }
+ },
+ "load_specs": [
+  {
+   "car": "7",
+   "event": "FSG",
+   "max_rpm": 20000.0,
+   "n_motors": 4,
+   "power_per_motor_kw": 35.0,
+   "ratio_primary": 12.4,
+   "ratio_secondary": null,
+   "source_url": "u",
+   "team": "T",
+   "track_f_mm": null,
+   "track_r_mm": null,
+   "tyres": "Hoosier 16x7.5-10",
+   "weight_f_kg": 120.0,
+   "weight_r_kg": 130.0,
+   "wheelbase_mm": 1530.0,
+   "year": 2026
+  },
+  {
+   "car": "8",
+   "event": "FSG",
+   "max_rpm": null,
+   "n_motors": null,
+   "power_per_motor_kw": null,
+   "ratio_primary": null,
+   "ratio_secondary": null,
+   "source_url": "v",
+   "team": "U",
+   "track_f_mm": 1200.0,
+   "track_r_mm": 1180.0,
+   "tyres": "",
+   "weight_f_kg": 1.0,
+   "weight_r_kg": 1.0,
+   "wheelbase_mm": 1600.0,
+   "year": 2025
+  }
+ ],
+ "num": [
+  null,
+  null,
+  null,
+  null,
+  null,
+  1.5,
+  2.25
+ ],
+ "predict": [
+  {
+   "accel_s": 3.3974,
+   "car": "1",
+   "inputs": {
+    "cda": {
+     "basis": "assumed",
+     "unit": "m^2",
+     "value": 1.1
+    },
+    "cg_height": {
+     "basis": "assumed",
+     "unit": "mm",
+     "value": 300.0
+    },
+    "cla": {
+     "basis": "assumed",
+     "unit": "m^2",
+     "value": 2.6
+    },
+    "drive": {
+     "basis": "published",
+     "unit": "-",
+     "value": "awd"
+    },
+    "mass": {
+     "basis": "published",
+     "unit": "kg",
+     "value": 250
+    },
+    "motor_torque": {
+     "basis": "assumed",
+     "unit": "N·m",
+     "value": 86.63038709677419
+    },
+    "overall_ratio": {
+     "basis": "published",
+     "unit": "-",
+     "value": 12.4
+    },
+    "power": {
+     "basis": "rule",
+     "unit": "kW",
+     "value": 80.0
+    },
+    "redline": {
+     "basis": "published",
+     "unit": "rpm",
+     "value": 20000
+    },
+    "track_front": {
+     "basis": "published",
+     "unit": "mm",
+     "value": 1220
+    },
+    "track_rear": {
+     "basis": "published",
+     "unit": "mm",
+     "value": 1200
+    },
+    "weight_dist_front": {
+     "basis": "published",
+     "unit": "-",
+     "value": 0.48
+    },
+    "wheel_radius": {
+     "basis": "published",
+     "unit": "m",
+     "value": 0.19710399999999997
+    },
+    "wheelbase": {
+     "basis": "published",
+     "unit": "mm",
+     "value": 1530
+    }
+   },
+   "skidpad_s": 4.6076,
+   "team": "A",
+   "warnings": []
+  },
+  {
+   "accel_s": 4.2648,
+   "car": "2",
+   "inputs": {
+    "cda": {
+     "basis": "assumed",
+     "unit": "m^2",
+     "value": 1.1
+    },
+    "cg_height": {
+     "basis": "assumed",
+     "unit": "mm",
+     "value": 300.0
+    },
+    "cla": {
+     "basis": "assumed",
+     "unit": "m^2",
+     "value": 2.6
+    },
+    "drive": {
+     "basis": "published",
+     "unit": "-",
+     "value": "rwd"
+    },
+    "mass": {
+     "basis": "published",
+     "unit": "kg",
+     "value": 250
+    },
+    "motor_torque": {
+     "basis": "assumed",
+     "unit": "N·m",
+     "value": 105.33351249999998
+    },
+    "overall_ratio": {
+     "basis": "published",
+     "unit": "-",
+     "value": 12.0
+    },
+    "power": {
+     "basis": "rule",
+     "unit": "kW",
+     "value": 85.0
+    },
+    "redline": {
+     "basis": "published",
+     "unit": "rpm",
+     "value": 20000
+    },
+    "track_front": {
+     "basis": "published",
+     "unit": "mm",
+     "value": 1220
+    },
+    "track_rear": {
+     "basis": "published",
+     "unit": "mm",
+     "value": 1200
+    },
+    "weight_dist_front": {
+     "basis": "published",
+     "unit": "-",
+     "value": 0.48
+    },
+    "wheel_radius": {
+     "basis": "published",
+     "unit": "m",
+     "value": 0.231927
+    },
+    "wheelbase": {
+     "basis": "published",
+     "unit": "mm",
+     "value": 1530
+    }
+   },
+   "skidpad_s": 4.6076,
+   "team": "B",
+   "warnings": []
+  },
+  {
+   "accel_s": 4.2975,
+   "car": "3",
+   "inputs": {
+    "cda": {
+     "basis": "assumed",
+     "unit": "m^2",
+     "value": 1.1
+    },
+    "cg_height": {
+     "basis": "assumed",
+     "unit": "mm",
+     "value": 300.0
+    },
+    "cla": {
+     "basis": "assumed",
+     "unit": "m^2",
+     "value": 2.6
+    },
+    "drive": {
+     "basis": "assumed",
+     "unit": "-",
+     "value": "rwd"
+    },
+    "mass": {
+     "basis": "assumed",
+     "unit": "kg",
+     "value": 280.0
+    },
+    "power": {
+     "basis": "rule",
+     "unit": "kW",
+     "value": 80.0
+    },
+    "track_front": {
+     "basis": "assumed",
+     "unit": "mm",
+     "value": 1200.0
+    },
+    "track_rear": {
+     "basis": "assumed",
+     "unit": "mm",
+     "value": 1180.0
+    },
+    "weight_dist_front": {
+     "basis": "assumed",
+     "unit": "-",
+     "value": 0.47
+    },
+    "wheel_radius": {
+     "basis": "assumed",
+     "unit": "m",
+     "value": 0.2
+    },
+    "wheelbase": {
+     "basis": "assumed",
+     "unit": "mm",
+     "value": 1550.0
+    }
+   },
+   "skidpad_s": 4.6694,
+   "team": "C",
+   "warnings": []
+  },
+  {
+   "accel_s": 4.2311,
+   "car": "4",
+   "inputs": {
+    "cda": {
+     "basis": "assumed",
+     "unit": "m^2",
+     "value": 1.1
+    },
+    "cg_height": {
+     "basis": "assumed",
+     "unit": "mm",
+     "value": 300.0
+    },
+    "cla": {
+     "basis": "assumed",
+     "unit": "m^2",
+     "value": 2.6
+    },
+    "drive": {
+     "basis": "published",
+     "unit": "-",
+     "value": "rwd"
+    },
+    "mass": {
+     "basis": "assumed",
+     "unit": "kg",
+     "value": 280.0
+    },
+    "motor_torque": {
+     "basis": "assumed",
+     "unit": "N·m",
+     "value": 338.378292
+    },
+    "overall_ratio": {
+     "basis": "published",
+     "unit": "-",
+     "value": 4.0
+    },
+    "power": {
+     "basis": "rule",
+     "unit": "kW",
+     "value": 80.0
+    },
+    "redline": {
+     "basis": "published",
+     "unit": "rpm",
+     "value": 20000
+    },
+    "track_front": {
+     "basis": "published",
+     "unit": "mm",
+     "value": 1220
+    },
+    "track_rear": {
+     "basis": "published",
+     "unit": "mm",
+     "value": 1200
+    },
+    "weight_dist_front": {
+     "basis": "assumed",
+     "unit": "-",
+     "value": 0.47
+    },
+    "wheel_radius": {
+     "basis": "published",
+     "unit": "m",
+     "value": 0.221742
+    },
+    "wheelbase": {
+     "basis": "published",
+     "unit": "mm",
+     "value": 1530
+    }
+   },
+   "skidpad_s": 4.665,
+   "team": "D",
+   "warnings": []
+  }
+ ],
+ "ranks": [
+  [
+   3.0,
+   1.0,
+   2.0
+  ],
+  [
+   1.5,
+   1.5,
+   3.0
+  ],
+  [
+   2.0,
+   2.0,
+   2.0
+  ],
+  [
+   4.5,
+   1.5,
+   4.5,
+   3.0,
+   1.5
+  ],
+  []
+ ],
+ "ratio": [
+  null,
+  null,
+  null,
+  12.4,
+  14.700000000000001,
+  5.0,
+  4.0,
+  4.0,
+  4.0,
+  5.0
+ ],
+ "ratio.edges": [
+  0.5,
+  2.0,
+  1.5
+ ],
+ "score.all": {
+  "event": "FSG 2026",
+  "kind": "blind",
+  "record_sha256": "R",
+  "rows": [
+   {
+    "car": "1",
+    "error_pct": -5.967346938775523,
+    "error_s": -0.29240000000000066,
+    "event": "skidpad",
+    "excluded": "",
+    "official_s": 4.9,
+    "predicted_s": 4.6076,
+    "team": "A"
+   },
+   {
+    "car": "1",
+    "error_pct": -8.178378378378378,
+    "error_s": -0.3026,
+    "event": "accel",
+    "excluded": "",
+    "official_s": 3.7,
+    "predicted_s": 3.3974,
+    "team": "A"
+   },
+   {
+    "car": "2",
+    "error_pct": -11.392307692307702,
+    "error_s": -0.5924000000000005,
+    "event": "skidpad",
+    "excluded": "left/right laps 5.100 / 6.000 s differ by more than 10%",
+    "official_s": 5.2,
+    "predicted_s": 4.6076,
+    "team": "B"
+   },
+   {
+    "car": "2",
+    "error_pct": "NaN",
+    "error_s": "NaN",
+    "event": "accel",
+    "excluded": "no valid official time",
+    "official_s": null,
+    "predicted_s": 4.2648,
+    "team": "B"
+   },
+   {
+    "car": "3",
+    "error_pct": -15.101818181818174,
+    "error_s": -0.8305999999999996,
+    "event": "skidpad",
+    "excluded": "",
+    "official_s": 5.5,
+    "predicted_s": 4.6694,
+    "team": "C"
+   },
+   {
+    "car": "3",
+    "error_pct": 2.3214285714285747,
+    "error_s": 0.09750000000000014,
+    "event": "accel",
+    "excluded": "best time includes a penalty",
+    "official_s": 4.2,
+    "predicted_s": 4.2975,
+    "team": "C"
+   },
+   {
+    "car": "4",
+    "error_pct": -8.529411764705875,
+    "error_s": -0.4349999999999996,
+    "event": "skidpad",
+    "excluded": "",
+    "official_s": 5.1,
+    "predicted_s": 4.665,
+    "team": "D"
+   },
+   {
+    "car": "4",
+    "error_pct": 5.777499999999991,
+    "error_s": 0.23109999999999964,
+    "event": "accel",
+    "excluded": "",
+    "official_s": 4.0,
+    "predicted_s": 4.2311,
+    "team": "D"
+   }
+  ],
+  "summary": {
+   "accel": {
+    "bias_pct": -1.2004391891891935,
+    "excluded": 2,
+    "mae_pct": 6.977939189189184,
+    "median_abs_pct": 6.977939189189184,
+    "n": 2,
+    "spearman": "NaN",
+    "within_5pct": 0
+   },
+   "skidpad": {
+    "bias_pct": -9.866192295099857,
+    "excluded": 1,
+    "mae_pct": 9.866192295099857,
+    "median_abs_pct": 8.529411764705875,
+    "n": 3,
+    "spearman": 0.9999999999999998,
+    "within_5pct": 0
+   }
+  }
+ },
+ "score.none": {
+  "event": "FSG 2026",
+  "kind": "blind",
+  "record_sha256": "R",
+  "rows": [],
+  "summary": {}
+ },
+ "score.odd": {
+  "event": "FSG 2026",
+  "kind": "blind",
+  "record_sha256": "R",
+  "rows": [
+   {
+    "car": "1",
+    "error_pct": -5.967346938775523,
+    "error_s": -0.29240000000000066,
+    "event": "skidpad",
+    "excluded": "",
+    "official_s": 4.9,
+    "predicted_s": 4.6076,
+    "team": "A"
+   },
+   {
+    "car": "1",
+    "error_pct": -8.178378378378378,
+    "error_s": -0.3026,
+    "event": "accel",
+    "excluded": "",
+    "official_s": 3.7,
+    "predicted_s": 3.3974,
+    "team": "A"
+   },
+   {
+    "car": "3",
+    "error_pct": -15.101818181818174,
+    "error_s": -0.8305999999999996,
+    "event": "skidpad",
+    "excluded": "",
+    "official_s": 5.5,
+    "predicted_s": 4.6694,
+    "team": "C"
+   },
+   {
+    "car": "3",
+    "error_pct": 2.3214285714285747,
+    "error_s": 0.09750000000000014,
+    "event": "accel",
+    "excluded": "best time includes a penalty",
+    "official_s": 4.2,
+    "predicted_s": 4.2975,
+    "team": "C"
+   },
+   {
+    "car": "4",
+    "error_pct": -8.529411764705875,
+    "error_s": -0.4349999999999996,
+    "event": "skidpad",
+    "excluded": "",
+    "official_s": 5.1,
+    "predicted_s": 4.665,
+    "team": "D"
+   },
+   {
+    "car": "4",
+    "error_pct": 5.777499999999991,
+    "error_s": 0.23109999999999964,
+    "event": "accel",
+    "excluded": "",
+    "official_s": 4.0,
+    "predicted_s": 4.2311,
+    "team": "D"
+   }
+  ],
+  "summary": {
+   "accel": {
+    "bias_pct": -1.2004391891891935,
+    "excluded": 1,
+    "mae_pct": 6.977939189189184,
+    "median_abs_pct": 6.977939189189184,
+    "n": 2,
+    "spearman": "NaN",
+    "within_5pct": 0
+   },
+   "skidpad": {
+    "bias_pct": -9.866192295099857,
+    "excluded": 0,
+    "mae_pct": 9.866192295099857,
+    "median_abs_pct": 8.529411764705875,
+    "n": 3,
+    "spearman": 0.9999999999999998,
+    "within_5pct": 0
+   }
+  }
+ },
+ "score.one": {
+  "event": "FSG 2026",
+  "kind": "blind",
+  "record_sha256": "R",
+  "rows": [
+   {
+    "car": "1",
+    "error_pct": -5.967346938775523,
+    "error_s": -0.29240000000000066,
+    "event": "skidpad",
+    "excluded": "",
+    "official_s": 4.9,
+    "predicted_s": 4.6076,
+    "team": "A"
+   },
+   {
+    "car": "1",
+    "error_pct": -8.178378378378378,
+    "error_s": -0.3026,
+    "event": "accel",
+    "excluded": "",
+    "official_s": 3.7,
+    "predicted_s": 3.3974,
+    "team": "A"
+   }
+  ],
+  "summary": {
+   "accel": {
+    "bias_pct": -8.178378378378378,
+    "excluded": 0,
+    "mae_pct": 8.178378378378378,
+    "median_abs_pct": 8.178378378378378,
+    "n": 1,
+    "spearman": "NaN",
+    "within_5pct": 0
+   },
+   "skidpad": {
+    "bias_pct": -5.967346938775523,
+    "excluded": 0,
+    "mae_pct": 5.967346938775523,
+    "median_abs_pct": 5.967346938775523,
+    "n": 1,
+    "spearman": "NaN",
+    "within_5pct": 0
+   }
+  }
+ },
+ "seal": {
+  "event": "FSG 2026",
+  "kind": "blind",
+  "ledger": "KinematiK prediction ledger",
+  "note": "n",
+  "predictions": [
+   {
+    "accel_s": 3.3974,
+    "car": "1",
+    "inputs": {
+     "cda": {
+      "basis": "assumed",
+      "unit": "m^2",
+      "value": 1.1
+     },
+     "cg_height": {
+      "basis": "assumed",
+      "unit": "mm",
+      "value": 300.0
+     },
+     "cla": {
+      "basis": "assumed",
+      "unit": "m^2",
+      "value": 2.6
+     },
+     "drive": {
+      "basis": "published",
+      "unit": "-",
+      "value": "awd"
+     },
+     "mass": {
+      "basis": "published",
+      "unit": "kg",
+      "value": 250
+     },
+     "motor_torque": {
+      "basis": "assumed",
+      "unit": "N·m",
+      "value": 86.63038709677419
+     },
+     "overall_ratio": {
+      "basis": "published",
+      "unit": "-",
+      "value": 12.4
+     },
+     "power": {
+      "basis": "rule",
+      "unit": "kW",
+      "value": 80.0
+     },
+     "redline": {
+      "basis": "published",
+      "unit": "rpm",
+      "value": 20000
+     },
+     "track_front": {
+      "basis": "published",
+      "unit": "mm",
+      "value": 1220
+     },
+     "track_rear": {
+      "basis": "published",
+      "unit": "mm",
+      "value": 1200
+     },
+     "weight_dist_front": {
+      "basis": "published",
+      "unit": "-",
+      "value": 0.48
+     },
+     "wheel_radius": {
+      "basis": "published",
+      "unit": "m",
+      "value": 0.19710399999999997
+     },
+     "wheelbase": {
+      "basis": "published",
+      "unit": "mm",
+      "value": 1530
+     }
+    },
+    "skidpad_s": 4.6076,
+    "team": "A",
+    "warnings": []
+   },
+   {
+    "accel_s": 4.2648,
+    "car": "2",
+    "inputs": {
+     "cda": {
+      "basis": "assumed",
+      "unit": "m^2",
+      "value": 1.1
+     },
+     "cg_height": {
+      "basis": "assumed",
+      "unit": "mm",
+      "value": 300.0
+     },
+     "cla": {
+      "basis": "assumed",
+      "unit": "m^2",
+      "value": 2.6
+     },
+     "drive": {
+      "basis": "published",
+      "unit": "-",
+      "value": "rwd"
+     },
+     "mass": {
+      "basis": "published",
+      "unit": "kg",
+      "value": 250
+     },
+     "motor_torque": {
+      "basis": "assumed",
+      "unit": "N·m",
+      "value": 105.33351249999998
+     },
+     "overall_ratio": {
+      "basis": "published",
+      "unit": "-",
+      "value": 12.0
+     },
+     "power": {
+      "basis": "rule",
+      "unit": "kW",
+      "value": 85.0
+     },
+     "redline": {
+      "basis": "published",
+      "unit": "rpm",
+      "value": 20000
+     },
+     "track_front": {
+      "basis": "published",
+      "unit": "mm",
+      "value": 1220
+     },
+     "track_rear": {
+      "basis": "published",
+      "unit": "mm",
+      "value": 1200
+     },
+     "weight_dist_front": {
+      "basis": "published",
+      "unit": "-",
+      "value": 0.48
+     },
+     "wheel_radius": {
+      "basis": "published",
+      "unit": "m",
+      "value": 0.231927
+     },
+     "wheelbase": {
+      "basis": "published",
+      "unit": "mm",
+      "value": 1530
+     }
+    },
+    "skidpad_s": 4.6076,
+    "team": "B",
+    "warnings": []
+   },
+   {
+    "accel_s": 4.2975,
+    "car": "3",
+    "inputs": {
+     "cda": {
+      "basis": "assumed",
+      "unit": "m^2",
+      "value": 1.1
+     },
+     "cg_height": {
+      "basis": "assumed",
+      "unit": "mm",
+      "value": 300.0
+     },
+     "cla": {
+      "basis": "assumed",
+      "unit": "m^2",
+      "value": 2.6
+     },
+     "drive": {
+      "basis": "assumed",
+      "unit": "-",
+      "value": "rwd"
+     },
+     "mass": {
+      "basis": "assumed",
+      "unit": "kg",
+      "value": 280.0
+     },
+     "power": {
+      "basis": "rule",
+      "unit": "kW",
+      "value": 80.0
+     },
+     "track_front": {
+      "basis": "assumed",
+      "unit": "mm",
+      "value": 1200.0
+     },
+     "track_rear": {
+      "basis": "assumed",
+      "unit": "mm",
+      "value": 1180.0
+     },
+     "weight_dist_front": {
+      "basis": "assumed",
+      "unit": "-",
+      "value": 0.47
+     },
+     "wheel_radius": {
+      "basis": "assumed",
+      "unit": "m",
+      "value": 0.2
+     },
+     "wheelbase": {
+      "basis": "assumed",
+      "unit": "mm",
+      "value": 1550.0
+     }
+    },
+    "skidpad_s": 4.6694,
+    "team": "C",
+    "warnings": []
+   },
+   {
+    "accel_s": 4.2311,
+    "car": "4",
+    "inputs": {
+     "cda": {
+      "basis": "assumed",
+      "unit": "m^2",
+      "value": 1.1
+     },
+     "cg_height": {
+      "basis": "assumed",
+      "unit": "mm",
+      "value": 300.0
+     },
+     "cla": {
+      "basis": "assumed",
+      "unit": "m^2",
+      "value": 2.6
+     },
+     "drive": {
+      "basis": "published",
+      "unit": "-",
+      "value": "rwd"
+     },
+     "mass": {
+      "basis": "assumed",
+      "unit": "kg",
+      "value": 280.0
+     },
+     "motor_torque": {
+      "basis": "assumed",
+      "unit": "N·m",
+      "value": 338.378292
+     },
+     "overall_ratio": {
+      "basis": "published",
+      "unit": "-",
+      "value": 4.0
+     },
+     "power": {
+      "basis": "rule",
+      "unit": "kW",
+      "value": 80.0
+     },
+     "redline": {
+      "basis": "published",
+      "unit": "rpm",
+      "value": 20000
+     },
+     "track_front": {
+      "basis": "published",
+      "unit": "mm",
+      "value": 1220
+     },
+     "track_rear": {
+      "basis": "published",
+      "unit": "mm",
+      "value": 1200
+     },
+     "weight_dist_front": {
+      "basis": "assumed",
+      "unit": "-",
+      "value": 0.47
+     },
+     "wheel_radius": {
+      "basis": "published",
+      "unit": "m",
+      "value": 0.221742
+     },
+     "wheelbase": {
+      "basis": "published",
+      "unit": "mm",
+      "value": 1530
+     }
+    },
+    "skidpad_s": 4.665,
+    "team": "D",
+    "warnings": []
+   }
+  ],
+  "protocol": {
+   "acceleration": "KinematiK laptime.acceleration_time over 75.0 m from rest",
+   "aero (ClA, CdA)": "assumed: KinematiK Powertrain defaults, never per car",
+   "cg_height": "assumed: KinematiK default (VehicleParams.cg_height), never per car",
+   "drive": "published: 4 motors = all-wheel drive, fewer = rear-wheel drive",
+   "mass": "published: front + rear weight with a 68 kg driver (FSG car data)",
+   "motor torque": "assumed: enough for 2.0 g at the wheels (grip-limited launch)",
+   "overall ratio": "published: the primary ratio; primary x secondary only when the primary is below 5; when front and rear ratios differ, the rear one",
+   "power": "rule: min(motors x published power per motor, FS accumulator power limit for the year)",
+   "redline": "published max motor rpm",
+   "scoring exclusions": "skidpad: left/right laps more than 10% apart, or any penalty in the best time; listed but left out of the summary",
+   "skidpad": "KinematiK laptime.skidpad_time, radius 9.125 m",
+   "tyre grip": "assumed: KinematiK default_tire(), never per car",
+   "weight_dist_front": "published: front weight / total",
+   "wheel radius": "published tyre diameter / 2 x 0.97 (loaded)",
+   "wheelbase, tracks": "published"
+  },
+  "protocol_version": "1",
+  "sealed_utc": "2026-08-01T09:30:00Z",
+  "specs": [
+   {
+    "car": "1",
+    "event": "T",
+    "max_rpm": 20000,
+    "n_motors": 4,
+    "power_per_motor_kw": 35,
+    "ratio_primary": 12.4,
+    "ratio_secondary": null,
+    "source_url": "u",
+    "team": "A",
+    "track_f_mm": 1220,
+    "track_r_mm": 1200,
+    "tyres": "Hoosier 16.0x7.5-10 R20",
+    "weight_f_kg": 120,
+    "weight_r_kg": 130,
+    "wheelbase_mm": 1530,
+    "year": 2026
+   },
+   {
+    "car": "2",
+    "event": "T",
+    "max_rpm": 20000,
+    "n_motors": 2,
+    "power_per_motor_kw": 50,
+    "ratio_primary": 3.0,
+    "ratio_secondary": 4.0,
+    "source_url": "u",
+    "team": "B",
+    "track_f_mm": 1220,
+    "track_r_mm": 1200,
+    "tyres": "185/40 R13",
+    "weight_f_kg": 120,
+    "weight_r_kg": 130,
+    "wheelbase_mm": 1530,
+    "year": 2012
+   },
+   {
+    "car": "3",
+    "event": "T",
+    "max_rpm": null,
+    "n_motors": null,
+    "power_per_motor_kw": null,
+    "ratio_primary": null,
+    "ratio_secondary": null,
+    "source_url": "u",
+    "team": "C",
+    "track_f_mm": null,
+    "track_r_mm": null,
+    "tyres": "",
+    "weight_f_kg": null,
+    "weight_r_kg": 130,
+    "wheelbase_mm": null,
+    "year": 2026
+   },
+   {
+    "car": "4",
+    "event": "T",
+    "max_rpm": 20000,
+    "n_motors": 1,
+    "power_per_motor_kw": 200,
+    "ratio_primary": 4.0,
+    "ratio_secondary": null,
+    "source_url": "u",
+    "team": "D",
+    "track_f_mm": 1220,
+    "track_r_mm": 1200,
+    "tyres": "7.5x18 x",
+    "weight_f_kg": 120,
+    "weight_r_kg": 0,
+    "wheelbase_mm": 1530,
+    "year": 2026
+   }
+  ]
+ },
+ "seal.badkind": "kind must be 'blind' or 'hindcast'",
+ "seal.hashes": [
+  [
+   "dynamics.py",
+   "laptime.py",
+   "ledger.py",
+   "tiremodel.py"
+  ],
+  64,
+  [
+   "dynamics.py",
+   "laptime.py",
+   "ledger.py",
+   "tiremodel.py"
+  ]
+ ],
+ "seal.now_is_utc": true,
+ "spearman": [
+  0.9999999999999998,
+  -0.9999999999999998,
+  "NaN",
+  "NaN",
+  "NaN",
+  0.5999999999999999,
+  "NaN"
+ ],
+ "spearman.ties": [
+  "NaN",
+  "NaN",
+  -0.8888888888888891,
+  0.026315789473684216
+ ],
+ "tyre": [
+  0.2032,
+  0.2286,
+  0.254,
+  0.2032,
+  0.2391,
+  0.25735,
+  0.2391,
+  0.2032,
+  null,
+  null,
+  null,
+  null,
+  null
+ ],
+ "tyre.edges": [
+  0.2032,
+  0.1905,
+  0.19685,
+  0.30479999999999996,
+  null,
+  null
+ ],
+ "verify": [
+  {
+   "intact": true,
+   "reproduced": true,
+   "same_code": true
+  },
+  {
+   "intact": false,
+   "reproduced": true,
+   "same_code": true
+  },
+  {
+   "intact": false,
+   "reproduced": false,
+   "same_code": true
+  },
+  {
+   "intact": false,
+   "reproduced": true,
+   "same_code": false
+  }
+ ],
+ "verify.bare": {
+  "intact": false,
+  "reproduced": true,
+  "same_code": true
+ }
+}

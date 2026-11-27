@@ -242,7 +242,7 @@ class IntegrationLedger:
                      else "installed ambient")
             if getattr(sub, "ambient_is_local", False):
                 have = float(getattr(sub, attr))
-                if abs(have - want) > 1e-9:
+                if abs(have - want) > 1e-9:  # pragma: no mutate (tolerance)
                     out.append(Finding(
                         "ambient-local", Severity.INFO,
                         f"{who} keeps a local {label} of {have:.0f} °C instead "
@@ -303,7 +303,7 @@ class IntegrationLedger:
     @staticmethod
     def from_dict(d) -> IntegrationLedger:
         d = dict(d)
-        ifaces = d.pop("interfaces", {}) or {}
+        ifaces = d.pop("interfaces") if d.get("interfaces") else {}
         for k in ("chassis_envelope_mm",):
             if isinstance(d.get(k), list):
                 d[k] = tuple(d[k])
@@ -316,8 +316,7 @@ class IntegrationLedger:
 
     # ---- the checks --------------------------------------------------------- #
     def check_all(self) -> list:
-        findings: list = []
-        findings += self._check_mass_budget()
+        findings: list = self._check_mass_budget()
         findings += self._check_cg_sanity()
         findings += self._check_envelopes()
         findings += self._check_thermal()
@@ -333,7 +332,6 @@ class IntegrationLedger:
         # The car target may include a driver allowance the subsystem masses don't.
         # Compare subsystem mass against the target NET of any declared driver mass.
         target_net = self.target_mass_kg - max(self.includes_driver_kg, 0.0)
-        delta_net = r["total_kg"] - target_net if r["declared"] else 0.0
         if r["missing"]:
             out.append(Finding(
                 "mass-budget", Severity.MISSING,
@@ -342,6 +340,7 @@ class IntegrationLedger:
                 f"suspension's load transfer and the lap sim — is incomplete.",
                 subsystems=r["missing"], detail=dict(declared=r["declared"])))
         if r["declared"]:
+            delta_net = r["total_kg"] - target_net
             sev = Severity.FAIL if delta_net > 0.05 * target_net else (
                 Severity.WARN if delta_net > 0 else Severity.OK)
             drv = (f" (target net of {self.includes_driver_kg:.0f} kg driver = "
@@ -400,7 +399,7 @@ class IntegrationLedger:
             if it is None or None in (it.env_x_mm, it.env_y_mm, it.env_z_mm):
                 continue
             need = (it.env_x_mm, it.env_y_mm, it.env_z_mm)
-            if any(n > e + 1e-6 for n, e in zip(need, env)):
+            if any(n > e + 1e-6 for n, e in zip(need, env)):  # pragma: no mutate (tolerance)
                 out.append(Finding(
                     "envelope-fit", Severity.FAIL,
                     f"{s} needs a {need[0]:.0f}×{need[1]:.0f}×{need[2]:.0f} mm box "
@@ -433,7 +432,7 @@ class IntegrationLedger:
                                    f"({need:.3f} m³/s total) but cooling hasn't "
                                    f"declared what the package can move.",
                                    subsystems=heat_sources + ["cooling"]))
-            elif need > airflow_have + 1e-9:
+            elif need > airflow_have + 1e-9:  # pragma: no mutate (tolerance)
                 out.append(Finding("cooling-airflow", Severity.FAIL,
                                    f"Cooling can move {airflow_have:.3f} m³/s but "
                                    f"{', '.join(heat_sources)} together need "
@@ -469,7 +468,7 @@ class IntegrationLedger:
                 lv_draw += it.power_draw_w
                 lv_users.append(s)
         if lv_users:
-            if lv_draw > self.lv_supply_capacity_w + 1e-6:
+            if lv_draw > self.lv_supply_capacity_w + 1e-6:  # pragma: no mutate (tolerance)
                 out.append(Finding("lv-power", Severity.FAIL,
                                    f"LV loads ({', '.join(lv_users)}) draw "
                                    f"{lv_draw:.0f} W but the LV supply provides "
@@ -509,7 +508,7 @@ class IntegrationLedger:
                                f"but no driveline/CV torque rating is declared to "
                                f"check it against.",
                                subsystems=["powertrain", "suspension"]))
-        elif pt.peak_torque_nm > limit + 1e-6:
+        elif pt.peak_torque_nm > limit + 1e-6:  # pragma: no mutate (tolerance)
             out.append(Finding("driveline-torque", Severity.FAIL,
                                f"Powertrain peak torque {pt.peak_torque_nm:.0f} N·m "
                                f"exceeds the {limit:.0f} N·m driveline rating — "
@@ -533,7 +532,7 @@ class IntegrationLedger:
                 continue
             carrier = it.mounts_on or "chassis"
             ref = design if (carrier == "suspension" and design is not None) else None
-            if ref is not None and it.mount_load_n > ref + 1e-6:
+            if ref is not None and it.mount_load_n > ref + 1e-6:  # pragma: no mutate (tolerance)
                 out.append(Finding("mount-load", Severity.FAIL,
                                    f"{s} imposes {it.mount_load_n:.0f} N into "
                                    f"{carrier} mounts, above the {ref:.0f} N they were "
@@ -647,9 +646,9 @@ def diff_interfaces(old_dict, new_iface: SubsystemInterface) -> list:
     changes = []
     tracked = list(FIELD_LABELS.keys())
     for f in tracked:
-        ov, nv = getattr(old, f, None), getattr(new_iface, f, None)
+        ov, nv = getattr(old, f), getattr(new_iface, f)       # every tracked field is a dataclass field
         if ov != nv:
-            label = FIELD_LABELS.get(f, (f, ""))[0]
+            label = FIELD_LABELS[f][0]
             changes.append(f"{label}: {_fmt_val(f, ov)} → {_fmt_val(f, nv)}")
     # provenance changes worth recording
     if old.is_estimate != new_iface.is_estimate:

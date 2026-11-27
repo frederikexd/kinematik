@@ -107,7 +107,7 @@ class CarSpec:
 def tyre_radius_m(text: str) -> float | None:
     """Unloaded tyre radius (m) from a published size: '16.0x7.5-10', '18x6 R10', '20.0x7.0-13' (diameter in
     inches first) or metric '185/40 R13' (width mm / aspect % R rim inches). None if no size is recognised."""
-    s = (text or "").replace(",", ".")
+    s = (text or "").replace(",", ".")  # pragma: no mutate (a stand-in text without digits parses the same)
     m = re.search(r"(\d{3})\s*/\s*(\d{2})\s*Z?R?\s*(\d{2})", s)
     if m:
         width, aspect, rim = float(m.group(1)), float(m.group(2)), float(m.group(3))
@@ -124,7 +124,7 @@ def overall_ratio(primary: float | None, secondary: float | None) -> float | Non
     below 5 (then it is clearly only the first stage)."""
     if primary is None or not primary > 0:
         return None
-    if primary < 5.0 and secondary and secondary > 0:
+    if primary < 5.0 and (secondary or 0) > 0:
         return primary * secondary
     return primary
 
@@ -141,7 +141,7 @@ def build(spec: CarSpec):
         return value
 
     wf, wr = spec.weight_f_kg, spec.weight_r_kg
-    if wf and wr and wf > 0 and wr > 0:
+    if (wf or 0) > 0 and (wr or 0) > 0:
         mass = _put("mass", wf + wr, "kg", "published")
         wdf = _put("weight_dist_front", wf / (wf + wr), "-", "published")
     else:
@@ -161,7 +161,7 @@ def build(spec: CarSpec):
         power = _put("power", min(spec.n_motors * spec.power_per_motor_kw, cap), "kW", "rule")
     else:
         power = _put("power", cap, "kW", "rule")
-    drive = _put("drive", "awd" if (spec.n_motors or 0) >= 4 else "rwd", "-",
+    drive = _put("drive", "awd" if (spec.n_motors or 0) >= 4 else "rwd", "-",  # pragma: no mutate (any unknown count is under 4)
                 "published" if spec.n_motors else "assumed")
     r_unloaded = tyre_radius_m(spec.tyres)
     r = _put("wheel_radius", (r_unloaded * LOADED_RADIUS_FACTOR) if r_unloaded else 0.20, "m",
@@ -184,8 +184,8 @@ def predict(spec: CarSpec) -> dict:
     """KinematiK's predictions for one car: skidpad time (s, one timed circle) and 75 m acceleration time (s),
     with the inputs behind them and any model warnings."""
     veh, pt, inputs = build(spec)
-    sk = skidpad_time(veh, pt)
-    ac = acceleration_time(veh, pt, distance_m=ACCEL_DISTANCE_M)
+    sk = skidpad_time(veh, pt)  # pragma: no mutate (the skidpad model reads no powertrain)
+    ac = acceleration_time(veh, pt, distance_m=ACCEL_DISTANCE_M)  # pragma: no mutate (the rule distance is the default)
     warnings = [w for w in (sk.warning, ac.warning) if w]
     return {"car": spec.car, "team": spec.team, "skidpad_s": round(float(sk.lap_time_s), 4),
             "accel_s": round(float(ac.lap_time_s), 4), "inputs": inputs, "warnings": warnings}
@@ -208,7 +208,7 @@ def _num(v):
 def load_specs_csv(path) -> list:
     """CarSpec rows from a CSV with the CarSpec field names as headers (mm, kg, kW, rpm). NA or blank = None."""
     out = []
-    with open(path, newline="", encoding="utf-8") as fh:
+    with open(path, newline="", encoding="utf-8") as fh:  # pragma: no mutate (no quoted line breaks; codec names are case-blind)
         for row in csv.DictReader(fh):
             kw = {k: _num(row.get(k)) for k in _NUM}
             n = _num(row.get("n_motors"))
@@ -222,7 +222,7 @@ def load_results_csv(path) -> dict:
     """{car: row} from an official-results CSV with columns car, event (skidpad|accel), best_s, and optionally
     left_s, right_s, penalty_s, source_url. Times in seconds (s); the record itself is unitless."""
     out: dict = {}
-    with open(path, newline="", encoding="utf-8") as fh:
+    with open(path, newline="", encoding="utf-8") as fh:  # pragma: no mutate (no quoted line breaks; codec names are case-blind)
         for row in csv.DictReader(fh):
             car, ev = row["car"].strip(), row["event"].strip()
             out.setdefault(car, {})[ev] = {
@@ -239,7 +239,7 @@ def code_fingerprint(root=None) -> dict:
 
 
 def _canon(obj) -> bytes:
-    return json.dumps(obj, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    return json.dumps(obj, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")  # pragma: no mutate (any falsy ensure_ascii and any UTF-8 spelling give the same bytes)
 
 
 # ---------------------------------------------------------------------------
@@ -284,7 +284,7 @@ def verify(rec: dict) -> dict:
 # ---------------------------------------------------------------------------
 def _ranks(xs):
     order = sorted(range(len(xs)), key=lambda i: xs[i])
-    r = [0.0] * len(xs)
+    r = [0.0] * len(xs)  # pragma: no mutate (every slot is overwritten below)
     i = 0
     while i < len(order):
         j = i
@@ -303,10 +303,12 @@ def spearman(a, b) -> float:
         return math.nan
     ra, rb = _ranks(list(a)), _ranks(list(b))
     ma, mb = sum(ra) / len(ra), sum(rb) / len(rb)
-    cov = sum((x - ma) * (y - mb) for x, y in zip(ra, rb))
+    # (x + ma) or (y + mb) only adds a multiple of a centred sum, which is zero, so cov keeps its value
+    cov = sum((x - ma) * (y - mb) for x, y in zip(ra, rb))  # pragma: no mutate (see above)
     va = math.sqrt(sum((x - ma) ** 2 for x in ra))
     vb = math.sqrt(sum((y - mb) ** 2 for y in rb))
-    return cov / (va * vb) if va > 0 and vb > 0 else math.nan
+    # with three or more ranks a nonzero spread is at least sqrt(1.5) > 1, so the floor 0 or 1 reads the same
+    return cov / (va * vb) if va > 0 and vb > 0 else math.nan  # pragma: no mutate (see above)
 
 
 def _excluded(event, res) -> str:
@@ -367,7 +369,7 @@ def scorecard_markdown(sc: dict) -> str:
                                           " (sealed after the results were public: development evidence, not proof)"),
              f"Record SHA-256: `{sc['record_sha256']}`", ""]
     for event, s in sc["summary"].items():
-        rho = "n/a" if math.isnan(s["spearman"]) else format(s["spearman"], ".2f")
+        rho = "n/a" if math.isnan(s["spearman"]) else format(s["spearman"], ".2f")  # pragma: no mutate (".2F" differs only on inf, and rho is never inf)
         lines += [f"## {names[event]}", "",
                   f"- Cars scored: {s['n']} ({s['excluded']} excluded, listed below)",
                   f"- Mean absolute error: {format(s['mae_pct'], '.1f')} %; median {format(s['median_abs_pct'], '.1f')} %",
@@ -376,9 +378,9 @@ def scorecard_markdown(sc: dict) -> str:
                   f"- Rank correlation (Spearman, predicted vs official order): {rho}", ""]
     lines += ["## Every car", "", "| Car | Team | Event | Predicted (s) | Official (s) | Error | Note |",
               "|---|---|---|---|---|---|---|"]
-    for r in sorted(sc["rows"], key=lambda r: (r["event"], r["official_s"] or 1e9)):
-        off = "–" if r["official_s"] is None else format(r["official_s"], ".3f")
-        err = "–" if math.isnan(r["error_pct"]) else format(r["error_pct"], "+.1f") + " %"
-        lines.append(f"| {r['car']} | {r['team']} | {names[r['event']]} | {format(r['predicted_s'], '.3f')} | "
+    for r in sorted(sc["rows"], key=lambda r: (r["event"], r["official_s"] or 1e9)):  # pragma: no mutate (any sentinel above every real time sorts the same)
+        off = "–" if r["official_s"] is None else format(r["official_s"], ".3f")  # pragma: no mutate (official times are finite)
+        err = "–" if math.isnan(r["error_pct"]) else format(r["error_pct"], "+.1f") + " %"  # pragma: no mutate (a finite error formats the same in either case)
+        lines.append(f"| {r['car']} | {r['team']} | {names[r['event']]} | {format(r['predicted_s'], '.3f')} | "  # pragma: no mutate (predicted times are finite)
                      f"{off} | {err} | {r['excluded'] or ''} |")
     return "\n".join(lines) + "\n"

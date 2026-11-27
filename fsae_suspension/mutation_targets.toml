@@ -884,3 +884,21 @@ tests = [
     "tests/test_correlation.py",
 ]
 deselect = []
+
+[[group]]
+name = "interfaces"
+files = ["suspension/interfaces.py"]
+tests = [
+    "tests/test_mutation_interfaces.py",
+    "tests/test_interfaces.py",
+]
+deselect = []
+
+[[group]]
+name = "ledger"
+files = ["suspension/ledger.py"]
+tests = [
+    "tests/test_mutation_ledger.py",
+    "tests/test_ledger.py",
+]
+deselect = ["tests/test_ledger.py::test_csv_loaders_round_trip", "tests/test_ledger.py::test_repo_records_are_intact"]  # reads benchmarks/ from the repo root, which the mutation copy does not have
