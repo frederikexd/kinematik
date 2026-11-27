@@ -37,6 +37,7 @@ def _cases(mp):
     yield "decel", [bd.decel_g(0.6), bd.decel_g(0.6000004), gw.BrakeDecel(mass_kg=250.0, cg_height_mm=300.0,
                                                                          wheelbase_mm=1550.0, track_mm=1200.0
                                                                          ).decel_g(0.7)]
+    yield "balanced.extra", [plain(bd.balanced()), plain(bd.balanced(0.123456, 0.123456, 0.01))]
     yield "balanced", [plain(bd.balanced(0.6, 0.7, 0.05)), plain(bd.balanced(lo=0.55, hi=0.56, step=0.01)),
                        plain(gw.BrakeDecel(cg_height_mm=600.0).balanced(0.5, 0.9, 0.1))]
     yield "brake.dict", [bd.to_dict(), plain(gw.BrakeDecel.from_dict({"mass_kg": "310", "track_mm": 1180}))]
@@ -52,6 +53,8 @@ def _cases(mp):
     rt = L.from_dict({"cases": {"c": CASE}})
     yield "link.from_partial", [rt.od_mm, rt.wall_mm, rt.per_member, rt.sy_mpa, rt.e_mpa, rt.crook]
     yield "link.from_full", L.from_dict(ls.to_dict()).to_dict() == ls.to_dict()
+    odd = L(cases={"c": CASE}, od_mm=19.05, wall_mm=1.245, sy_mpa=460.0, e_mpa=200000.0, crook=0.002)
+    yield "link.from_odd", L.from_dict(odd.to_dict()).to_dict()
     import suspension.robustness as RB
     seen = []
     mp.setattr(RB, "member_margins", lambda hp, loads, **kw: seen.append(sorted(kw.items())) or {})
@@ -72,7 +75,8 @@ def _cases(mp):
                                    Y0=0.4).rows(hp))
     yield "rocker.dict", [rw.to_dict(), plain(R.from_dict({"cases": [dict(CASE, name="c")], "C0_N": 1000})),
                           R.from_dict(rw.to_dict()).to_dict() == rw.to_dict()]
-    _try(R.from_dict, {"cases": [dict(CASE, name="c")]})
+    rodd = R(cases=rw.cases, label="L2", C0_N=1500.0, spacing_mm=25.0, X0=1.3, Y0=0.45)
+    yield "rocker.odd", [plain(rodd.rows(hp)), R.from_dict(rodd.to_dict()).to_dict()]
     yield "rocker.from_missing", _try(R.from_dict, {"cases": [dict(CASE, name="c")]})
     import suspension.actuation as AC
     mp.setattr(AC, "rocker_bearing_loads", lambda hp, cs, b: [])

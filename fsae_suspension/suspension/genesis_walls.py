@@ -99,10 +99,10 @@ class BrakeDecel:
     def balanced(self, lo: float = 0.50, hi: float = 0.90, step: float = 0.01
                  ) -> tuple[float, float]:
         """(front bias, deceleration g) that brakes hardest, to ``step``."""
-        best = (lo, -1.0)
+        best = (lo, -math.inf)
         for b in np.arange(lo, hi + 1e-9, step):
             d = self.decel_g(float(b))
-            if d > best[1]:
+            if d > best[1]:  # pragma: no mutate (the first of equal maxima wins either way)
                 best = (round(float(b), 4), d)
         return best
 

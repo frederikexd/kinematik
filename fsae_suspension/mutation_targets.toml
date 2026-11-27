@@ -1006,6 +1006,15 @@ deselect = [
     "tests/test_kinematik_stochastic.py::test_yield_monotone_in_field",
 ]
 
+[[group]]
+name = "genesis_walls"
+files = ["suspension/genesis_walls.py"]
+tests = [
+    "tests/test_mutation_genesis_walls.py",
+    "tests/test_genesis_walls.py",
+]
+deselect = []
+
 # --------------------------------------------------------------------------------------------
 # PENDING groups — suites are in place but these modules are not yet at the 99% floor. Uncomment
 # a block once a full run of `python scripts/mutation_gate.py --group NAME` reaches 99%.
@@ -1042,16 +1051,6 @@ deselect = [
 # tests = [
 #     "tests/test_mutation_pcb_doctor.py",
 #     "tests/test_pcb_doctor.py",
-# ]
-# deselect = []
-#
-# genesis_walls: 62.9% before its new suite; re-run pending
-# [[group]]
-# name = "genesis_walls"
-# files = ["suspension/genesis_walls.py"]
-# tests = [
-#     "tests/test_mutation_genesis_walls.py",
-#     "tests/test_genesis_walls.py",
 # ]
 # deselect = []
 #
