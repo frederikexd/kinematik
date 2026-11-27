@@ -95,20 +95,24 @@ def _formulas():
     return {"traces": _plain(rows), "vias": _plain(vias), "prescribe": presc, "clearance": _plain(clear)}
 
 
-def _everything():
-    out = {"formulas": _formulas()}
+def _cases():
+    """case name -> a function computing it (computed one at a time, so a broken case fails before the rest)."""
+    out = {"formulas": _formulas}
     for b in BOARDS:
         for fan in (2.0, 20.0):
             for lim in LIMITS:
-                out[f"{b}_{fan:g}_{lim}"] = _case(b, fan, lim)
+                out[f"{b}_{fan:g}_{lim}"] = (lambda b=b, fan=fan, lim=lim: _case(b, fan, lim))
     return out
 
 
 def test_every_board_word_for_word():
-    got = json.loads(json.dumps(_everything(), ensure_ascii=False))
+    cases = _cases()
     if os.environ.get("KINEMATIK_REGOLD"):
+        got = json.loads(json.dumps({k: f() for k, f in cases.items()}, ensure_ascii=False))
         GOLD.write_text(json.dumps(got, indent=0, ensure_ascii=False) + "\n", encoding="utf-8")
     want = json.loads(GOLD.read_text(encoding="utf-8"))
-    for case in want:
+    assert set(cases) == set(want)
+    for case, f in cases.items():
+        got = json.loads(json.dumps(f(), ensure_ascii=False))
         for part in want[case]:
-            assert got[case][part] == want[case][part], (case, part)
+            assert got[part] == want[case][part], (case, part)

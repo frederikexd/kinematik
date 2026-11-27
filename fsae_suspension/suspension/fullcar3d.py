@@ -46,6 +46,7 @@ for analysis.
 from __future__ import annotations
 
 import math
+from types import SimpleNamespace
 import numpy as np
 from ._num import vec as _vec
 import plotly.graph_objects as go
@@ -220,7 +221,7 @@ def _orient_part_mesh(verts, *, axis_map="z_up", yaw_deg=0.0, scale=1.0,
     yaw_deg    : rotation about the car's z-axis (vertical) — spins it flat.
     The three are applied roll -> pitch -> yaw, after the CAD-up-axis remap.
     """
-    V = _vec(verts).reshape(-1, 3) * float(scale)
+    V = _vec(verts).reshape(_ROWS3) * float(scale)
     # Defensive recentre: placement translates the part's CENTRE to `centre`, so
     # the incoming verts must be centred on their own bbox. load_part_mesh does
     # this, but a payload from elsewhere (older cache, hand-built) might not — in
@@ -373,29 +374,29 @@ def _solved_corner_points(hp: Hardpoints, ride_drop_mm: float = 0.0):
     kin = SuspensionKinematics(hp)
     s = kin.static
     pts = dict(
-        upper_front_inner=np.array(hp.upper_front_inner, float),
-        upper_rear_inner=np.array(hp.upper_rear_inner, float),
-        lower_front_inner=np.array(hp.lower_front_inner, float),
-        lower_rear_inner=np.array(hp.lower_rear_inner, float),
-        tie_rod_inner=np.array(hp.tie_rod_inner, float),
-        upper_outer=np.array(s.upper_outer, float),
-        lower_outer=np.array(s.lower_outer, float),
-        tie_rod_outer=np.array(s.tie_rod_outer, float),
-        wheel_center=np.array(s.wheel_center, float),
-        contact_patch=np.array(s.contact_patch, float),
+        upper_front_inner=_vec(hp.upper_front_inner).copy(),
+        upper_rear_inner=_vec(hp.upper_rear_inner).copy(),
+        lower_front_inner=_vec(hp.lower_front_inner).copy(),
+        lower_rear_inner=_vec(hp.lower_rear_inner).copy(),
+        tie_rod_inner=_vec(hp.tie_rod_inner).copy(),
+        upper_outer=_vec(s.upper_outer).copy(),
+        lower_outer=_vec(s.lower_outer).copy(),
+        tie_rod_outer=_vec(s.tie_rod_outer).copy(),
+        wheel_center=_vec(s.wheel_center).copy(),
+        contact_patch=_vec(s.contact_patch).copy(),
     )
     if hp.has_rocker():               # all six linkage points are present
         for kk in ("rocker_pivot", "rocker_pushrod", "rocker_spring", "spring_inner"):
-            pts[kk] = np.array(getattr(hp, kk), float)
-        po = s.pushrod_outer if s.pushrod_outer is not None else hp.pushrod_outer
-        pts["pushrod_outer"] = np.array(po, float)
+            pts[kk] = _vec(getattr(hp, kk)).copy()
+        po = s.pushrod_outer if s.pushrod_outer is not None else hp.pushrod_outer  # pragma: no mutate (at static travel the solved point is the hardpoint)
+        pts["pushrod_outer"] = _vec(po).copy()
     if ride_drop_mm:
         # Static sag lowers the SPRUNG side: the chassis pickups and the rocker
         # move down with the body, while the upright, wheel and contact patch stay
         # on the ground.
         for kk in pts:
             if kk in _SPRUNG_POINTS:
-                pts[kk] = pts[kk] - np.array([0, 0, ride_drop_mm], float)
+                pts[kk] = pts[kk] - _vec([0, 0, ride_drop_mm]).copy()
     return pts, s
 
 
@@ -448,6 +449,16 @@ def sub_color_key(subsys):
     return _SUBSYS_COLOR_KEY.get(subsys, "custom")
 
 
+def _num(obj, name, default):
+    """obj.name as a float, or `default` when it is missing, None, zero or empty."""
+    return float(getattr(obj, name, None) or default)
+
+
+def _numd(d, key, default):
+    """d[key] as a float, or `default` when it is missing, None, zero or empty."""
+    return float(d.get(key) or default)
+
+
 def _is_wishbone_hardpoints(corner) -> bool:
     """True if `corner` is a double-wishbone Hardpoints (has the named fields)."""
     return isinstance(corner, Hardpoints)
@@ -468,7 +479,7 @@ def _extract_corner(corner, ride_drop_mm, color_registry):
     """
     if _is_wishbone_hardpoints(corner):
         pts, s = _solved_corner_points(corner, ride_drop_mm)
-        cam = getattr(corner, "static_camber", -1.5)
+        cam = corner.static_camber              # a Hardpoints always carries it
         # Named wishbone links -> fixed colours (matches the GEOMETRY 3D tab).
         segs = [
             (pts["upper_front_inner"], pts["upper_outer"], "Upper wishbone", COLORS["upper"], "upper"),
@@ -545,6 +556,9 @@ def _extract_corner(corner, ride_drop_mm, color_registry):
 # --------------------------------------------------------------------------- #
 #  Sizing laws
 # --------------------------------------------------------------------------- #
+_ROWS3 = (-1, 3)  # pragma: no mutate (numpy reads any negative size as "the rest")
+
+
 def _clamp(v, lo, hi):
     return max(lo, min(hi, v))
 
@@ -662,20 +676,17 @@ def subsystem_metrics(vp, ledger, metric: str = "heat") -> dict:
     values: dict[str, float] = {}
     for s in SUBSYSTEMS:
         it = _iface(ledger, s)
-        v = _g(it, field, None)
+        v = _g(it, field)
         if v is not None and float(v) > 0:
             values[s] = float(v)
 
     vmax = max(values.values()) if values else 0.0
-    norm = {s: (v / vmax if vmax > 0 else 0.0) for s, v in values.items()}
+    norm = {s: (v / vmax if vmax > 0 else 0.0) for s, v in values.items()}  # pragma: no mutate (values holds only positives, so vmax > 0 whenever it is read)
 
     # ---- capacity + over-budget, mirrored from the ledger checks ---------- #
     over: dict[str, bool] = {}
-    capacity = None
-    findings = []
     try:
-        findings = [f.as_dict() if hasattr(f, "as_dict") else f
-                    for f in ledger.check_all()]
+        findings = [f.as_dict() for f in ledger.check_all()]
     except Exception:
         findings = []
 
@@ -723,7 +734,7 @@ def subsystem_metrics(vp, ledger, metric: str = "heat") -> dict:
             lv_bus = _capacity("lv_voltage_v") or 24.0
             for s in values:
                 it = _iface(ledger, s)
-                v_s = _g(it, "voltage_v", None)
+                v_s = _g(it, "voltage_v")
                 if v_s is None or abs(float(v_s) - lv_bus) < 5.0:
                     over[s] = True
     else:                                # "mass"
@@ -747,9 +758,9 @@ def subsystem_metrics(vp, ledger, metric: str = "heat") -> dict:
                 "mass": {"mass-budget", "mass-budget-total", "cg", "cg-lateral"}}
     warnings = [
         dict(severity=f.get("severity"), message=f.get("message"),
-             subsystems=f.get("subsystems", []))
+             subsystems=f["subsystems"])
         for f in findings
-        if f.get("check") in relevant.get(metric, set())
+        if f.get("check") in relevant[metric]
         and f.get("severity") in ("warning", "fail", "missing")
     ]
 
@@ -853,6 +864,29 @@ def build_full_car_figure(
     tf = float(getattr(vp, "track_front", 1200.0))
     tr = float(getattr(vp, "track_rear", 1180.0))
 
+    # The drawing sections below share the builder's state through `s` (each is its own
+    # function so it can be read, and mutation-tested, on its own).
+    s = SimpleNamespace(**locals())
+    _fc_cad_chassis(s)
+    _fc_overrides(s)
+    _fc_draw_helpers(s)
+    _fc_corners(s)
+    _fc_chassis(s)
+    _fc_aero(s)
+    _fc_cooling(s)
+    _fc_powertrain(s)
+    _fc_electrics(s)
+    _fc_logger(s)
+    _fc_cg(s)
+    _fc_floor(s)
+    _fc_custom_parts(s)
+    _fc_camera(s)
+    return s.fig
+
+
+def _fc_cad_chassis(s):
+    """build_full_car_figure, continued: imported CAD chassis fits the placeholder."""
+    cf, cr, custom_parts, tf, tr, vp, wb = s.cf, s.cr, s.custom_parts, s.tf, s.tr, s.vp, s.wb
     # ---- imported CAD chassis fits the placeholder ------------------------- #
     # A `define_car` chassis (Chassis slot, "fit the rest of the car around this
     # part") is scaled to occupy the SAME footprint as the dummy monocoque on the
@@ -866,14 +900,14 @@ def build_full_car_figure(
         if _cp.get("define_car") and _cp.get("mesh"):
             _car_part = _cp
             break
-    _car_scale = 1.0            # wheels/tyres keep their natural size
+    _car_scale = 1.0  # pragma: no mutate (kept for callers of the state; wheels and tires keep their natural size)
 
     # Softer front spring -> more static sag -> body visibly lower. Cue, not a calc:
     # the sprung bodies (frame, driver, wings, pods, motor, accumulator, logger)
     # and the inboard pickups drop by ride_drop; wheels and ground stay at z = 0.
-    kf = float(getattr(vp, "spring_rate_front", 35.0) or 35.0)
+    kf = _num(vp, "spring_rate_front", 35.0)
     ride_drop = _clamp((35.0 - kf) * 0.6, -12.0, 18.0)
-    _body_dz = 0.0                 # set to ride_drop while the sprung bodies draw
+    _body_dz = [0.0]               # [0] is ride_drop while the sprung bodies draw
 
     # Extract each axle's corner into a uniform, topology-independent description.
     color_registry = {}
@@ -886,7 +920,12 @@ def build_full_car_figure(
     x_front, x_rear = +wb / 2.0, -wb / 2.0
 
     fig = go.Figure()
+    s._body_dz, s._car_part, s._car_scale, s.fig, s.front_corner, s.rear_corner, s.ride_drop, s.scale_f, s.scale_r, s.x_front, s.x_rear, s.y_center = _body_dz, _car_part, _car_scale, fig, front_corner, rear_corner, ride_drop, scale_f, scale_r, x_front, x_rear, y_center
 
+
+def _fc_overrides(s):
+    """build_full_car_figure, continued: user part overrides (size & position)."""
+    highlight_subsystem, part_overrides, suppress_parts, suppress_subsystems = s.highlight_subsystem, s.part_overrides, s.suppress_parts, s.suppress_subsystems
     # ---- user part overrides (size & position) -------------------------- #
     # Resolve once: a part name -> (dx, dy, dz, sx, sy, sz). Scaling is about
     # the part's centroid so a part keeps its place while changing size; the
@@ -920,17 +959,17 @@ def build_full_car_figure(
     _part_pieces: dict = {}
 
     def _ov_for(name):
-        o = _ov.get(name) if name else None
+        o = _ov.get(name)                     # a nameless body has no override
         if not o:
             return None
-        dx = float(o.get("dx", 0.0) or 0.0)
-        dy = float(o.get("dy", 0.0) or 0.0)
-        dz = float(o.get("dz", 0.0) or 0.0)
-        us = o.get("scale", 1.0)
+        dx = _numd(o, "dx", 0.0)
+        dy = _numd(o, "dy", 0.0)
+        dz = _numd(o, "dz", 0.0)
+        us = o.get("scale")
         us = 1.0 if us is None else float(us)
-        sx = float(o.get("sx", us) or us)
-        sy = float(o.get("sy", us) or us)
-        sz = float(o.get("sz", us) or us)
+        sx = float(o.get("sx") or us)
+        sy = float(o.get("sy") or us)
+        sz = float(o.get("sz") or us)
         if dx == dy == dz == 0.0 and sx == sy == sz == 1.0:
             return None
         return (dx, dy, dz, sx, sy, sz)
@@ -941,7 +980,7 @@ def build_full_car_figure(
         or the body itself (suppress_subsystems / suppress_parts)."""
         if name and name in _suppress_names:
             return True
-        o = _ov.get(name) if name else None
+        o = _ov.get(name)                     # a nameless body has no override
         return bool(o and o.get("hide"))
 
     _scale_centre: dict[str, np.ndarray] = {}
@@ -957,7 +996,7 @@ def build_full_car_figure(
             return V
         dx, dy, dz, sx, sy, sz = spec
         A = _vec(V)
-        flat = A.reshape(-1, 3)
+        flat = A.reshape(_ROWS3)
         if name in _PER_INSTANCE:
             c = flat.mean(axis=0)            # this instance's own centre
         else:
@@ -979,7 +1018,14 @@ def build_full_car_figure(
             _hl_set = None
     else:
         _hl_set = {highlight_subsystem}
+    s._apply_ov, s._is_hidden, s._ov, s._part_boxes, s._part_pieces = _apply_ov, _is_hidden, _ov, _part_boxes, _part_pieces
+    vars(s).update({k: v for k, v in locals().items() if k in ('_hl_set',)})
 
+
+def _fc_draw_helpers(s):
+    """build_full_car_figure, continued: def op(subsys, base):."""
+    _apply_ov, _body_dz, _is_hidden, _ov, _part_boxes, _part_pieces, fig, heatmap = s._apply_ov, s._body_dz, s._is_hidden, s._ov, s._part_boxes, s._part_pieces, s.fig, s.heatmap
+    _hl_set = vars(s).get('_hl_set')              # drawn only when that section ran
     def op(subsys, base):
         if _hl_set is None:
             return base
@@ -1000,8 +1046,8 @@ def build_full_car_figure(
     # the whole car reads as a load map. Subsystems that declared no value for
     # the chosen metric go neutral grey (they're not part of this story). The
     # set of over-budget subsystems is returned so we can outline them.
-    _hm_norm = (heatmap or {}).get("norm", {}) if heatmap else {}
-    _hm_over = (heatmap or {}).get("over", {}) if heatmap else {}
+    _hm_norm = (heatmap or {}).get("norm", {})
+    _hm_over = (heatmap or {}).get("over", {})
 
     def heat_for(subsys):
         """(fill_colour, is_over) for a subsystem under the active heatmap, or
@@ -1027,7 +1073,7 @@ def build_full_car_figure(
     part_pts: dict[str, list] = {}
 
     def _accrue(subsys, pts, part=None, corner=None):
-        arr = _vec(pts).reshape(-1, 3).tolist()
+        arr = _vec(pts).reshape(_ROWS3).tolist()
         if subsys:
             subsys_pts.setdefault(subsys, []).extend(arr)
         if part:
@@ -1049,7 +1095,7 @@ def build_full_car_figure(
         _ovk = part if (part and part in _ov) else (group if group in _ov else part)
         if _is_hidden(part) or _is_hidden(group):
             return
-        pq = _apply_ov(_ovk, _sprung(np.array([p, q], float)))
+        pq = _apply_ov(_ovk, _sprung(_vec([p, q]).copy()))
         p, q = pq[0], pq[1]
         # Accrue under a STABLE part key. corner_name() returns a label only the
         # first time (legend dedup), so for the 2nd–4th corners `name` is None;
@@ -1077,10 +1123,10 @@ def build_full_car_figure(
 
     def _sprung(V):
         """Lower V by the static sag while the sprung bodies are being drawn."""
-        if not _body_dz:
+        if not _body_dz[0]:
             return V
-        A = np.array(V, float)
-        A[..., 2] -= _body_dz
+        A = _vec(V).copy()
+        A[..., 2] -= _body_dz[0]
         return A
 
     def mesh(verts, i, j, k, color, name, subsys, base_op=0.6, hover=None,
@@ -1090,7 +1136,7 @@ def build_full_car_figure(
         # suppression, so a replacing CAD part can land in exactly the same place
         # its placeholder occupied — even when the placeholder is now hidden.
         # Every body is drawn under a name (custom parts default to "Custom part").
-        _vv = _vec(_apply_ov(name, verts)).reshape(-1, 3)
+        _vv = _vec(_apply_ov(name, verts)).reshape(_ROWS3)
         _lo, _hi = _vv.min(axis=0), _vv.max(axis=0)
         if name in _part_boxes:
             _pb = _part_boxes[name]
@@ -1139,7 +1185,12 @@ def build_full_car_figure(
             return None
         legend_done.add(base)
         return base
+    s._accrue, s.corner_name, s.edge_op, s.mesh, s.part_pts, s.seg, s.subsys_pts = _accrue, corner_name, edge_op, mesh, part_pts, seg, subsys_pts
 
+
+def _fc_corners(s):
+    """build_full_car_figure, continued: 1) suspension corners + tires + brake discs."""
+    _accrue, _car_part, _car_scale, corner_name, edge_op, fig, front_corner, ledger, mesh, rear_corner, ride_drop, scale_f, scale_r, seg, show_brakes, show_tires, tf, tire_width_mm, tr, x_front, x_rear, y_center = s._accrue, s._car_part, s._car_scale, s.corner_name, s.edge_op, s.fig, s.front_corner, s.ledger, s.mesh, s.rear_corner, s.ride_drop, s.scale_f, s.scale_r, s.seg, s.show_brakes, s.show_tires, s.tf, s.tire_width_mm, s.tr, s.x_front, s.x_rear, s.y_center
     # ---- 1) suspension corners + tires + brake discs -------------------- #
     #  Each station reuses the SAME extracted corner description, transformed to
     #  its wheel position (mirror L/R, scale to axle track, shift fore/aft). The
@@ -1155,8 +1206,7 @@ def build_full_car_figure(
 
     def _xform(p, mirror, lat_scale, x_shift):
         return _corner_transform(p, mirror_y=mirror, lateral_scale=lat_scale,
-                                 x_shift=x_shift, y_center_ref=y_center,
-                                 size_scale=_car_scale)
+                                 x_shift=x_shift, y_center_ref=y_center)
 
     for axle, corner, lat_scale, x_shift, mirror in stations:
         # Stable corner id (FL/FR/RL/RR) for per-corner focus. Side comes from the
@@ -1225,7 +1275,7 @@ def build_full_car_figure(
         z_all += [corner["wheel_center"][2], corner["contact_patch"][2]]
     z_lo, z_hi = (min(z_all), max(z_all)) if z_all else (0.0, 300.0)
     tire_r = (abs(front_corner["wheel_center"][2]
-                  - front_corner["contact_patch"][2]) or 228.0) * _car_scale
+                  - front_corner["contact_patch"][2]) or 228.0)
     inner_y_f = tf / 2.0 - tire_width_mm - 40
     inner_y_r = tr / 2.0 - tire_width_mm - 40
 
@@ -1238,9 +1288,9 @@ def build_full_car_figure(
     _def_target = None
     if _car_part is not None:
         try:
-            _pl0 = float(_car_part.get("l_mm", 0) or 0)
-            _pw0 = float(_car_part.get("w_mm", 0) or 0)
-            _ph0 = float(_car_part.get("h_mm", 0) or 0)
+            _pl0 = _numd(_car_part, "l_mm", 0)
+            _pw0 = _numd(_car_part, "w_mm", 0)
+            _ph0 = _numd(_car_part, "h_mm", 0)
 
             # --- dummy monocoque footprint (mirror the section-2 formulas) ---
             _dummy_tub_w = _clamp(min(inner_y_f, inner_y_r) * 1.1, 140, 320)
@@ -1271,7 +1321,12 @@ def build_full_car_figure(
                 centre=(_dummy_cx, 0.0, _dummy_cz))
         except Exception:
             _def_target = None
+    s._def_target, s.inner_y_f, s.inner_y_r, s.tire_r, s.z_hi, s.z_lo = _def_target, inner_y_f, inner_y_r, tire_r, z_hi, z_lo
 
+
+def _fc_chassis(s):
+    """build_full_car_figure, continued: 2) chassis: FSAE steel SPACEFRAME + roll hoops + driver."""
+    _body_dz, inner_y_f, inner_y_r, ledger, mesh, ride_drop, seg, show_bodywork, tire_r, wb, x_front, x_rear, z_lo = s._body_dz, s.inner_y_f, s.inner_y_r, s.ledger, s.mesh, s.ride_drop, s.seg, s.show_bodywork, s.tire_r, s.wb, s.x_front, s.x_rear, s.z_lo
     # ---- 2) chassis: FSAE steel SPACEFRAME + roll hoops + driver -------- #
     #  Tube frame in place of the old lofted monocoque shell: front bulkhead,
     #  front hoop, cockpit bay, rear box, with bottom/top rails and
@@ -1279,7 +1334,7 @@ def build_full_car_figure(
     #  Spans the SAME envelope the shell did (nose tip -> tail, same width and
     #  deck heights), so slot fitting, part boxes and `define_car` scaling all
     #  keep working unchanged.
-    _body_dz = ride_drop
+    _body_dz[0] = ride_drop
     if show_bodywork:
         ch_it = _iface(ledger, "chassis")
         tub_w = _clamp(min(inner_y_f, inner_y_r) * 1.1, 140, 320)
@@ -1397,7 +1452,13 @@ def build_full_car_figure(
         fhm = _swept_tube(front_hoop, radius=tire_r * 0.05, n=8)
         mesh(fhm[0], fhm[1], fhm[2], fhm[3], COLORS["frame"], "Roll hoop",
              "chassis", 0.95, "Front hoop")
+    vars(s).update({k: v for k, v in locals().items() if k in ('tub_w',)})
 
+
+def _fc_aero(s):
+    """build_full_car_figure, continued: 3) aerodynamics: multi-element wings + endplates."""
+    ledger, mesh, seg, show_aero, show_bodywork, tf, tire_r, tr, x_front, x_rear, z_hi = s.ledger, s.mesh, s.seg, s.show_aero, s.show_bodywork, s.tf, s.tire_r, s.tr, s.x_front, s.x_rear, s.z_hi
+    tub_w = vars(s).get('tub_w')              # drawn only when that section ran
     # ---- 3) aerodynamics: multi-element wings + endplates --------------- #
     #  FSAE-style: a wide multi-element FRONT wing low and ahead of the front
     #  axle on endplates, and a tall multi-element REAR wing on twin endplates
@@ -1469,6 +1530,10 @@ def build_full_car_figure(
                 [rw_x + rw_chord * 1.2, sgn * rw_span * 0.12, z_hi * 0.7],
                 COLORS["wing_edge"], 5, None, "rw_mount", "aerodynamics")
 
+
+def _fc_cooling(s):
+    """build_full_car_figure, continued: 4) cooling: sidepods."""
+    inner_y_f, inner_y_r, ledger, mesh, show_cooling, tire_r, wb = s.inner_y_f, s.inner_y_r, s.ledger, s.mesh, s.show_cooling, s.tire_r, s.wb
     # ---- 4) cooling: sidepods ------------------------------------------ #
     if show_cooling:
         cool_it = _iface(ledger, "cooling")
@@ -1492,6 +1557,10 @@ def build_full_car_figure(
                                   8, pod_w * 0.8, pod_h * 0.8)
             mesh(rv, ri, rj, rk, COLORS["radiator"], "Radiator core", "cooling", 0.85)
 
+
+def _fc_powertrain(s):
+    """build_full_car_figure, continued: 5) powertrain: EV traction motor + inverter + driveshafts."""
+    inner_y_r, ledger, mesh, seg, show_powertrain, tire_r, tr, wb, x_rear = s.inner_y_r, s.ledger, s.mesh, s.seg, s.show_powertrain, s.tire_r, s.tr, s.wb, s.x_rear
     # ---- 5) powertrain: EV traction motor + inverter + driveshafts ------ #
     #  This is an FSAE EV, so the rear package is a compact traction motor with
     #  its inverter on top, not an IC engine + airbox. Sizing still tracks the
@@ -1528,6 +1597,10 @@ def build_full_car_figure(
                 [x_rear, sgn * tr / 2 * 0.78, tire_r],
                 "#8d99a6", 5, None, "drive", "powertrain")
 
+
+def _fc_electrics(s):
+    """build_full_car_figure, continued: 6) electrics: accumulator."""
+    inner_y_r, ledger, mesh, show_electrics, tire_r, wb, x_rear = s.inner_y_r, s.ledger, s.mesh, s.show_electrics, s.tire_r, s.wb, s.x_rear
     # ---- 6) electrics: accumulator ------------------------------------- #
     if show_electrics:
         el_it = _iface(ledger, "electrics")
@@ -1550,6 +1623,10 @@ def build_full_car_figure(
         hv = "Accumulator / battery " + sized + (f" · {pwr:.0f} W" if pwr else "")
         mesh(v, i, j, k, COLORS["battery"], "Accumulator", "electrics", 0.85, hv)
 
+
+def _fc_logger(s):
+    """build_full_car_figure, continued: 7) data-acquisition: logger pod."""
+    _body_dz, ledger, mesh, tf, tire_r, wb, x_front = s._body_dz, s.ledger, s.mesh, s.tf, s.tire_r, s.wb, s.x_front
     # ---- 7) data-acquisition: logger pod ------------------------------- #
     daq_it = _iface(ledger, "data-acquisition")
     _daq_mass = _g(daq_it, "mass_kg") if daq_it is not None else None
@@ -1557,11 +1634,16 @@ def build_full_car_figure(
     _daq_hv = (f"Data-acquisition logger · {_daq_mass:.1f} kg" if _daq_mass
                else "Data-acquisition logger (placeholder — declare mass in INTEGRATION)")
     mesh(v, i, j, k, COLORS["logger"], "Data logger", "data-acquisition", 0.85, _daq_hv)
-    _body_dz = 0.0                 # custom parts are placed in real mm off the ground
+    _body_dz[0] = 0.0              # custom parts are placed in real mm off the ground
 
+
+def _fc_cg(s):
+    """build_full_car_figure, continued: 8) CG marker from mass roll-up."""
+    custom_parts, fig, ledger, show_cg, vp, x_front, x_rear = s.custom_parts, s.fig, s.ledger, s.show_cg, s.vp, s.x_front, s.x_rear
+    _hl_set = vars(s).get('_hl_set')              # drawn only when that section ran
     # ---- 8) CG marker from mass roll-up -------------------------------- #
-    cg_h = float(getattr(vp, "cg_height", 0.0) or 0.0)
-    wdist = float(getattr(vp, "weight_dist_front", 0.5) or 0.5)
+    cg_h = _num(vp, "cg_height", 0.0)
+    wdist = _num(vp, "weight_dist_front", 0.5)
     cg_x = x_rear + wdist * (x_front - x_rear)
     cg_y = 0.0
     cg_label = "CG (params)"
@@ -1582,27 +1664,27 @@ def build_full_car_figure(
     _cp_masses = []
     for _cpm in (custom_parts or []):
         try:
-            _m = float(_cpm.get("mass_kg", 0.0) or 0.0)
+            _m = _numd(_cpm, "mass_kg", 0.0)
         except Exception:
             _m = 0.0
         if _m > 0:
-            _cp_masses.append((_m, float(_cpm.get("x_mm", 0) or 0),
-                               float(_cpm.get("y_mm", 0) or 0),
-                               float(_cpm.get("z_mm", 0) or 0)))
+            _cp_masses.append((_m, _numd(_cpm, "x_mm", 0),
+                               _numd(_cpm, "y_mm", 0),
+                               _numd(_cpm, "z_mm", 0)))
     if _cp_masses and cg_h > 0:
         _base_kg = 0.0
         if ledger is not None:
             try:
-                _base_kg = float(ledger.mass_rollup().get("total_kg", 0.0) or 0.0)
+                _base_kg = float(ledger.mass_rollup()["total_kg"] or 0.0)
             except Exception:
                 _base_kg = 0.0
         if _base_kg <= 0:
-            _base_kg = float(getattr(vp, "mass", 0.0) or 0.0)
+            _base_kg = _num(vp, "mass", 0.0)
         if _base_kg <= 0:
             _base_kg = 220.0  # nominal FSAE car mass so the blend is sensible
         _tot = _base_kg
         _sx = cg_x * _base_kg
-        _sy = cg_y * _base_kg
+        _sy = 0.0                         # the base CG sits on the centreline (cg_y is 0 here)
         _sz = cg_h * _base_kg
         for _m, _px, _py, _pz in _cp_masses:
             _tot += _m
@@ -1625,6 +1707,10 @@ def build_full_car_figure(
             opacity=_cg_op,
             name="Centre of gravity", hoverinfo="text"))
 
+
+def _fc_floor(s):
+    """build_full_car_figure, continued: ground plane."""
+    fig, show_floor, tf, tire_r, tr, x_front, x_rear = s.fig, s.show_floor, s.tf, s.tire_r, s.tr, s.x_front, s.x_rear
     # ---- ground plane -------------------------------------------------- #
     if show_floor:
         pad = max(tf, tr) * 0.8
@@ -1636,6 +1722,10 @@ def build_full_car_figure(
             opacity=0.22, colorscale=[[0, COLORS["floor"]], [1, COLORS["floor"]]],
             hoverinfo="skip", name="Ground", showlegend=False))
 
+
+def _fc_custom_parts(s):
+    """build_full_car_figure, continued: 9) custom parts: user-dropped bodies in real millimetres."""
+    _def_target, custom_parts, mesh, seg = s._def_target, s.custom_parts, s.mesh, s.seg
     # ---- 9) custom parts: user-dropped bodies in real millimetres ------- #
     # A sub-team can drop any part onto the car straight off a spec sheet: real
     # L×W×H in mm at a real centre, no scale factors. Each becomes a first-class
@@ -1651,12 +1741,12 @@ def build_full_car_figure(
             sub = cp.get("subsys") or None
             if sub == "(custom / unassigned)":
                 sub = None
-            l = float(cp.get("l_mm", 0) or 0)
-            w = float(cp.get("w_mm", 0) or 0)
-            h = float(cp.get("h_mm", 0) or 0)
-            cx = float(cp.get("x_mm", 0) or 0)
-            cy = float(cp.get("y_mm", 0) or 0)
-            cz = float(cp.get("z_mm", 0) or 0)
+            l = _numd(cp, "l_mm", 0)
+            w = _numd(cp, "w_mm", 0)
+            h = _numd(cp, "h_mm", 0)
+            cx = _numd(cp, "x_mm", 0)
+            cy = _numd(cp, "y_mm", 0)
+            cz = _numd(cp, "z_mm", 0)
             _has_mesh_early = bool(cp.get("mesh") and cp["mesh"].get("verts"))
             if not _has_mesh_early and (
                     l <= 0 or w <= 0 or (h <= 0 and cp.get("shape", "box") == "box")):
@@ -1688,7 +1778,7 @@ def build_full_car_figure(
             shape = cp.get("shape", "box")
             # A `define_car` chassis is scaled + centred to fit the real car
             # (computed above), so it reads as one whole car with the wheels.
-            _msc = float(cp.get("mesh_scale", 1.0) or 1.0)
+            _msc = _numd(cp, "mesh_scale", 1.0)
             _mcx, _mcy, _mcz = cx, cy, cz
             if cp.get("define_car") and has_mesh and _def_target is not None:
                 _msc = float(_def_target["scale"])
@@ -1696,18 +1786,18 @@ def build_full_car_figure(
             # User nudge offsets apply ON TOP of any auto placement — including
             # the define_car auto-centre above, which otherwise ignores x/y/z —
             # so an imported chassis can still be slid into alignment by hand.
-            _mcx += float(cp.get("dx_mm", 0.0) or 0.0)
-            _mcy += float(cp.get("dy_mm", 0.0) or 0.0)
-            _mcz += float(cp.get("dz_mm", 0.0) or 0.0)
+            _mcx += _numd(cp, "dx_mm", 0.0)
+            _mcy += _numd(cp, "dy_mm", 0.0)
+            _mcz += _numd(cp, "dz_mm", 0.0)
             if has_mesh:
                 # Draw the ACTUAL imported geometry, oriented + placed on the car.
                 faces = np.asarray(mesh_payload["faces"], int)
                 V = _orient_part_mesh(
                     mesh_payload["verts"],
                     axis_map=cp.get("axis_map", "z_up"),
-                    yaw_deg=float(cp.get("yaw_deg", 0.0) or 0.0),
-                    roll_deg=float(cp.get("roll_deg", 0.0) or 0.0),
-                    pitch_deg=float(cp.get("pitch_deg", 0.0) or 0.0),
+                    yaw_deg=_numd(cp, "yaw_deg", 0.0),
+                    roll_deg=_numd(cp, "roll_deg", 0.0),
+                    pitch_deg=_numd(cp, "pitch_deg", 0.0),
                     scale=_msc,
                     centre=(_mcx, _mcy, _mcz))
                 mesh(V, faces[:, 0], faces[:, 1], faces[:, 2],
@@ -1731,6 +1821,10 @@ def build_full_car_figure(
             # A malformed custom part must never take down the whole car view.
             continue
 
+
+def _fc_camera(s):
+    """build_full_car_figure, continued: camera: zoom to the focused subsystem, if one is clicked."""
+    _part_boxes, _part_pieces, fig, focus_part, focus_subsystem, height, part_pts, subsys_pts = s._part_boxes, s._part_pieces, s.fig, s.focus_part, s.focus_subsystem, s.height, s.part_pts, s.subsys_pts
     # ---- camera: zoom to the focused subsystem, if one is clicked ------- #
     # When focus_subsystem is set we re-aim the camera at that part's bounding
     # box centre and pull the eye in proportionally, so clicking a part reads as
@@ -1787,7 +1881,7 @@ def build_full_car_figure(
     # Global scene extents (mm) over every accrued vertex — feeds the units-
     # aware axis tick generator so ticks land on round mm OR round inches.
     # The suspension pickups always accrue, so there is at least one vertex.
-    _all = np.vstack([_vec(_p).reshape(-1, 3) for _p in subsys_pts.values()])
+    _all = np.vstack([_vec(_p).reshape(_ROWS3) for _p in subsys_pts.values()])
     _ext_lo, _ext_hi = _all.min(axis=0), _all.max(axis=0)
 
     fig.update_layout(
@@ -1816,7 +1910,7 @@ def build_full_car_figure(
     # Expose each subsystem's centroid (mean of all its accrued vertices) so a
     # caller can float a label on it — e.g. the role picker tags every lit
     # subteam by name at the centre of the parts it owns.
-    _centroids = {_s: _vec(_pts).reshape(-1, 3).mean(axis=0).tolist()
+    _centroids = {_s: _vec(_pts).reshape(_ROWS3).mean(axis=0).tolist()
                   for _s, _pts in subsys_pts.items()}
     # Attach as a plain Python attribute, bypassing plotly's Figure.__setattr__
     # guard via object.__setattr__. This avoids stuffing a nested dict into
@@ -1871,7 +1965,6 @@ def build_full_car_figure(
 
     object.__setattr__(fig, "_part_instance_boxes", {
         nm: _cluster_instances(pieces) for nm, pieces in _part_pieces.items()})
-    return fig
 
 
 def subsys_centroids(fig) -> dict:
@@ -2122,12 +2215,12 @@ def custom_part_fit(vp, part: dict) -> dict:
     # A representative usable height: ground up to roughly the main-hoop top.
     z_ceiling = 1150.0
 
-    l = float(part.get("l_mm", 0) or 0)
-    w = float(part.get("w_mm", 0) or 0)
-    h = float(part.get("h_mm", 0) or 0)
-    cx = float(part.get("x_mm", 0) or 0)
-    cy = float(part.get("y_mm", 0) or 0)
-    cz = float(part.get("z_mm", 0) or 0)
+    l = _numd(part, "l_mm", 0)
+    w = _numd(part, "w_mm", 0)
+    h = _numd(part, "h_mm", 0)
+    cx = _numd(part, "x_mm", 0)
+    cy = _numd(part, "y_mm", 0)
+    cz = _numd(part, "z_mm", 0)
 
     # Car spans x in [-wb/2, +wb/2] (mid-wheelbase origin), y in [-track/2, track/2].
     x_lo, x_hi = cx - l / 2, cx + l / 2
@@ -2191,7 +2284,7 @@ def reconcile_part(guess: dict, real: dict, tol_mm: float = 8.0,
             "new"        nothing was packaged here yet (no guess to compare)
     """
     def trip(d):
-        return [abs(float(d.get(k, 0) or 0)) for k in ("l_mm", "w_mm", "h_mm")]
+        return [abs(float(d.get(k) or 0)) for k in ("l_mm", "w_mm", "h_mm")]
 
     g, r = trip(guess or {}), trip(real or {})
     if max(g) <= 0:
@@ -2323,9 +2416,9 @@ def suggest_part_geometry(vp, subsys: str, ledger=None) -> dict:
     if dec[2]:
         out_h = float(dec[2]); from_declared.append("H")
 
-    return dict(l_mm=round(out_l, 0), w_mm=round(out_w, 0), h_mm=round(out_h, 0),
-                x_mm=round(float(x), 0), y_mm=round(float(y), 0),
-                z_mm=round(float(z), 0), shape=shape, basis=basis,
+    return dict(l_mm=float(round(out_l)), w_mm=float(round(out_w)), h_mm=float(round(out_h)),
+                x_mm=float(round(float(x))), y_mm=float(round(float(y))),
+                z_mm=float(round(float(z))), shape=shape, basis=basis,
                 from_declared=from_declared)
 
 
@@ -2408,8 +2501,8 @@ def suggest_part_geometry_for(vp, part_key: str, ledger=None) -> dict:
     x_front, x_rear = wb / 2.0, -wb / 2.0
 
     def out(l, w, h, x, y, z, shape="box", basis=None):
-        return dict(l_mm=round(l, 0), w_mm=round(w, 0), h_mm=round(h, 0),
-                    x_mm=round(x, 0), y_mm=round(y, 0), z_mm=round(z, 0),
+        return dict(l_mm=float(round(l)), w_mm=float(round(w)), h_mm=float(round(h)),
+                    x_mm=float(round(x)), y_mm=float(round(y)), z_mm=float(round(z)),
                     shape=shape, basis=basis or base["basis"],
                     from_declared=base.get("from_declared", []))
 

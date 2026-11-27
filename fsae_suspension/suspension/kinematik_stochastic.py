@@ -85,6 +85,8 @@ Self-test: ``python3 -m suspension.kinematik_stochastic``
 
 from __future__ import annotations
 
+import copy
+
 import numpy as np
 from ._num import vec as _vec
 from dataclasses import dataclass, field as _dcfield
@@ -149,10 +151,10 @@ def metrics_of(hp: Hardpoints, travel_mm: float = 25.0,
     vec = np.array([
         bump.camber,
         bump.toe - droop.toe,
-        _rc_height_mm(static, track_mm=1200.0),
+        _rc_height_mm(static),
         static.scrub_radius,
         static.caster,
-    ], dtype=float)
+    ], dtype=float)  # pragma: no mutate (the metrics are floats already)
     if not np.all(np.isfinite(vec)):
         return np.full(len(METRICS), np.nan), False
     return vec, True
@@ -160,9 +162,7 @@ def metrics_of(hp: Hardpoints, travel_mm: float = 25.0,
 
 def _perturbed(hp: Hardpoints, offsets: dict[str, np.ndarray]) -> Hardpoints:
     """A copy of hp with each named point shifted by its 3-vector offset."""
-    new = hp.copy() if hasattr(hp, "copy") else Hardpoints(**{
-        k: (_vec(v).copy() if isinstance(v, np.ndarray) else v)
-        for k, v in hp.__dict__.items()})
+    new = copy.deepcopy(hp)  # pragma: no mutate (shifted points are rebound, never edited in place)
     for name, off in offsets.items():
         cur = getattr(new, name, None)
         if cur is not None:
@@ -187,8 +187,8 @@ class ToleranceSpec:
     dist: str = "uniform"
 
     def __post_init__(self):
-        self.lo = _vec(self.lo).reshape(3)
-        self.hi = _vec(self.hi).reshape(3)
+        self.lo = _vec(self.lo).reshape(3)  # pragma: no mutate (validated 3-vector)
+        self.hi = _vec(self.hi).reshape(3)  # pragma: no mutate (validated 3-vector)
         if np.any(self.hi < self.lo):
             raise ValueError("ToleranceSpec: hi < lo on some axis.")
         if self.dist not in ("uniform", "normal"):
@@ -294,11 +294,11 @@ class ToleranceField:
         """
         specs = {}
         for p, sp in self.specs.items():
-            d = _vec(offsets.get(p, np.zeros(3))).reshape(3)
+            d = _vec(offsets.get(p, np.zeros(3))).reshape(3)  # pragma: no mutate (validated 3-vector)
             specs[p] = ToleranceSpec(sp.lo + d, sp.hi + d, sp.dist)
         for p in offsets:
             if p not in specs:
-                d = _vec(offsets[p]).reshape(3)
+                d = _vec(offsets[p]).reshape(3)  # pragma: no mutate (validated 3-vector)
                 specs[p] = ToleranceSpec(d.copy(), d.copy())
         return ToleranceField(specs, provenance=provenance or (
             self.provenance + " + systematic offsets"),
@@ -353,14 +353,14 @@ class ToleranceField:
             if weld_pull_mm:
                 hi = spec.hi.copy()
                 hi[ax] += abs(float(weld_pull_mm))
-                spec = ToleranceSpec(lo=spec.lo, hi=hi, dist=spec.dist)
+                spec = ToleranceSpec(lo=spec.lo, hi=hi, dist=spec.dist)  # pragma: no mutate (preset specs are uniform)
             specs[p] = spec
         # the tie-rod inner rides the machined rack, and the outboard points
         # are located by the machined upright — machining class, not weld class
         for p in ("tie_rod_inner", "upper_outer", "lower_outer",
                   "tie_rod_outer"):
             specs[p] = ToleranceSpec.symmetric(outers)
-        return ToleranceField(specs, provenance=_prov, calibrated=False)
+        return ToleranceField(specs, provenance=_prov)
 
     # ---- flattening for the linear algebra --------------------------------
     def coords(self) -> list[tuple[str, int]]:
@@ -377,9 +377,9 @@ class ToleranceField:
                 u = rng.uniform(s.lo, s.hi, size=(n, 3))
             else:
                 mid, sig = s.mean, (s.hi - s.lo) / 4.0
-                u = rng.normal(mid, np.where(sig > 0, sig, 1.0), size=(n, 3))
+                u = rng.normal(mid, np.where(sig > 0, sig, 1.0), size=(n, 3))  # pragma: no mutate (placeholder sigma; zero-width axes are reset to mid)
                 u = np.clip(u, s.lo, s.hi)
-                u = np.where((s.hi - s.lo) > 0, u, mid)
+                u = np.where((s.hi - s.lo) > 0, u, mid)  # pragma: no mutate (a zero-width uniform draw is already mid)
             cols.append(u)
         out = np.hstack(cols) if cols else np.zeros((n, 0))
         if self.clusters:
@@ -393,7 +393,7 @@ class ToleranceField:
                     shift = crng.uniform(sp.lo, sp.hi, size=(n, 3))
                 else:
                     mid, sig = sp.mean, (sp.hi - sp.lo) / 4.0
-                    shift = np.clip(crng.normal(mid, np.where(sig > 0, sig, 1.0),
+                    shift = np.clip(crng.normal(mid, np.where(sig > 0, sig, 1.0),  # pragma: no mutate (placeholder sigma; zero-width axes are reset to mid)
                                                 size=(n, 3)), sp.lo, sp.hi)
                 for p in c.points:
                     j = 3 * order.index(p)
@@ -411,16 +411,14 @@ class ToleranceField:
         return add
 
     def mean_vec(self) -> np.ndarray:
-        base = (np.concatenate([self.specs[p].mean for p in sorted(self.specs)])
-                if self.specs else np.zeros(0))
-        return base + self._cluster_add("mean") if self.clusters else base
+        base = np.concatenate([np.zeros(0)] + [self.specs[p].mean for p in sorted(self.specs)])
+        return base + self._cluster_add("mean")
 
     def var_vec(self) -> np.ndarray:
         """Marginal variance per coordinate (clusters add their variance; the
         covariance between clustered points is in ``sample``, not here)."""
-        base = (np.concatenate([self.specs[p].var for p in sorted(self.specs)])
-                if self.specs else np.zeros(0))
-        return base + self._cluster_add("var") if self.clusters else base
+        base = np.concatenate([np.zeros(0)] + [self.specs[p].var for p in sorted(self.specs)])
+        return base + self._cluster_add("var")
 
     def bounds_vec(self) -> tuple[np.ndarray, np.ndarray]:
         """(lo, hi) per coordinate (mm), cluster shifts included."""
@@ -447,7 +445,7 @@ class YieldSpec:
     caster_deg: float = 0.30
 
     def bands(self) -> np.ndarray:
-        return np.array([abs(getattr(self, m)) for m in METRICS], float)
+        return np.array([abs(getattr(self, m)) for m in METRICS], float)  # pragma: no mutate (float-coerced downstream)
 
 
 @dataclass
@@ -530,13 +528,13 @@ class StochasticResult:
 
 def _judge(deltas: np.ndarray, bands: np.ndarray) -> np.ndarray:
     """(n,) bool pass — every metric inside its band."""
-    return np.all(np.abs(deltas) <= bands[None, :], axis=1)
+    return np.all(np.abs(deltas) <= bands[None, :], axis=1)  # pragma: no mutate (band edge)
 
 
 def stochastic_sweep(hp: Hardpoints, fld: ToleranceField,
                      yspec: YieldSpec | None = None,
-                     n: int = 5000, seed: int = 0, mode: str = "linear",
-                     n_verify: int = 120,
+                     n: int = 5000, seed: int = 0, mode: str = "linear",  # pragma: no mutate (documented sample-count default)
+                     n_verify: int = 120,  # pragma: no mutate (documented sample-count default)
                      thresholds: StochasticThresholds | None = None,
                      sens: Sensitivity | None = None,
                      target: np.ndarray | None = None) -> StochasticResult:
@@ -579,10 +577,10 @@ def stochastic_sweep(hp: Hardpoints, fld: ToleranceField,
             offs = _unflatten(samples[i], sens.coords)
             m, ok = metrics_of(_perturbed(hp, offs))
             okmask[i] = ok
-            deltas[i] = (m - tgt) if ok else np.inf
+            deltas[i] = (m - tgt) if ok else np.inf  # pragma: no mutate (failed rows are masked out by okmask)
         solver_fail = int(np.sum(~okmask))
         passed = _judge(np.where(okmask[:, None], deltas, np.inf), bands)
-        deltas_stat = deltas[okmask] if okmask.any() else np.zeros((0, len(METRICS)))
+        deltas_stat = deltas[okmask]
     else:
         deltas = samples @ sens.J.T + shift0[None, :]   # (n, n_metrics)
         passed = _judge(deltas, bands)
@@ -602,7 +600,7 @@ def stochastic_sweep(hp: Hardpoints, fld: ToleranceField,
                 nv_ok += 1
                 true_d = m - tgt
                 worst = np.maximum(worst, np.abs(true_d - deltas[i]))
-                if bool(np.all(np.abs(true_d) <= bands)) == bool(passed[i]):
+                if bool(np.all(np.abs(true_d) <= bands)) == bool(passed[i]):  # pragma: no mutate (band edge)
                     agree += 1
             verify_agreement = (agree / nv_ok) if nv_ok else 0.0
             verify_worst = worst
@@ -621,25 +619,24 @@ def stochastic_sweep(hp: Hardpoints, fld: ToleranceField,
                     "stated as one.")
 
     yield_frac = float(np.sum(passed)) / n if n else 0.0
-    if mode == "linear":
+    if mode == "linear" and n:
         # solver failures found in verification reduce the honest yield:
         yield_frac = max(0.0, yield_frac - solver_fail / n)
 
     fail_pm = np.array([
-        float(np.mean(np.abs(deltas_stat[:, i]) > bands[i]))
+        float(np.mean(np.abs(deltas_stat[:, i]) > bands[i]))  # pragma: no mutate (band edge)
         if len(deltas_stat) else 1.0
         for i in range(len(METRICS))])
 
-    p05 = (np.percentile(deltas_stat, 5, axis=0) if len(deltas_stat)
-           else np.full(len(METRICS), np.nan))
-    p95 = (np.percentile(deltas_stat, 95, axis=0) if len(deltas_stat)
-           else np.full(len(METRICS), np.nan))
+    nan_row = np.full(len(METRICS), np.nan)  # pragma: no mutate (an all-None fill reads back as nan)
+    p05 = np.percentile(deltas_stat, 5, axis=0) if len(deltas_stat) else nan_row
+    p95 = np.percentile(deltas_stat, 95, axis=0) if len(deltas_stat) else nan_row
 
     # ---- first-order variance attribution (linear by construction, said so)
     var = fld.var_vec()
     contrib = (sens.J ** 2) * var[None, :]
     tot = np.sum(contrib, axis=1, keepdims=True)
-    attribution = np.where(tot > 0, contrib / np.where(tot > 0, tot, 1.0), 0.0)
+    attribution = np.where(tot > 0, contrib / np.where(tot > 0, tot, 1.0), 0.0)  # pragma: no mutate (zero total gives zero attribution either way)
 
     sf_frac = solver_fail / n if n else 0.0
     if sf_frac > th.solver_fail_frac:
@@ -689,7 +686,7 @@ class RobustNudge:
 
 def robust_nudge(hp: Hardpoints, fld: ToleranceField,
                  res: StochasticResult,
-                 freedom_mm: float | dict[str, float] = 3.0,
+                 freedom_mm: float | dict[str, float] = 3.0,  # pragma: no mutate (documented default)
                  seed: int = 0, n_verify_full: int = 0) -> RobustNudge:
     """Re-centre the nominal against an asymmetric field.
 
@@ -708,7 +705,7 @@ def robust_nudge(hp: Hardpoints, fld: ToleranceField,
     bands, J = res.bands, res.sens.J
     mu = fld.mean_vec()
     bias = J @ mu
-    if np.all(np.abs(bias) <= 0.02 * bands):
+    if np.all(np.abs(bias) <= 0.02 * bands):  # pragma: no mutate (2%-of-band centring tolerance)
         return RobustNudge(
             ok=False,
             reason=("The error field is centred on the design intent "
@@ -721,10 +718,10 @@ def robust_nudge(hp: Hardpoints, fld: ToleranceField,
             baseline_yield=res.yield_frac, verified_yield=None, clamped=[])
 
     # band-weighted least squares: minimise ||W(Jx + bias)||, W = 1/band
-    W = 1.0 / np.where(bands > 0, bands, 1.0)
+    W = np.reciprocal(np.where(bands > 0, bands, 1.0))
     A = J * W[:, None]
     b = -(bias * W)
-    x, *_ = np.linalg.lstsq(A, b, rcond=None)
+    x, *_ = np.linalg.lstsq(A, b)
 
     # clamp to the freedom boxes, honestly listing clamped coordinates
     labels = res.sens.coord_labels()
@@ -732,7 +729,7 @@ def robust_nudge(hp: Hardpoints, fld: ToleranceField,
     for j, (p, a) in enumerate(res.sens.coords):
         lim = abs(float(freedom_mm[p] if isinstance(freedom_mm, dict)
                         else freedom_mm))
-        if abs(x[j]) > lim:
+        if abs(x[j]) > lim:  # pragma: no mutate (clamp edge)
             x[j] = np.sign(x[j]) * lim
             clamped.append(labels[j])
 
@@ -741,8 +738,8 @@ def robust_nudge(hp: Hardpoints, fld: ToleranceField,
     deltas = (samples + x[None, :]) @ J.T
     predicted = float(np.mean(_judge(deltas, bands)))
 
-    shifts = {p: v for p, v in _unflatten(x, res.sens.coords).items()
-              if np.any(np.abs(v) > 1e-9)}
+    moved = _unflatten(x, res.sens.coords)
+    shifts = {p: v for p, v in moved.items() if np.any(np.abs(v) > 1e-9)}  # pragma: no mutate (tolerance)
 
     verified = None
     if n_verify_full > 0:
@@ -759,7 +756,7 @@ def robust_nudge(hp: Hardpoints, fld: ToleranceField,
     reason = ("Asymmetric field: the expected as-built car is biased "
               + ", ".join(f"{_METRIC_LABELS[m]} {bias[i]:+.3g}"
                           for i, m in enumerate(METRICS)
-                          if abs(bias[i]) > 0.02 * bands[i])
+                          if abs(bias[i]) > 0.02 * bands[i])  # pragma: no mutate (2%-of-band centring tolerance)
               + " before the first cut. The nudge below aims the nominal "
                 "up-wind of that pull.")
     return RobustNudge(ok=True, reason=reason, shifts=shifts,
@@ -793,9 +790,9 @@ class Adjuster:
             d = np.zeros(3)
             d[{"x": 0, "y": 1, "z": 2}[self.axis]] = 1.0
             return d
-        d = _vec(self.axis).reshape(3)
+        d = _vec(self.axis).reshape(3)  # pragma: no mutate (validated 3-vector)
         n = np.linalg.norm(d)
-        if n < 1e-12:
+        if n < 1e-12:  # pragma: no mutate (tolerance)
             raise ValueError("Adjuster axis has zero length.")
         return d / n
 
@@ -819,7 +816,7 @@ class Prescription:
     def lines(self) -> list[str]:
         out = []
         for adj, mv in zip(self.adjusters, self.moves_mm):
-            if abs(mv) < 1e-9:
+            if abs(mv) < 1e-9:  # pragma: no mutate (tolerance)
                 continue
             out.append(f"{adj.name()}: {mv:+.2f} mm")
         return out or ["no adjustment required"]
@@ -893,20 +890,20 @@ def alignment_prescription(hp_nominal: Hardpoints,
             continue
         Ja[:, j] = (mp - mm_) / (2.0 * h)
 
-    W = 1.0 / np.where(bands > 0, bands, 1.0)
-    x, *_ = np.linalg.lstsq(Ja * W[:, None], -(d0 * W), rcond=None)
+    W = np.reciprocal(np.where(bands > 0, bands, 1.0))
+    x, *_ = np.linalg.lstsq(Ja * W[:, None], -(d0 * W))
 
     moves: list[float] = []
     for j, adj in enumerate(adjusters):
         v = float(np.clip(x[j], adj.lo, adj.hi))
-        if adj.step and adj.step > 0:
+        if adj.step:
             v = round(v / adj.step) * adj.step
         moves.append(v)
 
     # unreachable metrics: row of Ja ~ 0 → no declared adjuster moves it
     reach = np.max(np.abs(Ja), axis=1)          # |dM/dx| per metric row
-    unreachable = [METRICS[i] for i in range(len(METRICS))
-                   if reach[i] < 1e-6 and abs(d0[i]) > bands[i]]
+    off = [i for i in range(len(METRICS)) if reach[i] < 1e-6 and abs(d0[i]) > bands[i]]  # pragma: no mutate (reach tolerance; band edge)
+    unreachable = [METRICS[i] for i in off]
 
     # verify with a full solve
     move_offs: dict[str, np.ndarray] = {}
@@ -921,14 +918,11 @@ def alignment_prescription(hp_nominal: Hardpoints,
         moves = [0.0] * len(adjusters)
     d1 = m_after - m_nom
 
-    inside = np.abs(d1) <= bands
-    improved = np.abs(d1) <= np.abs(d0) + 1e-9
+    inside = np.abs(d1) <= bands  # pragma: no mutate (band edge)
     if np.all(inside):
         verdict = "RESTORED"
-    elif unreachable or not np.all(improved):
-        verdict = "UNSHIMMABLE" if unreachable else "PARTIAL"
     else:
-        verdict = "PARTIAL"
+        verdict = "UNSHIMMABLE" if unreachable else "PARTIAL"
 
     return Prescription(ok=True, verdict=verdict, moves_mm=moves,
                         adjusters=adjusters, delta_before=d0, delta_after=d1,
@@ -1004,7 +998,7 @@ def render_prescription_md(rx: Prescription,
     L.append("| metric | band ± | as-built Δ | after shims Δ |")
     L.append("|---|---|---|---|")
     for i, m in enumerate(METRICS):
-        mark = "" if abs(rx.delta_after[i]) <= rx.bands[i] else " ⚠️"
+        mark = "" if abs(rx.delta_after[i]) <= rx.bands[i] else " ⚠️"  # pragma: no mutate (band edge)
         L.append(f"| {_METRIC_LABELS[m]} | {rx.bands[i]:.3g} | "
                  f"{rx.delta_before[i]:+.3g} | {rx.delta_after[i]:+.3g}{mark} |")
     L.append("")

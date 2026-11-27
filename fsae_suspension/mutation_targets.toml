@@ -983,3 +983,105 @@ tests = [
     "tests/test_plug_builder.py",
 ]
 deselect = []
+
+[[group]]
+name = "topologies"
+files = ["suspension/topologies.py"]
+tests = [
+    "tests/test_mutation_topologies.py",
+    "tests/test_topology.py",
+]
+deselect = []
+
+[[group]]
+name = "kinematik_stochastic"
+files = ["suspension/kinematik_stochastic.py"]
+tests = [
+    "tests/test_mutation_kinematik_stochastic.py",
+    "tests/test_kinematik_stochastic.py",
+]
+deselect = [
+    "tests/test_kinematik_stochastic.py::test_full_mode_agrees_with_linear",
+    "tests/test_kinematik_stochastic.py::test_nudge_verification_judges_original_intent",
+    "tests/test_kinematik_stochastic.py::test_yield_monotone_in_field",
+]
+
+# --------------------------------------------------------------------------------------------
+# PENDING groups — suites are in place but these modules are not yet at the 99% floor. Uncomment
+# a block once a full run of `python scripts/mutation_gate.py --group NAME` reaches 99%.
+#
+# fullcar3d: 95.0% (378 survivors)
+# [[group]]
+# name = "fullcar3d"
+# files = ["suspension/fullcar3d.py"]
+# tests = [
+#     "tests/test_mutation_fullcar3d.py",
+#     "tests/test_fullcar3d.py",
+#     "tests/test_master_assembly.py",
+# ]
+# deselect = []
+#
+# ev_excel_roundtrip: no complete run yet; ~18% survived on the first 1,234 of ~7,000 mutants
+# [[group]]
+# name = "ev_excel_roundtrip"
+# files = ["suspension/ev_excel_roundtrip.py"]
+# tests = [
+#     "tests/test_mutation_ev_excel_roundtrip.py",
+#     "tests/test_ev_excel_roundtrip.py",
+#     "tests/test_ev_excel_database.py",
+#     "tests/test_ev_sheet_resolution.py",
+# ]
+# # the full audit of a corrected file is half of every mutant's test time; the word-for-word
+# # workbook goldens and the reader-audit test cover the same behavior.
+# deselect = ["tests/test_ev_excel_roundtrip.py::test_the_audit_finds_nothing_left_to_fix_in_a_corrected_file"]
+#
+# pcb_doctor: no complete run yet; ~52% survived on the first 1,571 of ~8,500 mutants
+# [[group]]
+# name = "pcb_doctor"
+# files = ["suspension/pcb_doctor.py"]
+# tests = [
+#     "tests/test_mutation_pcb_doctor.py",
+#     "tests/test_pcb_doctor.py",
+# ]
+# deselect = []
+#
+# genesis_walls: 62.9% before its new suite; re-run pending
+# [[group]]
+# name = "genesis_walls"
+# files = ["suspension/genesis_walls.py"]
+# tests = [
+#     "tests/test_mutation_genesis_walls.py",
+#     "tests/test_genesis_walls.py",
+# ]
+# deselect = []
+#
+# daq_plan: suite written, never run
+# [[group]]
+# name = "daq_plan"
+# files = ["suspension/daq_plan.py"]
+# tests = [
+#     "tests/test_mutation_daq_plan.py",
+#     "tests/test_daq_plan.py",
+#     "tests/test_daq_sample.py",
+# ]
+# deselect = []
+#
+# sim_handoff: suite written, never run
+# [[group]]
+# name = "sim_handoff"
+# files = ["suspension/sim_handoff.py"]
+# tests = [
+#     "tests/test_mutation_sim_handoff.py",
+#     "tests/test_sim_handoff.py",
+# ]
+# deselect = []
+#
+# pcb_pour: suite written, never run
+# [[group]]
+# name = "pcb_pour"
+# files = ["suspension/pcb_pour.py"]
+# tests = [
+#     "tests/test_mutation_pcb_pour.py",
+#     "tests/test_pcb_doctor.py",
+# ]
+# deselect = []

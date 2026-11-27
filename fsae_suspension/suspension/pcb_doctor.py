@@ -96,6 +96,7 @@ Honesty rules the rest of KinematiK keeps, kept here:
 from __future__ import annotations
 
 import math
+from types import SimpleNamespace
 import re
 from dataclasses import dataclass, field
 
@@ -611,6 +612,19 @@ def parse_kicad_pcb(text: str) -> PcbBoard:
     # no nets, which looks like an empty file rather than a bug. So a net
     # reference is resolved either way, and names met for the first time are
     # interned into the same id space the rest of the Doctor already uses.
+    # The sections below share this function's state through `s` (each is its own
+    # function so it can be read, and mutation-tested, on its own).
+    s = SimpleNamespace(**locals())
+    _parse_kicad_pcb_2(s)
+    _parse_kicad_pcb_3(s)
+    _parse_kicad_pcb_4(s)
+    _parse_kicad_pcb_5(s)
+    return board
+
+
+def _parse_kicad_pcb_2(s):
+    """parse_kicad_pcb, part 2 of 5."""
+    board, = s.board,
     _by_name = {}
 
     def _net_ref(nt) -> int:
@@ -638,6 +652,12 @@ def parse_kicad_pcb(text: str) -> PcbBoard:
     #  else the board default in (setup (via_drill …)). Assuming a fixed 0.3 mm
     #  instead misread every such via on a real FSAE precharge board (0.4 mm in
     #  KiCad), found by the electrical benchmark's held-out boards.
+    s._net_ref, = _net_ref,
+
+
+def _parse_kicad_pcb_3(s):
+    """parse_kicad_pcb, part 3 of 5."""
+    root, = s.root,
     _drill_default = 0.3
     _drill_by_net: dict = {}
     _clear_by_name: dict = {}
@@ -663,7 +683,13 @@ def parse_kicad_pcb(text: str) -> PcbBoard:
                 for an in _children(node, "add_net"):
                     if _atoms(an):
                         _clear_by_name[str(_atoms(an)[0].value).strip('"')] = _floats(cl)[0]
+    s._clear_by_name, s._drill_by_net, s._drill_default, s._legacy_fill = _clear_by_name, _drill_by_net, _drill_default, _legacy_fill
 
+
+def _parse_kicad_pcb_4(s):
+    """parse_kicad_pcb, part 4 of 5."""
+    _drill_by_net, _drill_default, _legacy_fill, _net_ref, board, lay, root = s._drill_by_net, s._drill_default, s._legacy_fill, s._net_ref, s.board, s.lay, s.root
+    ats = vars(s).get('ats')              # drawn only when that section ran
     _unreadable_tracks = 0
     _unfilled_zones: list = []          # (net id, first and one-past-last index of its outlines in board.zones)
     _any_fill = False
@@ -794,6 +820,12 @@ def parse_kicad_pcb(text: str) -> PcbBoard:
     #  to keep (an island joined to no pad): it is not copper, and reading its outline as copper joined pads and
     #  lowered resistances that KiCad 9 does not (benchmark addendum 11). If no pour in the file is filled, the
     #  board was saved without filling: the outlines stand in, and the report says so.
+    s._any_fill, s._unfilled_zones, s._unreadable_tracks = _any_fill, _unfilled_zones, _unreadable_tracks
+
+
+def _parse_kicad_pcb_5(s):
+    """parse_kicad_pcb, part 5 of 5."""
+    _any_fill, _clear_by_name, _unfilled_zones, _unreadable_tracks, board = s._any_fill, s._clear_by_name, s._unfilled_zones, s._unreadable_tracks, s.board
     if _unfilled_zones and _any_fill:
         drop = {i for _nid, i0, i1 in _unfilled_zones for i in range(i0, i1)}
         nets_ = sorted({board.nets.get(nid_, str(nid_)) for nid_, _i0, _i1 in _unfilled_zones})
@@ -811,7 +843,6 @@ def parse_kicad_pcb(text: str) -> PcbBoard:
         board.notes.append(
             f"{_unreadable_tracks} track(s) in the file have no usable width, position or net and were left out. "
             "Nets they belong to may read as open; re-save the board from KiCad and upload it again.")
-    return board
 
 
 def _pad_primitives(pd, centre, angle_deg) -> list:
@@ -1275,6 +1306,34 @@ def analyze_net(board: PcbBoard, nid: int, ambient_c: float = 40.0) -> dict:
     #  So containment is used only to CONNECT (it can clear a false open, never
     #  create one), and the blanket exemption stays until spoke geometry is read
     #  too. Both halves fail safe.
+    # The sections below share this function's state through `st` (each is its own
+    # function so it can be read, and mutation-tested, on its own).
+    st = SimpleNamespace(**locals())
+    _analyze_net_2(st)
+    _analyze_net_3(st)
+    _analyze_net_4(st)
+    _analyze_net_5(st)
+    _analyze_net_6(st)
+    _analyze_net_7(st)
+    _analyze_net_8(st)
+    _analyze_net_9(st)
+    _analyze_net_10(st)
+    _analyze_net_11(st)
+    bottleneck, has_zone, has_zone_no_geom, layer_transitions, nodes, open_groups, per_layer, worst_pair, worst_r = st.bottleneck, st.has_zone, st.has_zone_no_geom, st.layer_transitions, st.nodes, st.open_groups, st.per_layer, st.worst_pair, st.worst_r
+    return {
+        "net": board.net_name(nid), "nid": nid,
+        "segments": len(segs), "vias": len(vias), "pads": len(pads),
+        "has_zone": has_zone, "per_layer": per_layer,
+        "bottleneck": bottleneck, "layer_transitions": max(layer_transitions, 0),
+        "open_groups": open_groups if not has_zone_no_geom else [],
+        "worst_r_ohm": worst_r, "worst_pair": worst_pair,
+        "nodal_skipped": len(nodes) > _MAX_NODAL_NODES,
+    }
+
+
+def _analyze_net_2(st):
+    """analyze_net, part 2 of 11."""
+    ambient_c, board, nid, pads = st.ambient_c, st.board, st.nid, st.pads
     has_zone = nid in board.zone_nets
     has_zone_no_geom = has_zone
 
@@ -1301,6 +1360,12 @@ def analyze_net(board: PcbBoard, nid: int, ambient_c: float = 40.0) -> dict:
     #  top of the old one) adds no copper: counted as a parallel path it halved
     #  that stretch (StickHub, J1 to JP1: -43 %). It keeps its connectivity but
     #  carries no current, provided both its ends meet other copper of the net.
+    st._joined, st._pads_net, st.edges, st.has_zone, st.has_zone_no_geom, st.keyed, st.node, st.nodes, st.temp, st.via_hubs = _joined, _pads_net, edges, has_zone, has_zone_no_geom, keyed, node, nodes, temp, via_hubs
+
+
+def _analyze_net_3(st):
+    """analyze_net, part 3 of 11."""
+    _joined, _pads_net, board, edges, keyed, node, segs, temp, via_hubs, vias = st._joined, st._pads_net, st.board, st.edges, st.keyed, st.node, st.segs, st.temp, st.via_hubs, st.vias
     _ends: dict = {}
     for s in segs:
         for e_ in (s.start, s.end):
@@ -1337,6 +1402,12 @@ def analyze_net(board: PcbBoard, nid: int, ambient_c: float = 40.0) -> dict:
         via_hubs.append((hub, v, set(layers)))
     # Weld coincident-but-not-identical endpoints before the pads are attached,
     # so a pad reaching either side of a joint reaches the whole net.
+    st._adj, st._conn_only = _adj, _conn_only
+
+
+def _analyze_net_4(st):
+    """analyze_net, part 4 of 11."""
+    _joined, edges, keyed, node, nodes, segs, via_hubs = st._joined, st.edges, st.keyed, st.node, st.nodes, st.segs, st.via_hubs
     edges.extend(_weld_nodes(node, keyed, joined=_joined))
     edges.extend(_weld_overlapping_ends(node, segs, _joined))
 
@@ -1373,6 +1444,11 @@ def analyze_net(board: PcbBoard, nid: int, ambient_c: float = 40.0) -> dict:
     # overlaps the pad outline: KiCad's own connectivity rule. An SMD pad joins
     # a via on its own layer, so a top pad and a bottom pad on one via still
     # pass through the barrel; only a through-hole pad joins the via's hub.
+
+
+def _analyze_net_5(st):
+    """analyze_net, part 5 of 11."""
+    nodes, segs, via_hubs = st.nodes, st.segs, st.via_hubs
     pad_nodes = []
     node_pts = {idx: key for key, idx in nodes.items()}
     half_w: dict = {}
@@ -1389,6 +1465,12 @@ def analyze_net(board: PcbBoard, nid: int, ambient_c: float = 40.0) -> dict:
     #  made the part's internal link a 0 Ω copper shortcut: KiCad's coldfire
     #  demo, D102 to LV101 through RST_SW101's two pin 1s, read 27 % low against
     #  a 2-D solve. The internal link still counts for connectivity (below).
+    st.half_w, st.pad_nodes = half_w, pad_nodes
+
+
+def _analyze_net_6(st):
+    """analyze_net, part 6 of 11."""
+    _adj, board, edges, half_w, keyed, node, nodes, pad_nodes, pads, segs, temp = st._adj, st.board, st.edges, st.half_w, st.keyed, st.node, st.nodes, st.pad_nodes, st.pads, st.segs, st.temp
     def _r_per_mm(width_mm):
         return Trace(name="s", net="s", owner_subsystem="e", width_mm=max(width_mm, 1e-4),
                      copper_oz=board.copper_oz, length_mm=1.0).resistance_ohm(temp_c=temp)
@@ -1466,6 +1548,11 @@ def analyze_net(board: PcbBoard, nid: int, ambient_c: float = 40.0) -> dict:
     #  part: bridging them hid a 16 mm track loop behind a 10 mΩ link and
     #  under-read its resistance by 80 % (KiCad's video demo, U8 pins 60 and 70,
     #  in the SPICE benchmark).
+
+
+def _analyze_net_7(st):
+    """analyze_net, part 7 of 11."""
+    board, edges, pad_nodes = st.board, st.edges, st.pad_nodes
     _two_pad = {fp_.ref for fp_ in board.footprints if len(fp_.pads) == 2}
     _by_fp = {}
     for ref, num, pn, hit in pad_nodes:
@@ -1486,6 +1573,11 @@ def analyze_net(board: PcbBoard, nid: int, ambient_c: float = 40.0) -> dict:
     #  is open; `edges` — untouched here — remains the trace-only mesh the nodal
     #  solve uses, so every resistance the Doctor reports is still an
     #  upper bound on the real thing.
+
+
+def _analyze_net_8(st):
+    """analyze_net, part 8 of 11."""
+    _conn_only, board, edges, nid, node, nodes, pad_nodes, pads = st._conn_only, st.board, st.edges, st.nid, st.node, st.nodes, st.pad_nodes, st.pads
     conn_edges = list(edges) + _conn_only
     _first_pin: dict = {}
     for ref, num, pn, _hit in pad_nodes:          # same-numbered pads: joined inside the part
@@ -1519,6 +1611,12 @@ def analyze_net(board: PcbBoard, nid: int, ambient_c: float = 40.0) -> dict:
                 conn_edges.append((zhub, idx, 0.0))
 
     # --- connected components ------------------------------------------------- #
+    st.conn_edges, = conn_edges,
+
+
+def _analyze_net_9(st):
+    """analyze_net, part 9 of 11."""
+    conn_edges, nodes, pad_nodes = st.conn_edges, st.nodes, st.pad_nodes
     parent = list(range(len(nodes)))
     def find(x):
         while parent[x] != x:
@@ -1536,6 +1634,12 @@ def analyze_net(board: PcbBoard, nid: int, ambient_c: float = 40.0) -> dict:
     open_groups = list(pad_comps.values()) if len(pad_comps) > 1 else []
 
     # --- worst pad-to-pad resistance (nodal analysis) -------------------------- #
+    st.open_groups, = open_groups,
+
+
+def _analyze_net_10(st):
+    """analyze_net, part 10 of 11."""
+    edges, nodes, open_groups, pad_nodes = st.edges, st.nodes, st.open_groups, st.pad_nodes
     worst_r, worst_pair = None, None
     attached = [(ref, num, pn) for ref, num, pn, hit in pad_nodes if hit]
     if len(attached) >= 2 and len(nodes) <= _MAX_NODAL_NODES and not open_groups:
@@ -1589,6 +1693,12 @@ def analyze_net(board: PcbBoard, nid: int, ambient_c: float = 40.0) -> dict:
             worst_r = None
 
     # --- bottleneck + per-layer stats ----------------------------------------- #
+    st.worst_pair, st.worst_r = worst_pair, worst_r
+
+
+def _analyze_net_11(st):
+    """analyze_net, part 11 of 11."""
+    segs, = st.segs,
     bottleneck = min(segs, key=lambda s: s.width_mm) if segs else None
     per_layer = {}
     for s in segs:
@@ -1596,16 +1706,7 @@ def analyze_net(board: PcbBoard, nid: int, ambient_c: float = 40.0) -> dict:
         d["len"] += s.length_mm
         d["min_w"] = min(d["min_w"], s.width_mm)
     layer_transitions = len({s.layer for s in segs}) - 1 if segs else 0
-
-    return {
-        "net": board.net_name(nid), "nid": nid,
-        "segments": len(segs), "vias": len(vias), "pads": len(pads),
-        "has_zone": has_zone, "per_layer": per_layer,
-        "bottleneck": bottleneck, "layer_transitions": max(layer_transitions, 0),
-        "open_groups": open_groups if not has_zone_no_geom else [],
-        "worst_r_ohm": worst_r, "worst_pair": worst_pair,
-        "nodal_skipped": len(nodes) > _MAX_NODAL_NODES,
-    }
+    st.bottleneck, st.layer_transitions, st.per_layer = bottleneck, layer_transitions, per_layer
 
 
 # --------------------------------------------------------------------------- #
@@ -2039,6 +2140,21 @@ def diagnose(board: PcbBoard, assignments: dict,
         return a.get("source", "")
 
     # ---------- per-net copper physics ---------------------------------------- #
+    # The sections below share this function's state through `st` (each is its own
+    # function so it can be read, and mutation-tested, on its own).
+    st = SimpleNamespace(**locals())
+    _diagnose_2(st)
+    _diagnose_3(st)
+    _diagnose_4(st)
+    _diagnose_5(st)
+    _diagnose_6(st)
+    _diagnose_7(st)
+    return rep
+
+
+def _diagnose_2(st):
+    """diagnose, part 2 of 7."""
+    F, ambient_c, assignments, board, brownout_v, copper_finish, dT_budget_c, fuse_sf, hint, max_temp_c, pour_max_cells, rail_v, rep = st.F, st.ambient_c, st.assignments, st.board, st.brownout_v, st.copper_finish, st.dT_budget_c, st.fuse_sf, st.hint, st.max_temp_c, st.pour_max_cells, st.rail_v, st.rep
     hot_nets = {}   # nid -> (temp_c, worst_segment) for component proximity later
     for nid, a in assignments.items():
         cur = float(a.get("current_a", 0.0) or 0.0)
@@ -2277,6 +2393,12 @@ def diagnose(board: PcbBoard, assignments: dict,
             hot_nets[nid] = (t_run, bn)
 
     # ---------- HV clearance (IPC-2221 B4) — the wet-track arc ------------------ #
+    st.hot_nets, = hot_nets,
+
+
+def _diagnose_3(st):
+    """diagnose, part 3 of 7."""
+    F, assignments, board = st.F, st.assignments, st.board
     hv_ids = [nid for nid, a in assignments.items()
               if float(a.get("voltage_v", 0) or 0) > 60.0]
     seg_cap = 6000
@@ -2312,6 +2434,12 @@ def diagnose(board: PcbBoard, assignments: dict,
                          f"or conformal-coat and re-rate to the coated column.")))
 
     # ---------- differential pairs ---------------------------------------------- #
+    st.hv_ids, = hv_ids,
+
+
+def _diagnose_4(st):
+    """diagnose, part 4 of 7."""
+    F, board, hv_ids = st.F, st.board, st.hv_ids
     pairs = find_diff_pairs(board)
     for base, hid, lid in pairs:
         hs, ls = board.segments_of(hid), board.segments_of(lid)
@@ -2375,6 +2503,11 @@ def diagnose(board: PcbBoard, assignments: dict,
     #  Tracks and vias of different nets whose copper overlaps on one layer are a dead short (the fixed file would
     #  carry it too). Checked with a coarse grid so a 6,000-track board stays fast; pads and pours are left to the
     #  layout tool's DRC, whose exact pad shapes and pour clearances this screen does not model.
+
+
+def _diagnose_5(st):
+    """diagnose, part 5 of 7."""
+    F, board = st.F, st.board
     for (na, nb, layer, at, gap) in _copper_shorts(board):
         F.append(Finding(
             check=f"copper short — {na} / {nb}", severity=Severity.FAIL, subsystems=["electrics"],
@@ -2383,6 +2516,11 @@ def diagnose(board: PcbBoard, assignments: dict,
                      f"of them so the copper keeps the net-class clearance, then re-run DRC in the layout tool.")))
 
     # ---------- component-level real-life derating ------------------------------- #
+
+
+def _diagnose_6(st):
+    """diagnose, part 6 of 7."""
+    F, assignments, board, hot_nets = st.F, st.assignments, st.board, st.hot_nets
     fuse_re = re.compile(r"([\d.]+)\s*A", re.I)
     for fp in board.footprints:
         r0 = fp.ref[:1].upper() if fp.ref else "?"
@@ -2443,6 +2581,10 @@ def diagnose(board: PcbBoard, assignments: dict,
                              f"fuse. Verify the contact rating or split the "
                              f"current across paralleled pins.")))
 
+
+def _diagnose_7(st):
+    """diagnose, part 7 of 7."""
+    F, = st.F,
     if not F:
         F.append(Finding(check="board", severity=Severity.OK,
                          subsystems=["electrics"],
@@ -2450,7 +2592,6 @@ def diagnose(board: PcbBoard, assignments: dict,
                                   "IR-drop, clearance and pairing screens at the "
                                   "assigned currents — commit the currents in the "
                                   "table (they drive everything) and go to fab.")))
-    return rep
 
 
 # --------------------------------------------------------------------------- #
@@ -3359,7 +3500,7 @@ def board_svg(board: PcbBoard, report=None, show_layers=None,
     glow and the rest of the copper dims. With ``applied`` (the segment indices the verified fix actually wrote),
     only those glow; a fix that was withdrawn or left for a human is outlined in amber instead, so the picture
     never promises a widening the downloaded file does not have."""
-    from html import escape as _esc
+    from html import escape as _esc  # noqa: F401 (the drawing parts read it from the shared state)
     layers = list(show_layers or board.copper_layers)
     lset = set(layers)
 
@@ -3379,6 +3520,24 @@ def board_svg(board: PcbBoard, report=None, show_layers=None,
     def tx(pt):
         return ox + (pt[0] - x0) * s, oy + (pt[1] - y0) * s
 
+    # The sections below share this function's state through `st` (each is its own
+    # function so it can be read, and mutation-tested, on its own).
+    st = SimpleNamespace(**locals())
+    _board_svg_2(st)
+    _board_svg_3(st)
+    _board_svg_4(st)
+    _board_svg_5(st)
+    _board_svg_6(st)
+    _board_svg_7(st)
+    _board_svg_8(st)
+    _board_svg_9(st)
+    parts, = st.parts,
+    return "".join(parts)
+
+
+def _board_svg_2(st):
+    """board_svg, part 2 of 9."""
+    applied, height_px, report, width_px = st.applied, st.height_px, st.report, st.width_px
     fixes_by_seg = {}
     if report is not None:
         for fx in report.fixes:
@@ -3391,6 +3550,12 @@ def board_svg(board: PcbBoard, report=None, show_layers=None,
              f'border:1px solid var(--line);border-radius:8px;">']
 
     # ---- copper ------------------------------------------------------------ #
+    st.dim, st.fixes_by_seg, st.parts, st.written = dim, fixes_by_seg, parts, written
+
+
+def _board_svg_3(st):
+    """board_svg, part 3 of 9."""
+    _esc, board, dim, fixes_by_seg, lset, parts, s, tx, written = st._esc, st.board, st.dim, st.fixes_by_seg, st.lset, st.parts, st.s, st.tx, st.written
     glow = []
     for i, seg in enumerate(board.segments):
         if seg.layer not in lset:
@@ -3425,6 +3590,11 @@ def board_svg(board: PcbBoard, report=None, show_layers=None,
     parts.extend(glow)                   # on top, so nothing hides a fix
 
     # ---- pads: the copper every trace is supposed to land on --------------- #
+
+
+def _board_svg_4(st):
+    """board_svg, part 4 of 9."""
+    _esc, _pad_layer, board, dim, pads, parts, s, tx = st._esc, st._pad_layer, st.board, st.dim, st.pads, st.parts, st.s, st.tx
     for fp, p in pads:
         cx, cy = tx(p.at)
         pw, ph = (float(v) * s for v in (p.size or (1.0, 1.0))[:2])
@@ -3459,6 +3629,11 @@ def board_svg(board: PcbBoard, report=None, show_layers=None,
     #  moves right, left or below instead of being struck through. A coarse
     #  grid keeps the collision test local, so a 6000-segment board still draws
     #  in well under a second.
+
+
+def _board_svg_5(st):
+    """board_svg, part 5 of 9."""
+    board, lset, pads, s, tx = st.board, st.lset, st.pads, st.s, st.tx
     CELL = 40.0
     grid = {}
 
@@ -3482,7 +3657,12 @@ def board_svg(board: PcbBoard, report=None, show_layers=None,
         cx, cy = tx(p.at)
         r = _pad_extent(p) * s + 1.0
         _add(("box", cx - r, cy - r, cx + r, cy + r), (cx - r, cy - r, cx + r, cy + r))
+    st._cells, st.grid = _cells, grid
 
+
+def _board_svg_6(st):
+    """board_svg, part 6 of 9."""
+    _cells, grid = st._cells, st.grid
     def _hits(bx0, by0, bx1, by1):
         seen = set()
         for c in _cells(bx0, by0, bx1, by1):
@@ -3504,7 +3684,12 @@ def board_svg(board: PcbBoard, report=None, show_layers=None,
                         if bx0 - r <= px <= bx1 + r and by0 - r <= py <= by1 + r:
                             return True
         return False
+    st._hits, = _hits,
 
+
+def _board_svg_7(st):
+    """board_svg, part 7 of 9."""
+    _esc, _hits, _pad_layer, board, bottom, height_px, lset, parts, s, top, tx, width_px = st._esc, st._hits, st._pad_layer, st.board, st.bottom, st.height_px, st.lset, st.parts, st.s, st.top, st.tx, st.width_px
     label_boxes = []
     for fp in board.footprints:
         fpads = [p for p in fp.pads if p.through or _pad_layer(fp, p) in lset]
@@ -3556,6 +3741,11 @@ def board_svg(board: PcbBoard, report=None, show_layers=None,
                      f'<text {txt} fill="#e8edf2">{ref}</text>')
 
     # ---- legend strip (above the board, so it never sits on copper) --------- #
+
+
+def _board_svg_8(st):
+    """board_svg, part 8 of 9."""
+    _esc, board, dim, fixes_by_seg, layers, parts, side, written = st._esc, st.board, st.dim, st.fixes_by_seg, st.layers, st.parts, st.side, st.written
     lx = side
     for ly in layers:
         parts.append(f'<line x1="{lx}" y1="14" x2="{lx + 16}" y2="14" '
@@ -3585,6 +3775,11 @@ def board_svg(board: PcbBoard, report=None, show_layers=None,
                          f'font-size="10">amber = needs a manual fix ({n_man})</text>')
 
     # ---- scale bar ---------------------------------------------------------- #
+
+
+def _board_svg_9(st):
+    """board_svg, part 9 of 9."""
+    height_px, parts, s, side, width_px = st.height_px, st.parts, st.s, st.side, st.width_px
     bar_mm = next((b for b in (100, 50, 20, 10, 5, 2, 1, 0.5)
                    if b * s <= width_px * 0.35), 0.5)
     bar = bar_mm * s
@@ -3594,5 +3789,4 @@ def board_svg(board: PcbBoard, report=None, show_layers=None,
                  f'<text x="{side}" y="{height_px - 15}" fill="#8d99a6" '
                  f'font-size="10">{bar_mm:g} mm</text>')
     parts.append("</svg>")
-    return "".join(parts)
 

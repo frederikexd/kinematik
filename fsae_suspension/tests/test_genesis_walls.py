@@ -12,6 +12,12 @@ from suspension import actuation as act, genesis_walls as gw, inverse_genesis as
 from suspension.genesis_repro import (GenesisManifest, _property_bounds_from_dict,
                                       _property_bounds_to_dict, hp_from_dict)
 
+
+@pytest.fixture(autouse=True)
+def _cold_cache():
+    """A test must compute the brake wall itself, not read it from an earlier test's cache."""
+    gw._max_decel_g.cache_clear()
+
 MAN = Path(__file__).resolve().parents[1] / "manifests"
 
 

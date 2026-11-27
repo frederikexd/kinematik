@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import io, math, os, re, tempfile
 from dataclasses import dataclass, field
+from types import SimpleNamespace
 from collections.abc import Sequence
 
 import numpy as np
@@ -1330,6 +1331,25 @@ def apply_workbook_corrections(wb, *, ws_ep, ws_svt, svt_first: int, n_rows: int
     span = lambda blk: f"{_col_letter(H)}{blk[0]}:{_col_letter(V)}{blk[1]}"
     ep = ws_ep.title
 
+    # The sections below share this function's state through `s` (each is its own
+    # function so it can be read, and mutation-tested, on its own).
+    s = SimpleNamespace(**locals())
+    _corrections_2(s)
+    _corrections_3(s)
+    _corrections_4(s)
+    _corrections_5(s)
+    _corrections_6(s)
+    _corrections_7(s)
+    _corrections_8(s)
+    _corrections_9(s)
+    _corrections_10(s)
+    _corrections_11(s)
+    return fixes, notes
+
+
+def _corrections_2(s):
+    """apply_workbook_corrections, part 2 of 11."""
+    H, V, _log, b1, ep, ep_is_live, n_rows, span, svt_first, ws_ep, ws_svt = s.H, s.V, s._log, s.b1, s.ep, s.ep_is_live, s.n_rows, s.span, s.svt_first, s.ws_ep, s.ws_svt
     # ---- block 1: motor RPM, reduction applied the right way round ------- #
     rpm_why = ("The ratio cells hold 1/N and were multiplied into wheel speed, so a "
                "7:1 reduction made the motor turn 7x slower than the wheel instead of "
@@ -1358,6 +1378,10 @@ def apply_workbook_corrections(wb, *, ws_ep, ws_svt, svt_first: int, n_rows: int
             f"=({q}!B{svt_first}*1056/$H$1)/($B$10*PI())", rpm_why)
     ws_ep.cell(row=b1[0], column=7).value = "Motor RPM"
 
+
+def _corrections_3(s):
+    """apply_workbook_corrections, part 3 of 11."""
+    H, V, _log, b1, b2, b3, ep, ep_is_live, n_rows, notes, span, ws_ep = s.H, s.V, s._log, s.b1, s.b2, s.b3, s.ep, s.ep_is_live, s.n_rows, s.notes, s.span, s.ws_ep
     # ---- blocks 2 and 3: pack current and power from the road load ------- #
     cur0 = _formula_text(ws_ep.cell(row=b2[0], column=H).value)
     already = isinstance(cur0, str) and cur0.startswith(f"={_ROAD_SHEET}!")
@@ -1388,6 +1412,10 @@ def apply_workbook_corrections(wb, *, ws_ep, ws_svt, svt_first: int, n_rows: int
                      f"formula this correction expects ({cur0!r}); the current and power "
                      f"blocks were left as they are.")
 
+
+def _corrections_4(s):
+    """apply_workbook_corrections, part 4 of 11."""
+    H, V, _log, b1, b2, b3, blocks, ep, ep_is_live, ws_ep = s.H, s.V, s._log, s.b1, s.b2, s.b3, s.blocks, s.ep, s.ep_is_live, s.ws_ep
     # ---- summary rows under the blocks ------------------------------------ #
     stats = [("Min RPM", b1, "MIN"), ("Max RPM", b1, "MAX"),
              ("Min Current (A)", b2, "MIN"), ("Max Current (A)", b2, "MAX"),
@@ -1419,6 +1447,10 @@ def apply_workbook_corrections(wb, *, ws_ep, ws_svt, svt_first: int, n_rows: int
             _log(ep, f"H{r}:V{r}", before, after,
                 "The range ran one row past its block into the next one.")
 
+
+def _corrections_5(s):
+    """apply_workbook_corrections, part 5 of 11."""
+    H, V, _log, ep, ws_ep = s.H, s.V, s._log, s.ep, s.ws_ep
     # Date-formatted gear cells read back as times; General keeps them numbers.
     for c in range(H, V + 1):
         cell = ws_ep.cell(row=1, column=c)
@@ -1427,6 +1459,10 @@ def apply_workbook_corrections(wb, *, ws_ep, ws_svt, svt_first: int, n_rows: int
                 "A gear ratio with a date number format reads back as a time of day.")
             cell.number_format = "General"
 
+
+def _corrections_6(s):
+    """apply_workbook_corrections, part 6 of 11."""
+    _log, blocks, ep, wb = s._log, s.blocks, s.ep, s.wb
     # ---- every other sheet: block ranges off by one ----------------------- #
     for ws in wb.worksheets:
         if ws.title in (ep, _ROAD_SHEET, _CORR_SHEET):
@@ -1445,6 +1481,10 @@ def apply_workbook_corrections(wb, *, ws_ep, ws_svt, svt_first: int, n_rows: int
                         "The range ran one row past its propulsion block (a blank row, "
                         "which is why the last value read 0).")
 
+
+def _corrections_7(s):
+    """apply_workbook_corrections, part 7 of 11."""
+    _log, wb = s._log, s.wb
     # ---- the pack sheet: resistance ignoring the parallel strings --------- #
     ws_pack = resolve_pack_sheet(wb)
     rows: dict = {}
@@ -1467,7 +1507,12 @@ def apply_workbook_corrections(wb, *, ws_ep, ws_svt, svt_first: int, n_rows: int
                     "parallel strings (3x high for 3P), and it feeds every joule-heat "
                     "and EMF figure.")
                 cell.value = new
+    s.rows, s.ws_pack = rows, ws_pack
 
+
+def _corrections_8(s):
+    """apply_workbook_corrections, part 8 of 11."""
+    _log, n_rows, wb = s._log, s.n_rows, s.wb
     # ---- ThermalLoad ------------------------------------------------------- #
     tl = resolve_sheet(wb, _THERMAL_SHEET_ALIASES)
     if tl is not None:
@@ -1502,6 +1547,10 @@ def apply_workbook_corrections(wb, *, ws_ep, ws_svt, svt_first: int, n_rows: int
                 "Left for review: a sum of instantaneous power, but its range does not "
                 "line up with the profile rows, so the time steps cannot be paired.")
 
+
+def _corrections_9(s):
+    """apply_workbook_corrections, part 9 of 11."""
+    _log, wb = s._log, s.wb
     # ---- BearingBlowOut: TAN in degrees, torque over the pitch diameter --- #
     bb = resolve_sheet(wb, ("BearingBlowOut", "Bearing Blow Out"))
     if bb is not None:
@@ -1533,6 +1582,10 @@ def apply_workbook_corrections(wb, *, ws_ep, ws_svt, svt_first: int, n_rows: int
             _log(bb.title, "B19", b19, new, "Column G ends one row earlier.")
             bb["B19"] = new
 
+
+def _corrections_10(s):
+    """apply_workbook_corrections, part 10 of 11."""
+    _log, fixes, n_rows, rows, wb, ws_pack = s._log, s.fixes, s.n_rows, s.rows, s.wb, s.ws_pack
     # ---- EMFs: volts x kW x ohms becomes the pack's voltage under load ---- #
     # The columns multiply pack voltage, power and pack resistance. Of the two
     # voltages that could have been meant, only one is computable from what the
@@ -1578,6 +1631,10 @@ def apply_workbook_corrections(wb, *, ws_ep, ws_svt, svt_first: int, n_rows: int
                      "sheet has no 'Battery Pack Nominal Voltage' / 'Battery Pack Internal "
                      "Resistance' rows to build V - I R from.")
 
+
+def _corrections_11(s):
+    """apply_workbook_corrections, part 11 of 11."""
+    fixes, notes, wb = s.fixes, s.notes, s.wb
     # ---- the list, in the file ------------------------------------------- #
     if _CORR_SHEET in wb.sheetnames:
         del wb[_CORR_SHEET]
@@ -1595,7 +1652,6 @@ def apply_workbook_corrections(wb, *, ws_ep, ws_svt, svt_first: int, n_rows: int
                  f"after, is on the {_CORR_SHEET} sheet. Pack current and power in "
                  f"ElecPropulsion now come from the live road-load model on "
                  f"{_ROAD_SHEET}.")
-    return fixes, notes
 
 
 def lap_to_excel_roundtrip(
@@ -1693,6 +1749,22 @@ def lap_to_excel_roundtrip(
             error="This workbook has no propulsion sheet. Expected one named "
                   "ElecPropulsion; found: " + ", ".join(wb.sheetnames))
 
+    # The sections below share this function's state through `st` (each is its own
+    # function so it can be read, and mutation-tested, on its own).
+    st = SimpleNamespace(**locals())
+    _roundtrip_2(st)
+    _roundtrip_3(st)
+    _roundtrip_4(st)
+    _roundtrip_5(st)
+    _roundtrip_6(st)
+    corrections, out_bytes = st.corrections, st.out_bytes
+    return _result(e, t_arr, v_ms, pack, motor, warnings=warnings,
+                   excel_bytes=out_bytes, corrections=corrections)
+
+
+def _roundtrip_2(st):
+    """lap_to_excel_roundtrip, part 2 of 6."""
+    n_pts, t_arr, v_mph, warnings, wb, ws_ep, ws_svt = st.n_pts, st.t_arr, st.v_mph, st.warnings, st.wb, st.ws_ep, st.ws_svt
     # The profile is written at the height the workbook's own formulas are
     # wired to, NOT at the lap's sample count. Those two are unrelated numbers,
     # and writing the lap's count is what emptied ElecPropulsion's second and
@@ -1709,7 +1781,12 @@ def lap_to_excel_roundtrip(
             f"(SpeedVsTime {svt_first}-{svt_last}). Resampled to fit so every "
             f"row of ElecPropulsion and the sheets reading it stay populated. "
             f"The results reported here use the lap's own {n_pts} samples.")
+    st.n_rows, st.svt_first, st.svt_last, st.t_sheet, st.v_sheet = n_rows, svt_first, svt_last, t_sheet, v_sheet
 
+
+def _roundtrip_3(st):
+    """lap_to_excel_roundtrip, part 3 of 6."""
+    n_rows, svt_first, svt_last, t_sheet, v_sheet, ws_svt = st.n_rows, st.svt_first, st.svt_last, st.t_sheet, st.v_sheet, st.ws_svt
     # Clear only the profile rows. Everything below them — the Max/Min Speed
     # and Max/Min Time summary rows — belongs to the user and is left alone.
     # The old code cleared to ws_svt.max_row and destroyed all four.
@@ -1722,6 +1799,12 @@ def lap_to_excel_roundtrip(
         ws_svt.cell(row=r, column=1).value = round(float(t_sheet[i]), 6)
         ws_svt.cell(row=r, column=2).value = round(float(v_sheet[i]), 4)
 
+
+def _roundtrip_4(st):
+    """lap_to_excel_roundtrip, part 4 of 6."""
+    correct_workbook, k_rpm, motor_eff, motor_pf, n_rows, pack, pack_v_ep, svt_first, svt_last, v_sheet, vehicle, warnings, wb, ws_ep, ws_svt = st.correct_workbook, st.k_rpm, st.motor_eff, st.motor_pf, st.n_rows, st.pack, st.pack_v_ep, st.svt_first, st.svt_last, st.v_sheet, st.vehicle, st.warnings, st.wb, st.ws_ep, st.ws_svt
+    col = vars(st).get('col')              # drawn only when that section ran
+    gear_ratios = vars(st).get('gear_ratios')              # drawn only when that section ran
     # 9b. ElecPropulsion.
     #
     # Deliberately NOT rewritten. Columns H..V are the workbook's own live
@@ -1828,7 +1911,14 @@ def lap_to_excel_roundtrip(
             f"blocks at rows {b1[0]}-{b3[1]} across {len(gear_ratios)} gear "
             f"columns, with the MIN/MAX summary rows, so ThermalLoad, EMFs and "
             f"BearingBlowOut resolve at every gear instead of reading blanks.")
+    st.corrections, = corrections,
+    vars(st).update({k: v for k, v in locals().items() if k in ('warnings',)})
 
+
+def _roundtrip_5(st):
+    """lap_to_excel_roundtrip, part 5 of 6."""
+    avg_i, avg_speed_ms, e, feasible, fuse_limit, fuse_margin, fuse_speed_ms, lap_time_s, n_pts, peak_i, peak_pw, t_arr, top_speed_ms, total_energy_kwh, usable_kwh, v_mph, wb = st.avg_i, st.avg_speed_ms, st.e, st.feasible, st.fuse_limit, st.fuse_margin, st.fuse_speed_ms, st.lap_time_s, st.n_pts, st.peak_i, st.peak_pw, st.t_arr, st.top_speed_ms, st.total_energy_kwh, st.usable_kwh, st.v_mph, st.wb
+    warnings = vars(st).get('warnings')              # drawn only when that section ran
     # 9c. Pack sheet — stamp the KinematiK summary block.
     # Missing is NOT fatal: the summary is a convenience, and losing it must not
     # take down the lap-time results the caller actually asked for.
@@ -1874,6 +1964,11 @@ def lap_to_excel_roundtrip(
             ws_bpc.cell(row=r, column=1).value = label
             ws_bpc.cell(row=r, column=2).value = val
 
+
+def _roundtrip_6(st):
+    """lap_to_excel_roundtrip, part 6 of 6."""
+    wb, = st.wb,
+    warnings = vars(st).get('warnings')              # drawn only when that section ran
     # 9d. Portability. Five CHOOSECOLS array formulas in this workbook spill
     # roughly nineteen thousand #NAME? cells on any Excel that is not
     # Microsoft 365, and a #NAME? in a source column makes every dependent
@@ -1894,9 +1989,7 @@ def lap_to_excel_roundtrip(
     buf = io.BytesIO()
     wb.save(buf)
     out_bytes = buf.getvalue()
-
-    return _result(e, t_arr, v_ms, pack, motor, warnings=warnings,
-                   excel_bytes=out_bytes, corrections=corrections)
+    st.out_bytes, = out_bytes,
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -2153,8 +2246,8 @@ def build_enhanced_excel(
         from openpyxl.styles import (
             PatternFill, Font, Alignment, Border, Side,
         )
-        from openpyxl.utils import get_column_letter
-        from openpyxl.chart import Reference
+        from openpyxl.utils import get_column_letter  # noqa: F401 (the sheet parts read it from the shared state)
+        from openpyxl.chart import Reference  # noqa: F401 (the sheet parts read it from the shared state)
     except ImportError:
         # Return original bytes if openpyxl not available
         return excel_bytes
@@ -2196,6 +2289,28 @@ def build_enhanced_excel(
     t_arr = result.time_s
     n_pts = len(t_arr)
 
+    # The sections below share this function's state through `st` (each is its own
+    # function so it can be read, and mutation-tested, on its own).
+    st = SimpleNamespace(**locals())
+    _enhanced_2(st)
+    _enhanced_3(st)
+    _enhanced_4(st)
+    _enhanced_5(st)
+    _enhanced_6(st)
+    _enhanced_7(st)
+    _enhanced_8(st)
+    _enhanced_9(st)
+    _enhanced_10(st)
+    buf, = st.buf,
+    return buf.getvalue()
+
+
+def _enhanced_2(st):
+    """build_enhanced_excel, part 2 of 10."""
+    n_pts, pack, thermals, wb = st.n_pts, st.pack, st.thermals, st.wb
+    Alignment = vars(st).get('Alignment')              # drawn only when that section ran
+    Font = vars(st).get('Font')              # drawn only when that section ran
+    PatternFill = vars(st).get('PatternFill')              # drawn only when that section ran
     # ── Sheet 1: PackHeatmap ─────────────────────────────────────────────────
     _HM = "PackHeatmap"
     if _HM in wb.sheetnames:
@@ -2241,7 +2356,14 @@ def build_enhanced_excel(
             bold=True, size=11, color="FFFFFFFF")
         ws_hm.cell(row=3, column=col).fill = PatternFill(
             fill_type="solid", fgColor="FF131B24")
+    st.i_cell, st.joule_w, st.n_par, st.n_series, st.snap_idx, st.temp_c, st.ws_hm = i_cell, joule_w, n_par, n_series, snap_idx, temp_c, ws_hm
 
+
+def _enhanced_3(st):
+    """build_enhanced_excel, part 3 of 10."""
+    _cell_fill, _header, _heat_colour, _thin_border, n_par, n_series, temp_c, thermals, ws_hm = st._cell_fill, st._header, st._heat_colour, st._thin_border, st.n_par, st.n_series, st.temp_c, st.thermals, st.ws_hm
+    Alignment = vars(st).get('Alignment')              # drawn only when that section ran
+    Font = vars(st).get('Font')              # drawn only when that section ran
     # ── Cell grid header
     _header(ws_hm, 5, 1, "Cell position →  (columns = parallel strings)")
     _header(ws_hm, 6, 1, "Series\nRow↓", bold=True)
@@ -2291,7 +2413,13 @@ def build_enhanced_excel(
         c.fill = _cell_fill(colour)
         c.font = Font(size=9, color="FF000000" if t_val < (t_lo+t_hi)/2 else "FFFFFFFF")
         c.alignment = Alignment(horizontal="center")
+    st.legend_row, st.t_hi, st.t_lo = legend_row, t_hi, t_lo
 
+
+def _enhanced_4(st):
+    """build_enhanced_excel, part 4 of 10."""
+    _cell_fill, _header, _heat_colour, i_cell, joule_w, legend_row, result, snap_idx, t_arr, t_hi, t_lo, temp_c, thermals, ws_hm = st._cell_fill, st._header, st._heat_colour, st.i_cell, st.joule_w, st.legend_row, st.result, st.snap_idx, st.t_arr, st.t_hi, st.t_lo, st.temp_c, st.thermals, st.ws_hm
+    Font = vars(st).get('Font')              # drawn only when that section ran
     # ── Time-series data table (Joule W and cell temp per time step)
     ts_start_row = legend_row + 3
     _header(ws_hm, ts_start_row, 1, "Time (s)")
@@ -2318,7 +2446,14 @@ def build_enhanced_excel(
         ws_hm.cell(row=r, column=6).fill = _cell_fill(_heat_colour(t_val, t_lo, t_hi))
         ws_hm.cell(row=r, column=6).font = Font(
             size=9, color="FFFFFFFF" if t_val > (t_lo + t_hi) / 2 else "FF000000")
+    st.ts_start_row, = ts_start_row,
 
+
+def _enhanced_5(st):
+    """build_enhanced_excel, part 5 of 10."""
+    n_par, snap_idx, ts_start_row, ws_hm = st.n_par, st.snap_idx, st.ts_start_row, st.ws_hm
+    Font = vars(st).get('Font')              # drawn only when that section ran
+    get_column_letter = vars(st).get('get_column_letter')              # drawn only when that section ran
     # ── Python macro stub (embedded as a named comment range so xlwings can find it)
     pycode_row = ts_start_row + len(snap_idx) + 3
     ws_hm.cell(row=pycode_row, column=1,
@@ -2361,6 +2496,13 @@ def build_enhanced_excel(
     for ci in range(2, n_par + 2):
         ws_hm.column_dimensions[get_column_letter(ci)].width = 8
 
+
+def _enhanced_6(st):
+    """build_enhanced_excel, part 6 of 10."""
+    result, soc_data, wb = st.result, st.soc_data, st.wb
+    Alignment = vars(st).get('Alignment')              # drawn only when that section ran
+    Font = vars(st).get('Font')              # drawn only when that section ran
+    PatternFill = vars(st).get('PatternFill')              # drawn only when that section ran
     # ── Sheet 2: LapEnergy ──────────────────────────────────────────────────
     _LE = "LapEnergy"
     if _LE in wb.sheetnames:
@@ -2404,7 +2546,13 @@ def build_enhanced_excel(
             color="FFE74C3C" if bad else "FF37E0D0")
         ws_le.cell(row=3, column=col).fill = PatternFill(
             fill_type="solid", fgColor="FF131B24")
+    st.ws_le, = ws_le,
 
+
+def _enhanced_7(st):
+    """build_enhanced_excel, part 7 of 10."""
+    _cell_fill, _header, _heat_colour, result, snap_idx, soc_data, t_arr, ws_le = st._cell_fill, st._header, st._heat_colour, st.result, st.snap_idx, st.soc_data, st.t_arr, st.ws_le
+    Font = vars(st).get('Font')              # drawn only when that section ran
     # Data table
     _header(ws_le, 5, 1, "Time (s)")
     _header(ws_le, 5, 2, "Speed (km/h)")
@@ -2435,6 +2583,12 @@ def build_enhanced_excel(
             ws_le.cell(row=r, column=7, value="🛑 STOP").font = Font(
                 bold=True, color="FFE74C3C", size=10)
 
+
+def _enhanced_8(st):
+    """build_enhanced_excel, part 8 of 10."""
+    snap_idx, ws_le = st.snap_idx, st.ws_le
+    Reference = vars(st).get('Reference')              # drawn only when that section ran
+    get_column_letter = vars(st).get('get_column_letter')              # drawn only when that section ran
     # SoC chart
     from openpyxl.chart import LineChart
     chart_ref_soc = Reference(ws_le, min_col=5, min_row=5, max_row=5 + len(snap_idx))
@@ -2454,6 +2608,13 @@ def build_enhanced_excel(
     for col_idx, w in enumerate([12, 12, 10, 16, 8, 10, 14], 1):
         ws_le.column_dimensions[get_column_letter(col_idx)].width = w
 
+
+def _enhanced_9(st):
+    """build_enhanced_excel, part 9 of 10."""
+    _thin_border, min_pack, wb = st._thin_border, st.min_pack, st.wb
+    Alignment = vars(st).get('Alignment')              # drawn only when that section ran
+    Font = vars(st).get('Font')              # drawn only when that section ran
+    PatternFill = vars(st).get('PatternFill')              # drawn only when that section ran
     # ── Sheet 3: FeasiblePack ────────────────────────────────────────────────
     _FP = "FeasiblePack"
     if _FP in wb.sheetnames:
@@ -2530,7 +2691,15 @@ def build_enhanced_excel(
                     color=("FFE74C3C" if is_bad else
                            "FF37E0D0" if is_good else "FFFFFFFF"))
             c.border = _thin_border()
+    st.ws_fp, = ws_fp,
 
+
+def _enhanced_10(st):
+    """build_enhanced_excel, part 10 of 10."""
+    _header, _thin_border, min_pack, result, wb, ws_fp = st._header, st._thin_border, st.min_pack, st.result, st.wb, st.ws_fp
+    Font = vars(st).get('Font')              # drawn only when that section ran
+    PatternFill = vars(st).get('PatternFill')              # drawn only when that section ran
+    get_column_letter = vars(st).get('get_column_letter')              # drawn only when that section ran
     # What-if table: capacity vs laps completed
     ws_fp.cell(row=14, column=1, value="What-if: capacity → laps completed").font = Font(
         bold=True, size=11, color="FFA855F7")
@@ -2574,7 +2743,7 @@ def build_enhanced_excel(
     _request_full_recalc(wb)
     buf = io.BytesIO()
     wb.save(buf)
-    return buf.getvalue()
+    st.buf, = buf,
 
 
 # ═════════════════════════════════════════════════════════════════════════════
