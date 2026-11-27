@@ -96,7 +96,7 @@ jobs:
           python-version: '3.12'
       - name: Install
         run: |
-          pip install -r requirements-ci.lock
+          pip install --require-hashes -r requirements-ci.lock
           pip install --no-deps -e ./fsae_suspension
       - name: Mutate the group's files and hold each one at the floor
         working-directory: fsae_suspension
@@ -129,7 +129,7 @@ jobs:
           python-version: '3.12'
       - name: Install
         run: |
-          pip install -r requirements-ci.lock
+          pip install --require-hashes -r requirements-ci.lock
           pip install --no-deps -e ./fsae_suspension
       - name: Measure the module against the tests that import it
         working-directory: fsae_suspension

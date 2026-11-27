@@ -26,7 +26,7 @@ jobs:
           python-version: '3.12'
       - name: Install dependencies
         run: |
-          pip install -r requirements-ci.lock
+          pip install --require-hashes -r requirements-ci.lock
       - name: Install local package and run tests
         run: |
           pip install --no-deps -e ./fsae_suspension
@@ -65,7 +65,7 @@ jobs:
           python-version: '3.12'
       - name: Install
         run: |
-          pip install -r requirements-ci.lock
+          pip install --require-hashes -r requirements-ci.lock
           pip install --no-deps -e ./fsae_suspension
       - name: Core solvers at 100% statement and branch coverage
         working-directory: fsae_suspension
