@@ -1,0 +1,3518 @@
+{
+ "axes": [
+  [
+   "Fx",
+   "Fy",
+   "Fz"
+  ],
+  [
+   "Fx",
+   "Fy",
+   "Fz",
+   "Mx",
+   "My",
+   "Mz"
+  ]
+ ],
+ "balance_spec": [
+  "force balance ? [under-floor sting]: balance B6: 6x6 cal, cond=8.0, max cross-talk 8% of full-scale",
+  "force balance S9 [strut]: balance I: 6x6 cal, cond=20.0, max cross-talk 0% of full-scale"
+ ],
+ "biquad.extra": [
+  6.00783930743656e-05,
+  [
+   0.0020805658905756123,
+   0.010125887746150013
+  ],
+  0.0020805658905756123,
+  [
+   [
+    10.0,
+    6.0
+   ],
+   [
+    10.0,
+    12.0
+   ]
+  ]
+ ],
+ "biquad.step": [
+  1.9999999999999927,
+  2.002080565890568,
+  2.0059647559649907
+ ],
+ "biquads": [
+  [
+   [
+    0.9930941439234866,
+    -1.8050472850946164,
+    0.9930941439234866
+   ],
+   [
+    1.0,
+    -1.8050472850946164,
+    0.9861882878469731
+   ]
+  ],
+  [
+   [
+    0.0020805658905756123,
+    0.004161131781151225,
+    0.0020805658905756123
+   ],
+   [
+    1.0,
+    -1.8668911626483358,
+    0.8752134262106382
+   ]
+  ]
+ ],
+ "cal.cross": [
+  "balance B6: 6x6 cal, cond=8.0, max cross-talk 8% of full-scale, rail ±10 V",
+  true,
+  true,
+  [
+   [
+    20.0,
+    40.0,
+    125.39999999999999,
+    0.0,
+    0.8,
+    0.0
+   ],
+   [
+    1998.0,
+    0.0,
+    299.7,
+    0.0,
+    79.92,
+    0.0
+   ],
+   [
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN"
+   ],
+   [
+    -400.0,
+    0.0,
+    -60.0,
+    0.0,
+    -16.0,
+    0.0
+   ],
+   [
+    398.0,
+    0.0,
+    59.7,
+    0.0,
+    15.92,
+    0.0
+   ]
+  ],
+  [
+   [
+    20.0,
+    40.0,
+    125.4,
+    0.0,
+    0.8,
+    0.0
+   ]
+  ],
+  [
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  ""
+ ],
+ "cal.errors": [
+  {
+   "message": "balance interaction matrix must be 6x6 (Fx,Fy,Fz,Mx,My,Mz)",
+   "raised": "ValueError"
+  },
+  {
+   "message": "zero_volts must have 6 entries (one per bridge)",
+   "raised": "ValueError"
+  },
+  {
+   "message": "need 6 sensitivities (Fx,Fy,Fz,Mx,My,Mz)",
+   "raised": "ValueError"
+  },
+  {
+   "message": "balance stream must have 6 bridge channels (Fx,Fy,Fz,Mx,My,Mz order)",
+   "raised": "ValueError"
+  }
+ ],
+ "cal.extra": [
+  false,
+  [
+   0.1,
+   0.1,
+   0.1,
+   0.1,
+   0.1,
+   0.1
+  ],
+  [
+   [
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    2.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    3.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    4.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    5.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    6.0
+   ]
+  ]
+ ],
+ "cal.ident": [
+  "balance I: 6x6 cal, cond=20.0, max cross-talk 0% of full-scale",
+  true,
+  true,
+  [
+   [
+    10.0,
+    20.0,
+    60.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    999.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    1000.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    -200.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    199.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
+  [
+   [
+    10.0,
+    20.0,
+    60.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
+  [
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "lab [diagonal-only: cross-talk assumed zero — baseline, not a real balance cal]"
+ ],
+ "cal.ident_plain": [
+  "balance ?: 6x6 cal, cond=6.0, max cross-talk 0% of full-scale",
+  true,
+  true,
+  [
+   [
+    0.1,
+    0.4,
+    0.8999999999999999,
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    9.99,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    10.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    -2.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    1.99,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
+  [
+   [
+    0.1,
+    0.4,
+    0.8999999999999999,
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
+  [
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "[diagonal-only: cross-talk assumed zero — baseline, not a real balance cal]"
+ ],
+ "cal.nomatrix": [
+  "balance ?: UNCALIBRATED — no interaction matrix; bridge volts are not forces and reduce to holes",
+  false,
+  false,
+  [
+   [
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN"
+   ],
+   [
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN"
+   ],
+   [
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN"
+   ],
+   [
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN"
+   ],
+   [
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN"
+   ]
+  ],
+  [
+   [
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN"
+   ]
+  ],
+  [
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  ""
+ ],
+ "cal.singular": [
+  "balance ?: SINGULAR interaction matrix (cond=inf) — cannot decouple; holes",
+  false,
+  false,
+  [
+   [
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN"
+   ],
+   [
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN"
+   ],
+   [
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN"
+   ],
+   [
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN"
+   ],
+   [
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN"
+   ]
+  ],
+  [
+   [
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN"
+   ]
+  ],
+  [
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  ""
+ ],
+ "cal.uncal": [
+  "balance ?: UNCALIBRATED — no interaction matrix; bridge volts are not forces and reduce to holes",
+  false,
+  false,
+  [
+   [
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN"
+   ],
+   [
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN"
+   ],
+   [
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN"
+   ],
+   [
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN"
+   ],
+   [
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN"
+   ]
+  ],
+  [
+   [
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN"
+   ]
+  ],
+  [
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  ""
+ ],
+ "cal.zeros": [
+  "balance ?: 6x6 cal, cond=1.0, max cross-talk 0% of full-scale, rail ±2 V",
+  true,
+  true,
+  [
+   [
+    0.0,
+    0.1,
+    0.19999999999999998,
+    -0.1,
+    -0.1,
+    -0.1
+   ],
+   [
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN"
+   ],
+   [
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN"
+   ],
+   [
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN",
+    "NaN"
+   ],
+   [
+    1.89,
+    -0.1,
+    -0.1,
+    -0.1,
+    -0.1,
+    -0.1
+   ]
+  ],
+  [
+   [
+    0.0,
+    0.1,
+    0.19999999999999998,
+    -0.1,
+    -0.1,
+    -0.1
+   ]
+  ],
+  [
+   0.1,
+   0.1,
+   0.1,
+   0.1,
+   0.1,
+   0.1
+  ],
+  ""
+ ],
+ "chassis": [
+  "synthetic-cDAQ: 2000 Hz (Nyquist 1000 Hz), 4 slots",
+  "cDAQ-9178: 500 Hz (Nyquist 250 Hz), 8 slots",
+  5.0,
+  {
+   "message": "sample_rate_hz must be positive",
+   "raised": "ValueError"
+  },
+  {
+   "message": "sample_rate_hz must be positive",
+   "raised": "ValueError"
+  }
+ ],
+ "chassis.one": [
+  0.5,
+  []
+ ],
+ "filt.svf": [
+  [
+   [
+    1.042746544,
+    1.037310985,
+    1.126782075,
+    1.183046099,
+    1.200163945,
+    1.172667616,
+    1.109982747,
+    1.020655946,
+    0.928620807,
+    0.852103317,
+    0.806953875,
+    0.80466313,
+    0.844432637,
+    0.918766043,
+    1.010691925,
+    1.099333327,
+    1.167383545,
+    1.198989157,
+    1.186474617,
+    1.133948424
+   ],
+   {
+    "fan_tone_hz": 137.0,
+    "harmonics_notched": [
+     137.0,
+     274.0,
+     411.0
+    ],
+    "note": "causal cascade (has phase lag; time-average is unaffected); first 500 samples are settling transient, excluded from stats",
+    "resolved": true,
+    "tone_power_frac": 0.0,
+    "variance_removed_frac": 0.0
+   }
+  ],
+  [
+   [
+    1.041323711,
+    1.037391989,
+    "NaN",
+    1.176744449,
+    1.200483663,
+    1.172798386,
+    1.109949966,
+    1.020658558,
+    0.92862287,
+    0.85209996,
+    0.806957304,
+    0.804660454,
+    0.844434289,
+    0.918765302,
+    1.010692031,
+    1.099333563,
+    1.167383196,
+    1.198989479,
+    1.186474388,
+    1.133948552
+   ],
+   {
+    "fan_tone_hz": 137.0,
+    "harmonics_notched": [
+     137.0,
+     274.0,
+     411.0
+    ],
+    "note": "causal cascade (has phase lag; time-average is unaffected); first 500 samples are settling transient, excluded from stats",
+    "resolved": true,
+    "tone_power_frac": 0.0,
+    "variance_removed_frac": 0.0
+   }
+  ],
+  [
+   [
+    1.004081838
+   ],
+   {
+    "fan_tone_hz": 137.0,
+    "harmonics_notched": [],
+    "note": "too few finite samples to filter — passed through",
+    "resolved": false,
+    "tone_power_frac": 0.0,
+    "variance_removed_frac": 0.0
+   }
+  ],
+  [
+   [
+    "NaN"
+   ],
+   {
+    "fan_tone_hz": 137.0,
+    "harmonics_notched": [],
+    "note": "too few finite samples to filter — passed through",
+    "resolved": false,
+    "tone_power_frac": 0.0,
+    "variance_removed_frac": 0.0
+   }
+  ],
+  [
+   [
+    1.039914388
+   ],
+   {
+    "fan_tone_hz": 137.0,
+    "harmonics_notched": [
+     137.0,
+     274.0,
+     411.0
+    ],
+    "note": "window too short for the cascade to settle past 137 Hz — mean may still carry tone residual; causal cascade (has phase lag; time-average is unaffected); first 500 samples are settling transient, excluded from stats",
+    "resolved": false,
+    "tone_power_frac": 0.9888075307802247,
+    "variance_removed_frac": 0.9888075307802247
+   }
+  ],
+  [
+   137.0,
+   274.0,
+   411.0
+  ]
+ ],
+ "filt.svf_none": [
+  [
+   [
+    1.042746538,
+    1.037467554,
+    1.126954896,
+    1.183202429,
+    1.200078557,
+    1.172624734,
+    1.109695096,
+    1.020445725,
+    0.928390191,
+    0.851875399,
+    0.806976023,
+    0.804607858,
+    0.844694396,
+    0.918925823,
+    1.01097703,
+    1.099576929,
+    1.16745276,
+    1.199113816,
+    1.186275999,
+    1.133852533
+   ],
+   {
+    "fan_tone_hz": -1.0,
+    "harmonics_notched": [],
+    "note": "causal cascade (has phase lag; time-average is unaffected); first 500 samples are settling transient, excluded from stats",
+    "resolved": true,
+    "tone_power_frac": 0.0,
+    "variance_removed_frac": 0.0
+   }
+  ],
+  [
+   [
+    1.041323705,
+    1.037550876,
+    "NaN",
+    1.176900499,
+    1.200416737,
+    1.172735749,
+    1.109673103,
+    1.02044524,
+    0.928390846,
+    0.851875337,
+    0.806976012,
+    0.804607861,
+    0.844694396,
+    0.918925823,
+    1.01097703,
+    1.099576929,
+    1.16745276,
+    1.199113816,
+    1.186275999,
+    1.133852533
+   ],
+   {
+    "fan_tone_hz": -1.0,
+    "harmonics_notched": [],
+    "note": "causal cascade (has phase lag; time-average is unaffected); first 500 samples are settling transient, excluded from stats",
+    "resolved": true,
+    "tone_power_frac": 0.0,
+    "variance_removed_frac": 0.0
+   }
+  ],
+  [
+   [
+    1.004081838
+   ],
+   {
+    "fan_tone_hz": -1.0,
+    "harmonics_notched": [],
+    "note": "too few finite samples to filter — passed through",
+    "resolved": false,
+    "tone_power_frac": 0.0,
+    "variance_removed_frac": 0.0
+   }
+  ],
+  [
+   [
+    "NaN"
+   ],
+   {
+    "fan_tone_hz": -1.0,
+    "harmonics_notched": [],
+    "note": "too few finite samples to filter — passed through",
+    "resolved": false,
+    "tone_power_frac": 0.0,
+    "variance_removed_frac": 0.0
+   }
+  ],
+  [
+   [
+    1.039914382
+   ],
+   {
+    "fan_tone_hz": -1.0,
+    "harmonics_notched": [],
+    "note": "causal cascade (has phase lag; time-average is unaffected); first 500 samples are settling transient, excluded from stats",
+    "resolved": true,
+    "tone_power_frac": 0.9887446673549328,
+    "variance_removed_frac": 0.9887446673549328
+   }
+  ],
+  []
+ ],
+ "filt.svf_struct": [
+  [
+   [
+    1.004192315,
+    1.113093538,
+    1.119922369,
+    1.247946278,
+    1.145976155,
+    1.177913715,
+    1.047064834,
+    0.96330878,
+    0.908832936,
+    0.778019969,
+    0.849587539,
+    0.775454994,
+    0.911561966,
+    0.957279437,
+    1.047010786,
+    1.174669812,
+    1.144324198,
+    1.24793074,
+    1.121319609,
+    1.11461038
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     55.0
+    ],
+    "note": "causal cascade (has phase lag; time-average is unaffected); first 200 samples are settling transient, excluded from stats",
+    "resolved": true,
+    "tone_power_frac": 0.0,
+    "variance_removed_frac": 0.0
+   }
+  ],
+  [
+   [
+    1.00418825,
+    1.113067186,
+    "NaN",
+    1.247952159,
+    1.145013968,
+    1.179087012,
+    1.046351181,
+    0.963301319,
+    0.909377914,
+    0.777358519,
+    0.849987955,
+    0.775461537,
+    0.911253306,
+    0.957652324,
+    1.046786132,
+    1.174664806,
+    1.144499006,
+    1.247720533,
+    1.121445646,
+    1.114613945
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     55.0
+    ],
+    "note": "causal cascade (has phase lag; time-average is unaffected); first 200 samples are settling transient, excluded from stats",
+    "resolved": true,
+    "tone_power_frac": 0.0,
+    "variance_removed_frac": 0.0
+   }
+  ],
+  [
+   [
+    1.004081838
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [],
+    "note": "too few finite samples to filter — passed through",
+    "resolved": false,
+    "tone_power_frac": 0.0,
+    "variance_removed_frac": 0.0
+   }
+  ],
+  [
+   [
+    "NaN"
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [],
+    "note": "too few finite samples to filter — passed through",
+    "resolved": false,
+    "tone_power_frac": 0.0,
+    "variance_removed_frac": 0.0
+   }
+  ],
+  [
+   [
+    1.004184223
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     55.0
+    ],
+    "note": "window too short for the cascade to settle past 55 Hz — mean may still carry tone residual; causal cascade (has phase lag; time-average is unaffected); first 200 samples are settling transient, excluded from stats",
+    "resolved": false,
+    "tone_power_frac": 0.02062615146775415,
+    "variance_removed_frac": 0.02062615146775415
+   }
+  ],
+  [
+   55.0
+  ]
+ ],
+ "filt.vf": [
+  [
+   [
+    1.019441106,
+    1.091389969,
+    1.162022227,
+    1.19715406,
+    1.190278838,
+    1.142064177,
+    1.061505127,
+    0.968767394,
+    0.883008346,
+    0.821532729,
+    0.800689905,
+    0.821825659,
+    0.882785876,
+    0.968550561,
+    1.061873859,
+    1.141478561,
+    1.189901785,
+    1.196714118,
+    1.161860378,
+    1.092089474
+   ],
+   {
+    "fan_tone_hz": 137.0,
+    "harmonics_notched": [
+     137.0,
+     274.0,
+     411.0
+    ],
+    "note": "",
+    "resolved": true,
+    "tone_power_frac": 0.0005713141450920713,
+    "variance_removed_frac": 0.06457252966927962
+   }
+  ],
+  [
+   [
+    1.022475514,
+    1.097862053,
+    "NaN",
+    1.206378754,
+    1.189439566,
+    1.138935581,
+    1.061175945,
+    0.97065917,
+    0.883762435,
+    0.820257368,
+    0.799678761,
+    0.822665228,
+    0.884001973,
+    0.968100271,
+    1.060455438,
+    1.141501528,
+    1.191566741,
+    1.197280821,
+    1.159804591,
+    1.090389123
+   ],
+   {
+    "fan_tone_hz": 137.0,
+    "harmonics_notched": [
+     137.0,
+     274.0,
+     411.0
+    ],
+    "note": "",
+    "resolved": true,
+    "tone_power_frac": 0.0006120270599103483,
+    "variance_removed_frac": 0.07334283385947005
+   }
+  ],
+  [
+   [
+    1.004081838
+   ],
+   {
+    "fan_tone_hz": 137.0,
+    "harmonics_notched": [],
+    "note": "too few finite samples to filter — passed through",
+    "resolved": false,
+    "tone_power_frac": 0.0,
+    "variance_removed_frac": 0.0
+   }
+  ],
+  [
+   [
+    "NaN"
+   ],
+   {
+    "fan_tone_hz": 137.0,
+    "harmonics_notched": [],
+    "note": "too few finite samples to filter — passed through",
+    "resolved": false,
+    "tone_power_frac": 0.0,
+    "variance_removed_frac": 0.0
+   }
+  ],
+  [
+   [
+    1.039914539
+   ],
+   {
+    "fan_tone_hz": 137.0,
+    "harmonics_notched": [
+     137.0,
+     274.0,
+     411.0
+    ],
+    "note": "",
+    "resolved": true,
+    "tone_power_frac": 0.0006844255093452874,
+    "variance_removed_frac": 1.0
+   }
+  ],
+  [
+   137.0,
+   274.0,
+   411.0
+  ]
+ ],
+ "filt.vf_hi": [
+  [
+   [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   {
+    "fan_tone_hz": 600.0,
+    "harmonics_notched": [
+     600.0
+    ],
+    "note": "",
+    "resolved": true,
+    "tone_power_frac": 1.0,
+    "variance_removed_frac": 1.0
+   }
+  ],
+  [
+   [
+    0.0,
+    0.0,
+    "NaN",
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   {
+    "fan_tone_hz": 600.0,
+    "harmonics_notched": [
+     600.0
+    ],
+    "note": "",
+    "resolved": true,
+    "tone_power_frac": 1.0,
+    "variance_removed_frac": 1.0
+   }
+  ],
+  [
+   [
+    1.004081838
+   ],
+   {
+    "fan_tone_hz": 600.0,
+    "harmonics_notched": [],
+    "note": "too few finite samples to filter — passed through",
+    "resolved": false,
+    "tone_power_frac": 0.0,
+    "variance_removed_frac": 0.0
+   }
+  ],
+  [
+   [
+    "NaN"
+   ],
+   {
+    "fan_tone_hz": 600.0,
+    "harmonics_notched": [],
+    "note": "too few finite samples to filter — passed through",
+    "resolved": false,
+    "tone_power_frac": 0.0,
+    "variance_removed_frac": 0.0
+   }
+  ],
+  [
+   [
+    0.0
+   ],
+   {
+    "fan_tone_hz": 600.0,
+    "harmonics_notched": [
+     600.0
+    ],
+    "note": "",
+    "resolved": true,
+    "tone_power_frac": 1.0,
+    "variance_removed_frac": 1.0
+   }
+  ],
+  [
+   600.0
+  ]
+ ],
+ "filt.vf_none": [
+  [
+   [
+    1.019441106,
+    1.091389969,
+    1.162022227,
+    1.19715406,
+    1.190278838,
+    1.142064177,
+    1.061505127,
+    0.968767394,
+    0.883008346,
+    0.821532729,
+    0.800689905,
+    0.821825659,
+    0.882785876,
+    0.968550561,
+    1.061873859,
+    1.141478561,
+    1.189901785,
+    1.196714118,
+    1.161860378,
+    1.092089474
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [],
+    "note": "",
+    "resolved": true,
+    "tone_power_frac": 0.0005713141450920716,
+    "variance_removed_frac": 0.06457252966927962
+   }
+  ],
+  [
+   [
+    1.022475514,
+    1.097862053,
+    "NaN",
+    1.206378754,
+    1.189439566,
+    1.138935581,
+    1.061175945,
+    0.97065917,
+    0.883762435,
+    0.820257368,
+    0.799678761,
+    0.822665228,
+    0.884001973,
+    0.968100271,
+    1.060455438,
+    1.141501528,
+    1.191566741,
+    1.197280821,
+    1.159804591,
+    1.090389123
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [],
+    "note": "",
+    "resolved": true,
+    "tone_power_frac": 0.0006120270599103484,
+    "variance_removed_frac": 0.07334283385947005
+   }
+  ],
+  [
+   [
+    1.004081838
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [],
+    "note": "too few finite samples to filter — passed through",
+    "resolved": false,
+    "tone_power_frac": 0.0,
+    "variance_removed_frac": 0.0
+   }
+  ],
+  [
+   [
+    "NaN"
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [],
+    "note": "too few finite samples to filter — passed through",
+    "resolved": false,
+    "tone_power_frac": 0.0,
+    "variance_removed_frac": 0.0
+   }
+  ],
+  [
+   [
+    1.039914539
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [],
+    "note": "",
+    "resolved": true,
+    "tone_power_frac": 0.0006844255093452874,
+    "variance_removed_frac": 1.0
+   }
+  ],
+  []
+ ],
+ "filt.vf_struct": [
+  [
+   [
+    1.02328744,
+    1.088998006,
+    1.161914464,
+    1.198263544,
+    1.189701137,
+    1.142139322,
+    1.061337466,
+    0.96916092,
+    0.88241058,
+    0.822362871,
+    0.799856715,
+    0.822467383,
+    0.882058861,
+    0.969493463,
+    1.061267133,
+    1.141511582,
+    1.189626369,
+    1.197582921,
+    1.161907284,
+    1.089586691
+   ],
+   {
+    "fan_tone_hz": 137.0,
+    "harmonics_notched": [
+     137.0,
+     55.0
+    ],
+    "note": "",
+    "resolved": true,
+    "tone_power_frac": 0.0005720733970712205,
+    "variance_removed_frac": 0.06465834391036973
+   }
+  ],
+  [
+   [
+    1.020703361,
+    1.092759103,
+    "NaN",
+    1.196447685,
+    1.189798617,
+    1.142578866,
+    1.060625615,
+    0.970044134,
+    0.881404517,
+    0.823465457,
+    0.798672687,
+    0.823724361,
+    0.880732955,
+    0.970887862,
+    1.059801181,
+    1.1430563,
+    1.187989785,
+    1.199334153,
+    1.160000235,
+    1.091731972
+   ],
+   {
+    "fan_tone_hz": 137.0,
+    "harmonics_notched": [
+     137.0,
+     55.0
+    ],
+    "note": "",
+    "resolved": true,
+    "tone_power_frac": 0.0006202449044440018,
+    "variance_removed_frac": 0.0754524962755021
+   }
+  ],
+  [
+   [
+    1.004081838
+   ],
+   {
+    "fan_tone_hz": 137.0,
+    "harmonics_notched": [],
+    "note": "too few finite samples to filter — passed through",
+    "resolved": false,
+    "tone_power_frac": 0.0,
+    "variance_removed_frac": 0.0
+   }
+  ],
+  [
+   [
+    "NaN"
+   ],
+   {
+    "fan_tone_hz": 137.0,
+    "harmonics_notched": [],
+    "note": "too few finite samples to filter — passed through",
+    "resolved": false,
+    "tone_power_frac": 0.0,
+    "variance_removed_frac": 0.0
+   }
+  ],
+  [
+   [
+    1.039914539
+   ],
+   {
+    "fan_tone_hz": 137.0,
+    "harmonics_notched": [
+     137.0,
+     55.0
+    ],
+    "note": "",
+    "resolved": true,
+    "tone_power_frac": 0.0006844255093452874,
+    "variance_removed_frac": 1.0
+   }
+  ],
+  [
+   137.0,
+   55.0
+  ]
+ ],
+ "filt2.svf_low": [
+  [
+   [
+    1.029204365
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     20.0
+    ],
+    "note": "window too short for the cascade to settle past 20 Hz — mean may still carry tone residual; causal cascade (has phase lag; time-average is unaffected)",
+    "resolved": false,
+    "tone_power_frac": 0.9999999633417659,
+    "variance_removed_frac": 0.9999999633417659
+   }
+  ],
+  [
+   [
+    1.042772266,
+    1.037783523,
+    1.124698779,
+    1.184175923,
+    1.198812432,
+    1.174410187,
+    1.109293235,
+    1.022691278,
+    0.92816918,
+    0.853663087,
+    0.806205778,
+    0.805376879,
+    0.843137196,
+    0.918858693,
+    1.009136497,
+    1.099494702,
+    1.166120019,
+    1.199722944,
+    1.185963271,
+    1.135241141
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     20.0
+    ],
+    "note": "causal cascade (has phase lag; time-average is unaffected)",
+    "resolved": true,
+    "tone_power_frac": 0.06517739718111992,
+    "variance_removed_frac": 0.06517739718111992
+   }
+  ],
+  [
+   [
+    1.0,
+    1.0
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     20.0
+    ],
+    "note": "window too short for the cascade to settle past 20 Hz — mean may still carry tone residual; causal cascade (has phase lag; time-average is unaffected)",
+    "resolved": false,
+    "tone_power_frac": 0.0,
+    "variance_removed_frac": 0.0
+   }
+  ],
+  [
+   [
+    1.039914382
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     20.0
+    ],
+    "note": "window too short for the cascade to settle past 20 Hz — mean may still carry tone residual; causal cascade (has phase lag; time-average is unaffected)",
+    "resolved": false,
+    "tone_power_frac": 0.9891876802866426,
+    "variance_removed_frac": 0.9891876802866426
+   }
+  ],
+  [
+   [
+    1.087214832,
+    1.036355953
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     20.0
+    ],
+    "note": "window too short for the cascade to settle past 20 Hz — mean may still carry tone residual; causal cascade (has phase lag; time-average is unaffected)",
+    "resolved": false,
+    "tone_power_frac": 0.7968170779619042,
+    "variance_removed_frac": 0.7968170779619042
+   }
+  ],
+  [
+   [
+    1.119408928,
+    1.035321824,
+    1.124500276
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     20.0
+    ],
+    "note": "causal cascade (has phase lag; time-average is unaffected)",
+    "resolved": true,
+    "tone_power_frac": 0.5765161996840247,
+    "variance_removed_frac": 0.5765161996840247
+   }
+  ],
+  [
+   [
+    1.139377965,
+    1.034680385,
+    1.124448553,
+    1.186765281,
+    "NaN",
+    "NaN"
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     20.0
+    ],
+    "note": "causal cascade (has phase lag; time-average is unaffected)",
+    "resolved": true,
+    "tone_power_frac": 0.42208999418238535,
+    "variance_removed_frac": 0.42208999418238535
+   }
+  ],
+  [
+   20.0
+  ]
+ ],
+ "filt2.svf_one": [
+  [
+   [
+    1.004255332
+   ],
+   {
+    "fan_tone_hz": 137.0,
+    "harmonics_notched": [
+     137.0
+    ],
+    "note": "window too short for the cascade to settle past 137 Hz — mean may still carry tone residual; causal cascade (has phase lag; time-average is unaffected); first 1 samples are settling transient, excluded from stats",
+    "resolved": false,
+    "tone_power_frac": 0.02613515520586418,
+    "variance_removed_frac": 0.02613515520586418
+   }
+  ],
+  [
+   [
+    1.00434903,
+    1.106507031,
+    1.140376631,
+    1.216113459,
+    1.181230419,
+    1.149059446,
+    1.060334504,
+    0.970010144,
+    0.881619163,
+    0.819770613,
+    0.801911964,
+    0.818996374,
+    0.882072288,
+    0.966419963,
+    1.061427789,
+    1.140417376,
+    1.191483447,
+    1.198203511,
+    1.162514618,
+    1.090836933
+   ],
+   {
+    "fan_tone_hz": 137.0,
+    "harmonics_notched": [
+     137.0
+    ],
+    "note": "causal cascade (has phase lag; time-average is unaffected); first 1 samples are settling transient, excluded from stats",
+    "resolved": true,
+    "tone_power_frac": 0.05935715585682433,
+    "variance_removed_frac": 0.05935715585682433
+   }
+  ],
+  [
+   [
+    1.0,
+    1.0
+   ],
+   {
+    "fan_tone_hz": 137.0,
+    "harmonics_notched": [
+     137.0
+    ],
+    "note": "causal cascade (has phase lag; time-average is unaffected); first 1 samples are settling transient, excluded from stats",
+    "resolved": true,
+    "tone_power_frac": 0.0,
+    "variance_removed_frac": 0.0
+   }
+  ],
+  [
+   [
+    1.004329294
+   ],
+   {
+    "fan_tone_hz": 137.0,
+    "harmonics_notched": [
+     137.0
+    ],
+    "note": "causal cascade (has phase lag; time-average is unaffected); first 1 samples are settling transient, excluded from stats",
+    "resolved": true,
+    "tone_power_frac": 0.16307158129808275,
+    "variance_removed_frac": 0.16307158129808275
+   }
+  ],
+  [
+   [
+    1.004655945,
+    1.106768417
+   ],
+   {
+    "fan_tone_hz": 137.0,
+    "harmonics_notched": [
+     137.0
+    ],
+    "note": "causal cascade (has phase lag; time-average is unaffected); first 1 samples are settling transient, excluded from stats",
+    "resolved": true,
+    "tone_power_frac": 0.14877589717511464,
+    "variance_removed_frac": 0.14877589717511464
+   }
+  ],
+  [
+   [
+    1.004878274,
+    1.106957765,
+    1.139546049
+   ],
+   {
+    "fan_tone_hz": 137.0,
+    "harmonics_notched": [
+     137.0
+    ],
+    "note": "causal cascade (has phase lag; time-average is unaffected); first 1 samples are settling transient, excluded from stats",
+    "resolved": true,
+    "tone_power_frac": 0.1395552892119195,
+    "variance_removed_frac": 0.1395552892119195
+   }
+  ],
+  [
+   [
+    1.005016178,
+    1.107075211,
+    1.139329627,
+    1.217146053,
+    "NaN",
+    "NaN"
+   ],
+   {
+    "fan_tone_hz": 137.0,
+    "harmonics_notched": [
+     137.0
+    ],
+    "note": "causal cascade (has phase lag; time-average is unaffected); first 1 samples are settling transient, excluded from stats",
+    "resolved": true,
+    "tone_power_frac": 0.15645656661162566,
+    "variance_removed_frac": 0.15645656661162566
+   }
+  ],
+  [
+   137.0
+  ]
+ ],
+ "filt2.svf_slow": [
+  [
+   [
+    1.029204365
+   ],
+   {
+    "fan_tone_hz": 0.5,
+    "harmonics_notched": [
+     0.5,
+     0.5
+    ],
+    "note": "window too short for the cascade to settle past 0.5 Hz — mean may still carry tone residual; causal cascade (has phase lag; time-average is unaffected)",
+    "resolved": false,
+    "tone_power_frac": 0.9999999631957566,
+    "variance_removed_frac": 0.9999999631957566
+   }
+  ],
+  [
+   [
+    1.042772266,
+    1.037497954,
+    1.126775092,
+    1.182425275,
+    1.198514628,
+    1.170312383,
+    1.106893888,
+    1.017580675,
+    0.925959542,
+    0.850341324,
+    0.806669985,
+    0.805649506,
+    0.846973361,
+    0.922117747,
+    1.014618259,
+    1.103160606,
+    1.170540891,
+    1.201425851,
+    1.187750512,
+    1.134655717
+   ],
+   {
+    "fan_tone_hz": 0.5,
+    "harmonics_notched": [
+     0.5,
+     0.5
+    ],
+    "note": "window too short for the cascade to settle past 0.5 Hz — mean may still carry tone residual; causal cascade (has phase lag; time-average is unaffected)",
+    "resolved": false,
+    "tone_power_frac": 0.06551623868426693,
+    "variance_removed_frac": 0.06551623868426693
+   }
+  ],
+  [
+   [
+    1.0,
+    1.0
+   ],
+   {
+    "fan_tone_hz": 0.5,
+    "harmonics_notched": [
+     0.5,
+     0.5
+    ],
+    "note": "window too short for the cascade to settle past 0.5 Hz — mean may still carry tone residual; causal cascade (has phase lag; time-average is unaffected)",
+    "resolved": false,
+    "tone_power_frac": 0.0,
+    "variance_removed_frac": 0.0
+   }
+  ],
+  [
+   [
+    1.039914382
+   ],
+   {
+    "fan_tone_hz": 0.5,
+    "harmonics_notched": [
+     0.5,
+     0.5
+    ],
+    "note": "window too short for the cascade to settle past 0.5 Hz — mean may still carry tone residual; causal cascade (has phase lag; time-average is unaffected)",
+    "resolved": false,
+    "tone_power_frac": 0.9887718307674884,
+    "variance_removed_frac": 0.9887718307674884
+   }
+  ],
+  [
+   [
+    1.087214832,
+    1.034993556
+   ],
+   {
+    "fan_tone_hz": 0.5,
+    "harmonics_notched": [
+     0.5,
+     0.5
+    ],
+    "note": "window too short for the cascade to settle past 0.5 Hz — mean may still carry tone residual; causal cascade (has phase lag; time-average is unaffected)",
+    "resolved": false,
+    "tone_power_frac": 0.7741063496161246,
+    "variance_removed_frac": 0.7741063496161246
+   }
+  ],
+  [
+   [
+    1.119408927,
+    1.033179375,
+    1.129364719
+   ],
+   {
+    "fan_tone_hz": 0.5,
+    "harmonics_notched": [
+     0.5,
+     0.5
+    ],
+    "note": "window too short for the cascade to settle past 0.5 Hz — mean may still carry tone residual; causal cascade (has phase lag; time-average is unaffected)",
+    "resolved": false,
+    "tone_power_frac": 0.5612128072128341,
+    "variance_removed_frac": 0.5612128072128341
+   }
+  ],
+  [
+   [
+    1.139377964,
+    1.032054093,
+    1.130039492,
+    1.183551961,
+    "NaN",
+    "NaN"
+   ],
+   {
+    "fan_tone_hz": 0.5,
+    "harmonics_notched": [
+     0.5,
+     0.5
+    ],
+    "note": "window too short for the cascade to settle past 0.5 Hz — mean may still carry tone residual; causal cascade (has phase lag; time-average is unaffected)",
+    "resolved": false,
+    "tone_power_frac": 0.4115961138439248,
+    "variance_removed_frac": 0.4115961138439248
+   }
+  ],
+  [
+   0.5,
+   0.5
+  ]
+ ],
+ "filt2.svf_tail": [
+  [
+   [
+    1.029204365
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     55.0
+    ],
+    "note": "window too short for the cascade to settle past 55 Hz — mean may still carry tone residual; causal cascade (has phase lag; time-average is unaffected); first 200 samples are settling transient, excluded from stats",
+    "resolved": false,
+    "tone_power_frac": 0.9999999636021006,
+    "variance_removed_frac": 0.9999999636021006
+   }
+  ],
+  [
+   [
+    1.042772267,
+    1.037137548,
+    1.126665319,
+    1.183123519,
+    1.200009715,
+    1.172844955,
+    1.110020349,
+    1.020752272,
+    0.928779613,
+    0.852102204,
+    0.807076134,
+    0.804569428,
+    0.844419055,
+    0.918617506,
+    1.010601956,
+    1.099239991,
+    1.167282294,
+    1.199057114,
+    1.186412251,
+    1.134137873
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     55.0
+    ],
+    "note": "causal cascade (has phase lag; time-average is unaffected); first 200 samples are settling transient, excluded from stats",
+    "resolved": true,
+    "tone_power_frac": 0.008411250405784942,
+    "variance_removed_frac": 0.008411250405784942
+   }
+  ],
+  [
+   [
+    1.0,
+    1.0
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     55.0
+    ],
+    "note": "window too short for the cascade to settle past 55 Hz — mean may still carry tone residual; causal cascade (has phase lag; time-average is unaffected); first 200 samples are settling transient, excluded from stats",
+    "resolved": false,
+    "tone_power_frac": 0.0,
+    "variance_removed_frac": 0.0
+   }
+  ],
+  [
+   [
+    1.039914383
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     55.0
+    ],
+    "note": "window too short for the cascade to settle past 55 Hz — mean may still carry tone residual; causal cascade (has phase lag; time-average is unaffected); first 200 samples are settling transient, excluded from stats",
+    "resolved": false,
+    "tone_power_frac": 0.9891149800359749,
+    "variance_removed_frac": 0.9891149800359749
+   }
+  ],
+  [
+   [
+    1.087214833,
+    1.034544592
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     55.0
+    ],
+    "note": "window too short for the cascade to settle past 55 Hz — mean may still carry tone residual; causal cascade (has phase lag; time-average is unaffected); first 200 samples are settling transient, excluded from stats",
+    "resolved": false,
+    "tone_power_frac": 0.7766149496679589,
+    "variance_removed_frac": 0.7766149496679589
+   }
+  ],
+  [
+   [
+    1.119408929,
+    1.03266626,
+    1.128694125
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     55.0
+    ],
+    "note": "window too short for the cascade to settle past 55 Hz — mean may still carry tone residual; causal cascade (has phase lag; time-average is unaffected); first 200 samples are settling transient, excluded from stats",
+    "resolved": false,
+    "tone_power_frac": 0.5634513374123221,
+    "variance_removed_frac": 0.5634513374123221
+   }
+  ],
+  [
+   [
+    1.139377966,
+    1.031501187,
+    1.129222766,
+    1.183152682,
+    "NaN",
+    "NaN"
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     55.0
+    ],
+    "note": "causal cascade (has phase lag; time-average is unaffected); first 200 samples are settling transient, excluded from stats",
+    "resolved": true,
+    "tone_power_frac": 0.4132637822542272,
+    "variance_removed_frac": 0.4132637822542272
+   }
+  ],
+  [
+   55.0
+  ]
+ ],
+ "filt2.svf_wlow": [
+  [
+   [
+    1.029204365
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     20.0
+    ],
+    "note": "window too short for the cascade to settle past 20 Hz — mean may still carry tone residual; causal cascade (has phase lag; time-average is unaffected); first 20 samples are settling transient, excluded from stats",
+    "resolved": false,
+    "tone_power_frac": 0.9999999633417659,
+    "variance_removed_frac": 0.9999999633417659
+   }
+  ],
+  [
+   [
+    1.042772266,
+    1.037783523,
+    1.124698779,
+    1.184175923,
+    1.198812432,
+    1.174410187,
+    1.109293235,
+    1.022691278,
+    0.92816918,
+    0.853663087,
+    0.806205778,
+    0.805376879,
+    0.843137196,
+    0.918858693,
+    1.009136497,
+    1.099494702,
+    1.166120019,
+    1.199722944,
+    1.185963271,
+    1.135241141
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     20.0
+    ],
+    "note": "causal cascade (has phase lag; time-average is unaffected); first 20 samples are settling transient, excluded from stats",
+    "resolved": true,
+    "tone_power_frac": 0.06369723859750809,
+    "variance_removed_frac": 0.06369723859750809
+   }
+  ],
+  [
+   [
+    1.0,
+    1.0
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     20.0
+    ],
+    "note": "window too short for the cascade to settle past 20 Hz — mean may still carry tone residual; causal cascade (has phase lag; time-average is unaffected); first 20 samples are settling transient, excluded from stats",
+    "resolved": false,
+    "tone_power_frac": 0.0,
+    "variance_removed_frac": 0.0
+   }
+  ],
+  [
+   [
+    1.039914382
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     20.0
+    ],
+    "note": "window too short for the cascade to settle past 20 Hz — mean may still carry tone residual; causal cascade (has phase lag; time-average is unaffected); first 20 samples are settling transient, excluded from stats",
+    "resolved": false,
+    "tone_power_frac": 0.9956333424277329,
+    "variance_removed_frac": 0.9956333424277329
+   }
+  ],
+  [
+   [
+    1.087214832,
+    1.036355953
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     20.0
+    ],
+    "note": "window too short for the cascade to settle past 20 Hz — mean may still carry tone residual; causal cascade (has phase lag; time-average is unaffected); first 20 samples are settling transient, excluded from stats",
+    "resolved": false,
+    "tone_power_frac": 0.7016087859123463,
+    "variance_removed_frac": 0.7016087859123463
+   }
+  ],
+  [
+   [
+    1.119408928,
+    1.035321824,
+    1.124500276
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     20.0
+    ],
+    "note": "causal cascade (has phase lag; time-average is unaffected); first 20 samples are settling transient, excluded from stats",
+    "resolved": true,
+    "tone_power_frac": 0.38107723508309943,
+    "variance_removed_frac": 0.38107723508309943
+   }
+  ],
+  [
+   [
+    1.139377965,
+    1.034680385,
+    1.124448553,
+    1.186765281,
+    "NaN",
+    "NaN"
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     20.0
+    ],
+    "note": "causal cascade (has phase lag; time-average is unaffected); first 20 samples are settling transient, excluded from stats",
+    "resolved": true,
+    "tone_power_frac": 0.16489881334588652,
+    "variance_removed_frac": 0.16489881334588652
+   }
+  ],
+  [
+   20.0
+  ]
+ ],
+ "filt2.vf_band": [
+  [
+   [
+    0.0
+   ],
+   {
+    "fan_tone_hz": 100.0,
+    "harmonics_notched": [
+     100.0
+    ],
+    "note": "run too short to resolve 100 Hz (resolution 5e+02 Hz) — notch is approximate",
+    "resolved": false,
+    "tone_power_frac": 1.0,
+    "variance_removed_frac": 1.0
+   }
+  ],
+  [
+   [
+    1.020257216,
+    1.091515594,
+    1.161646639,
+    1.197065611,
+    1.190639873,
+    1.142140524,
+    1.061149286,
+    0.968697199,
+    0.883361848,
+    0.821598788,
+    0.800337227,
+    0.821763167,
+    0.883138989,
+    0.968609068,
+    1.061518699,
+    1.141425888,
+    1.190262187,
+    1.196755194,
+    1.161483709,
+    1.092086397
+   ],
+   {
+    "fan_tone_hz": 100.0,
+    "harmonics_notched": [
+     100.0
+    ],
+    "note": "",
+    "resolved": true,
+    "tone_power_frac": 0.0005718606908134068,
+    "variance_removed_frac": 0.0645756693199393
+   }
+  ],
+  [
+   [
+    1.0,
+    1.0
+   ],
+   {
+    "fan_tone_hz": 100.0,
+    "harmonics_notched": [
+     100.0
+    ],
+    "note": "",
+    "resolved": true,
+    "tone_power_frac": 0.0,
+    "variance_removed_frac": 0.0
+   }
+  ],
+  [
+   [
+    1.039914539
+   ],
+   {
+    "fan_tone_hz": 100.0,
+    "harmonics_notched": [
+     100.0
+    ],
+    "note": "",
+    "resolved": true,
+    "tone_power_frac": 0.0006844255093452874,
+    "variance_removed_frac": 1.0
+   }
+  ],
+  [
+   [
+    1.083003272,
+    1.091427119
+   ],
+   {
+    "fan_tone_hz": 100.0,
+    "harmonics_notched": [
+     100.0
+    ],
+    "note": "",
+    "resolved": true,
+    "tone_power_frac": 0.0007782611221430727,
+    "variance_removed_frac": 0.5683601923903026
+   }
+  ],
+  [
+   [
+    1.103886537,
+    1.097021612,
+    1.157320145
+   ],
+   {
+    "fan_tone_hz": 100.0,
+    "harmonics_notched": [
+     100.0
+    ],
+    "note": "",
+    "resolved": true,
+    "tone_power_frac": 0.0007554032166708821,
+    "variance_removed_frac": 0.4062266141677341
+   }
+  ],
+  [
+   [
+    1.075067376,
+    1.089773249,
+    1.158605971,
+    1.197792546,
+    "NaN",
+    "NaN"
+   ],
+   {
+    "fan_tone_hz": 100.0,
+    "harmonics_notched": [
+     100.0
+    ],
+    "note": "",
+    "resolved": true,
+    "tone_power_frac": 0.0003950282361944842,
+    "variance_removed_frac": 0.34609733829113554
+   }
+  ],
+  [
+   100.0
+  ]
+ ],
+ "filt2.vf_edge": [
+  [
+   [
+    0.0
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     50.0
+    ],
+    "note": "run too short to resolve 50 Hz (resolution 5e+02 Hz) — notch is approximate",
+    "resolved": false,
+    "tone_power_frac": 1.0,
+    "variance_removed_frac": 1.0
+   }
+  ],
+  [
+   [
+    1.020257216,
+    1.091515594,
+    1.161646639,
+    1.197065611,
+    1.190639873,
+    1.142140524,
+    1.061149286,
+    0.968697199,
+    0.883361848,
+    0.821598788,
+    0.800337227,
+    0.821763167,
+    0.883138989,
+    0.968609068,
+    1.061518699,
+    1.141425888,
+    1.190262187,
+    1.196755194,
+    1.161483709,
+    1.092086397
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     50.0
+    ],
+    "note": "",
+    "resolved": true,
+    "tone_power_frac": 0.0005718606908134068,
+    "variance_removed_frac": 0.0645756693199393
+   }
+  ],
+  [
+   [
+    1.0,
+    1.0
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     50.0
+    ],
+    "note": "",
+    "resolved": true,
+    "tone_power_frac": 0.0,
+    "variance_removed_frac": 0.0
+   }
+  ],
+  [
+   [
+    0.0
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     50.0
+    ],
+    "note": "",
+    "resolved": true,
+    "tone_power_frac": 0.9999999999999999,
+    "variance_removed_frac": 1.0
+   }
+  ],
+  [
+   [
+    1.083003272,
+    1.091427119
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     50.0
+    ],
+    "note": "",
+    "resolved": true,
+    "tone_power_frac": 0.0007782611221430727,
+    "variance_removed_frac": 0.5683601923903026
+   }
+  ],
+  [
+   [
+    1.103886537,
+    1.097021612,
+    1.157320145
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     50.0
+    ],
+    "note": "",
+    "resolved": true,
+    "tone_power_frac": 0.0007554032166708821,
+    "variance_removed_frac": 0.4062266141677341
+   }
+  ],
+  [
+   [
+    1.075067376,
+    1.089773249,
+    1.158605971,
+    1.197792546,
+    "NaN",
+    "NaN"
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     50.0
+    ],
+    "note": "",
+    "resolved": true,
+    "tone_power_frac": 0.0003950282361944842,
+    "variance_removed_frac": 0.34609733829113554
+   }
+  ],
+  [
+   50.0
+  ]
+ ],
+ "filt2.vf_low": [
+  [
+   [
+    0.0
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     20.0
+    ],
+    "note": "run too short to resolve 20 Hz (resolution 5e+02 Hz) — notch is approximate",
+    "resolved": false,
+    "tone_power_frac": 1.0,
+    "variance_removed_frac": 1.0
+   }
+  ],
+  [
+   [
+    1.023831318,
+    1.088051192,
+    1.164806436,
+    1.194375994,
+    1.192738981,
+    1.140695438,
+    1.061939756,
+    0.968498961,
+    0.88308721,
+    0.822181442,
+    0.799641062,
+    0.822367392,
+    0.882823347,
+    0.968467202,
+    1.062243039,
+    1.140050085,
+    1.192295834,
+    1.194120548,
+    1.164604748,
+    1.088640314
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     20.0
+    ],
+    "note": "",
+    "resolved": true,
+    "tone_power_frac": 0.0005733771956339202,
+    "variance_removed_frac": 0.06474691612075056
+   }
+  ],
+  [
+   [
+    0.0,
+    0.0
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     20.0
+    ],
+    "note": "",
+    "resolved": true,
+    "tone_power_frac": 1.0,
+    "variance_removed_frac": 0.0
+   }
+  ],
+  [
+   [
+    0.0
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     20.0
+    ],
+    "note": "run too short to resolve 20 Hz (resolution 50 Hz) — notch is approximate",
+    "resolved": false,
+    "tone_power_frac": 0.9999999999999999,
+    "variance_removed_frac": 1.0
+   }
+  ],
+  [
+   [
+    0.0,
+    0.0
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     20.0
+    ],
+    "note": "",
+    "resolved": true,
+    "tone_power_frac": 0.9999999999999999,
+    "variance_removed_frac": 1.0
+   }
+  ],
+  [
+   [
+    1.119409431,
+    1.119409431,
+    1.119409431
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     20.0
+    ],
+    "note": "",
+    "resolved": true,
+    "tone_power_frac": 0.0018592006190320653,
+    "variance_removed_frac": 1.0
+   }
+  ],
+  [
+   [
+    1.076301451,
+    1.103867584,
+    1.146909337,
+    1.191763068,
+    "NaN",
+    "NaN"
+   ],
+   {
+    "fan_tone_hz": null,
+    "harmonics_notched": [
+     20.0
+    ],
+    "note": "",
+    "resolved": true,
+    "tone_power_frac": 0.0005513839524425614,
+    "variance_removed_frac": 0.5427158339474342
+   }
+  ],
+  [
+   20.0
+  ]
+ ],
+ "filt2.vf_slow": [
+  [
+   [
+    0.0
+   ],
+   {
+    "fan_tone_hz": 0.5,
+    "harmonics_notched": [
+     0.5,
+     1.0,
+     1.5,
+     0.5
+    ],
+    "note": "run too short to resolve 0.5 Hz (resolution 5e+02 Hz) — notch is approximate",
+    "resolved": false,
+    "tone_power_frac": 1.0,
+    "variance_removed_frac": 1.0
+   }
+  ],
+  [
+   [
+    -0.176043005,
+    -0.097437247,
+    -0.00562124,
+    0.063693383,
+    0.100049452,
+    0.099021966,
+    0.065536539,
+    0.015964774,
+    -0.035321507,
+    -0.075206329,
+    -0.088906334,
+    -0.074977168,
+    -0.035421155,
+    0.016046197,
+    0.06610522,
+    0.098516766,
+    0.09987083,
+    0.063552133,
+    -0.005661493,
+    -0.096802288
+   ],
+   {
+    "fan_tone_hz": 0.5,
+    "harmonics_notched": [
+     0.5,
+     1.0,
+     1.5,
+     0.5
+    ],
+    "note": "run too short to resolve 0.5 Hz (resolution 2 Hz) — notch is approximate",
+    "resolved": false,
+    "tone_power_frac": 0.997087477172572,
+    "variance_removed_frac": 0.6711120137961404
+   }
+  ],
+  [
+   [
+    0.0,
+    0.0
+   ],
+   {
+    "fan_tone_hz": 0.5,
+    "harmonics_notched": [
+     0.5,
+     1.0,
+     1.5,
+     0.5
+    ],
+    "note": "run too short to resolve 0.5 Hz (resolution 20 Hz) — notch is approximate",
+    "resolved": false,
+    "tone_power_frac": 1.0,
+    "variance_removed_frac": 0.0
+   }
+  ],
+  [
+   [
+    0.0
+   ],
+   {
+    "fan_tone_hz": 0.5,
+    "harmonics_notched": [
+     0.5,
+     1.0,
+     1.5,
+     0.5
+    ],
+    "note": "run too short to resolve 0.5 Hz (resolution 50 Hz) — notch is approximate",
+    "resolved": false,
+    "tone_power_frac": 0.9999999999999999,
+    "variance_removed_frac": 1.0
+   }
+  ],
+  [
+   [
+    0.0,
+    0.0
+   ],
+   {
+    "fan_tone_hz": 0.5,
+    "harmonics_notched": [
+     0.5,
+     1.0,
+     1.5,
+     0.5
+    ],
+    "note": "run too short to resolve 0.5 Hz (resolution 20 Hz) — notch is approximate",
+    "resolved": false,
+    "tone_power_frac": 0.9999999999999999,
+    "variance_removed_frac": 1.0
+   }
+  ],
+  [
+   [
+    -0.003100945,
+    0.028782638,
+    -0.025681692
+   ],
+   {
+    "fan_tone_hz": 0.5,
+    "harmonics_notched": [
+     0.5,
+     1.0,
+     1.5,
+     0.5
+    ],
+    "note": "run too short to resolve 0.5 Hz (resolution 13 Hz) — notch is approximate",
+    "resolved": false,
+    "tone_power_frac": 0.9998011800165297,
+    "variance_removed_frac": 0.8930473884938253
+   }
+  ],
+  [
+   [
+    -0.006580372,
+    -0.004076659,
+    0.007025254,
+    0.000683182,
+    "NaN",
+    "NaN"
+   ],
+   {
+    "fan_tone_hz": 0.5,
+    "harmonics_notched": [
+     0.5,
+     1.0,
+     1.5,
+     0.5
+    ],
+    "note": "run too short to resolve 0.5 Hz (resolution 6.7 Hz) — notch is approximate",
+    "resolved": false,
+    "tone_power_frac": 0.9998243140554474,
+    "variance_removed_frac": 0.95036639472189
+   }
+  ],
+  [
+   0.5,
+   1.0,
+   1.5,
+   0.5
+  ]
+ ],
+ "offline": [
+  {
+   "message": "no balance DAQ backend bound — plug in a nidaqmx/vendor backend; this offline stub will not fabricate bridge voltages",
+   "raised": "DAQUnavailable"
+  },
+  {
+   "message": "no scanner backend bound — plug in a Scanivalve/Chell backend; this offline stub will not fabricate transducer voltages",
+   "raised": "DAQUnavailable"
+  },
+  "offline",
+  false,
+  true
+ ],
+ "prov": [
+  false,
+  true,
+  false,
+  "A2 via SYNTHETIC: 6000 samp @ 2000 Hz (3s), fan/vibration-filtered — WARNING: 3s window is short; turbulence/vibration left in the mean as bias — WARNING: chassis dropped 4 samples — NOTE: synthetic stream, not a measured run",
+  "B via nidaq: 5000 samp @ 500 Hz (10s), UNFILTERED — WARNING: no vibration filter; fan blade-pass tone biases the time-average"
+ ],
+ "prov.extra": [
+  true,
+  "C via nidaq: 2750 samp @ 500 Hz (5.5s), UNFILTERED — WARNING: no vibration filter; fan blade-pass tone biases the time-average",
+  "NaN"
+ ],
+ "reading": [
+  120.0,
+  -3.0,
+  -900.0,
+  900.0,
+  true,
+  "Balance: Fx(drag)=+120.0±1.5 N, Fy(side)=-3.0±nan N, Fz(lift)=-900.0±4.0 N, downforce=+900.0 N [1000 samp]; A2 via SYNTHETIC: 6000 samp @ 2000 Hz (3s), fan/vibration-filtered — WARNING: 3s window is short; turbulence/vibration left in the mean as bias — WARNING: chassis dropped 4 samples — NOTE: synthetic stream, not a measured run",
+  "NaN",
+  "NaN",
+  false,
+  "Balance: Fx(drag)=hole, Fy(side)=hole, Fz(lift)=hole, downforce=+nan N [0 samp]; provenance unknown"
+ ],
+ "scanner": [
+  3,
+  "chell scanner Z: 3 ports, 2 calibrated, ±6895 Pa FS",
+  "scanivalve scanner ?: 0 ports, 0 calibrated, ±6895 Pa FS"
+ ],
+ "spec": [
+  1000,
+  1,
+  20000
+ ],
+ "svf.bad": {
+  "message": "sample_rate_hz must be positive",
+  "raised": "ValueError"
+ },
+ "svf.stream": [
+  250,
+  [
+   0.9999999999999999,
+   1.000012015678615,
+   1.0000782370091958,
+   1.0002491670333757
+  ],
+  [
+   1.000545039719,
+   1.000966876474,
+   1.001519411089,
+   1.002198596665
+  ]
+ ],
+ "syn.cal": [
+  [
+   [
+    0.743482088,
+    0.023252827,
+    -3.04036276,
+    0.006591477,
+    0.463586027,
+    -5.2033e-05
+   ],
+   [
+    0.764626998,
+    0.047347951,
+    -3.052220242,
+    0.023279354,
+    0.503215445,
+    0.036617896
+   ],
+   [
+    0.791084546,
+    0.068023562,
+    -3.034013071,
+    0.060445387,
+    0.49876164,
+    0.048936114
+   ]
+  ],
+  [
+   [
+    -0.802959554,
+    0.023100509,
+    -0.009895892
+   ],
+   [
+    -0.766622691,
+    0.026141914,
+    0.001310374
+   ],
+   [
+    -0.756896985,
+    0.047170653,
+    0.02872127
+   ]
+  ],
+  [
+   1000,
+   0
+  ]
+ ],
+ "syn.extra": [
+  [
+   [
+    150.101257302,
+    5.198678951,
+    -1199.693595773,
+    0.001049001,
+    29.994643306,
+    0.003615951
+   ],
+   [
+    150.133901636,
+    5.230332445,
+    -1199.686175717,
+    0.008207421,
+    30.014628891,
+    0.021274895
+   ]
+  ],
+  [
+   [
+    0.186481354,
+    0.020507351,
+    0.005838474
+   ],
+   [
+    0.214235915,
+    0.03086195,
+    0.006901341
+   ]
+  ]
+ ],
+ "syn.nocal": [
+  [
+   [
+    0.143482088,
+    0.003252827,
+    -1.18336276,
+    0.006591477,
+    0.013586027,
+    -5.2033e-05
+   ],
+   [
+    0.164626998,
+    0.027347951,
+    -1.195220242,
+    0.023279354,
+    0.053215445,
+    0.036617896
+   ],
+   [
+    0.191084546,
+    0.048023562,
+    -1.177013071,
+    0.060445387,
+    0.04876164,
+    0.048936114
+   ]
+  ],
+  [
+   [
+    -0.802959554,
+    0.023100509,
+    -0.009895892
+   ],
+   [
+    -0.766622691,
+    0.026141914,
+    0.001310374
+   ],
+   [
+    -0.756896985,
+    0.047170653,
+    0.02872127
+   ]
+  ],
+  [
+   1000,
+   0
+  ]
+ ],
+ "syn.uncal": [
+  [
+   [
+    0.143482088,
+    0.003252827,
+    -1.18336276,
+    0.006591477,
+    0.013586027,
+    -5.2033e-05
+   ],
+   [
+    0.164626998,
+    0.027347951,
+    -1.195220242,
+    0.023279354,
+    0.053215445,
+    0.036617896
+   ],
+   [
+    0.191084546,
+    0.048023562,
+    -1.177013071,
+    0.060445387,
+    0.04876164,
+    0.048936114
+   ]
+  ],
+  [
+   [
+    -0.802959554,
+    0.023100509,
+    -0.009895892
+   ],
+   [
+    -0.766622691,
+    0.026141914,
+    0.001310374
+   ],
+   [
+    -0.756896985,
+    0.047170653,
+    0.02872127
+   ]
+  ],
+  [
+   1000,
+   0
+  ]
+ ],
+ "vi.acquire": [
+  {
+   "Fx": 150.0,
+   "Fy": 5.0,
+   "Fz": -1200.0,
+   "Mx": 0.0,
+   "My": 30.0,
+   "Mz": 0.0
+  },
+  {
+   "Fx": 0.0,
+   "Fy": 0.0,
+   "Fz": 0.0,
+   "Mx": 0.0,
+   "My": 0.0,
+   "Mz": 0.0
+  },
+  [
+   [
+    -0.8,
+    0.0,
+    0.0
+   ],
+   [
+    -0.8,
+    0.0,
+    0.0
+   ]
+  ]
+ ],
+ "vi.badshape": [
+  {
+   "message": "balance backend must return (n_samples, 6) bridge volts",
+   "raised": "ValueError"
+  },
+  {
+   "message": "scanner backend must return (n_samples, n_channels)",
+   "raised": "ValueError"
+  }
+ ],
+ "vi.bare": [
+  {
+   "message": "no force balance bound to this VI",
+   "raised": "DAQUnavailable"
+  },
+  {
+   "message": "no pressure scanners bound to this VI",
+   "raised": "DAQUnavailable"
+  },
+  "VirtualInstrument @ X [backend=offline]\n  synthetic-cDAQ: 2000 Hz (Nyquist 1000 Hz), 4 slots\n  (no instruments bound)",
+  "offline"
+ ],
+ "vi.int": [
+  [
+   145.5,
+   146.5,
+   147.5
+  ],
+  [
+   139.511839629,
+   140.511839629,
+   141.511839629
+  ],
+  [
+   133.559151422,
+   134.559151422,
+   135.559151422
+  ]
+ ],
+ "vi.raw": [
+  {
+   "Fx": 150.05315672909694,
+   "Fy": 5.070030399165289,
+   "Fz": -1199.7810940549484,
+   "Mx": 0.027472374242838514,
+   "My": 30.02727293363109,
+   "Mz": 0.02701214967686745
+  },
+  {
+   "Fx": 0.2354163958416303,
+   "Fy": 0.23211387376125292,
+   "Fz": 0.5120085834279127,
+   "Mx": 0.0578364041617025,
+   "My": 0.06669824068919937,
+   "Mz": 0.0581542224808259
+  },
+  1000,
+  "Balance: Fx(drag)=+150.1±0.2 N, Fy(side)=+5.1±0.2 N, Fz(lift)=-1199.8±0.5 N, downforce=+1199.8 N [1000 samp]; A2 via SYNTHETIC: 1000 samp @ 2000 Hz (0.5s), UNFILTERED — WARNING: 0.5s window is short; turbulence/vibration left in the mean as bias — WARNING: no vibration filter; fan blade-pass tone biases the time-average — NOTE: synthetic stream, not a measured run",
+  [
+   1000,
+   6
+  ],
+  [
+   [
+    -0.827859428,
+    0.002317864,
+    -0.00992345,
+    -0.008059459,
+    0.008764578,
+    -0.011230085
+   ],
+   [
+    -0.778132671,
+    0.016097309,
+    0.006112228,
+    0.017550821,
+    0.04137385,
+    0.030295345
+   ]
+  ],
+  [
+   "t0",
+   "t1",
+   "t2",
+   "u0",
+   "u1",
+   "u2"
+  ],
+  [
+   "t0",
+   "t1",
+   "u0",
+   "u1"
+  ],
+  {
+   "blockage_corrected": false,
+   "blockage_ratio": null,
+   "facility": "A2",
+   "ground_state": "moving-belt",
+   "notes": "reduced from a live VI acquisition (volts -> Pa -> C_p)",
+   "p_static_inf_pa": 10.0,
+   "p_total_inf_pa": 300.0,
+   "reynolds": null,
+   "rho": 1.2,
+   "sample_rate_hz": 2000.0,
+   "sample_seconds": 0.5,
+   "speed_ms": 22.0
+  },
+  "VirtualInstrument @ A2 [backend=synthetic]\n  synthetic-cDAQ: 2000 Hz (Nyquist 1000 Hz), 4 slots\n  force balance ? [under-floor sting]: balance B6: 6x6 cal, cond=8.0, max cross-talk 8% of full-scale, rail ±10 V\n  chell scanner Z: 3 ports, 2 calibrated, ±6895 Pa FS\n  chell scanner Z: 3 ports, 1 calibrated, ±6895 Pa FS",
+  {
+   "backend": "synthetic",
+   "dropped_samples": 0,
+   "facility": "A2",
+   "filtered": false,
+   "ground_state": "moving-belt",
+   "n_samples": 1000,
+   "notes": "",
+   "rho": 1.2,
+   "sample_rate_hz": 2000.0,
+   "seconds": 0.5,
+   "speed_ms": 22.0,
+   "synthetic": true
+  },
+  [
+   [
+    200.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    200.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    30.0,
+    12.0,
+    400.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    50.0,
+    0.0,
+    0.0
+   ],
+   [
+    8.0,
+    0.0,
+    0.0,
+    0.0,
+    50.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    50.0
+   ]
+  ],
+  {
+   "pitch_deg": 0.0,
+   "ride_height_mm": 30.0,
+   "roll_deg": 0.0,
+   "speed_ms": 20.0,
+   "yaw_deg": 0.0
+  }
+ ],
+ "vi.svf": [
+  {
+   "Fx": 150.02385705957172,
+   "Fy": 5.0452752261823495,
+   "Fz": -1199.7758478097553,
+   "Mx": 0.02369970642008466,
+   "My": 30.019891117079194,
+   "Mz": 0.01940818086379897
+  },
+  {
+   "Fx": 0.011882922324837971,
+   "Fy": 0.008587281590424326,
+   "Fz": 0.019505817478743304,
+   "Mx": 0.0021677975255601266,
+   "My": 0.002634358863890592,
+   "Mz": 0.002621543028050991
+  },
+  1000,
+  "Balance: Fx(drag)=+150.0±0.0 N, Fy(side)=+5.0±0.0 N, Fz(lift)=-1199.8±0.0 N, downforce=+1199.8 N [1000 samp]; A2 via SYNTHETIC: 1000 samp @ 2000 Hz (0.5s), fan/vibration-filtered — WARNING: 0.5s window is short; turbulence/vibration left in the mean as bias — NOTE: synthetic stream, not a measured run",
+  [
+   1000,
+   6
+  ],
+  [
+   [
+    -0.800016969,
+    0.000923916,
+    0.00036399,
+    0.000446588,
+    0.000170106,
+    2.7524e-05
+   ],
+   [
+    -0.800017666,
+    0.00092402,
+    0.000363722,
+    0.000446419,
+    0.000170524,
+    2.7333e-05
+   ]
+  ],
+  [
+   "t0",
+   "t1",
+   "t2",
+   "u0",
+   "u1",
+   "u2"
+  ],
+  [
+   "t0",
+   "t1",
+   "u0",
+   "u1"
+  ],
+  {
+   "blockage_corrected": false,
+   "blockage_ratio": null,
+   "facility": "A2",
+   "ground_state": "moving-belt",
+   "notes": "reduced from a live VI acquisition (volts -> Pa -> C_p)",
+   "p_static_inf_pa": 10.0,
+   "p_total_inf_pa": 300.0,
+   "reynolds": null,
+   "rho": 1.2,
+   "sample_rate_hz": 2000.0,
+   "sample_seconds": 0.5,
+   "speed_ms": 22.0
+  },
+  "VirtualInstrument @ A2 [backend=synthetic]\n  synthetic-cDAQ: 2000 Hz (Nyquist 1000 Hz), 4 slots\n  force balance ? [under-floor sting]: balance B6: 6x6 cal, cond=8.0, max cross-talk 8% of full-scale, rail ±10 V\n  chell scanner Z: 3 ports, 2 calibrated, ±6895 Pa FS\n  chell scanner Z: 3 ports, 1 calibrated, ±6895 Pa FS",
+  {
+   "backend": "synthetic",
+   "dropped_samples": 0,
+   "facility": "A2",
+   "filtered": true,
+   "ground_state": "moving-belt",
+   "n_samples": 1000,
+   "notes": "",
+   "rho": 1.2,
+   "sample_rate_hz": 2000.0,
+   "seconds": 0.5,
+   "speed_ms": 22.0,
+   "synthetic": true
+  },
+  [
+   [
+    200.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    200.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    30.0,
+    12.0,
+    400.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    50.0,
+    0.0,
+    0.0
+   ],
+   [
+    8.0,
+    0.0,
+    0.0,
+    0.0,
+    50.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    50.0
+   ]
+  ],
+  {
+   "pitch_deg": 0.0,
+   "ride_height_mm": 30.0,
+   "roll_deg": 0.0,
+   "speed_ms": 20.0,
+   "yaw_deg": 0.0
+  }
+ ],
+ "vi.tiny": [
+  [
+   {
+    "Fx": 0.0,
+    "Fy": 0.0,
+    "Fz": 0.0,
+    "Mx": 0.0,
+    "My": 0.0,
+    "Mz": 0.0
+   },
+   {
+    "Fx": 149.34915432626434,
+    "Fy": 6.547613173455323,
+    "Fz": -1198.8799273814625,
+    "Mx": -0.2769114182120262,
+    "My": 30.46274989861359,
+    "Mz": -0.15527827332957628
+   }
+  ],
+  [
+   {
+    "Fx": 2.541815319478644,
+    "Fy": 1.9860362802379343,
+    "Fz": 5.445775413612296,
+    "Mx": 0.5933491767517252,
+    "My": 0.569534078399016,
+    "Mz": 0.7759632952874316
+   },
+   {
+    "Fx": 151.9168649616095,
+    "Fy": 7.998060221926972,
+    "Fz": -1189.0901689876619,
+    "Mx": 0.2925379843452002,
+    "My": 30.218505576846788,
+    "Mz": 0.21634257492371933
+   }
+  ]
+ ],
+ "vi.uncal": [
+  {
+   "Fx": "NaN",
+   "Fy": "NaN",
+   "Fz": "NaN",
+   "Mx": "NaN",
+   "My": "NaN",
+   "Mz": "NaN"
+  },
+  0,
+  "Balance: Fx(drag)=hole, Fy(side)=hole, Fz(lift)=hole, downforce=+nan N [0 samp]; Y via SYNTHETIC: 1000 samp @ 2000 Hz (0.5s), UNFILTERED — WARNING: 0.5s window is short; turbulence/vibration left in the mean as bias — WARNING: no vibration filter; fan blade-pass tone biases the time-average — NOTE: synthetic stream, not a measured run",
+  "VirtualInstrument @ Y [backend=synthetic]\n  synthetic-cDAQ: 2000 Hz (Nyquist 1000 Hz), 4 slots\n  force balance ? [under-floor sting]: balance ?: UNCALIBRATED — no interaction matrix; bridge volts are not forces and reduce to holes",
+  {
+   "Fx": "NaN",
+   "Fy": "NaN",
+   "Fz": "NaN",
+   "Mx": "NaN",
+   "My": "NaN",
+   "Mz": "NaN"
+  },
+  {
+   "backend": "synthetic",
+   "dropped_samples": 0,
+   "facility": "Y",
+   "filtered": false,
+   "ground_state": "suction-fixed",
+   "n_samples": 1000,
+   "notes": "",
+   "rho": 1.225,
+   "sample_rate_hz": 2000.0,
+   "seconds": 0.5,
+   "speed_ms": 20.0,
+   "synthetic": true
+  },
+  null
+ ],
+ "vi.vf": [
+  {
+   "Fx": 150.05315672909694,
+   "Fy": 5.07003039916529,
+   "Fz": -1199.7810940549484,
+   "Mx": 0.027472374242838514,
+   "My": 30.02727293363109,
+   "Mz": 0.027012149676867443
+  },
+  {
+   "Fx": 0.013680453466120662,
+   "Fy": 0.010946111041661693,
+   "Fz": 0.022187065317617445,
+   "Mx": 0.002626541440526572,
+   "My": 0.0037999474859429913,
+   "Mz": 0.002905456228907545
+  },
+  1000,
+  "Balance: Fx(drag)=+150.1±0.0 N, Fy(side)=+5.1±0.0 N, Fz(lift)=-1199.8±0.0 N, downforce=+1199.8 N [1000 samp]; A2 via SYNTHETIC: 1000 samp @ 2000 Hz (0.5s), fan/vibration-filtered — WARNING: 0.5s window is short; turbulence/vibration left in the mean as bias — NOTE: synthetic stream, not a measured run",
+  [
+   1000,
+   6
+  ],
+  [
+   [
+    -0.794239315,
+    0.010178959,
+    0.007496529,
+    0.005445338,
+    0.007355381,
+    0.005683375
+   ],
+   [
+    -0.794106692,
+    0.010179573,
+    0.007424982,
+    0.005310583,
+    0.007488416,
+    0.005743744
+   ]
+  ],
+  [
+   "t0",
+   "t1",
+   "t2",
+   "u0",
+   "u1",
+   "u2"
+  ],
+  [
+   "t0",
+   "t1",
+   "u0",
+   "u1"
+  ],
+  {
+   "blockage_corrected": false,
+   "blockage_ratio": null,
+   "facility": "A2",
+   "ground_state": "moving-belt",
+   "notes": "reduced from a live VI acquisition (volts -> Pa -> C_p)",
+   "p_static_inf_pa": 10.0,
+   "p_total_inf_pa": 300.0,
+   "reynolds": null,
+   "rho": 1.2,
+   "sample_rate_hz": 2000.0,
+   "sample_seconds": 0.5,
+   "speed_ms": 22.0
+  },
+  "VirtualInstrument @ A2 [backend=synthetic]\n  synthetic-cDAQ: 2000 Hz (Nyquist 1000 Hz), 4 slots\n  force balance ? [under-floor sting]: balance B6: 6x6 cal, cond=8.0, max cross-talk 8% of full-scale, rail ±10 V\n  chell scanner Z: 3 ports, 2 calibrated, ±6895 Pa FS\n  chell scanner Z: 3 ports, 1 calibrated, ±6895 Pa FS",
+  {
+   "backend": "synthetic",
+   "dropped_samples": 0,
+   "facility": "A2",
+   "filtered": true,
+   "ground_state": "moving-belt",
+   "n_samples": 1000,
+   "notes": "",
+   "rho": 1.2,
+   "sample_rate_hz": 2000.0,
+   "seconds": 0.5,
+   "speed_ms": 22.0,
+   "synthetic": true
+  },
+  [
+   [
+    200.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    200.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    30.0,
+    12.0,
+    400.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    50.0,
+    0.0,
+    0.0
+   ],
+   [
+    8.0,
+    0.0,
+    0.0,
+    0.0,
+    50.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    50.0
+   ]
+  ],
+  {
+   "pitch_deg": 0.0,
+   "ride_height_mm": 30.0,
+   "roll_deg": 0.0,
+   "speed_ms": 20.0,
+   "yaw_deg": 0.0
+  }
+ ]
+}

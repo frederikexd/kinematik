@@ -1,0 +1,996 @@
+{
+ "check.clear_close": {
+  "collision_fraction": 0.0,
+  "method": "surface_sample",
+  "min_clearance_mm": 5.0,
+  "n_samples": 800,
+  "verdict": "TIGHT",
+  "worst_point": [
+   205.0,
+   12.097998352743176,
+   -24.59990939906013
+  ]
+ },
+ "check.defaults": [
+  {
+   "collision_fraction": 0.0,
+   "method": "surface_sample",
+   "min_clearance_mm": 4.5,
+   "n_samples": 800,
+   "verdict": "TIGHT",
+   "worst_point": [
+    204.5,
+    12.097998352743176,
+    -24.59990939906013
+   ]
+  },
+  {
+   "collision_fraction": 0.0,
+   "method": "bbox_reject",
+   "min_clearance_mm": 5.5,
+   "verdict": "CLEAR",
+   "worst_point": null
+  },
+  {
+   "collision_fraction": 0.0,
+   "method": "surface_sample",
+   "min_clearance_mm": 0.5,
+   "n_samples": 800,
+   "verdict": "TIGHT",
+   "worst_point": [
+    200.5,
+    12.097998352743176,
+    -24.59990939906013
+   ]
+  }
+ ],
+ "check.exact_bbox": {
+  "collision_fraction": 0.0,
+  "method": "surface_sample",
+  "min_clearance_mm": 5.0,
+  "n_samples": 800,
+  "verdict": "CLEAR",
+  "worst_point": [
+   205.0,
+   12.097998352743176,
+   -24.59990939906013
+  ]
+ },
+ "check.far": {
+  "collision_fraction": 0.0,
+  "method": "bbox_reject",
+  "min_clearance_mm": 775.0,
+  "verdict": "CLEAR",
+  "worst_point": null
+ },
+ "check.inside": {
+  "collision_fraction": 1.0,
+  "method": "surface_sample",
+  "min_clearance_mm": -99.99184525230629,
+  "n_samples": 800,
+  "verdict": "COLLISION",
+  "worst_point": [
+   -25.0,
+   2.5048928205611034,
+   -0.008154747693712494
+  ]
+ },
+ "check.many_faces": {
+  "collision_fraction": 0.415,
+  "method": "surface_sample",
+  "min_clearance_mm": -24.830111496236412,
+  "n_samples": 1000,
+  "verdict": "COLLISION",
+  "worst_point": [
+   175.1698885037636,
+   0.9089010163671114,
+   -2.7984248112111634
+  ]
+ },
+ "check.near_bbox": {
+  "collision_fraction": 0.0,
+  "method": "surface_sample",
+  "min_clearance_mm": 3.0,
+  "n_samples": 800,
+  "verdict": "TIGHT",
+  "worst_point": [
+   203.0,
+   12.097998352743176,
+   -24.59990939906013
+  ]
+ },
+ "check.overlap": {
+  "collision_fraction": 0.37125,
+  "method": "surface_sample",
+  "min_clearance_mm": -15.0,
+  "n_samples": 800,
+  "verdict": "COLLISION",
+  "worst_point": [
+   185.0,
+   12.097998352743176,
+   -24.59990939906013
+  ]
+ },
+ "check.sample": {
+  "collision_fraction": 0.37125,
+  "method": "surface_sample",
+  "min_clearance_mm": -15.0,
+  "n_samples": 800,
+  "verdict": "COLLISION",
+  "worst_point": [
+   185.0,
+   12.097998352743176,
+   -24.59990939906013
+  ]
+ },
+ "check.tight": {
+  "collision_fraction": 0.0,
+  "method": "surface_sample",
+  "min_clearance_mm": 2.0,
+  "n_samples": 800,
+  "verdict": "TIGHT",
+  "worst_point": [
+   202.0,
+   12.097998352743176,
+   -24.59990939906013
+  ]
+ },
+ "lazy": [
+  true,
+  "trimesh.creation",
+  "trimesh"
+ ],
+ "load.all": [
+  {
+   "bbox_max": [
+    111.99869478882735,
+    93.47340322699064,
+    63.86914145886008
+   ],
+   "bbox_min": [
+    -109.99869478882735,
+    -89.47340322699064,
+    -57.86914145886008
+   ],
+   "size_mm": [
+    221.9973895776547,
+    182.94680645398128,
+    121.73828291772016
+   ],
+   "triangles": 12,
+   "volume_mm3": 800000.0000000003,
+   "watertight": true
+  },
+  [
+   [
+    -50.760841,
+    -88.752271,
+    47.55155
+   ],
+   [
+    -94.857803,
+    -0.495859,
+    63.869141
+   ],
+   [
+    -65.901734,
+    -89.473403,
+    10.534887
+   ],
+   [
+    96.857803,
+    4.495859,
+    -57.869141
+   ]
+  ]
+ ],
+ "load.err.bad": {
+  "detailed": false,
+  "raised": "No 3D geometry found in the file. If it's a STEP assembly, make sure it contains solid bodies, not just sketches or reference geometry."
+ },
+ "load.err.empty": {
+  "detailed": false,
+  "raised": "No 3D geometry found in the file. If it's a STEP assembly, make sure it contains solid bodies, not just sketches or reference geometry."
+ },
+ "load.err.step": {
+  "detailed": true,
+  "raised": "Couldn't read the file — it may be corrupted or not a valid .step file."
+ },
+ "load.err.type": {
+  "detailed": false,
+  "raised": "Unsupported file type '.sldprt'. Use STEP (.step/.stp), STL, OBJ, or GLB. SolidWorks .sldprt isn't supported — export it as STEP first."
+ },
+ "load.err.upper": {
+  "detailed": true,
+  "raised": "Couldn't read the file — it may be corrupted or not a valid .stl file."
+ },
+ "load.fake_step.STEP": [
+  [
+   {
+    "bbox_max": [
+     106.0,
+     30.0,
+     30.0
+    ],
+    "bbox_min": [
+     -29.0,
+     -30.0,
+     -30.0
+    ],
+    "size_mm": [
+     135.0,
+     60.0,
+     60.0
+    ],
+    "triangles": 24,
+    "volume_mm3": 217000.0,
+    "watertight": true
+   },
+   [
+    [
+     -29.0,
+     -30.0,
+     -30.0
+    ],
+    [
+     -29.0,
+     -30.0,
+     30.0
+    ],
+    [
+     -29.0,
+     30.0,
+     -30.0
+    ],
+    [
+     -29.0,
+     30.0,
+     30.0
+    ]
+   ]
+  ],
+  [
+   [
+    "part.STEP",
+    true,
+    true,
+    0.5,
+    0.5
+   ]
+  ]
+ ],
+ "load.fake_step.step": [
+  [
+   {
+    "bbox_max": [
+     106.0,
+     30.0,
+     30.0
+    ],
+    "bbox_min": [
+     -29.0,
+     -30.0,
+     -30.0
+    ],
+    "size_mm": [
+     135.0,
+     60.0,
+     60.0
+    ],
+    "triangles": 24,
+    "volume_mm3": 217000.0,
+    "watertight": true
+   },
+   [
+    [
+     -29.0,
+     -30.0,
+     -30.0
+    ],
+    [
+     -29.0,
+     -30.0,
+     30.0
+    ],
+    [
+     -29.0,
+     30.0,
+     -30.0
+    ],
+    [
+     -29.0,
+     30.0,
+     30.0
+    ]
+   ]
+  ],
+  [
+   [
+    "part.step",
+    true,
+    true,
+    0.5,
+    0.5
+   ]
+  ]
+ ],
+ "load.fake_step.stp": [
+  [
+   {
+    "bbox_max": [
+     106.0,
+     30.0,
+     30.0
+    ],
+    "bbox_min": [
+     -29.0,
+     -30.0,
+     -30.0
+    ],
+    "size_mm": [
+     135.0,
+     60.0,
+     60.0
+    ],
+    "triangles": 24,
+    "volume_mm3": 217000.0,
+    "watertight": true
+   },
+   [
+    [
+     -29.0,
+     -30.0,
+     -30.0
+    ],
+    [
+     -29.0,
+     -30.0,
+     30.0
+    ],
+    [
+     -29.0,
+     30.0,
+     -30.0
+    ],
+    [
+     -29.0,
+     30.0,
+     30.0
+    ]
+   ]
+  ],
+  [
+   [
+    "part.stp",
+    true,
+    true,
+    0.5,
+    0.5
+   ]
+  ]
+ ],
+ "load.geo.one_face": [
+  {
+   "bbox_max": [
+    100.0,
+    100.0,
+    0.0
+   ],
+   "bbox_min": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "size_mm": [
+    100.0,
+    100.0,
+    0.0
+   ],
+   "triangles": 1,
+   "volume_mm3": null,
+   "watertight": false
+  },
+  [
+   [
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    100.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    100.0,
+    0.0
+   ]
+  ]
+ ],
+ "load.geo.one_vertex": {
+  "detailed": false,
+  "raised": "The file loaded but contains no usable surface mesh."
+ },
+ "load.geo.points": {
+  "detailed": false,
+  "raised": "The file loaded but contains no usable surface mesh."
+ },
+ "load.glb": [
+  {
+   "bbox_max": [
+    105.0,
+    30.0,
+    30.0
+   ],
+   "bbox_min": [
+    -30.0,
+    -30.0,
+    -30.0
+   ],
+   "size_mm": [
+    135.0,
+    60.0,
+    60.0
+   ],
+   "triangles": 24,
+   "volume_mm3": 217000.0,
+   "watertight": true
+  },
+  [
+   [
+    -30.0,
+    -30.0,
+    -30.0
+   ],
+   [
+    -30.0,
+    -30.0,
+    30.0
+   ],
+   [
+    -30.0,
+    30.0,
+    -30.0
+   ],
+   [
+    -30.0,
+    30.0,
+    30.0
+   ]
+  ]
+ ],
+ "load.half": {
+  "detailed": false,
+  "raised": "The part is only 4.00 units across, which is suspiciously small — the file is probably in metres. Set scale to 1000 to convert to mm."
+ },
+ "load.metres": {
+  "detailed": false,
+  "raised": "The part is only 0.10 units across, which is suspiciously small — the file is probably in metres. Set scale to 1000 to convert to mm."
+ },
+ "load.obj": [
+  {
+   "bbox_max": [
+    55.0,
+    17.0,
+    17.0
+   ],
+   "bbox_min": [
+    -25.0,
+    -23.0,
+    -13.0
+   ],
+   "size_mm": [
+    80.0,
+    40.0,
+    30.0
+   ],
+   "triangles": 12,
+   "volume_mm3": 96000.0,
+   "watertight": true
+  },
+  [
+   [
+    -25.0,
+    -23.0,
+    -13.0
+   ],
+   [
+    -25.0,
+    -23.0,
+    17.0
+   ],
+   [
+    -25.0,
+    17.0,
+    -13.0
+   ],
+   [
+    -25.0,
+    17.0,
+    17.0
+   ]
+  ]
+ ],
+ "load.rx": [
+  {
+   "bbox_max": [
+    50.0,
+    10.000000000000002,
+    25.0
+   ],
+   "bbox_min": [
+    -50.0,
+    -10.000000000000002,
+    -25.0
+   ],
+   "size_mm": [
+    100.0,
+    20.000000000000004,
+    50.0
+   ],
+   "triangles": 12,
+   "volume_mm3": 100000.0,
+   "watertight": true
+  },
+  [
+   [
+    -50.0,
+    -10.0,
+    -25.0
+   ],
+   [
+    -50.0,
+    -10.0,
+    25.0
+   ],
+   [
+    -50.0,
+    10.0,
+    -25.0
+   ],
+   [
+    50.0,
+    10.0,
+    -25.0
+   ]
+  ]
+ ],
+ "load.ry": [
+  {
+   "bbox_max": [
+    42.42640687119285,
+    25.0,
+    42.426406871192846
+   ],
+   "bbox_min": [
+    -42.42640687119285,
+    -25.0,
+    -42.426406871192846
+   ],
+   "size_mm": [
+    84.8528137423857,
+    50.0,
+    84.85281374238569
+   ],
+   "triangles": 12,
+   "volume_mm3": 100000.0,
+   "watertight": true
+  },
+  [
+   [
+    -28.284271,
+    -25.0,
+    42.426407
+   ],
+   [
+    -28.284271,
+    25.0,
+    42.426407
+   ],
+   [
+    -42.426407,
+    -25.0,
+    28.284271
+   ],
+   [
+    28.284271,
+    -25.0,
+    -42.426407
+   ]
+  ]
+ ],
+ "load.rz": [
+  {
+   "bbox_max": [
+    55.80127018922194,
+    46.65063509461096,
+    10.0
+   ],
+   "bbox_min": [
+    -55.80127018922194,
+    -46.65063509461096,
+    -10.0
+   ],
+   "size_mm": [
+    111.60254037844388,
+    93.30127018922192,
+    20.0
+   ],
+   "triangles": 12,
+   "volume_mm3": 100000.0,
+   "watertight": true
+  },
+  [
+   [
+    -30.80127,
+    -46.650635,
+    10.0
+   ],
+   [
+    -55.80127,
+    -3.349365,
+    10.0
+   ],
+   [
+    -30.80127,
+    -46.650635,
+    -10.0
+   ],
+   [
+    55.80127,
+    3.349365,
+    -10.0
+   ]
+  ]
+ ],
+ "load.scaled": [
+  {
+   "bbox_max": [
+    50.00000074505806,
+    25.00000037252903,
+    9.999999776482582
+   ],
+   "bbox_min": [
+    -50.00000074505806,
+    -25.00000037252903,
+    -9.999999776482582
+   ],
+   "size_mm": [
+    100.00000149011612,
+    50.00000074505806,
+    19.999999552965164
+   ],
+   "triangles": 12,
+   "volume_mm3": 100000.00074505802,
+   "watertight": true
+  },
+  [
+   [
+    -50.000001,
+    -25.0,
+    10.0
+   ],
+   [
+    -50.000001,
+    25.0,
+    10.0
+   ],
+   [
+    -50.000001,
+    -25.0,
+    -10.0
+   ],
+   [
+    50.000001,
+    -25.0,
+    -10.0
+   ]
+  ]
+ ],
+ "load.size.5.0": [
+  {
+   "bbox_max": [
+    2.5,
+    2.5,
+    2.5
+   ],
+   "bbox_min": [
+    -2.5,
+    -2.5,
+    -2.5
+   ],
+   "size_mm": [
+    5.0,
+    5.0,
+    5.0
+   ],
+   "triangles": 12,
+   "volume_mm3": 125.0,
+   "watertight": true
+  },
+  [
+   [
+    -2.5,
+    -2.5,
+    2.5
+   ],
+   [
+    -2.5,
+    2.5,
+    2.5
+   ],
+   [
+    -2.5,
+    -2.5,
+    -2.5
+   ],
+   [
+    2.5,
+    -2.5,
+    -2.5
+   ]
+  ]
+ ],
+ "load.size.5.5": [
+  {
+   "bbox_max": [
+    2.75,
+    2.75,
+    2.75
+   ],
+   "bbox_min": [
+    -2.75,
+    -2.75,
+    -2.75
+   ],
+   "size_mm": [
+    5.5,
+    5.5,
+    5.5
+   ],
+   "triangles": 12,
+   "volume_mm3": 166.375,
+   "watertight": true
+  },
+  [
+   [
+    -2.75,
+    -2.75,
+    2.75
+   ],
+   [
+    -2.75,
+    2.75,
+    2.75
+   ],
+   [
+    -2.75,
+    -2.75,
+    -2.75
+   ],
+   [
+    2.75,
+    -2.75,
+    -2.75
+   ]
+  ]
+ ],
+ "load.stl": [
+  {
+   "bbox_max": [
+    50.0,
+    25.0,
+    10.0
+   ],
+   "bbox_min": [
+    -50.0,
+    -25.0,
+    -10.0
+   ],
+   "size_mm": [
+    100.0,
+    50.0,
+    20.0
+   ],
+   "triangles": 12,
+   "volume_mm3": 100000.0,
+   "watertight": true
+  },
+  [
+   [
+    -50.0,
+    -25.0,
+    10.0
+   ],
+   [
+    -50.0,
+    25.0,
+    10.0
+   ],
+   [
+    -50.0,
+    -25.0,
+    -10.0
+   ],
+   [
+    50.0,
+    -25.0,
+    -10.0
+   ]
+  ]
+ ],
+ "load.upper_ext": [
+  {
+   "bbox_max": [
+    50.0,
+    25.0,
+    10.0
+   ],
+   "bbox_min": [
+    -50.0,
+    -25.0,
+    -10.0
+   ],
+   "size_mm": [
+    100.0,
+    50.0,
+    20.0
+   ],
+   "triangles": 12,
+   "volume_mm3": 100000.0,
+   "watertight": true
+  },
+  [
+   [
+    -50.0,
+    -25.0,
+    10.0
+   ],
+   [
+    -50.0,
+    25.0,
+    10.0
+   ],
+   [
+    -50.0,
+    -25.0,
+    -10.0
+   ],
+   [
+    50.0,
+    -25.0,
+    -10.0
+   ]
+  ]
+ ],
+ "record.cone": {
+  "bbox_size": [
+   80.0,
+   80.0,
+   90.0
+  ],
+  "centroid": [
+   -6.474883391146923e-16,
+   8.875142898255684e-16,
+   22.499999999999996
+  ],
+  "mass_g": 1176.160533370834,
+  "name": "cone",
+  "team": "brakes"
+ },
+ "record.dense": {
+  "bbox_size": [
+   100.0,
+   100.0,
+   100.0
+  ],
+  "centroid": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "mass_g": 7850.000000000001,
+  "name": "dense",
+  "team": "brakes"
+ },
+ "record.none": {
+  "bbox_size": [
+   100.0,
+   100.0,
+   100.0
+  ],
+  "centroid": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "mass_g": null,
+  "name": "none",
+  "team": "brakes"
+ },
+ "record.offset": {
+  "bbox_size": [
+   10.0,
+   20.0,
+   30.0
+  ],
+  "centroid": [
+   5.0,
+   5.0,
+   5.0
+  ],
+  "mass_g": 6.0,
+  "name": "offset",
+  "team": "brakes"
+ },
+ "record.open": {
+  "bbox_size": [
+   10.0,
+   10.0,
+   10.0
+  ],
+  "centroid": [
+   -1.0,
+   -5.684341886080802e-17,
+   -5.684341886080802e-17
+  ],
+  "mass_g": null,
+  "name": "open",
+  "team": "brakes"
+ },
+ "summary.open": {
+  "bbox_max": [
+   5.0,
+   5.0,
+   5.0
+  ],
+  "bbox_min": [
+   -5.0,
+   -5.0,
+   -5.0
+  ],
+  "size_mm": [
+   10.0,
+   10.0,
+   10.0
+  ],
+  "triangles": 10,
+  "volume_mm3": null,
+  "watertight": false
+ },
+ "teams": {
+  "aerodynamics": {
+   "color": "#ffd93b",
+   "label": "Aerodynamics"
+  },
+  "brakes": {
+   "color": "#ff8c1a",
+   "label": "Brakes"
+  },
+  "chassis": {
+   "color": "#a855f7",
+   "label": "Chassis"
+  },
+  "cooling": {
+   "color": "#5ec8f2",
+   "label": "Cooling"
+  },
+  "data-acquisition": {
+   "color": "#3ec46d",
+   "label": "Data acquisition"
+  },
+  "electrics": {
+   "color": "#2f6bff",
+   "label": "Electrics"
+  },
+  "powertrain": {
+   "color": "#ff4444",
+   "label": "Powertrain"
+  },
+  "suspension": {
+   "color": "#ff6fb5",
+   "label": "Suspension"
+  }
+ }
+}

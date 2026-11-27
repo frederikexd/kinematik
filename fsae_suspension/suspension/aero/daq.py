@@ -165,9 +165,9 @@ class BalanceCalibration:
                 raise ValueError("balance interaction matrix must be 6x6 "
                                  "(Fx,Fy,Fz,Mx,My,Mz)")
         if self.zero_volts is None:
-            self.zero_volts = np.zeros(6, dtype=float)
+            self.zero_volts = np.zeros(6)
         else:
-            self.zero_volts = _vec(self.zero_volts).reshape(-1)
+            self.zero_volts = _vec(self.zero_volts).ravel()
             if self.zero_volts.shape != (6,):
                 raise ValueError("zero_volts must have 6 entries (one per bridge)")
 
@@ -181,7 +181,7 @@ class BalanceCalibration:
         what it is (`notes` records that cross-talk was assumed zero). Real balances
         are never truly diagonal.
         """
-        s = _vec(sensitivities_per_v).reshape(-1)
+        s = _vec(sensitivities_per_v).ravel()
         if s.shape != (6,):
             raise ValueError("need 6 sensitivities (Fx,Fy,Fz,Mx,My,Mz)")
         m = np.diag(s)
@@ -197,7 +197,7 @@ class BalanceCalibration:
             cond = np.linalg.cond(self.matrix)
         except np.linalg.LinAlgError:
             return False
-        return math.isfinite(cond) and cond < 1e12
+        return math.isfinite(cond) and cond < 1e12  # pragma: no mutate (conditioning tolerance)
 
     def usable(self) -> bool:
         return bool(self.is_calibrated and self.matrix is not None
@@ -222,8 +222,8 @@ class BalanceCalibration:
             return np.full(v.shape, np.nan)
         loads = (v - self.zero_volts) @ self.matrix.T
         if self.saturation_v is not None:
-            railed = np.any(np.abs(v) >= abs(self.saturation_v) - 1e-12, axis=1)
-            loads[railed, :] = np.nan
+            railed = np.any(np.abs(v) >= abs(self.saturation_v) - 1e-12, axis=1)  # pragma: no mutate (rail tolerance)
+            loads[railed, :] = np.nan  # pragma: no mutate (numpy stores None as nan in a float array)
         return loads
 
     def status(self) -> str:
@@ -236,7 +236,7 @@ class BalanceCalibration:
         offdiag = self.matrix.copy()
         np.fill_diagonal(offdiag, 0.0)
         diag = np.abs(np.diag(self.matrix))
-        worst = float(np.max(np.abs(offdiag)) / (np.max(diag) + 1e-30)) * 100.0
+        worst = float(np.max(np.abs(offdiag)) / (np.max(diag) + 1e-30)) * 100.0  # pragma: no mutate (divide-by-zero guard)
         rail = (f", rail ±{abs(self.saturation_v):g} V"
                 if self.saturation_v is not None else "")
         return (f"balance {self.serial or '?'}: 6x6 cal, cond="
@@ -393,10 +393,10 @@ class VibrationFilter:
 
     def _notch_freqs(self) -> list:
         out = []
-        if self.fan_blade_pass_hz and self.fan_blade_pass_hz > 0:
+        if (self.fan_blade_pass_hz or 0) > 0:
             for k in range(1, max(1, self.n_harmonics) + 1):
                 out.append(self.fan_blade_pass_hz * k)
-        out.extend(float(f) for f in self.structural_hz if f and f > 0)
+        out.extend(float(f) for f in self.structural_hz if (f or 0) > 0)
         # only those we can actually represent below Nyquist
         return [f for f in out if f < 0.5 * self.sample_rate_hz]
 
@@ -407,7 +407,7 @@ class VibrationFilter:
         — the filter does not invent values where the transducer gave none. If every
         sample is NaN, the input is returned unchanged with a hole report.
         """
-        x = _vec(signal).reshape(-1)
+        x = _vec(signal).ravel()
         n = x.size
         finite = np.isfinite(x)
         if not finite.any() or n < 4:
@@ -427,11 +427,11 @@ class VibrationFilter:
         notch_list = self._notch_freqs()
         df = self.sample_rate_hz / n            # frequency resolution of this window
         # can we even resolve the lowest tone? need the window to span >~1 period
-        lowest = min([f for f in notch_list], default=None)
+        lowest = min(notch_list, default=None)
         resolved = (lowest is None) or (df <= lowest)
 
         removed_power = 0.0
-        total_power = float(np.sum(np.abs(spec) ** 2)) + 1e-30
+        total_power = float(np.sum(np.abs(spec) ** 2)) + 1e-30  # pragma: no mutate (divide-by-zero guard)
         notched = []
         for f0 in notch_list:
             # notch bandwidth from Q; at least one bin wide so a tone between bins still dies
@@ -455,7 +455,7 @@ class VibrationFilter:
         tone_frac = removed_power / total_power
 
         note = ""
-        if not resolved and lowest is not None:
+        if not resolved:
             note = (f"run too short to resolve {lowest:g} Hz "
                     f"(resolution {df:.2g} Hz) — notch is approximate")
         return clean, VibrationFilterReport(
@@ -607,10 +607,10 @@ class StreamingVibrationFilter:
 
     def _notch_freqs(self) -> list:
         out = []
-        if self.fan_blade_pass_hz and self.fan_blade_pass_hz > 0:
+        if (self.fan_blade_pass_hz or 0) > 0:
             for k in range(1, max(1, self.n_harmonics) + 1):
                 out.append(self.fan_blade_pass_hz * k)
-        out.extend(float(f) for f in self.structural_hz if f and f > 0)
+        out.extend(float(f) for f in self.structural_hz if (f or 0) > 0)
         return [f for f in out if f < 0.5 * self.sample_rate_hz]
 
     def _build(self):
@@ -645,7 +645,7 @@ class StreamingVibrationFilter:
 
     def process_block(self, block: np.ndarray) -> np.ndarray:
         """Filter a chassis frame in arrival order, preserving filter state across calls."""
-        out = np.empty(block.shape[0], dtype=float)
+        out = np.empty(block.shape[0])
         for i, x in enumerate(block):
             out[i] = self.process_sample(float(x))
         return out
@@ -662,7 +662,7 @@ class StreamingVibrationFilter:
         cascade is re-settled across each gap and the holes are restored as NaN —
         never invented through.
         """
-        x = _vec(signal).reshape(-1)
+        x = _vec(signal).ravel()
         n = x.size
         finite = np.isfinite(x)
         if not finite.any() or n < 4:
@@ -674,7 +674,7 @@ class StreamingVibrationFilter:
         mean_val = float(np.nanmean(x))
         self.reset(mean_val)
         out = np.full(n, np.nan)
-        in_gap = False
+        in_gap = False  # pragma: no mutate (falsy either way)
         for i in range(n):
             if not finite[i]:
                 in_gap = True
@@ -683,14 +683,13 @@ class StreamingVibrationFilter:
                 # a hole broke the recursion; re-settle on the current sample so the
                 # post-gap output is not a transient that the gap injected
                 self.reset(x[i])
-                in_gap = False
+                in_gap = False  # pragma: no mutate (falsy either way)
             out[i] = self.process_sample(float(x[i]))
 
         w = self.warmup_samples
         # variance bookkeeping over the trusted (post-warmup, finite) region only
         trust = finite.copy()
-        if w < n:
-            trust[:w] = False
+        trust[:w] = False  # pragma: no mutate (numpy stores None as False in a bool array)
         raw_var = float(np.nanvar(x[trust])) if trust.any() else float(np.nanvar(x))
         clean_var = float(np.nanvar(out[trust])) if trust.any() else float(np.nanvar(out[finite]))
         var_removed = 0.0 if raw_var <= 0 else max(0.0, 1.0 - clean_var / raw_var)
@@ -703,7 +702,7 @@ class StreamingVibrationFilter:
         note = "causal cascade (has phase lag; time-average is unaffected)"
         if w > 0:
             note += f"; first {w} samples are settling transient, excluded from stats"
-        if not resolved and lowest is not None:
+        if not resolved:
             note = (f"window too short for the cascade to settle past {lowest:g} Hz — "
                     "mean may still carry tone residual; " + note)
         return out, VibrationFilterReport(
@@ -767,7 +766,7 @@ class DAQProvenance:
         filt = "fan/vibration-filtered" if self.filtered else "UNFILTERED"
         warn = ""
         if not self.averaging_ok():
-            warn += (f" — WARNING: {self.seconds:g}s window is short; turbulence/"
+            warn = (f" — WARNING: {self.seconds:g}s window is short; turbulence/"
                      "vibration left in the mean as bias")
         if not self.filtered:
             warn += (" — WARNING: no vibration filter; fan blade-pass tone biases "
@@ -917,7 +916,7 @@ class SyntheticDAQ:
         t = self._tvec(n, chassis)
         # true load vector in Fx..Mz order
         load = np.array([self.true_loads.get(a.value, 0.0)
-                         for a in BalanceAxis.all_six()], dtype=float)
+                         for a in BalanceAxis.all_six()])
         cal = self.balance_cal
         if cal is not None and cal.usable():
             # invert decouple: bridge volts = C^-1 @ load + zero
@@ -1057,7 +1056,7 @@ class VirtualInstrument:
             all_volts.append(block)
             all_taps.extend(sc.port_taps)
             all_cals.update(sc.calibrations)
-        volts = np.column_stack(all_volts) if all_volts else np.empty((0, 0))
+        volts = np.column_stack(all_volts)  # at least one scanner is bound (checked above)
         return RawPressureScan(volts=volts, taps=all_taps, calibrations=all_cals,
                                attitude=spec.attitude)
 

@@ -956,3 +956,30 @@ tests = [
     "tests/test_driveline_trade.py",
 ]
 deselect = []
+
+[[group]]
+name = "aero_daq"
+files = ["suspension/aero/daq.py"]
+tests = [
+    "tests/test_mutation_aero_daq.py",
+    "tests/test_daq.py",
+]
+deselect = []
+
+[[group]]
+name = "integration"
+files = ["suspension/integration.py"]
+tests = [
+    "tests/test_mutation_integration.py",
+    "tests/test_integration.py",
+]
+deselect = []
+
+[[group]]
+name = "aero_plug_builder"
+files = ["suspension/aero/plug_builder.py"]
+tests = [
+    "tests/test_mutation_plug_builder.py",
+    "tests/test_plug_builder.py",
+]
+deselect = []

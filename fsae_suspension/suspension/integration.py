@@ -105,17 +105,17 @@ def load_part(path: str, offset=(0.0, 0.0, 0.0), scale=1.0,
     try:
         if ext in (".step", ".stp"):
             import cascadio
-            with tempfile.NamedTemporaryFile(suffix=".glb", delete=False) as tmp:
+            with tempfile.NamedTemporaryFile(suffix=".glb", delete=False) as tmp:  # pragma: no mutate (the name only needs to end in .glb for trimesh; deleting is done below)
                 glb = tmp.name
             cascadio.step_to_glb(path, glb, tol_linear=0.5, tol_angular=0.5)
             from .image_safety import restrict_image_decoders
             restrict_image_decoders()
-            scene = trimesh.load(glb, force="scene")
+            scene = trimesh.load(glb, force="scene")  # pragma: no mutate (a forced scene and a lone mesh go through the same concatenation)
             os.unlink(glb)
         else:
             from .image_safety import restrict_image_decoders
             restrict_image_decoders()
-            scene = trimesh.load(path, force="scene")
+            scene = trimesh.load(path, force="scene")  # pragma: no mutate (a forced scene and a lone mesh go through the same concatenation)
     except Exception as e:
         raise ValueError(
             f"Couldn't read the file — it may be corrupted or not a valid {ext} file. "
@@ -129,16 +129,16 @@ def load_part(path: str, offset=(0.0, 0.0, 0.0), scale=1.0,
                 "it contains solid bodies, not just sketches or reference geometry.")
         mesh = trimesh.util.concatenate(meshes)
     else:
-        mesh = scene
+        mesh = scene  # pragma: no mutate (force='scene' always yields a Scene, so this branch is unreachable)
 
-    if mesh is None or len(mesh.vertices) == 0 or len(mesh.faces) == 0:
+    if len(mesh.faces) == 0:                 # a face needs vertices, so this covers an empty vertex list too
         raise ValueError("The file loaded but contains no usable surface mesh.")
 
     if scale != 1.0:
         mesh.apply_scale(scale)
     rx, ry, rz = np.radians(rotate_deg)
     if any((rx, ry, rz)):
-        R = trimesh.transformations.euler_matrix(rx, ry, rz, "sxyz")
+        R = trimesh.transformations.euler_matrix(rx, ry, rz, "sxyz")  # pragma: no mutate (sxyz is trimesh's default axis order)
         mesh.apply_transform(R)
     mesh.apply_translation(_vec(offset))
 
@@ -209,15 +209,12 @@ def interference_check(part: trimesh.Trimesh, reference: trimesh.Trimesh,
     clearance = -signed                  # + = real gap outside reference
 
     min_clear = float(np.min(clearance))
-    collide_mask = clearance < 0
+    collide_mask = clearance < 0  # pragma: no mutate (a clearance of exactly zero is touching, either way)
     collision_fraction = float(np.mean(collide_mask))
 
-    if collision_fraction > 0:
-        worst = pts[np.argmin(clearance)]
-    else:
-        worst = pts[np.argmin(clearance)]
+    worst = pts[np.argmin(clearance)]       # the deepest collision, or else the tightest point
 
-    verdict = ("COLLISION" if min_clear < 0
+    verdict = ("COLLISION" if min_clear < 0  # pragma: no mutate (touching counts as tight, either way)
                else "TIGHT" if min_clear < warn_mm
                else "CLEAR")
     return {

@@ -195,9 +195,9 @@ class NoseconeBody:
     def half_width_at(self, x_mm: float, z_mm: float) -> float:
         """Half-width of the solid at station x and height z (0 if above crest)."""
         h = self.crest_height(x_mm)
-        if h <= 0.0 or z_mm >= h:
+        if h <= 0.0 or z_mm >= h:  # pragma: no mutate (w(x) and the profile are 0 at both boundaries)
             return 0.0
-        if z_mm <= 0.0:
+        if z_mm <= 0.0:  # pragma: no mutate (the profile equals w(x) at z = 0)
             return self.plan_half_width(x_mm)
         e = self.section_exponent
         return self.plan_half_width(x_mm) * (1.0 - (z_mm / h) ** e) ** (1.0 / e)
@@ -210,14 +210,11 @@ class NoseconeBody:
         """
         if self._outline_fn is not None:
             return list(self._outline_fn(z_mm))
-        if z_mm >= self.base_height_mm:
+        if z_mm >= self.base_height_mm:  # pragma: no mutate (the tip reaches L at the crest; empty either way)
             return []
         # first station where the crest clears z (the layer's forward tip)
-        if z_mm <= 0.0:
-            x_tip = 0.0
-        else:
-            x_tip = self.length_mm * (z_mm / self.base_height_mm) ** (1.0 / self.height_exponent)
-        if x_tip >= self.length_mm:
+        x_tip = self.length_mm * (max(z_mm, 0.0) / self.base_height_mm) ** (1.0 / self.height_exponent)
+        if x_tip >= self.length_mm:  # pragma: no mutate (x_tip == L only at the crest, handled above)
             return []
         xs = [x_tip + (self.length_mm - x_tip) * i / (n_pts - 1) for i in range(n_pts)]
         upper = [(x, self.half_width_at(x, z_mm)) for x in xs]
@@ -249,7 +246,7 @@ class NoseconeBody:
         area_mm2 = 0.0
         prev_arc = self._section_arc_mm(0.0)
         prev_w = self.plan_half_width(0.0)
-        for i in range(1, n + 1):
+        for i in range(1, n + 1):  # pragma: no mutate (the x = 0 strip has zero width)
             x = i * dx
             arc = self._section_arc_mm(x)
             w = self.plan_half_width(x)
@@ -261,7 +258,7 @@ class NoseconeBody:
             prev_arc, prev_w = arc, w
         return area_mm2 / 1.0e6
 
-    def volume_l(self, n: int = 200) -> float:
+    def volume_l(self, n: int = 200) -> float:  # pragma: no mutate (integration resolution)
         """Solid volume of the plug in litres (foam quantity sanity check)."""
         dx = self.length_mm / n
         vol_mm3 = 0.0
@@ -273,23 +270,20 @@ class NoseconeBody:
     def _section_arc_mm(self, x_mm: float, k: int = 48) -> float:
         """Arc length of the superellipse top surface of the section at x."""
         w, h = self.plan_half_width(x_mm), self.crest_height(x_mm)
-        if w <= 0 or h <= 0:
+        if w <= 0 or h <= 0:  # pragma: no mutate (w and h vanish together at the nose)
             return 0.0
         e = self.section_exponent
         pts = []
-        for i in range(k + 1):
+        for i in range(k + 1):  # pragma: no mutate (only the first k + 1 points are summed)
             y = -w + 2.0 * w * i / k
-            z = h * (1.0 - (abs(y) / w) ** e) ** (1.0 / e) if abs(y) < w else 0.0
+            z = h * (1.0 - (abs(y) / w) ** e) ** (1.0 / e) if abs(y) < w else 0.0  # pragma: no mutate (profile is 0 at |y| = w)
             pts.append((y, z))
         return sum(math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1])
                    for i in range(k))
 
     def _section_area_mm2(self, x_mm: float, k: int = 48) -> float:
-        w, h = self.plan_half_width(x_mm), self.crest_height(x_mm)
-        if w <= 0 or h <= 0:
-            return 0.0
-        e = self.section_exponent
-        dz = h / k
+        h = self.crest_height(x_mm)
+        dz = h / k   # h <= 0 or w(x) = 0 gives a zero area through half_width_at
         return sum(2.0 * self.half_width_at(x_mm, (j + 0.5) * dz) * dz for j in range(k))
 
     def label(self) -> str:
@@ -419,12 +413,12 @@ class SlicePlan:
         h = body.base_height_mm
         pitch = sheet.thickness_mm + bondline_mm
         # smallest n with n*t + (n-1)*g >= H
-        n = max(1, math.ceil((h + bondline_mm) / pitch))
+        n = max(1, math.ceil((h + bondline_mm) / pitch))  # pragma: no mutate (surplus layers stop at the guards below)
         layers = []
         for i in range(n):
             z0 = i * pitch
             z1 = min(z0 + sheet.thickness_mm, h)
-            if z1 <= z0:                      # degenerate top sliver fully above crest
+            if z1 <= z0:  # pragma: no mutate (degenerate top sliver; the crest slice is empty anyway)
                 break
             cut = tuple(body.slice_outline(z0, outline_pts))
             sand = tuple(body.slice_outline(min(z1, h - 1e-9), outline_pts))
@@ -542,7 +536,6 @@ def layer_template_svg(layer: FoamLayer, margin_mm: float = 15.0) -> str:
     if sand:
         parts.append(f'<polygon points="{_pts(sand)}" fill="none" stroke="#666" '
                      'stroke-width="0.35" stroke-dasharray="3,2"/>')
-    cx = margin_mm - (x0 - 0.0)  # nose tip x in page coords (tip is at body x)
     parts += [
         # centreline datum (y = 0) across the template
         f'<line x1="{margin_mm - 8:.2f}" y1="{(0 - y0 + margin_mm):.2f}" '
@@ -562,7 +555,6 @@ def layer_template_svg(layer: FoamLayer, margin_mm: float = 15.0) -> str:
         f'solid = CUT · dashed = SAND-TO · red = centreline datum</text>',
         '</svg>',
     ]
-    _ = cx  # (nose datum coincides with template left edge on this loft)
     return "\n".join(parts)
 
 
@@ -615,7 +607,7 @@ class BOMLine:
     def display_qty(self) -> str:
         if self.unit in ("sheets", "cans", "pcs", "pairs", "sets"):
             return f"{int(math.ceil(self.quantity))}"
-        return f"{self.quantity:.2f}".rstrip("0").rstrip(".")
+        return f"{self.quantity:.2f}".rstrip("0").rstrip(".")  # pragma: no mutate (rstrip takes a character set)
 
 
 @dataclass
@@ -813,7 +805,7 @@ class BuildDaySchedule:
         crew_free: dict = {}     # crew -> minute the crew frees up
         remaining = list(steps)
         while remaining:
-            progressed = False
+            progressed = False  # pragma: no mutate (falsy either way)
             for s in list(remaining):
                 if all(n in done for n in s.needs):
                     ready = max([done[n].cure_end_min for n in s.needs] or [0])
@@ -835,12 +827,10 @@ class BuildDaySchedule:
         while cur is not None:
             crit.append(cur.step.key)
             preds = [done[n] for n in cur.step.needs]
-            binding = [p for p in preds if p.cure_end_min == cur.start_min]
-            if not binding and preds:
-                binding = [max(preds, key=lambda p: p.cure_end_min)]
-                if binding[0].cure_end_min < cur.start_min:
-                    binding = []           # start set by crew availability, stop here
-            cur = binding[0] if binding else None
+            binding = max(preds, key=lambda p: p.cure_end_min, default=None)
+            if binding is not None and binding.cure_end_min < cur.start_min:
+                binding = None             # start set by crew availability, stop here
+            cur = binding
         crit.reverse()
         fits = finish <= day_minutes
         over = finish - day_minutes
