@@ -819,8 +819,10 @@ def _unfold_branch_2d(path3d: np.ndarray, origin2d: np.ndarray,
         if i < turns.shape[0]:
             t = np.radians(turns[i])
             plus, minus = heading + t, heading - t
-            heading = plus if _ang_diff(plus, target) <= _ang_diff(minus, target) \
-                else minus
+            # a straight-ahead target puts both signs at the same distance; round-off decides that tie
+            # differently on different CPUs, so a tie within 1e-9 rad always turns plus
+            d_plus, d_minus = _ang_diff(plus, target), _ang_diff(minus, target)
+            heading = plus if d_plus <= d_minus + 1e-9 else minus  # pragma: no mutate (tie tolerance)
     return np.asarray(pts)
 
 
