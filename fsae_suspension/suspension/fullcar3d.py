@@ -460,8 +460,11 @@ def _numd(d, key, default):
 
 
 def _is_wishbone_hardpoints(corner) -> bool:
-    """True if `corner` is a double-wishbone Hardpoints (has the named fields)."""
-    return isinstance(corner, Hardpoints)
+    """True if `corner` is a double-wishbone Hardpoints (has the named fields).
+
+    Matched by class name as well as identity: a test that re-imports suspension.kinematics leaves objects of the
+    fresh Hardpoints class next to this module's reference to the old one, and those are still wishbone corners."""
+    return isinstance(corner, Hardpoints) or type(corner).__name__ == "Hardpoints"
 
 
 def _extract_corner(corner, ride_drop_mm, color_registry):
