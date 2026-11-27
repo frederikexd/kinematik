@@ -15,6 +15,7 @@ from tests._golden import plain
 from tests._golden_lazy import check_lazy
 
 REL = 1e-6          # the generic kernel solves iteratively
+ABS = 1e-6          # near-zero outputs carry the solver's ~1e-8 round-off, which differs by BLAS
 
 
 def _mech(m):
@@ -226,8 +227,8 @@ def _adapter():
 
 
 def test_every_topology_built_and_solved():
-    check_lazy("topologies", _topologies(), rel=REL, abs_=1e-9)
+    check_lazy("topologies", _topologies(), rel=REL, abs_=ABS)
 
 
 def test_generic_kinematics_on_every_topology():
-    check_lazy("adapter", _adapter(), rel=REL, abs_=1e-9)
+    check_lazy("adapter", _adapter(), rel=REL, abs_=ABS)
