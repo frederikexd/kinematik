@@ -21,7 +21,7 @@ means checking a design before the car is built or the board is first powered; i
 > decisions, and give motion ratios and link and pickup forces, within the vehicle's operating range. The kinematics and
 > pickup loads assume rigid links; the Compliance tab adds link, joint and pickup stiffness, checked against two
 > independent solvers but not yet against a measured K&C test. It cannot model transients, and absolute grip depends on
-> the tire data you load. Whole-car results use a separate rear corner once you enter one.
+> the tire data you load. Whole-car results use a separate rear corner once you enter one
 >
 > **Chassis: what it can and cannot do.** It provides suspension-derived pickup loads as inputs to chassis design; those
 > loads have been checked against Adams View and an independent static solver for the benchmark cases below. The
